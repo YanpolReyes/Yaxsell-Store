@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft, Save, Monitor, Smartphone, Tablet, Eye, EyeOff, GripVertical,
@@ -164,7 +164,7 @@ type DeviceKey = keyof typeof DEVICES;
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MAIN EDITOR
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-export default function ThemeEditorPage() {
+function ThemeEditorPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const templateId = searchParams.get('t') || '2';
@@ -4371,5 +4371,13 @@ function HistoryPanel({
         </div>
       )}
     </>
+  );
+}
+
+export default function ThemeEditorPageWrapper() {
+  return (
+    <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>Cargando editor...</div>}>
+      <ThemeEditorPage />
+    </Suspense>
   );
 }
