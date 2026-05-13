@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import * as XLSX from 'xlsx';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Product, Category } from '@/types/admin';
@@ -254,6 +255,31 @@ export default function ProductsPage() {
     a.click(); URL.revokeObjectURL(url);
   };
 
+  const getSku = (p: Product) => {
+    const featMatch = p.FEATURES?.match(/SKU:\s*(.+)/i);
+    if (featMatch) return featMatch[1].trim();
+    const tagParts = (p.TAGS || '').split(',').map(t => t.trim());
+    const skuTag = tagParts.find(t => /^[A-Z0-9]{4,}$/i.test(t) && !tagParts.includes(t.toLowerCase()));
+    return p.jumpseller_id || skuTag || p.$id;
+  };
+
+  const exportXLSX = () => {
+    const data = filtered.map(p => ({
+      SKU: getSku(p), ID: p.$id, Nombre: p.NAME || '', Descripción: p.DESCRIPTION || '',
+      Precio: p.PRICE, Stock: p.STOCK ?? 0, Categoría: catName(p.CATEGORYID),
+      Costo: p.COST || 0,
+      'Margen %': p.COST && p.PRICE ? Math.round(((p.PRICE - p.COST) / p.PRICE) * 100) : '',
+      'Precio Mayorista': p.WHOLESALEPRICE || 0,
+      'Mín. Mayorista': p.WHOLESALEMINQUANTITY || 0,
+      Vendidos: p.SOLDQUANTITY || 0,
+      'URL Imagen': p.IMAGEURL || '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Productos');
+    XLSX.writeFile(wb, `productos_${new Date().toISOString().slice(0,10)}.xlsx`);
+  };
+
   const toggleSort = (key: typeof sort.key) =>
     setSort(s => s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' });
 
@@ -307,6 +333,9 @@ export default function ProductsPage() {
           </button>
           <button onClick={exportCSV} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50">
             <Download className="w-4 h-4" />CSV
+          </button>
+          <button onClick={exportXLSX} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm font-medium hover:bg-green-100 transition disabled:opacity-50">
+            <Download className="w-4 h-4" />XLSX
           </button>
           <button onClick={load} disabled={isLoading} className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition text-gray-600">
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
