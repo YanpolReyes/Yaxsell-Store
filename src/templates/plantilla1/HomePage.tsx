@@ -23,6 +23,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import lottie from 'lottie-web';
 import './shopify-fix.css';
+import './mobile-responsive.css';
 
 /* ── Mapeo: ID de sección en config → ID del elemento en el HTML de Shopify ── */
 const TPL1_SECTION_HTML_MAP: Record<string, string> = {

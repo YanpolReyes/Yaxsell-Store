@@ -217,13 +217,13 @@ function ProductosInner() {
 
   return (
     <div style={{ fontFamily: FF, background: 'linear-gradient(180deg,#fff5f8 0%,#fff 280px)', minHeight: '100vh' }}>
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 20px 60px' }}>
+      <div className="pk-products-container" style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 20px 60px' }}>
         {/* Hero header */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#fef2f8', color: '#ec4899', padding: '5px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 10 }}>
             <Sparkles size={13} /> Nuestra tienda
           </div>
-          <h1 style={{ fontSize: 36, fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+          <h1 className="pk-products-title" style={{ fontSize: 36, fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
             Productos
           </h1>
           <p style={{ fontSize: 14, color: '#6b7280', margin: '6px 0 0' }}>
@@ -287,7 +287,7 @@ function ProductosInner() {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 28 }}>
+        <div className="pk-products-layout" style={{ display: 'flex', gap: 28 }}>
           {/* Desktop sidebar */}
           <aside className="hidden md:block" style={{ width: 260, flexShrink: 0 }}>
             <div style={{ position: 'sticky', top: 20 }}>
@@ -313,7 +313,7 @@ function ProductosInner() {
             </p>
 
             {isLoading ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 18 }}>
+              <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 18 }}>
                 {[...Array(8)].map((_, i) => (
                   <div key={i} style={{ background: '#fff', borderRadius: 18, overflow: 'hidden', border: '1px solid #fce7f3' }}>
                     <div style={{ aspectRatio: '1/1', background: 'linear-gradient(90deg,#fef2f8,#fce7f3,#fef2f8)', backgroundSize: '200% 100%', animation: 'pkShimmer 1.4s ease infinite' }} />
@@ -338,7 +338,7 @@ function ProductosInner() {
                 )}
               </div>
             ) : view === 'grid' ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 18 }}>
+              <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 18 }}>
                 {filtered.map(p => {
                   const price = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
                   const hasDisc = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
@@ -461,6 +461,21 @@ function ProductosInner() {
         .pk-card:hover .pk-card-actions { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
         .pk-card-actions button:hover { transform: scale(1.1); }
         .pk-card-list:hover { border-color: #fbcfe8; box-shadow: 0 8px 24px rgba(236,72,153,0.1); }
+
+        /* ─── Mobile responsive ─── */
+        @media (max-width: 900px) {
+          .pk-products-layout { flex-direction: column !important; gap: 16px !important; }
+        }
+        @media (max-width: 700px) {
+          .pk-products-container { padding: 20px 14px 50px !important; }
+          .pk-products-title { font-size: 28px !important; }
+          .pk-products-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+          /* Show actions overlay on tap (mobile lacks hover) */
+          .pk-card-actions { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
+        }
+        @media (max-width: 420px) {
+          .pk-products-grid { gap: 10px !important; }
+        }
       `}</style>
     </div>
   );

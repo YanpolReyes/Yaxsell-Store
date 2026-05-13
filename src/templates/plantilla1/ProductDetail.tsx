@@ -206,7 +206,7 @@ export default function ProductDetailPlantilla1() {
         <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to bottom, transparent 0%, transparent 50%, #f5f5f5 100%)` }} />
       </div>
 
-      <div style={{ maxWidth: 1400, margin: '-550px auto 0', padding: '0 16px 16px', position: 'relative', zIndex: 2 }}>
+      <div className="pd-container" style={{ maxWidth: 1400, margin: '-550px auto 0', padding: '0 16px 16px', position: 'relative', zIndex: 2 }}>
 
         {/* Category badge - above the main card */}
         {(categoryName || categoryIcon) && (
@@ -230,10 +230,10 @@ export default function ProductDetailPlantilla1() {
         )}
 
         {/* Main: 3-column ML-style layout */}
-        <div style={{ background: '#fff', borderRadius: 24, padding: '48px 40px', display: 'grid', gridTemplateColumns: 'auto 1fr 380px', gap: 40, marginBottom: 20, boxShadow: '0 10px 40px rgba(236,72,153,0.1)', alignItems: 'flex-start' }}>
+        <div className="pd-main-grid" style={{ background: '#fff', borderRadius: 24, padding: '48px 40px', display: 'grid', gridTemplateColumns: 'auto 1fr 380px', gap: 40, marginBottom: 20, boxShadow: '0 10px 40px rgba(236,72,153,0.1)', alignItems: 'flex-start' }}>
 
           {/* Column 1: Image gallery (thumbs + main) */}
-          <div style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
+          <div className="pd-gallery" style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
             {images.length > 1 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {images.map((img, i) => (

@@ -1,0 +1,402 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE OVERRIDES — plantilla1
+   Aplica fixes para mobile tanto en HomePage como en páginas globales (productos, login, etc.)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Global: prevent horizontal scroll on small screens ─── */
+@media screen and (max-width: 768px) {
+  html, body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+  }
+  * {
+    max-width: 100%;
+  }
+  img, video {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOMEPAGE NAVBAR MOBILE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 1024px) {
+  /* Permite que el menú hamburguesa nativo del tema vuelva a aparecer */
+  [data-template="1"] .musk-main-header .menu-btn-3 {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    z-index: 100;
+  }
+
+  /* Ocultar nav desktop en mobile (sobreescribe la regla global del shopify-fix) */
+  [data-template="1"] .musk-main-header .musk-navbar {
+    display: none !important;
+  }
+
+  /* Header padding más compacto en mobile */
+  [data-template="1"] header.musk-main-header,
+  [data-template="1"] header.musk-main-header .musk-main-header-container {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* Logo más pequeño */
+  [data-template="1"] header.musk-main-header .logo-col img {
+    max-width: 110px !important;
+    height: auto !important;
+  }
+
+  /* Iconos del header (search, cart, user) con espacio justo */
+  [data-template="1"] header.musk-main-header .musk-header-info-col {
+    gap: 10px !important;
+  }
+  [data-template="1"] header.musk-main-header .musk-header-info-col svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  [data-template="1"] header.musk-main-header .logo-col img {
+    max-width: 90px !important;
+  }
+  [data-template="1"] header.musk-main-header .musk-header-info-col {
+    gap: 8px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HERO BANNER MOBILE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 768px) {
+  [data-template="1"] .musk-banner-slider,
+  [data-template="1"] .musk-main-banner {
+    min-height: 70vh !important;
+  }
+
+  [data-template="1"] .banner-main-title,
+  [data-template="1"] .musk-banner-slider .banner-main-title {
+    font-size: clamp(36px, 9vw, 64px) !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  [data-template="1"] .banner-fancy-sub-head,
+  [data-template="1"] .musk-banner-slider .banner-fancy-sub-head {
+    font-size: clamp(14px, 3.5vw, 18px) !important;
+  }
+
+  [data-template="1"] .banner-slide-para {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    padding: 0 16px !important;
+  }
+
+  [data-template="1"] .banner-slide-content {
+    padding: 0 16px !important;
+  }
+
+  /* Hero buttons en mobile */
+  [data-template="1"] .musk-main-banner .btn-link-3,
+  [data-template="1"] .musk-main-banner .musk-banner-button {
+    font-size: 14px !important;
+    padding: 12px 22px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GRIDS DE PRODUCTOS / CATEGORÍAS — pasar a 2 cols en mobile
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 768px) {
+  [data-template="1"] .row.row-cols-lg-4,
+  [data-template="1"] .row.row-cols-lg-3,
+  [data-template="1"] .row.row-cols-lg-2,
+  [data-template="1"] .row.row-cols-md-3,
+  [data-template="1"] .row.row-cols-md-4 {
+    --bs-gutter-x: 12px !important;
+  }
+
+  [data-template="1"] .row.row-cols-lg-4 > [class*="col-"],
+  [data-template="1"] .row.row-cols-lg-3 > [class*="col-"],
+  [data-template="1"] .row.row-cols-md-4 > [class*="col-"],
+  [data-template="1"] .row.row-cols-md-3 > [class*="col-"] {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+  }
+
+  /* Card de producto compacta en mobile */
+  [data-template="1"] .product-card,
+  [data-template="1"] .musk-product-card,
+  [data-template="1"] .product-grid-item {
+    font-size: 13px !important;
+  }
+  [data-template="1"] .product-card .product-title,
+  [data-template="1"] .product-card h3,
+  [data-template="1"] .product-card h4 {
+    font-size: 14px !important;
+    line-height: 1.3 !important;
+  }
+  [data-template="1"] .product-card .price,
+  [data-template="1"] .product-card .product-price {
+    font-size: 14px !important;
+  }
+}
+
+@media screen and (max-width: 420px) {
+  /* En pantallas muy chicas, mantener 2 cols pero con menos gap */
+  [data-template="1"] .row.row-cols-lg-4 > [class*="col-"],
+  [data-template="1"] .row.row-cols-lg-3 > [class*="col-"],
+  [data-template="1"] .row.row-cols-md-4 > [class*="col-"],
+  [data-template="1"] .row.row-cols-md-3 > [class*="col-"] {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECCIONES HOME — paddings y headings
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 768px) {
+  [data-template="1"] section,
+  [data-template="1"] .container,
+  [data-template="1"] .container-fluid {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  [data-template="1"] section {
+    padding-top: 40px !important;
+    padding-bottom: 40px !important;
+  }
+
+  /* Headings grandes (section titles) */
+  [data-template="1"] .musk-section-title,
+  [data-template="1"] .section-title,
+  [data-template="1"] h2.heading,
+  [data-template="1"] section h2 {
+    font-size: clamp(26px, 7vw, 38px) !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  [data-template="1"] section h3 {
+    font-size: clamp(20px, 5vw, 26px) !important;
+  }
+
+  /* Categorías scroll horizontal en mobile */
+  [data-template="1"] .musk-category-slider,
+  [data-template="1"] .categories-list {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CART DRAWER — full width en mobile
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 600px) {
+  [data-template="1"] .cart-sidebar,
+  [data-template="1"] #cart_drawer {
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+
+  /* Header del cart con padding más razonable y gap menor */
+  [data-template="1"] .cart-sidebar .cart-sidebar-header {
+    padding: 16px 18px !important;
+    gap: 12px !important;
+  }
+
+  [data-template="1"] .cart-sidebar .cart-sidebar-header h2,
+  [data-template="1"] .cart-sidebar .cart-sidebar-header h3 {
+    font-size: 17px !important;
+  }
+
+  /* Items del cart más compactos */
+  [data-template="1"] .cart-sidebar .cart-product,
+  [data-template="1"] .cart-sidebar .cart-item {
+    padding: 12px 18px !important;
+    gap: 12px !important;
+  }
+  [data-template="1"] .cart-sidebar .cart-product img,
+  [data-template="1"] .cart-sidebar .cart-item img {
+    width: 70px !important;
+    height: 70px !important;
+  }
+
+  /* Footer del cart fijo abajo */
+  [data-template="1"] .cart-sidebar .cart-sidebar-footer,
+  [data-template="1"] .cart-sidebar .cart-footer {
+    padding: 16px 18px env(safe-area-inset-bottom, 16px) !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FOOTER MOBILE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 768px) {
+  [data-template="1"] .musk-main-footer,
+  [data-template="1"] footer.musk-main-footer {
+    padding: 32px 16px !important;
+    text-align: center !important;
+  }
+
+  [data-template="1"] .musk-main-footer .footer-col,
+  [data-template="1"] .musk-main-footer .col-lg-3,
+  [data-template="1"] .musk-main-footer .col-md-3 {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+    margin-bottom: 24px !important;
+  }
+
+  [data-template="1"] .musk-main-footer h4,
+  [data-template="1"] .musk-main-footer h5 {
+    font-size: 16px !important;
+    margin-bottom: 12px !important;
+  }
+
+  [data-template="1"] .musk-main-footer ul {
+    padding-left: 0 !important;
+  }
+  [data-template="1"] .musk-main-footer ul li {
+    list-style: none !important;
+    margin-bottom: 8px !important;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  [data-template="1"] .musk-main-footer .footer-col,
+  [data-template="1"] .musk-main-footer .col-lg-3,
+  [data-template="1"] .musk-main-footer .col-md-3 {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BOTONES Y CTAs MOBILE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 600px) {
+  [data-template="1"] .btn,
+  [data-template="1"] button.btn-link-3,
+  [data-template="1"] .musk-button {
+    font-size: 14px !important;
+    padding: 12px 22px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PÁGINAS GLOBALES (productos, login, checkout, pedido-confirmado)
+   Estas páginas usan inline styles, pero podemos targets generales.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Productos page — sidebar de filtros se vuelve drawer en mobile */
+@media screen and (max-width: 900px) {
+  /* Layout: stack sidebar arriba del grid */
+  body .pk-products-layout,
+  body main .pk-products-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Páginas con maxWidth y padding (productos, login, pedido-confirmado) */
+@media screen and (max-width: 600px) {
+  [class*="page"] [style*="maxWidth: 1280"],
+  [class*="page"] [style*="maxWidth: 720"],
+  [class*="page"] [style*="maxWidth: 800"] {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PRODUCT DETAIL PAGE — colapsar grid de 3 columnas en mobile
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 1024px) {
+  .pd-main-grid {
+    grid-template-columns: 1fr 380px !important;
+    padding: 32px 28px !important;
+    gap: 28px !important;
+  }
+  .pd-gallery {
+    grid-column: 1 / -1 !important;
+    justify-content: center !important;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .pd-container {
+    margin-top: -380px !important;
+    padding: 0 12px 12px !important;
+  }
+  .pd-main-grid {
+    grid-template-columns: 1fr !important;
+    padding: 24px 20px !important;
+    gap: 20px !important;
+    border-radius: 18px !important;
+  }
+  .pd-gallery {
+    flex-direction: column-reverse !important;
+    align-items: center !important;
+  }
+  .pd-gallery > div:first-child {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PEDIDO-CONFIRMADO + LOGIN + CHECKOUT — paddings y grids
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 768px) {
+  /* Genérico: cualquier página con grid 2 cols se vuelve 1 col */
+  body [style*="gridTemplateColumns: '1.5fr 1fr'"],
+  body [style*="grid-template-columns: 1.5fr 1fr"],
+  body [style*="gridTemplateColumns: '2fr 1fr'"],
+  body [style*="grid-template-columns: 2fr 1fr"],
+  body [style*="gridTemplateColumns: '1fr 1fr'"],
+  body [style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MEJORAS GENERALES UX MOBILE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 768px) {
+  /* Tap targets mínimo 44px */
+  [data-template="1"] a,
+  [data-template="1"] button {
+    min-height: 40px;
+  }
+
+  /* Inputs no zoom en iOS */
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="password"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
