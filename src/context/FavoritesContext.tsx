@@ -1,0 +1,118 @@
+'use client';
+
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { getServices, getAppwriteConfig, FAVORITES_COLLECTION, PRODUCTS_COLLECTION } from '@/lib/appwrite';
+import { Query, ID } from 'appwrite';
+import { useAuth } from '@/hooks/useAuth';
+import { Product } from '@/types';
+import { useToast } from '@/components/Toast';
+
+interface FavoritesContextType {
+  favorites: string[];
+  favoriteProducts: Product[];
+  isFavorite: (productId: string) => boolean;
+  toggleFavorite: (productId: string) => Promise<void>;
+  loading: boolean;
+}
+
+const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
+
+export function FavoritesProvider({ children }: { children: ReactNode }) {
+  const { user, isLoggedIn } = useAuth();
+  const { showToast } = useToast();
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favoriteProducts, setFavoriteProducts] = useState<Product[]>([]);
+  const [docMap, setDocMap] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+
+  const loadFavorites = useCallback(async () => {
+    if (!isLoggedIn || !user) { setFavorites([]); setFavoriteProducts([]); return; }
+    setLoading(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const res = await databases.listDocuments(databaseId, FAVORITES_COLLECTION, [
+        Query.equal('user_id', user.id),
+        Query.limit(100),
+      ]);
+      const ids: string[] = [];
+      const map: Record<string, string> = {};
+      res.documents.forEach((doc: any) => {
+        ids.push(doc.product_id);
+        map[doc.product_id] = doc.$id;
+      });
+      setFavorites(ids);
+      setDocMap(map);
+
+      // Load product details
+      if (ids.length > 0) {
+        const prodRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+          Query.equal('$id', ids),
+          Query.limit(100),
+        ]);
+        setFavoriteProducts(prodRes.documents as unknown as Product[]);
+      } else {
+        setFavoriteProducts([]);
+      }
+    } catch (e) {
+      console.error('Error loading favorites:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [isLoggedIn, user]);
+
+  useEffect(() => { loadFavorites(); }, [loadFavorites]);
+
+  const isFavorite = (productId: string) => favorites.includes(productId);
+
+  const toggleFavorite = async (productId: string) => {
+    if (!isLoggedIn || !user) return;
+    const { databases } = getServices();
+    const { databaseId } = getAppwriteConfig();
+
+    if (isFavorite(productId)) {
+      // Remove
+      const docId = docMap[productId];
+      if (docId) {
+        try {
+          await databases.deleteDocument(databaseId, FAVORITES_COLLECTION, docId);
+          showToast('Eliminado de favoritos', 'info');
+        } catch {}
+      }
+      setFavorites(prev => prev.filter(id => id !== productId));
+      setFavoriteProducts(prev => prev.filter(p => p.$id !== productId));
+      setDocMap(prev => { const n = { ...prev }; delete n[productId]; return n; });
+    } else {
+      // Add
+      try {
+        const doc = await databases.createDocument(databaseId, FAVORITES_COLLECTION, ID.unique(), {
+          user_id: user.id,
+          product_id: productId,
+          created_at: new Date().toISOString(),
+        });
+        setFavorites(prev => [...prev, productId]);
+        setDocMap(prev => ({ ...prev, [productId]: doc.$id }));
+        showToast('❤️ Agregado a favoritos', 'success');
+        // Load product detail
+        try {
+          const p = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, productId);
+          setFavoriteProducts(prev => [...prev, p as unknown as Product]);
+        } catch {}
+      } catch (e) {
+        console.error('Error adding favorite:', e);
+      }
+    }
+  };
+
+  return React.createElement(
+    FavoritesContext.Provider,
+    { value: { favorites, favoriteProducts, isFavorite, toggleFavorite, loading } },
+    children
+  );
+}
+
+export function useFavorites() {
+  const ctx = useContext(FavoritesContext);
+  if (!ctx) throw new Error('useFavorites must be used within FavoritesProvider');
+  return ctx;
+}

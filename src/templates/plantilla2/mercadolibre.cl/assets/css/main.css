@@ -1,0 +1,368 @@
+/* ============================================================
+   main.css — MercadoLibre CL — Migrador #1
+   Variables corporativas + layout base + navegación local
+   ============================================================ */
+
+/* ── Variables corporativas ─────────────────────────────── */
+:root {
+  --ml-yellow:       #ffe600;
+  --ml-yellow-hover: #f0d900;
+  --ml-blue:         #3483fa;
+  --ml-blue-hover:   #2968c8;
+  --ml-blue-dark:    #1a1f36;
+  --ml-green:        #00a650;
+  --ml-text:         #333333;
+  --ml-text-light:   #666666;
+  --ml-text-subtle:  #999999;
+  --ml-bg:           #ebebeb;
+  --ml-white:        #ffffff;
+  --ml-border:       #e6e6e6;
+  --ml-shadow:       0 1px 2px 0 rgba(0,0,0,.12);
+  --ml-radius:       6px;
+  --ml-font:         "Proxima Nova", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --nav-height:      109px;
+  --nav-top-height:  46px;
+  --nav-bottom-height: 63px;
+  --content-width:   1200px;
+}
+
+/* ── Reset mínimo ────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ── Layout raíz ─────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--ml-font);
+  font-size: 14px;
+  color: var(--ml-text);
+  background-color: var(--ml-bg);
+}
+
+/* ── Header / Navegación ─────────────────────────────────── */
+.nav-header {
+  background-color: var(--ml-yellow);
+  width: 100%;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 1px 2px rgba(0,0,0,.15);
+}
+
+.nav-bounds {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.nav-bounds-with-cart {
+  display: grid;
+  grid-template-areas:
+    "logo search banner"
+    "cp   menu   user";
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: var(--nav-top-height) var(--nav-bottom-height);
+  align-items: center;
+  gap: 0 16px;
+}
+
+/* ── Logo ────────────────────────────────────────────────── */
+.nav-header-plus-logo { grid-area: logo; }
+.nav-logo-container   { display: flex; align-items: center; }
+.nav-logo-link        { display: flex; align-items: center; }
+.nav-logo-link img    { height: 34px; width: auto; }
+
+/* ── Search ──────────────────────────────────────────────── */
+.nav-header-search-form {
+  grid-area: search;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.nav-search-input {
+  flex: 1;
+  height: 40px;
+  padding: 0 16px;
+  font-size: 14px;
+  border: none;
+  border-radius: var(--ml-radius) 0 0 var(--ml-radius);
+  outline: none;
+}
+
+.nav-search-btn {
+  height: 40px;
+  padding: 0 16px;
+  background: #ededed;
+  border: none;
+  border-radius: 0 var(--ml-radius) var(--ml-radius) 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.nav-search-btn:hover { background: #dcdcdc; }
+
+/* ── Menu inferior ───────────────────────────────────────── */
+.nav-menu { grid-area: menu; }
+
+.nav-menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.nav-menu-item { position: relative; }
+
+.nav-menu-item-link,
+.nav-menu-categories-link {
+  display: block;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ml-text);
+  text-decoration: none;
+  border-radius: var(--ml-radius);
+  white-space: nowrap;
+  transition: background-color .15s;
+}
+
+.nav-menu-item-link:hover,
+.nav-menu-categories-link:hover {
+  background-color: rgba(0,0,0,.07);
+  text-decoration: underline;
+}
+
+/* ── Tag labels (Nuevo, Gratis) ──────────────────────────── */
+.nav-link-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.nav-link-tag.supermercado { background: #00a650; color: #fff; }
+.nav-link-tag.mplay        { background: #3483fa; color: #fff; }
+
+/* ── User area (derecha) ─────────────────────────────────── */
+.nav-header-plus-menu-wrapper { grid-area: user; }
+
+.nav-header-menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-menu-guest-item a {
+  font-size: 13px;
+  color: var(--ml-text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.user-menu-guest-item a:hover { text-decoration: underline; }
+
+/* ── Main content ────────────────────────────────────────── */
+#root-app {
+  min-height: calc(100vh - var(--nav-height) - 200px);
+}
+
+.home {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* ── Hero Carousel ───────────────────────────────────────── */
+.andes-carousel-snapped__exhibitor-wrapper {
+  width: 100%;
+  margin-bottom: 16px;
+  border-radius: var(--ml-radius);
+  overflow: hidden;
+  background: var(--ml-white);
+}
+
+.andes-carousel-snapped__container--full {
+  position: relative;
+  width: 100%;
+}
+
+.andes-carousel-snapped {
+  overflow: hidden;
+  position: relative;
+}
+
+.andes-carousel-snapped__wrapper {
+  display: flex;
+  transition: transform .4s ease;
+}
+
+.andes-carousel-snapped__slide {
+  flex-shrink: 0;
+}
+
+.andes-carousel-snapped__slide a {
+  display: block;
+  width: 100%;
+}
+
+.andes-carousel-snapped__slide img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Controls */
+.andes-carousel-snapped__controls-wrapper {
+  position: relative;
+}
+
+.andes-carousel-snapped__control {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  background: rgba(255,255,255,.85);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,.2);
+  transition: background .15s;
+}
+
+.andes-carousel-snapped__control:hover { background: #fff; }
+.andes-carousel-snapped__control--previous { left: 8px; }
+.andes-carousel-snapped__control--next     { right: 8px; }
+
+/* ── Categorías ──────────────────────────────────────────── */
+.categories-new-design {
+  background: var(--ml-white);
+  border-radius: var(--ml-radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--ml-shadow);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.section-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--ml-text);
+}
+
+.section-header a {
+  font-size: 13px;
+  color: var(--ml-blue);
+  text-decoration: none;
+}
+
+.section-header a:hover { text-decoration: underline; }
+
+/* ── Dynamic access ──────────────────────────────────────── */
+.dynamic-access {
+  background: var(--ml-white);
+  border-radius: var(--ml-radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--ml-shadow);
+}
+
+/* ── Site shopping info ──────────────────────────────────── */
+.site-shopping-info {
+  background: var(--ml-white);
+  border-radius: var(--ml-radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--ml-shadow);
+}
+
+/* ── Advertising ─────────────────────────────────────────── */
+.advertising-adn-component {
+  border-radius: var(--ml-radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+.nav-footer {
+  background: var(--ml-white);
+  border-top: 1px solid var(--ml-border);
+  padding: 24px 0 16px;
+  margin-top: 32px;
+  font-size: 13px;
+  color: var(--ml-text-light);
+}
+
+.nav-footer-user-info {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.nav-footer-info-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-footer-copyright { font-size: 12px; }
+
+.nav-footer-navigation__menu {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.nav-footer-navigation__link {
+  color: var(--ml-text-light);
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.nav-footer-navigation__link:hover { text-decoration: underline; }
+
+.nav-footer-secondaryinfo {
+  font-size: 12px;
+  color: var(--ml-text-subtle);
+  margin: 4px 0 0;
+}
+
+/* ── Utilities ───────────────────────────────────────────── */
+.clipped {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+}
+
+[hidden] { display: none !important; }

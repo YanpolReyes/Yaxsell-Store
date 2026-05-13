@@ -1,0 +1,79 @@
+'use client';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import DynamicNavbar from '@/components/DynamicNavbar';
+import NewsletterSignup from '@/components/NewsletterSignup';
+import AnnouncementBar from '@/components/AnnouncementBar';
+import { useTemplate } from '@/context/TemplateContext';
+
+const FOOTER_LINKS = [
+  { title: 'Tienda', items: [
+    { label: 'Productos', href: '/productos' },
+    { label: 'Ofertas', href: '/productos?sort=offers' },
+    { label: 'Categorías', href: '/productos' },
+    { label: 'Clips', href: '/clips' },
+  ]},
+  { title: 'Mi cuenta', items: [
+    { label: 'Mis pedidos', href: '/cuenta/pedidos' },
+    { label: 'Favoritos', href: '/favoritos' },
+    { label: 'Direcciones', href: '/cuenta/direcciones' },
+    { label: 'Notificaciones', href: '/cuenta/notificaciones' },
+  ]},
+  { title: 'Ayuda', items: [
+    { label: 'Soporte', href: '/cuenta/tickets' },
+    { label: 'Mayorista', href: '/mayorista' },
+    { label: 'Comparar', href: '/comparar' },
+  ]},
+];
+
+export default function StoreShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const { template } = useTemplate();
+  const isAdmin       = pathname.startsWith('/admin');
+  const isAuth        = pathname.startsWith('/login');
+  const isCuentaSub   = pathname.startsWith('/cuenta/');
+
+  if (isAdmin || isAuth || isCuentaSub) {
+    return <>{children}</>;
+  }
+
+  /* Templates 1 (Shopify-Venice) y 4 (Chinamart) tienen su propio footer en el HTML migrado */
+  const hideNativeFooter = template === 1 || template === 4;
+
+  return (
+    <>
+      <DynamicNavbar />
+      <main className="min-h-screen">{children}</main>
+      {!hideNativeFooter && (
+      <footer style={{ background: '#f9f9f9', color: '#374151', borderTop: '1px solid #e5e7eb', marginTop: 40 }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 5% 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 32 }}>
+          {FOOTER_LINKS.map(group => (
+            <div key={group.title}>
+              <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: '#111827' }}>{group.title}</h4>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                {group.items.map(item => (
+                  <li key={item.label} style={{ marginBottom: 6 }}>
+                    <Link href={item.href} style={{ fontSize: 13, color: '#6b7280', textDecoration: 'none', transition: 'color .15s' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = '#111827')}
+                      onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}>
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <div>
+            <NewsletterSignup />
+          </div>
+        </div>
+        <div style={{ borderTop: '1px solid #e5e7eb', padding: '16px 5%', textAlign: 'center' }}>
+          <p style={{ margin: 0, fontSize: 12, color: '#9ca3af' }}>
+            © {new Date().getFullYear()} Tienda Online · Todos los derechos reservados
+          </p>
+        </div>
+      </footer>
+      )}
+    </>
+  );
+}

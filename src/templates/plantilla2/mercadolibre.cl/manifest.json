@@ -1,0 +1,94 @@
+{
+  "generadoEn": "2026-03-30T09:56:32.559Z",
+  "modo": "url",
+  "rootUrl": "https://www.mercadolibre.cl/",
+  "outputRoot": "C:\\Proyectos\\WORKSTATION IA CODE\\mercadolibre.cl",
+  "opciones": {
+    "maxPages": 1,
+    "maxDepth": 1,
+    "limpiarHtml": true,
+    "conservarAnimaciones": true,
+    "modoImagenes": "localizar",
+    "renderizarJs": true,
+    "htmlClean": false,
+    "htmlStatic": false,
+    "astroVersion": false,
+    "generarPresets": false
+  },
+  "paginas": [
+    {
+      "url": "https://www.mercadolibre.cl/",
+      "depth": 0,
+      "salida": "index.html",
+      "routePath": "/",
+      "routeType": "root",
+      "renderReason": null,
+      "captureStrategy": "raw_html",
+      "fallbackMode": null,
+      "browserAssets": 0,
+      "usedPuppeteer": false,
+      "viewport": null
+    }
+  ],
+  "paginasPorRuta": {
+    "/": {
+      "url": "https://www.mercadolibre.cl/",
+      "salida": "index.html",
+      "captureStrategy": "raw_html",
+      "fallbackMode": null,
+      "renderReason": null
+    }
+  },
+  "estrategias": {
+    "usadas": [
+      "raw_html"
+    ],
+    "paginasConFallbackVisual": [],
+    "paginasRenderizadasConJs": []
+  },
+  "captureStrategies": [
+    {
+      "id": "raw_html",
+      "label": "Raw HTML",
+      "description": "Guarda el HTML fuente sin render adicional.",
+      "bestFor": [
+        "landings simples",
+        "sitios server-rendered",
+        "HTML estable"
+      ],
+      "tradeoffs": [
+        "puede perder contenido que aparece solo tras JS"
+      ],
+      "aiGuidance": "Empieza aquí si el sitio parece estático y editable."
+    }
+  ],
+  "knownIssues": [],
+  "debug": {
+    "dir": "_debug",
+    "files": {
+      "report": "_debug/capture-report.json",
+      "pages": "_debug/pages.json",
+      "assets": "_debug/assets.json",
+      "errors": "_debug/errors.json"
+    }
+  },
+  "resumen": {
+    "paginasDescargadas": 1,
+    "paginasRenderizadas": 0,
+    "cssEncontrados": 3,
+    "cssDescargados": 3,
+    "jsEncontrados": 31,
+    "jsDescargados": 31,
+    "cssInlineExtraidos": 1,
+    "jsInlineExtraidos": 1,
+    "imagenesEncontradas": 91,
+    "imagenesDescargadas": 105,
+    "imagenesBase64": 0,
+    "fontsDescargadas": 17,
+    "mediaDescargados": 0,
+    "otrosDescargados": 0,
+    "errores": 0,
+    "assetsNavegadorDetectados": 0
+  },
+  "errores": []
+}

@@ -1,0 +1,19 @@
+/* PLANTILLA 1 — Moderna (blanca / violeta) */
+[data-template="1"] {
+  --t-bg:           #f8f9fa;
+  --t-surface:      #ffffff;
+  --t-border:       #e5e7eb;
+  --t-text:         #111827;
+  --t-muted:        #6b7280;
+  --t-primary:      #667eea;
+  --t-primary-dark: #764ba2;
+  --t-primary-text: #ffffff;
+  --t-accent:       #667eea;
+  --t-card-shadow:  0 1px 4px rgba(0,0,0,0.06);
+  --t-radius:       1rem;
+}
+[data-template="1"] body,
+[data-template="1"] .t-bg   { background-color: var(--t-bg); }
+[data-template="1"] .t-card { background: var(--t-surface); border: 1px solid var(--t-border); border-radius: var(--t-radius); box-shadow: var(--t-card-shadow); }
+[data-template="1"] .t-btn  { background: linear-gradient(135deg, var(--t-primary), var(--t-primary-dark)); color: var(--t-primary-text); border-radius: 0.75rem; }
+[data-template="1"] .t-price { color: #7c3aed; font-weight: 700; }

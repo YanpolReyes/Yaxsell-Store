@@ -1,0 +1,331 @@
+:root {
+      /** ------------SPACING VARIABLES------------------*/
+      --spacing-unit: 0.313rem; /* ≈ 5px */
+
+      --spacing-5: calc(var(--spacing-unit) * 1);   /* 5px */
+      --spacing-10: calc(var(--spacing-unit) * 2);  /* 10px */
+      --spacing-15: calc(var(--spacing-unit) * 3);  /* 15px */
+      --spacing-20: calc(var(--spacing-unit) * 4);  /* 20px */
+      --spacing-25: calc(var(--spacing-unit) * 5);  /* 25px */
+      --spacing-30: calc(var(--spacing-unit) * 6);  /* 30px */
+      --spacing-35: calc(var(--spacing-unit) * 7);  /* 35px */
+      --spacing-40: calc(var(--spacing-unit) * 8);  /* 40px */
+      --spacing-45: calc(var(--spacing-unit) * 9);  /* 45px */
+      --spacing-50: calc(var(--spacing-unit) * 10); /* 50px */
+      --spacing-55: calc(var(--spacing-unit) * 11); /* 55px */
+      --spacing-60: calc(var(--spacing-unit) * 12); /* 60px */
+      --spacing-65: calc(var(--spacing-unit) * 13); /* 65px */
+      --spacing-70: calc(var(--spacing-unit) * 14); /* 70px */
+      --spacing-75: calc(var(--spacing-unit) * 15); /* 75px */
+      --spacing-80: calc(var(--spacing-unit) * 16); /* 80px */
+      --spacing-85: calc(var(--spacing-unit) * 17); /* 85px */
+      --spacing-90: calc(var(--spacing-unit) * 18); /* 90px */
+      --spacing-95: calc(var(--spacing-unit) * 19); /* 95px */
+      --spacing-100: calc(var(--spacing-unit) * 20); /* 100px */
+
+      /** ------------FONT SIZING VARIABLES-------------*/
+
+      /* Display Fonts */
+      --display-font-1: clamp(6rem, 12vw + 1rem, 14.5rem);    /* 96px - 232px */
+      --display-font-2: clamp(5rem, 8vw + 1rem, 11.625rem);   /* 80px - 186px */
+      --display-font-3: clamp(4rem, 6.5vw + 1rem, 9.313rem);  /* 64px - 149px */
+      --display-font-4: clamp(3rem, 5.5vw + 1rem, 7.438rem);  /* 48px - 119px */
+      --display-font-5: clamp(2.5rem, 4.5vw + 1rem, 5.938rem);/* 40px - 95px */
+      --display-font-6: clamp(2rem, 3.5vw + 1rem, 4.75rem);   /* 32px - 76px */
+      --display-font-7: clamp(1.5rem, 2.5vw + 1rem, 3.813rem);/* 24px - 61px */
+
+      /* Heading & Text Fonts */
+      --font-huge: clamp(2rem, 2vw + 1rem, 3.063rem);         /* 32px - 49px */
+      --font-largest: clamp(1.75rem, 1.8vw + 1rem, 2.438rem); /* 28px - 39px */
+      --font-larger: clamp(1.5rem, 1.5vw + 1rem, 1.938rem);   /* 24px - 31px */
+      --font-large: clamp(1.25rem, 1.2vw + 1rem, 1.563rem);   /* 20px - 25px */
+      --font-medium: clamp(1.125rem, 1vw + 1rem, 1.25rem);    /* 18px - 20px */
+      --font-small: clamp(0.875rem, 0.5vw + 1rem, 1rem);      /* 14px - 16px */
+      --font-base: clamp(0.75rem, 0.5vw + 1rem, 0.875rem);    /* 12px - 14px */
+      --font-extra-small: clamp(0.625rem, 0.3vw + 1rem, 0.75rem); /* 10px - 12px */
+      --font-tiny-small:  clamp(0.563rem, 0.3vw + 0.5rem, 0.625rem); /* 9px - 10px */
+      --font-extra-smallest: calc(var(--body-scaler) * var(--font-tiny-small));
+
+      /** ------------TYPOGRAPHY-------------*/
+
+      --heading-font: "DM Sans";
+      --body-font: Poppins;
+      --heading-scaler: 1.0;
+      --body-scaler: 1.0;
+      --heading-style: normal;
+      --body-style: normal;
+      --font-body-weight: 400;
+      --font-heading-weight: 400;
+      --font-body-weight-bold: 700;
+      --font-heading-weight-bold: 700;
+
+      --font-line-height-static: 1 + 0;
+      --font-line-height-11: 1 + 0.1;
+      --font-line-height-12: 1 + 0.2;
+      --font-line-height-13: 1 + 0.3;
+      --font-line-height-14: 1 + 0.4;
+      --font-line-height-15: 1 + 0.5;
+      --font-line-height-16: 1 + 0.6;
+      --font-line-height-17: 1 + 0.7;
+      --font-line-height-18: 1 + 0.8;
+      --font-line-height-19: 1 + 0.9;
+
+
+      /** ------------BORDER RADIUS VARIABLES-------------*/
+
+      --radius-rounded: 50%; /* 50% */
+      --radius-5: 0.313rem;   /* 5px */
+      --radius-10: 0.625rem;  /* 10px */
+      --radius-15: 0.938rem;  /* 15px */
+      --radius-20: 1.25rem;   /* 20px */
+      --radius-25: 1.563rem;  /* 25px */
+      --radius-30: 1.875rem;  /* 30px */
+      --radius-35: 2.188rem;  /* 35px */
+      --radius-40: 2.5rem;    /* 40px */
+      --radius-45: 2.813rem;  /* 45px */
+      --radius-50: 3.125rem;  /* 50px */
+      --radius-55: 3.438rem;  /* 55px */
+      --radius-60: 3.75rem;   /* 60px */
+      --radius-65: 4.063rem;  /* 65px */
+      --radius-70: 4.375rem;  /* 70px */
+      --radius-75: 4.688rem;  /* 75px */
+      --radius-80: 5rem;      /* 80px */
+      --radius-85: 5.313rem;  /* 85px */
+      --radius-90: 5.625rem;  /* 90px */
+      --radius-95: 5.938rem;  /* 95px */
+      --radius-100: 6.25rem;  /* 100px */
+
+
+      /** -----------CONTAINER SIZE VARIABLES-----------*/
+
+      --container-wide: 115rem; /* 1840px */
+      --container-box: 73.125rem; /*  1170px */
+
+      /** -----------TRANSITION VARIABLES---------------*/
+
+      --transition-primary: all .3s ease-in-out;
+
+      /** --------------COLORS VARIABLES----------------*/
+
+    --body-bg-color:#FFFFFF;
+    --global-overlay:0,0,0;
+    --badge-text:#FFFFFF;
+    --badge-bg:#000000;
+    --product-bg: #f2f2f2;
+    --policy-banner-bg:#000000;
+
+    }
+
+  /** --------------COLOR SCHEME VARIABLES---------------*/
+    :root,
+          .color-scheme-1 {
+            --primary-background: 255,255,255;
+            --secondary-background: 220,220,220;
+            --gradient-background: linear-gradient(101.19deg, rgba(122, 181, 247, 1), rgba(210, 237, 222, 1) 29.42%, rgba(251, 244, 202, 1) 50.05%, rgba(252, 218, 188, 1) 72.01%, rgba(254, 169, 162, 1) 100%);
+
+            --sidebars-background: 255,255,255;
+            --primary-color: 0,0,0;
+            --secondary-color: 255,255,255;
+            --tertiary-color: 58,58,58;
+            --quinary-color: 117,117,117;
+
+            --primary-button-bg:0,0,0;
+            --primary-button-text:#ffffff;
+            --primary-button-border:rgba(0,0,0,0);
+            --primary-button-hover-bg:51,51,51;
+            --primary-button-hover-text:#ffffff;
+            --primary-button-hover-border:rgba(0,0,0,0);
+
+            --secondary-button-bg:rgba(0,0,0,0);
+            --secondary-button-text:#000000;
+            --secondary-button-border:#dcdcdc;
+            --secondary-button-hover-bg:0,0,0;
+            --secondary-button-hover-text:#ffffff;
+            --secondary-button-hover-border:#000000;
+        }
+        
+          .color-scheme-bcca51f6-8cb1-46f3-8f26-94394c542484 {
+            --primary-background: 255,255,255;
+            --secondary-background: 220,220,220;
+            --gradient-background: linear-gradient(101.19deg, rgba(122, 181, 247, 1), rgba(210, 237, 222, 1) 29.42%, rgba(251, 244, 202, 1) 50.05%, rgba(252, 218, 188, 1) 72.01%, rgba(254, 169, 162, 1) 100%);
+
+            --sidebars-background: 255,255,255;
+            --primary-color: 0,0,0;
+            --secondary-color: 255,255,255;
+            --tertiary-color: 58,58,58;
+            --quinary-color: 117,117,117;
+
+            --primary-button-bg:0,0,0;
+            --primary-button-text:#ffffff;
+            --primary-button-border:rgba(0,0,0,0);
+            --primary-button-hover-bg:51,51,51;
+            --primary-button-hover-text:#ffffff;
+            --primary-button-hover-border:rgba(0,0,0,0);
+
+            --secondary-button-bg:rgba(0,0,0,0);
+            --secondary-button-text:#ffffff;
+            --secondary-button-border:#ffffff;
+            --secondary-button-hover-bg:255,255,255;
+            --secondary-button-hover-text:#000000;
+            --secondary-button-hover-border:#ffffff;
+        }
+        
+          .color-scheme-03e762cf-6ed8-460a-9b70-653f56524706 {
+            --primary-background: 255,255,255;
+            --secondary-background: 220,220,220;
+            --gradient-background: linear-gradient(101.19deg, rgba(122, 181, 247, 1), rgba(210, 237, 222, 1) 29.42%, rgba(251, 244, 202, 1) 50.05%, rgba(252, 218, 188, 1) 72.01%, rgba(254, 169, 162, 1) 100%);
+
+            --sidebars-background: 255,255,255;
+            --primary-color: 0,0,0;
+            --secondary-color: 255,255,255;
+            --tertiary-color: 58,58,58;
+            --quinary-color: 117,117,117;
+
+            --primary-button-bg:0,0,0;
+            --primary-button-text:#ffffff;
+            --primary-button-border:rgba(0,0,0,0);
+            --primary-button-hover-bg:51,51,51;
+            --primary-button-hover-text:#ffffff;
+            --primary-button-hover-border:rgba(0,0,0,0);
+
+            --secondary-button-bg:rgba(0,0,0,0);
+            --secondary-button-text:#000000;
+            --secondary-button-border:#dcdcdc;
+            --secondary-button-hover-bg:0,0,0;
+            --secondary-button-hover-text:#ffffff;
+            --secondary-button-hover-border:#000000;
+        }
+        
+          .color-scheme-14236e4c-f2c5-4ee1-8c56-ba23c22876e4 {
+            --primary-background: 255,255,255;
+            --secondary-background: 220,220,220;
+            --gradient-background: linear-gradient(101.19deg, rgba(122, 181, 247, 1), rgba(210, 237, 222, 1) 29.42%, rgba(251, 244, 202, 1) 50.05%, rgba(252, 218, 188, 1) 72.01%, rgba(254, 169, 162, 1) 100%);
+
+            --sidebars-background: 255,255,255;
+            --primary-color: 0,0,0;
+            --secondary-color: 255,255,255;
+            --tertiary-color: 58,58,58;
+            --quinary-color: 117,117,117;
+
+            --primary-button-bg:0,0,0;
+            --primary-button-text:#ffffff;
+            --primary-button-border:rgba(0,0,0,0);
+            --primary-button-hover-bg:51,51,51;
+            --primary-button-hover-text:#ffffff;
+            --primary-button-hover-border:rgba(0,0,0,0);
+
+            --secondary-button-bg:rgba(0,0,0,0);
+            --secondary-button-text:#000000;
+            --secondary-button-border:#dcdcdc;
+            --secondary-button-hover-bg:0,0,0;
+            --secondary-button-hover-text:#ffffff;
+            --secondary-button-hover-border:#000000;
+        }
+        
+          .color-scheme-769192ce-30a9-49f5-9207-0bd4d2c4619e {
+            --primary-background: 255,255,255;
+            --secondary-background: 220,220,220;
+            --gradient-background: linear-gradient(101.19deg, rgba(122, 181, 247, 1), rgba(210, 237, 222, 1) 29.42%, rgba(251, 244, 202, 1) 50.05%, rgba(252, 218, 188, 1) 72.01%, rgba(254, 169, 162, 1) 100%);
+
+            --sidebars-background: 255,255,255;
+            --primary-color: 0,0,0;
+            --secondary-color: 255,255,255;
+            --tertiary-color: 58,58,58;
+            --quinary-color: 117,117,117;
+
+            --primary-button-bg:0,0,0;
+            --primary-button-text:#ffffff;
+            --primary-button-border:rgba(0,0,0,0);
+            --primary-button-hover-bg:51,51,51;
+            --primary-button-hover-text:#ffffff;
+            --primary-button-hover-border:rgba(0,0,0,0);
+
+            --secondary-button-bg:rgba(0,0,0,0);
+            --secondary-button-text:#000000;
+            --secondary-button-border:#dcdcdc;
+            --secondary-button-hover-bg:0,0,0;
+            --secondary-button-hover-text:#ffffff;
+            --secondary-button-hover-border:#000000;
+        }
+        
+
+
+
+    
+
+          
+              .fusion-scroll-top svg{
+                fill: #3a3a3a;
+              }
+          
+            
+              body.musk-skin::-webkit-scrollbar {
+                width: 7px;
+              }
+            
+              body.musk-skin::-webkit-scrollbar-thumb {
+                background: #000000;
+              }
+            
+            
+              body.musk-skin::-webkit-scrollbar-track {
+                background: #e6e6e6;
+              }
+            
+            
+            body .musk-primary-btn,
+            body .musk-secondary-btn,
+            body .musk-third-btn,body .shopify-payment-button__button{
+            
+              border-width: 1px !important;
+            
+            
+              border-radius: 0px !important;
+            
+            
+              border-style: solid !important;
+            
+          }
+          body .musk-primary-btn:hover,
+          body .musk-secondary-btn:hover,
+          body .musk-third-btn:hover,body .shopify-payment-button__button:hover{
+            
+              border-width: 1px !important;
+            
+            
+              border-radius: 0px !important;
+            
+            
+              border-style: solid !important;
+            
+          }
+      .PopupModal-custom .quickview-slider-gallery .quickview-slider-thumbnail .swiper-slide-thumb-active img{
+          
+            filter: brightness( 0.8 );
+          
+        }
+
+      body .fusion-product-item .product-content,
+      body .fusion-shoplook-wrapper .shoplook-item-slide .product-img,
+      body .popular-prd-wrapper>ul .fusion-product-item .product-content{
+        
+          border-radius: 0px;
+        
+      }
+
+      .sidebar-bg ,
+      .cart-sidebar .order_note_modal ,
+      .cart-sidebar .estimate_shipping_dwr .shipping-estimate-wrapper form select ,
+      .editaddress-popup-subinner form select{
+        background: rgb(var(--sidebars-background)) !important;
+      }
+
+       @media screen and (max-width: 767px) {
+        body .fusion-product-item .product-content,
+        body .fusion-shoplook-wrapper .shoplook-item-slide .product-img,
+        body .popular-prd-wrapper>ul .fusion-product-item .product-content{
+          
+            border-radius: 0px;
+          
+      }
+      }

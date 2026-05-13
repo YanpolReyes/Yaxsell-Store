@@ -1,0 +1,661 @@
+'use client';
+
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { useAuth } from '@/hooks/useAuth';
+import { LogOut, Menu, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, WHOLESALE_REQUESTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import GlobalSearch from '@/components/admin/GlobalSearch';
+import AISidekick from '@/components/admin/AISidekick';
+import { Query } from 'appwrite';
+import gsap from 'gsap';
+
+/* ─────────────────────────── custom SVG icons ─────────────────────────── */
+const Ico = {
+  Dashboard:   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><path d="M3 17.5A3.5 3.5 0 0 0 6.5 21h0A3.5 3.5 0 0 0 10 17.5v0A3.5 3.5 0 0 0 6.5 14v0A3.5 3.5 0 0 0 3 17.5z"/></svg>,
+  Pedidos:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>,
+  Analytics:   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+  Cupones:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H2v7l6.29 6.29c.94.94 2.48.94 3.42 0l3.58-3.58c.94-.94.94-2.48 0-3.42L9 5Z"/><path d="M6 9.01V9"/><path d="m15 5 6.3 6.3a2.4 2.4 0 0 1 0 3.4L17 19"/></svg>,
+  Ofertas:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+  Productos:   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>,
+  Inventario:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20h20"/><path d="M5 20V8l7-5 7 5v12"/><path d="M9 20v-5h6v5"/></svg>,
+  Categorias:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>,
+  Subcategorias: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="5" width="4" height="4" rx="1"/><rect x="17" y="3" width="4" height="4" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><rect x="11" y="13" width="4" height="4" rx="1"/><rect x="17" y="11" width="4" height="4" rx="1"/><rect x="11" y="19" width="4" height="4" rx="1"/><rect x="17" y="17" width="4" height="4" rx="1"/></svg>,
+  Segmentos:   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>,
+  EnVivo:      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/><circle cx="8" cy="12" r="1.5" fill="currentColor"/></svg>,
+  HeroCarousel:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 9 21 9"/><path d="m9 21 3-3 3 3"/></svg>,
+  OfertasDia:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+  Collage:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="8" height="18" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>,
+  SalaInterac: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9"/><path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2"/><path d="M7 19v-8"/><path d="M11 19v-8"/><path d="M15 19v-8"/></svg>,
+  Recomendados:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>,
+  Destacados:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>,
+  Notifs:      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><circle cx="18" cy="5" r="3" fill="#f43f5e" stroke="none"/></svg>,
+  LiveShop:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>,
+  Plantillas:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="19.5" cy="10.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><circle cx="13.5" cy="17.5" r="2.5"/><path d="M16 6.5h-2.5a3 3 0 0 0-3 3v.5"/><path d="M9 12.5h8.5a3 3 0 0 1 3 3v.5"/></svg>,
+  Usuarios:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  Mayoristas:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9h18"/><path d="M3 15h18"/><path d="M12 3v18"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>,
+  Soporte:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3Z"/><path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3Z"/></svg>,
+  Config:      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>,
+  Pagos:       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>,
+  Agencias:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="1"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></svg>,
+  Clips:       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><circle cx="12" cy="14" r="3"/><path d="M11 14l2-1.5v3z" fill="currentColor" stroke="none"/></svg>,
+  Sorteos:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
+};
+
+/* Shopify-dark sidebar — no accent colors needed */
+
+/* ─────────────────────────── nav structure ─────────────────────────── */
+interface NavItem { href: string; label: string; icon: React.ReactNode; badge?: 'orders'|'notifs'|'wholesale'; children?: NavItem[]; }
+interface NavGroup { label: string; items: NavItem[]; defaultOpen?: boolean; }
+
+const NAV_GROUPS: NavGroup[] = [
+  { label: 'General', defaultOpen: true, items: [
+    { href: '/admin/dashboard', label: 'Inicio', icon: Ico.Dashboard },
+    { href: '/admin/product-votes', label: 'Productos que Llegan', icon: Ico.Ofertas },
+    { href: '/admin/store-settings', label: 'Mi Tienda', icon: Ico.Config },
+    { href: '/admin/orders',    label: 'Pedidos', icon: Ico.Pedidos, badge: 'orders' },
+    { href: '', label: 'Productos', icon: Ico.Productos, children: [
+      { href: '/admin/products',       label: 'Productos',       icon: Ico.Productos },
+      { href: '/admin/inventory',      label: 'Inventario',      icon: Ico.Inventario },
+      { href: '/admin/categories',     label: 'Categorías',      icon: Ico.Categorias },
+      { href: '/admin/subcategories',  label: 'Subcategorías',   icon: Ico.Subcategorias },
+      { href: '/admin/products/import-jumpseller', label: 'Subir Masivamente', icon: Ico.Inventario },
+    ]},
+    { href: '/admin/users',     label: 'Clientes',    icon: Ico.Usuarios },
+    { href: '/admin/analytics', label: 'Analytics',    icon: Ico.Analytics },
+    { href: '', label: 'Marketing', icon: Ico.OfertasDia, children: [
+      { href: '/admin/coupons',       label: 'Cupones',        icon: Ico.Cupones },
+      { href: '/admin/timed-offers',  label: 'Ofertas',        icon: Ico.Ofertas },
+      { href: '/admin/notifications', label: 'Notificaciones', icon: Ico.Notifs, badge: 'notifs' },
+    ]},
+    { href: '', label: 'Contenido', icon: Ico.Plantillas, children: [
+      { href: '/admin/sections',         label: 'Editor de Secciones', icon: Ico.Plantillas },
+      { href: '/admin/sections-custom',  label: 'Editor Personalizado', icon: Ico.Plantillas },
+      { href: '/admin/banners',          label: 'Hero Carousel',       icon: Ico.HeroCarousel },
+      { href: '/admin/hotspot-banners',  label: 'Collage Interactivo', icon: Ico.Collage },
+      { href: '/admin/hotspot-banners-plantilla1', label: 'Collage Plantilla 1', icon: Ico.Collage },
+    ]},
+    { href: '/admin/wholesale', label: 'Mayoristas',   icon: Ico.Mayoristas, badge: 'wholesale' },
+  ]},
+  { label: 'Engagement', defaultOpen: false, items: [
+    { href: '/admin/engagement/plantillas', label: 'Plantillas',     icon: Ico.Plantillas },
+    { href: '/admin/live',                  label: 'Live Shopping',  icon: Ico.LiveShop },
+    { href: '/admin/clips',                 label: 'Clips / Videos', icon: Ico.Clips },
+    { href: '/admin/raffles',               label: 'Sorteos',        icon: Ico.Sorteos },
+    { href: '/admin/reviews',               label: 'Reseñas',        icon: Ico.Recomendados },
+    { href: '/admin/questions',             label: 'Preguntas Q&A',  icon: Ico.Soporte },
+  ]},
+  { label: 'Configuración', defaultOpen: false, items: [
+    { href: '/admin/settings', label: 'General',          icon: Ico.Config },
+    { href: '/admin/pagos',    label: 'Pagos',            icon: Ico.Pagos },
+    { href: '/admin/agencias', label: 'Agencias de envío', icon: Ico.Agencias },
+    { href: '/admin/support',  label: 'Soporte',          icon: Ico.Soporte },
+  ]},
+];
+
+
+/* ═══════════════════ IA Top Bar Button ═══════════════════ */
+const IA_PHRASES = [
+  '¿Necesitas ayuda?',
+  'Habla con Yexy',
+  'Crear y editar productos',
+  'Consultar pedidos',
+  'Niveles de inventario',
+  'Buscar clientes VIP',
+  'Analizar ventas',
+  'Crear descuentos',
+  'Configurar envíos',
+  'Generar imágenes con IA',
+  'Estrategias de marketing',
+  'Automatizaciones',
+];
+
+function IATopBarButton({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }) {
+  const [phrase, setPhrase] = useState('');
+  const [phraseIdx, setPhraseIdx] = useState(0);
+  const [charIdx, setCharIdx] = useState(0);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    const word = IA_PHRASES[phraseIdx % IA_PHRASES.length];
+    if (!deleting) {
+      if (charIdx < word.length) {
+        const t = setTimeout(() => setCharIdx(c => c + 1), 40 + Math.random() * 30);
+        return () => clearTimeout(t);
+      } else {
+        const t = setTimeout(() => setDeleting(true), 2200);
+        return () => clearTimeout(t);
+      }
+    } else {
+      if (charIdx > 0) {
+        const t = setTimeout(() => setCharIdx(c => c - 1), 20);
+        return () => clearTimeout(t);
+      } else {
+        setDeleting(false);
+        setPhraseIdx(p => (p + 1) % IA_PHRASES.length);
+      }
+    }
+  }, [charIdx, deleting, phraseIdx]);
+
+  useEffect(() => {
+    const word = IA_PHRASES[phraseIdx % IA_PHRASES.length];
+    setPhrase(word.slice(0, charIdx));
+  }, [charIdx, phraseIdx]);
+
+  return (
+    <>
+      <style>{`
+        @keyframes ia-gradient { 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
+        @keyframes ia-glow { 0%,100%{filter:drop-shadow(0 0 5px rgba(139,92,246,0.5));} 50%{filter:drop-shadow(0 0 12px rgba(99,102,241,0.9)) drop-shadow(0 0 22px rgba(139,92,246,0.5));} }
+        .ia-text { background:linear-gradient(270deg,#818cf8,#a78bfa,#6366f1,#c4b5fd,#818cf8); background-size:400% 400%; -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; animation:ia-gradient 2.5s ease infinite, ia-glow 2s ease-in-out infinite; font-weight:900; font-size:26px; letter-spacing:-1px; line-height:1; }
+        .ia-cursor { display:inline-block; width:1.5px; height:11px; background:rgba(139,92,246,0.8); animation:ia-blink 0.6s step-end infinite; margin-left:1px; vertical-align:middle; border-radius:1px; }
+        @keyframes ia-blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+      `}</style>
+      <button onClick={onClick} title="Asistente IA" style={{
+        display: 'flex', alignItems: 'center', gap: 10, padding: '4px 14px 4px 10px',
+        borderRadius: 10, border: '1px solid rgba(139,92,246,0.2)', cursor: 'pointer',
+        background: isOpen ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.06)',
+        transition: 'all .2s', height: 38, flexShrink: 0,
+      }}>
+        {/* Typing phrase — ancho fijo para que no mueva nada */}
+        <span style={{
+          width: 148, display: 'inline-block', overflow: 'hidden', whiteSpace: 'nowrap',
+          color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 500,
+          textAlign: 'right',
+        }}>
+          {phrase}<span className="ia-cursor" />
+        </span>
+        {/* Separator */}
+        <span style={{ width: 1, height: 18, background: 'rgba(139,92,246,0.25)', flexShrink: 0 }} />
+        {/* IA text — grande y separado */}
+        <span className="ia-text">IA</span>
+      </button>
+    </>
+  );
+}
+
+/* ═══════════════════════════════ LAYOUT ═══════════════════════════════ */
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { user, isLoggedIn, isLoading, logout } = useAuth();
+  const router   = useRouter();
+  const pathname = usePathname();
+
+  const [sidebarOpen,     setSidebarOpen]     = useState(false);
+  const [userMenuOpen,    setUserMenuOpen]    = useState(false);
+  const [userMenuClosing, setUserMenuClosing] = useState(false);
+  const [sidekickOpen,    setSidekickOpen]    = useState(false);
+  const userMenuRef      = useRef<HTMLDivElement>(null);
+  const userMenuTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pendingOrders,    setPendingOrders]    = useState(0);
+  const [unreadNotifs,     setUnreadNotifs]     = useState(0);
+  const [pendingWholesale, setPendingWholesale] = useState(0);
+
+  const closeUserMenu = () => {
+    setUserMenuClosing(true);
+    if (userMenuTimerRef.current) clearTimeout(userMenuTimerRef.current);
+    userMenuTimerRef.current = setTimeout(() => {
+      setUserMenuOpen(false);
+      setUserMenuClosing(false);
+    }, 280);
+  };
+
+  // Multiple groups can be open at once - all start expanded
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        if (userMenuOpen) closeUserMenu();
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [userMenuOpen]);
+
+  const [openGroups,  setOpenGroups]  = useState<string[]>(NAV_GROUPS.map(g => g.label));
+  const [openItems,   setOpenItems]   = useState<Record<string, boolean>>({});
+
+  const toggleGroup = (label: string) => {
+    setOpenGroups(prev => prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]);
+  };
+
+  const toggleItem = (label: string) => {
+    setOpenItems(prev => ({ ...prev, [label]: !prev[label] }));
+  };
+
+  const fetchBadges = useCallback(async () => {
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const [o, n, w] = await Promise.all([
+        databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [Query.equal('STATUS','pending'), Query.limit(1)]),
+        databases.listDocuments(databaseId, NOTIFICATIONS_COLLECTION_ID, [Query.equal('isRead',false), Query.limit(1)]),
+        databases.listDocuments(databaseId, WHOLESALE_REQUESTS_COLLECTION_ID, [Query.equal('status','pending'), Query.limit(1)]),
+      ]);
+      setPendingOrders(o.total); setUnreadNotifs(n.total); setPendingWholesale(w.total);
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading && !isLoggedIn) router.replace('/admin/login');
+    if (!isLoading && isLoggedIn) {
+      fetchBadges();
+      const id = setInterval(fetchBadges, 60_000);
+      return () => clearInterval(id);
+    }
+  }, [isLoading, isLoggedIn, router, fetchBadges]);
+
+  /* ── GSAP page transition on route change ── */
+  const contentRef = useRef<HTMLDivElement>(null);
+  const prevPathRef = useRef(pathname);
+  useEffect(() => {
+    if (prevPathRef.current === pathname || !contentRef.current) {
+      prevPathRef.current = pathname;
+      return;
+    }
+    prevPathRef.current = pathname;
+    const el = contentRef.current;
+    gsap.fromTo(el,
+      { opacity: 0, y: 16 },
+      { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out', clearProps: 'transform,opacity' }
+    );
+  }, [pathname]);
+
+  if (isLoading) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+  if (!isLoggedIn) return null;
+
+  const handleLogout = async () => { await logout(); router.replace('/admin/login'); };
+
+  const badgeCount = (b?: string) => b === 'orders' ? pendingOrders : b === 'notifs' ? unreadNotifs : b === 'wholesale' ? pendingWholesale : 0;
+  const badgeColor = (b?: string) => b === 'orders' ? '#f59e0b' : b === 'notifs' ? '#6366f1' : '#8b5cf6';
+
+  const isActive = (href: string) => href && (pathname === href || (href.length > 10 && pathname.startsWith(href)));
+  const anyChildActive = (ch: NavItem[]) => ch.some(c => isActive(c.href));
+
+  /* ── render a single nav item with stagger animation ── */
+  const renderItem = (item: NavItem, ctr: { i: number }, depth = 0) => {
+    const active  = isActive(item.href);
+    const bc      = badgeCount(item.badge);
+    const expanded = openItems[item.label] ?? false;
+    const childActive = item.children ? anyChildActive(item.children) : false;
+    const delay = `${(ctr.i++ * 0.065).toFixed(3)}s`;
+    const anim  = `sf-curtain-drop 0.55s cubic-bezier(0.16,1,0.3,1) ${delay} both`;
+
+    if (item.children) {
+      return (
+        <div key={item.label}>
+          <button onClick={() => toggleItem(item.label)}
+            className="sf-nav-item"
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+              padding: '7px 12px', borderRadius: 8, cursor: 'pointer', border: 'none',
+              background: childActive || expanded ? 'rgba(255,255,255,0.08)' : 'transparent',
+              color: childActive ? '#fff' : 'rgba(255,255,255,0.7)',
+              fontSize: 14, fontWeight: 500, transition: 'all .15s',
+              animation: anim,
+            }}>
+            <span style={{ width: 20, height: 20, flexShrink: 0 }}>{item.icon}</span>
+            <span style={{ flex: 1, textAlign: 'left' }}>{item.label}</span>
+            <ChevronRight size={16} style={{ opacity: 0.9, transform: expanded ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform .25s cubic-bezier(0.16,1,0.3,1)' }} />
+          </button>
+          <div className={expanded ? 'sf-children sf-children-open' : 'sf-children'}>
+            <div style={{ marginLeft: 20, paddingLeft: 12, borderLeft: '1px solid rgba(255,255,255,0.08)' }}>
+              {item.children.map(c => renderItem(c, ctr, depth + 1))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <Link key={`${item.href}-${item.label}`} href={item.href}
+        onClick={() => setSidebarOpen(false)}
+        className="sf-nav-item"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: depth > 0 ? '6px 10px' : '7px 12px',
+          borderRadius: 8, textDecoration: 'none',
+          background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
+          color: active ? '#fff' : 'rgba(255,255,255,0.7)',
+          fontSize: depth > 0 ? 13 : 14, fontWeight: active ? 600 : 400,
+          transition: 'all .15s',
+          animation: anim,
+        }}>
+        {depth === 0 && <span style={{ width: 20, height: 20, flexShrink: 0 }}>{item.icon}</span>}
+        {depth > 0 && <span style={{ width: 4, height: 4, borderRadius: '50%', background: active ? '#fff' : 'rgba(255,255,255,0.3)', flexShrink: 0 }} />}
+        <span style={{ flex: 1 }}>{item.label}</span>
+        {bc > 0 && (
+          <span style={{ background: badgeColor(item.badge), color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20, minWidth: 18, textAlign: 'center' }}>
+            {bc > 99 ? '99+' : bc}
+          </span>
+        )}
+      </Link>
+    );
+  };
+
+  /* ── sidebar JSX — Shopify dark style ── */
+  const sidebarJsx = (
+    <aside className={`sf-sidebar-shine fixed inset-y-0 left-0 top-[56px] z-30 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} lg:!static lg:!transform-none`} style={{
+      width: 240, flexShrink: 0, display: 'flex', flexDirection: 'column',
+      background: '#1a1a1a',
+      boxShadow: 'inset -1px 0 0 rgba(255,255,255,0.04), inset 1px 0 0 rgba(255,255,255,0.02)',
+      transition: 'transform .3s', overflow: 'hidden', position: 'relative',
+    }}
+    >
+      <style>{`
+        .sf-nav-item:hover { background: rgba(255,255,255,0.08) !important; color: #fff !important; }
+        .sf-sidebar-scroll::-webkit-scrollbar { display: none; }
+        .sf-sidebar-scroll { scrollbar-width: none; }
+
+        @keyframes sf-curtain-drop {
+          0%   { opacity: 0; clip-path: inset(0 0 100% 0); transform: translateY(-8px); }
+          40%  { opacity: 1; }
+          100% { opacity: 1; clip-path: inset(0 0 0% 0); transform: translateY(0); }
+        }
+        
+        .sf-sidebar-scroll > div:nth-child(1) .sf-nav-item:nth-child(1) { animation: sf-curtain-drop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both; }
+        .sf-sidebar-scroll > div:nth-child(1) .sf-nav-item:nth-child(2) { animation: sf-curtain-drop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both; }
+        .sf-sidebar-scroll > div:nth-child(1) .sf-nav-item:nth-child(3) { animation: sf-curtain-drop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.19s both; }
+        .sf-sidebar-scroll > div:nth-child(1) .sf-nav-item:nth-child(4) { animation: sf-curtain-drop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.26s both; }
+        .sf-sidebar-scroll > div:nth-child(1) .sf-nav-item:nth-child(5) { animation: sf-curtain-drop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.33s both; }
+        .sf-sidebar-scroll > div:nth-child(1) .sf-nav-item:nth-child(6) { animation: sf-curtain-drop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.40s both; }
+        
+        .sf-sidebar-scroll > div:nth-child(2) { animation: sf-curtain-drop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.47s both; }
+        .sf-sidebar-scroll > div:nth-child(2) button { animation: sf-curtain-drop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.47s both; }
+        .sf-sidebar-scroll > div:nth-child(3) { animation: sf-curtain-drop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.54s both; }
+        .sf-sidebar-scroll > div:nth-child(3) button { animation: sf-curtain-drop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.54s both; }
+        .sf-sidebar-scroll > div:nth-child(4) { animation: sf-curtain-drop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.61s both; }
+        .sf-sidebar-scroll > div:nth-child(4) button { animation: sf-curtain-drop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.61s both; }
+        .sf-sidebar-scroll > div:nth-child(5) { animation: sf-curtain-drop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.68s both; }
+        .sf-sidebar-scroll > div:nth-child(5) button { animation: sf-curtain-drop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.68s both; }
+        .sf-sidebar-scroll > div:nth-child(6) { animation: sf-curtain-drop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.75s both; }
+        .sf-sidebar-scroll > div:nth-child(6) button { animation: sf-curtain-drop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.75s both; }
+
+        .sf-children {
+          display: grid;
+          grid-template-rows: 0fr;
+          transition: grid-template-rows 0.28s ease-out;
+        }
+        .sf-children > div {
+          overflow: hidden;
+          min-height: 0;
+        }
+        .sf-children-open {
+          grid-template-rows: 1fr;
+          transition: grid-template-rows 0.32s cubic-bezier(0.16,1,0.3,1);
+        }
+        .sf-children-open > div > *:nth-child(1) { animation: sf-sub-item 0.22s cubic-bezier(0.16,1,0.3,1) 0.06s both; }
+        .sf-children-open > div > *:nth-child(2) { animation: sf-sub-item 0.22s cubic-bezier(0.16,1,0.3,1) 0.10s both; }
+        .sf-children-open > div > *:nth-child(3) { animation: sf-sub-item 0.22s cubic-bezier(0.16,1,0.3,1) 0.14s both; }
+        .sf-children-open > div > *:nth-child(4) { animation: sf-sub-item 0.22s cubic-bezier(0.16,1,0.3,1) 0.18s both; }
+        .sf-children-open > div > *:nth-child(5) { animation: sf-sub-item 0.22s cubic-bezier(0.16,1,0.3,1) 0.22s both; }
+        .sf-children-open > div > *:nth-child(6) { animation: sf-sub-item 0.22s cubic-bezier(0.16,1,0.3,1) 0.26s both; }
+        .sf-children-open > div > *:nth-child(7) { animation: sf-sub-item 0.22s cubic-bezier(0.16,1,0.3,1) 0.30s both; }
+        .sf-children-open > div > *:nth-child(8) { animation: sf-sub-item 0.22s cubic-bezier(0.16,1,0.3,1) 0.34s both; }
+        @keyframes sf-sub-item {
+          0%   { opacity: 0; transform: translateX(-4px); }
+          100% { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes sf-badge-pop {
+          0%   { transform: scale(0.6); }
+          70%  { transform: scale(1.15); }
+          100% { transform: scale(1); }
+        }
+        .sf-badge { animation: sf-badge-pop 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+      `}</style>
+
+      {/* Nav — flat Shopify style with expandable groups */}
+      <nav className="sf-sidebar-scroll" style={{ flex: 1, overflowY: 'auto', padding: '12px 8px 8px' }}>
+        {(() => {
+          const ctr = { i: 0 };
+          return NAV_GROUPS.map(group => {
+            const isOpen = openGroups.includes(group.label);
+            const isMain = group.label === 'General';
+
+            if (isMain) {
+              return (
+                <div key={group.label} style={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: 4 }}>
+                  {group.items.map(item => renderItem(item, ctr))}
+                </div>
+              );
+            }
+
+            const headerDelay = `${(ctr.i++ * 0.065).toFixed(3)}s`;
+            return (
+              <div key={group.label} style={{ marginBottom: 2 }}>
+                <button onClick={() => toggleGroup(group.label)} style={{
+                  width: '100%', display: 'flex', alignItems: 'center',
+                  padding: '18px 12px 6px', border: 'none', cursor: 'pointer',
+                  background: 'transparent', transition: 'all .15s',
+                  animation: `sf-curtain-drop 0.55s cubic-bezier(0.16,1,0.3,1) ${headerDelay} both`,
+                }}>
+                  <span style={{ flex: 1, textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.5px', textTransform: 'uppercase' as const }}>
+                    {group.label}
+                  </span>
+                  <ChevronDown size={16} style={{ color: 'rgba(255,255,255,0.9)', transform: isOpen ? 'rotate(0)' : 'rotate(-90deg)', transition: 'transform .2s' }} />
+                </button>
+
+                {isOpen && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {group.items.map(item => renderItem(item, ctr))}
+                  </div>
+                )}
+              </div>
+            );
+          });
+        })()}
+      </nav>
+
+    </aside>
+  );
+
+  /* CSS global para topbar shine + logo fade */
+  const topbarShineCss = `
+    @keyframes gs-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .admin-content-wrap::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: #000;
+      z-index: 0;
+    }
+    @keyframes sf-shine-first {
+      0%   { left: 80px; opacity: 0; transform: skewX(-20deg) scaleX(0.4); filter: blur(6px); }
+      15%  { opacity: 1; filter: blur(0); }
+      25%  { transform: skewX(-20deg) scaleX(1); }
+      55%  { opacity: 1; filter: blur(0); }
+      70%  { opacity: 0.5; filter: blur(3px); }
+      82%  { opacity: 0.15; filter: blur(8px); }
+      92%  { opacity: 0; filter: blur(14px); }
+      100% { left: calc(100% + 120px); opacity: 0; transform: skewX(-20deg) scaleX(1); filter: blur(20px); }
+    }
+    @keyframes sf-shine-loop {
+      0%   { left: -25%; opacity: 0; transform: skewX(-20deg); filter: blur(8px); }
+      5%   { opacity: 0.5; filter: blur(4px); }
+      8%   { opacity: 1; filter: blur(0); }
+      60%  { opacity: 1; filter: blur(0); }
+      75%  { opacity: 0.45; filter: blur(7px); }
+      90%  { opacity: 0.15; filter: blur(12px); }
+      100% { left: calc(100% + 100px); opacity: 0; transform: skewX(-20deg); filter: blur(16px); }
+    }
+    @keyframes sf-logo-wipe {
+      0%   { clip-path: inset(0 100% 0 0); opacity: 0; }
+      15%  { opacity: 1; }
+      100% { clip-path: inset(0 0% 0 0); opacity: 1; }
+    }
+    .sf-logo-animate {
+      animation: sf-logo-wipe 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    /* Logo sin brillo - completamente visible */
+
+  `;
+
+  return (
+    <>
+      <style>{topbarShineCss}</style>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#1a1a1a', overflow: 'hidden' }}>
+      {/* ═══ Top bar — unified with sidebar ═══ */}
+      <header style={{
+        height: 72,
+        background: '#1a1a1a',
+        display: 'flex', alignItems: 'center',
+        padding: '0 20px', gap: 14, flexShrink: 0, zIndex: 40,
+        boxShadow: 'none',
+        position: 'relative',
+      }}
+      className="sf-topbar-shine"
+      >
+                <button onClick={() => setSidebarOpen(o => !o)} className="lg:hidden" style={{ padding: 6, borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', color: 'rgba(255,255,255,0.7)' }}>
+          {sidebarOpen ? <X size={20}/> : <Menu size={20}/>}
+        </button>
+
+        {/* Logo in top bar on desktop */}
+        <div className="hidden lg:block sf-logo-animate" style={{ width: 180, height: 90, flexShrink: 0, marginRight: 12, position: 'relative' }}>
+          <Link href="/admin/dashboard" style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
+            <Image
+              src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/Yaxsell%2Flogo.png?alt=media&token=3c24b115-53b7-4603-badf-1af26b586a6a"
+              alt="Yaxsel"
+              fill
+              style={{ objectFit: 'contain' }}
+              priority
+            />
+          </Link>
+        </div>
+
+        {/* Centered search bar */}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <GlobalSearch />
+        </div>
+
+        {/* Right side */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+
+          {/* IA Sidekick button with typing phrases */}
+          <IATopBarButton isOpen={sidekickOpen} onClick={() => setSidekickOpen(o => !o)} />
+
+          {/* Notifications */}
+          <Link href="/admin/notifications" style={{
+            width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', position: 'relative', transition: 'background .15s',
+          }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
+              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+            </svg>
+            {unreadNotifs > 0 && (
+              <span style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '2px solid #1a1a1a' }} />
+            )}
+          </Link>
+
+          {/* User menu */}
+          <div ref={userMenuRef} style={{ position: 'relative' }}>
+            <button onClick={() => { if (userMenuOpen) closeUserMenu(); else setUserMenuOpen(true); }} style={{
+              display: 'flex', alignItems: 'center', gap: 7, padding: '4px 8px 4px 4px',
+              borderRadius: 8, border: 'none', cursor: 'pointer',
+              background: userMenuOpen ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)',
+              transition: 'background .15s',
+            }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%', background: '#059669',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#fff', fontWeight: 700, fontSize: 11, flexShrink: 0,
+              }}>
+                {user?.name?.charAt(0).toUpperCase() || 'A'}
+              </div>
+              <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: 500, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user?.name || 'Admin'}
+              </span>
+              <ChevronDown size={13} style={{ color: 'rgba(255,255,255,0.4)', transition: 'transform .2s', transform: userMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+            </button>
+
+            {(userMenuOpen || userMenuClosing) && (
+              <div className={userMenuClosing ? 'um-dropdown um-dropdown-closing' : 'um-dropdown'} style={{
+                position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+                width: 220, background: '#232323', borderRadius: 10,
+                border: '1px solid rgba(255,255,255,0.08)',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.35)', zIndex: 200,
+                overflow: 'hidden',
+              }}>
+                <style>{`
+                  @keyframes um-curtain-open  { 0%{clip-path:inset(0 0 100% 0);opacity:0;transform:translateY(-4px);}  100%{clip-path:inset(0 0 0% 0);opacity:1;transform:translateY(0);} }
+                  @keyframes um-curtain-close { 0%{clip-path:inset(0 0 0% 0);opacity:1;transform:translateY(0);}  100%{clip-path:inset(0 0 100% 0);opacity:0;transform:translateY(-6px);} }
+                  @keyframes um-item-drop  { 0%{opacity:0;transform:translateY(-5px);}  100%{opacity:1;transform:translateY(0);} }
+                  @keyframes um-item-out   { 0%{opacity:1;transform:translateY(0);}  100%{opacity:0;transform:translateY(-4px);} }
+                  .um-dropdown         { animation: um-curtain-open  0.28s cubic-bezier(0.16,1,0.3,1) both; }
+                  .um-dropdown-closing { animation: um-curtain-close 0.24s cubic-bezier(0.4,0,0.8,0) both !important; }
+                  .um-dropdown-closing .um-item { animation: um-item-out 0.18s cubic-bezier(0.4,0,0.8,0) both !important; }
+                  .um-item { animation: um-item-drop 0.28s cubic-bezier(0.16,1,0.3,1) both; }
+                  .um-item:nth-child(1){animation-delay:0.04s;} .um-item:nth-child(2){animation-delay:0.08s;}
+                  .um-item:nth-child(3){animation-delay:0.12s;} .um-item:nth-child(4){animation-delay:0.16s;}
+                  .um-item:nth-child(5){animation-delay:0.20s;} .um-item:nth-child(6){animation-delay:0.24s;}
+                  .um-item:hover { background: rgba(255,255,255,0.06) !important; }
+                `}</style>
+                {/* Header */}
+                <div className="um-item" style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
+                      {user?.name?.charAt(0).toUpperCase() || 'A'}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ margin: 0, color: '#fff', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name || 'Admin'}</p>
+                      <p style={{ margin: 0, color: 'rgba(255,255,255,0.4)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email || ''}</p>
+                    </div>
+                  </div>
+                </div>
+                {/* Options */}
+                {[
+                  { label: 'Ir al Dashboard', icon: '🏠', href: '/admin/dashboard' },
+                  { label: 'Configuración', icon: '⚙️', href: '/admin/settings' },
+                  { label: 'Ver tienda', icon: '🛍️', href: '/' },
+                ].map(item => (
+                  <Link key={item.href} href={item.href} onClick={() => closeUserMenu()} className="um-item" style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+                    color: 'rgba(255,255,255,0.75)', fontSize: 13, textDecoration: 'none',
+                    transition: 'background .1s',
+                  }}>
+                    <span style={{ fontSize: 15 }}>{item.icon}</span>{item.label}
+                  </Link>
+                ))}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', margin: '2px 0' }} />
+                <button onClick={() => { closeUserMenu(); setTimeout(() => logout(), 280); }} className="um-item" style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', width: '100%',
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  color: '#f87171', fontSize: 13, transition: 'background .1s',
+                }}>
+                  <LogOut size={14} /> Cerrar sesión
+                </button>
+              </div>
+            )}
+          </div>
+
+        </div>
+      </header>
+
+      {/* ═══ Body: sidebar + content ═══ */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', background: '#1a1a1a' }}>
+        {sidebarOpen && <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 20 }} className="lg:hidden" onClick={() => setSidebarOpen(false)} />}
+        {sidebarJsx}
+        {/* Main content area — clean, centered */}
+        <div className="admin-content-wrap" style={{
+          flex: 1, position: 'relative', overflow: 'hidden', borderRadius: 24, background: '#ffffff', border: '3px solid #000000',
+        }}>
+          <main ref={contentRef} style={{
+            position: 'relative', zIndex: 1, height: '100%',
+            overflowY: 'auto', overflowX: 'hidden',
+            padding: '24px 24px 40px', background: '#ffffff',
+            borderRadius: 24, margin: 0,
+          }}>
+            {children}
+          </main>
+        </div>
+        {/* IA Sidekick panel */}
+        <AISidekick open={sidekickOpen} onClose={() => setSidekickOpen(false)} />
+      </div>
+    </div>
+    </>
+  );
+}

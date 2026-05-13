@@ -1,0 +1,409 @@
+'use client';
+
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { X, Send, Sparkles, Package, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+  action?: ProductAction | null;
+  actionStatus?: 'pending' | 'done' | 'error';
+  displayedContent?: string;
+  typed?: boolean;
+}
+
+interface ProductAction {
+  name: string;
+  price: number;
+  description: string;
+  category: string;
+}
+
+function parseAction(text: string): { clean: string; action: ProductAction | null } {
+  const match = text.match(/\[ACTION:CREATE_PRODUCT\]([\s\S]*?)\[\/ACTION\]/);
+  if (!match) return { clean: text, action: null };
+  try {
+    const action = JSON.parse(match[1]);
+    const clean = text.replace(/\[ACTION:CREATE_PRODUCT\][\s\S]*?\[\/ACTION\]/, '').trim();
+    return { clean, action };
+  } catch {
+    return { clean: text, action: null };
+  }
+}
+
+const SUGGESTIONS = [
+  { text: 'Crea un producto "Polo blanco" de $25000', icon: '📦' },
+  { text: '¿Cómo puedo mejorar mis ventas?', icon: '📈' },
+  { text: 'Crea 3 productos de ejemplo', icon: '✨' },
+  { text: '¿Qué estrategias de marketing?', icon: '🎯' },
+];
+
+const PLACEHOLDERS = ['Crea un producto...', 'Pregunta lo que quieras...', 'Genera ideas...', 'Pide consejo...'];
+
+export default function AISidekick({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [messages, setMessages] = useState<Message[]>([
+    { role: 'assistant', content: '¡Hola! Soy **Yexy**, tu asistente de IA. Puedo ayudarte a crear productos, gestionar pedidos, analizar ventas, crear descuentos y mucho más. ¿En qué te ayudo hoy?', typed: true },
+  ]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [placeholder, setPlaceholder] = useState('');
+  const [phIdx, setPhIdx] = useState(0);
+  const [inputFocused, setInputFocused] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const typingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (open) { setVisible(true); setClosing(false); }
+    else if (visible) { setClosing(true); const t = setTimeout(() => { setClosing(false); setVisible(false); }, 350); return () => clearTimeout(t); }
+  }, [open]);
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 200); }, [open]);
+
+  // Typing placeholder animation
+  useEffect(() => {
+    if (inputFocused || input) { setPlaceholder(''); return; }
+    let charIdx = 0;
+    const word = PLACEHOLDERS[phIdx % PLACEHOLDERS.length];
+    setPlaceholder('');
+    const interval = setInterval(() => {
+      charIdx++;
+      setPlaceholder(word.slice(0, charIdx));
+      if (charIdx >= word.length) {
+        clearInterval(interval);
+        setTimeout(() => setPhIdx(p => p + 1), 2000);
+      }
+    }, 50);
+    return () => clearInterval(interval);
+  }, [phIdx, inputFocused, input]);
+
+  // Typewriter effect for assistant messages
+  const typewriterEffect = useCallback((msgIndex: number, fullText: string) => {
+    let i = 0;
+    const tick = () => {
+      i += Math.floor(Math.random() * 3) + 1;
+      if (i >= fullText.length) {
+        setMessages(prev => prev.map((m, idx) => idx === msgIndex ? { ...m, displayedContent: fullText, typed: true } : m));
+        return;
+      }
+      setMessages(prev => prev.map((m, idx) => idx === msgIndex ? { ...m, displayedContent: fullText.slice(0, i) } : m));
+      typingRef.current = setTimeout(tick, 15 + Math.random() * 20);
+    };
+    tick();
+  }, []);
+
+  const executeProductAction = async (msgIndex: number, action: ProductAction) => {
+    setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'pending' } : m));
+    try {
+      const res = await fetch('/api/products/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: action.name,
+          price: action.price,
+          description: action.description,
+          category: action.category || '',
+          stock: 0,
+        }),
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'done' } : m));
+      } else {
+        console.error('Error creating product:', data.error);
+        setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'error' } : m));
+      }
+    } catch (error) {
+      console.error('Error executing product action:', error);
+      setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'error' } : m));
+    }
+  };
+
+  const sendMessage = async (text?: string) => {
+    const content = (text ?? input).trim();
+    if (!content || loading) return;
+    setInput('');
+    const userMsg: Message = { role: 'user', content, typed: true };
+    const history = [...messages, userMsg];
+    setMessages(history);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/ai-sidekick', {
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: history.map(m => ({ role: m.role, content: m.content })) }),
+      });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('API error:', errorText);
+        throw new Error(`API error: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      
+      if (!data.text) {
+        console.error('No text in response:', data);
+        throw new Error('No text in response');
+      }
+      
+      const raw = data.text;
+      const { clean, action } = parseAction(raw);
+      const newIdx = history.length;
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: clean, 
+        displayedContent: '', 
+        action, 
+        actionStatus: action ? 'pending' : undefined, 
+        typed: false 
+      }]);
+      setTimeout(() => typewriterEffect(newIdx, clean), 100);
+    } catch (error) {
+      console.error('Error in sendMessage:', error);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'Ocurrió un error al procesar la respuesta. Por favor intenta de nuevo.', 
+        typed: true 
+      }]);
+    } finally { 
+      setLoading(false); 
+    }
+  };
+
+  const renderText = (text: string) => text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br/>');
+
+  return (
+    <>
+      <style>{`
+        @keyframes sk-slide { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+        @keyframes sk-slide-out { from { transform:translateX(0); opacity:1; } to { transform:translateX(100%); opacity:0; } }
+        @keyframes sk-msg-user { from { opacity:0; transform:translateX(16px) scale(0.95); } to { opacity:1; transform:translateX(0) scale(1); } }
+        @keyframes sk-msg-ai { from { opacity:0; transform:translateX(-16px) scale(0.95); } to { opacity:1; transform:translateX(0) scale(1); } }
+        @keyframes sk-pulse { 0%,100%{opacity:.3;transform:scale(0.85);} 50%{opacity:1;transform:scale(1.1);} }
+        @keyframes sk-glow-pulse { 0%,100%{box-shadow:0 0 8px rgba(139,92,246,0.2);} 50%{box-shadow:0 0 18px rgba(139,92,246,0.5);} }
+        @keyframes sk-border-spin { from{transform:translate(-50%,-50%) rotate(0deg);} to{transform:translate(-50%,-50%) rotate(360deg);} }
+        @keyframes sk-cursor { 0%,100%{opacity:1;} 50%{opacity:0;} }
+        @keyframes sk-suggestion-in { from{opacity:0;clip-path:inset(0 0 100% 0);transform:translateY(-4px);} to{opacity:1;clip-path:inset(0 0 0% 0);transform:translateY(0);} }
+        @keyframes sk-header-glow { 0%,100%{background-position:0% 50%;} 50%{background-position:100% 50%;} }
+        @keyframes sk-card-in { from{opacity:0;transform:translateY(8px) scale(0.96);} to{opacity:1;transform:translateY(0) scale(1);} }
+        @keyframes spin { to{transform:rotate(360deg);} }
+        .sk-panel-enter { animation: sk-slide 0.35s cubic-bezier(0.16,1,0.3,1) both; }
+        .sk-panel-exit { animation: sk-slide-out 0.35s cubic-bezier(0.36,0,0.66,-0.56) both; }
+        .sk-msg-u { animation: sk-msg-user 0.35s cubic-bezier(0.16,1,0.3,1) both; }
+        .sk-msg-a { animation: sk-msg-ai 0.35s cubic-bezier(0.16,1,0.3,1) both; }
+        .sk-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#a78bfa; animation:sk-pulse 1.2s ease-in-out infinite; }
+        .sk-dot:nth-child(2){animation-delay:.2s;} .sk-dot:nth-child(3){animation-delay:.4s;}
+        .sk-send:hover:not(:disabled) { background:rgba(139,92,246,0.35)!important; transform:scale(1.08); }
+        .sk-suggestion:hover { background:rgba(139,92,246,0.1)!important; border-color:rgba(139,92,246,0.4)!important; transform:translateX(3px); }
+        .sk-bubble-ai { position:relative; }
+        .sk-bubble-ai::before { content:''; position:absolute; inset:-1px; border-radius:inherit; background:linear-gradient(135deg,rgba(139,92,246,0.15),rgba(139,92,246,0.03)); z-index:-1; pointer-events:none; }
+        .sk-typing-cursor::after { content:'|'; animation:sk-cursor 0.7s step-end infinite; color:#a78bfa; font-weight:300; margin-left:1px; }
+      `}</style>
+
+      <div className={closing ? 'sk-panel-exit' : 'sk-panel-enter'} style={{
+        width: 370, flexShrink: 0, display: visible ? 'flex' : 'none', flexDirection: 'column',
+        background: '#131313', borderLeft: '1px solid rgba(255,255,255,0.06)',
+        position: 'relative', overflow: 'hidden',
+      }}>
+
+        {/* Ambient glow */}
+        <div style={{ position:'absolute', top:0, left:0, right:0, height:180,
+          background:'radial-gradient(ellipse at 50% -20%, rgba(139,92,246,0.12) 0%, transparent 65%)',
+          pointerEvents:'none', zIndex:0
+        }}/>
+
+        {/* Header with animated gradient border bottom */}
+        <div style={{
+          display:'flex', alignItems:'center', gap:10, padding:'12px 14px',
+          position:'relative', flexShrink:0, zIndex:1,
+          borderBottom:'1px solid rgba(139,92,246,0.15)',
+        }}>
+          <div style={{
+            width:92, height:92, borderRadius:23, flexShrink:0, position:'relative', overflow:'hidden',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            animation:'sk-glow-pulse 2s ease-in-out infinite',
+            boxShadow:'0 0 32px rgba(139,92,246,0.9)',
+            alignSelf: 'flex-end',
+            marginTop: 4,
+          }}>
+            <img
+              src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/Yaxsell%2Fimage-20.png?alt=media&token=0facabd7-7fb4-4cfd-9f35-a6bfd1fd66ab"
+              alt="Yexy"
+              style={{ width:88, height:88, borderRadius:21, objectFit:'cover', objectPosition: 'center 20%' }}
+            />
+          </div>
+          <div>
+            <p style={{ margin:0, color:'#fff', fontSize:18, fontWeight:700 }}>Yexy IA</p>
+            <p style={{ margin:0, color:'rgba(255,255,255,0.9)', fontSize:11, letterSpacing:'0.3px' }}>Asistente inteligente</p>
+          </div>
+          <button onClick={onClose} style={{
+            marginLeft:'auto', width:26, height:26, borderRadius:6,
+            border:'none', cursor:'pointer', background:'rgba(255,255,255,0.05)',
+            color:'rgba(255,255,255,0.4)', display:'flex', alignItems:'center', justifyContent:'center',
+            transition:'all .15s',
+          }}
+          onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,0.1)';e.currentTarget.style.color='#fff';}}
+          onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.05)';e.currentTarget.style.color='rgba(255,255,255,0.4)';}}>
+            <X size={13}/>
+          </button>
+        </div>
+
+        {/* Messages */}
+        <div style={{ flex:1, overflowY:'auto', padding:'14px', display:'flex', flexDirection:'column', gap:10, zIndex:1 }}>
+          {messages.map((msg, i) => {
+            const isUser = msg.role === 'user';
+            const displayText = (!isUser && !msg.typed) ? (msg.displayedContent || '') : msg.content;
+            return (
+              <div key={i} className={isUser ? 'sk-msg-u' : 'sk-msg-a'} style={{
+                display:'flex', flexDirection:'column',
+                alignItems:isUser ? 'flex-end' : 'flex-start', gap:6,
+              }}>
+                {/* Avatar for AI */}
+                {!isUser && (
+                  <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
+                    <img
+                      src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/Yaxsell%2Fyexyface.png?alt=media&token=11559be5-9d69-442f-b42b-25fb8dd663e9"
+                      alt="Yexy"
+                      style={{ width:30, height:30, borderRadius:7, objectFit:'cover', flexShrink:0 }}
+                    />
+                    <span style={{ fontSize:10, color:'rgba(167,139,250,0.6)', fontWeight:500 }}>Yexy</span>
+                  </div>
+                )}
+                <div className={isUser ? '' : 'sk-bubble-ai'} style={{
+                  maxWidth:'90%', padding:'10px 13px',
+                  borderRadius:isUser ? '14px 14px 4px 14px' : '4px 14px 14px 14px',
+                  background:isUser ? 'linear-gradient(135deg,#7c3aed,#5b21b6)' : 'rgba(255,255,255,0.04)',
+                  color:isUser ? '#fff' : 'rgba(255,255,255,0.88)',
+                  fontSize:13, lineHeight:1.6,
+                  border:isUser ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                  boxShadow:isUser ? '0 2px 12px rgba(124,58,237,0.25)' : 'none',
+                }}>
+                  <span className={(!isUser && !msg.typed) ? 'sk-typing-cursor' : ''}
+                    dangerouslySetInnerHTML={{ __html: renderText(displayText) }}/>
+                </div>
+
+                {/* Product action card */}
+                {msg.action && msg.typed && (
+                  <div style={{
+                    width:'90%', borderRadius:10, overflow:'hidden',
+                    border:'1px solid rgba(139,92,246,0.25)', background:'rgba(139,92,246,0.06)',
+                    animation:'sk-card-in 0.4s cubic-bezier(0.16,1,0.3,1) both',
+                  }}>
+                    <div style={{ padding:'10px 12px', display:'flex', alignItems:'center', gap:8 }}>
+                      <div style={{ width:28, height:28, borderRadius:7, background:'rgba(139,92,246,0.15)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <Package size={13} style={{ color:'#a78bfa' }}/>
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <p style={{ margin:0, color:'#e9d5ff', fontSize:12, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{msg.action.name}</p>
+                        <p style={{ margin:0, color:'rgba(167,139,250,0.6)', fontSize:10 }}>${msg.action.price.toLocaleString()} · {msg.action.description?.slice(0,35)||'—'}</p>
+                      </div>
+                      {msg.actionStatus === 'pending' && (
+                        <button onClick={() => executeProductAction(i, msg.action!)} style={{
+                          padding:'5px 10px', borderRadius:6, border:'1px solid rgba(139,92,246,0.3)', cursor:'pointer',
+                          background:'rgba(139,92,246,0.2)', color:'#c4b5fd', fontSize:11, fontWeight:600,
+                          transition:'all .15s', flexShrink:0,
+                        }}
+                        onMouseEnter={e=>{e.currentTarget.style.background='rgba(139,92,246,0.4)';e.currentTarget.style.borderColor='rgba(139,92,246,0.6)';}}
+                        onMouseLeave={e=>{e.currentTarget.style.background='rgba(139,92,246,0.2)';e.currentTarget.style.borderColor='rgba(139,92,246,0.3)';}}
+                        >Crear</button>
+                      )}
+                      {msg.actionStatus === 'done' && <CheckCircle2 size={16} style={{ color:'#4ade80', flexShrink:0 }}/>}
+                      {msg.actionStatus === 'error' && <AlertCircle size={16} style={{ color:'#f87171', flexShrink:0 }}/>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Loading */}
+          {loading && (
+            <div className="sk-msg-a" style={{ display:'flex', flexDirection:'column', alignItems:'flex-start', gap:6 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
+                <div style={{ width:18, height:18, borderRadius:5, background:'linear-gradient(135deg,#7c3aed,#a78bfa)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <Sparkles size={9} style={{ color:'#fff' }}/>
+                </div>
+                <span style={{ fontSize:10, color:'rgba(167,139,250,0.6)', fontWeight:500 }}>Yexy está pensando...</span>
+              </div>
+              <div style={{
+                padding:'12px 16px', borderRadius:'4px 14px 14px 14px',
+                background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.06)',
+                display:'flex', gap:6, alignItems:'center',
+              }}>
+                <span className="sk-dot"/><span className="sk-dot"/><span className="sk-dot"/>
+              </div>
+            </div>
+          )}
+          <div ref={bottomRef}/>
+        </div>
+
+        {/* Suggestions */}
+        {messages.length === 1 && (
+          <div style={{ padding:'0 14px 10px', display:'flex', flexDirection:'column', gap:5, zIndex:1, alignItems:'flex-start', maxWidth:'95%' }}>
+            {SUGGESTIONS.map((s, i) => (
+              <button key={i} className="sk-suggestion" onClick={() => sendMessage(s.text)} style={{
+                textAlign:'left', padding:'8px 11px', borderRadius:8, width:'100%',
+                background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.07)',
+                color:'rgba(255,255,255,0.6)', fontSize:12, cursor:'pointer',
+                transition:'all .2s', display:'flex', alignItems:'center', gap:8,
+                animation:`sk-suggestion-in 0.4s cubic-bezier(0.16,1,0.3,1) ${0.1+i*0.08}s both`,
+              }}>
+                <span style={{ fontSize:14 }}>{s.icon}</span>{s.text}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Input area with rotating border */}
+        <div style={{ padding:'10px 14px', borderTop:'1px solid rgba(255,255,255,0.06)', flexShrink:0, zIndex:1 }}>
+          <div style={{ display:'flex', gap:8, alignItems:'flex-end', position:'relative' }}>
+            <div style={{ flex:1, position:'relative', borderRadius:11, overflow:'hidden' }}>
+              {/* Rotating conic gradient border */}
+              <div style={{
+                position:'absolute', top:'50%', left:'50%',
+                width:500, height:500,
+                background: inputFocused
+                  ? 'conic-gradient(from 0deg, transparent 0%, transparent 55%, rgba(139,92,246,0.4) 70%, rgba(167,139,250,0.9) 77%, rgba(139,92,246,0.4) 84%, transparent 100%)'
+                  : 'conic-gradient(from 0deg, transparent 0%, transparent 70%, rgba(255,255,255,0.08) 80%, rgba(255,255,255,0.15) 85%, rgba(255,255,255,0.08) 90%, transparent 100%)',
+                animation:'sk-border-spin 3s linear infinite',
+                pointerEvents:'none', zIndex:0,
+              }}/>
+              <textarea ref={inputRef} value={input}
+                onChange={e=>setInput(e.target.value)}
+                onFocus={()=>setInputFocused(true)} onBlur={()=>setInputFocused(false)}
+                onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}}
+                placeholder={placeholder}
+                rows={1}
+                style={{
+                  position:'relative', zIndex:1, width:'100%', background:'#1a1a1a',
+                  border:'none', borderRadius:10, padding:'9px 12px', color:'#fff', fontSize:13,
+                  resize:'none', outline:'none', fontFamily:'inherit', lineHeight:1.5,
+                  maxHeight:100, overflowY:'auto', margin:1,
+                }}
+              />
+            </div>
+            <button className="sk-send" onClick={()=>sendMessage()} disabled={!input.trim()||loading}
+              style={{
+                width:36, height:36, borderRadius:10, border:'none', cursor:'pointer',
+                background:input.trim()&&!loading ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.04)',
+                color:input.trim()&&!loading ? '#a78bfa' : 'rgba(255,255,255,0.2)',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                transition:'all .2s', flexShrink:0,
+              }}>
+              {loading ? <Loader2 size={15} style={{ animation:'spin 1s linear infinite' }}/> : <Send size={15}/>}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

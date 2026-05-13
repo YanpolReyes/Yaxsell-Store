@@ -1,0 +1,126 @@
+{
+  "generadoEn": "2026-05-07T05:13:15.923Z",
+  "limpiezaPostProcesoEn": "2026-05-07T05:24:00.000Z",
+  "modo": "url",
+  "rootUrl": "https://9jo523yvuya95av2-82653806840.shopifypreview.com/",
+  "tiendaShopify": {
+    "shop": "6tk4k9-c1.myshopify.com",
+    "shopId": 82653806840,
+    "tema": "Venice",
+    "themeId": 161660961016,
+    "themeStoreId": 4020,
+    "locale": "es",
+    "currency": "CLP",
+    "country": "CL",
+    "title": "Mi tienda 3"
+  },
+  "opciones": {
+    "maxPages": 6,
+    "maxDepth": 1,
+    "limpiarHtml": true,
+    "conservarAnimaciones": true,
+    "modoImagenes": "localizar",
+    "renderizarJs": true,
+    "htmlClean": false,
+    "htmlStatic": false,
+    "astroVersion": false,
+    "generarPresets": false,
+    "limpiezaPostProceso": true
+  },
+  "paginas": [
+    {
+      "url": "https://9jo523yvuya95av2-82653806840.shopifypreview.com/",
+      "depth": 0,
+      "salida": "index.html",
+      "routePath": "/",
+      "routeType": "root",
+      "captureStrategy": "raw_html"
+    },
+    {
+      "url": "https://9jo523yvuya95av2-82653806840.shopifypreview.com/collections",
+      "depth": 1,
+      "salida": "collections/index.html",
+      "routePath": "/collections/",
+      "routeType": "pretty",
+      "captureStrategy": "raw_html"
+    },
+    {
+      "url": "https://9jo523yvuya95av2-82653806840.shopifypreview.com/collections/all",
+      "depth": 1,
+      "salida": "collections/all/index.html",
+      "routePath": "/collections/all/",
+      "routeType": "pretty",
+      "captureStrategy": "raw_html"
+    },
+    {
+      "url": "https://9jo523yvuya95av2-82653806840.shopifypreview.com/collections/frontpage",
+      "depth": 1,
+      "salida": "collections/frontpage/index.html",
+      "routePath": "/collections/frontpage/",
+      "routeType": "pretty",
+      "captureStrategy": "raw_html"
+    },
+    {
+      "url": "https://9jo523yvuya95av2-82653806840.shopifypreview.com/pages/contact",
+      "depth": 1,
+      "salida": "pages/contact/index.html",
+      "routePath": "/pages/contact/",
+      "routeType": "pretty",
+      "captureStrategy": "raw_html"
+    },
+    {
+      "url": "https://9jo523yvuya95av2-82653806840.shopifypreview.com/search",
+      "depth": 1,
+      "salida": "search/index.html",
+      "routePath": "/search/",
+      "routeType": "pretty",
+      "captureStrategy": "raw_html"
+    }
+  ],
+  "paginasPorRuta": {
+    "/": { "salida": "index.html" },
+    "/collections/": { "salida": "collections/index.html" },
+    "/collections/all/": { "salida": "collections/all/index.html" },
+    "/collections/frontpage/": { "salida": "collections/frontpage/index.html" },
+    "/pages/contact/": { "salida": "pages/contact/index.html" },
+    "/search/": { "salida": "search/index.html" }
+  },
+  "estrategias": {
+    "usadas": ["raw_html"],
+    "paginasConFallbackVisual": [],
+    "paginasRenderizadasConJs": []
+  },
+  "captureStrategies": [
+    {
+      "id": "raw_html",
+      "label": "Raw HTML",
+      "description": "Guarda el HTML fuente sin render adicional.",
+      "bestFor": ["landings simples", "sitios server-rendered", "HTML estable"],
+      "tradeoffs": ["puede perder contenido que aparece solo tras JS"],
+      "aiGuidance": "Empieza aquí si el sitio parece estático y editable."
+    }
+  ],
+  "knownIssues": [
+    {
+      "id": "shopify-preview-only",
+      "severity": "info",
+      "description": "URL de origen es un preview Shopify (token con TTL); el dominio fuente puede expirar. Los assets ya están localizados en assets/."
+    },
+    {
+      "id": "limpieza-shopify-aplicada",
+      "severity": "info",
+      "description": "Se eliminó preview-bar, perf-kit, theme-hot-reload, monorail/trekkie, ShopifyAnalytics, captcha-bootstrap, dynamic_checkout, SignInWithShop, shopify-features, __st, OnlineStorePreviewBarNextData. Ver FACTORY-LOG-LIMPIEZA.md para detalle por archivo."
+    }
+  ],
+  "resumen": {
+    "paginasDescargadas": 6,
+    "cssDescargados": 3,
+    "cssInlineExtraidos": 1,
+    "jsDescargados": 25,
+    "jsInlineExtraidos": 1,
+    "imagenesDescargadas": 86,
+    "fontsDescargadas": 4,
+    "errores": 0
+  },
+  "errores": []
+}

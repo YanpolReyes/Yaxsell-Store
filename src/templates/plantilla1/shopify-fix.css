@@ -1,0 +1,1234 @@
+/* ════════════════════════════════════════════════════════════════════
+   PLANTILLA 1 — Shopify Migration Fix CSS
+   Overrides para arreglar los bugs de la copia del HTML original.
+   No tocar el style-i86hs0.css original — usar este archivo para fixes.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ─── Search popup: show/hide manually (no Bootstrap) ─── */
+[data-template="1"] .fusion-search-popup,
+.fusion-search-popup[data-template-moved="1"] {
+  display: none !important;
+  height: 640px;
+  overflow: hidden;
+  top: -20px;
+  margin: 0 auto;
+}
+[data-template="1"] .fusion-search-popup.show,
+.fusion-search-popup[data-template-moved="1"].show {
+  display: block !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-height: none !important;
+  min-height: 100vh !important;
+  max-width: 100vw !important;
+  z-index: 99999 !important;
+  margin: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding-top: 140px !important;
+  padding-bottom: 0 !important;
+  padding-left: 60px !important;
+  padding-right: 60px !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+  animation: tpl1SearchIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+/* Exit animation: combined selector overrides entry animation */
+[data-template="1"] .fusion-search-popup.show.tpl1-closing,
+.fusion-search-popup[data-template-moved="1"].show.tpl1-closing {
+  animation: tpl1SearchOut 0.5s cubic-bezier(0.55, 0, 1, 0.45) forwards !important;
+}
+[data-template="1"] .fusion-search-popup.show .row,
+.fusion-search-popup[data-template-moved="1"].show .row {
+  min-height: calc(100vh - 240px) !important;
+}
+/* Remove internal scroll/max-height on collections column */
+[data-template="1"] .fusion-search-popup .popular_search_collection_blog,
+.fusion-search-popup[data-template-moved="1"] .popular_search_collection_blog {
+  max-height: none !important;
+  overflow: visible !important;
+  padding-left: 24px !important;
+  padding-right: 0 !important;
+}
+/* Hide "Últimos artículos" section in search popup */
+[data-template="1"] .fusion-search-popup .popular_search_article_header,
+.fusion-search-popup[data-template-moved="1"] .popular_search_article_header {
+  display: none !important;
+}
+/* Staggered content animations */
+[data-template="1"] .fusion-search-popup.show .close-popup-btn,
+.fusion-search-popup[data-template-moved="1"].show .close-popup-btn {
+  animation: tpl1FadeRotateIn 0.5s 0.15s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  top: 30px !important;
+  right: 30px !important;
+}
+[data-template="1"] .fusion-search-popup.show form,
+.fusion-search-popup[data-template-moved="1"].show form {
+  animation: tpl1SlideUpIn 0.5s 0.25s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+[data-template="1"] .fusion-search-popup.show #search-results,
+[data-template="1"] .fusion-search-popup.show #tpl1-search-results,
+.fusion-search-popup[data-template-moved="1"].show #search-results,
+.fusion-search-popup[data-template-moved="1"].show #tpl1-search-results {
+  animation: tpl1SlideUpIn 0.6s 0.4s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+[data-template="1"] .fusion-search-popup.show .popular_search_product_header_wrapp .col-lg-3,
+[data-template="1"] .fusion-search-popup.show .popular_search_product_header_wrapp .col-6,
+.fusion-search-popup[data-template-moved="1"].show .popular_search_product_header_wrapp .col-lg-3,
+.fusion-search-popup[data-template-moved="1"].show .popular_search_product_header_wrapp .col-6 {
+  animation: tpl1CardPop 0.5s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+[data-template="1"] .fusion-search-popup.show .popular_search_product_header_wrapp .col-lg-3:nth-child(1),
+[data-template="1"] .fusion-search-popup.show .popular_search_product_header_wrapp .col-6:nth-child(1),
+.fusion-search-popup[data-template-moved="1"].show .popular_search_product_header_wrapp .col-lg-3:nth-child(1),
+.fusion-search-popup[data-template-moved="1"].show .popular_search_product_header_wrapp .col-6:nth-child(1) { animation-delay: 0.5s !important; }
+[data-template="1"] .fusion-search-popup.show .popular_search_product_header_wrapp .col-lg-3:nth-child(2),
+[data-template="1"] .fusion-search-popup.show .popular_search_product_header_wrapp .col-6:nth-child(2),
+.fusion-search-popup[data-template-moved="1"].show .popular_search_product_header_wrapp .col-lg-3:nth-child(2),
+.fusion-search-popup[data-template-moved="1"].show .popular_search_product_header_wrapp .col-6:nth-child(2) { animation-delay: 0.6s !important; }
+[data-template="1"] .fusion-search-popup.show .popular_search_product_header_wrapp .col-lg-3:nth-child(3),
+[data-template="1"] .fusion-search-popup.show .popular_search_product_header_wrapp .col-6:nth-child(3),
+.fusion-search-popup[data-template-moved="1"].show .popular_search_product_header_wrapp .col-lg-3:nth-child(3),
+.fusion-search-popup[data-template-moved="1"].show .popular_search_product_header_wrapp .col-6:nth-child(3) { animation-delay: 0.7s !important; }
+[data-template="1"] .fusion-search-popup.show .popular_search_product_header_wrapp .col-lg-3:nth-child(4),
+[data-template="1"] .fusion-search-popup.show .popular_search_product_header_wrapp .col-6:nth-child(4),
+.fusion-search-popup[data-template-moved="1"].show .popular_search_product_header_wrapp .col-lg-3:nth-child(4),
+.fusion-search-popup[data-template-moved="1"].show .popular_search_product_header_wrapp .col-6:nth-child(4) { animation-delay: 0.8s !important; }
+
+/* Keyframes */
+@keyframes tpl1SearchIn {
+  0% { clip-path: circle(0% at calc(100% - 50px) 30px); opacity: 0; }
+  50% { opacity: 1; }
+  100% { clip-path: circle(200% at calc(100% - 50px) 30px); opacity: 1; }
+}
+@keyframes tpl1SearchOut {
+  0% { clip-path: circle(200% at calc(100% - 50px) 30px); opacity: 1; }
+  50% { opacity: 1; }
+  100% { clip-path: circle(0% at calc(100% - 50px) 30px); opacity: 0; }
+}
+@keyframes tpl1FadeRotateIn {
+  from { opacity: 0; transform: rotate(-90deg) scale(0.5); }
+  to { opacity: 1; transform: rotate(0deg) scale(1); }
+}
+@keyframes tpl1SlideUpIn {
+  from { opacity: 0; transform: translateY(40px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes tpl1CardPop {
+  from { opacity: 0; transform: translateY(30px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes tpl1Float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes tpl1LightboxIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tpl1LightboxOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes tpl1ZoomIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+/* ─── Search popup product card icon buttons: ensure clickable ─── */
+[data-template="1"] .tpl1-icon-btn,
+.fusion-search-popup[data-template-moved="1"] .tpl1-icon-btn {
+  pointer-events: auto !important;
+  z-index: 50 !important;
+  cursor: pointer !important;
+}
+[data-template="1"] .tpl1-prod-card,
+.fusion-search-popup[data-template-moved="1"] .tpl1-prod-card {
+  pointer-events: auto !important;
+}
+[data-template="1"] .tpl1-pc-wrap,
+.fusion-search-popup[data-template-moved="1"] .tpl1-pc-wrap {
+  pointer-events: auto !important;
+}
+[data-template="1"] .tpl1-product-grid,
+.fusion-search-popup[data-template-moved="1"] .tpl1-product-grid {
+  pointer-events: auto !important;
+}
+/* Ensure the <a> inside card does NOT cover the buttons */
+[data-template="1"] .tpl1-card-link,
+.fusion-search-popup[data-template-moved="1"] .tpl1-card-link {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+/* Custom scrollbar for product grid */
+.tpl1-product-grid::-webkit-scrollbar { width: 8px; }
+.tpl1-product-grid::-webkit-scrollbar-track { background: #fdf2f8; border-radius: 8px; }
+.tpl1-product-grid::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #f9a8d4, #ec4899); border-radius: 8px; }
+.tpl1-product-grid::-webkit-scrollbar-thumb:hover { background: #ec4899; }
+.tpl1-product-grid { scrollbar-color: #ec4899 #fdf2f8; scrollbar-width: thin; }
+/* Hide spinner on number inputs in filters */
+.tpl1-filters-panel input[type="number"]::-webkit-outer-spin-button,
+.tpl1-filters-panel input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.tpl1-filters-panel input[type="number"] { -moz-appearance: textfield; }
+/* Focus styles for filter inputs */
+.tpl1-filters-panel input:focus { border-color: #ec4899 !important; box-shadow: 0 0 0 3px rgba(236,72,153,0.15); }
+.tpl1-select-btn:hover { border-color: #ec4899 !important; }
+/* ─── Hide theme overlay when search is open ─── */
+[data-template="1"] .fusion-overlay-custom,
+[data-template="1"] .fusion-overlay-custom.overlay-active {
+  display: none !important;
+  opacity: 0 !important;
+  background: none !important;
+  pointer-events: none !important;
+}
+
+/* ─── Hide Shopify-specific UI we don't want ─── */
+[data-template="1"] .skip-to-content-link,
+[data-template="1"] cart-drawer:not(.active),
+[data-template="1"] #cart_drawer:not(.active),
+[data-template="1"] .fusion-overlay-custom,
+[data-template="1"] .preview-bar,
+[data-template="1"] .shopify-preview-bar,
+[data-template="1"] a[href*="wa.me"][style*="fixed"],
+[data-template="1"] button[style*="fixed"]:not([id^="tpl1-"]) {
+  display: none !important;
+}
+
+/* ─── Cart drawer: show when active ─── */
+[data-template="1"] cart-drawer.active,
+[data-template="1"] #cart_drawer.active {
+  display: flex !important;
+}
+/* ─── Theme's CartDrawer-Overlay: make it clickable for close-on-outside ─── */
+[data-template="1"] .cart-drawer__overlay,
+[data-template="1"] #CartDrawer-Overlay {
+  display: block !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  background: transparent !important;
+  z-index: 1 !important;
+}
+/* ─── Make theme's fusion-overlay-custom click-through ─── */
+[data-template="1"] .fusion-overlay-custom {
+  z-index: 9997 !important;
+  pointer-events: none !important;
+}
+[data-template="1"] .fusion-overlay-custom.overlay-active {
+  display: block !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+}
+/* ─── Drawer panel must be above overlay ─── */
+[data-template="1"] .cart-sidebar {
+  z-index: 9999 !important;
+}
+/* ─── Blur PAGE when cart drawer is active — tied to REAL DOM state via :has() ─── */
+[data-template="1"] body:has(cart-drawer.active) .musk-main-site-content,
+[data-template="1"] body:has(cart-drawer.active) header.musk-main-header,
+[data-template="1"] body:has(cart-drawer.active) .fusion-mobile-bottom-nav,
+[data-template="1"] body:has(cart-drawer.active) .announcement-bar-main {
+  filter: blur(4px) !important;
+  transition: filter 0.4s ease !important;
+  pointer-events: none !important;
+}
+/* ─── When drawer is NOT active, FORCE clear any stuck blur ─── */
+[data-template="1"] body:not(:has(cart-drawer.active)) .musk-main-site-content,
+[data-template="1"] body:not(:has(cart-drawer.active)) header.musk-main-header,
+[data-template="1"] body:not(:has(cart-drawer.active)) .fusion-mobile-bottom-nav,
+[data-template="1"] body:not(:has(cart-drawer.active)) .announcement-bar-main {
+  filter: none !important;
+  pointer-events: auto !important;
+}
+/* ─── Cart drawer: white background, no dark overlay on panel ─── */
+/* Override CSS variables for sidebar colors */
+[data-template="1"] {
+  --sidebars-background: 255 255 255 !important;
+  --drawer-background: 255 255 255 !important;
+  --cart-drawer-bg: #ffffff !important;
+}
+/* High specificity selectors to override theme CSS */
+#cart_drawer,
+#cart_drawer.cart-sidebar,
+#cart_drawer.drawer,
+#cart_drawer.sidebar-bg,
+#cart_drawer.color-scheme-1,
+cart-drawer#cart_drawer,
+cart-drawer.cart-sidebar,
+.cart-drawer,
+.sidebar-bg,
+.color-scheme-1.cart-sidebar,
+.color-scheme-1 #cart_drawer,
+.cart-sidebar.drawer {
+  background: #ffffff !important;
+  background-image: none !important;
+  background-color: #ffffff !important;
+  background: rgb(var(--sidebars-background)) !important;
+}
+#cart_drawer::before,
+#cart_drawer::after,
+cart-drawer.cart-sidebar::before,
+cart-drawer.cart-sidebar::after {
+  display: none !important;
+}
+[data-template="1"] .cart-sidebar .drawer__inner,
+[data-template="1"] .cart-sidebar .drawer__inner.gradient,
+[data-template="1"] .color-scheme-1 .drawer__inner,
+[data-template="1"] .color-scheme-1 .drawer__inner.gradient {
+  background: #ffffff !important;
+  background-image: none !important;
+  background-color: #ffffff !important;
+  box-shadow: -8px 0 40px rgba(236, 72, 153, 0.12), -2px 0 12px rgba(0, 0, 0, 0.08) !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+/* ─── Also override any child elements that might have dark backgrounds ─── */
+[data-template="1"] .cart-sidebar .cart-sidebar-header,
+[data-template="1"] .cart-sidebar .cart-footer,
+[data-template="1"] .cart-sidebar .empty_cart_drawer,
+[data-template="1"] .cart-sidebar .drawer__contents,
+[data-template="1"] .cart-sidebar .cart-items,
+[data-template="1"] .cart-sidebar .cart-item,
+[data-template="1"] .cart-sidebar .gradient,
+[data-template="1"] cart-drawer-items .gradient {
+  background: #ffffff !important;
+  background-image: none !important;
+  background-color: #ffffff !important;
+}
+/* ─── Cart Drawer: fully rounded, GSAP handles animation ─── */
+[data-template="1"] .cart-sidebar {
+  transition: none !important;
+  z-index: 9999 !important;
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  width: 480px !important;
+  max-width: 93vw !important;
+  margin: 12px 0 !important;
+  right: 12px !important;
+  box-shadow: -16px 0 60px rgba(0, 0, 0, 0.18), -4px 0 20px rgba(236, 72, 153, 0.1) !important;
+}
+/* Kill theme CSS transition — GSAP controls all animation */
+[data-template="1"] .cart-sidebar,
+[data-template="1"] #cart_drawer {
+  transition: none !important;
+  -webkit-transition: none !important;
+}
+/* Clip overflow on parent */
+[data-template="1"] cart-drawer.active,
+[data-template="1"] #cart_drawer.active {
+  overflow: hidden !important;
+}
+
+/* ─── Cart Drawer Full Redesign ─── */
+[data-template="1"] .cart-sidebar .cart-sidebar-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 20px 32px !important;
+  background: #ffffff !important;
+  border-bottom: 1.5px solid #fce7f3 !important;
+  flex-shrink: 0 !important;
+  gap: 144px !important;
+}
+[data-template="1"] .cart-sidebar .cart-sidebar-title {
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  color: #111827 !important;
+  letter-spacing: -0.4px !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+[data-template="1"] .cart-sidebar-title-count {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 24px !important;
+  height: 24px !important;
+  padding: 0 7px !important;
+  background: linear-gradient(135deg, #ec4899, #db2777) !important;
+  color: #fff !important;
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+[data-template="1"] .cart-sidebar .cart-close-btn,
+[data-template="1"] .cart-sidebar .cls-btn {
+  width: 36px !important;
+  height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  background: #fce7f3 !important;
+  border: none !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  transition: background 0.2s, transform 0.15s !important;
+}
+[data-template="1"] .cart-sidebar .cart-close-btn:hover,
+[data-template="1"] .cart-sidebar .cls-btn:hover {
+  background: #fbcfe8 !important;
+  transform: scale(1.1) !important;
+}
+[data-template="1"] .cart-sidebar .cart-close-btn svg path,
+[data-template="1"] .cart-sidebar .cls-btn svg path {
+  fill: #db2777 !important;
+}
+/* ─── Empty state ─── */
+[data-template="1"] .empty_cart_drawer {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 64px 32px !important;
+  text-align: center !important;
+  background: #ffffff !important;
+  flex: 1 !important;
+}
+[data-template="1"] .empty-cart-icon img {
+  width: 100px !important;
+  height: 100px !important;
+  filter: drop-shadow(0 8px 24px rgba(236, 72, 153, 0.2)) !important;
+}
+[data-template="1"] .empty-cart-icon {
+  margin-bottom: 8px !important;
+  display: flex !important;
+  justify-content: center !important;
+}
+[data-template="1"] .empty-cart-icon #lottie-cart-empty {
+  filter: drop-shadow(0 8px 24px rgba(236, 72, 153, 0.15)) !important;
+}
+[data-template="1"] .empty-cart-title {
+  font-size: 21px !important;
+  font-weight: 800 !important;
+  color: #111827 !important;
+  margin: 16px 0 8px !important;
+  letter-spacing: -0.5px !important;
+}
+[data-template="1"] .empty_cart_drawer p {
+  font-size: 13px !important;
+  color: #9ca3af !important;
+  margin: 0 0 24px !important;
+  line-height: 1.5 !important;
+}
+[data-template="1"] .empty_cart_drawer .musk-third-btn,
+[data-template="1"] .empty_cart_drawer .button_tertiary a {
+  display: inline-block !important;
+  padding: 13px 36px !important;
+  background: linear-gradient(135deg, #ec4899, #db2777) !important;
+  color: #fff !important;
+  border-radius: 999px !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  text-decoration: none !important;
+  box-shadow: 0 8px 24px rgba(236, 72, 153, 0.35) !important;
+  letter-spacing: 0.4px !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: transform 0.15s, box-shadow 0.15s !important;
+}
+[data-template="1"] .empty_cart_drawer .musk-third-btn:hover,
+[data-template="1"] .empty_cart_drawer .button_tertiary a:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 32px rgba(236, 72, 153, 0.45) !important;
+}
+/* ─── Remove the line below form / cart-drawer-items ─── */
+[data-template="1"] cart-drawer-items,
+[data-template="1"] cart-drawer-items form,
+[data-template="1"] #cart,
+[data-template="1"] .js-contents {
+  border: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+  background: #ffffff !important;
+}
+
+/* ─── Cart drawer: footer hoisted to .drawer__inner — 2-level flex only ─── */
+/* Structure: .drawer__inner(flex col) > [header + cart-drawer-items(flex:1,overflow:hidden) + .tpl1-cart-footer(flex-shrink:0)] */
+[data-template="1"] .cart-sidebar {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+}
+[data-template="1"] .cart-sidebar .drawer__inner {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+[data-template="1"] .cart-sidebar .cart-sidebar-header {
+  flex-shrink: 0 !important;
+}
+/* cart-drawer-items and all its descendants just scroll freely */
+[data-template="1"] cart-drawer-items {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+[data-template="1"] #CartDrawer-CartItems {
+  overflow: visible !important;
+}
+[data-template="1"] .tpl1-cart-items-scroll {
+  overflow: visible !important;
+}
+/* Footer: hoisted sibling inside .drawer__inner — always visible */
+[data-template="1"] .drawer__inner > .tpl1-cart-footer {
+  flex-shrink: 0 !important;
+  background: #fff !important;
+  border-top: 2px solid #fce7f3 !important;
+  z-index: 10 !important;
+}
+
+/* ─── Footer background: minimalist dark gray ─── */
+[data-template="1"] .contrass-bg {
+  background: #1a1a1a !important;
+}
+/* ─── Collection slides: NO dark mask, fully transparent ─── */
+[data-template="1"] .musk_collection1 .musk-collection-slide.contrass-bg,
+[data-template="1"] .musk_collection1 .swiper-slide .contrass-bg {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+/* ─── Collection slides: remove any dark overlays/pseudo-elements ─── */
+[data-template="1"] .musk_collection1 .musk-collection-slide::before,
+[data-template="1"] .musk_collection1 .musk-collection-slide::after,
+[data-template="1"] .musk_collection1 .img-content::before,
+[data-template="1"] .musk_collection1 .img-content::after {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+}
+/* ─── Collection slides: remove product count ─── */
+[data-template="1"] .musk_collection1 .collection-num {
+  display: none !important;
+}
+/* ─── Collection slides: pink glow on hover ─── */
+[data-template="1"] .musk_collection1 .swiper-slide:hover .img-content img {
+  filter: brightness(1.12) !important;
+  transform: scale(1.05) !important;
+  transition: filter 0.3s ease, transform 0.3s ease !important;
+}
+[data-template="1"] .musk_collection1 .swiper-slide .slide-title,
+[data-template="1"] .musk_collection1 .swiper-slide .collection_list_title_main {
+  transition: color 0.2s ease !important;
+}
+[data-template="1"] .musk_collection1 .swiper-slide:hover .slide-title,
+[data-template="1"] .musk_collection1 .swiper-slide:hover .collection_list_title_main {
+  color: #ec4899 !important;
+}
+/* ─── Hide dark hover overlay element from theme ─── */
+[data-template="1"] .musk_collection1 .collection_inner_product_main {
+  display: none !important;
+}
+
+/* ─── Marquee: infinite seamless loop ─── */
+[data-template="1"] .marquee-text-wrapper .marquee-text-container {
+  animation: tpl1-marquee-scroll var(--marquee-speed, 18s) linear infinite !important;
+}
+@keyframes tpl1-marquee-scroll {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
+}
+[data-template="1"] .marquee-text-wrapper .marquee-scroll-item {
+  opacity: 1 !important;
+}
+[data-template="1"] .marquee-text-wrapper .marquee-img-box img {
+  height: var(--marquee-img-one-height, 50px) !important;
+  width: var(--marquee-img-one-width, 50px) !important;
+  object-fit: contain !important;
+}
+
+/* ─── Featured collection as categories with centered icons ─── */
+[data-template="1"] .tpl1-featured-cat-slide .fusion-product-item {
+  border-radius: 28px !important;
+  overflow: hidden !important;
+  background: linear-gradient(180deg, #fff 0%, #fff5f8 100%) !important;
+  box-shadow: 0 10px 30px rgba(236, 72, 153, 0.12) !important;
+}
+[data-template="1"] .tpl1-featured-cat-slide .product-content {
+  min-height: 220px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 28px !important;
+}
+[data-template="1"] .tpl1-featured-cat-slide .tpl1-featured-cat-icon-wrap {
+  width: 140px !important;
+  height: 140px !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  box-shadow: inset 0 0 0 1px rgba(236, 72, 153, 0.16), 0 12px 26px rgba(236, 72, 153, 0.16) !important;
+}
+[data-template="1"] .tpl1-featured-cat-slide .tpl1-featured-cat-icon {
+  width: 82px !important;
+  height: 82px !important;
+  object-fit: contain !important;
+}
+[data-template="1"] .tpl1-featured-cat-slide .product-details {
+  text-align: center !important;
+  padding-top: 16px !important;
+}
+[data-template="1"] .tpl1-featured-cat-slide .product-name a {
+  font-weight: 700 !important;
+  color: #111827 !important;
+}
+[data-template="1"] .tpl1-featured-cat-slide:hover .product-name a {
+  color: #ec4899 !important;
+}
+
+/* ─── Media gallery: move big title higher ─── */
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-gallery-wrapper {
+  padding-top: 40px !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .fusion-stroke-text {
+  margin-top: -35px !important;
+  margin-bottom: 22px !important;
+  display: block !important;
+}
+
+/* ─── Countdown section: add top spacing to separate from featured product ─── */
+[data-template="1"] #shopify-section-template--22405132419320__countdown_timer_hYJrNM {
+  padding-top: 60px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PRODUCT CARDS 3D — Estilo plantilla2 portado a tpl1
+   Sección "Productos con Filtro" (collection_tab)
+   ═══════════════════════════════════════════════════════════════════ */
+[data-template="1"] .tpl1-product-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,0.05);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  transition: box-shadow .35s cubic-bezier(.4,0,.2,1), border-color .35s ease, transform .35s cubic-bezier(.4,0,.2,1);
+  will-change: transform, box-shadow;
+  transform-style: preserve-3d;
+  height: 100%;
+  z-index: 1;
+}
+[data-template="1"] .tpl1-product-card:hover {
+  box-shadow: 0 16px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.08);
+  z-index: 100;
+}
+[data-template="1"] .tpl1-pc-slide {
+  perspective: 700px;
+  position: relative;
+  z-index: 1;
+}
+[data-template="1"] .tpl1-pc-slide:hover {
+  z-index: 100;
+}
+[data-template="1"] .tpl1-pc-link {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+[data-template="1"] .tpl1-pc-img-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #f7f7f7;
+}
+[data-template="1"] .tpl1-pc-img-primary,
+[data-template="1"] .tpl1-pc-img-secondary {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+[data-template="1"] .tpl1-pc-img-primary img,
+[data-template="1"] .tpl1-pc-img-secondary img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.6s cubic-bezier(.23,1,.32,1), opacity .45s cubic-bezier(.4,0,.2,1);
+}
+[data-template="1"] .tpl1-pc-img-primary {
+  z-index: 1;
+  opacity: 1;
+}
+[data-template="1"] .tpl1-pc-img-secondary {
+  z-index: 2;
+  opacity: 0;
+  transition: opacity .45s cubic-bezier(.4,0,.2,1);
+}
+[data-template="1"] .tpl1-product-card:hover .tpl1-pc-img-secondary { opacity: 1; }
+[data-template="1"] .tpl1-product-card:hover .tpl1-pc-img-primary { opacity: 0.25; }
+[data-template="1"] .tpl1-product-card:hover .tpl1-pc-img-primary img,
+[data-template="1"] .tpl1-product-card:hover .tpl1-pc-img-secondary img {
+  transform: scale(1.07);
+}
+[data-template="1"] .tpl1-pc-placeholder {
+  font-size: 56px;
+  color: #ccc;
+}
+
+/* ─── Badges ─── */
+[data-template="1"] .tpl1-pc-badges {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+[data-template="1"] .tpl1-pc-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(4px);
+}
+[data-template="1"] .tpl1-pc-badge-disc {
+  background: linear-gradient(135deg,#ff416c,#ff4b2b);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(255,65,108,0.25);
+  animation: tpl1PcBadge 2s ease-in-out infinite;
+}
+[data-template="1"] .tpl1-pc-badge-urg {
+  background: rgba(229, 57, 53, 0.95);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(229,57,53,0.25);
+}
+[data-template="1"] .tpl1-pc-badge-out {
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+}
+@keyframes tpl1PcBadge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+/* ─── Floating action bar (slides up on hover) ─── */
+[data-template="1"] .tpl1-pc-action-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  transform: translateY(100%);
+  opacity: 0;
+  transition: all .3s cubic-bezier(.4,0,.2,1);
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border-top: 1px solid rgba(255,255,255,0.5);
+  text-align: center;
+  z-index: 4;
+}
+[data-template="1"] .tpl1-product-card:hover .tpl1-pc-action-bar {
+  transform: translateY(0);
+  opacity: 1;
+}
+[data-template="1"] .tpl1-pc-cta {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+[data-template="1"] .tpl1-pc-out {
+  font-size: 11px;
+  font-weight: 700;
+  color: #e53935;
+  text-transform: uppercase;
+}
+
+/* ─── Shimmer sweep on hover ─── */
+[data-template="1"] .tpl1-pc-shimmer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.5) 50%, transparent 70%);
+  background-size: 200% 100%;
+  background-position: -180% center;
+  opacity: 0;
+}
+[data-template="1"] .tpl1-product-card:hover .tpl1-pc-shimmer {
+  animation: tpl1PcShimmer 1.6s cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+@keyframes tpl1PcShimmer {
+  0% { background-position: -180% center; opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { background-position: 180% center; opacity: 0; }
+}
+
+/* ─── Info area ─── */
+[data-template="1"] .tpl1-pc-info {
+  padding: 12px 13px 14px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+[data-template="1"] .tpl1-pc-rating {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  margin-bottom: 5px;
+}
+[data-template="1"] .tpl1-pc-reviews {
+  font-size: 9px;
+  color: #aaa;
+  margin-left: 4px;
+}
+[data-template="1"] .tpl1-pc-name {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #333;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color .2s;
+  min-height: 36px;
+}
+[data-template="1"] .tpl1-product-card:hover .tpl1-pc-name { color: #111; }
+[data-template="1"] .tpl1-pc-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: auto;
+}
+[data-template="1"] .tpl1-pc-price {
+  font-size: 18px;
+  font-weight: 800;
+  color: #111;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+[data-template="1"] .tpl1-pc-price-old {
+  font-size: 12px;
+  color: #bbb;
+  text-decoration: line-through;
+  font-weight: 400;
+}
+[data-template="1"] .tpl1-pc-disc-label {
+  margin-top: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #00A650;
+  letter-spacing: 0.02em;
+}
+
+/* Sobreescribir reglas del tema que pueden interferir */
+[data-template="1"] #shopify-section-template--22405132419320__collection_tab_NGBXPp {
+  padding-top: 20px !important;
+  overflow: visible !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__collection_tab_NGBXPp > div {
+  overflow: visible !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__collection_tab_NGBXPp .fusion-collection-tab-wrapper {
+  overflow: visible !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__collection_tab_NGBXPp .fusion-collection-tab-wrapper > div {
+  overflow: visible !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__collection_tab_NGBXPp .row {
+  overflow: visible !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__collection_tab_NGBXPp .col-lg-6 {
+  overflow: visible !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__collection_tab_NGBXPp .fusion-filter-selector-slider {
+  margin-top: 30px !important;
+  overflow: visible !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__collection_tab_NGBXPp .swiper-backface-hidden {
+  overflow: visible !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__collection_tab_NGBXPp .swiper-slide {
+  height: auto !important;
+  overflow: visible !important;
+  padding: 12px !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__collection_tab_NGBXPp .swiper-wrapper {
+  overflow: visible !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__collection_tab_NGBXPp .product-img,
+[data-template="1"] #shopify-section-template--22405132419320__collection_tab_NGBXPp .product-details {
+  display: none;
+}
+
+/* ─── Countdown wrapper: dark overlay on product background image ─── */
+[data-template="1"] #shopify-section-template--22405132419320__countdown_timer_hYJrNM .fusion-countdown-wrapper {
+  position: relative;
+}
+[data-template="1"] #shopify-section-template--22405132419320__countdown_timer_hYJrNM .fusion-countdown-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.55) 100%);
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
+}
+[data-template="1"] #shopify-section-template--22405132419320__countdown_timer_hYJrNM .fusion-countdown-wrapper > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Top spacing fix: announcement bar + header overlap ─── */
+[data-template="1"] body.viewport {
+  padding-top: 0 !important;
+}
+
+/* ─── Container default — prevent edge overflow on narrow viewports ─── */
+[data-template="1"] .container,
+[data-template="1"] .container-fluid {
+  padding-left: max(16px, 3vw);
+  padding-right: max(16px, 3vw);
+}
+
+/* ─── Override container padding inside hero banner to be full-width ─── */
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .container,
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .container-fluid {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  max-width: 100vw !important;
+  width: 100vw !important;
+}
+
+/* ─── Force hero banner wrapper to full viewport width ─── */
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin-left: calc(50% - 50vw) !important;
+  margin-right: calc(50% - 50vw) !important;
+  padding: 0 !important;
+}
+
+/* ─── Hero banner: full-width ─── */
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4,
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 > section,
+[data-template="1"] .musk-main-banner,
+[data-template="1"] .musk-banner-slider {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  overflow: hidden;
+  position: relative;
+  left: 0;
+  right: 0;
+}
+
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-wrapper,
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-slide,
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .slide-image {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .container-fluid,
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .style_container_width {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+[data-template="1"] .musk-banner-slider .swiper-slide .slide-image img,
+[data-template="1"] .musk-banner-slider .swiper-slide .slide-image__img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  max-width: 100vw;
+}
+
+/* ─── Section spacing — prevent zero-padding sections from cramming ─── */
+[data-template="1"] .shopify-section > section,
+[data-template="1"] .shopify-section > div > section {
+  padding-left: max(16px, 3vw);
+  padding-right: max(16px, 3vw);
+}
+
+[data-template="1"] .shopify-section .container-fluid > section,
+[data-template="1"] .shopify-section .container-fluid {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* ─── Fix images with no width attribute ─── */
+[data-template="1"] img:not([width]):not([height]) {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ─── Fix oversized testimonial / before-after / shop-the-look images ─── */
+[data-template="1"] .fusion-bf-af-wrapper img,
+[data-template="1"] .fusion-shoplook-wrapper img,
+[data-template="1"] .fusion-testimaonial-wrapper img,
+[data-template="1"] .musk-collection-slide img,
+[data-template="1"] .product-img img,
+[data-template="1"] .musk-product-card img {
+  max-width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+/* ─── Marquee text overflow safety ─── */
+[data-template="1"] .marquee-text-wrapper {
+  overflow: hidden;
+  max-width: 100vw;
+}
+
+/* ─── Footer / nav fixes ─── */
+[data-template="1"] .musk-main-footer {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* ═══ Forzar nav y pill visibles también en <=1024px (el original las oculta) ═══ */
+@media screen and (max-width: 1024px) {
+  [data-template="1"] .musk-main-header .musk-navbar,
+  [data-template="1"] .musk-main-header::before {
+    display: block !important;
+  }
+  [data-template="1"] .musk-main-header .musk-navbar {
+    display: flex !important;
+  }
+  [data-template="1"] .musk-main-header .menu-btn-3,
+  [data-template="1"] .fusion-mobile-bottom-nav,
+  [data-template="1"] .fusion-mobile-menu-drawer {
+    display: none !important;
+  }
+}
+
+/* ─── Prevent body horizontal scroll. Usamos overflow-x:clip (no rompe position:sticky del header) ─── */
+[data-template="1"] body {
+  overflow-x: clip;
+}
+[data-template="1"] html {
+  overflow-x: clip;
+}
+
+/* ─── Loading state placeholder ─── */
+.tpl1-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: #666;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+
+.tpl1-loading::before {
+  content: '';
+  width: 32px;
+  height: 32px;
+  border: 3px solid #eee;
+  border-top-color: #111;
+  border-radius: 50%;
+  animation: tpl1-spin 0.8s linear infinite;
+  margin-right: 12px;
+}
+
+@keyframes tpl1-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Hide native footer when this template is active ─── */
+[data-template="1"] body > footer:not(.musk-main-footer) {
+  display: none !important;
+}
+
+/* ─── Make sure the migrated content takes full width without site shell padding ─── */
+[data-template="1"] main.min-h-screen,
+[data-template="1"] .musk-main-site-content,
+[data-template="1"] .tpl1-shopify-root {
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* ─── Sticky header: is-sticky aplica pill y sombra, colores ya vienen del tema ─── */
+[data-template="1"] header.musk-main-header.is-sticky {
+  top: 0 !important;
+  border-radius: var(--radius-20) !important;
+  box-shadow: 0 5px 50px #00000020 !important;
+}
+
+/* ─── Discover more button: icon to the right of text, not below ─── */
+[data-template="1"] .drag-inner {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-direction: row !important;
+}
+[data-template="1"] .drag-inner svg {
+  display: inline-block !important;
+  vertical-align: middle !important;
+  width: 24px !important;
+  height: 24px !important;
+}
+
+/* ─── Countdown: padding interno en el contenedor blanco ─── */
+[data-template="1"] section.fusion_countdown {
+  padding-top: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  padding-bottom: 80px !important;
+  margin: 0 !important;
+}
+[data-template="1"] .fusion-countdown-wrapper .gradient-bg-light,
+[data-template="1"] .fusion-countdown-wrapper .container-fluid.gradient-bg-light {
+  padding-left: 30px !important;
+  padding-right: 30px !important;
+  padding-top: 30px !important;
+  padding-bottom: 30px !important;
+}
+
+/* ─── Imagen circular: asegurar que sea perfectamente redonda ─── */
+[data-template="1"] .rotate_image {
+  aspect-ratio: 1 / 1 !important;
+  object-fit: cover !important;
+  border-radius: 100% !important;
+}
+
+/* ─── FAQ accordion: asegurar que el contenido sea visible cuando se expande ─── */
+[data-template="1"] .accordion-collapse.show .accordion-body {
+  visibility: visible !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+}
+
+/* ─── Fusion bg fixed container: quitar padding ─── */
+[data-template="1"] section.fusion-bg-fixed-wrapper,
+[data-template="1"] .fusion-bg-fixed-wrapper-main,
+[data-template="1"] .fusion-bg-fixed-container {
+  padding: 0 !important;
+}
+
+[data-template="1"] .musk-main-banner .product_hero_banner_wrapp:first-child {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: absolute !important;
+}
+
+/* ─── Hero heading scroll animation fix ───
+   El CSS original del tema tiene:
+     [data-animate=bottom]{transform:translate3d(0,15px,0)}
+     [data-animate]{opacity:0;transition:all .8s ease-out}
+     .swiper-slide-active [data-animate]{opacity:1;transform:none}
+     .swiper-slide-active .banner-main-title{transition-delay:.4s}
+   Esto fuerza transform:none y transition:all cuando el slide se activa,
+   destruyendo la animación GSAP del heading (MUSK COSMO).
+   NUCLEAR: sobreescribir TODO. ─── */
+
+/* 1. Neutralizar [data-animate] dentro del hero banner */
+[data-template="1"] .musk-banner-slider [data-animate],
+[data-template="1"] .musk-banner-slider .swiper-slide-active [data-animate] {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+  transition-delay: 0s !important;
+}
+
+/* 2. Neutralizar transition-delay en heading y subheading */
+[data-template="1"] .musk-banner-slider .swiper-slide-active .banner-main-title,
+[data-template="1"] .musk-banner-slider .swiper-slide-active .banner-fancy-sub-head,
+[data-template="1"] .musk-banner-slider .swiper-slide-active .banner-slide-para {
+  transition: none !important;
+  transition-delay: 0s !important;
+}
+
+/* 3. Forzar visibility: visible y transition:none en heading y todos sus spans */
+[data-template="1"] .musk-banner-slider .banner-main-title,
+[data-template="1"] .musk-banner-slider .banner-main-title span,
+[data-template="1"] .musk-banner-slider .banner-main-title span span,
+[data-template="1"] .musk-banner-slider .enlarge_text,
+[data-template="1"] .musk-banner-slider .enlarge_text span,
+[data-template="1"] .musk-banner-slider .enlarge_text span span {
+  visibility: visible !important;
+  transition: none !important;
+  transition-delay: 0s !important;
+  will-change: transform !important;
+}
+
+/* Subtítulo: permitir opacidad desde JS */
+[data-template="1"] .musk-banner-slider .banner-fancy-sub-head,
+[data-template="1"] .musk-banner-slider .banner-fancy-sub-head span,
+[data-template="1"] .musk-banner-slider .banner-fancy-sub-head span span {
+  visibility: visible !important;
+  transition: none !important;
+  transition-delay: 0s !important;
+  will-change: transform !important;
+}
+
+/* 4. Prevenir que [data-animate] afecte los spans del heading */
+[data-template="1"] .musk-banner-slider [data-animate] span,
+[data-template="1"] .musk-banner-slider [data-animate] span span {
+  transition: none !important;
+  transition-delay: 0s !important;
+  opacity: 1 !important;
+}
+
+/* ─── Scrollbar personalizado: colores neutros (gris) ─── */
+[data-template="1"] ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+[data-template="1"] ::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+[data-template="1"] ::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+  border: 3px solid #f1f1f1;
+}
+
+[data-template="1"] ::-webkit-scrollbar-thumb:hover {
+  background: #555;
+  border: 3px solid #f1f1f1;
+}
+
+/* ─── Scrollbar para Firefox ─── */
+[data-template="1"] {
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+}
