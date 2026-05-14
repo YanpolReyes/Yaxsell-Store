@@ -33,6 +33,12 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
             aspectRatio: 1.0,
           },
           (decodedText: string) => {
+            if (scannerRef.current) {
+              scannerRef.current.stop().then(() => {
+                scannerRef.current?.clear();
+                scannerRef.current = null;
+              }).catch(() => { scannerRef.current = null; });
+            }
             onScanRef.current(decodedText);
           },
           () => {} // ignore scan failures

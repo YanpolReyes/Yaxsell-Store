@@ -121,11 +121,17 @@ export default function InventarioPage() {
   const [barcodeEdits, setBarcodeEdits] = useState<Record<string, string>>({});
   const [savingStockId, setSavingStockId] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(false);
+  const [scanTarget, setScanTarget] = useState<'search' | string>('search');
 
   const handleBarcodeScan = (code: string) => {
-    setCatalogSearch(code);
+    if (scanTarget === 'search') {
+      setCatalogSearch(code);
+      if (view !== 'catalog') setView('catalog');
+    } else {
+      setBarcodeEdits(prev => ({ ...prev, [scanTarget]: code }));
+    }
     setShowScanner(false);
-    if (view !== 'catalog') setView('catalog');
+    setScanTarget('search');
   };
 
   useEffect(() => {
@@ -649,7 +655,7 @@ export default function InventarioPage() {
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
-                <button onClick={() => setShowScanner(true)}
+                <button onClick={() => { setScanTarget('search'); setShowScanner(true); }}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-indigo-600 transition"
                   title="Escanear código de barras">
                   <Camera className="w-4 h-4" />
@@ -725,14 +731,21 @@ export default function InventarioPage() {
                           <td className="px-4 py-2">
                             <div className="flex flex-col gap-1.5">
                               {!hasBarcode && (
-                                <input
-                                  type="text"
-                                  value={inlineBarcode}
-                                  onChange={e => setBarcodeEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
-                                  placeholder="Código de barras"
-                                  title="Añadir código de barras"
-                                  className="w-full px-2 py-1.5 text-sm border border-rose-300 bg-rose-50 rounded focus:outline-none focus:border-rose-500 font-mono"
-                                />
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="text"
+                                    value={inlineBarcode}
+                                    onChange={e => setBarcodeEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                    placeholder="Código de barras"
+                                    title="Añadir código de barras"
+                                    className="flex-1 px-2 py-1.5 text-sm border border-rose-300 bg-rose-50 rounded focus:outline-none focus:border-rose-500 font-mono"
+                                  />
+                                  <button onClick={() => { setScanTarget(p.$id); setShowScanner(true); }}
+                                    className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded transition"
+                                    title="Escanear código de barras">
+                                    <Camera className="w-4 h-4" />
+                                  </button>
+                                </div>
                               )}
                               <div className="flex items-center gap-2">
                                 {!hasPack && (
@@ -836,14 +849,21 @@ export default function InventarioPage() {
                           {!hasBarcode && (
                             <div>
                               <label className="text-[10px] text-rose-600 font-semibold uppercase tracking-wide mb-0.5 block">Código de barras</label>
-                              <input
-                                type="text"
-                                value={inlineBarcode}
-                                onChange={e => setBarcodeEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
-                                placeholder="Escanear o escribir código..."
-                                title="Añadir código de barras"
-                                className="w-full px-3 py-2 text-sm border border-rose-300 bg-rose-50 rounded-lg focus:outline-none focus:border-rose-500 font-mono"
-                              />
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="text"
+                                  value={inlineBarcode}
+                                  onChange={e => setBarcodeEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                  placeholder="Escanear o escribir código..."
+                                  title="Añadir código de barras"
+                                  className="flex-1 px-3 py-2 text-sm border border-rose-300 bg-rose-50 rounded-lg focus:outline-none focus:border-rose-500 font-mono"
+                                />
+                                <button onClick={() => { setScanTarget(p.$id); setShowScanner(true); }}
+                                  className="p-2.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition border border-rose-200"
+                                  title="Escanear código de barras">
+                                  <Camera className="w-5 h-5" />
+                                </button>
+                              </div>
                             </div>
                           )}
                           <div className="flex items-end gap-2">
