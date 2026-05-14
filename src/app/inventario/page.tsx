@@ -1119,43 +1119,29 @@ export default function InventarioPage() {
                             {!hasPack && (
                               <div className="flex-1">
                                 <label className="text-[10px] text-amber-600 font-semibold uppercase tracking-wide mb-0.5 block">Und. por paquete</label>
-                                <div className="flex gap-1">
-                                  <input
-                                    type="number"
-                                    min={1}
-                                    value={inlinePack}
-                                    onChange={e => setPackQtyEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
-                                    placeholder="Ej: 12"
-                                    title="Unidades por paquete"
-                                    className="flex-1 w-full px-3 py-2 text-sm border border-amber-300 bg-amber-50 rounded-lg focus:outline-none focus:border-amber-500"
-                                  />
-                                  <button type="button" onClick={() => setPackQtyEdits(prev => ({ ...prev, [p.$id]: '12' }))}
-                                    className="px-2.5 py-2 text-xs font-bold bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg transition border border-amber-300"
-                                    title="Atajo: 12 unidades por paquete">
-                                    +12
-                                  </button>
-                                </div>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={inlinePack}
+                                  onChange={e => setPackQtyEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                  placeholder="Ej: 12"
+                                  title="Unidades por paquete"
+                                  className="w-full px-3 py-2 text-sm border border-amber-300 bg-amber-50 rounded-lg focus:outline-none focus:border-amber-500"
+                                />
                               </div>
                             )}
                             <div className="flex-1">
                               <label className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-0.5 block">Paquetes</label>
-                              <div className="flex gap-1">
-                                <input
-                                  type="number"
-                                  min={0}
-                                  value={editing}
-                                  onChange={e => setStockEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
-                                  onKeyDown={e => { if (e.key === 'Enter') assignStock(p.$id); }}
-                                  placeholder="Ej: 3"
-                                  title="Cantidad de paquetes"
-                                  className="flex-1 w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
-                                />
-                                <button type="button" onClick={() => setStockEdits(prev => ({ ...prev, [p.$id]: '2' }))}
-                                  className="px-2.5 py-2 text-xs font-bold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg transition border border-indigo-300"
-                                  title="Atajo: 2 paquetes">
-                                  +2
-                                </button>
-                              </div>
+                              <input
+                                type="number"
+                                min={0}
+                                value={editing}
+                                onChange={e => setStockEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                onKeyDown={e => { if (e.key === 'Enter') assignStock(p.$id); }}
+                                placeholder="Ej: 3"
+                                title="Cantidad de paquetes"
+                                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
+                              />
                             </div>
                             <button
                               onClick={() => assignStock(p.$id)}
@@ -1181,6 +1167,19 @@ export default function InventarioPage() {
                                 Guardar
                               </button>
                             )}
+                          </div>
+                          {/* Quick-action chips */}
+                          <div className="flex gap-2 mt-1">
+                            {!hasPack && (
+                              <button type="button" onClick={() => setPackQtyEdits(prev => ({ ...prev, [p.$id]: inlinePack || '12' }))}
+                                className="flex-1 py-2 text-xs font-bold bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg transition border border-amber-300 text-center">
+                                +12 und/paq
+                              </button>
+                            )}
+                            <button type="button" onClick={() => setStockEdits(prev => ({ ...prev, [p.$id]: editing || '2' }))}
+                              className="flex-1 py-2 text-xs font-bold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg transition border border-indigo-300 text-center">
+                              +2 paquetes
+                            </button>
                           </div>
                           {totalUnits > 0 && (
                             <div className="text-xs text-gray-500 font-medium">= {totalUnits} unidades totales</div>
