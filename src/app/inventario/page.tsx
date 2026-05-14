@@ -1269,15 +1269,15 @@ export default function InventarioPage() {
                           {/* Quick-action chips — und/paq */}
                           {!hasPack && (
                             <div className="flex gap-2 mt-1">
-                              <button type="button" onClick={() => setPackQtyEdits(prev => ({ ...prev, [p.$id]: inlinePack || '6' }))}
+                              <button type="button" onClick={() => setPackQtyEdits(prev => ({ ...prev, [p.$id]: '6' }))}
                                 className="flex-1 py-2 text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg transition border border-amber-200 text-center">
                                 +6
                               </button>
-                              <button type="button" onClick={() => setPackQtyEdits(prev => ({ ...prev, [p.$id]: inlinePack || '12' }))}
+                              <button type="button" onClick={() => setPackQtyEdits(prev => ({ ...prev, [p.$id]: '12' }))}
                                 className="flex-1 py-2 text-xs font-bold bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg transition border border-amber-300 text-center">
                                 +12
                               </button>
-                              <button type="button" onClick={() => setPackQtyEdits(prev => ({ ...prev, [p.$id]: inlinePack || '24' }))}
+                              <button type="button" onClick={() => setPackQtyEdits(prev => ({ ...prev, [p.$id]: '24' }))}
                                 className="flex-1 py-2 text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg transition border border-amber-200 text-center">
                                 +24
                               </button>
@@ -1285,15 +1285,15 @@ export default function InventarioPage() {
                           )}
                           {/* Quick-action chips — paquetes */}
                           <div className="flex gap-2 mt-1">
-                            <button type="button" onClick={() => setStockEdits(prev => ({ ...prev, [p.$id]: editing || '1' }))}
+                            <button type="button" onClick={() => setStockEdits(prev => ({ ...prev, [p.$id]: '1' }))}
                               className="flex-1 py-2 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition border border-indigo-200 text-center">
                               +1 paq
                             </button>
-                            <button type="button" onClick={() => setStockEdits(prev => ({ ...prev, [p.$id]: editing || '2' }))}
+                            <button type="button" onClick={() => setStockEdits(prev => ({ ...prev, [p.$id]: '2' }))}
                               className="flex-1 py-2 text-xs font-bold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg transition border border-indigo-300 text-center">
                               +2 paq
                             </button>
-                            <button type="button" onClick={() => setStockEdits(prev => ({ ...prev, [p.$id]: editing || '3' }))}
+                            <button type="button" onClick={() => setStockEdits(prev => ({ ...prev, [p.$id]: '3' }))}
                               className="flex-1 py-2 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition border border-indigo-200 text-center">
                               +3 paq
                             </button>
