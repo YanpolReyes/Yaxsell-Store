@@ -123,13 +123,15 @@ export default function InventarioPage() {
   const [showScanner, setShowScanner] = useState(false);
   const [scanTarget, setScanTarget] = useState<'search' | string>('search');
   const [barcodeSuggestion, setBarcodeSuggestion] = useState<{ product: Product; scannedBarcode: string; step: 'confirm-product' | 'confirm-add-barcode' } | null>(null);
+  const [stockNotification, setStockNotification] = useState<{ product: Product; scannedCode: string } | null>(null);
 
   const handleBarcodeScan = (code: string) => {
     if (scanTarget === 'search') {
       setCatalogSearch(code);
-      if (view !== 'catalog') setView('catalog');
 
-      // Smart fallback: if no product matches the full barcode, try last 4 digits against SKU
+      // Respect current view — don't force switch to catalog
+      if (view === 'excel') setView('catalog');
+
       const codeLower = code.toLowerCase().trim();
       const directMatch = products.find(p => {
         const bc = getBarcode(p).toLowerCase();
@@ -138,11 +140,16 @@ export default function InventarioPage() {
         return bc === codeLower || sku === codeLower || name.includes(codeLower);
       });
 
+      // If product found and already has stock, notify (especially useful in "Sin stock" view)
+      if (directMatch && (directMatch.STOCK || 0) > 0 && view === 'catalog') {
+        setStockNotification({ product: directMatch, scannedCode: code });
+      }
+
       if (!directMatch && code.length >= 4) {
         const last4 = code.slice(-4).toLowerCase();
         const suggested = products.find(p => {
           const sku = getSku(p).toLowerCase();
-          return sku && sku.endsWith(last4) && !getBarcode(p); // only suggest if no barcode yet
+          return sku && sku.endsWith(last4) && !getBarcode(p);
         });
         if (suggested) {
           setBarcodeSuggestion({ product: suggested, scannedBarcode: code, step: 'confirm-product' });
@@ -771,6 +778,32 @@ export default function InventarioPage() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Stock notification — product already has stock */}
+      {stockNotification && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-bounce">
+          <div className="bg-amber-500 text-white rounded-2xl shadow-2xl px-6 py-4 flex items-center gap-4 max-w-sm">
+            {stockNotification.product.IMAGEURL && (
+              <img src={stockNotification.product.IMAGEURL} alt="" className="w-12 h-12 object-cover rounded-xl border-2 border-white/30" />
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-sm">⚠ Ya tiene stock</div>
+              <div className="text-xs text-white/90 line-clamp-1">{stockNotification.product.NAME}</div>
+              <div className="text-xs text-white/70 mt-0.5">{stockNotification.product.STOCK} unidades</div>
+            </div>
+            <div className="flex flex-col gap-1 shrink-0">
+              <button onClick={() => { setView('withStock'); setCatalogSearch(getSku(stockNotification.product)); setStockNotification(null); }}
+                className="px-3 py-1 bg-white text-amber-700 text-[11px] font-bold rounded-lg hover:bg-amber-50 transition">
+                Ver en Con stock
+              </button>
+              <button onClick={() => setStockNotification(null)}
+                className="px-3 py-1 bg-white/20 text-white text-[11px] font-medium rounded-lg hover:bg-white/30 transition">
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}
