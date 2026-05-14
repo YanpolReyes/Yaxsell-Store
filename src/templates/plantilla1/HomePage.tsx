@@ -192,8 +192,8 @@ function MobileCountdown({ title, subtitle, endTimeMs, bgImage, buttonHref }: {
       position: 'relative',
       width: '100%',
       overflow: 'hidden',
-      background: bgImage ? `url(${bgImage}) center/cover no-repeat` : 'linear-gradient(135deg, #1a1a2e, #16213e)',
-      minHeight: bgImage ? 180 : 280,
+      background: bgImage ? `url(${bgImage}) center top/cover no-repeat` : 'linear-gradient(135deg, #1a1a2e, #16213e)',
+      minHeight: bgImage ? 480 : 280,
       display: 'flex',
       alignItems: 'flex-end',
     }}>
