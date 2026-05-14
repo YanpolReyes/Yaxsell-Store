@@ -198,7 +198,7 @@ function MobileCountdown({ title, subtitle, endTimeMs, bgImage, buttonHref }: {
       alignItems: 'flex-end',
     }}>
       {/* Dark overlay */}
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1 }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'transparent', zIndex: 1 }} />
 
       {/* Content card */}
       <div style={{

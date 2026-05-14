@@ -122,16 +122,70 @@ export default function InventarioPage() {
   const [savingStockId, setSavingStockId] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(false);
   const [scanTarget, setScanTarget] = useState<'search' | string>('search');
+  const [barcodeSuggestion, setBarcodeSuggestion] = useState<{ product: Product; scannedBarcode: string; step: 'confirm-product' | 'confirm-add-barcode' } | null>(null);
 
   const handleBarcodeScan = (code: string) => {
     if (scanTarget === 'search') {
       setCatalogSearch(code);
       if (view !== 'catalog') setView('catalog');
+
+      // Smart fallback: if no product matches the full barcode, try last 4 digits against SKU
+      const codeLower = code.toLowerCase().trim();
+      const directMatch = products.find(p => {
+        const bc = getBarcode(p).toLowerCase();
+        const sku = getSku(p).toLowerCase();
+        const name = (p.NAME || '').toLowerCase();
+        return bc === codeLower || sku === codeLower || name.includes(codeLower);
+      });
+
+      if (!directMatch && code.length >= 4) {
+        const last4 = code.slice(-4).toLowerCase();
+        const suggested = products.find(p => {
+          const sku = getSku(p).toLowerCase();
+          return sku && sku.endsWith(last4) && !getBarcode(p); // only suggest if no barcode yet
+        });
+        if (suggested) {
+          setBarcodeSuggestion({ product: suggested, scannedBarcode: code, step: 'confirm-product' });
+        }
+      }
     } else {
       setBarcodeEdits(prev => ({ ...prev, [scanTarget]: code }));
     }
     setShowScanner(false);
     setScanTarget('search');
+  };
+
+  const confirmBarcodeSuggestion = async () => {
+    if (!barcodeSuggestion) return;
+    // Step 1 → advance to step 2 (asks to add barcode)
+    if (barcodeSuggestion.step === 'confirm-product') {
+      setBarcodeSuggestion({ ...barcodeSuggestion, step: 'confirm-add-barcode' });
+      return;
+    }
+    // Step 2 → save barcode and close
+    const { product, scannedBarcode } = barcodeSuggestion;
+    setSavingStockId(product.$id);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const features = product.FEATURES || '';
+      const newFeatures = features ? `${features}\nBarcode: ${scannedBarcode}` : `Barcode: ${scannedBarcode}`;
+      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, product.$id, { FEATURES: newFeatures });
+      setProducts(prev => prev.map(p => p.$id === product.$id ? { ...p, FEATURES: newFeatures } : p));
+      setCatalogSearch(getSku(product)); // switch search to SKU so user sees the product
+      setBarcodeSuggestion(null);
+    } catch (e: any) {
+      alert('Error al guardar código: ' + e.message);
+    } finally {
+      setSavingStockId(null);
+    }
+  };
+
+  // Skip barcode-add step but still show the product in catalog
+  const skipBarcodeStep = () => {
+    if (!barcodeSuggestion) return;
+    setCatalogSearch(getSku(barcodeSuggestion.product));
+    setBarcodeSuggestion(null);
   };
 
   useEffect(() => {
@@ -647,6 +701,80 @@ export default function InventarioPage() {
         </div>
       )}
 
+      {/* Barcode suggestion modal — 2-step confirmation */}
+      {barcodeSuggestion && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            {barcodeSuggestion.step === 'confirm-product' ? (
+              <>
+                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-4">
+                  <h3 className="text-lg font-bold">¿Es este el producto?</h3>
+                  <p className="text-xs text-white/80 mt-0.5">Coincide con los últimos 4 dígitos del código escaneado</p>
+                </div>
+                <div className="p-6 flex flex-col items-center gap-4">
+                  {barcodeSuggestion.product.IMAGEURL ? (
+                    <img src={barcodeSuggestion.product.IMAGEURL} alt="" className="w-48 h-48 object-cover rounded-2xl shadow-lg" />
+                  ) : (
+                    <div className="w-48 h-48 rounded-2xl bg-gray-100 flex items-center justify-center">
+                      <Package className="w-16 h-16 text-gray-300" />
+                    </div>
+                  )}
+                  <div className="text-center">
+                    <div className="font-semibold text-gray-900 text-lg">{barcodeSuggestion.product.NAME}</div>
+                    <div className="text-xs font-mono text-gray-500 mt-1">SKU: {getSku(barcodeSuggestion.product)}</div>
+                    <div className="text-xs font-mono text-rose-600 mt-2 bg-rose-50 px-3 py-1 rounded-full inline-block">
+                      Código escaneado: {barcodeSuggestion.scannedBarcode}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex border-t border-gray-100">
+                  <button onClick={() => setBarcodeSuggestion(null)}
+                    className="flex-1 px-4 py-3 text-gray-600 hover:bg-gray-50 font-semibold transition">
+                    No
+                  </button>
+                  <button onClick={confirmBarcodeSuggestion}
+                    className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition">
+                    Sí, es este
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-6 py-4">
+                  <h3 className="text-lg font-bold">¿Añadir el código al producto?</h3>
+                  <p className="text-xs text-white/80 mt-0.5">Se guardará en el producto y podrás añadir las cantidades</p>
+                </div>
+                <div className="p-6 flex flex-col items-center gap-3">
+                  {barcodeSuggestion.product.IMAGEURL && (
+                    <img src={barcodeSuggestion.product.IMAGEURL} alt="" className="w-24 h-24 object-cover rounded-xl" />
+                  )}
+                  <div className="text-center">
+                    <div className="font-semibold text-gray-900 text-sm line-clamp-1">{barcodeSuggestion.product.NAME}</div>
+                    <div className="text-base font-mono text-gray-900 mt-2 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-200">
+                      {barcodeSuggestion.scannedBarcode}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex border-t border-gray-100">
+                  <button onClick={skipBarcodeStep}
+                    className="flex-1 px-4 py-3 text-gray-600 hover:bg-gray-50 font-semibold transition">
+                    No, solo mostrar
+                  </button>
+                  <button onClick={confirmBarcodeSuggestion}
+                    disabled={savingStockId === barcodeSuggestion.product.$id}
+                    className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white font-semibold transition flex items-center justify-center gap-2">
+                    {savingStockId === barcodeSuggestion.product.$id ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : null}
+                    Sí, guardar
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
@@ -812,15 +940,22 @@ export default function InventarioPage() {
                               )}
                               <div className="flex items-center gap-2">
                                 {!hasPack && (
-                                  <input
-                                    type="number"
-                                    min={1}
-                                    value={inlinePack}
-                                    onChange={e => setPackQtyEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
-                                    placeholder="u/pkg"
-                                    title="Unidades por paquete"
-                                    className="w-16 px-2 py-1.5 text-sm border border-amber-300 bg-amber-50 rounded focus:outline-none focus:border-amber-500"
-                                  />
+                                  <>
+                                    <input
+                                      type="number"
+                                      min={1}
+                                      value={inlinePack}
+                                      onChange={e => setPackQtyEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                      placeholder="u/pkg"
+                                      title="Unidades por paquete"
+                                      className="w-16 px-2 py-1.5 text-sm border border-amber-300 bg-amber-50 rounded focus:outline-none focus:border-amber-500"
+                                    />
+                                    <button type="button" onClick={() => setPackQtyEdits(prev => ({ ...prev, [p.$id]: '12' }))}
+                                      className="px-2 py-1.5 text-[11px] font-bold bg-amber-100 hover:bg-amber-200 text-amber-700 rounded border border-amber-300 transition"
+                                      title="Atajo: 12 unidades por paquete">
+                                      +12
+                                    </button>
+                                  </>
                                 )}
                                 <input
                                   type="number"
@@ -832,6 +967,11 @@ export default function InventarioPage() {
                                   title="Cantidad de paquetes"
                                   className="w-16 px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:border-indigo-500"
                                 />
+                                <button type="button" onClick={() => setStockEdits(prev => ({ ...prev, [p.$id]: '2' }))}
+                                  className="px-2 py-1.5 text-[11px] font-bold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded border border-indigo-300 transition"
+                                  title="Atajo: 2 paquetes">
+                                  +2
+                                </button>
                                 <button
                                   onClick={() => assignStock(p.$id)}
                                   disabled={saving || !editing || pkgs <= 0 || (!hasPack && (!inlinePack || parseInt(inlinePack, 10) <= 0))}
@@ -946,29 +1086,43 @@ export default function InventarioPage() {
                             {!hasPack && (
                               <div className="flex-1">
                                 <label className="text-[10px] text-amber-600 font-semibold uppercase tracking-wide mb-0.5 block">Und. por paquete</label>
-                                <input
-                                  type="number"
-                                  min={1}
-                                  value={inlinePack}
-                                  onChange={e => setPackQtyEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
-                                  placeholder="Ej: 12"
-                                  title="Unidades por paquete"
-                                  className="w-full px-3 py-2 text-sm border border-amber-300 bg-amber-50 rounded-lg focus:outline-none focus:border-amber-500"
-                                />
+                                <div className="flex gap-1">
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    value={inlinePack}
+                                    onChange={e => setPackQtyEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                    placeholder="Ej: 12"
+                                    title="Unidades por paquete"
+                                    className="flex-1 w-full px-3 py-2 text-sm border border-amber-300 bg-amber-50 rounded-lg focus:outline-none focus:border-amber-500"
+                                  />
+                                  <button type="button" onClick={() => setPackQtyEdits(prev => ({ ...prev, [p.$id]: '12' }))}
+                                    className="px-2.5 py-2 text-xs font-bold bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg transition border border-amber-300"
+                                    title="Atajo: 12 unidades por paquete">
+                                    +12
+                                  </button>
+                                </div>
                               </div>
                             )}
                             <div className="flex-1">
                               <label className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-0.5 block">Paquetes</label>
-                              <input
-                                type="number"
-                                min={0}
-                                value={editing}
-                                onChange={e => setStockEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
-                                onKeyDown={e => { if (e.key === 'Enter') assignStock(p.$id); }}
-                                placeholder="Ej: 3"
-                                title="Cantidad de paquetes"
-                                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
-                              />
+                              <div className="flex gap-1">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={editing}
+                                  onChange={e => setStockEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                  onKeyDown={e => { if (e.key === 'Enter') assignStock(p.$id); }}
+                                  placeholder="Ej: 3"
+                                  title="Cantidad de paquetes"
+                                  className="flex-1 w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
+                                />
+                                <button type="button" onClick={() => setStockEdits(prev => ({ ...prev, [p.$id]: '2' }))}
+                                  className="px-2.5 py-2 text-xs font-bold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg transition border border-indigo-300"
+                                  title="Atajo: 2 paquetes">
+                                  +2
+                                </button>
+                              </div>
                             </div>
                             <button
                               onClick={() => assignStock(p.$id)}
