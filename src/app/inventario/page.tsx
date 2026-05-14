@@ -784,23 +784,23 @@ export default function InventarioPage() {
 
       {/* Stock notification — product already has stock */}
       {stockNotification && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-bounce">
-          <div className="bg-amber-500 text-white rounded-2xl shadow-2xl px-6 py-4 flex items-center gap-4 max-w-sm">
+        <div className="fixed inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 top-3 sm:top-4 z-50 sm:max-w-sm">
+          <div className="bg-amber-500 text-white rounded-xl sm:rounded-2xl shadow-2xl p-3 sm:px-6 sm:py-4 flex items-center gap-3 sm:gap-4">
             {stockNotification.product.IMAGEURL && (
-              <img src={stockNotification.product.IMAGEURL} alt="" className="w-12 h-12 object-cover rounded-xl border-2 border-white/30" />
+              <img src={stockNotification.product.IMAGEURL} alt="" className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg sm:rounded-xl border-2 border-white/30 shrink-0" />
             )}
             <div className="flex-1 min-w-0">
-              <div className="font-bold text-sm">⚠ Ya tiene stock</div>
-              <div className="text-xs text-white/90 line-clamp-1">{stockNotification.product.NAME}</div>
-              <div className="text-xs text-white/70 mt-0.5">{stockNotification.product.STOCK} unidades</div>
+              <div className="font-bold text-xs sm:text-sm">⚠ Ya tiene stock</div>
+              <div className="text-[11px] sm:text-xs text-white/90 line-clamp-1">{stockNotification.product.NAME}</div>
+              <div className="text-[10px] sm:text-xs text-white/70">{stockNotification.product.STOCK} uds</div>
             </div>
             <div className="flex flex-col gap-1 shrink-0">
               <button onClick={() => { setView('withStock'); setCatalogSearch(getSku(stockNotification.product)); setStockNotification(null); }}
-                className="px-3 py-1 bg-white text-amber-700 text-[11px] font-bold rounded-lg hover:bg-amber-50 transition">
-                Ver en Con stock
+                className="px-2.5 py-1 bg-white text-amber-700 text-[10px] sm:text-[11px] font-bold rounded-lg hover:bg-amber-50 transition whitespace-nowrap">
+                Ver stock
               </button>
               <button onClick={() => setStockNotification(null)}
-                className="px-3 py-1 bg-white/20 text-white text-[11px] font-medium rounded-lg hover:bg-white/30 transition">
+                className="px-2.5 py-1 bg-white/20 text-white text-[10px] sm:text-[11px] font-medium rounded-lg hover:bg-white/30 transition whitespace-nowrap">
                 Cerrar
               </button>
             </div>
