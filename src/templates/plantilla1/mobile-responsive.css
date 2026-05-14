@@ -328,104 +328,13 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   COUNTDOWN TIMER MOBILE — fondo visible, barra abajo compacta
+   COUNTDOWN TIMER MOBILE — Shopify section hidden, React component replaces
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @media screen and (max-width: 768px) {
-  /* El wrapper — imagen de fondo visible, más altura para la foto */
-  [data-template="1"] .fusion-countdown-wrapper {
-    position: relative !important;
-    min-height: 420px !important;
-    padding-top: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: flex-end !important;
-    background-size: cover !important;
-    background-position: center top !important;
-  }
-
-  /* El marquee — ocultar en móvil para ahorrar espacio */
-  [data-template="1"] .fusion-countdown-wrapper .countdown-slideT-container {
+  /* Hide the Shopify countdown section on mobile — React MobileCountdown replaces it */
+  [data-template="1"] #shopify-section-template--22405132419320__countdown_timer_hYJrNM {
     display: none !important;
-  }
-
-  /* La capa blanca — compacta, semi-transparente, rounded top */
-  [data-template="1"] .fusion-countdown-wrapper .right-content,
-  [data-template="1"] .fusion-countdown-wrapper .gradient-bg-light {
-    position: relative !important;
-    z-index: 3 !important;
-    border-radius: 20px 20px 0 0 !important;
-    padding: 16px 14px !important;
-    margin-top: 0 !important;
-    width: 100% !important;
-    flex: 0 0 auto !important;
-    flex-grow: 0 !important;
-    flex-shrink: 0 !important;
-    height: auto !important;
-    background: rgba(255,255,255,0.92) !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
-  }
-
-  /* Apilar la row del countdown verticalmente y centrar */
-  [data-template="1"] .contdown-row {
-    flex-direction: column !important;
-    align-items: center !important;
-    text-align: center !important;
-    gap: 10px !important;
-  }
-  [data-template="1"] .contdown-row > [class*="col-"] {
-    width: 100% !important;
-    max-width: 100% !important;
-    flex: 0 0 auto !important;
-    text-align: center !important;
-    padding: 0 !important;
-  }
-
-  /* Título del countdown — más pequeño */
-  [data-template="1"] .countdown-sec-title {
-    text-align: center !important;
-    margin-bottom: 4px !important;
-  }
-  [data-template="1"] .countdown-sec-title h2 {
-    font-size: clamp(15px, 4vw, 22px) !important;
-    margin-bottom: 2px !important;
-  }
-  [data-template="1"] .countdown-sec-title h3 {
-    font-size: clamp(11px, 2.8vw, 14px) !important;
-  }
-
-  /* Centrar los items del countdown — más compactos */
-  [data-template="1"] .fusion-countdown.heading_color {
-    display: flex !important;
-    justify-content: center !important;
-    flex-wrap: wrap !important;
-    gap: 6px !important;
-  }
-  [data-template="1"] .fusion-countdown-item {
-    min-width: 48px !important;
-    padding: 4px 2px !important;
-  }
-  [data-template="1"] .countdown-item {
-    font-size: 20px !important;
-  }
-  [data-template="1"] .countdown-text {
-    font-size: 8px !important;
-  }
-
-  /* Botón centrado */
-  [data-template="1"] .contdown-row .button_primary,
-  [data-template="1"] .contdown-row .musk-primary-btn {
-    display: inline-block !important;
-    text-align: center !important;
-    margin: 0 auto !important;
-    font-size: 12px !important;
-    padding: 8px 20px !important;
-  }
-
-  /* Reducir padding de la sección */
-  [data-template="1"] section.fusion_countdown {
-    padding-bottom: 0 !important;
   }
 }
 

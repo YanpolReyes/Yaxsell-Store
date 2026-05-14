@@ -163,9 +163,118 @@ const FONT_FACE_CSS = `
 }
 `;
 
+/* ── Mobile Countdown — simple compact version for devices ≤768px ── */
+function MobileCountdown({ title, subtitle, endTimeMs, bgImage, buttonHref }: {
+  title: string; subtitle: string; endTimeMs: number | null; bgImage: string; buttonHref: string;
+}) {
+  const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0 });
+  const [expired, setExpired] = useState(false);
+
+  useEffect(() => {
+    if (!endTimeMs) return;
+    const tick = () => {
+      const ms = endTimeMs - Date.now();
+      if (ms <= 0) { setExpired(true); setTimeLeft({ d: 0, h: 0, m: 0, s: 0 }); return; }
+      setTimeLeft({
+        d: Math.floor(ms / 86400000),
+        h: Math.floor((ms % 86400000) / 3600000),
+        m: Math.floor((ms % 3600000) / 60000),
+        s: Math.floor((ms % 60000) / 1000),
+      });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [endTimeMs]);
+
+  return (
+    <div style={{
+      position: 'relative',
+      width: '100%',
+      overflow: 'hidden',
+      background: bgImage ? `url(${bgImage}) center/cover no-repeat` : 'linear-gradient(135deg, #1a1a2e, #16213e)',
+      minHeight: 280,
+      display: 'flex',
+      alignItems: 'flex-end',
+    }}>
+      {/* Dark overlay */}
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1 }} />
+
+      {/* Content card */}
+      <div style={{
+        position: 'relative', zIndex: 2,
+        width: '100%',
+        padding: '20px 16px 24px',
+        background: 'rgba(255,255,255,0.95)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        borderRadius: '16px 16px 0 0',
+      }}>
+        {/* Title */}
+        {title && (
+          <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 800, color: '#1f2937', lineHeight: 1.2, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+            {title}
+          </h2>
+        )}
+        {subtitle && (
+          <p style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 600, color: '#ec4899', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+            {subtitle}
+          </p>
+        )}
+
+        {/* Countdown digits */}
+        {!expired && endTimeMs && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            {[
+              { val: timeLeft.d, label: 'Días' },
+              { val: timeLeft.h, label: 'Hrs' },
+              { val: timeLeft.m, label: 'Min' },
+              { val: timeLeft.s, label: 'Seg' },
+            ].map(item => (
+              <div key={item.label} style={{
+                flex: 1, textAlign: 'center',
+                background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)',
+                borderRadius: 10, padding: '8px 2px',
+                border: '1px solid rgba(236,72,153,0.15)',
+              }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#ec4899', lineHeight: 1, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                  {String(item.val).padStart(2, '0')}
+                </div>
+                <div style={{ fontSize: 9, fontWeight: 600, color: '#9ca3af', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  {item.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {expired && (
+          <p style={{ margin: '0 0 14px', fontSize: 13, fontWeight: 700, color: '#9ca3af', textAlign: 'center' }}>
+            OFERTA CADUCADA
+          </p>
+        )}
+
+        {/* CTA Button */}
+        <a href={expired ? undefined : buttonHref} style={{
+          display: 'block', width: '100%', textAlign: 'center',
+          padding: '10px 0', borderRadius: 999,
+          background: expired ? '#d1d5db' : 'linear-gradient(135deg, #ec4899, #db2777)',
+          color: '#fff', fontSize: 13, fontWeight: 700,
+          textDecoration: 'none', fontFamily: "'DM Sans', system-ui, sans-serif",
+          pointerEvents: expired ? 'none' : 'auto',
+          boxShadow: expired ? 'none' : '0 4px 14px rgba(236,72,153,0.3)',
+        }}>
+          {expired ? 'OFERTA CADUCADA' : 'COMPRAR AHORA'}
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage1() {
   const containerRef = useRef<HTMLDivElement>(null);
   const couponRootRef = useRef<Root | null>(null);
+  const countdownMobileRootRef = useRef<Root | null>(null);
   const [bodyHtml, setBodyHtml] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sectionCfg, setSectionCfg] = useState<SectionConfig[]>([]);
@@ -6816,6 +6925,64 @@ export default function HomePage1() {
     containerRef.current.innerHTML = bodyHtml;
     containerRef.current.dataset.htmlSet = '1';
   }, [bodyHtml]);
+
+  /* ── Inject mobile countdown (simple version replacing Shopify section) ── */
+  useEffect(() => {
+    if (!bodyHtml || !containerRef.current) return;
+    const isMobile = window.innerWidth <= 768;
+    const sectionId = 'template--22405132419320__countdown_timer_hYJrNM';
+    const section = document.getElementById(`shopify-section-${sectionId}`);
+
+    if (!section) return;
+
+    if (!isMobile) {
+      // Desktop: show Shopify section, remove mobile overlay if any
+      section.style.display = '';
+      const existing = document.getElementById('tpl1-mobile-countdown');
+      if (existing) { countdownMobileRootRef.current?.unmount(); countdownMobileRootRef.current = null; existing.remove(); }
+      return;
+    }
+
+    // Mobile: hide Shopify section, inject simple React countdown
+    if (!countdownOffer) {
+      section.style.display = 'none';
+      const existing = document.getElementById('tpl1-mobile-countdown');
+      if (existing) { countdownMobileRootRef.current?.unmount(); countdownMobileRootRef.current = null; existing.remove(); }
+      return;
+    }
+
+    section.style.display = 'none';
+
+    let endTimeMs: number | null = null;
+    if (countdownOffer.timeType === 'endDateTime' && countdownOffer.endDateTime) {
+      endTimeMs = new Date(countdownOffer.endDateTime).getTime();
+    } else if (countdownOffer.timeType === 'duration' && countdownOffer.activatedAt && countdownOffer.durationHours) {
+      endTimeMs = new Date(countdownOffer.activatedAt).getTime() + (countdownOffer.durationHours * 3600000);
+    }
+
+    const title = countdownOffer.productName || '';
+    const subtitle = countdownOffer.discountPercentage ? `-${countdownOffer.discountPercentage}% por tiempo limitado` : '';
+    const bgImage = countdownProduct?.IMAGEURL || '';
+    const buttonHref = countdownOffer.targetId ? `/producto/${countdownOffer.targetId}` : '/productos';
+
+    let host = document.getElementById('tpl1-mobile-countdown');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'tpl1-mobile-countdown';
+      section.parentNode?.insertBefore(host, section.nextSibling);
+    }
+
+    if (!countdownMobileRootRef.current) countdownMobileRootRef.current = createRoot(host);
+    countdownMobileRootRef.current.render(
+      <MobileCountdown
+        title={title}
+        subtitle={subtitle}
+        endTimeMs={endTimeMs}
+        bgImage={bgImage}
+        buttonHref={buttonHref}
+      />
+    );
+  }, [bodyHtml, countdownOffer, countdownProduct]);
 
   /* ── Inject TPL1 coupon banner before Colecciones ── */
   useEffect(() => {
