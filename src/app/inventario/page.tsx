@@ -114,7 +114,7 @@ export default function InventarioPage() {
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrateProgress, setMigrateProgress] = useState(0);
   const [migrateResults, setMigrateResults] = useState<{ activated: number; deactivated: number; errors: number } | null>(null);
-  const [view, setView] = useState<'excel' | 'catalog'>('excel');
+  const [view, setView] = useState<'excel' | 'catalog' | 'withStock'>('excel');
   const [catalogSearch, setCatalogSearch] = useState('');
   const [stockEdits, setStockEdits] = useState<Record<string, string>>({});
   const [packQtyEdits, setPackQtyEdits] = useState<Record<string, string>>({});
@@ -549,8 +549,67 @@ export default function InventarioPage() {
     }
   };
 
+  const saveProductEdits = async (productId: string) => {
+    const product = products.find(p => p.$id === productId);
+    if (!product) return;
+
+    const inlineBarcode = barcodeEdits[productId]?.trim();
+    const inlinePackQty = packQtyEdits[productId]?.trim();
+    const parsedPackQty = parseInt(inlinePackQty, 10);
+
+    if (!inlineBarcode && (isNaN(parsedPackQty) || parsedPackQty <= 0)) {
+      alert('No hay cambios para guardar.');
+      return;
+    }
+
+    setSavingStockId(productId);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const payload: Record<string, any> = {};
+
+      // Save barcode if provided and product doesn't have one
+      const existingBarcode = getBarcode(product);
+      if (!existingBarcode && inlineBarcode) {
+        const features = product.FEATURES || '';
+        payload.FEATURES = features ? `${features}\nBarcode: ${inlineBarcode}` : `Barcode: ${inlineBarcode}`;
+      }
+
+      // Save pack qty if provided and product doesn't have one
+      if (!product.PACKQTY && !isNaN(parsedPackQty) && parsedPackQty > 0) {
+        payload.PACKQTY = parsedPackQty;
+      }
+
+      if (Object.keys(payload).length === 0) {
+        alert('No hay cambios para guardar.');
+        setSavingStockId(null);
+        return;
+      }
+
+      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, productId, payload);
+      setProducts(prev => prev.map(p => p.$id === productId
+        ? { ...p, ...payload }
+        : p));
+      setBarcodeEdits(prev => { const n = { ...prev }; delete n[productId]; return n; });
+      setPackQtyEdits(prev => { const n = { ...prev }; delete n[productId]; return n; });
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    } finally {
+      setSavingStockId(null);
+    }
+  };
+
   const zeroStockProducts = products.filter(p => (p.STOCK || 0) === 0);
+  const withStockProducts = products.filter(p => (p.STOCK || 0) > 0);
   const catalogFiltered = zeroStockProducts.filter(p => {
+    if (!catalogSearch) return true;
+    const q = catalogSearch.toLowerCase();
+    const sku = getSku(p).toLowerCase();
+    const barcode = getBarcode(p).toLowerCase();
+    const name = (p.NAME || '').toLowerCase();
+    return sku.includes(q) || name.includes(q) || barcode.includes(q);
+  });
+  const withStockFiltered = withStockProducts.filter(p => {
     if (!catalogSearch) return true;
     const q = catalogSearch.toLowerCase();
     const sku = getSku(p).toLowerCase();
@@ -626,6 +685,10 @@ export default function InventarioPage() {
             <button onClick={() => setView('catalog')}
               className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition ${view === 'catalog' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
               Sin stock ({zeroStockProducts.length})
+            </button>
+            <button onClick={() => setView('withStock')}
+              className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition ${view === 'withStock' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              Con stock ({withStockProducts.length})
             </button>
           </div>
         </div>
@@ -780,6 +843,19 @@ export default function InventarioPage() {
                                   )}
                                   Activar
                                 </button>
+                                {((!hasBarcode && inlineBarcode) || (!hasPack && inlinePack && parseInt(inlinePack, 10) > 0)) && (
+                                  <button
+                                    onClick={() => saveProductEdits(p.$id)}
+                                    disabled={saving}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-medium rounded transition">
+                                    {saving ? (
+                                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                      <CheckCircle2 className="w-3 h-3" />
+                                    )}
+                                    Guardar
+                                  </button>
+                                )}
                               </div>
                               {totalUnits > 0 && (
                                 <div className="text-[11px] text-gray-500">= {totalUnits} unidades</div>
@@ -905,6 +981,19 @@ export default function InventarioPage() {
                               )}
                               Activar
                             </button>
+                            {((!hasBarcode && inlineBarcode) || (!hasPack && inlinePack && parseInt(inlinePack, 10) > 0)) && (
+                              <button
+                                onClick={() => saveProductEdits(p.$id)}
+                                disabled={saving}
+                                className="flex items-center gap-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition shrink-0">
+                                {saving ? (
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <CheckCircle2 className="w-4 h-4" />
+                                )}
+                                Guardar
+                              </button>
+                            )}
                           </div>
                           {totalUnits > 0 && (
                             <div className="text-xs text-gray-500 font-medium">= {totalUnits} unidades totales</div>
@@ -917,6 +1006,266 @@ export default function InventarioPage() {
                 {catalogFiltered.length > 200 && (
                   <div className="p-3 text-center text-xs text-gray-500 border-t border-gray-100">
                     Mostrando primeros 200 de {catalogFiltered.length}. Refina la búsqueda para ver más.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {view === 'withStock' && (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="p-3 sm:p-5 border-b border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-sm font-semibold text-gray-900 mb-0.5 sm:mb-1">Productos con stock</h2>
+                <p className="text-xs text-gray-500">{withStockProducts.length} productos activos</p>
+              </div>
+              <div className="relative flex-1 min-w-0 sm:min-w-[240px]">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={catalogSearch}
+                  onChange={e => setCatalogSearch(e.target.value)}
+                  placeholder="Nombre, SKU o código de barras..."
+                  className="w-full pl-9 pr-10 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
+                />
+                {catalogSearch && (
+                  <button onClick={() => setCatalogSearch('')}
+                    className="absolute right-9 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition"
+                    title="Limpiar búsqueda">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <button onClick={() => { setScanTarget('search'); setShowScanner(true); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-indigo-600 transition"
+                  title="Escanear código de barras">
+                  <Camera className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            {loadingProducts ? (
+              <div className="p-10 text-center text-sm text-gray-500">Cargando...</div>
+            ) : withStockFiltered.length === 0 ? (
+              <div className="p-10 text-center text-sm text-gray-500">
+                {catalogSearch ? 'No hay productos que coincidan con la búsqueda.' : 'No hay productos con stock.'}
+              </div>
+            ) : (
+              <div className="max-h-[70vh] overflow-y-auto">
+                {/* Desktop table */}
+                <table className="hidden md:table w-full text-sm">
+                  <thead className="bg-gray-50 sticky top-0 z-10">
+                    <tr className="text-left text-xs text-gray-500 uppercase">
+                      <th className="px-4 py-2.5 w-16">Img</th>
+                      <th className="px-4 py-2.5">Producto</th>
+                      <th className="px-4 py-2.5 w-32">SKU</th>
+                      <th className="px-4 py-2.5 w-24">Stock</th>
+                      <th className="px-4 py-2.5 w-24">Precio</th>
+                      <th className="px-4 py-2.5 w-48">Editar</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {withStockFiltered.slice(0, 200).map(p => {
+                      const sku = getSku(p);
+                      const barcode = getBarcode(p);
+                      const inlineBarcode = barcodeEdits[p.$id] ?? '';
+                      const inlinePack = packQtyEdits[p.$id] ?? '';
+                      const saving = savingStockId === p.$id;
+                      const hasPack = !!(p.PACKQTY && p.PACKQTY > 0);
+                      const hasBarcode = !!barcode;
+                      return (
+                        <tr key={p.$id} className="hover:bg-gray-50">
+                          <td className="px-4 py-2">
+                            {p.IMAGEURL ? (
+                              <img src={p.IMAGEURL} alt="" className="w-10 h-10 object-cover rounded cursor-pointer"
+                                onClick={() => setPreviewImg(p.IMAGEURL || null)} />
+                            ) : (
+                              <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
+                                <Package className="w-4 h-4 text-gray-300" />
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-2">
+                            <div className="font-medium text-gray-900 line-clamp-1">{p.NAME || '—'}</div>
+                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                              {hasPack ? (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-medium rounded">
+                                  <Package className="w-3 h-3" />{p.PACKQTY} u/paquete
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-medium rounded">
+                                  Sin paquete
+                                </span>
+                              )}
+                              {hasBarcode ? (
+                                <span className="inline-flex items-center px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-mono rounded">BC: {barcode}</span>
+                              ) : (
+                                <span className="inline-flex items-center px-1.5 py-0.5 bg-rose-50 text-rose-600 text-[10px] font-medium rounded">Sin código</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-2 text-xs font-mono text-gray-600">{sku || '—'}</td>
+                          <td className="px-4 py-2 text-sm font-semibold text-emerald-600">{p.STOCK || 0}</td>
+                          <td className="px-4 py-2 text-gray-700">${(p.PRICE || 0).toLocaleString('es-CL')}</td>
+                          <td className="px-4 py-2">
+                            <div className="flex flex-col gap-1.5">
+                              {!hasBarcode && (
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="text"
+                                    value={inlineBarcode}
+                                    onChange={e => setBarcodeEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                    placeholder="Código de barras"
+                                    title="Añadir código de barras"
+                                    className="flex-1 px-2 py-1.5 text-sm border border-rose-300 bg-rose-50 rounded focus:outline-none focus:border-rose-500 font-mono"
+                                  />
+                                  <button onClick={() => { setScanTarget(p.$id); setShowScanner(true); }}
+                                    className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded transition"
+                                    title="Escanear código de barras">
+                                    <Camera className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2">
+                                {!hasPack && (
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    value={inlinePack}
+                                    onChange={e => setPackQtyEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                    placeholder="u/pkg"
+                                    title="Unidades por paquete"
+                                    className="w-16 px-2 py-1.5 text-sm border border-amber-300 bg-amber-50 rounded focus:outline-none focus:border-amber-500"
+                                  />
+                                )}
+                                {((!hasBarcode && inlineBarcode) || (!hasPack && inlinePack && parseInt(inlinePack, 10) > 0)) && (
+                                  <button
+                                    onClick={() => saveProductEdits(p.$id)}
+                                    disabled={saving}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-medium rounded transition">
+                                    {saving ? (
+                                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                      <CheckCircle2 className="w-3 h-3" />
+                                    )}
+                                    Guardar
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {/* Mobile cards */}
+                <div className="md:hidden divide-y divide-gray-100">
+                  {withStockFiltered.slice(0, 200).map(p => {
+                    const sku = getSku(p);
+                    const barcode = getBarcode(p);
+                    const inlineBarcode = barcodeEdits[p.$id] ?? '';
+                    const inlinePack = packQtyEdits[p.$id] ?? '';
+                    const saving = savingStockId === p.$id;
+                    const hasPack = !!(p.PACKQTY && p.PACKQTY > 0);
+                    const hasBarcode = !!barcode;
+                    return (
+                      <div key={p.$id} className="p-4">
+                        <div className="flex gap-3">
+                          <div className="shrink-0">
+                            {p.IMAGEURL ? (
+                              <img src={p.IMAGEURL} alt="" className="w-14 h-14 object-cover rounded-lg cursor-pointer"
+                                onClick={() => setPreviewImg(p.IMAGEURL || null)} />
+                            ) : (
+                              <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center">
+                                <Package className="w-5 h-5 text-gray-300" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 text-sm line-clamp-1">{p.NAME || '—'}</div>
+                            <div className="text-xs text-gray-500 mt-0.5">
+                              {sku && <span className="font-mono mr-2">SKU: {sku}</span>}
+                              {hasBarcode && <span className="font-mono text-gray-400">BC: {barcode}</span>}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span className="text-sm font-semibold text-emerald-600">{p.STOCK} uds</span>
+                              <span className="text-sm text-gray-700">${(p.PRICE || 0).toLocaleString('es-CL')}</span>
+                              {hasPack ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[11px] font-medium rounded-full">
+                                  <Package className="w-3 h-3" />{p.PACKQTY} u/paquete
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-[11px] font-medium rounded-full">
+                                  ⚠ Sin paquete
+                                </span>
+                              )}
+                              {!hasBarcode && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-100 text-rose-600 text-[11px] font-medium rounded-full">
+                                  ⚠ Sin código
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {/* Inline edits */}
+                        {((!hasBarcode) || (!hasPack)) && (
+                          <div className="mt-3 space-y-2">
+                            {!hasBarcode && (
+                              <div>
+                                <label className="text-[10px] text-rose-600 font-semibold uppercase tracking-wide mb-0.5 block">Código de barras</label>
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="text"
+                                    value={inlineBarcode}
+                                    onChange={e => setBarcodeEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                    placeholder="Escanear o escribir código..."
+                                    title="Añadir código de barras"
+                                    className="flex-1 px-3 py-2 text-sm border border-rose-300 bg-rose-50 rounded-lg focus:outline-none focus:border-rose-500 font-mono"
+                                  />
+                                  <button onClick={() => { setScanTarget(p.$id); setShowScanner(true); }}
+                                    className="p-2.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition border border-rose-200"
+                                    title="Escanear código de barras">
+                                    <Camera className="w-5 h-5" />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            {!hasPack && (
+                              <div>
+                                <label className="text-[10px] text-amber-600 font-semibold uppercase tracking-wide mb-0.5 block">Und. por paquete</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={inlinePack}
+                                  onChange={e => setPackQtyEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                  placeholder="Ej: 12"
+                                  title="Unidades por paquete"
+                                  className="w-full px-3 py-2 text-sm border border-amber-300 bg-amber-50 rounded-lg focus:outline-none focus:border-amber-500"
+                                />
+                              </div>
+                            )}
+                            {((!hasBarcode && inlineBarcode) || (!hasPack && inlinePack && parseInt(inlinePack, 10) > 0)) && (
+                              <button
+                                onClick={() => saveProductEdits(p.$id)}
+                                disabled={saving}
+                                className="flex items-center gap-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition">
+                                {saving ? (
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <CheckCircle2 className="w-4 h-4" />
+                                )}
+                                Guardar
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {withStockFiltered.length > 200 && (
+                  <div className="p-3 text-center text-xs text-gray-500 border-t border-gray-100">
+                    Mostrando primeros 200 de {withStockFiltered.length}. Refina la búsqueda para ver más.
                   </div>
                 )}
               </div>
