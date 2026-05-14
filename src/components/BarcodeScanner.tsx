@@ -22,6 +22,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
     if (scanning || !scannerRef.current) return;
     setScanning(true);
     setDetected(false);
+    setLastCode('');
     try {
       await scannerRef.current.start(
         { facingMode: 'environment' },
@@ -31,9 +32,15 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
           aspectRatio: 1.0,
         },
         (decodedText: string) => {
+          // Stop scanning immediately when code detected
+          if (scannerRef.current && scanning) {
+            scannerRef.current.stop().then(() => {
+              scannerRef.current?.clear();
+            }).catch(() => {});
+            setScanning(false);
+          }
           setDetected(true);
           setLastCode(decodedText);
-          // Don't auto-scan, wait for user to confirm
         },
         () => {} // ignore scan failures
       );
@@ -47,6 +54,22 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
     if (lastCode) {
       onScanRef.current(lastCode);
     }
+  };
+
+  const rescan = async () => {
+    setDetected(false);
+    setLastCode('');
+    // Recreate scanner instance to prevent lag
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.stop();
+        await scannerRef.current.clear();
+      } catch (e) {}
+    }
+    const { Html5Qrcode } = await import('html5-qrcode');
+    const scanner = new Html5Qrcode('barcode-reader');
+    scannerRef.current = scanner;
+    startScanning();
   };
 
   useEffect(() => {
@@ -133,7 +156,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
               Confirmar código
             </button>
             <button
-              onClick={() => { setDetected(false); setLastCode(''); }}
+              onClick={rescan}
               className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition"
             >
               Reescanear
