@@ -118,6 +118,7 @@ export default function InventarioPage() {
   const [catalogSearch, setCatalogSearch] = useState('');
   const [stockEdits, setStockEdits] = useState<Record<string, string>>({});
   const [packQtyEdits, setPackQtyEdits] = useState<Record<string, string>>({});
+  const [barcodeEdits, setBarcodeEdits] = useState<Record<string, string>>({});
   const [savingStockId, setSavingStockId] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(false);
 
@@ -520,12 +521,21 @@ export default function InventarioPage() {
       };
       if (needsSavePackQty) payload.PACKQTY = packQty;
 
+      // Save inline barcode if provided
+      const inlineBarcode = barcodeEdits[productId]?.trim();
+      const existingBarcode = getBarcode(product);
+      if (!existingBarcode && inlineBarcode) {
+        const features = product.FEATURES || '';
+        payload.FEATURES = features ? `${features}\nBarcode: ${inlineBarcode}` : `Barcode: ${inlineBarcode}`;
+      }
+
       await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, productId, payload);
       setProducts(prev => prev.map(p => p.$id === productId
-        ? { ...p, STOCK: finalStock, ISACTIVE: finalStock > 0, PACKQTY: packQty }
+        ? { ...p, STOCK: finalStock, ISACTIVE: finalStock > 0, PACKQTY: packQty, FEATURES: payload.FEATURES || p.FEATURES }
         : p));
       setStockEdits(prev => { const n = { ...prev }; delete n[productId]; return n; });
       setPackQtyEdits(prev => { const n = { ...prev }; delete n[productId]; return n; });
+      setBarcodeEdits(prev => { const n = { ...prev }; delete n[productId]; return n; });
     } catch (e: any) {
       alert('Error: ' + e.message);
     } finally {
@@ -668,10 +678,13 @@ export default function InventarioPage() {
                   <tbody className="divide-y divide-gray-100">
                     {catalogFiltered.slice(0, 200).map(p => {
                       const sku = getSku(p);
+                      const barcode = getBarcode(p);
                       const editing = stockEdits[p.$id] ?? '';
                       const inlinePack = packQtyEdits[p.$id] ?? '';
+                      const inlineBarcode = barcodeEdits[p.$id] ?? '';
                       const saving = savingStockId === p.$id;
                       const hasPack = !!(p.PACKQTY && p.PACKQTY > 0);
+                      const hasBarcode = !!barcode;
                       const effectivePack = hasPack ? p.PACKQTY! : (parseInt(inlinePack, 10) || 0);
                       const pkgs = parseInt(editing, 10) || 0;
                       const totalUnits = pkgs * effectivePack;
@@ -690,20 +703,37 @@ export default function InventarioPage() {
                           <td className="px-4 py-2">
                             <div className="font-medium text-gray-900 line-clamp-1">{p.NAME || '—'}</div>
                             <div className="text-xs text-gray-400 line-clamp-1">{p.DESCRIPTION || ''}</div>
-                            {hasPack ? (
-                              <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-medium rounded">
-                                <Package className="w-3 h-3" />{p.PACKQTY} u/paquete
-                              </div>
-                            ) : (
-                              <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-medium rounded">
-                                Sin paquete
-                              </div>
-                            )}
+                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                              {hasPack ? (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-medium rounded">
+                                  <Package className="w-3 h-3" />{p.PACKQTY} u/paquete
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-medium rounded">
+                                  Sin paquete
+                                </span>
+                              )}
+                              {hasBarcode ? (
+                                <span className="inline-flex items-center px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-mono rounded">BC: {barcode}</span>
+                              ) : (
+                                <span className="inline-flex items-center px-1.5 py-0.5 bg-rose-50 text-rose-600 text-[10px] font-medium rounded">Sin código</span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-2 text-xs font-mono text-gray-600">{sku || '—'}</td>
                           <td className="px-4 py-2 text-gray-700">${(p.PRICE || 0).toLocaleString('es-CL')}</td>
                           <td className="px-4 py-2">
                             <div className="flex flex-col gap-1.5">
+                              {!hasBarcode && (
+                                <input
+                                  type="text"
+                                  value={inlineBarcode}
+                                  onChange={e => setBarcodeEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                  placeholder="Código de barras"
+                                  title="Añadir código de barras"
+                                  className="w-full px-2 py-1.5 text-sm border border-rose-300 bg-rose-50 rounded focus:outline-none focus:border-rose-500 font-mono"
+                                />
+                              )}
                               <div className="flex items-center gap-2">
                                 {!hasPack && (
                                   <input
@@ -755,67 +785,99 @@ export default function InventarioPage() {
                     const barcode = getBarcode(p);
                     const editing = stockEdits[p.$id] ?? '';
                     const inlinePack = packQtyEdits[p.$id] ?? '';
+                    const inlineBarcode = barcodeEdits[p.$id] ?? '';
                     const saving = savingStockId === p.$id;
                     const hasPack = !!(p.PACKQTY && p.PACKQTY > 0);
+                    const hasBarcode = !!barcode;
                     const effectivePack = hasPack ? p.PACKQTY! : (parseInt(inlinePack, 10) || 0);
                     const pkgs = parseInt(editing, 10) || 0;
                     const totalUnits = pkgs * effectivePack;
                     return (
-                      <div key={p.$id} className="p-4 flex gap-3">
-                        <div className="shrink-0">
-                          {p.IMAGEURL ? (
-                            <img src={p.IMAGEURL} alt="" className="w-14 h-14 object-cover rounded-lg cursor-pointer"
-                              onClick={() => setPreviewImg(p.IMAGEURL || null)} />
-                          ) : (
-                            <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center">
-                              <Package className="w-5 h-5 text-gray-300" />
+                      <div key={p.$id} className="p-4">
+                        <div className="flex gap-3">
+                          <div className="shrink-0">
+                            {p.IMAGEURL ? (
+                              <img src={p.IMAGEURL} alt="" className="w-14 h-14 object-cover rounded-lg cursor-pointer"
+                                onClick={() => setPreviewImg(p.IMAGEURL || null)} />
+                            ) : (
+                              <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center">
+                                <Package className="w-5 h-5 text-gray-300" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 text-sm line-clamp-1">{p.NAME || '—'}</div>
+                            <div className="text-xs text-gray-500 mt-0.5">
+                              {sku && <span className="font-mono mr-2">SKU: {sku}</span>}
+                              {hasBarcode && <span className="font-mono text-gray-400">BC: {barcode}</span>}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span className="text-sm text-gray-700">${(p.PRICE || 0).toLocaleString('es-CL')}</span>
+                              {hasPack ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[11px] font-medium rounded-full">
+                                  <Package className="w-3 h-3" />{p.PACKQTY} u/paquete
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-[11px] font-medium rounded-full">
+                                  ⚠ Sin paquete
+                                </span>
+                              )}
+                              {!hasBarcode && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-100 text-rose-600 text-[11px] font-medium rounded-full">
+                                  ⚠ Sin código
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Inline inputs — stacked with clear labels */}
+                        <div className="mt-3 space-y-2">
+                          {!hasBarcode && (
+                            <div>
+                              <label className="text-[10px] text-rose-600 font-semibold uppercase tracking-wide mb-0.5 block">Código de barras</label>
+                              <input
+                                type="text"
+                                value={inlineBarcode}
+                                onChange={e => setBarcodeEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                placeholder="Escanear o escribir código..."
+                                title="Añadir código de barras"
+                                className="w-full px-3 py-2 text-sm border border-rose-300 bg-rose-50 rounded-lg focus:outline-none focus:border-rose-500 font-mono"
+                              />
                             </div>
                           )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 text-sm line-clamp-1">{p.NAME || '—'}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">
-                            {sku && <span className="font-mono mr-2">SKU: {sku}</span>}
-                            {barcode && <span className="font-mono">BC: {barcode}</span>}
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-sm text-gray-700">${(p.PRICE || 0).toLocaleString('es-CL')}</span>
-                            {hasPack ? (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-medium rounded">
-                                <Package className="w-3 h-3" />{p.PACKQTY} u/pkg
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-medium rounded">
-                                Sin paquete
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          <div className="flex items-end gap-2">
                             {!hasPack && (
+                              <div className="flex-1">
+                                <label className="text-[10px] text-amber-600 font-semibold uppercase tracking-wide mb-0.5 block">Und. por paquete</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={inlinePack}
+                                  onChange={e => setPackQtyEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                  placeholder="Ej: 12"
+                                  title="Unidades por paquete"
+                                  className="w-full px-3 py-2 text-sm border border-amber-300 bg-amber-50 rounded-lg focus:outline-none focus:border-amber-500"
+                                />
+                              </div>
+                            )}
+                            <div className="flex-1">
+                              <label className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-0.5 block">Paquetes</label>
                               <input
                                 type="number"
-                                min={1}
-                                value={inlinePack}
-                                onChange={e => setPackQtyEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
-                                placeholder="u/pkg"
-                                title="Unidades por paquete"
-                                className="w-20 px-2 py-2 text-sm border border-amber-300 bg-amber-50 rounded-lg focus:outline-none focus:border-amber-500"
+                                min={0}
+                                value={editing}
+                                onChange={e => setStockEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                onKeyDown={e => { if (e.key === 'Enter') assignStock(p.$id); }}
+                                placeholder="Ej: 3"
+                                title="Cantidad de paquetes"
+                                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
                               />
-                            )}
-                            <input
-                              type="number"
-                              min={0}
-                              value={editing}
-                              onChange={e => setStockEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
-                              onKeyDown={e => { if (e.key === 'Enter') assignStock(p.$id); }}
-                              placeholder="paq."
-                              title="Cantidad de paquetes"
-                              className="w-20 px-2 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
-                            />
+                            </div>
                             <button
                               onClick={() => assignStock(p.$id)}
                               disabled={saving || !editing || pkgs <= 0 || (!hasPack && (!inlinePack || parseInt(inlinePack, 10) <= 0))}
-                              className="flex items-center gap-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition">
+                              className="flex items-center gap-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition shrink-0">
                               {saving ? (
                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                               ) : (
@@ -825,7 +887,7 @@ export default function InventarioPage() {
                             </button>
                           </div>
                           {totalUnits > 0 && (
-                            <div className="text-[11px] text-gray-500 mt-1">= {totalUnits} unidades</div>
+                            <div className="text-xs text-gray-500 font-medium">= {totalUnits} unidades totales</div>
                           )}
                         </div>
                       </div>
