@@ -2623,7 +2623,7 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         setWidgetProdLoading(true);
         const { databaseId } = getAppwriteConfig();
         const { databases } = getServices();
-        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.orderAsc('NAME'), Query.limit(200)]);
+        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.greaterThan('STOCK', 0), Query.orderAsc('NAME'), Query.limit(200)]);
         setWidgetProducts(res.documents as unknown as Product[]);
       } catch { /* ignore */ }
       finally { setWidgetProdLoading(false); }
@@ -3045,7 +3045,7 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
           <select
             value={s.countdownOfferId || ''}
             onChange={e => onUpdate({ countdownOfferId: e.target.value })}
-            style={{ padding: '6px 8px', fontSize: 12, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff' }}
+            style={{ padding: '6px 8px', fontSize: 12, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', color: '#1f2937' }}
           >
             <option value="">{countdownOffersLoading ? 'Cargando...' : '— Sin oferta vinculada (modo manual) —'}</option>
             {countdownOffers.map(o => {
@@ -3105,7 +3105,7 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
           <select
             value={s.featuredProductProductId || ''}
             onChange={e => onProductSelect(e.target.value)}
-            style={{ padding: '6px 8px', fontSize: 12, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff' }}
+            style={{ padding: '6px 8px', fontSize: 12, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', color: '#1f2937' }}
           >
             <option value="">{widgetProdLoading ? 'Cargando...' : '— Seleccionar producto —'}</option>
             {widgetProducts.map(p => (
@@ -3143,7 +3143,7 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
             <select
               value={s.productWidgetProductId || ''}
               onChange={e => onProductSelect(e.target.value)}
-              style={{ padding: '6px 8px', fontSize: 12, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff' }}
+              style={{ padding: '6px 8px', fontSize: 12, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', color: '#1f2937' }}
             >
               <option value="">{widgetProdLoading ? 'Cargando...' : '— Seleccionar producto —'}</option>
               {widgetProducts.map(p => (
@@ -3163,7 +3163,7 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
               <select
                 value={s.productWidgetCategoryId || ''}
                 onChange={e => onUpdate({ productWidgetCategoryId: e.target.value, productWidgetSubcategoryId: '' })}
-                style={{ padding: '6px 8px', fontSize: 12, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff' }}
+                style={{ padding: '6px 8px', fontSize: 12, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', color: '#1f2937' }}
               >
                 <option value="">{collCatLoading ? 'Cargando...' : '— Seleccionar categoría —'}</option>
                 {collCategories.map(c => (
@@ -3178,7 +3178,7 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
               <select
                 value={s.productWidgetSubcategoryId || ''}
                 onChange={e => onUpdate({ productWidgetSubcategoryId: e.target.value })}
-                style={{ padding: '6px 8px', fontSize: 12, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff' }}
+                style={{ padding: '6px 8px', fontSize: 12, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', color: '#1f2937' }}
               >
                 <option value="">— Seleccionar subcategoría —</option>
                 {widgetSubcategories.map(sc => (
@@ -3868,7 +3868,7 @@ function TestimonialsEditor({ settings, onUpdate }: { settings: SectionSettings;
         setProdLoading(true);
         const { databaseId } = getAppwriteConfig();
         const { databases } = getServices();
-        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.orderAsc('NAME'), Query.limit(200)]);
+        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.greaterThan('STOCK', 0), Query.orderAsc('NAME'), Query.limit(200)]);
         setProducts(res.documents as unknown as Product[]);
       } catch { /* ignore */ }
       finally { setProdLoading(false); }
@@ -4156,8 +4156,8 @@ function SelectField({ label, value, onChange, options }: { label: string; value
     <div>
       <label style={{ fontSize: 10, fontWeight: 600, color: '#6b7280', marginBottom: 4, display: 'block' }}>{label}</label>
       <select value={value} onChange={e => onChange(e.target.value)}
-        style={{ width: '100%', padding: '6px 8px', fontSize: 11, border: '1px solid #e5e7eb', borderRadius: 5, outline: 'none', background: '#fff' }}>
-        {options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+        style={{ width: '100%', padding: '6px 8px', fontSize: 11, border: '1px solid #e5e7eb', borderRadius: 5, outline: 'none', background: '#fff', color: '#1f2937' }}>
+        {options.map(o => <option key={o.v} value={o.v} style={{ background: '#fff', color: '#1f2937' }}>{o.l}</option>)}
       </select>
     </div>
   );

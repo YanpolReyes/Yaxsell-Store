@@ -24,7 +24,7 @@ export default function TimedOffersPage() {
       const { databaseId } = getAppwriteConfig();
       const [or, pr] = await Promise.all([
         databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION_ID, [Query.orderDesc('$createdAt'), Query.limit(100)]),
-        databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(500)]),
+        databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.greaterThan('STOCK', 0), Query.orderAsc('NAME'), Query.limit(500)]),
       ]);
       setOffers(or.documents as unknown as TimedOffer[]);
       setProducts(pr.documents as unknown as Product[]);
