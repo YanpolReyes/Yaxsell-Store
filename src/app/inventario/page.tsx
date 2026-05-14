@@ -630,8 +630,15 @@ export default function InventarioPage() {
                   value={catalogSearch}
                   onChange={e => setCatalogSearch(e.target.value)}
                   placeholder="Nombre, SKU o código de barras..."
-                  className="w-full pl-9 pr-10 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
+                  className="w-full pl-9 pr-16 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
                 />
+                {catalogSearch && (
+                  <button onClick={() => setCatalogSearch('')}
+                    className="absolute right-9 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition"
+                    title="Limpiar búsqueda">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
                 <button onClick={() => setShowScanner(true)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-indigo-600 transition"
                   title="Escanear código de barras">

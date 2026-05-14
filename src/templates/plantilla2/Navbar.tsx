@@ -1508,13 +1508,19 @@ export default function Navbar2({ initialSettings }: { initialSettings?: Record<
           <Link href="/" style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
             {ns.logoUrl ? <img src={ns.logoUrl} alt="Logo" style={{ height: 26, width: 'auto' }} /> : <Image src="/ml/logo/logo.webp" alt="Logo" width={100} height={26} style={{ height: 26, width: 'auto' }} />}
           </Link>
-          <div style={{ flex: 1, display: 'flex' }}>
+          <div style={{ flex: 1, display: 'flex', borderRadius: 6, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.08)' }}>
             <input value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && go()}
-              placeholder="Buscar..."
-              style={{ flex: 1, height: 34, padding: '0 10px', fontSize: 13, border: 'none', borderRadius: `${sRadius}px 0 0 ${sRadius}px`, outline: 'none', background: sBg }}
+              placeholder="Buscar productos..."
+              type="search"
+              enterKeyHint="search"
+              style={{ flex: 1, height: 38, padding: '0 12px', fontSize: 14, border: 'none', outline: 'none', background: '#fff', color: '#333', minWidth: 0 }}
             />
-            <button onClick={go} style={{ height: 34, padding: '0 10px', background: sBtnBg, border: 'none', borderRadius: `0 ${sRadius}px ${sRadius}px 0`, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-              <Search size={15} color={sBtnText} />
+            <button
+              onClick={(e) => { e.preventDefault(); go(); }}
+              type="button"
+              aria-label="Buscar"
+              style={{ height: 38, minWidth: 44, padding: '0 14px', background: accent, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Search size={18} color="#fff" strokeWidth={2.5} />
             </button>
           </div>
           {isLoggedIn && user ? (

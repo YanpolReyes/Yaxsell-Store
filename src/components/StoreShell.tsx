@@ -45,10 +45,10 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
       <DynamicNavbar />
       <main className="min-h-screen">{children}</main>
       {!hideNativeFooter && (
-      <footer style={{ background: '#f9f9f9', color: '#374151', borderTop: '1px solid #e5e7eb', marginTop: 40 }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 5% 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 32 }}>
+      <footer className="store-footer" style={{ background: '#f9f9f9', color: '#374151', borderTop: '1px solid #e5e7eb', marginTop: 40 }}>
+        <div className="store-footer-grid" style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 5% 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 32 }}>
           {FOOTER_LINKS.map(group => (
-            <div key={group.title}>
+            <div key={group.title} className="store-footer-col">
               <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: '#111827' }}>{group.title}</h4>
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {group.items.map(item => (
@@ -63,7 +63,7 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
               </ul>
             </div>
           ))}
-          <div>
+          <div className="store-footer-newsletter">
             <NewsletterSignup />
           </div>
         </div>

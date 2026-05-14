@@ -98,7 +98,7 @@ function CountdownBlocks({ offer }: { offer: TimedOffer; dark?: boolean }) {
           </div>
         ))}
       </div>
-      <span style={{ fontSize: 9, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px' }}>{label}</span>
+      <span className="cd-label" style={{ fontSize: 9, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px' }}>{label}</span>
     </div>
   );
 
@@ -1884,7 +1884,7 @@ export default function HomePage2() {
             if (!mainOffer && sideProducts.length === 0) return null;
             const offerImg = mainOffer?.customImagePath || offerProduct?.IMAGEURL || '';
             return (
-              <div key={section.id} data-section-id="offers_featured" style={{ padding: '0 8% 16px' }}>
+              <div key={section.id} data-section-id="offers_featured" className="offer-section-pad" style={{ padding: '0 8% 16px' }}>
                 <div style={{ ...S.section, overflow: 'visible' }}>
                   <div style={S.sectionPad}>
                     <div style={{ ...S.sectionHeader, marginBottom: 16 }}>
@@ -1900,9 +1900,9 @@ export default function HomePage2() {
                         style={{ position: 'relative', borderRadius: 20, overflow: 'hidden', minHeight: 340, display: 'flex', marginBottom: sideProducts.length > 0 ? 18 : 0, background: '#fff', transformStyle: 'preserve-3d', willChange: 'transform', cursor: 'default' }}>
                         {/* Background image — fills entire right side seamlessly */}
                         {offerImg && (
-                          <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+                          <div className="offer-bg-img" style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
                             <Image src={offerImg} alt={mainOffer.title} fill quality={95} style={{ objectFit: 'cover', objectPosition: 'right center' }} sizes="100vw" priority />
-                            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #ffffff 0%, #ffffff 30%, rgba(255,255,255,0.97) 38%, rgba(255,255,255,0.88) 45%, rgba(255,255,255,0.6) 55%, rgba(255,255,255,0.2) 70%, transparent 85%)' }} />
+                            <div className="offer-bg-overlay" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #ffffff 0%, #ffffff 30%, rgba(255,255,255,0.97) 38%, rgba(255,255,255,0.88) 45%, rgba(255,255,255,0.6) 55%, rgba(255,255,255,0.2) 70%, transparent 85%)' }} />
                             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(255,255,255,0.3) 0%, transparent 20%, transparent 80%, rgba(255,255,255,0.4) 100%)' }} />
                           </div>
                         )}
@@ -1915,31 +1915,31 @@ export default function HomePage2() {
                         <div className="offer-particle offer-p5" style={{ position: 'absolute', width: 10, height: 10, borderRadius: '50%', background: 'rgba(255,65,108,0.12)', top: '10%', left: '80%', zIndex: 1 }} />
 
                         {/* Left content */}
-                        <div style={{ position: 'relative', zIndex: 2, flex: 1, padding: '32px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center', maxWidth: '52%' }}>
+                        <div className="offer-content" style={{ position: 'relative', zIndex: 2, flex: 1, padding: '32px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center', maxWidth: '52%' }}>
                           {/* Badges */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                          <div className="offer-badges" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                             <span className="offer-flash-badge" style={{ background: 'linear-gradient(135deg, #ff416c, #ff4b2b)', color: '#fff', fontSize: 10, fontWeight: 800, padding: '6px 14px', borderRadius: 8, letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 5 }}><Zap size={12} /> OFERTA FLASH</span>
                             {mainOffer.discountPercentage > 0 && <span className="offer-disc-badge" style={{ background: '#ff3b30', color: '#fff', fontSize: 14, fontWeight: 800, padding: '5px 12px', borderRadius: 8 }}>-{Math.round(mainOffer.discountPercentage)}%</span>}
                           </div>
 
                           {/* Title */}
                           <Link href={`/productos/${mainOffer.targetId}`} style={{ textDecoration: 'none' }}>
-                            <h3 style={{ margin: '0 0 12px', fontSize: 20, fontWeight: 700, color: '#111', lineHeight: 1.3, letterSpacing: '-0.4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{mainOffer.productName || mainOffer.title}</h3>
+                            <h3 className="offer-title" style={{ margin: '0 0 12px', fontSize: 20, fontWeight: 700, color: '#111', lineHeight: 1.3, letterSpacing: '-0.4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{mainOffer.productName || mainOffer.title}</h3>
                           </Link>
 
                           {/* Prices — green discount, red original */}
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 2 }}>
-                            <span style={{ fontSize: 36, fontWeight: 800, color: '#00a650', letterSpacing: '-1px', fontFamily: 'system-ui' }}>{formatPrice(mainOffer.discountPrice)}</span>
-                            {mainOffer.originalPrice > mainOffer.discountPrice && <span style={{ fontSize: 16, color: '#e53935', textDecoration: 'line-through', fontWeight: 600 }}>{formatPrice(mainOffer.originalPrice)}</span>}
+                            <span className="offer-price-main" style={{ fontSize: 36, fontWeight: 800, color: '#00a650', letterSpacing: '-1px', fontFamily: 'system-ui' }}>{formatPrice(mainOffer.discountPrice)}</span>
+                            {mainOffer.originalPrice > mainOffer.discountPrice && <span className="offer-price-old" style={{ fontSize: 16, color: '#e53935', textDecoration: 'line-through', fontWeight: 600 }}>{formatPrice(mainOffer.originalPrice)}</span>}
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 20 }}>
-                            <span style={{ fontSize: 13, color: '#00a650', fontWeight: 700 }}>Ahorras {formatPrice(mainOffer.originalPrice - mainOffer.discountPrice)}</span>
+                            <span className="offer-savings" style={{ fontSize: 13, color: '#00a650', fontWeight: 700 }}>Ahorras {formatPrice(mainOffer.originalPrice - mainOffer.discountPrice)}</span>
                             <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#ddd' }} />
                             <span style={{ fontSize: 11, color: '#999' }}>Envío gratis</span>
                           </div>
 
                           {/* Premium countdown — clean, no bar lines */}
-                          <div style={{ marginBottom: 20 }}>
+                          <div className="offer-countdown-wrap" style={{ marginBottom: 20 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                               <div className="offer-urgency-dot" style={{ width: 7, height: 7, borderRadius: '50%', background: '#ff3b30' }} />
                               <span style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px' }}>Termina en</span>
@@ -1984,7 +1984,7 @@ export default function HomePage2() {
                               <Link key={p.$id} href={`/productos/${p.$id}`} className="category-card offer-side-card" style={{ textDecoration: 'none', background: '#fff', borderRadius: 14, border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 155, maxWidth: 155, flexShrink: 0, transition: 'box-shadow .3s, transform .3s', transformStyle: 'preserve-3d', willChange: 'transform' }}
                                 onMouseMove={e => { const el = e.currentTarget; el.style.transition = 'box-shadow .3s'; const r = el.getBoundingClientRect(); const rx = ((e.clientY - r.top) / r.height - 0.5) * 8; const ry = ((e.clientX - r.left) / r.width - 0.5) * -8; el.style.transform = `perspective(500px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-2px) scale(1.02)`; }}
                                 onMouseLeave={e => { const el = e.currentTarget; el.style.transition = ''; el.style.transform = ''; }}>
-                                <div style={{ position: 'relative', height: 130, background: '#f8f8f8' }}>
+                                <div className="offer-side-img" style={{ position: 'relative', height: 130, background: '#f8f8f8' }}>
                                   {p.IMAGEURL ? <Image src={p.IMAGEURL} alt={p.NAME || ''} fill style={{ objectFit: 'contain', padding: 8 }} sizes="155px" /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📦</div>}
                                   <span style={{ position: 'absolute', bottom: 6, left: 6, background: '#00a650', color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 6 }}>{discPct}% OFF</span>
                                 </div>

@@ -77,3 +77,143 @@ select option { background: #1a1a2e; color: #f0f0f8; }
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #0a0a0f; }
 ::-webkit-scrollbar-thumb { background: #3d1a78; border-radius: 3px; }
+
+/* ── Offer section responsive ── */
+@media (max-width: 768px) {
+  .offer-hero-card {
+    min-height: auto !important;
+    flex-direction: column !important;
+    margin-bottom: 12px !important;
+  }
+  .offer-hero-card .offer-content {
+    max-width: 100% !important;
+    padding: 16px !important;
+  }
+  .offer-hero-card .offer-bg-img {
+    position: relative !important;
+    height: 180px !important;
+  }
+  .offer-hero-card .offer-bg-overlay {
+    background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.95) 70%, #ffffff 100%) !important;
+  }
+  .offer-hero-card .offer-price-main {
+    font-size: 24px !important;
+  }
+  .offer-hero-card .offer-price-old {
+    font-size: 13px !important;
+  }
+  .offer-hero-card .offer-title {
+    font-size: 16px !important;
+  }
+  .offer-hero-card .offer-cta-btn,
+  .offer-hero-card .offer-details-btn {
+    padding: 10px 18px !important;
+    font-size: 13px !important;
+  }
+  .offer-hero-card .offer-badges {
+    margin-bottom: 8px !important;
+  }
+  .offer-hero-card .offer-countdown-wrap {
+    margin-bottom: 12px !important;
+  }
+  .offer-section-pad {
+    padding: 0 4% 12px !important;
+  }
+  /* Countdown blocks mobile */
+  .cd-digit {
+    width: 22px !important;
+    height: 32px !important;
+    border-radius: 6px !important;
+  }
+  .cd-digit span {
+    font-size: 17px !important;
+  }
+  .cd-block {
+    gap: 2px !important;
+  }
+  .cd-sep {
+    margin-bottom: 12px !important;
+    padding-top: 2px !important;
+  }
+  .cd-sep div {
+    width: 3px !important;
+    height: 3px !important;
+  }
+  .cd-label {
+    font-size: 7px !important;
+  }
+  /* Side products */
+  .offer-side-card {
+    min-width: 130px !important;
+    max-width: 130px !important;
+  }
+  .offer-side-card .offer-side-img {
+    height: 100px !important;
+  }
+  /* Hide 3D hover on touch devices */
+  .offer-hero-card,
+  .offer-side-card {
+    transform: none !important;
+    will-change: auto !important;
+  }
+  /* Hide floating particles on mobile */
+  .offer-particle {
+    display: none !important;
+  }
+  /* Savings row */
+  .offer-hero-card .offer-savings {
+    font-size: 11px !important;
+  }
+
+  /* ── Store footer mobile ── */
+  .store-footer-grid {
+    padding: 24px 6% 16px !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 20px !important;
+    text-align: center !important;
+  }
+  .store-footer-grid h4 {
+    font-size: 13px !important;
+    margin-bottom: 8px !important;
+  }
+  .store-footer-grid li {
+    margin-bottom: 4px !important;
+  }
+  .store-footer-grid a {
+    font-size: 12px !important;
+  }
+  .store-footer-newsletter {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+    text-align: center !important;
+  }
+
+  /* ── Video section mobile ── */
+  [data-section-id="video"],
+  [data-section-id^="video_"] {
+    padding: 0 4% 20px !important;
+  }
+  [data-section-id="video"] > div,
+  [data-section-id^="video_"] > div {
+    padding: 16px 12px !important;
+  }
+  [data-section-id="video"] h2,
+  [data-section-id^="video_"] h2 {
+    font-size: 18px !important;
+    margin-bottom: 12px !important;
+  }
+  [data-section-id="video"] iframe,
+  [data-section-id^="video_"] iframe {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* ── General section padding reduce on mobile ── */
+  [data-section-id="rich_text"],
+  [data-section-id^="rich_text_"],
+  [data-section-id="faq"],
+  [data-section-id^="faq_"] {
+    padding-left: 4% !important;
+    padding-right: 4% !important;
+  }
+}
