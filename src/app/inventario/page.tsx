@@ -117,6 +117,7 @@ export default function InventarioPage() {
   const [view, setView] = useState<'excel' | 'catalog'>('excel');
   const [catalogSearch, setCatalogSearch] = useState('');
   const [stockEdits, setStockEdits] = useState<Record<string, string>>({});
+  const [packQtyEdits, setPackQtyEdits] = useState<Record<string, string>>({});
   const [savingStockId, setSavingStockId] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(false);
 
@@ -488,19 +489,43 @@ export default function InventarioPage() {
   };
 
   const assignStock = async (productId: string) => {
-    const raw = stockEdits[productId];
-    const value = parseInt(raw, 10);
-    if (isNaN(value) || value < 0) return;
+    const product = products.find(p => p.$id === productId);
+    if (!product) return;
+
+    const pkgRaw = stockEdits[productId];
+    const pkgs = parseInt(pkgRaw, 10);
+    if (isNaN(pkgs) || pkgs <= 0) return;
+
+    // Determine PACKQTY: existing on product OR entered inline
+    let packQty = product.PACKQTY || 0;
+    const inlinePackQtyRaw = packQtyEdits[productId];
+    const inlinePackQty = parseInt(inlinePackQtyRaw, 10);
+    const needsSavePackQty = !packQty && !isNaN(inlinePackQty) && inlinePackQty > 0;
+    if (needsSavePackQty) packQty = inlinePackQty;
+
+    if (!packQty || packQty <= 0) {
+      alert('Debes establecer la cantidad por paquete primero.');
+      return;
+    }
+
+    const finalStock = pkgs * packQty;
+
     setSavingStockId(productId);
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, productId, {
-        STOCK: value,
-        ISACTIVE: value > 0,
-      });
-      setProducts(prev => prev.map(p => p.$id === productId ? { ...p, STOCK: value, ISACTIVE: value > 0 } : p));
+      const payload: Record<string, any> = {
+        STOCK: finalStock,
+        ISACTIVE: finalStock > 0,
+      };
+      if (needsSavePackQty) payload.PACKQTY = packQty;
+
+      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, productId, payload);
+      setProducts(prev => prev.map(p => p.$id === productId
+        ? { ...p, STOCK: finalStock, ISACTIVE: finalStock > 0, PACKQTY: packQty }
+        : p));
       setStockEdits(prev => { const n = { ...prev }; delete n[productId]; return n; });
+      setPackQtyEdits(prev => { const n = { ...prev }; delete n[productId]; return n; });
     } catch (e: any) {
       alert('Error: ' + e.message);
     } finally {
@@ -637,7 +662,12 @@ export default function InventarioPage() {
                     {catalogFiltered.slice(0, 200).map(p => {
                       const sku = getSku(p);
                       const editing = stockEdits[p.$id] ?? '';
+                      const inlinePack = packQtyEdits[p.$id] ?? '';
                       const saving = savingStockId === p.$id;
+                      const hasPack = !!(p.PACKQTY && p.PACKQTY > 0);
+                      const effectivePack = hasPack ? p.PACKQTY! : (parseInt(inlinePack, 10) || 0);
+                      const pkgs = parseInt(editing, 10) || 0;
+                      const totalUnits = pkgs * effectivePack;
                       return (
                         <tr key={p.$id} className="hover:bg-gray-50">
                           <td className="px-4 py-2">
@@ -653,31 +683,57 @@ export default function InventarioPage() {
                           <td className="px-4 py-2">
                             <div className="font-medium text-gray-900 line-clamp-1">{p.NAME || '—'}</div>
                             <div className="text-xs text-gray-400 line-clamp-1">{p.DESCRIPTION || ''}</div>
+                            {hasPack ? (
+                              <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-medium rounded">
+                                <Package className="w-3 h-3" />{p.PACKQTY} u/paquete
+                              </div>
+                            ) : (
+                              <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-medium rounded">
+                                Sin paquete
+                              </div>
+                            )}
                           </td>
                           <td className="px-4 py-2 text-xs font-mono text-gray-600">{sku || '—'}</td>
                           <td className="px-4 py-2 text-gray-700">${(p.PRICE || 0).toLocaleString('es-CL')}</td>
                           <td className="px-4 py-2">
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="number"
-                                min={0}
-                                value={editing}
-                                onChange={e => setStockEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
-                                onKeyDown={e => { if (e.key === 'Enter') assignStock(p.$id); }}
-                                placeholder="0"
-                                className="w-20 px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:border-indigo-500"
-                              />
-                              <button
-                                onClick={() => assignStock(p.$id)}
-                                disabled={saving || !editing || parseInt(editing, 10) <= 0}
-                                className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-medium rounded transition">
-                                {saving ? (
-                                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                ) : (
-                                  <Plus className="w-3 h-3" />
+                            <div className="flex flex-col gap-1.5">
+                              <div className="flex items-center gap-2">
+                                {!hasPack && (
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    value={inlinePack}
+                                    onChange={e => setPackQtyEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                    placeholder="u/pkg"
+                                    title="Unidades por paquete"
+                                    className="w-16 px-2 py-1.5 text-sm border border-amber-300 bg-amber-50 rounded focus:outline-none focus:border-amber-500"
+                                  />
                                 )}
-                                Activar
-                              </button>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={editing}
+                                  onChange={e => setStockEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                  onKeyDown={e => { if (e.key === 'Enter') assignStock(p.$id); }}
+                                  placeholder="paq."
+                                  title="Cantidad de paquetes"
+                                  className="w-16 px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:border-indigo-500"
+                                />
+                                <button
+                                  onClick={() => assignStock(p.$id)}
+                                  disabled={saving || !editing || pkgs <= 0 || (!hasPack && (!inlinePack || parseInt(inlinePack, 10) <= 0))}
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-medium rounded transition">
+                                  {saving ? (
+                                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                  ) : (
+                                    <Plus className="w-3 h-3" />
+                                  )}
+                                  Activar
+                                </button>
+                              </div>
+                              {totalUnits > 0 && (
+                                <div className="text-[11px] text-gray-500">= {totalUnits} unidades</div>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -691,7 +747,12 @@ export default function InventarioPage() {
                     const sku = getSku(p);
                     const barcode = getBarcode(p);
                     const editing = stockEdits[p.$id] ?? '';
+                    const inlinePack = packQtyEdits[p.$id] ?? '';
                     const saving = savingStockId === p.$id;
+                    const hasPack = !!(p.PACKQTY && p.PACKQTY > 0);
+                    const effectivePack = hasPack ? p.PACKQTY! : (parseInt(inlinePack, 10) || 0);
+                    const pkgs = parseInt(editing, 10) || 0;
+                    const totalUnits = pkgs * effectivePack;
                     return (
                       <div key={p.$id} className="p-4 flex gap-3">
                         <div className="shrink-0">
@@ -710,21 +771,44 @@ export default function InventarioPage() {
                             {sku && <span className="font-mono mr-2">SKU: {sku}</span>}
                             {barcode && <span className="font-mono">BC: {barcode}</span>}
                           </div>
-                          <div className="text-sm text-gray-700 mt-1">${(p.PRICE || 0).toLocaleString('es-CL')}</div>
-                          <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-sm text-gray-700">${(p.PRICE || 0).toLocaleString('es-CL')}</span>
+                            {hasPack ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-medium rounded">
+                                <Package className="w-3 h-3" />{p.PACKQTY} u/pkg
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-medium rounded">
+                                Sin paquete
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-2 flex-wrap">
+                            {!hasPack && (
+                              <input
+                                type="number"
+                                min={1}
+                                value={inlinePack}
+                                onChange={e => setPackQtyEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
+                                placeholder="u/pkg"
+                                title="Unidades por paquete"
+                                className="w-20 px-2 py-2 text-sm border border-amber-300 bg-amber-50 rounded-lg focus:outline-none focus:border-amber-500"
+                              />
+                            )}
                             <input
                               type="number"
                               min={0}
                               value={editing}
                               onChange={e => setStockEdits(prev => ({ ...prev, [p.$id]: e.target.value }))}
                               onKeyDown={e => { if (e.key === 'Enter') assignStock(p.$id); }}
-                              placeholder="Stock"
-                              className="w-24 px-2 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
+                              placeholder="paq."
+                              title="Cantidad de paquetes"
+                              className="w-20 px-2 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
                             />
                             <button
                               onClick={() => assignStock(p.$id)}
-                              disabled={saving || !editing || parseInt(editing, 10) <= 0}
-                              className="flex items-center gap-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition">
+                              disabled={saving || !editing || pkgs <= 0 || (!hasPack && (!inlinePack || parseInt(inlinePack, 10) <= 0))}
+                              className="flex items-center gap-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition">
                               {saving ? (
                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                               ) : (
@@ -733,6 +817,9 @@ export default function InventarioPage() {
                               Activar
                             </button>
                           </div>
+                          {totalUnits > 0 && (
+                            <div className="text-[11px] text-gray-500 mt-1">= {totalUnits} unidades</div>
+                          )}
                         </div>
                       </div>
                     );

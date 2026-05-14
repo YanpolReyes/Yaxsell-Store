@@ -66,6 +66,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/products/import-jumpseller', label: 'Subir Masivamente', icon: Ico.Inventario },
       { href: '/admin/products/bulk-delete', label: 'Eliminar Masivamente', icon: Ico.OctagonX },
       { href: '/admin/products/bulk-edit', label: 'Editar Masivamente', icon: Ico.Sparkles },
+      { href: '/admin/products/pack-qty', label: 'Cant. por Paquete', icon: Ico.Inventario },
     ]},
     { href: '/admin/users',     label: 'Clientes',    icon: Ico.Usuarios },
     { href: '/admin/analytics', label: 'Analytics',    icon: Ico.Analytics },
