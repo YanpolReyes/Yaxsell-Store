@@ -93,8 +93,18 @@ export default function Navbar1() {
     return () => document.removeEventListener('mousedown', handler);
   }, [authPopupOpen]);
 
-  // En homepage el HomePage1 ya tiene su propio header
-  if (isHome) return null;
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 1024);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // En homepage el HomePage1 ya tiene su propio header (desktop)
+  // En mobile mostramos este navbar en todas las páginas
+  if (isHome && !isMobile) return null;
 
   const NAV_LINKS = [
     { label: 'Inicio', href: '/' },
@@ -120,7 +130,7 @@ export default function Navbar1() {
   return (
     <>
       <style>{`
-        .tpl1-nav { position: sticky; top: 0; z-index: 1000; transition: all 0.3s ease; }
+        .tpl1-nav { position: sticky; top: 0; z-index: 9999; transition: all 0.3s ease; }
         .tpl1-nav.scrolled { box-shadow: 0 2px 12px rgba(236,72,153,0.04); backdrop-filter: blur(12px); }
         .tpl1-nav-inner { max-width: 1600px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; height: 76px; }
         .tpl1-nav-logo { display: flex; align-items: center; text-decoration: none; gap: 10px; }

@@ -23,22 +23,38 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @media screen and (max-width: 1024px) {
-  /* Permite que el menú hamburguesa nativo del tema vuelva a aparecer */
-  [data-template="1"] .musk-main-header .menu-btn-3 {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    cursor: pointer;
-    background: transparent;
-    border: none;
-    z-index: 100;
+  /* Ocultar el header de Shopify y announcement bar en mobile — Navbar1 toma el control */
+  [data-template="1"] .musk-main-header,
+  [data-template="1"] #shopify-section-sections--22405132747000__header_fYEwWD,
+  [data-template="1"] #shopify-section-sections--22405132747000__announcement_bar_B8FdRK,
+  [data-template="1"] .announcement-bar,
+  [data-template="1"] .musk-announcement-bar {
+    display: none !important;
   }
 
-  /* Ocultar nav desktop en mobile (sobreescribe la regla global del shopify-fix) */
-  [data-template="1"] .musk-main-header .musk-navbar {
-    display: none !important;
+  /* Eliminar gap arriba y abajo del hero en mobile */
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4,
+  [data-template="1"] .musk-banner-slider,
+  [data-template="1"] .musk-main-banner {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    top: 0 !important;
+  }
+
+  /* Asegurar que el primer section dentro de data-template no tenga gap */
+  [data-template="1"] > section:first-child,
+  [data-template="1"] > div:first-child,
+  [data-template="1"] > .shopify-section:first-child {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  /* Eliminar gap debajo del hero section wrapper */
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
   }
 
   /* Header padding más compacto en mobile */
@@ -110,6 +126,303 @@
   [data-template="1"] .musk-main-banner .musk-banner-button {
     font-size: 14px !important;
     padding: 12px 22px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COUPON BANNER MOBILE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 768px) {
+  /* Reducir padding del host container */
+  #tpl1-coupon-banner-section {
+    padding: 24px 0 !important;
+  }
+  #tpl1-coupon-banner-section > div {
+    padding: 0 12px !important;
+  }
+
+  /* Banner interno más compacto */
+  .cb-banner {
+    padding: 16px 14px !important;
+  }
+
+  /* Layout vertical en mobile */
+  .cb-banner > div:last-of-type {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  /* Porcentaje más pequeño */
+  .cb-hero-percent {
+    font-size: 32px !important;
+  }
+
+  /* Ocultar divider vertical */
+  .cb-banner .cb-divider,
+  .cb-banner > div:last-of-type > div:nth-child(2) {
+    display: none !important;
+  }
+
+  /* Ticket icon más pequeño */
+  .cb-ticket-icon {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* Code box más compacta */
+  .cb-code-box {
+    padding: 10px 14px !important;
+  }
+  .cb-code-box span {
+    font-size: 15px !important;
+  }
+
+  /* Copy button más compacto */
+  .cb-copy-btn {
+    padding: 10px 16px !important;
+    font-size: 12px !important;
+    min-width: 90px !important;
+  }
+
+  /* Ocultar notches del ticket en mobile */
+  .cb-banner > div[style*="translate(-50%"],
+  .cb-banner > div[style*="translate(50%"] {
+    display: none !important;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  #tpl1-coupon-banner-section {
+    padding: 16px 0 !important;
+  }
+  .cb-banner {
+    padding: 14px 10px !important;
+    border-radius: 12px !important;
+  }
+  .cb-hero-percent {
+    font-size: 26px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MEDIA GALLERY (3 VIDEOS) MOBILE — apilar centrados
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 768px) {
+  /* Apilar los 3 videos verticalmente */
+  [data-template="1"] .media_gallery_items.col-sm-4 {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+    margin-bottom: 16px !important;
+  }
+
+  /* Centrar cada video */
+  [data-template="1"] .media_gallery_items .media-gallery-item {
+    max-width: 360px !important;
+    margin: 0 auto !important;
+    border-radius: 24px !important;
+  }
+
+  /* Centrar la row de videos */
+  [data-template="1"] .media-gallery-wrapper .row {
+    justify-content: center !important;
+  }
+
+  /* Reducir padding de la sección */
+  [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  [data-template="1"] .media-gallery-wrapper {
+    padding-top: 40px !important;
+    padding-bottom: 20px !important;
+  }
+
+  /* Título stroke más pequeño */
+  [data-template="1"] .fusion-stroke-text {
+    font-size: clamp(32px, 10vw, 60px) !important;
+  }
+
+  /* Botón avísame más pequeño */
+  [data-template="1"] .notify-arrival-btn {
+    padding: 8px 16px !important;
+    font-size: 12px !important;
+    bottom: 12px !important;
+    right: 12px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FEATURED PRODUCT SECTION MOBILE — centrar videos, apilar vertical
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 768px) {
+  /* Apilar galería y detalle verticalmente */
+  [data-template="1"] .product-gallery-row {
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+  [data-template="1"] .product-gallery-row > .col-lg-7,
+  [data-template="1"] .product-gallery-row > .col-lg-5,
+  [data-template="1"] .product-gallery-row > [class*="col-"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* Centrar la galería de videos */
+  [data-template="1"] .left-content {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+  [data-template="1"] .left-content .product-gallery-content {
+    width: 100% !important;
+    max-width: 500px !important;
+    margin: 0 auto !important;
+  }
+  [data-template="1"] .left-content .product-gallery-content .swiper-slide {
+    border-radius: 20px !important;
+  }
+
+  /* Centrar thumbnails debajo del video */
+  [data-template="1"] .productgallerythumbnail {
+    width: 100% !important;
+    max-width: 500px !important;
+    margin: 12px auto 0 !important;
+  }
+  [data-template="1"] .productgallerythumbnail .swiper-wrapper {
+    justify-content: center !important;
+  }
+
+  /* Detalle del producto centrado */
+  [data-template="1"] .right-content,
+  [data-template="1"] .product_inner_variant {
+    text-align: center !important;
+    padding: 24px 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+  [data-template="1"] .right-content .product-detail {
+    align-items: center !important;
+    text-align: center !important;
+  }
+  [data-template="1"] .right-content .product_variant_color_title {
+    justify-content: center !important;
+  }
+  [data-template="1"] .right-content .product-form {
+    justify-content: center !important;
+  }
+
+  /* Reducir padding de la sección */
+  [data-template="1"] .fusion-featured-wrapper {
+    padding-top: 40px !important;
+    padding-bottom: 30px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COUNTDOWN TIMER MOBILE — fondo visible, barra abajo
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 768px) {
+  /* El wrapper — imagen de fondo visible */
+  [data-template="1"] .fusion-countdown-wrapper {
+    position: relative !important;
+    min-height: 300px !important;
+    padding-top: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    background-size: cover !important;
+    background-position: center top !important;
+  }
+
+  /* El marquee — sin padding enorme del tema */
+  [data-template="1"] .fusion-countdown-wrapper .countdown-slideT-container {
+    position: relative !important;
+    padding: 20px 0 !important;
+    z-index: 2 !important;
+  }
+  [data-template="1"] .countdown-slideT-row .slide-item h3 {
+    font-size: clamp(11px, 2.8vw, 16px) !important;
+  }
+
+  /* La capa blanca — sin margin-top enorme del tema */
+  [data-template="1"] .fusion-countdown-wrapper .right-content,
+  [data-template="1"] .fusion-countdown-wrapper .gradient-bg-light {
+    position: relative !important;
+    z-index: 3 !important;
+    border-radius: 24px 24px 0 0 !important;
+    padding: 20px 16px !important;
+    margin-top: 0 !important;
+    width: 100% !important;
+    flex: 0 0 auto !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    height: auto !important;
+  }
+
+  /* Apilar la row del countdown verticalmente y centrar */
+  [data-template="1"] .contdown-row {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 16px !important;
+  }
+  [data-template="1"] .contdown-row > [class*="col-"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 auto !important;
+    text-align: center !important;
+  }
+
+  /* Título del countdown */
+  [data-template="1"] .countdown-sec-title {
+    text-align: center !important;
+  }
+  [data-template="1"] .countdown-sec-title h2 {
+    font-size: clamp(18px, 4.5vw, 28px) !important;
+  }
+  [data-template="1"] .countdown-sec-title h3 {
+    font-size: clamp(12px, 3vw, 15px) !important;
+  }
+
+  /* Centrar los items del countdown */
+  [data-template="1"] .fusion-countdown.heading_color {
+    display: flex !important;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  [data-template="1"] .fusion-countdown-item {
+    min-width: 56px !important;
+    padding: 6px 4px !important;
+  }
+  [data-template="1"] .countdown-item {
+    font-size: 26px !important;
+  }
+  [data-template="1"] .countdown-text {
+    font-size: 9px !important;
+  }
+
+  /* Botón centrado */
+  [data-template="1"] .contdown-row .button_primary,
+  [data-template="1"] .contdown-row .musk-primary-btn {
+    display: inline-block !important;
+    text-align: center !important;
+    margin: 0 auto !important;
+  }
+
+  /* Reducir padding de la sección */
+  [data-template="1"] section.fusion_countdown {
+    padding-bottom: 0 !important;
   }
 }
 
