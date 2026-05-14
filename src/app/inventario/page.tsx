@@ -126,15 +126,15 @@ export default function InventarioPage() {
   const [stockNotification, setStockNotification] = useState<{ product: Product; scannedCode: string } | null>(null);
   const [editStockModal, setEditStockModal] = useState<Product | null>(null);
   const [editPackQtyValue, setEditPackQtyValue] = useState<string>('');
+  const [editPackagesValue, setEditPackagesValue] = useState<string>('');
 
   const savePackQty = async () => {
     if (!editStockModal) return;
     const newPackQty = parseInt(editPackQtyValue, 10);
+    const newPackages = parseInt(editPackagesValue, 10);
     if (isNaN(newPackQty) || newPackQty <= 0) return;
-    const currentStock = editStockModal.STOCK || 0;
-    const currentPackQty = editStockModal.PACKQTY || 1;
-    const currentPackages = currentStock / currentPackQty;
-    const newStock = Math.round(currentPackages * newPackQty);
+    if (isNaN(newPackages) || newPackages < 0) return;
+    const newStock = newPackages * newPackQty;
     setSavingStockId(editStockModal.$id);
     try {
       const { databases } = getServices();
@@ -149,6 +149,7 @@ export default function InventarioPage() {
         : p));
       setEditStockModal(null);
       setEditPackQtyValue('');
+      setEditPackagesValue('');
     } catch (e: any) {
       alert('Error: ' + e.message);
     } finally {
@@ -849,15 +850,43 @@ export default function InventarioPage() {
               )}
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-sm line-clamp-1">{editStockModal.NAME}</div>
-                <div className="text-xs text-white/80">Und. por paquete actual: {editStockModal.PACKQTY || '—'}</div>
+                <div className="text-xs text-white/80">Stock actual: {editStockModal.STOCK} uds</div>
               </div>
-              <button onClick={() => { setEditStockModal(null); setEditPackQtyValue(''); }} className="text-white/70 hover:text-white">
+              <button onClick={() => { setEditStockModal(null); setEditPackQtyValue(''); setEditPackagesValue(''); }} className="text-white/70 hover:text-white">
                 <X size={20} />
               </button>
             </div>
             <div className="p-5 space-y-4">
+              {/* Packages input */}
               <div>
-                <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1 block">Nuevas unidades por paquete</label>
+                <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1 block">Cantidad de paquetes</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={editPackagesValue}
+                  onChange={e => setEditPackagesValue(e.target.value)}
+                  placeholder={String(Math.round((editStockModal.STOCK || 0) / (editStockModal.PACKQTY || 1)))}
+                  autoFocus
+                  className="w-full px-4 py-3 text-2xl font-bold text-center border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500"
+                />
+                <div className="flex gap-2 mt-2">
+                  <button type="button" onClick={() => setEditPackagesValue('1')}
+                    className="flex-1 py-2 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition">
+                    +1
+                  </button>
+                  <button type="button" onClick={() => setEditPackagesValue('2')}
+                    className="flex-1 py-2 text-xs font-bold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg transition border border-indigo-300">
+                    +2
+                  </button>
+                  <button type="button" onClick={() => setEditPackagesValue('3')}
+                    className="flex-1 py-2 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition">
+                    +3
+                  </button>
+                </div>
+              </div>
+              {/* Units per package input */}
+              <div>
+                <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1 block">Unidades por paquete</label>
                 <input
                   type="number"
                   min={1}
@@ -865,34 +894,33 @@ export default function InventarioPage() {
                   onChange={e => setEditPackQtyValue(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') savePackQty(); }}
                   placeholder={String(editStockModal.PACKQTY || '')}
-                  autoFocus
                   className="w-full px-4 py-3 text-2xl font-bold text-center border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500"
                 />
+                <div className="flex gap-2 mt-2">
+                  <button type="button" onClick={() => setEditPackQtyValue('6')}
+                    className="flex-1 py-2 text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg transition">
+                    +6
+                  </button>
+                  <button type="button" onClick={() => setEditPackQtyValue('12')}
+                    className="flex-1 py-2 text-xs font-bold bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg transition border border-amber-300">
+                    +12
+                  </button>
+                  <button type="button" onClick={() => setEditPackQtyValue('24')}
+                    className="flex-1 py-2 text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg transition">
+                    +24
+                  </button>
+                </div>
               </div>
               {/* Calculation preview */}
-              {editPackQtyValue && (
-                <div className="text-center text-xs text-gray-500">
-                  {editStockModal.STOCK} ÷ {editStockModal.PACKQTY || 1} = {Math.round((editStockModal.STOCK || 0) / (editStockModal.PACKQTY || 1))} paquetes → <span className="font-bold text-emerald-600">{Math.round((editStockModal.STOCK || 0) / (editStockModal.PACKQTY || 1)) * parseInt(editPackQtyValue, 10)} unidades</span>
+              {editPackagesValue && editPackQtyValue && (
+                <div className="text-center text-sm bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                  <span className="text-gray-600">{editPackagesValue} paquetes × {editPackQtyValue} und/paq = </span>
+                  <span className="font-bold text-emerald-600 text-lg">{parseInt(editPackagesValue, 10) * parseInt(editPackQtyValue, 10)} unidades</span>
                 </div>
               )}
-              {/* Shortcut chips */}
-              <div className="flex gap-2">
-                <button type="button" onClick={() => setEditPackQtyValue('6')}
-                  className="flex-1 py-2.5 text-sm font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition">
-                  6
-                </button>
-                <button type="button" onClick={() => setEditPackQtyValue('12')}
-                  className="flex-1 py-2.5 text-sm font-bold bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-xl transition border border-emerald-300">
-                  12
-                </button>
-                <button type="button" onClick={() => setEditPackQtyValue('24')}
-                  className="flex-1 py-2.5 text-sm font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition">
-                  24
-                </button>
-              </div>
               <button
                 onClick={savePackQty}
-                disabled={savingStockId === editStockModal.$id || !editPackQtyValue}
+                disabled={savingStockId === editStockModal.$id || !editPackagesValue || !editPackQtyValue}
                 className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold rounded-xl transition flex items-center justify-center gap-2">
                 {savingStockId === editStockModal.$id ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -1376,7 +1404,7 @@ export default function InventarioPage() {
                       const hasPack = !!(p.PACKQTY && p.PACKQTY > 0);
                       const hasBarcode = !!barcode;
                       return (
-                        <tr key={p.$id} className="hover:bg-gray-50 cursor-pointer" onClick={() => { setEditStockModal(p); setEditPackQtyValue(String(p.PACKQTY || '')); }}>
+                        <tr key={p.$id} className="hover:bg-gray-50 cursor-pointer" onClick={() => { setEditStockModal(p); setEditPackQtyValue(String(p.PACKQTY || '')); setEditPackagesValue(String(Math.round((p.STOCK || 0) / (p.PACKQTY || 1)))); }}>
                           <td className="px-4 py-2">
                             {p.IMAGEURL ? (
                               <img src={p.IMAGEURL} alt="" className="w-10 h-10 object-cover rounded"
@@ -1472,7 +1500,7 @@ export default function InventarioPage() {
                     const hasPack = !!(p.PACKQTY && p.PACKQTY > 0);
                     const hasBarcode = !!barcode;
                     return (
-                      <div key={p.$id} className="p-4 cursor-pointer active:bg-gray-50 transition" onClick={() => { setEditStockModal(p); setEditPackQtyValue(String(p.PACKQTY || '')); }}>
+                      <div key={p.$id} className="p-4 cursor-pointer active:bg-gray-50 transition" onClick={() => { setEditStockModal(p); setEditPackQtyValue(String(p.PACKQTY || '')); setEditPackagesValue(String(Math.round((p.STOCK || 0) / (p.PACKQTY || 1)))); }}>
                         <div className="flex gap-3">
                           <div className="shrink-0">
                             {p.IMAGEURL ? (
