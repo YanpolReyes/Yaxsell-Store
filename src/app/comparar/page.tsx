@@ -47,7 +47,7 @@ export default function CompararPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.limit(100)]);
-      setAllProducts(res.documents as unknown as Product[]);
+      setAllProducts((res.documents as unknown as Product[]).filter(p => p.ISACTIVE !== false));
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }

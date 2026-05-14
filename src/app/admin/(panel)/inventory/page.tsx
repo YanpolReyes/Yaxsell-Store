@@ -23,7 +23,7 @@ export default function InventoryPage() {
   const [bulkThresholdModal, setBulkThresholdModal] = useState(false);
   const [bulkThresholdValue, setBulkThresholdValue] = useState('');
   const [applyingBulkThreshold, setApplyingBulkThreshold] = useState(false);
-  const [sortBy, setSortBy] = useState<'name' | 'stock' | 'value' | 'sold'>('stock');
+  const [sortBy, setSortBy] = useState<'name' | 'stock' | 'value' | 'sold'>('name');
 
   const applyBulkThreshold = async () => {
     const val = bulkThresholdValue === '' ? null : parseInt(bulkThresholdValue, 10);
@@ -64,8 +64,20 @@ export default function InventoryPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(500)]);
-      setProducts(resp.documents as unknown as Product[]);
+      // Pagina hasta cargar todos los productos, filtra client-side
+      const all: Product[] = [];
+      let cursor: string | undefined;
+      while (true) {
+        const queries = [Query.limit(100)];
+        if (cursor) queries.push(Query.cursorAfter(cursor));
+        const resp: any = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
+        const docs = resp.documents as unknown as Product[];
+        if (!docs.length) break;
+        all.push(...docs);
+        if (docs.length < 100) break;
+        cursor = (docs[docs.length - 1] as any).$id;
+      }
+      setProducts(all.filter(p => p.ISACTIVE !== false));
     } catch (e: any) { setError(e.message); }
     finally { setIsLoading(false); }
   }, []);
@@ -300,8 +312,16 @@ export default function InventoryPage() {
                   <tr key={p.$id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden shrink-0">
-                          {p.IMAGEURL ? <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" /> : <Package className="w-5 h-5 text-gray-400 m-auto mt-2.5" />}
+                        <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden shrink-0 group cursor-pointer">
+                          {p.IMAGEURL ? (
+                            <img 
+                              src={p.IMAGEURL} 
+                              alt={p.NAME} 
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-150 group-hover:z-10 group-hover:shadow-lg"
+                            />
+                          ) : (
+                            <Package className="w-5 h-5 text-gray-400 m-auto mt-2.5" />
+                          )}
                         </div>
                         <p className="font-medium text-gray-900 truncate max-w-[180px]">{p.NAME}</p>
                       </div>

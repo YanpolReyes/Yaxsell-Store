@@ -91,11 +91,23 @@ export default function ProductsPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const [pr, cr] = await Promise.all([
-        databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(500)]),
-        databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]),
-      ]);
-      setProducts(pr.documents as unknown as Product[]);
+      // Carga todos los productos con paginación
+      const allProducts: Product[] = [];
+      let cursor: string | undefined;
+      while (true) {
+        const queries = [Query.limit(100)];
+        if (cursor) queries.push(Query.cursorAfter(cursor));
+        const resp: any = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
+        const docs = resp.documents as unknown as Product[];
+        if (!docs.length) break;
+        allProducts.push(...docs);
+        if (docs.length < 100) break;
+        cursor = (docs[docs.length - 1] as any).$id;
+      }
+      // Filtrar client-side: solo productos con stock > 0
+      const activeProducts = allProducts.filter(p => (p.STOCK || 0) > 0);
+      const cr = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]);
+      setProducts(activeProducts);
       setCategories(cr.documents as unknown as Category[]);
     } catch (e: any) { setError(e.message); }
     finally { setIsLoading(false); }

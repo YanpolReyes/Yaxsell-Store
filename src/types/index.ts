@@ -20,6 +20,7 @@ export interface Product {
   TAGS?: string[];
   FEATURES?: string[];
   SOLDQUANTITY?: number;
+  ISACTIVE?: boolean;
 }
 
 export interface Review {

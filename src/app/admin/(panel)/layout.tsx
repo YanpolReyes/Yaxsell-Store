@@ -42,6 +42,8 @@ const Ico = {
   Agencias:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="1"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></svg>,
   Clips:       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><circle cx="12" cy="14" r="3"/><path d="M11 14l2-1.5v3z" fill="currentColor" stroke="none"/></svg>,
   Sorteos:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
+  OctagonX:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l8.5 5v10L12 22l-8.5-5V7L12 2z"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>,
+  Sparkles:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>,
 };
 
 /* Shopify-dark sidebar — no accent colors needed */
@@ -62,6 +64,8 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/categories',     label: 'Categorías',      icon: Ico.Categorias },
       { href: '/admin/subcategories',  label: 'Subcategorías',   icon: Ico.Subcategorias },
       { href: '/admin/products/import-jumpseller', label: 'Subir Masivamente', icon: Ico.Inventario },
+      { href: '/admin/products/bulk-delete', label: 'Eliminar Masivamente', icon: Ico.OctagonX },
+      { href: '/admin/products/bulk-edit', label: 'Editar Masivamente', icon: Ico.Sparkles },
     ]},
     { href: '/admin/users',     label: 'Clientes',    icon: Ico.Usuarios },
     { href: '/admin/analytics', label: 'Analytics',    icon: Ico.Analytics },

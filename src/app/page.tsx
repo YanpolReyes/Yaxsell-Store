@@ -71,7 +71,7 @@ export default function HomePage() {
           databases.listDocuments(databaseId, BANNERS_COLLECTION, [Query.orderDesc('$createdAt'), Query.limit(5)]),
           databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [Query.equal('isActive', true), Query.equal('status', 'active'), Query.limit(4)]),
         ]);
-        setProducts(prodRes.documents as unknown as Product[]);
+        setProducts((prodRes.documents as unknown as Product[]).filter(p => (p.STOCK || 0) > 0));
         setCategories(catRes.documents as unknown as Category[]);
         setBanners(banRes.documents as unknown as Banner[]);
         setOffers((offRes.documents as unknown as TimedOffer[]).filter(isOfferActive));

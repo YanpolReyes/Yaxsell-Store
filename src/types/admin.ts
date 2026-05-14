@@ -70,6 +70,7 @@ export interface Product {
   TAGS?: string;
   FEATURES?: string;
   ISFEATURED?: boolean;
+  ISACTIVE?: boolean;
   RESTOCKTHRESHOLD?: number;
   CUSTOM_PRIMARY_COLOR?: string;
   CUSTOM_SECONDARY_COLOR?: string;

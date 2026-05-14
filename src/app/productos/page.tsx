@@ -66,7 +66,7 @@ function ProductosInner() {
       else if (sortBy === 'price_desc') queries.push(Query.orderDesc('PRICE'));
 
       const prodRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, queries);
-      setProducts(prodRes.documents as unknown as Product[]);
+      setProducts((prodRes.documents as unknown as Product[]).filter(p => (p.STOCK || 0) > 0));
 
       // 4. Cargar subcategorías para la categoría seleccionada
       if (catIdToUse) {
