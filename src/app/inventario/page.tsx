@@ -124,6 +124,32 @@ export default function InventarioPage() {
   const [scanTarget, setScanTarget] = useState<'search' | string>('search');
   const [barcodeSuggestion, setBarcodeSuggestion] = useState<{ product: Product; scannedBarcode: string; step: 'confirm-product' | 'confirm-add-barcode' } | null>(null);
   const [stockNotification, setStockNotification] = useState<{ product: Product; scannedCode: string } | null>(null);
+  const [editStockModal, setEditStockModal] = useState<Product | null>(null);
+  const [editStockValue, setEditStockValue] = useState<string>('');
+
+  const saveDirectStock = async () => {
+    if (!editStockModal) return;
+    const newStock = parseInt(editStockValue, 10);
+    if (isNaN(newStock) || newStock < 0) return;
+    setSavingStockId(editStockModal.$id);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, editStockModal.$id, {
+        STOCK: newStock,
+        ISACTIVE: newStock > 0,
+      });
+      setProducts(prev => prev.map(p => p.$id === editStockModal.$id
+        ? { ...p, STOCK: newStock, ISACTIVE: newStock > 0 }
+        : p));
+      setEditStockModal(null);
+      setEditStockValue('');
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    } finally {
+      setSavingStockId(null);
+    }
+  };
 
   const handleBarcodeScan = (code: string) => {
     if (scanTarget === 'search') {
@@ -808,6 +834,67 @@ export default function InventarioPage() {
         </div>
       )}
 
+      {/* Edit stock modal — for Con Stock view */}
+      {editStockModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center sm:p-4">
+          <div className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-5 py-3 flex items-center gap-3">
+              {editStockModal.IMAGEURL && (
+                <img src={editStockModal.IMAGEURL} alt="" className="w-10 h-10 object-cover rounded-lg border border-white/30" />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-sm line-clamp-1">{editStockModal.NAME}</div>
+                <div className="text-xs text-white/80">Stock actual: {editStockModal.STOCK} uds</div>
+              </div>
+              <button onClick={() => { setEditStockModal(null); setEditStockValue(''); }} className="text-white/70 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1 block">Nueva cantidad</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={editStockValue}
+                  onChange={e => setEditStockValue(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') saveDirectStock(); }}
+                  placeholder={String(editStockModal.STOCK)}
+                  autoFocus
+                  className="w-full px-4 py-3 text-2xl font-bold text-center border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+              {/* Shortcut chips */}
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setEditStockValue('6')}
+                  className="flex-1 py-2.5 text-sm font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition">
+                  6
+                </button>
+                <button type="button" onClick={() => setEditStockValue('12')}
+                  className="flex-1 py-2.5 text-sm font-bold bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-xl transition border border-emerald-300">
+                  12
+                </button>
+                <button type="button" onClick={() => setEditStockValue('24')}
+                  className="flex-1 py-2.5 text-sm font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition">
+                  24
+                </button>
+              </div>
+              <button
+                onClick={saveDirectStock}
+                disabled={savingStockId === editStockModal.$id || !editStockValue}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold rounded-xl transition flex items-center justify-center gap-2">
+                {savingStockId === editStockModal.$id ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <CheckCircle2 size={18} />
+                )}
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
@@ -1168,17 +1255,36 @@ export default function InventarioPage() {
                               </button>
                             )}
                           </div>
-                          {/* Quick-action chips */}
-                          <div className="flex gap-2 mt-1">
-                            {!hasPack && (
+                          {/* Quick-action chips — und/paq */}
+                          {!hasPack && (
+                            <div className="flex gap-2 mt-1">
+                              <button type="button" onClick={() => setPackQtyEdits(prev => ({ ...prev, [p.$id]: inlinePack || '6' }))}
+                                className="flex-1 py-2 text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg transition border border-amber-200 text-center">
+                                +6
+                              </button>
                               <button type="button" onClick={() => setPackQtyEdits(prev => ({ ...prev, [p.$id]: inlinePack || '12' }))}
                                 className="flex-1 py-2 text-xs font-bold bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg transition border border-amber-300 text-center">
-                                +12 und/paq
+                                +12
                               </button>
-                            )}
+                              <button type="button" onClick={() => setPackQtyEdits(prev => ({ ...prev, [p.$id]: inlinePack || '24' }))}
+                                className="flex-1 py-2 text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg transition border border-amber-200 text-center">
+                                +24
+                              </button>
+                            </div>
+                          )}
+                          {/* Quick-action chips — paquetes */}
+                          <div className="flex gap-2 mt-1">
+                            <button type="button" onClick={() => setStockEdits(prev => ({ ...prev, [p.$id]: editing || '1' }))}
+                              className="flex-1 py-2 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition border border-indigo-200 text-center">
+                              +1 paq
+                            </button>
                             <button type="button" onClick={() => setStockEdits(prev => ({ ...prev, [p.$id]: editing || '2' }))}
                               className="flex-1 py-2 text-xs font-bold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg transition border border-indigo-300 text-center">
-                              +2 paquetes
+                              +2 paq
+                            </button>
+                            <button type="button" onClick={() => setStockEdits(prev => ({ ...prev, [p.$id]: editing || '3' }))}
+                              className="flex-1 py-2 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition border border-indigo-200 text-center">
+                              +3 paq
                             </button>
                           </div>
                           {totalUnits > 0 && (
@@ -1259,11 +1365,11 @@ export default function InventarioPage() {
                       const hasPack = !!(p.PACKQTY && p.PACKQTY > 0);
                       const hasBarcode = !!barcode;
                       return (
-                        <tr key={p.$id} className="hover:bg-gray-50">
+                        <tr key={p.$id} className="hover:bg-gray-50 cursor-pointer" onClick={() => { setEditStockModal(p); setEditStockValue(String(p.STOCK || '')); }}>
                           <td className="px-4 py-2">
                             {p.IMAGEURL ? (
-                              <img src={p.IMAGEURL} alt="" className="w-10 h-10 object-cover rounded cursor-pointer"
-                                onClick={() => setPreviewImg(p.IMAGEURL || null)} />
+                              <img src={p.IMAGEURL} alt="" className="w-10 h-10 object-cover rounded"
+                                onClick={e => { e.stopPropagation(); setPreviewImg(p.IMAGEURL || null); }} />
                             ) : (
                               <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
                                 <Package className="w-4 h-4 text-gray-300" />
@@ -1292,7 +1398,7 @@ export default function InventarioPage() {
                           <td className="px-4 py-2 text-xs font-mono text-gray-600">{sku || '—'}</td>
                           <td className="px-4 py-2 text-sm font-semibold text-emerald-600">{p.STOCK || 0}</td>
                           <td className="px-4 py-2 text-gray-700">${(p.PRICE || 0).toLocaleString('es-CL')}</td>
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-2" onClick={e => e.stopPropagation()}>
                             <div className="flex flex-col gap-1.5">
                               {!hasBarcode && (
                                 <div className="flex items-center gap-1">
@@ -1355,12 +1461,12 @@ export default function InventarioPage() {
                     const hasPack = !!(p.PACKQTY && p.PACKQTY > 0);
                     const hasBarcode = !!barcode;
                     return (
-                      <div key={p.$id} className="p-4">
+                      <div key={p.$id} className="p-4 cursor-pointer active:bg-gray-50 transition" onClick={() => { setEditStockModal(p); setEditStockValue(String(p.STOCK || '')); }}>
                         <div className="flex gap-3">
                           <div className="shrink-0">
                             {p.IMAGEURL ? (
-                              <img src={p.IMAGEURL} alt="" className="w-14 h-14 object-cover rounded-lg cursor-pointer"
-                                onClick={() => setPreviewImg(p.IMAGEURL || null)} />
+                              <img src={p.IMAGEURL} alt="" className="w-14 h-14 object-cover rounded-lg"
+                                onClick={e => { e.stopPropagation(); setPreviewImg(p.IMAGEURL || null); }} />
                             ) : (
                               <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center">
                                 <Package className="w-5 h-5 text-gray-300" />
@@ -1395,7 +1501,7 @@ export default function InventarioPage() {
                         </div>
                         {/* Inline edits */}
                         {((!hasBarcode) || (!hasPack)) && (
-                          <div className="mt-3 space-y-2">
+                          <div className="mt-3 space-y-2" onClick={e => e.stopPropagation()}>
                             {!hasBarcode && (
                               <div>
                                 <label className="text-[10px] text-rose-600 font-semibold uppercase tracking-wide mb-0.5 block">Código de barras</label>
