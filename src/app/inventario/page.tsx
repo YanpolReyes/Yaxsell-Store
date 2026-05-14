@@ -116,11 +116,11 @@ export default function InventarioPage() {
   const [savingStockId, setSavingStockId] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(false);
 
-  const handleBarcodeScan = useCallback((code: string) => {
+  const handleBarcodeScan = (code: string) => {
     setCatalogSearch(code);
     setShowScanner(false);
     if (view !== 'catalog') setView('catalog');
-  }, [view]);
+  };
 
   const loadProducts = useCallback(async () => {
     setLoadingProducts(true);

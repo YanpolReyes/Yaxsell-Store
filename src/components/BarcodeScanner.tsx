@@ -9,21 +9,22 @@ interface BarcodeScannerProps {
 }
 
 export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
-  const scannerRef = useRef<HTMLDivElement>(null);
+  const scannerRef = useRef<any>(null);
   const [error, setError] = useState('');
   const [started, setStarted] = useState(false);
+  const onScanRef = useRef(onScan);
+  onScanRef.current = onScan;
 
   useEffect(() => {
-    if (!scannerRef.current) return;
-    let scanner: any;
     let cancelled = false;
 
     (async () => {
       try {
         const { Html5Qrcode } = await import('html5-qrcode');
-        if (cancelled || !scannerRef.current) return;
+        if (cancelled) return;
 
-        scanner = new Html5Qrcode('barcode-reader');
+        const scanner = new Html5Qrcode('barcode-reader');
+        scannerRef.current = scanner;
         await scanner.start(
           { facingMode: 'environment' },
           {
@@ -32,22 +33,28 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
             aspectRatio: 1.0,
           },
           (decodedText: string) => {
-            onScan(decodedText);
-            scanner?.stop().catch(() => {});
+            onScanRef.current(decodedText);
           },
           () => {} // ignore scan failures
         );
         if (!cancelled) setStarted(true);
       } catch (e: any) {
-        setError('No se pudo acceder a la cámara. Verifica los permisos.');
+        if (!cancelled) setError('No se pudo acceder a la cámara. Verifica los permisos.');
       }
     })();
 
     return () => {
       cancelled = true;
-      scanner?.stop().catch(() => {});
+      if (scannerRef.current) {
+        scannerRef.current.stop().then(() => {
+          scannerRef.current?.clear();
+          scannerRef.current = null;
+        }).catch(() => {
+          scannerRef.current = null;
+        });
+      }
     };
-  }, [onScan]);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4">
