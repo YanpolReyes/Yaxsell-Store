@@ -784,7 +784,7 @@ export default function InventarioPage() {
 
       {/* Stock notification — product already has stock */}
       {stockNotification && (
-        <div className="fixed inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 top-3 sm:top-4 z-50 sm:max-w-sm">
+        <div className="fixed inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 bottom-4 sm:bottom-4 z-50 sm:max-w-sm">
           <div className="bg-amber-500 text-white rounded-xl sm:rounded-2xl shadow-2xl p-3 sm:px-6 sm:py-4 flex items-center gap-3 sm:gap-4">
             {stockNotification.product.IMAGEURL && (
               <img src={stockNotification.product.IMAGEURL} alt="" className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg sm:rounded-xl border-2 border-white/30 shrink-0" />
