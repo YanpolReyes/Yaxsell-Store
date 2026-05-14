@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { Query, ID } from 'appwrite';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 import * as XLSX from 'xlsx';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Product, Category, Subcategory } from '@/types/admin';
@@ -92,6 +94,8 @@ ${lines}`;
 }
 
 export default function InventarioPage() {
+  const router = useRouter();
+  const { isLoggedIn, isLoading: authLoading } = useAuth();
   const [rows, setRows] = useState<InventoryRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -121,6 +125,10 @@ export default function InventarioPage() {
     setShowScanner(false);
     if (view !== 'catalog') setView('catalog');
   };
+
+  useEffect(() => {
+    if (!authLoading && !isLoggedIn) router.replace('/admin/login');
+  }, [authLoading, isLoggedIn, router]);
 
   const loadProducts = useCallback(async () => {
     setLoadingProducts(true);
@@ -524,6 +532,8 @@ export default function InventarioPage() {
   const newCount = rows.filter(r => r.isNew).length;
   const selectedCount = rows.filter(r => r.selected).length;
   const translatedCount = rows.filter(r => r.translated).length;
+
+  if (authLoading || !isLoggedIn) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">

@@ -10,8 +10,8 @@ export default function WhatsAppButton() {
   const [hover, setHover] = useState(false);
   const pathname = usePathname();
 
-  // Ocultar en rutas admin
-  if (pathname?.startsWith('/admin')) return null;
+  // Ocultar en rutas admin e inventario
+  if (pathname?.startsWith('/admin') || pathname === '/inventario') return null;
 
   const url = `https://wa.me/${PHONE}?text=${encodeURIComponent(MSG)}`;
 

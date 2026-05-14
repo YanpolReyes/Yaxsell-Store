@@ -73,8 +73,8 @@ export default function ChatBot() {
   const inputRef = useRef<HTMLInputElement>(null);
   const pathname = usePathname();
 
-  // Ocultar en rutas admin
-  if (pathname?.startsWith('/admin')) return null;
+  // Ocultar en rutas admin e inventario
+  if (pathname?.startsWith('/admin') || pathname === '/inventario') return null;
 
   useEffect(() => {
     if (scrollRef.current) {
