@@ -222,13 +222,60 @@ export default function Navbar1() {
         }
         @media (max-width: 768px) {
           .tpl1-nav-links { display: none; }
-          .tpl1-nav-search-wrap { display: none; }
           .tpl1-nav-hamburger { display: flex !important; }
-          .tpl1-nav-inner { padding: 0 16px; }
+          .tpl1-nav-inner { padding: 0 12px; height: 60px; }
+          .tpl1-nav-logo img { height: 38px; }
+          .tpl1-nav-btn { width: 36px; height: 36px; }
+          .tpl1-nav-btn svg { width: 18px; height: 18px; }
+          .tpl1-nav-avatar { width: 26px; height: 26px; font-size: 11px; border-width: 1.5px; }
+          .tpl1-nav-user-avatar { width: 26px; height: 26px; margin-top: 0; }
+          .tpl1-nav-account-btn { gap: 4px; }
+          .tpl1-nav-actions { gap: 2px; }
+
+          /* Search overlay on mobile */
+          .tpl1-nav-search-wrap { display: none !important; }
+          .tpl1-nav-search-mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.98); z-index: 10000; flex-direction: column; padding: 16px; }
+          .tpl1-nav-search-mobile-overlay.open { display: flex; }
+          .tpl1-nav-search-mobile-overlay form { display: flex; align-items: center; background: #fef2f8; border: 1.5px solid rgba(236,72,153,0.25); border-radius: 999px; padding: 0 16px; height: 48px; width: 100%; }
+          .tpl1-nav-search-mobile-overlay input { border: none; background: transparent; outline: none; font-size: 16px; width: 100%; color: #333; font-family: 'DM Sans', system-ui, sans-serif; }
+          .tpl1-nav-search-mobile-overlay input::placeholder { color: #c084a0; }
+          .tpl1-nav-search-mobile-close { position: absolute; top: 16px; right: 16px; width: 40px; height: 40px; border-radius: 50%; border: none; background: #f3f4f6; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #666; }
+
+          /* Remove hover animations on mobile */
+          *:hover { transform: none !important; box-shadow: inherit !important; }
+          .tpl1-nav-logo:hover img { transform: none !important; }
+          .tpl1-nav-links a:hover { background: transparent !important; color: #444 !important; transform: none !important; }
+          .tpl1-nav-btn:hover { background: transparent !important; color: #666 !important; transform: none !important; box-shadow: none !important; }
+          .tpl1-nav-mobile-menu a:hover { background: transparent !important; color: #444 !important; }
+          .tpl1-auth-popup-close:hover { background: #f3f4f6 !important; color: #666 !important; }
+          .tpl1-auth-primary-btn:hover { transform: none !important; box-shadow: 0 4px 16px rgba(236,72,153,0.3) !important; }
+          .tpl1-nav-dropdown a:hover, .tpl1-nav-dropdown button:hover { background: transparent !important; color: #444 !important; transform: none !important; }
+          .tpl1-auth-email-wrap button:hover { color: #aaa !important; }
+          .tpl1-auth-popup-footer a:hover { border-color: #e5e7eb !important; color: #444 !important; transform: none !important; }
+          .tpl1-nav-addr:hover { background: transparent !important; border-color: rgba(236,72,153,0.15) !important; transform: none !important; }
         }
       `}</style>
 
       <div className={`tpl1-nav-mobile-overlay ${menuOpen ? 'open' : ''}`} onClick={() => setMenuOpen(false)} />
+
+      {/* Mobile search overlay */}
+      <div className={`tpl1-nav-search-mobile-overlay ${searchOpen ? 'open' : ''}`}>
+        <div style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }} />
+        <form onSubmit={handleSearch} style={{ position: 'relative', marginTop: 8 }}>
+          <Search size={18} color={PINK_PRIMARY} style={{ marginRight: 10, flexShrink: 0 }} />
+          <input placeholder="Buscar productos..." autoFocus={searchOpen} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+        </form>
+        <button className="tpl1-nav-search-mobile-close" onClick={() => { setSearchOpen(false); setSearchQuery(''); }}>
+          <X size={18} />
+        </button>
+        {searchQuery.trim() && (
+          <div style={{ marginTop: 16, textAlign: 'center' }}>
+            <button onClick={handleSearch} style={{ padding: '12px 32px', background: `linear-gradient(135deg, ${PINK_PRIMARY}, #db2777)`, color: '#fff', border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+              Buscar "{searchQuery.trim()}"
+            </button>
+          </div>
+        )}
+      </div>
 
       <nav className={`tpl1-nav ${scrolled ? 'scrolled' : ''}`} style={{ background: scrolled ? 'rgba(255,255,255,0.95)' : '#fff', borderBottom: `1px solid ${scrolled ? '#fce7f3' : '#f5f5f5'}` }}>
         <div className="tpl1-nav-inner">

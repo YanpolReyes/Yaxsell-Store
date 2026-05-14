@@ -819,4 +819,64 @@
   select {
     font-size: 16px !important;
   }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     REMOVE HOVER ANIMATIONS ON MOBILE — no mouse = no hover
+     ═══════════════════════════════════════════════════════════════════════════ */
+  [data-template="1"] *:hover {
+    transform: none !important;
+  }
+
+  /* Product cards — no 3D tilt, no scale, no shadow change */
+  [data-template="1"] .tpl1-product-card:hover {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
+    border-color: rgba(0,0,0,0.05) !important;
+    transform: none !important;
+    z-index: 1 !important;
+  }
+  [data-template="1"] .tpl1-product-card:hover .tpl1-pc-img-primary,
+  [data-template="1"] .tpl1-product-card:hover .tpl1-pc-img-secondary {
+    opacity: inherit !important;
+    transform: none !important;
+  }
+  [data-template="1"] .tpl1-product-card:hover .tpl1-pc-img-primary img,
+  [data-template="1"] .tpl1-product-card:hover .tpl1-pc-img-secondary img {
+    transform: none !important;
+  }
+  [data-template="1"] .tpl1-product-card:hover .tpl1-pc-action-bar {
+    transform: translateY(100%) !important;
+    opacity: 0 !important;
+  }
+  [data-template="1"] .tpl1-product-card:hover .tpl1-pc-shimmer {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+  [data-template="1"] .tpl1-product-card:hover .tpl1-pc-name {
+    color: #333 !important;
+  }
+
+  /* Collection slides — no hover effects */
+  [data-template="1"] .musk_collection1 .swiper-slide:hover .img-content img {
+    filter: none !important;
+    transform: none !important;
+  }
+  [data-template="1"] .musk_collection1 .swiper-slide:hover .slide-title,
+  [data-template="1"] .musk_collection1 .swiper-slide:hover .collection_list_title_main {
+    color: inherit !important;
+  }
+
+  /* General buttons — no hover transforms */
+  [data-template="1"] .btn:hover,
+  [data-template="1"] .musk-button:hover,
+  [data-template="1"] .musk-primary-btn:hover,
+  [data-template="1"] .button_primary a:hover {
+    transform: none !important;
+    box-shadow: inherit !important;
+  }
+
+  /* Nav links — no hover transforms */
+  [data-template="1"] .musk-main-header a:hover,
+  [data-template="1"] .musk-main-header button:hover {
+    transform: none !important;
+  }
 }
