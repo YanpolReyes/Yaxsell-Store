@@ -2686,23 +2686,27 @@ export default function HomePage1() {
           video.style.display = '';
           const posterImg = slide.querySelector('.tpl1-fp-poster') as HTMLImageElement;
           if (posterImg) posterImg.style.opacity = '0';
-          // Skip autoplay on mobile (lag) — just show poster
-          if (window.innerWidth <= 768) {
-            video.pause();
-            video.removeAttribute('autoplay');
-            video.preload = 'none';
-            if (posterImg) posterImg.style.opacity = '1';
-            video.style.display = 'none';
-          } else {
-            // Solo reproducir si es visible (PC)
-            const obs = new IntersectionObserver(([e]) => {
-              if (e.isIntersecting) video.play().catch(() => {});
-              else video.pause();
-              obs.disconnect();
-            }, { threshold: 0.1 });
-            obs.observe(slide);
-          }
+          // No autoplay anywhere — click to play only
+          video.pause();
+          video.preload = 'none';
         };
+
+        // Play/pause overlay icon — glassmorphism style
+        const playIcon = document.createElement('div');
+        playIcon.className = 'tpl1-video-play-icon';
+        playIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;transition:opacity 0.3s ease;opacity:1;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
+        playIcon.innerHTML = `<svg width="22" height="26" viewBox="0 0 22 26" fill="white"><polygon points="2,0 22,13 2,26"/></svg>`;
+        const pauseIcon = document.createElement('div');
+        pauseIcon.className = 'tpl1-video-pause-icon';
+        pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
+        pauseIcon.innerHTML = `<svg width="22" height="26" viewBox="0 0 22 26" fill="white"><rect x="2" y="0" width="6" height="26" rx="2"/><rect x="14" y="0" width="6" height="26" rx="2"/></svg>`;
+        const updateIcons = () => {
+          playIcon.style.opacity = video.paused ? '1' : '0';
+          pauseIcon.style.opacity = video.paused ? '0' : '1';
+        };
+        slide.style.position = 'relative';
+        slide.appendChild(playIcon);
+        slide.appendChild(pauseIcon);
 
         video.onloadeddata = showVideo;
         video.oncanplay = showVideo;
@@ -2722,11 +2726,14 @@ export default function HomePage1() {
 
         video.onclick = () => {
           if (video.paused) {
-            video.play();
+            video.play().catch(() => {});
           } else {
             video.pause();
           }
+          updateIcons();
         };
+        video.onplay = updateIcons;
+        video.onpause = updateIcons;
       } else {
         const img = slide.querySelector('img') as HTMLImageElement | null;
         if (img) {
