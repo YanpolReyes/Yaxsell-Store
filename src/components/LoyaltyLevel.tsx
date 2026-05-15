@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Crown, Star, Gem, Award, Gift, Truck, Headphones, Sparkles, TrendingUp, Coins, Calendar, Trophy, Zap, ChevronRight, Lock } from 'lucide-react';
+import { Crown, Star, Gem, Award, Gift, Truck, Headphones, Sparkles, TrendingUp, Coins, Calendar, Trophy, Zap, ChevronRight, Lock, CheckCircle2 } from 'lucide-react';
 import { formatPrice } from '@/lib/appwrite';
 import { useAuth } from '@/hooks/useAuth';
 import { LoyaltyService } from '@/services/loyaltyService';
