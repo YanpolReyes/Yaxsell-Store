@@ -1490,55 +1490,17 @@ export default function HomePage1() {
       popup.id = 'yaxsel-auth-popup';
       popup.style.cssText = 'position:fixed;z-index:10002;width:340px;background:#fff;border-radius:24px;box-shadow:0 8px 30px rgba(0,0,0,0.08),0 2px 8px rgba(0,0,0,0.04);border:1px solid #f0f0f0;overflow:hidden;animation:tpl1AuthIn .3s cubic-bezier(0.16,1,0.3,1);font-family:"DM Sans",system-ui,sans-serif;';
       popup.innerHTML = `
-        <!-- Gradient header -->
-        <div id="yaxsel-auth-header" style="background-color:#fce7f3;background-image:url(https://kevincococolombia.com/wp-content/uploads/2026/04/1-41.jpg);background-size:cover;background-position:center;padding:28px 24px 24px;position:relative;overflow:hidden;">
-          <div id="yaxsel-auth-header-blur" style="position:absolute;inset:0;background-image:inherit;background-size:cover;background-position:center;filter:blur(6px);transform:scale(1.15);z-index:0;"></div>
-          <div style="position:absolute;inset:0;background:rgba(236,72,153,0.15);z-index:1;"></div>
-          <button id="yaxsel-auth-close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;color:#fff;backdrop-filter:blur(8px);z-index:2;">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M11 3L3 11M3 3L11 11" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
-          </button>
-          <div style="width:52px;height:52px;border-radius:50%;overflow:hidden;margin:0 auto 14px;border:2px solid rgba(236,72,153,0.2);position:relative;z-index:2;">
-            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSNrs0xQ1se5Q01MgfbyE15y_X9uExL5V9xAA&s" alt="" style="width:100%;height:100%;object-fit:cover;" />
+        <button id="yaxsel-auth-close" type="button" aria-label="Cerrar" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:none;background:#f3f4f6;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#666;z-index:2;">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M11 3L3 11M3 3L11 11" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        </button>
+        <div style="padding:28px 24px 24px;text-align:center;">
+          <div style="width:56px;height:56px;margin:0 auto 14px;border-radius:50%;background:linear-gradient(135deg,#fef2f8,#fce7f3);display:flex;align-items:center;justify-content:center;color:#ec4899;box-shadow:0 4px 14px rgba(236,72,153,0.15);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
-          <p style="font-size:18px;font-weight:800;color:#fff;margin:0;text-align:center;letter-spacing:-0.01em;position:relative;z-index:2;text-shadow:0 1px 4px rgba(0,0,0,0.3);">Inicia sesión</p>
-          <p style="font-size:13px;color:#fff;margin:4px 0 0;text-align:center;opacity:0.9;position:relative;z-index:2;text-shadow:0 1px 3px rgba(0,0,0,0.3);">Accede a ofertas exclusivas</p>
-        </div>
-        <!-- Body -->
-        <div style="padding:20px 24px 24px;">
-          <a href="/login" id="yaxsel-auth-login-btn" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;background:linear-gradient(135deg,#fce7f3,#fbcfe8);color:#ec4899;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;box-shadow:0 6px 24px rgba(236,72,153,0.15);transition:all 0.25s;margin-bottom:16px;border:1.5px solid rgba(236,72,153,0.2);">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-            Iniciar sesión
-          </a>
-          <div style="display:flex;align-items:center;gap:12px;margin:0 0 16px;">
-            <span style="flex:1;height:1px;background:linear-gradient(90deg,transparent,#e5e7eb,transparent);"></span>
-            <span style="font-size:12px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">o continúa con email</span>
-            <span style="flex:1;height:1px;background:linear-gradient(90deg,transparent,#e5e7eb,transparent);"></span>
-          </div>
-          <form id="yaxsel-auth-email-form" style="margin-bottom:14px;">
-            <div style="display:flex;align-items:center;border:2px solid #f3f4f6;border-radius:14px;overflow:hidden;transition:all 0.25s;background:#fafafa;">
-              <div style="padding:0 0 0 14px;display:flex;align-items:center;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-              </div>
-              <input type="email" placeholder="tu@correo.com" style="flex:1;border:none;outline:none;padding:13px 10px;font-size:14px;color:#333;font-family:inherit;background:transparent;" />
-              <button type="submit" id="yaxsel-auth-email-arrow" style="width:42px;height:42px;border:none;background:linear-gradient(135deg,#fce7f3,#fbcfe8);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#ec4899;border-radius:0 12px 12px 0;transition:all 0.2s;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </button>
-            </div>
-          </form>
-          <label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;font-size:12px;color:#6b7280;cursor:pointer;line-height:1.4;">
-            <input type="checkbox" style="margin-top:2px;accent-color:#ec4899;flex-shrink:0;width:16px;height:16px;" />
-            Quiero recibir novedades y ofertas exclusivas
-          </label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <a href="/cuenta/pedidos" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:14px 8px;background:#fef2f8;border:1.5px solid rgba(236,72,153,0.15);border-radius:14px;font-size:12px;font-weight:700;color:#ec4899;text-decoration:none;transition:all 0.2s;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-              Mis Pedidos
-            </a>
-            <a href="/login?tab=register" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:14px 8px;background:#fef2f8;border:1.5px solid rgba(236,72,153,0.15);border-radius:14px;font-size:12px;font-weight:700;color:#ec4899;text-decoration:none;transition:all 0.2s;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-              Crear Cuenta
-            </a>
-          </div>
+          <p style="font-size:18px;font-weight:800;color:#111;margin:0 0 8px;letter-spacing:-0.02em;">Inicia sesión o crea tu cuenta</p>
+          <p style="font-size:13px;color:#6b7280;margin:0 0 20px;line-height:1.45;">Para realizar pedidos necesitas iniciar sesión o registrarte.</p>
+          <a href="/login?redirect=/checkout" id="yaxsel-auth-login-btn" style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;box-shadow:0 6px 20px rgba(236,72,153,0.3);margin-bottom:10px;">Iniciar sesión</a>
+          <a href="/login?tab=register&redirect=/checkout" style="display:block;width:100%;padding:13px;background:#fff;color:#ec4899;border:2px solid #fce7f3;border-radius:14px;font-size:15px;font-weight:700;text-align:center;text-decoration:none;">Crear cuenta</a>
         </div>
       `;
 
@@ -1547,36 +1509,13 @@ export default function HomePage1() {
       ensureTpl1PanelKeyframes();
       layoutTpl1UserPanel(anchor, popup, 340);
 
-      // Skeleton loading for header cover image
-      const authHeader = popup.querySelector('#yaxsel-auth-header') as HTMLElement | null;
-      const authHeaderBlur = popup.querySelector('#yaxsel-auth-header-blur') as HTMLElement | null;
-      if (authHeader) {
-        authHeader.style.backgroundImage = 'none';
-        if (authHeaderBlur) authHeaderBlur.style.backgroundImage = 'none';
-        authHeader.style.animation = 'yaxselSkeletonShimmer 1.5s ease-in-out infinite';
-        const img = new Image();
-        img.onload = () => {
-          if (authHeader) {
-            authHeader.style.animation = '';
-            authHeader.style.backgroundImage = `url(${img.src})`;
-            if (authHeaderBlur) authHeaderBlur.style.backgroundImage = `url(${img.src})`;
-          }
-        };
-        img.onerror = () => {
-          if (authHeader) {
-            authHeader.style.animation = '';
-            authHeader.style.backgroundImage = 'linear-gradient(135deg,#fce7f3,#fbcfe8)';
-          }
-        };
-        img.src = 'https://kevincococolombia.com/wp-content/uploads/2026/04/1-41.jpg';
-      }
 
       // Close button hover
       const closeBtn = popup.querySelector('#yaxsel-auth-close') as HTMLElement | null;
       if (closeBtn) {
         closeBtn.addEventListener('click', () => { closeAuthPopup(); });
-        closeBtn.addEventListener('mouseenter', () => { closeBtn.style.background = 'rgba(255,255,255,0.5)'; closeBtn.style.transform = 'scale(1.1) rotate(90deg)'; });
-        closeBtn.addEventListener('mouseleave', () => { closeBtn.style.background = 'rgba(255,255,255,0.3)'; closeBtn.style.transform = 'scale(1) rotate(0)'; });
+        closeBtn.addEventListener('mouseenter', () => { closeBtn.style.background = '#fce7f3'; closeBtn.style.color = '#ec4899'; });
+        closeBtn.addEventListener('mouseleave', () => { closeBtn.style.background = '#f3f4f6'; closeBtn.style.color = '#666'; });
       }
 
       // Close when clicking overlay
@@ -1593,33 +1532,6 @@ export default function HomePage1() {
         loginBtn.addEventListener('mouseenter', () => { loginBtn.style.transform = 'translateY(-2px)'; loginBtn.style.boxShadow = '0 8px 32px rgba(236,72,153,0.25)'; });
         loginBtn.addEventListener('mouseleave', () => { loginBtn.style.transform = ''; loginBtn.style.boxShadow = '0 6px 24px rgba(236,72,153,0.15)'; });
       }
-
-      // Email form
-      const emailForm = popup.querySelector('#yaxsel-auth-email-form') as HTMLFormElement | null;
-      if (emailForm) {
-        emailForm.addEventListener('submit', (ev) => {
-          ev.preventDefault();
-          const input = emailForm.querySelector('input') as HTMLInputElement | null;
-          if (input?.value.trim()) {
-            window.location.href = `/login?email=${encodeURIComponent(input.value.trim())}`;
-          }
-        });
-      }
-
-      // Focus border on email input
-      const emailWrap = popup.querySelector('#yaxsel-auth-email-form > div') as HTMLElement | null;
-      const emailInput = popup.querySelector('#yaxsel-auth-email-form input') as HTMLInputElement | null;
-      if (emailWrap && emailInput) {
-        emailInput.addEventListener('focus', () => { emailWrap.style.borderColor = '#ec4899'; emailWrap.style.background = '#fff'; emailWrap.style.boxShadow = '0 0 0 4px rgba(236,72,153,0.1)'; });
-        emailInput.addEventListener('blur', () => { emailWrap.style.borderColor = '#f3f4f6'; emailWrap.style.background = '#fafafa'; emailWrap.style.boxShadow = 'none'; });
-      }
-
-      // Footer card hovers
-      popup.querySelectorAll('.yaxsel-auth-card, a[href*="pedidos"], a[href*="register"]').forEach((card) => {
-        const el = card as HTMLElement;
-        el.addEventListener('mouseenter', () => { el.style.borderColor = 'rgba(236,72,153,0.3)'; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 4px 16px rgba(236,72,153,0.12)'; });
-        el.addEventListener('mouseleave', () => { el.style.borderColor = 'rgba(236,72,153,0.15)'; el.style.transform = ''; el.style.boxShadow = 'none'; });
-      });
 
       // Close on outside click (solo desktop; en móvil usa overlay)
       if (!window.matchMedia('(max-width: 768px)').matches) {
@@ -2631,10 +2543,30 @@ export default function HomePage1() {
         }
 
         const slideTitle = titleLink.querySelector('.slide-title') as HTMLElement | null;
-        if (slideTitle) slideTitle.setAttribute('style', COLLECTION_TITLE_STYLE);
+        const nameText =
+          slideTitle?.textContent?.trim() ||
+          titleLink.getAttribute('aria-label')?.trim() ||
+          '';
+        if (slideTitle) {
+          slideTitle.classList.remove('display-font-6', 'heading_color', 'inner_heading_color');
+          slideTitle.setAttribute('style', COLLECTION_TITLE_STYLE);
+        }
         titleLink.style.cssText =
-          'position:static;display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 14px;background:linear-gradient(180deg,#fdf2f8,#fff);border-top:2px solid #fce7f3;text-decoration:none;opacity:1;visibility:visible;';
-        titleLink.querySelectorAll('.tpl1-collection-visible-name').forEach(el => el.remove());
+          'position:static;display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 14px;background:linear-gradient(180deg,#fdf2f8,#fff);border-top:2px solid #fce7f3;text-decoration:none;opacity:1;visibility:visible;z-index:5;';
+        titleLink.removeAttribute('tabindex');
+
+        let visibleName = titleLink.querySelector('.tpl1-collection-visible-name') as HTMLElement | null;
+        const titleLeft = titleLink.querySelector('.collection_list_title_left') as HTMLElement | null;
+        if (nameText) {
+          if (!visibleName) {
+            visibleName = document.createElement('span');
+            visibleName.className = 'tpl1-collection-visible-name';
+            if (titleLeft) titleLeft.insertBefore(visibleName, titleLeft.firstChild);
+            else titleLink.insertBefore(visibleName, titleLink.firstChild);
+          }
+          visibleName.textContent = nameText;
+          visibleName.setAttribute('style', COLLECTION_TITLE_STYLE);
+        }
       });
     };
 
@@ -2647,11 +2579,23 @@ export default function HomePage1() {
     if (mainPara && settings.collectionDescription) mainPara.textContent = settings.collectionDescription;
 
     // Collection items → update slides
+    const bindCollectionLayout = () => {
+      layoutCollectionTitles();
+      const layoutTimers = [120, 500, 1500].map(ms => window.setTimeout(layoutCollectionTitles, ms));
+      const collectionObserver = new MutationObserver(() => layoutCollectionTitles());
+      collectionObserver.observe(section, { childList: true, subtree: true });
+      window.addEventListener('resize', layoutCollectionTitles);
+      return () => {
+        layoutTimers.forEach(id => window.clearTimeout(id));
+        collectionObserver.disconnect();
+        window.removeEventListener('resize', layoutCollectionTitles);
+      };
+    };
+
     const items = (settings.collectionItems || []) as CollectionItem[];
     const slides = section.querySelectorAll('.swiper-slide') as NodeListOf<HTMLElement>;
     if (items.length === 0) {
-      layoutCollectionTitles();
-      return;
+      return bindCollectionLayout();
     }
     items.forEach((item, idx) => {
       if (idx >= slides.length) return;
@@ -2702,9 +2646,6 @@ export default function HomePage1() {
       }
     });
 
-    layoutCollectionTitles();
-    window.addEventListener('resize', layoutCollectionTitles);
-
     // Hide extra slides
     for (let i = items.length; i < slides.length; i++) {
       slides[i].style.display = 'none';
@@ -2713,9 +2654,7 @@ export default function HomePage1() {
       slides[i].style.display = '';
     }
 
-    return () => {
-      window.removeEventListener('resize', layoutCollectionTitles);
-    };
+    return bindCollectionLayout();
   }, [bodyHtml, sectionCfg]);
 
   useEffect(() => {
@@ -5837,6 +5776,9 @@ export default function HomePage1() {
       } catch { }
     }
 
+    const BRAND_LOGO_IMG_STYLE =
+      'width:280px;height:168px;min-width:280px;min-height:168px;object-fit:contain;border-radius:14px;border:1px solid #f3f4f6;background:#fff;padding:16px;box-sizing:border-box;';
+
     const logos = (s.logos || []) as { url: string; alt?: string; link?: string }[];
     if (logos.length === 0) return;
 
@@ -5870,15 +5812,20 @@ export default function HomePage1() {
         slide.style.minWidth = '0';
         const logo = logosForLoop[idx];
 
-        // Reemplazar SVG placeholder con imagen real
+        // Reemplazar SVG placeholder o actualizar imagen existente
         if (logo.url) {
           const svgEl = slide.querySelector('.placeholder-svg');
+          const existingImg = slide.querySelector('img') as HTMLImageElement | null;
           if (svgEl) {
             const img = document.createElement('img');
             img.src = logo.url;
             img.alt = logo.alt || '';
-            img.style.cssText = 'width:200px;height:120px;min-width:200px;min-height:120px;object-fit:contain;border-radius:12px;border:1px solid #f3f4f6;background:#fff;padding:12px;box-sizing:border-box;';
+            img.style.cssText = BRAND_LOGO_IMG_STYLE;
             svgEl.replaceWith(img);
+          } else if (existingImg) {
+            existingImg.src = logo.url;
+            existingImg.alt = logo.alt || '';
+            existingImg.style.cssText = BRAND_LOGO_IMG_STYLE;
           }
         }
 

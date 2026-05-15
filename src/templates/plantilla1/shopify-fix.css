@@ -568,6 +568,48 @@ cart-drawer.cart-sidebar::after {
 [data-template="1"] .musk_collection1 .collection_list_title_right svg path {
   fill: #ec4899 !important;
 }
+/* Título dentro de la imagen (overlay blanco del tema) — ocultar; se muestra en el footer */
+[data-template="1"] .musk_collection1 .img-content > .collection_list_title_main {
+  display: none !important;
+}
+[data-template="1"] .musk_collection1 .collectiony_main_card {
+  display: flex !important;
+  flex-direction: column !important;
+  position: relative !important;
+}
+[data-template="1"] .musk_collection1 .collectiony_main_card_inner {
+  bottom: auto !important;
+  height: 0 !important;
+  padding-bottom: 100% !important;
+  z-index: 2 !important;
+}
+[data-template="1"] .musk_collection1 .tpl1-collection-footer {
+  position: relative !important;
+  z-index: 5 !important;
+  flex: 0 0 auto !important;
+  order: 2 !important;
+}
+[data-template="1"] .musk_collection1 .tpl1-collection-footer .collection_list_title_main,
+[data-template="1"] .musk_collection1 .musk-collection-slide > .tpl1-collection-footer {
+  display: flex !important;
+}
+[data-template="1"] .musk_collection1 .tpl1-collection-footer *,
+[data-template="1"] .musk_collection1 .tpl1-collection-footer .slide-title,
+[data-template="1"] .musk_collection1 .tpl1-collection-footer .tpl1-collection-visible-name,
+[data-template="1"] .musk_collection1 .tpl1-collection-footer .inner_heading_color {
+  color: #ec4899 !important;
+  -webkit-text-fill-color: #ec4899 !important;
+  text-shadow: none !important;
+}
+[data-template="1"] .musk_collection1 .tpl1-collection-footer .slide-title {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+  margin: 0 !important;
+}
+[data-template="1"] .musk_collection1 .collection_list_title_left:has(.tpl1-collection-visible-name) .slide-title {
+  display: none !important;
+}
 [data-template="1"] .musk_collection1 .swiper-slide:hover .img-content img {
   filter: brightness(1.06) !important;
   transform: scale(1.03) !important;
@@ -599,20 +641,23 @@ cart-drawer.cart-sidebar::after {
   align-items: center !important;
   justify-content: center !important;
   width: auto !important;
-  min-width: 200px !important;
+  min-width: 280px !important;
   height: auto !important;
 }
 [data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .logo-img-item img,
-[data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .logo-img-item .placeholder-svg {
-  width: 200px !important;
-  height: 120px !important;
+[data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .logo-img-item .placeholder-svg,
+[data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .swiper-slide img {
+  width: 280px !important;
+  height: 168px !important;
+  min-width: 280px !important;
+  min-height: 168px !important;
   max-width: none !important;
   max-height: none !important;
   object-fit: contain !important;
-  border-radius: 12px !important;
+  border-radius: 14px !important;
   border: 1px solid #f3f4f6 !important;
   background: #fff !important;
-  padding: 12px !important;
+  padding: 16px !important;
   box-sizing: border-box !important;
 }
 /* ─── Hide dark hover overlay element from theme ─── */

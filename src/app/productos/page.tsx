@@ -307,13 +307,6 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
               )}
             </div>
           </div>
-          <div className="pk-hero-logo-wrap" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {lockedCategory?.iconUrl ? (
-              <img src={lockedCategory.iconUrl} alt={lockedCategory.name} className="pk-hero-logo-img" style={{ height: 100, objectFit: 'contain' }} />
-            ) : (
-              <img src="https://jumpseller.s3.eu-west-1.amazonaws.com/store/yes-bella/assets//Sin%20t%C3%ADtulo-1_5d514a8074f0023fe88b0eacda93c729.png?1743456840" alt="Logo" className="pk-hero-logo-img" style={{ height: 100, objectFit: 'contain' }} />
-            )}
-          </div>
           </div>
         </div>
 
@@ -628,9 +621,6 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           object-fit: cover; object-position: center center;
         }
         .pk-hero-body { flex: 1; min-width: 0; }
-        .pk-hero-logo-wrap { flex-shrink: 0; }
-        .pk-hero-logo-img { height: 100px; width: auto; object-fit: contain; }
-
         .pk-card-fav { display: none; align-items: center; justify-content: center; }
 
         @media (hover: hover) and (pointer: fine) {
@@ -660,8 +650,6 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           .pk-hero-subtitle { font-size: 13px !important; margin: 6px 0 12px !important; max-width: 100% !important; }
           .pk-hero-stats { gap: 8px !important; }
           .pk-hero-stats > div { padding: 8px 12px !important; border-radius: 12px !important; }
-          .pk-hero-logo-wrap { align-self: center !important; }
-          .pk-hero-logo-img { height: 56px !important; }
           .pk-toolbar { top: 0 !important; padding: 10px !important; border-radius: 16px !important; gap: 8px !important; margin-bottom: 14px !important; }
           .pk-toolbar > div:first-child { flex: 1 1 100% !important; min-width: 100% !important; order: 1; }
           .pk-filters-btn { order: 2; flex: 1; justify-content: center; min-height: 44px; }

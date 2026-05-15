@@ -25,9 +25,14 @@ function LoginInner() {
   const [loginForm, setLoginForm] = useState({ email: emailParam, password: '' });
   const [regForm, setRegForm] = useState({ firstName: '', lastName: '', email: '', phone: '', rut: '', password: '', confirm: '' });
 
+  const redirectTo = (() => {
+    const r = params.get('redirect');
+    return r && r.startsWith('/') ? r : '/cuenta';
+  })();
+
   useEffect(() => {
-    if (!isLoading && isLoggedIn) router.replace('/cuenta');
-  }, [isLoggedIn, isLoading, router]);
+    if (!isLoading && isLoggedIn) router.replace(redirectTo);
+  }, [isLoggedIn, isLoading, router, redirectTo]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -35,7 +40,7 @@ function LoginInner() {
     setSubmitting(true); setError('');
     const res = await login(loginForm.email, loginForm.password);
     setSubmitting(false);
-    if (res.success) router.replace('/cuenta');
+    if (res.success) router.replace(redirectTo);
     else setError(res.error || 'Error al iniciar sesión');
   }
 
@@ -48,7 +53,7 @@ function LoginInner() {
     const fullName = `${regForm.firstName.trim()} ${regForm.lastName.trim()}`;
     const res = await register(regForm.email, regForm.password, fullName, regForm.phone || undefined, regForm.rut || undefined);
     setSubmitting(false);
-    if (res.success) router.replace('/cuenta');
+    if (res.success) router.replace(redirectTo);
     else setError(res.error || 'Error al registrarse');
   }
 

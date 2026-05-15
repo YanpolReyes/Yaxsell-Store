@@ -62,7 +62,7 @@ function CheckoutInner() {
   const searchParams = useSearchParams();
   const discountParam = parseFloat(searchParams.get('discount') || '0');
   const { items, subtotal, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, isLoggedIn, isLoading: authLoading } = useAuth();
 
   const [form, setForm] = useState({
     name: '', rut: '', phone: '', email: '',
@@ -94,6 +94,12 @@ function CheckoutInner() {
   useEffect(() => {
     if (items.length === 0 && !submittedRef.current) router.push('/carrito');
   }, [items, router]);
+
+  useEffect(() => {
+    if (!authLoading && !isLoggedIn) {
+      router.replace('/login?redirect=/checkout');
+    }
+  }, [authLoading, isLoggedIn, router]);
 
   useEffect(() => {
     const loaded = loadAgencies();

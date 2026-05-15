@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -37,7 +37,6 @@ export default function Navbar1() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [primaryAddress, setPrimaryAddress] = useState<string | null>(null);
   const [authPopupOpen, setAuthPopupOpen] = useState(false);
-  const [authEmail, setAuthEmail] = useState('');
   const accountDropdownRef = useRef<HTMLDivElement>(null);
   const authPopupRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -70,7 +69,7 @@ export default function Navbar1() {
     })();
   }, [isLoggedIn, user?.id]);
 
-  // Cargar direcciÃ³n primaria desde localStorage
+  // Cargar dirección primaria desde localStorage
   useEffect(() => {
     if (!user?.id) { setPrimaryAddress(null); return; }
     try {
@@ -118,7 +117,7 @@ export default function Navbar1() {
 
   const NAV_LINKS = [
     { label: 'Inicio', href: '/' },
-    { label: 'CatÃ¡logo', href: '/productos' },
+    { label: 'Catálogo', href: '/productos' },
     { label: 'Mis Pedidos', href: '/cuenta/pedidos' },
   ];
 
@@ -138,24 +137,12 @@ export default function Navbar1() {
 
   const authPopupPanel = (
     <div className={`tpl1-auth-popup${isMobile ? ' tpl1-auth-popup--sheet' : ''}`}>
-      <p className="tpl1-auth-popup-title">Iniciar sesiÃ³n o crear cuenta</p>
-      <button type="button" className="tpl1-auth-popup-close" onClick={() => setAuthPopupOpen(false)}><X size={14} /></button>
-      <Link href="/login" className="tpl1-auth-primary-btn" onClick={() => setAuthPopupOpen(false)}>Iniciar sesiÃ³n</Link>
-      <div className="tpl1-auth-divider"><span>o</span></div>
-      <form onSubmit={e => { e.preventDefault(); if (authEmail.trim()) { router.push(`/login?email=${encodeURIComponent(authEmail)}`); setAuthPopupOpen(false); } }}>
-        <div className="tpl1-auth-email-wrap">
-          <input type="email" placeholder="Correo electrÃ³nico" value={authEmail} onChange={e => setAuthEmail(e.target.value)} />
-          <button type="submit"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
-        </div>
-      </form>
-      <label className="tpl1-auth-newsletter">
-        <input type="checkbox" />
-        Enviarme novedades y ofertas por correo electrÃ³nico
-      </label>
-      <div className="tpl1-auth-popup-footer">
-        <Link href="/cuenta/pedidos" onClick={() => setAuthPopupOpen(false)}><Package size={15} /> Pedidos</Link>
-        <Link href="/login" onClick={() => setAuthPopupOpen(false)}><User size={15} /> Perfil</Link>
-      </div>
+      <button type="button" className="tpl1-auth-popup-close" onClick={() => setAuthPopupOpen(false)} aria-label="Cerrar"><X size={14} /></button>
+      <div className="tpl1-auth-popup-icon" aria-hidden><User size={22} strokeWidth={2.2} /></div>
+      <p className="tpl1-auth-popup-title">Inicia sesión o crea tu cuenta</p>
+      <p className="tpl1-auth-popup-sub">Para realizar pedidos necesitas iniciar sesión o registrarte.</p>
+      <Link href="/login?redirect=/checkout" className="tpl1-auth-primary-btn" onClick={() => setAuthPopupOpen(false)}>Iniciar sesión</Link>
+      <Link href="/login?tab=register&redirect=/checkout" className="tpl1-auth-secondary-btn" onClick={() => setAuthPopupOpen(false)}>Crear cuenta</Link>
     </div>
   );
 
@@ -198,7 +185,7 @@ export default function Navbar1() {
         /* Badge para cart/notif */
         .tpl1-nav-badge { position: absolute; top: 2px; right: 2px; background: linear-gradient(135deg, ${PINK_PRIMARY}, #db2777); color: #fff; font-size: 9px; font-weight: 800; border-radius: 999px; min-width: 16px; height: 16px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(236,72,153,0.4); }
 
-        /* DirecciÃ³n pill */
+        /* Dirección pill */
         .tpl1-nav-addr { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: linear-gradient(135deg, #fef2f8, #fdf2f8); border: 1px solid rgba(236,72,153,0.15); border-radius: 999px; font-size: 12px; font-weight: 600; color: #555; text-decoration: none; max-width: 180px; transition: all 0.2s ease; }
         .tpl1-nav-addr:hover { background: linear-gradient(135deg, #fce7f3, #fbcfe8); border-color: rgba(236,72,153,0.3); transform: translateY(-1px); }
         .tpl1-nav-addr span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -227,26 +214,16 @@ export default function Navbar1() {
         .tpl1-nav-logout:hover { background: rgba(220,38,38,0.06) !important; color: #dc2626 !important; }
 
         /* Auth popup */
-        .tpl1-auth-popup { position: absolute; top: calc(100% + 14px); right: 0; width: 320px; background: #fff; border-radius: 18px; box-shadow: 0 20px 60px rgba(0,0,0,0.14), 0 4px 16px rgba(236,72,153,0.08); border: 1px solid #fce7f3; padding: 20px; z-index: 1002; animation: dropdownIn 0.22s ease; }
-        .tpl1-auth-popup-title { font-size: 16px; font-weight: 700; color: #111; font-family: 'DM Sans', system-ui, sans-serif; margin: 0 0 16px; padding-right: 32px; line-height: 1.3; }
-        .tpl1-auth-popup-close { position: absolute; top: 16px; right: 16px; width: 30px; height: 30px; border-radius: 50%; border: none; background: #f3f4f6; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: #666; }
+        .tpl1-auth-popup { position: absolute; top: calc(100% + 14px); right: 0; width: 300px; background: #fff; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(236,72,153,0.1); border: 1px solid #fce7f3; padding: 28px 22px 22px; z-index: 1002; animation: dropdownIn 0.22s ease; text-align: center; }
+        .tpl1-auth-popup-icon { width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 50%; background: linear-gradient(135deg, #fef2f8, #fce7f3); display: flex; align-items: center; justify-content: center; color: ${PINK_PRIMARY}; box-shadow: 0 4px 14px rgba(236,72,153,0.15); }
+        .tpl1-auth-popup-title { font-size: 17px; font-weight: 800; color: #111; font-family: 'DM Sans', system-ui, sans-serif; margin: 0 0 8px; padding-right: 0; line-height: 1.25; letter-spacing: -0.02em; }
+        .tpl1-auth-popup-sub { font-size: 13px; font-weight: 500; color: #6b7280; font-family: 'DM Sans', system-ui, sans-serif; margin: 0 0 18px; line-height: 1.45; }
+        .tpl1-auth-popup-close { position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; border-radius: 50%; border: none; background: #f9fafb; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: #666; }
         .tpl1-auth-popup-close:hover { background: #fce7f3; color: ${PINK_PRIMARY}; }
-        .tpl1-auth-primary-btn { display: block; width: 100%; padding: 13px; background: linear-gradient(135deg, ${PINK_PRIMARY}, #db2777); color: #fff; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; font-family: 'DM Sans', system-ui, sans-serif; box-shadow: 0 4px 16px rgba(236,72,153,0.3); transition: all 0.2s; margin-bottom: 14px; }
+        .tpl1-auth-primary-btn { display: block; width: 100%; padding: 14px; background: linear-gradient(135deg, ${PINK_PRIMARY}, #db2777); color: #fff; border: none; border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; font-family: 'DM Sans', system-ui, sans-serif; box-shadow: 0 4px 16px rgba(236,72,153,0.3); transition: all 0.2s; margin-bottom: 10px; }
         .tpl1-auth-primary-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(236,72,153,0.4); }
-        .tpl1-auth-divider { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; }
-        .tpl1-auth-divider::before, .tpl1-auth-divider::after { content: ''; flex: 1; height: 1px; background: #f0f0f0; }
-        .tpl1-auth-divider span { font-size: 12px; color: #aaa; }
-        .tpl1-auth-email-wrap { display: flex; align-items: center; border: 1.5px solid #e5e7eb; border-radius: 12px; overflow: hidden; margin-bottom: 12px; transition: border-color 0.2s; }
-        .tpl1-auth-email-wrap:focus-within { border-color: ${PINK_PRIMARY}; }
-        .tpl1-auth-email-wrap input { flex: 1; border: none; outline: none; padding: 12px 14px; font-size: 14px; color: #333; font-family: 'DM Sans', system-ui, sans-serif; background: transparent; }
-        .tpl1-auth-email-wrap input::placeholder { color: #aaa; }
-        .tpl1-auth-email-wrap button { width: 40px; height: 40px; border: none; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #aaa; transition: color 0.2s; }
-        .tpl1-auth-email-wrap button:hover { color: ${PINK_PRIMARY}; }
-        .tpl1-auth-newsletter { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 16px; font-size: 12px; color: #555; font-family: 'DM Sans', system-ui, sans-serif; cursor: pointer; line-height: 1.4; }
-        .tpl1-auth-newsletter input[type=checkbox] { margin-top: 2px; accent-color: ${PINK_PRIMARY}; flex-shrink: 0; }
-        .tpl1-auth-popup-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .tpl1-auth-popup-footer a { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: 13px; font-weight: 600; color: #444; text-decoration: none; font-family: 'DM Sans', system-ui, sans-serif; transition: all 0.2s; }
-        .tpl1-auth-popup-footer a:hover { border-color: ${PINK_PRIMARY}; color: ${PINK_PRIMARY}; background: rgba(236,72,153,0.04); }
+        .tpl1-auth-secondary-btn { display: block; width: 100%; padding: 13px; background: #fff; color: ${PINK_PRIMARY}; border: 2px solid #fce7f3; border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; font-family: 'DM Sans', system-ui, sans-serif; transition: all 0.2s; }
+        .tpl1-auth-secondary-btn:hover { border-color: ${PINK_PRIMARY}; background: rgba(236,72,153,0.04); }
         /* Nav avatar circle on button */
         .tpl1-nav-user-avatar { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; margin-top: 0; }
         .tpl1-nav-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -379,8 +356,7 @@ export default function Navbar1() {
           .tpl1-auth-popup-close:hover { background: #f3f4f6 !important; color: #666 !important; }
           .tpl1-auth-primary-btn:hover { transform: none !important; box-shadow: 0 4px 16px rgba(236,72,153,0.3) !important; }
           .tpl1-nav-dropdown a:hover, .tpl1-nav-dropdown button:hover { background: transparent !important; color: #444 !important; transform: none !important; }
-          .tpl1-auth-email-wrap button:hover { color: #aaa !important; }
-          .tpl1-auth-popup-footer a:hover { border-color: #e5e7eb !important; color: #444 !important; transform: none !important; }
+          .tpl1-auth-secondary-btn:hover { border-color: #fce7f3 !important; background: #fff !important; transform: none !important; }
           .tpl1-nav-addr:hover { background: transparent !important; border-color: rgba(236,72,153,0.15) !important; transform: none !important; }
         }
       `}</style>
@@ -395,7 +371,7 @@ export default function Navbar1() {
           {isMobile && scrolled && (
             <div className="tpl1-nav-mobile-center" aria-live="polite">
               <MapPin size={10} color={PINK_PRIMARY} />
-              <span>{primaryAddress || (isLoggedIn ? 'Mi ubicaciÃ³n' : 'UbicaciÃ³n')}</span>
+              <span>{primaryAddress || (isLoggedIn ? 'Mi ubicación' : 'Ubicación')}</span>
             </div>
           )}
           <Link href="/" className="tpl1-nav-logo">
@@ -429,10 +405,10 @@ export default function Navbar1() {
             </div>
             <button className="tpl1-nav-btn" onClick={() => setSearchOpen(!searchOpen)} title="Buscar"><Search size={20} /></button>
 
-            {/* DirecciÃ³n primaria */}
+            {/* Dirección primaria */}
             <Link href="/cuenta/direcciones" className="tpl1-nav-addr" title="Mis direcciones">
               <MapPin size={14} color={PINK_PRIMARY} />
-              <span>{primaryAddress || (isLoggedIn ? 'Agregar ubicaciÃ³n' : 'Ingresa ubicaciÃ³n')}</span>
+              <span>{primaryAddress || (isLoggedIn ? 'Agregar ubicación' : 'Ingresa ubicación')}</span>
             </Link>
 
             <Link href="/favoritos" title="Favoritos">
@@ -483,7 +459,7 @@ export default function Navbar1() {
                     <Link href="/cuenta/notificaciones" onClick={() => setAccountOpen(false)}><Bell size={16} /> Notificaciones</Link>
                     <Link href="/favoritos" onClick={() => setAccountOpen(false)}><Heart size={16} /> Favoritos</Link>
                     <div className="tpl1-nav-divider" />
-                    <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesiÃ³n</button>
+                    <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesión</button>
                   </div>
                 )}
               </div>
@@ -527,7 +503,7 @@ export default function Navbar1() {
             <>
               <Link href="/cuenta" onClick={() => setMenuOpen(false)}><User size={16} /> Mi cuenta</Link>
               <Link href="/cuenta/pedidos" onClick={() => setMenuOpen(false)}><Receipt size={16} /> Mis pedidos</Link>
-              <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesiÃ³n</button>
+              <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesión</button>
             </>
           ) : (
             <>
@@ -561,7 +537,7 @@ export default function Navbar1() {
             {items.length === 0 ? (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32, color: '#aaa' }}>
                 <ShoppingCart size={56} strokeWidth={1} color="#f9a8d4" />
-                <p style={{ margin: 0, fontSize: 15, color: '#888', fontFamily: 'DM Sans, system-ui, sans-serif' }}>Tu carrito estÃ¡ vacÃ­o</p>
+                <p style={{ margin: 0, fontSize: 15, color: '#888', fontFamily: 'DM Sans, system-ui, sans-serif' }}>Tu carrito está vacío</p>
                 <Link href="/productos" onClick={() => setCartOpen(false)} style={{ color: PINK_PRIMARY, fontSize: 13, fontWeight: 700, textDecoration: 'none', padding: '9px 20px', border: `1.5px solid ${PINK_LIGHT}`, borderRadius: 999, transition: 'all .2s' }}>Ver productos â†’</Link>
               </div>
             ) : (
@@ -633,7 +609,7 @@ export default function Navbar1() {
           </Link>
           <Link href="/productos" className={`tpl1-bottom-nav-item ${pathname === '/productos' ? 'active' : ''}`}>
             <Search />
-            <span>CatÃ¡logo</span>
+            <span>Catálogo</span>
           </Link>
           <Link href="/favoritos" className={`tpl1-bottom-nav-item ${pathname === '/favoritos' ? 'active' : ''}`}>
             <Heart />
