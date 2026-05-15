@@ -10,7 +10,7 @@ import { Query } from 'appwrite';
 import { Product, Category, Subcategory } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/context/FavoritesContext';
-import QuickView from '@/components/QuickView';
+import ProductCardPreview from '@/components/ProductCardPreview';
 import ProductBadges from '@/components/ProductBadges';
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
@@ -28,7 +28,7 @@ function ProductosInner() {
   const [sortBy, setSortBy] = useState('newest');
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [isLoading, setIsLoading] = useState(true);
-  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [selectedTag, setSelectedTag] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
   const [activePriceRange, setActivePriceRange] = useState<[number, number] | null>(null);
@@ -36,6 +36,13 @@ function ProductosInner() {
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const { addItem } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
+
+  const handleCardImageClick = (p: Product, e: React.MouseEvent) => {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) {
+      e.preventDefault();
+      setPreviewProduct(p);
+    }
+  };
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -427,14 +434,29 @@ function ProductosInner() {
                   const fav = isFavorite(p.$id);
                   return (
                     <div key={p.$id} className="pk-card" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 22, overflow: 'hidden', border: '1px solid rgba(252,231,243,0.95)', transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(236,72,153,0.08)', backdropFilter: 'blur(10px)' }}>
-                      <Link href={`/productos/${p.$id}`} style={{ display: 'block', position: 'relative' }}>
-                        <div style={{ position: 'relative', aspectRatio: '1/1', background: 'linear-gradient(135deg,#fef2f8,#fff)', overflow: 'hidden' }}>
+                      <Link href={`/productos/${p.$id}`} className="pk-card-media-link" onClick={e => handleCardImageClick(p, e)} style={{ display: 'block', position: 'relative' }}>
+                        <div className="pk-card-image" style={{ position: 'relative', aspectRatio: '1/1', background: 'linear-gradient(135deg,#fef2f8,#fff)', overflow: 'hidden' }}>
                           {p.IMAGEURL ? (
                             <Image src={p.IMAGEURL} alt={p.NAME} fill className="pk-card-img" style={{ objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.16,1,0.3,1)' }} sizes="(max-width: 768px) 50vw, 25vw" />
                           ) : (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 48, color: '#fbcfe8' }}>📦</div>
                           )}
                           <ProductBadges product={p} style={{ position: 'absolute', top: 10, left: 10, zIndex: 2 }} />
+                          <button
+                            type="button"
+                            className="pk-card-fav"
+                            aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                            onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorite(p.$id); }}
+                            style={{
+                              position: 'absolute', top: 8, right: 8, zIndex: 5,
+                              width: 34, height: 34, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                              alignItems: 'center', justifyContent: 'center',
+                              background: fav ? 'linear-gradient(135deg,#ec4899,#f9a8d4)' : 'rgba(255,255,255,0.95)',
+                              color: fav ? '#fff' : '#ec4899', boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                            }}
+                          >
+                            <Heart size={16} fill={fav ? '#fff' : 'none'} />
+                          </button>
                           {hasDisc && (
                             <div className="pk-disc-badge" style={{ position: 'absolute', top: 10, right: 10, padding: '4px 10px', background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 800, zIndex: 2, boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}>
                               -{disc}%
@@ -446,8 +468,8 @@ function ProductosInner() {
                             </div>
                           )}
                           {/* Hover overlay buttons */}
-                          <div className="pk-card-actions" style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%) translateY(20px)', opacity: 0, display: 'flex', gap: 6, zIndex: 4, transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)' }}>
-                            <button onClick={e => { e.preventDefault(); e.stopPropagation(); setQuickViewProduct(p); }}
+                          <div className="pk-card-actions pk-card-actions--desktop" style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%) translateY(20px)', opacity: 0, display: 'flex', gap: 6, zIndex: 4, transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)' }}>
+                            <button onClick={e => { e.preventDefault(); e.stopPropagation(); setPreviewProduct(p); }}
                               title="Vista rápida"
                               style={{ width: 36, height: 36, borderRadius: '50%', background: '#fff', border: 'none', color: '#ec4899', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,0.12)', transition: 'all 0.2s' }}>
                               <Search size={15} />
@@ -494,9 +516,10 @@ function ProductosInner() {
                   const fav = isFavorite(p.$id);
                   return (
                     <div key={p.$id} className="pk-card-list" style={{ background: '#fff', borderRadius: 18, border: '1px solid #fce7f3', display: 'flex', gap: 16, padding: 12, transition: 'all 0.2s', alignItems: 'center' }}>
-                      <Link href={`/productos/${p.$id}`} style={{ position: 'relative', width: 110, height: 110, borderRadius: 14, overflow: 'hidden', background: '#fef2f8', flexShrink: 0 }}>
+                      <Link href={`/productos/${p.$id}`} className="pk-card-list-media" onClick={e => handleCardImageClick(p, e)} style={{ position: 'relative', width: 110, height: 110, borderRadius: 14, overflow: 'hidden', background: '#fef2f8', flexShrink: 0 }}>
                         {p.IMAGEURL ? <Image src={p.IMAGEURL} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="110px" /> : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 36 }}>📦</div>}
                         {hasDisc && <div style={{ position: 'absolute', top: 6, left: 6, padding: '2px 7px', background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 800 }}>-{disc}%</div>}
+                        <button type="button" className="pk-card-fav pk-card-list-fav" aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'} onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorite(p.$id); }} style={{ position: 'absolute', top: 6, right: 6, zIndex: 5, width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer', alignItems: 'center', justifyContent: 'center', background: fav ? 'linear-gradient(135deg,#ec4899,#f9a8d4)' : 'rgba(255,255,255,0.95)', color: fav ? '#fff' : '#ec4899', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}><Heart size={14} fill={fav ? '#fff' : 'none'} /></button>
                       </Link>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
@@ -508,8 +531,8 @@ function ProductosInner() {
                           {hasDisc && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(p.PRICE)}</span>}
                         </div>
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <button onClick={() => setQuickViewProduct(p)} title="Vista rápida"
+                      <div className="pk-card-list-actions" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <button onClick={() => setPreviewProduct(p)} title="Vista rápida"
                           style={{ width: 40, height: 40, borderRadius: '50%', background: '#fef2f8', border: 'none', color: '#ec4899', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <Search size={16} />
                         </button>
@@ -532,7 +555,7 @@ function ProductosInner() {
       </div>
 
       {/* Quick View Modal */}
-      {quickViewProduct && <QuickView product={quickViewProduct} onClose={() => setQuickViewProduct(null)} />}
+      {previewProduct && <ProductCardPreview product={previewProduct} onClose={() => setPreviewProduct(null)} />}
 
       <style>{`
         @keyframes pkShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
@@ -581,6 +604,8 @@ function ProductosInner() {
         .pk-hero-logo-wrap { flex-shrink: 0; }
         .pk-hero-logo-img { height: 100px; width: auto; object-fit: contain; }
 
+        .pk-card-fav { display: none; align-items: center; justify-content: center; }
+
         @media (hover: hover) and (pointer: fine) {
           .pk-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(236,72,153,0.15); border-color: #fbcfe8; }
           .pk-card:hover .pk-card-img { transform: scale(1.06); }
@@ -620,8 +645,10 @@ function ProductosInner() {
           .pk-filter-chips span { flex-shrink: 0; font-size: 11px !important; }
           .pk-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
           .pk-card { border-radius: 16px !important; }
-          .pk-card-actions { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; bottom: 8px !important; }
-          .pk-card-actions button { width: 32px !important; height: 32px !important; }
+          .pk-card-fav { display: flex !important; }
+          .pk-card-actions--desktop { display: none !important; }
+          .pk-card-list-actions { display: none !important; }
+          .pk-card .pk-disc-badge { top: auto !important; bottom: 10px !important; left: 10px !important; right: auto !important; }
           .pk-card .pk-card-body { padding: 10px 10px 12px !important; }
           .pk-card .pk-card-body p { font-size: 12px !important; min-height: 32px !important; line-height: 1.35 !important; }
           .pk-card .pk-price { font-size: 16px !important; }

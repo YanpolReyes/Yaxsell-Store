@@ -141,13 +141,48 @@ export default function ProductDetailPlantilla1() {
   }, [product, categoryName]);
 
   if (isLoading) return (
-    <div style={{ background: PINK_BG, minHeight: '100vh', padding: '32px 5%' }}>
-      <div style={{ background: '#fff', borderRadius: 20, padding: 32, maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 32, boxShadow: '0 4px 30px rgba(236,72,153,0.08)' }}>
-        <div style={{ width: 460, height: 460, background: PINK_BG_DARK, borderRadius: 16 }} />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {[70, 50, 30, 80, 40, 40].map((w, i) => <div key={i} style={{ height: 18, background: PINK_BG_DARK, borderRadius: 8, width: `${w}%` }} />)}
+    <div className="pd-page pd-skeleton">
+      <div className="pd-skeleton-banner pd-skeleton-shine" />
+      <div className="pd-skeleton-container">
+        <div className="pd-skeleton-card">
+          <div className="pd-skeleton-gallery pd-skeleton-shine" />
+          <div className="pd-skeleton-info">
+            <div className="pd-skeleton-line pd-skeleton-line--lg pd-skeleton-shine" />
+            <div className="pd-skeleton-line pd-skeleton-line--md pd-skeleton-shine" />
+            <div className="pd-skeleton-line pd-skeleton-line--sm pd-skeleton-shine" />
+            <div className="pd-skeleton-price pd-skeleton-shine" />
+            <div className="pd-skeleton-btn pd-skeleton-shine" />
+            <div className="pd-skeleton-btn pd-skeleton-btn--ghost pd-skeleton-shine" />
+          </div>
         </div>
       </div>
+      <style>{`
+        @keyframes pdSkShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .pd-skeleton { background: ${PINK_BG}; min-height: 100vh; padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+        .pd-skeleton-shine { background: linear-gradient(90deg, #fef2f8, #fce7f3, #fef2f8); background-size: 200% 100%; animation: pdSkShimmer 1.4s ease infinite; }
+        .pd-skeleton-banner { height: 600px; width: 100%; }
+        .pd-skeleton-container { max-width: 1400px; margin: -550px auto 0; padding: 0 16px 24px; position: relative; z-index: 2; }
+        .pd-skeleton-card { background: #fff; border-radius: 24px; padding: 48px 40px; display: grid; grid-template-columns: auto 1fr; gap: 40px; box-shadow: 0 10px 40px rgba(236,72,153,0.1); }
+        .pd-skeleton-gallery { width: 460px; height: 460px; border-radius: 16px; }
+        .pd-skeleton-info { display: flex; flex-direction: column; gap: 14px; }
+        .pd-skeleton-line { height: 18px; border-radius: 8px; }
+        .pd-skeleton-line--lg { width: 85%; height: 28px; }
+        .pd-skeleton-line--md { width: 60%; }
+        .pd-skeleton-line--sm { width: 40%; }
+        .pd-skeleton-price { width: 45%; height: 36px; border-radius: 10px; margin-top: 8px; }
+        .pd-skeleton-btn { height: 48px; border-radius: 12px; width: 100%; max-width: 380px; }
+        .pd-skeleton-btn--ghost { max-width: 280px; height: 44px; opacity: 0.75; }
+        @media (max-width: 768px) {
+          .pd-skeleton-banner { height: 140px !important; }
+          .pd-skeleton-container { margin-top: -64px !important; padding: 0 12px 20px !important; }
+          .pd-skeleton-card { grid-template-columns: 1fr !important; padding: 16px 14px !important; gap: 16px !important; border-radius: 16px !important; }
+          .pd-skeleton-gallery { width: 100% !important; height: auto !important; aspect-ratio: 1 !important; max-height: min(82vw, 360px) !important; }
+          .pd-skeleton-info { gap: 12px !important; }
+          .pd-skeleton-line--lg { height: 22px !important; width: 92% !important; }
+          .pd-skeleton-btn { max-width: none !important; height: 46px !important; }
+          .pd-skeleton-btn--ghost { display: none !important; }
+        }
+      `}</style>
     </div>
   );
 

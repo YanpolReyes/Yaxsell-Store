@@ -592,9 +592,9 @@ export default function Navbar1() {
             {totalItems > 0 && <span className="tpl1-bottom-badge">{totalItems > 99 ? '99+' : totalItems}</span>}
             <span>Carrito</span>
           </Link>
-          <Link href="/cuenta/pedidos" className={`tpl1-bottom-nav-item ${pathname === '/cuenta/pedidos' ? 'active' : ''}`}>
-            <Package />
-            <span>Pedidos</span>
+          <Link href="/cuenta" className={`tpl1-bottom-nav-item ${pathname?.startsWith('/cuenta') ? 'active' : ''}`}>
+            <User />
+            <span>Mi perfil</span>
           </Link>
         </div>
       </nav>

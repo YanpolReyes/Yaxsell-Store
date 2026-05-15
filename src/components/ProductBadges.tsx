@@ -16,7 +16,7 @@ export default function ProductBadges({ product, style }: Props) {
     const created = new Date(createdAt).getTime();
     const sevenDays = 7 * 24 * 60 * 60 * 1000;
     if (Date.now() - created < sevenDays) {
-      badges.push({ label: 'Nuevo', bg: '#3483fa', color: '#fff' });
+      badges.push({ label: 'Nuevo', bg: 'linear-gradient(135deg,#ec4899,#f9a8d4)', color: '#fff' });
     }
   }
 
