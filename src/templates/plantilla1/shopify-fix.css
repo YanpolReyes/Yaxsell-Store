@@ -547,6 +547,20 @@ cart-drawer.cart-sidebar::after {
 }
 
 /* ─── Featured collection as categories — Premium 3D cards ─── */
+/* Container needs space for 3D tilt & scale on hover, prevent collision */
+[data-template="1"] #shopify-section-template--22405132419320__featured_collection_UNXLgP {
+  padding-top: 30px !important;
+  padding-bottom: 30px !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__featured_collection_UNXLgP .swiper,
+[data-template="1"] #shopify-section-template--22405132419320__featured_collection_UNXLgP .swiper-wrapper,
+[data-template="1"] #shopify-section-template--22405132419320__featured_collection_UNXLgP .swiper-container {
+  overflow: visible !important;
+  padding: 20px 0 !important;
+}
+[data-template="1"] .tpl1-featured-cat-slide {
+  padding: 8px !important;
+}
 [data-template="1"] .tpl1-featured-cat-slide .fusion-product-item {
   border-radius: 20px !important;
   overflow: visible !important;

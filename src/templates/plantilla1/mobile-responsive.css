@@ -789,3 +789,306 @@
     transform: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE FIXES — Comprehensive fixes for plantilla1 sections (mobile only)
+   Solo aplica en pantallas pequeñas para no afectar PC
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 768px) {
+
+  /* ─── HERO: Hide ALL particle effects on mobile (lag + visual clutter) ─── */
+  [data-template="1"] .tpl1-overlay-particles,
+  [data-template="1"] .tpl1-nav-particles,
+  [data-template="1"] .faq-particles-wrapper,
+  [data-template="1"] .faq-particles-canvas,
+  [data-template="1"] [class*="particle"],
+  [data-template="1"] .hero-particles,
+  [data-template="1"] .musk-banner-slider .particles,
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 [class*="particle"],
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 canvas {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+
+  /* ─── HERO: Eliminate white space below hero on mobile ─── */
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    background: transparent !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .musk-main-banner,
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .musk-banner-slider,
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper,
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-wrapper,
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-slide {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    background: transparent !important;
+  }
+  /* The section right after hero shouldn't have a white gap */
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 + * {
+    margin-top: 0 !important;
+  }
+
+  /* ─── MEDIA GALLERY (Pronto en Kevin y Coco): Compact title on mobile ─── */
+  [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG {
+    padding-top: 24px !important;
+    padding-bottom: 16px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-gallery-wrapper {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .musk-fancy-sub-head {
+    font-size: 11px !important;
+    margin-bottom: 4px !important;
+    letter-spacing: 0.18em !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .musk-h2-head {
+    font-size: 26px !important;
+    line-height: 1.15 !important;
+    margin: 0 0 8px !important;
+    letter-spacing: -0.5px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .fusion-stroke-text {
+    font-size: 22px !important;
+    margin-top: -10px !important;
+    margin-bottom: 8px !important;
+    line-height: 1 !important;
+    -webkit-text-stroke-width: 1px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .musk-main-para {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    margin: 0 !important;
+    padding: 0 12px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .title-area,
+  [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .heading-wrapper {
+    padding: 0 16px !important;
+  }
+
+  /* ─── ANTES Y DESPUÉS: Fix slider bar position on mobile ─── */
+  [data-template="1"] #shopify-section-template--22405132419320__before_after_3VVXkq {
+    padding-top: 30px !important;
+    padding-bottom: 30px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__before_after_3VVXkq .ba-image-wrapper,
+  [data-template="1"] #shopify-section-template--22405132419320__before_after_3VVXkq .img-wrapper,
+  [data-template="1"] #shopify-section-template--22405132419320__before_after_3VVXkq .compare-wrapper {
+    margin-bottom: 12px !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+  }
+  /* The slider handle/divider should be vertical-centered properly */
+  [data-template="1"] #shopify-section-template--22405132419320__before_after_3VVXkq input[type="range"],
+  [data-template="1"] #shopify-section-template--22405132419320__before_after_3VVXkq .ba-slider,
+  [data-template="1"] #shopify-section-template--22405132419320__before_after_3VVXkq .compare-slider {
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    margin: 0 !important;
+    bottom: auto !important;
+    width: 100% !important;
+    z-index: 10 !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__before_after_3VVXkq .musk-h2-head {
+    font-size: 24px !important;
+    line-height: 1.2 !important;
+    margin: 0 0 8px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__before_after_3VVXkq .musk-main-para {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    padding: 0 12px !important;
+  }
+
+  /* ─── SHOP THE LOOK: Fix broken hotspots on mobile ─── */
+  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg {
+    padding: 24px 0 !important;
+    overflow: hidden !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .stl-image,
+  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .stl-image-wrapper,
+  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .shop-the-look-image {
+    position: relative !important;
+    width: 100% !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .stl-hotspot,
+  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .hotspot,
+  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg [class*="hotspot"] {
+    position: absolute !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    background: rgba(255,255,255,0.95) !important;
+    border: 2px solid #ec4899 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2), 0 0 0 4px rgba(236,72,153,0.2) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 5 !important;
+    cursor: pointer !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .stl-products,
+  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .product-list {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 12px !important;
+    overflow-x: auto !important;
+    padding: 16px 12px !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .stl-products::-webkit-scrollbar,
+  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .product-list::-webkit-scrollbar {
+    display: none !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .stl-product-card,
+  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .product-card {
+    flex: 0 0 70% !important;
+    min-width: 70% !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .musk-h2-head {
+    font-size: 22px !important;
+    margin: 0 0 8px !important;
+    line-height: 1.2 !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .stl-row,
+  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .row {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* ─── IMAGE OVERLAY (banner con texto): Mobile redesign ─── */
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd {
+    padding: 0 !important;
+    margin: 16px 0 !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd .iwt-overlay-bg,
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd .image-with-text-overlay,
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd .overlay-content,
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd > div {
+    border-radius: 0 !important;
+    overflow: hidden !important;
+    min-height: 320px !important;
+    max-height: 420px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd .center-content,
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd .text-content,
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd .iwt-content {
+    padding: 24px 20px !important;
+    text-align: center !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd .musk-h2-head,
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd h1,
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd h2 {
+    font-size: 24px !important;
+    line-height: 1.2 !important;
+    margin: 0 0 10px !important;
+    letter-spacing: -0.5px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd .musk-fancy-sub-head {
+    font-size: 11px !important;
+    letter-spacing: 0.18em !important;
+    margin-bottom: 6px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd .musk-main-para,
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd p {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    margin: 0 0 14px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd .musk-primary-btn,
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd .button_primary,
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd a.btn {
+    font-size: 13px !important;
+    padding: 10px 24px !important;
+  }
+
+  /* ─── VIDEO WITH TEXT: Remove white borders, fix layout ─── */
+  [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt {
+    padding: 24px 0 !important;
+    background: transparent !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt .container,
+  [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt .ivt-wrapper,
+  [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt .row,
+  [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt > div {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt .video-wrapper,
+  [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt .image-wrapper,
+  [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt .ivt-media,
+  [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt .media-wrapper {
+    border: none !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
+    background: #000 !important;
+    margin: 0 12px 16px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt video,
+  [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt iframe,
+  [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt img {
+    width: 100% !important;
+    display: block !important;
+    border: none !important;
+    background: #000 !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt .text-content,
+  [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt .ivt-content,
+  [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt .content-wrap {
+    padding: 0 16px !important;
+    text-align: center !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt .musk-h2-head {
+    font-size: 22px !important;
+    line-height: 1.2 !important;
+    margin: 0 0 10px !important;
+    letter-spacing: -0.4px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt .musk-main-para {
+    font-size: 13px !important;
+    line-height: 1.55 !important;
+    margin: 0 0 14px !important;
+  }
+
+  /* ─── FEATURED COLLECTION: Reduce padding on mobile (no need for hover space) ─── */
+  [data-template="1"] #shopify-section-template--22405132419320__featured_collection_UNXLgP {
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__featured_collection_UNXLgP .swiper,
+  [data-template="1"] #shopify-section-template--22405132419320__featured_collection_UNXLgP .swiper-wrapper {
+    padding: 6px 0 !important;
+  }
+  [data-template="1"] .tpl1-featured-cat-slide {
+    padding: 4px !important;
+  }
+  [data-template="1"] .tpl1-featured-cat-slide .product-content {
+    min-height: 160px !important;
+    padding: 18px 12px 14px !important;
+  }
+  [data-template="1"] .tpl1-featured-cat-slide .tpl1-featured-cat-icon-wrap {
+    width: 70px !important;
+    height: 70px !important;
+    margin-bottom: 10px !important;
+  }
+  [data-template="1"] .tpl1-featured-cat-slide .tpl1-featured-cat-icon {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  [data-template="1"] .tpl1-featured-cat-slide .product-name a {
+    font-size: 12px !important;
+  }
+}
