@@ -2667,6 +2667,9 @@ export default function HomePage1() {
       if (media.type === 'video') {
         // Clear entire slide first — remove Shopify's autoplay video
         slide.innerHTML = '';
+        // Create a wrapper to center icons on the video area
+        const videoWrap = document.createElement('div');
+        videoWrap.style.cssText = 'position:relative;width:100%;height:100%;overflow:hidden;border-radius:inherit;';
         // Show poster image first, then video when loaded
         const poster = (media as any).poster;
         if (poster) {
@@ -2675,7 +2678,7 @@ export default function HomePage1() {
           posterEl.alt = 'Video poster';
           posterEl.className = 'tpl1-fp-poster';
           posterEl.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;transition:opacity 0.45s ease;';
-          slide.appendChild(posterEl);
+          videoWrap.appendChild(posterEl);
         }
         const video = document.createElement('video');
         video.src = media.url;
@@ -2685,8 +2688,11 @@ export default function HomePage1() {
         video.playsInline = true;
         video.preload = 'none';
         video.setAttribute('playsinline', '');
+        video.setAttribute('muted', '');
         video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;opacity:0;transition:opacity 0.45s ease;';
-        slide.appendChild(video);
+        // Force pause immediately
+        video.pause();
+        videoWrap.appendChild(video);
 
         const showVideo = () => {
           video.style.opacity = '1';
@@ -2696,25 +2702,28 @@ export default function HomePage1() {
           // No autoplay anywhere — click to play only
           video.pause();
           video.preload = 'none';
+          updateIcons();
         };
 
-        // Play/pause overlay icon — glassmorphism style
+        // Play/pause overlay icon — glassmorphism style, inside videoWrap
         const playIcon = document.createElement('div');
         playIcon.className = 'tpl1-video-play-icon';
-        playIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:1;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
-        playIcon.innerHTML = `<svg width="24" height="28" viewBox="0 0 24 28" fill="white" style="margin-left:3px;"><polygon points="2,0 24,14 2,28"/></svg>`;
+        playIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:1;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
+        playIcon.innerHTML = `<svg width="30" height="36" viewBox="0 0 30 36" fill="white" style="margin-left:4px;"><polygon points="2,0 30,18 2,36"/></svg>`;
         const pauseIcon = document.createElement('div');
         pauseIcon.className = 'tpl1-video-pause-icon';
-        pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
-        pauseIcon.innerHTML = `<svg width="24" height="28" viewBox="0 0 24 28" fill="white"><rect x="2" y="0" width="7" height="28" rx="2"/><rect x="15" y="0" width="7" height="28" rx="2"/></svg>`;
+        pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
+        pauseIcon.innerHTML = `<svg width="30" height="36" viewBox="0 0 30 36" fill="white"><rect x="2" y="0" width="9" height="36" rx="3"/><rect x="19" y="0" width="9" height="36" rx="3"/></svg>`;
         const updateIcons = () => {
           playIcon.style.opacity = video.paused ? '1' : '0';
           pauseIcon.style.opacity = video.paused ? '0' : '1';
         };
-        slide.style.position = 'relative';
+        videoWrap.appendChild(playIcon);
+        videoWrap.appendChild(pauseIcon);
+        slide.appendChild(videoWrap);
         slide.style.cursor = 'pointer';
-        slide.appendChild(playIcon);
-        slide.appendChild(pauseIcon);
+        // Force initial state
+        updateIcons();
 
         video.onloadeddata = showVideo;
         video.oncanplay = showVideo;
@@ -4493,9 +4502,11 @@ export default function HomePage1() {
           video.playsInline = true;
           video.setAttribute('playsinline', '');
           video.setAttribute('muted', '');
-          video.preload = 'metadata';
+          video.preload = 'none';
           if (item.posterUrl) video.poster = item.posterUrl;
           video.style.cssText = 'width:100%;aspect-ratio:9/16;object-fit:contain;display:block;border-radius:20px;cursor:pointer;background:#000;opacity:1;filter:none;';
+          // Force pause immediately — prevent browser silent autoplay
+          video.pause();
           // Play/pause overlay icon — glassmorphism style
           const playIcon = document.createElement('div');
           playIcon.className = 'tpl1-video-play-icon';
@@ -4519,6 +4530,8 @@ export default function HomePage1() {
           mediaImg.appendChild(video);
           mediaImg.appendChild(playIcon);
           mediaImg.appendChild(pauseIcon);
+          // Force initial state — show play icon, hide pause icon
+          updateIcons();
           // Click on entire mediaImg container to play/pause
           mediaImg.onclick = (e) => {
             e.stopPropagation();
