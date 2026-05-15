@@ -545,6 +545,23 @@ cart-drawer.cart-sidebar::after {
   width: var(--marquee-img-one-width, 50px) !important;
   object-fit: contain !important;
 }
+/* Mobile: slower marquee, smaller images, hide broken PNG shapes */
+@media screen and (max-width: 768px) {
+  [data-template="1"] .marquee-text-wrapper .marquee-text-container {
+    animation-duration: 14s !important;
+  }
+  [data-template="1"] .marquee-text-wrapper .marquee-img-box img {
+    height: 28px !important;
+    width: 28px !important;
+  }
+  [data-template="1"] .marquee-text-wrapper .marquee-scroll-item .marquee-text-box h3 {
+    font-size: 18px !important;
+  }
+  [data-template="1"] .marquee-text-wrapper {
+    padding-top: 30px !important;
+    padding-bottom: 0px !important;
+  }
+}
 
 /* ─── Featured collection as categories — Premium 3D cards ─── */
 /* Container needs space for 3D tilt & scale on hover, prevent collision */
@@ -1101,6 +1118,10 @@ cart-drawer.cart-sidebar::after {
 [data-template="1"] .marquee-text-wrapper {
   overflow: hidden;
   max-width: 100vw;
+}
+/* Hide broken marquee shape PNGs — they don't load properly */
+[data-template="1"] .marquee-text-wrapper .marquee-img-box img[src*="marquee-shape"] {
+  display: none !important;
 }
 
 /* ─── Footer / nav fixes ─── */
