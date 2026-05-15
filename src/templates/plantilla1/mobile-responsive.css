@@ -916,6 +916,32 @@
     padding: 0 12px !important;
   }
 
+  /* ─── VIDEO PLAY/PAUSE: Smaller SVG icons on mobile ─── */
+  [data-template="1"] .tpl1-video-play-icon svg {
+    width: 16px !important;
+    height: 18px !important;
+    margin-left: 2px !important;
+  }
+  [data-template="1"] .tpl1-video-pause-icon svg {
+    width: 16px !important;
+    height: 18px !important;
+  }
+
+  /* ─── ANTES Y DESPUÉS: Wider and shorter on mobile ─── */
+  [data-template="1"] #shopify-section-template--22405132419320__before_after_3VVXkq .before-after,
+  [data-template="1"] #shopify-section-template--22405132419320__before_after_3VVXkq .bf-af-item {
+    aspect-ratio: 16 / 9 !important;
+    max-height: 280px !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__before_after_3VVXkq .before-after img,
+  [data-template="1"] #shopify-section-template--22405132419320__before_after_3VVXkq .bf-af-item img {
+    object-fit: cover !important;
+    height: 100% !important;
+    width: 100% !important;
+  }
+
   /* ─── SHOP THE LOOK: Fix broken hotspots on mobile ─── */
   [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg {
     padding: 24px 0 !important;
