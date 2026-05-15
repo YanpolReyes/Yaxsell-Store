@@ -1102,4 +1102,24 @@
   [data-template="1"] .tpl1-featured-cat-slide .product-name a {
     font-size: 12px !important;
   }
+
+  /* ─── BRAND LOGOS carousel mobile fix ─── */
+  [data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .swiper-slide {
+    width: auto !important;
+    min-width: 0 !important;
+    padding: 6px 8px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .swiper-slide img {
+    width: 70px !important;
+    height: 40px !important;
+    object-fit: contain !important;
+    border-radius: 6px !important;
+    border: 1px solid #f3f4f6 !important;
+    padding: 4px !important;
+    background: #fff !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .brand-logos-title {
+    font-size: 18px !important;
+    margin-bottom: 12px !important;
+  }
 }

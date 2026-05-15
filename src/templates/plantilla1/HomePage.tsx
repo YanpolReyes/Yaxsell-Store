@@ -5582,10 +5582,11 @@ export default function HomePage1() {
         slide.style.display = 'flex';
         slide.style.justifyContent = 'center';
         slide.style.alignItems = 'center';
-        slide.style.padding = '10px';
+        slide.style.padding = '8px 12px';
         // Eliminar cualquier efecto de hover blur
         slide.style.filter = 'none';
         slide.style.transition = 'none';
+        slide.style.minWidth = '0';
         const logo = logosForLoop[idx];
         
         // Reemplazar SVG placeholder con imagen real
@@ -5595,7 +5596,7 @@ export default function HomePage1() {
             const img = document.createElement('img');
             img.src = logo.url;
             img.alt = logo.alt || '';
-            img.style.cssText = 'width:120px;height:120px;object-fit:cover;border-radius:50%;border:3px solid #f3f4f6;';
+            img.style.cssText = 'width:100px;height:60px;object-fit:contain;border-radius:8px;border:2px solid #f3f4f6;background:#fff;padding:8px;box-sizing:border-box;';
             svgEl.replaceWith(img);
           }
         }
