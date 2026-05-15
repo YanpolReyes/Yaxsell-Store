@@ -655,16 +655,35 @@ cart-drawer.cart-sidebar::after {
   display: block !important;
 }
 [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-gallery-top-text {
-  margin-bottom: 20px !important;
+  margin-bottom: 32px !important;
 }
-/* Remove any opacity/filter on gallery items and videos */
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .musk-fancy-sub-head {
+  margin-bottom: 16px !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .musk-h2-head {
+  margin-bottom: 16px !important;
+}
+/* Remove any opacity/filter/overlay on gallery items and videos */
 [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-gallery-item,
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-gallery-item *,
 [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-img,
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-img *,
 [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-img video {
   opacity: 1 !important;
   filter: none !important;
 }
-/* Video play/pause icon styling */
+/* Kill any Shopify overlay layers inside media items */
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-gallery-item .overlay,
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-gallery-item .media-overlay,
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-gallery-item::before,
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-gallery-item::after,
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-img::before,
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-img::after {
+  display: none !important;
+  opacity: 0 !important;
+  background: none !important;
+}
+/* Video play/pause icon — glassmorphism style */
 [data-template="1"] .tpl1-video-play-icon,
 [data-template="1"] .tpl1-video-pause-icon {
   transition: opacity 0.3s ease;

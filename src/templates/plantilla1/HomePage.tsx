@@ -4458,15 +4458,15 @@ export default function HomePage1() {
           video.preload = 'metadata';
           if (item.posterUrl) video.poster = item.posterUrl;
           video.style.cssText = 'width:100%;aspect-ratio:9/16;object-fit:contain;display:block;border-radius:20px;cursor:pointer;background:#000;opacity:1;filter:none;';
-          // Play/pause overlay icon
+          // Play/pause overlay icon — glassmorphism style
           const playIcon = document.createElement('div');
           playIcon.className = 'tpl1-video-play-icon';
-          playIcon.innerHTML = `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="24" cy="24" r="24" fill="rgba(0,0,0,0.45)"/><polygon points="20,14 36,24 20,34" fill="white"/></svg>`;
-          playIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;transition:opacity 0.3s ease;opacity:1;';
+          playIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;transition:opacity 0.3s ease;opacity:1;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
+          playIcon.innerHTML = `<svg width="22" height="26" viewBox="0 0 22 26" fill="white"><polygon points="2,0 22,13 2,26"/></svg>`;
           const pauseIcon = document.createElement('div');
           pauseIcon.className = 'tpl1-video-pause-icon';
-          pauseIcon.innerHTML = `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="24" cy="24" r="24" fill="rgba(0,0,0,0.45)"/><rect x="16" y="14" width="6" height="20" rx="2" fill="white"/><rect x="26" y="14" width="6" height="20" rx="2" fill="white"/></svg>`;
-          pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;transition:opacity 0.3s ease;opacity:0;';
+          pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
+          pauseIcon.innerHTML = `<svg width="22" height="26" viewBox="0 0 22 26" fill="white"><rect x="2" y="0" width="6" height="26" rx="2"/><rect x="14" y="0" width="6" height="26" rx="2"/></svg>`;
           const updateIcons = () => {
             playIcon.style.opacity = video.paused ? '1' : '0';
             pauseIcon.style.opacity = video.paused ? '0' : '1';
