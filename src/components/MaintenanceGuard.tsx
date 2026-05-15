@@ -27,40 +27,40 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
   if (!maintenance.enabled) return <>{children}</>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="max-w-md w-full text-center">
         {/* Animated wrench icon */}
         <div className="mb-8 flex justify-center">
           <div className="relative">
-            <div className="w-24 h-24 rounded-full bg-amber-500/20 flex items-center justify-center animate-pulse">
-              <Wrench className="w-12 h-12 text-amber-400" />
+            <div className="w-24 h-24 rounded-full bg-pink-100 flex items-center justify-center animate-pulse">
+              <Wrench className="w-12 h-12 text-pink-500" />
             </div>
-            <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-amber-500 animate-ping" />
+            <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-pink-500 animate-ping" />
           </div>
         </div>
 
         {/* Title */}
-        <h1 className="text-3xl font-bold text-white mb-2">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
           En Mantenimiento
         </h1>
-        <p className="text-amber-400 font-medium text-sm uppercase tracking-widest mb-6">
+        <p className="text-pink-500 font-medium text-sm uppercase tracking-widest mb-6">
           ¡Volveremos pronto!
         </p>
 
         {/* Message */}
-        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 mb-6">
-          <p className="text-gray-300 text-base leading-relaxed">
+        <div className="bg-pink-50 border border-pink-100 rounded-2xl p-6 mb-6">
+          <p className="text-gray-700 text-base leading-relaxed">
             {maintenance.message || 'Estamos realizando mejoras en nuestra tienda. Volveremos pronto.'}
           </p>
         </div>
 
         {/* Info items */}
         <div className="flex flex-col gap-3 text-sm">
-          <div className="flex items-center justify-center gap-2 text-gray-400">
+          <div className="flex items-center justify-center gap-2 text-gray-500">
             <Clock className="w-4 h-4" />
             <span>Trabajando para mejorar tu experiencia</span>
           </div>
-          <div className="flex items-center justify-center gap-2 text-gray-400">
+          <div className="flex items-center justify-center gap-2 text-gray-500">
             <Mail className="w-4 h-4" />
             <span>Para consultas, contáctanos por WhatsApp</span>
           </div>
@@ -71,7 +71,7 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
           {[0, 1, 2].map(i => (
             <div
               key={i}
-              className="w-2 h-2 rounded-full bg-amber-400"
+              className="w-2 h-2 rounded-full bg-pink-500"
               style={{
                 animation: `bounce 1.4s infinite ${i * 0.2}s`,
               }}
