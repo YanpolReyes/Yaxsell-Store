@@ -640,12 +640,61 @@
    Estas páginas usan inline styles, pero podemos targets generales.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Productos page — sidebar de filtros se vuelve drawer en mobile */
-@media screen and (max-width: 900px) {
-  /* Layout: stack sidebar arriba del grid */
-  body .pk-products-layout,
-  body main .pk-products-layout {
-    grid-template-columns: 1fr !important;
+/* ═══════════════════════════════════════════════════════════════════════════
+   CATÁLOGO /productos — layout, cards, filtros drawer
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 1024px) {
+  .pk-page .pk-sidebar-desktop,
+  .pk-page .pk-desktop-only {
+    display: none !important;
+  }
+  .pk-page .pk-mobile-only,
+  .pk-page .pk-filters-btn {
+    display: flex !important;
+  }
+  .pk-page .pk-products-layout {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+  .pk-page .pk-products-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .pk-page {
+    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .pk-page .pk-products-container {
+    padding: 12px 12px 44px !important;
+  }
+  .pk-page .pk-products-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+  .pk-page .pk-h-scroll {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    touch-action: pan-x !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .pk-page .pk-h-scroll::-webkit-scrollbar {
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+  }
+  .pk-page .pk-card-actions {
+    opacity: 1 !important;
+    transform: translateX(-50%) translateY(0) !important;
+  }
+  .pk-page *:hover {
+    transform: none !important;
+  }
+  .pk-page .pk-card:hover {
+    transform: none !important;
+    box-shadow: 0 8px 28px rgba(236,72,153,0.08) !important;
   }
 }
 

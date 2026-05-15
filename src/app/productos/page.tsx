@@ -65,9 +65,7 @@ function ProductosInner() {
       else if (sortBy === 'price_asc') queries.push(Query.orderAsc('PRICE'));
       else if (sortBy === 'price_desc') queries.push(Query.orderDesc('PRICE'));
 
-      console.log('📦 Loading products with config:', { databaseId, collection: PRODUCTS_COLLECTION, queries });
       const prodRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, queries);
-      console.log('📦 Products loaded:', prodRes.documents.length, 'total:', prodRes.total);
       setProducts(prodRes.documents as unknown as Product[]);
 
       // 4. Cargar subcategorías para la categoría seleccionada
@@ -144,7 +142,7 @@ function ProductosInner() {
 
   // Sidebar filters component (shared between desktop and mobile drawer)
   const FiltersSidebar = () => (
-    <div style={{ background: 'rgba(255,255,255,0.86)', borderRadius: 24, padding: 22, border: '1px solid rgba(252,231,243,0.95)', boxShadow: '0 14px 40px rgba(236,72,153,0.1)', backdropFilter: 'blur(14px)' }}>
+    <div className="pk-filters-panel" style={{ background: 'rgba(255,255,255,0.86)', borderRadius: 24, padding: 22, border: '1px solid rgba(252,231,243,0.95)', boxShadow: '0 14px 40px rgba(236,72,153,0.1)', backdropFilter: 'blur(14px)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
         <h3 style={{ fontSize: 15, fontWeight: 800, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
           <SlidersHorizontal size={16} color="#ec4899" /> Filtros
@@ -246,7 +244,7 @@ function ProductosInner() {
   );
 
   return (
-    <div style={{ fontFamily: FF, minHeight: '100vh', position: 'relative' }}>
+    <div className="pk-page" style={{ fontFamily: FF, minHeight: '100vh', position: 'relative' }}>
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden' }}>
         <img src="https://img.freepik.com/free-psd/3d-rendering-beauty-banner_23-2150159867.jpg?semt=ais_hybrid&w=740&q=80" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(4px) brightness(1.08) saturate(1.08)', transform: 'scale(1.15)', animation: 'pkBgFloat 20s ease-in-out infinite' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 15% 10%,rgba(236,72,153,0.16),transparent 32%), linear-gradient(180deg,rgba(255,245,248,0.72) 0%,rgba(255,255,255,0.92) 100%)' }} />
@@ -295,11 +293,12 @@ function ProductosInner() {
             {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: '#fef2f8', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ec4899' }}><X size={14} /></button>}
           </div>
 
-          <button onClick={() => setMobileFiltersOpen(true)} style={{ alignItems: 'center', gap: 7, padding: '12px 16px', borderRadius: 14, border: '1.5px solid #fce7f3', background: '#fff', fontSize: 13, fontWeight: 700, color: '#ec4899', cursor: 'pointer', fontFamily: 'inherit' }} className="md:hidden">
-            <SlidersHorizontal size={15} /> Filtros
+          <button type="button" onClick={() => setMobileFiltersOpen(true)} className="pk-filters-btn pk-mobile-only"
+            style={{ alignItems: 'center', gap: 7, padding: '12px 16px', borderRadius: 14, border: '1.5px solid #fce7f3', background: '#fff', fontSize: 13, fontWeight: 700, color: '#ec4899', cursor: 'pointer', fontFamily: 'inherit' }}>
+            <SlidersHorizontal size={15} /> Filtros{hasActiveFilters ? ' •' : ''}
           </button>
 
-          <div style={{ position: 'relative' }}>
+          <div className="pk-sort-wrap" style={{ position: 'relative' }}>
             <button onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
               className="pk-sort-btn" style={{ padding: '12px 38px 12px 16px', borderRadius: 14, border: '1.5px solid #fce7f3', background: '#fff', fontSize: 13, color: '#111', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               {sortBy === 'newest' ? 'Más recientes' : sortBy === 'price_asc' ? '↑ Precio: menor a mayor' : '↓ Precio: mayor a menor'}
@@ -323,7 +322,7 @@ function ProductosInner() {
             )}
           </div>
 
-          <div style={{ display: 'flex', background: '#fff', borderRadius: 14, border: '1.5px solid #fce7f3', overflow: 'hidden' }}>
+          <div className="pk-view-toggle" style={{ display: 'flex', background: '#fff', borderRadius: 14, border: '1.5px solid #fce7f3', overflow: 'hidden' }}>
             <button onClick={() => setView('grid')} style={{ padding: '11px 13px', background: view === 'grid' ? '#fef2f8' : 'transparent', color: view === 'grid' ? '#ec4899' : '#9ca3af', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Grid3x3 size={16} /></button>
             <button onClick={() => setView('list')} style={{ padding: '11px 13px', background: view === 'list' ? '#fef2f8' : 'transparent', color: view === 'list' ? '#ec4899' : '#9ca3af', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><List size={16} /></button>
           </div>
@@ -331,7 +330,7 @@ function ProductosInner() {
 
         {/* Active filter chips */}
         {hasActiveFilters && (
-          <div className="pk-filter-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+          <div className="pk-filter-chips pk-h-scroll" style={{ display: 'flex', flexWrap: 'nowrap', gap: 8, marginBottom: 20, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             {selectedCat && categories.find(c => c.$id === selectedCat) && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 10px 5px 12px', background: '#fef2f8', color: '#ec4899', borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
                 {categories.find(c => c.$id === selectedCat)?.name}
@@ -355,7 +354,7 @@ function ProductosInner() {
 
         <div className="pk-products-layout" style={{ display: 'flex', gap: 28 }}>
           {/* Desktop sidebar */}
-          <aside className="hidden md:block" style={{ width: 220, flexShrink: 0 }}>
+          <aside className="pk-sidebar-desktop pk-desktop-only" style={{ width: 220, flexShrink: 0 }}>
             <div style={{ position: 'sticky', top: 20 }}>
               <FiltersSidebar />
             </div>
@@ -364,10 +363,17 @@ function ProductosInner() {
           {/* Mobile filters drawer */}
           {mobileFiltersOpen && (
             <>
-              <div onClick={() => setMobileFiltersOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(6px)', zIndex: 998 }} />
-              <div className="md:hidden" style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: 320, maxWidth: '85vw', background: '#fff', zIndex: 999, padding: 20, overflowY: 'auto', boxShadow: '8px 0 32px rgba(0,0,0,0.15)', animation: 'slideInLeft 0.3s cubic-bezier(0.16,1,0.3,1)' }}>
-                <button onClick={() => setMobileFiltersOpen(false)} style={{ position: 'absolute', top: 16, right: 16, width: 32, height: 32, borderRadius: '50%', background: '#fef2f8', border: 'none', color: '#ec4899', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={16} /></button>
+              <div className="pk-filters-backdrop pk-mobile-only" onClick={() => setMobileFiltersOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', zIndex: 998 }} />
+              <div className="pk-filters-drawer pk-mobile-only">
+                <div className="pk-filters-drawer-handle" />
+                <div className="pk-filters-drawer-header">
+                  <h2>Filtros</h2>
+                  <button type="button" onClick={() => setMobileFiltersOpen(false)} aria-label="Cerrar filtros"><X size={18} /></button>
+                </div>
                 <FiltersSidebar />
+                <button type="button" className="pk-filters-apply" onClick={() => setMobileFiltersOpen(false)}>
+                  Ver {filtered.length} producto{filtered.length !== 1 ? 's' : ''}
+                </button>
               </div>
             </>
           )}
@@ -528,61 +534,88 @@ function ProductosInner() {
 
       <style>{`
         @keyframes pkShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        @keyframes slideInLeft { from { transform: translateX(-100%); } to { transform: translateX(0); } }
         @keyframes pkBgFloat { 0%,100% { transform: scale(1.15) translateY(0); } 50% { transform: scale(1.18) translateY(-10px); } }
-        .pk-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(236,72,153,0.15); border-color: #fbcfe8; }
-        .pk-card:hover .pk-card-img { transform: scale(1.08); }
-        .pk-card:hover .pk-card-actions { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
-        .pk-card-actions button:hover { transform: scale(1.1); }
-        .pk-card-list:hover { border-color: #fbcfe8; box-shadow: 0 8px 24px rgba(236,72,153,0.1); }
+        @keyframes pkDrawerUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-        /* ─── Mobile filter button ─── */
-        button.md:hidden { display: inline-flex; }
+        .pk-desktop-only { display: block; }
+        .pk-mobile-only { display: none; }
+        .pk-filters-btn { display: none; }
 
-        /* ─── Mobile responsive ─── */
-        @media (max-width: 900px) {
+        .pk-h-scroll { scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-x; -webkit-overflow-scrolling: touch; }
+        .pk-h-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+        .pk-filters-drawer {
+          position: fixed; left: 0; right: 0; bottom: 0; z-index: 999;
+          max-height: min(88vh, 720px); background: #fff;
+          border-radius: 20px 20px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+          box-shadow: 0 -12px 40px rgba(0,0,0,0.18);
+          display: flex; flex-direction: column; gap: 10px;
+          animation: pkDrawerUp 0.32s cubic-bezier(0.16,1,0.3,1);
+        }
+        .pk-filters-drawer-handle { width: 40px; height: 4px; border-radius: 999px; background: #e5e7eb; margin: 4px auto 0; flex-shrink: 0; }
+        .pk-filters-drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 4px 2px 8px; flex-shrink: 0; }
+        .pk-filters-drawer-header h2 { margin: 0; font-size: 17px; font-weight: 800; color: #111827; }
+        .pk-filters-drawer-header button { width: 36px; height: 36px; border-radius: 50%; border: none; background: #fef2f8; color: #ec4899; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .pk-filters-drawer .pk-filters-panel { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; border-radius: 16px !important; box-shadow: none !important; margin: 0 !important; }
+        .pk-filters-apply {
+          flex-shrink: 0; width: 100%; padding: 14px; border: none; border-radius: 14px;
+          background: linear-gradient(135deg,#ec4899,#f9a8d4); color: #fff;
+          font-size: 14px; font-weight: 800; cursor: pointer; font-family: inherit;
+          box-shadow: 0 6px 20px rgba(236,72,153,0.35);
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+          .pk-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(236,72,153,0.15); border-color: #fbcfe8; }
+          .pk-card:hover .pk-card-img { transform: scale(1.06); }
+          .pk-card:hover .pk-card-actions { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
+          .pk-card-list:hover { border-color: #fbcfe8; box-shadow: 0 8px 24px rgba(236,72,153,0.1); }
+        }
+
+        @media (max-width: 1024px) {
           .pk-products-layout { flex-direction: column !important; gap: 16px !important; }
           .pk-products-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 14px !important; }
+          .pk-sidebar-desktop { display: none !important; }
+          .pk-desktop-only { display: none !important; }
+          .pk-mobile-only, .pk-filters-btn { display: flex !important; }
         }
-        @media (max-width: 700px) {
-          .pk-products-container { padding: 14px 10px 50px !important; }
-          .pk-products-title { font-size: 26px !important; }
-          .pk-products-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-          .pk-card-actions { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
-          .pk-hero-text { display: none !important; }
-          .pk-hero-header { min-height: 140px !important; flex-direction: row !important; align-items: center !important; }
-          .pk-hero-logo { margin-left: auto !important; }
-          .pk-hero-logo img { height: 40px !important; }
-        }
-        @media (max-width: 480px) {
-          .pk-hero-header { padding: 16px !important; border-radius: 20px !important; flex-direction: column !important; align-items: flex-start !important; }
-          .pk-hero-header .pk-hero-logo { height: 70px !important; align-self: flex-end !important; margin-top: -10px; }
-          .pk-hero-header h1 { font-size: 24px !important; }
-          .pk-hero-header p { font-size: 13px !important; margin-bottom: 12px !important; }
+
+        @media (max-width: 768px) {
+          .pk-page { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+          .pk-products-container { padding: 12px 12px 48px !important; }
+          .pk-hero-header { padding: 16px !important; border-radius: 20px !important; min-height: auto !important; flex-direction: column !important; align-items: stretch !important; gap: 12px !important; margin-bottom: 16px !important; }
+          .pk-hero-text { display: block !important; }
+          .pk-products-title { font-size: 28px !important; }
+          .pk-hero-text p { font-size: 13px !important; margin: 6px 0 12px !important; max-width: 100% !important; }
           .pk-hero-stats { gap: 8px !important; }
-          .pk-hero-stats > div { padding: 7px 10px !important; border-radius: 12px !important; }
-          .pk-hero-stats span:first-child { font-size: 15px !important; }
-          .pk-toolbar { padding: 8px !important; border-radius: 16px !important; gap: 8px !important; }
-          .pk-toolbar .pk-sort-btn { min-width: 140px !important; padding: 10px 32px 10px 12px !important; font-size: 12px !important; }
-          .pk-toolbar input { padding: 10px 34px 10px 36px !important; font-size: 13px !important; }
-          .pk-result-bar { padding: 8px 10px !important; border-radius: 12px !important; }
-          .pk-result-bar p { font-size: 12px !important; }
-          .pk-products-grid { gap: 8px !important; }
+          .pk-hero-stats > div { padding: 8px 12px !important; border-radius: 12px !important; }
+          .pk-hero-logo { align-self: center !important; margin: 0 !important; }
+          .pk-hero-logo img { height: 52px !important; }
+          .pk-toolbar { top: 0 !important; padding: 10px !important; border-radius: 16px !important; gap: 8px !important; margin-bottom: 14px !important; }
+          .pk-toolbar > div:first-child { flex: 1 1 100% !important; min-width: 100% !important; order: 1; }
+          .pk-filters-btn { order: 2; flex: 1; justify-content: center; min-height: 44px; }
+          .pk-sort-wrap { order: 3; flex: 1.4; min-width: 0; }
+          .pk-sort-wrap .pk-sort-btn { width: 100% !important; min-width: 0 !important; font-size: 12px !important; padding: 11px 32px 11px 12px !important; }
+          .pk-view-toggle { order: 4; flex-shrink: 0; }
+          .pk-filter-chips { margin-bottom: 14px !important; padding-bottom: 2px !important; }
+          .pk-filter-chips span { flex-shrink: 0; font-size: 11px !important; }
+          .pk-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
           .pk-card { border-radius: 16px !important; }
-          .pk-card .pk-card-body { padding: 10px !important; }
-          .pk-card .pk-card-body p { font-size: 12px !important; min-height: 30px !important; }
-          .pk-card .pk-card-body .pk-price { font-size: 16px !important; }
-          .pk-card .pk-card-body .pk-add-btn { padding: 7px 10px !important; font-size: 11px !important; border-radius: 10px !important; }
-          .pk-card .pk-disc-badge { padding: 3px 7px !important; font-size: 10px !important; }
-          .pk-card-actions button { width: 30px !important; height: 30px !important; }
-          .pk-card-actions button svg { width: 13px !important; height: 13px !important; }
-          .pk-empty-state { padding: 50px 16px !important; border-radius: 20px !important; }
-          .pk-empty-state .pk-empty-icon { width: 72px !important; height: 72px !important; }
-          .pk-empty-state .pk-empty-icon svg { width: 28px !important; height: 28px !important; }
-          .pk-empty-state p:first-of-type { font-size: 18px !important; }
-          .pk-empty-state p:last-of-type { font-size: 13px !important; }
-          .pk-filter-chips { gap: 6px !important; }
-          .pk-filter-chips span { font-size: 11px !important; padding: 4px 8px 4px 10px !important; }
+          .pk-card-actions { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; bottom: 8px !important; }
+          .pk-card-actions button { width: 32px !important; height: 32px !important; }
+          .pk-card .pk-card-body { padding: 10px 10px 12px !important; }
+          .pk-card .pk-card-body p { font-size: 12px !important; min-height: 32px !important; line-height: 1.35 !important; }
+          .pk-card .pk-price { font-size: 16px !important; }
+          .pk-card .pk-add-btn { padding: 8px 10px !important; font-size: 11px !important; border-radius: 10px !important; margin-top: 8px !important; }
+          .pk-card-list { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; padding: 10px !important; }
+          .pk-card-list > a { width: 100% !important; height: 160px !important; }
+          .pk-card-list > div:last-child { flex-direction: row !important; justify-content: center; gap: 8px !important; }
+          .pk-result-bar { padding: 8px 10px !important; flex-wrap: wrap; }
+          .pk-result-bar p { font-size: 12px !important; }
+        }
+
+        @media (max-width: 400px) {
+          .pk-products-grid { gap: 8px !important; }
+          .pk-card .pk-disc-badge { font-size: 9px !important; padding: 3px 6px !important; }
         }
       `}</style>
     </div>
