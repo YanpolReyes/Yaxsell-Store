@@ -2670,99 +2670,67 @@ export default function HomePage1() {
         // Create a wrapper to center icons on the video area
         const videoWrap = document.createElement('div');
         videoWrap.style.cssText = 'position:relative;width:100%;height:100%;overflow:hidden;border-radius:inherit;';
-        // Show poster image first, then video when loaded
+
+        // Show poster image — NO video element until user clicks
         const poster = (media as any).poster;
         if (poster) {
           const posterEl = document.createElement('img');
           posterEl.src = poster;
           posterEl.alt = 'Video poster';
           posterEl.className = 'tpl1-fp-poster';
-          posterEl.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;transition:opacity 0.45s ease;';
+          posterEl.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;';
           videoWrap.appendChild(posterEl);
         }
-        const video = document.createElement('video');
-        video.src = media.url;
-        video.muted = true;
-        video.autoplay = false;
-        video.loop = true;
-        video.playsInline = true;
-        video.preload = 'none';
-        video.setAttribute('playsinline', '');
-        video.setAttribute('muted', '');
-        video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;opacity:0;transition:opacity 0.45s ease;';
-        // Force pause immediately
-        video.pause();
-        videoWrap.appendChild(video);
 
-        const showVideo = () => {
-          video.style.opacity = '1';
-          video.style.display = '';
-          const posterImg = slide.querySelector('.tpl1-fp-poster') as HTMLImageElement;
-          if (posterImg) posterImg.style.opacity = '0';
-          // No autoplay anywhere — click to play only
-          video.pause();
-          video.preload = 'none';
-          updateIcons();
-        };
-
-        // Play/pause overlay icon — glassmorphism style, inside videoWrap
+        // Play icon — always visible until video plays
         const playIcon = document.createElement('div');
         playIcon.className = 'tpl1-video-play-icon';
         playIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:1;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
         playIcon.innerHTML = `<svg width="30" height="36" viewBox="0 0 30 36" fill="white" style="margin-left:4px;"><polygon points="2,0 30,18 2,36"/></svg>`;
+        videoWrap.appendChild(playIcon);
+
+        // Pause icon — hidden until video plays
         const pauseIcon = document.createElement('div');
         pauseIcon.className = 'tpl1-video-pause-icon';
         pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
         pauseIcon.innerHTML = `<svg width="30" height="36" viewBox="0 0 30 36" fill="white"><rect x="2" y="0" width="9" height="36" rx="3"/><rect x="19" y="0" width="9" height="36" rx="3"/></svg>`;
-        const updateIcons = () => {
-          playIcon.style.opacity = video.paused ? '1' : '0';
-          pauseIcon.style.opacity = video.paused ? '0' : '1';
-        };
-        let userInitiatedPlay = false;
-        video.onplay = () => {
-          // Block browser silent autoplay — only allow user-initiated play
-          if (!userInitiatedPlay) {
-            video.pause();
-            userInitiatedPlay = false;
-            return;
-          }
-          updateIcons();
-          userInitiatedPlay = false;
-        };
-        video.onpause = updateIcons;
-        videoWrap.appendChild(playIcon);
         videoWrap.appendChild(pauseIcon);
+
         slide.appendChild(videoWrap);
         slide.style.cursor = 'pointer';
-        // Force initial state
-        updateIcons();
 
-        video.onloadeddata = showVideo;
-        video.oncanplay = showVideo;
-        video.onerror = () => {
-          video.style.opacity = '0';
-          const posterImg = slide.querySelector('.tpl1-fp-poster') as HTMLImageElement;
-          if (posterImg) posterImg.style.opacity = '1';
-        };
-
-        if (video.src !== media.url) {
-          video.style.opacity = '0';
-          video.src = media.url;
-          video.load();
-        } else if (video.readyState >= 2) {
-          showVideo();
-        }
-
-        // Click handler on entire slide (poster + video + icons all trigger play/pause)
+        let videoCreated = false;
         slide.onclick = (e) => {
           e.stopPropagation();
-          if (video.paused) {
-            userInitiatedPlay = true;
+          if (!videoCreated) {
+            // First click: create video, replace poster, play
+            const video = document.createElement('video');
+            video.src = media.url;
+            video.muted = true;
+            video.loop = true;
+            video.playsInline = true;
+            video.setAttribute('playsinline', '');
+            video.setAttribute('muted', '');
+            video.preload = 'auto';
+            video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;';
+            // Remove poster, insert video
+            const posterImg = videoWrap.querySelector('.tpl1-fp-poster');
+            if (posterImg) posterImg.remove();
+            videoWrap.insertBefore(video, playIcon);
             video.play().catch(() => {});
-          } else {
-            video.pause();
+            playIcon.style.opacity = '0';
+            pauseIcon.style.opacity = '1';
+            videoCreated = true;
+            // Toggle play/pause on subsequent clicks
+            video.onplay = () => { playIcon.style.opacity = '0'; pauseIcon.style.opacity = '1'; };
+            video.onpause = () => { playIcon.style.opacity = '1'; pauseIcon.style.opacity = '0'; };
+            // Subsequent clicks
+            slide.onclick = (e2) => {
+              e2.stopPropagation();
+              if (video.paused) { video.play().catch(() => {}); }
+              else { video.pause(); }
+            };
           }
-          updateIcons();
         };
       } else {
         const img = slide.querySelector('img') as HTMLImageElement | null;
@@ -4505,64 +4473,70 @@ export default function HomePage1() {
       const mediaImg = block.querySelector('.media-img') as HTMLElement;
       if (mediaImg && item.mediaUrl) {
         if (item.mediaType === 'video') {
-          const video = document.createElement('video');
-          video.src = item.mediaUrl;
-          video.autoplay = false;
-          video.muted = true;
-          video.loop = true;
-          video.playsInline = true;
-          video.setAttribute('playsinline', '');
-          video.setAttribute('muted', '');
-          video.preload = 'none';
-          if (item.posterUrl) video.poster = item.posterUrl;
-          video.style.cssText = 'width:100%;aspect-ratio:9/16;object-fit:contain;display:block;border-radius:20px;cursor:pointer;background:#000;opacity:1;filter:none;';
-          // Force pause immediately — prevent browser silent autoplay
-          video.pause();
-          // Play/pause overlay icon — glassmorphism style
-          const playIcon = document.createElement('div');
-          playIcon.className = 'tpl1-video-play-icon';
-          playIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:1;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
-          playIcon.innerHTML = `<svg width="24" height="28" viewBox="0 0 24 28" fill="white" style="margin-left:3px;"><polygon points="2,0 24,14 2,28"/></svg>`;
-          const pauseIcon = document.createElement('div');
-          pauseIcon.className = 'tpl1-video-pause-icon';
-          pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
-          pauseIcon.innerHTML = `<svg width="24" height="28" viewBox="0 0 24 28" fill="white"><rect x="2" y="0" width="7" height="28" rx="2"/><rect x="15" y="0" width="7" height="28" rx="2"/></svg>`;
-          const updateIcons = () => {
-            playIcon.style.opacity = video.paused ? '1' : '0';
-            pauseIcon.style.opacity = video.paused ? '0' : '1';
-          };
-          let userInitiatedPlay = false;
-          video.onplay = () => {
-            // Block browser silent autoplay — only allow user-initiated play
-            if (!userInitiatedPlay) {
-              video.pause();
-              userInitiatedPlay = false;
-              return;
-            }
-            updateIcons();
-            userInitiatedPlay = false;
-          };
-          video.onpause = updateIcons;
+          // Don't create video yet — show poster + play icon only
+          // Video is only created when user clicks (prevents browser autoplay)
           mediaImg.innerHTML = '';
           mediaImg.style.position = 'relative';
           mediaImg.style.opacity = '1';
           mediaImg.style.filter = 'none';
           mediaImg.style.cursor = 'pointer';
-          mediaImg.appendChild(video);
+
+          // Show poster image
+          if (item.posterUrl) {
+            const posterImg = document.createElement('img');
+            posterImg.src = item.posterUrl;
+            posterImg.alt = item.title || '';
+            posterImg.style.cssText = 'width:100%;aspect-ratio:9/16;object-fit:contain;display:block;border-radius:20px;background:#000;';
+            mediaImg.appendChild(posterImg);
+          }
+
+          // Play icon — always visible until video plays
+          const playIcon = document.createElement('div');
+          playIcon.className = 'tpl1-video-play-icon';
+          playIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:1;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
+          playIcon.innerHTML = `<svg width="24" height="28" viewBox="0 0 24 28" fill="white" style="margin-left:3px;"><polygon points="2,0 24,14 2,28"/></svg>`;
           mediaImg.appendChild(playIcon);
+
+          // Pause icon — hidden until video plays
+          const pauseIcon = document.createElement('div');
+          pauseIcon.className = 'tpl1-video-pause-icon';
+          pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
+          pauseIcon.innerHTML = `<svg width="24" height="28" viewBox="0 0 24 28" fill="white"><rect x="2" y="0" width="7" height="28" rx="2"/><rect x="14" y="0" width="7" height="28" rx="2"/></svg>`;
           mediaImg.appendChild(pauseIcon);
-          // Force initial state — show play icon, hide pause icon
-          updateIcons();
-          // Click on entire mediaImg container to play/pause
+
+          let videoCreated = false;
           mediaImg.onclick = (e) => {
             e.stopPropagation();
-            if (video.paused) {
-              userInitiatedPlay = true;
+            if (!videoCreated) {
+              // First click: create video, replace poster, play
+              const video = document.createElement('video');
+              video.src = item.mediaUrl;
+              video.muted = true;
+              video.loop = true;
+              video.playsInline = true;
+              video.setAttribute('playsinline', '');
+              video.setAttribute('muted', '');
+              video.preload = 'auto';
+              video.style.cssText = 'width:100%;aspect-ratio:9/16;object-fit:contain;display:block;border-radius:20px;background:#000;';
+              // Remove poster, insert video
+              const posterImg = mediaImg.querySelector('img');
+              if (posterImg) posterImg.remove();
+              mediaImg.insertBefore(video, playIcon);
               video.play().catch(() => {});
-            } else {
-              video.pause();
+              playIcon.style.opacity = '0';
+              pauseIcon.style.opacity = '1';
+              videoCreated = true;
+              // Toggle play/pause on subsequent clicks
+              video.onplay = () => { playIcon.style.opacity = '0'; pauseIcon.style.opacity = '1'; };
+              video.onpause = () => { playIcon.style.opacity = '1'; pauseIcon.style.opacity = '0'; };
+              // Subsequent clicks on mediaImg
+              const origOnclick = mediaImg.onclick;
+              mediaImg.onclick = (e2) => {
+                e2.stopPropagation();
+                if (video.paused) { video.play().catch(() => {}); }
+                else { video.pause(); }
+              };
             }
-            updateIcons();
           };
         } else {
           mediaImg.innerHTML = `<img src="${item.mediaUrl}" width="auto" height="auto" alt="${item.title || ''}" style="width:100%;aspect-ratio:9/16;object-fit:cover;display:block;border-radius:20px;" />`;
