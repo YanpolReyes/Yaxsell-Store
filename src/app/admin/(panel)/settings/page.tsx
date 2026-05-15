@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getAppwriteConfig, saveAppwriteConfig, clearAppwriteConfig, exportAppwriteConfig, AppwriteConfig, getServices } from '@/lib/appwrite-admin';
-import { Settings, Save, CheckCircle, AlertTriangle, Database, Globe, Key, RefreshCw, XCircle, HardDrive, Copy, Trash2, Megaphone } from 'lucide-react';
+import { Settings, Save, CheckCircle, AlertTriangle, Database, Globe, Key, RefreshCw, XCircle, HardDrive, Copy, Trash2, Megaphone, Wrench } from 'lucide-react';
 
 function AnnouncementConfig() {
   const [text, setText] = useState('');
@@ -54,6 +54,65 @@ function AnnouncementConfig() {
           <span className="text-sm text-gray-700">Mostrar barra de anuncio</span>
         </label>
         <button onClick={save} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition flex items-center gap-2">
+          {saved ? <><CheckCircle className="w-4 h-4" /> Guardado</> : <><Save className="w-4 h-4" /> Guardar</>}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MaintenanceConfig() {
+  const [enabled, setEnabled] = useState(false);
+  const [message, setMessage] = useState('Estamos realizando mejoras en nuestra tienda. Volveremos pronto.');
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('maintenance_config');
+      if (stored) {
+        const c = JSON.parse(stored);
+        setEnabled(c.enabled || false);
+        setMessage(c.message || 'Estamos realizando mejoras en nuestra tienda. Volveremos pronto.');
+      }
+    } catch {}
+  }, []);
+
+  function save() {
+    localStorage.setItem('maintenance_config', JSON.stringify({ enabled, message }));
+    setSaved(true); setTimeout(() => setSaved(false), 2000);
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Wrench className="w-4 h-4 text-amber-600" />
+        <p className="font-semibold text-gray-900 text-sm">Modo Mantenimiento</p>
+        {enabled && (
+          <span className="ml-auto px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full uppercase">Activo</span>
+        )}
+      </div>
+      <p className="text-xs text-gray-500 mb-3">Cuando está habilitado, los visitantes ven una página de mantenimiento y no pueden acceder a la tienda.</p>
+      <div className="space-y-3">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${enabled ? 'bg-amber-500' : 'bg-gray-200'}`}
+            onClick={() => setEnabled(!enabled)}>
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+          </div>
+          <span className="text-sm text-gray-700">Habilitar modo mantenimiento</span>
+        </label>
+        {enabled && (
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">Mensaje a mostrar</label>
+            <textarea
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              rows={2}
+              placeholder="Estamos realizando mejoras en nuestra tienda. Volveremos pronto."
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none resize-none"
+            />
+          </div>
+        )}
+        <button onClick={save} className="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition flex items-center gap-2">
           {saved ? <><CheckCircle className="w-4 h-4" /> Guardado</> : <><Save className="w-4 h-4" /> Guardar</>}
         </button>
       </div>
@@ -365,6 +424,9 @@ export default function SettingsPage() {
 
       {/* Announcement Bar Config */}
       <AnnouncementConfig />
+
+      {/* Maintenance Mode Config */}
+      <MaintenanceConfig />
 
       {/* Session Info */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">

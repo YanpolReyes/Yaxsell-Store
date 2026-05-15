@@ -4,6 +4,7 @@ import Link from 'next/link';
 import DynamicNavbar from '@/components/DynamicNavbar';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import AnnouncementBar from '@/components/AnnouncementBar';
+import MaintenanceGuard from '@/components/MaintenanceGuard';
 import { useTemplate } from '@/context/TemplateContext';
 
 const FOOTER_LINKS = [
@@ -41,6 +42,7 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
   const hideNativeFooter = template === 1 || template === 4;
 
   return (
+    <MaintenanceGuard>
     <>
       <DynamicNavbar />
       <main className="min-h-screen">{children}</main>
@@ -75,5 +77,6 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
       </footer>
       )}
     </>
+    </MaintenanceGuard>
   );
 }
