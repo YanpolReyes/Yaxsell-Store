@@ -275,7 +275,8 @@ export default function Navbar1() {
           .tpl1-nav-mobile-fabs { display: flex !important; }
           .tpl1-nav-hamburger { display: none !important; }
           .tpl1-nav-inner { padding: 0 10px !important; height: 48px !important; min-height: 48px !important; gap: 0 !important; justify-content: space-between !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; position: relative !important; }
-          .tpl1-nav-mobile-center { position: absolute !important; left: 50% !important; transform: translateX(-50%) !important; display: flex !important; align-items: center !important; gap: 4px !important; font-size: 10px !important; color: #be185d !important; white-space: nowrap !important; max-width: 140px !important; overflow: hidden !important; text-overflow: ellipsis !important; background: linear-gradient(135deg, #fef2f8, #fdf2f8) !important; border: 1px solid rgba(236,72,153,0.25) !important; border-radius: 999px !important; padding: 4px 10px !important; font-weight: 500 !important; font-family: 'DM Sans', system-ui, sans-serif !important; pointer-events: none !important; transition: none !important; animation: none !important; }
+          .tpl1-nav-mobile-center { position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; display: flex !important; align-items: center !important; gap: 4px !important; font-size: 10px !important; color: #be185d !important; white-space: nowrap !important; max-width: 140px !important; overflow: hidden !important; text-overflow: ellipsis !important; background: linear-gradient(135deg, #fef2f8, #fdf2f8) !important; border: 1px solid rgba(236,72,153,0.25) !important; border-radius: 999px !important; padding: 4px 10px !important; font-weight: 500 !important; font-family: 'DM Sans', system-ui, sans-serif !important; pointer-events: none !important; animation: tpl1AddrIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both !important; z-index: 10 !important; }
+          @keyframes tpl1AddrIn { from { opacity: 0; transform: translate(-50%, calc(-50% - 6px)); } to { opacity: 1; transform: translate(-50%, -50%); } }
           .tpl1-nav-mobile-center svg { flex-shrink: 0 !important; }
           .tpl1-nav-logo img { height: 22px !important; max-width: 58px !important; }
           .tpl1-nav-btn { width: 32px !important; height: 32px !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
@@ -296,6 +297,8 @@ export default function Navbar1() {
 
           /* Remove hover animations on mobile */
           *:hover { transform: none !important; box-shadow: inherit !important; }
+          .tpl1-nav-mobile-center,
+          .tpl1-nav-mobile-center:hover { transform: translate(-50%, -50%) !important; }
           .tpl1-nav-logo:hover img { transform: none !important; }
           .tpl1-nav-links a:hover { background: transparent !important; color: #444 !important; transform: none !important; }
           .tpl1-nav-btn:hover { background: transparent !important; color: #666 !important; transform: none !important; box-shadow: none !important; }
@@ -315,11 +318,13 @@ export default function Navbar1() {
       {!(isMobile && !isHome) && (
       <nav className={`tpl1-nav ${scrolled ? 'scrolled' : ''}`} style={{ background: scrolled ? 'rgba(255,255,255,0.95)' : '#fff', borderBottom: `1px solid ${scrolled ? '#fce7f3' : '#f5f5f5'}` }}>
         <div className="tpl1-nav-inner">
-          {/* Mobile center: address */}
-          <div className="tpl1-nav-mobile-center">
-            <MapPin size={10} color={PINK_PRIMARY} />
-            <span>{primaryAddress || (isLoggedIn ? 'Mi ubicación' : 'Ubicación')}</span>
-          </div>
+          {/* Mobile center: address — solo visible con navbar expandida (scroll) */}
+          {isMobile && scrolled && (
+            <div className="tpl1-nav-mobile-center" aria-live="polite">
+              <MapPin size={10} color={PINK_PRIMARY} />
+              <span>{primaryAddress || (isLoggedIn ? 'Mi ubicación' : 'Ubicación')}</span>
+            </div>
+          )}
           <Link href="/" className="tpl1-nav-logo">
             <img src={LOGO_URL} alt="Yes Bella" />
           </Link>

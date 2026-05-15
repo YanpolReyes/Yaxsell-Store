@@ -178,11 +178,132 @@ export default function ProductDetailPlantilla1() {
     setTimeout(() => setAdded(false), 2500);
   }
 
+  const buyBoxContent = (className: string) => (
+    <div className={className} style={{ position: 'sticky', top: 16, background: '#fff', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 16, padding: '18px 18px 22px', boxShadow: '0 4px 16px rgba(236,72,153,0.08)' }}>
+      <p style={{ margin: '0 0 4px', fontSize: 14, color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Truck size={15} /> Llega entre hoy y mañana
+      </p>
+      <p style={{ margin: '0 0 12px', fontSize: 13, color: TEXT_MUTED }}>
+        Envío disponible a todo Chile. <Link href="#" style={{ color: PINK_PRIMARY, textDecoration: 'none', fontWeight: 500 }}>Más detalles</Link>
+      </p>
+      <div style={{ borderTop: `1px solid ${PINK_BG_DARK}`, paddingTop: 12, marginBottom: 12 }}>
+        <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: stockColor }}>{stockLabel}</p>
+        {stock > 0 && stock <= 10 && <p style={{ margin: 0, fontSize: 12, color: TEXT_MUTED }}>¡Solo quedan {stock}!</p>}
+      </div>
+      {stock > 0 ? (
+        <>
+          <div style={{ marginBottom: 14 }}>
+            <p style={{ margin: '0 0 6px', fontSize: 13, color: TEXT_MUTED }}>
+              Cantidad: <strong style={{ color: TEXT_DARK }}>{qty} unidad{qty > 1 ? 'es' : ''}</strong>
+              <span style={{ color: '#9ca3af' }}> ({stock} disp.)</span>
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 8, width: 'fit-content', overflow: 'hidden' }}>
+              <button type="button" onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 40, height: 40, border: 'none', background: '#fff', fontSize: 18, cursor: 'pointer', color: PINK_PRIMARY, fontWeight: 600 }}>−</button>
+              <span style={{ width: 44, textAlign: 'center', fontSize: 14, fontWeight: 600, color: TEXT_DARK, borderLeft: `1px solid ${PINK_BG_DARK}`, borderRight: `1px solid ${PINK_BG_DARK}` }}>{qty}</span>
+              <button type="button" onClick={() => setQty(q => Math.min(stock, q + 1))} style={{ width: 40, height: 40, border: 'none', background: '#fff', fontSize: 18, cursor: 'pointer', color: PINK_PRIMARY, fontWeight: 600 }}>+</button>
+            </div>
+            {qty > 1 && <p style={{ margin: '8px 0 0', fontSize: 12, color: TEXT_MUTED }}>Total: <strong style={{ color: PINK_PRIMARY, fontSize: 14 }}>{formatPrice(lineTotal)}</strong></p>}
+          </div>
+          <button type="button" onClick={handleAdd} style={{ width: '100%', padding: '13px 18px', background: `linear-gradient(135deg, ${PINK_PRIMARY} 0%, ${PINK_LIGHT} 100%)`, color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 16px rgba(236,72,153,0.3)', marginBottom: 8 }}>Comprar ahora</button>
+          <button type="button" onClick={handleAdd} style={{ width: '100%', padding: '12px 18px', background: added ? '#ecfdf5' : '#f9fafb', color: added ? '#10b981' : PINK_PRIMARY, border: `1.5px solid ${added ? '#10b981' : PINK_LIGHT}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            {added ? <><Check size={15} /> Agregado</> : <><ShoppingCart size={15} /> Agregar al carrito</>}
+          </button>
+          <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${PINK_BG_DARK}`, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <p style={{ margin: 0, fontSize: 12, color: TEXT_MUTED, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+              <RefreshCw size={13} color={PINK_PRIMARY} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span><strong style={{ color: TEXT_DARK }}>Devolución gratis.</strong> 30 días desde que lo recibes.</span>
+            </p>
+            <p style={{ margin: 0, fontSize: 12, color: TEXT_MUTED, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+              <Shield size={13} color={PINK_PRIMARY} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span><strong style={{ color: TEXT_DARK }}>Compra Protegida.</strong> Recibe el producto o te devolvemos el dinero.</span>
+            </p>
+          </div>
+          <div style={{ marginTop: 12 }}><StockIndicator stock={product.STOCK} soldQuantity={product.SOLDQUANTITY} /></div>
+        </>
+      ) : (
+        <div style={{ background: '#f9fafb', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 10, padding: '16px', textAlign: 'center' }}>
+          <p style={{ margin: '0 0 12px', fontSize: 13, color: TEXT_MUTED }}>Sin stock por el momento</p>
+          <button type="button" onClick={async () => {
+            const email = prompt('Ingresa tu email para recibir una notificación cuando haya stock:');
+            if (!email || !email.includes('@')) return;
+            try {
+              const { databases } = getServices();
+              const { databaseId } = getAppwriteConfig();
+              await databases.createDocument(databaseId, STOCK_ALERTS_COLLECTION, ID.unique(), {
+                PRODUCTID: product.$id, PRODUCTNAME: product.NAME,
+                EMAIL: email.toLowerCase().trim(), CREATEDAT: Date.now(), NOTIFIED: false,
+              });
+              alert('✅ Te avisaremos por email cuando haya stock disponible');
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : '';
+              if (msg.includes('already exists')) alert('Ya estás suscrito a esta alerta');
+              else alert('Error al registrar alerta: ' + msg);
+            }
+          }} style={{ width: '100%', padding: '10px 18px', background: `linear-gradient(135deg, ${PINK_PRIMARY}, ${PINK_LIGHT})`, color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            🔔 Avisarme cuando haya stock
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div style={{ background: '#f5f5f5', minHeight: '100vh', fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, sans-serif' }}>
+    <div className="pd-page" style={{ background: '#f5f5f5', minHeight: '100vh', fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, sans-serif' }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .pd-page { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+          .pd-breadcrumb { top: 0 !important; padding: 10px 12px !important; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+          .pd-breadcrumb > div { font-size: 12px !important; flex-wrap: nowrap; min-width: min-content; }
+          .pd-breadcrumb span { max-width: 110px !important; }
+          .pd-category-banner { height: 150px !important; }
+          .pd-container { margin-top: -64px !important; padding: 0 12px 20px !important; }
+          .pd-main-grid { grid-template-columns: 1fr !important; padding: 18px 14px !important; gap: 18px !important; border-radius: 16px !important; }
+          .pd-gallery { flex-direction: column !important; width: 100% !important; align-items: stretch !important; }
+          .pd-h-scroll { overflow-x: auto !important; overflow-y: hidden !important; -webkit-overflow-scrolling: touch !important; scroll-snap-type: x proximity !important; touch-action: pan-x !important; scrollbar-width: none !important; -ms-overflow-style: none !important; padding-bottom: 0 !important; max-height: none !important; }
+          .pd-h-scroll::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; background: transparent !important; }
+          .pd-gallery-thumbs { flex-direction: row !important; gap: 8px !important; width: 100% !important; }
+          .pd-gallery-thumb-btn { flex-shrink: 0 !important; scroll-snap-align: start !important; }
+          .pd-buy-box--mobile-inline { position: static !important; display: block !important; }
+          .pd-features-grid { grid-template-columns: 1fr !important; }
+          .pd-related-scroll { padding-bottom: 0 !important; }
+          .pd-related-card { scroll-snap-align: start !important; }
+          .pd-gallery-main { width: 100% !important; height: auto !important; aspect-ratio: 1 !important; max-height: min(82vw, 360px) !important; }
+          .pd-gallery-main > div { width: 100% !important; height: 100% !important; min-height: 240px !important; }
+          .pd-info h1 { font-size: 18px !important; }
+          .pd-price-main { font-size: 28px !important; }
+          .pd-buy-box.pd-buy-box--desktop { display: none !important; }
+          .pd-section { padding: 18px 14px !important; border-radius: 14px !important; }
+          .pd-section h2 { font-size: 17px !important; }
+          .pd-related-scroll { gap: 10px !important; }
+          .pd-related-card { width: 140px !important; }
+          .pd-related-card > div:first-child { height: 112px !important; }
+          .pd-mobile-bar { display: flex !important; }
+        }
+        @media (min-width: 769px) {
+          .pd-mobile-bar, .pd-buy-box--mobile-inline { display: none !important; }
+          .pd-gallery { flex-direction: row !important; align-items: flex-start !important; }
+          .pd-gallery-main { order: 2 !important; }
+          .pd-gallery-thumbs { order: 1 !important; flex-direction: column !important; }
+        }
+        .pd-mobile-bar {
+          display: none; position: fixed; left: 0; right: 0;
+          bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+          z-index: 9990; background: rgba(255,255,255,0.98);
+          backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+          border-top: 1px solid #fce7f3; padding: 10px 12px; gap: 10px;
+          align-items: center; box-shadow: 0 -6px 24px rgba(236,72,153,0.1);
+        }
+        .pd-mobile-bar-info { flex-shrink: 0; min-width: 0; }
+        .pd-mobile-bar-price { font-size: 19px; font-weight: 700; color: ${TEXT_DARK}; line-height: 1.1; }
+        .pd-mobile-bar-meta { font-size: 10px; color: ${TEXT_MUTED}; margin-top: 2px; }
+        .pd-mobile-bar-actions { display: flex; gap: 8px; flex: 1; min-width: 0; }
+        .pd-mobile-bar-actions button { flex: 1; border-radius: 10px; font-size: 12px; font-weight: 700; padding: 11px 8px; cursor: pointer; }
+        .pd-mbar-buy { border: none; background: linear-gradient(135deg, ${PINK_PRIMARY}, ${PINK_LIGHT}); color: #fff; box-shadow: 0 4px 12px rgba(236,72,153,0.35); }
+        .pd-mbar-cart { background: #fff; color: ${PINK_PRIMARY}; border: 1.5px solid ${PINK_LIGHT}; display: flex; align-items: center; justify-content: center; gap: 4px; }
+      `}</style>
 
       {/* Breadcrumb */}
-      <div style={{ background: '#fff', padding: '12px 2%', borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 76, zIndex: 999 }}>
+      <div className="pd-breadcrumb pd-h-scroll" style={{ background: '#fff', padding: '12px 2%', borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 76, zIndex: 999 }}>
         <div style={{ maxWidth: 1400, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
           <Link href="/" style={{ color: PINK_PRIMARY, textDecoration: 'none', fontWeight: 500 }}>Inicio</Link>
           <ChevronRight size={12} color={PINK_LIGHT} />
@@ -197,7 +318,7 @@ export default function ProductDetailPlantilla1() {
       </div>
 
       {/* Category Banner con gradiente rosa */}
-      <div style={{
+      <div className="pd-category-banner" style={{
         position: 'relative', width: '100%', height: 600, overflow: 'hidden',
         background: categoryBg ? '#000' : `linear-gradient(135deg, ${PINK_PRIMARY} 0%, ${PINK_LIGHT} 50%, ${PINK_BG_DARK} 100%)`,
       }}>
@@ -215,7 +336,7 @@ export default function ProductDetailPlantilla1() {
 
         {/* Category badge - above the main card */}
         {(categoryName || categoryIcon) && (
-          <div style={{ marginBottom: 16 }}>
+          <div className="pd-category-badge" style={{ marginBottom: 16 }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 12,
               background: 'rgba(255,255,255,0.97)', borderRadius: 14,
@@ -239,23 +360,7 @@ export default function ProductDetailPlantilla1() {
 
           {/* Column 1: Image gallery (thumbs + main) */}
           <div className="pd-gallery" style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
-            {images.length > 1 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {images.map((img, i) => (
-                  <button key={i}
-                    onMouseEnter={() => setSelectedImg(i)}
-                    onClick={() => setSelectedImg(i)}
-                    style={{
-                      width: 56, height: 56, border: `2px solid ${selectedImg === i ? PINK_PRIMARY : PINK_BG_DARK}`,
-                      borderRadius: 8, background: '#fff', cursor: 'pointer', padding: 0, overflow: 'hidden',
-                      transition: 'all .15s', boxShadow: selectedImg === i ? `0 0 0 1px ${PINK_PRIMARY}` : 'none',
-                    }}>
-                    <Image src={img} alt="" width={56} height={56} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 3 }} />
-                  </button>
-                ))}
-              </div>
-            )}
-            <div style={{ position: 'relative', width: 420, height: 420, background: '#fff', borderRadius: 12, overflow: 'hidden', flexShrink: 0 }}>
+            <div className="pd-gallery-main" style={{ position: 'relative', width: 420, height: 420, background: '#fff', borderRadius: 12, overflow: 'hidden', flexShrink: 0 }}>
               {images[selectedImg]
                 ? <ImageZoom src={images[selectedImg]} alt={product.NAME} width={420} height={420} />
                 : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 80 }}>💄</span>}
@@ -269,10 +374,25 @@ export default function ProductDetailPlantilla1() {
                 <FavoriteButton productId={product.$id} size={20} />
               </div>
             </div>
+            {images.length > 1 && (
+              <div className="pd-gallery-thumbs pd-h-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {images.map((img, i) => (
+                  <button key={i} type="button" className="pd-gallery-thumb-btn"
+                    onClick={() => setSelectedImg(i)}
+                    style={{
+                      width: 56, height: 56, border: `2px solid ${selectedImg === i ? PINK_PRIMARY : PINK_BG_DARK}`,
+                      borderRadius: 8, background: '#fff', cursor: 'pointer', padding: 0, overflow: 'hidden',
+                      transition: 'all .15s', boxShadow: selectedImg === i ? `0 0 0 1px ${PINK_PRIMARY}` : 'none',
+                    }}>
+                    <Image src={img} alt="" width={56} height={56} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 3 }} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Column 2: Info (title, rating, price, description) */}
-          <div style={{ minWidth: 0, paddingTop: 4 }}>
+          <div className="pd-info" style={{ minWidth: 0, paddingTop: 4 }}>
             {soldQty > 0 && (
               <p style={{ margin: '0 0 6px', fontSize: 13, color: TEXT_MUTED, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Sparkles size={12} color={PINK_PRIMARY} /> Nuevo · <strong style={{ color: TEXT_DARK }}>+{soldQty.toLocaleString()}</strong> vendidos
@@ -324,7 +444,7 @@ export default function ProductDetailPlantilla1() {
                 <p style={{ margin: '0 0 2px', fontSize: 14, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(product.PRICE)}</p>
               )}
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 36, fontWeight: 400, color: TEXT_DARK, letterSpacing: -1, lineHeight: 1 }}>
+                <span className="pd-price-main" style={{ fontSize: 36, fontWeight: 400, color: TEXT_DARK, letterSpacing: -1, lineHeight: 1 }}>
                   {formatPrice(isWholesaleQty ? product.WHOLESALEPRICE! : effectivePrice)}
                 </span>
                 {(hasDisc && !isWholesaleQty) && (
@@ -364,122 +484,21 @@ export default function ProductDetailPlantilla1() {
             )}
           </div>
 
-          {/* Column 3: Sticky buy box */}
-          <div style={{ position: 'sticky', top: 16, background: '#fff', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 16, padding: '18px 18px 22px', boxShadow: '0 4px 16px rgba(236,72,153,0.08)' }}>
-            <p style={{ margin: '0 0 4px', fontSize: 14, color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Truck size={15} /> Llega entre hoy y mañana
-            </p>
-            <p style={{ margin: '0 0 12px', fontSize: 13, color: TEXT_MUTED }}>
-              Envío disponible a todo Chile. <Link href="#" style={{ color: PINK_PRIMARY, textDecoration: 'none', fontWeight: 500 }}>Más detalles</Link>
-            </p>
+          {buyBoxContent('pd-buy-box pd-buy-box--mobile-inline')}
 
-            <div style={{ borderTop: `1px solid ${PINK_BG_DARK}`, paddingTop: 12, marginBottom: 12 }}>
-              <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: stockColor }}>{stockLabel}</p>
-              {stock > 0 && stock <= 10 && <p style={{ margin: 0, fontSize: 12, color: TEXT_MUTED }}>¡Solo quedan {stock}!</p>}
-            </div>
-
-            {stock > 0 ? (
-              <>
-                <div style={{ marginBottom: 14 }}>
-                  <p style={{ margin: '0 0 6px', fontSize: 13, color: TEXT_MUTED }}>
-                    Cantidad: <strong style={{ color: TEXT_DARK }}>{qty} unidad{qty > 1 ? 'es' : ''}</strong>
-                    <span style={{ color: '#9ca3af' }}> ({stock} disp.)</span>
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'center', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 8, width: 'fit-content', overflow: 'hidden' }}>
-                    <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 36, height: 36, border: 'none', background: '#fff', fontSize: 18, cursor: 'pointer', color: PINK_PRIMARY, fontWeight: 600 }}
-                      onMouseEnter={e => (e.currentTarget.style.background = PINK_BG)}
-                      onMouseLeave={e => (e.currentTarget.style.background = '#fff')}
-                    >−</button>
-                    <span style={{ width: 40, textAlign: 'center', fontSize: 14, fontWeight: 600, color: TEXT_DARK, borderLeft: `1px solid ${PINK_BG_DARK}`, borderRight: `1px solid ${PINK_BG_DARK}` }}>{qty}</span>
-                    <button onClick={() => setQty(q => Math.min(stock, q + 1))} style={{ width: 36, height: 36, border: 'none', background: '#fff', fontSize: 18, cursor: 'pointer', color: PINK_PRIMARY, fontWeight: 600 }}
-                      onMouseEnter={e => (e.currentTarget.style.background = PINK_BG)}
-                      onMouseLeave={e => (e.currentTarget.style.background = '#fff')}
-                    >+</button>
-                  </div>
-                  {qty > 1 && <p style={{ margin: '8px 0 0', fontSize: 12, color: TEXT_MUTED }}>Total: <strong style={{ color: PINK_PRIMARY, fontSize: 14 }}>{formatPrice(lineTotal)}</strong></p>}
-                </div>
-
-                <button onClick={handleAdd} style={{
-                  width: '100%', padding: '12px 18px',
-                  background: `linear-gradient(135deg, ${PINK_PRIMARY} 0%, ${PINK_LIGHT} 100%)`,
-                  color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                  transition: 'all .25s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: '0 6px 16px rgba(236,72,153,0.3)',
-                  marginBottom: 8,
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 22px rgba(236,72,153,0.4)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(236,72,153,0.3)'; }}
-                >Comprar ahora</button>
-                <button onClick={handleAdd} style={{
-                  width: '100%', padding: '11px 18px',
-                  background: added ? '#ecfdf5' : '#f9fafb',
-                  color: added ? '#10b981' : PINK_PRIMARY,
-                  border: `1.5px solid ${added ? '#10b981' : PINK_LIGHT}`,
-                  borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  transition: 'all .15s',
-                }}
-                  onMouseEnter={e => { if (!added) { e.currentTarget.style.background = '#f3f4f6'; } }}
-                  onMouseLeave={e => { if (!added) { e.currentTarget.style.background = '#f9fafb'; } }}
-                >
-                  {added ? <><Check size={15} /> Agregado</> : <><ShoppingCart size={15} /> Agregar al carrito</>}
-                </button>
-
-                <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${PINK_BG_DARK}`, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <p style={{ margin: 0, fontSize: 12, color: TEXT_MUTED, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                    <RefreshCw size={13} color={PINK_PRIMARY} style={{ flexShrink: 0, marginTop: 1 }} />
-                    <span><strong style={{ color: TEXT_DARK }}>Devolución gratis.</strong> 30 días desde que lo recibes.</span>
-                  </p>
-                  <p style={{ margin: 0, fontSize: 12, color: TEXT_MUTED, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                    <Shield size={13} color={PINK_PRIMARY} style={{ flexShrink: 0, marginTop: 1 }} />
-                    <span><strong style={{ color: TEXT_DARK }}>Compra Protegida.</strong> Recibe el producto o te devolvemos el dinero.</span>
-                  </p>
-                </div>
-
-                <div style={{ marginTop: 12 }}>
-                  <StockIndicator stock={product.STOCK} soldQuantity={product.SOLDQUANTITY} />
-                </div>
-              </>
-            ) : (
-              <div style={{ background: '#f9fafb', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 10, padding: '16px', textAlign: 'center' }}>
-                <p style={{ margin: '0 0 12px', fontSize: 13, color: TEXT_MUTED }}>Sin stock por el momento</p>
-                <button onClick={async () => {
-                  const email = prompt('Ingresa tu email para recibir una notificación cuando haya stock:');
-                  if (!email || !email.includes('@')) return;
-                  try {
-                    const { databases } = getServices();
-                    const { databaseId } = getAppwriteConfig();
-                    await databases.createDocument(databaseId, STOCK_ALERTS_COLLECTION, ID.unique(), {
-                      PRODUCTID: product.$id, PRODUCTNAME: product.NAME,
-                      EMAIL: email.toLowerCase().trim(), CREATEDAT: Date.now(), NOTIFIED: false,
-                    });
-                    alert('✅ Te avisaremos por email cuando haya stock disponible');
-                  } catch (err: any) {
-                    if (err.message?.includes('already exists')) alert('Ya estás suscrito a esta alerta');
-                    else alert('Error al registrar alerta: ' + err.message);
-                  }
-                }} style={{
-                  width: '100%', padding: '10px 18px',
-                  background: `linear-gradient(135deg, ${PINK_PRIMARY}, ${PINK_LIGHT})`,
-                  color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(236,72,153,0.3)',
-                }}>
-                  🔔 Avisarme cuando haya stock
-                </button>
-              </div>
-            )}
-          </div>
+          {/* Column 3: Sticky buy box — desktop */}
+          {buyBoxContent('pd-buy-box pd-buy-box--desktop')}
         </div>
 
         {/* Features + Description */}
         {((features.length > 0) || (tags.length > 0) || product.DESCRIPTION) && (
-          <div style={{ background: '#fff', borderRadius: 24, padding: '32px 36px', marginBottom: 20, boxShadow: '0 6px 24px rgba(236,72,153,0.06)' }}>
+          <div className="pd-section" style={{ background: '#fff', borderRadius: 24, padding: '32px 36px', marginBottom: 20, boxShadow: '0 6px 24px rgba(236,72,153,0.06)' }}>
             {features.length > 0 && (
               <div style={{ marginBottom: 32 }}>
                 <h2 style={{ margin: '0 0 18px', fontSize: 22, fontWeight: 700, color: TEXT_DARK, display: 'flex', alignItems: 'center', gap: 10 }}>
                   <Sparkles size={20} color={PINK_PRIMARY} /> Características del producto
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 0, border: `1px solid ${PINK_BG_DARK}`, borderRadius: 14, overflow: 'hidden' }}>
+                <div className="pd-features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 0, border: `1px solid ${PINK_BG_DARK}`, borderRadius: 14, overflow: 'hidden' }}>
                   {features.map((f, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', background: i % 2 === 0 ? '#f9fafb' : '#fff', borderBottom: `1px solid ${PINK_BG_DARK}` }}>
                       <Check size={15} color={PINK_PRIMARY} style={{ flexShrink: 0 }} />
@@ -510,21 +529,21 @@ export default function ProductDetailPlantilla1() {
 
         {/* Related products */}
         {related.length > 0 && (
-          <div style={{ background: '#fff', borderRadius: 24, padding: '32px 36px', marginBottom: 20, boxShadow: '0 6px 24px rgba(236,72,153,0.06)' }}>
+          <div className="pd-section" style={{ background: '#fff', borderRadius: 24, padding: '32px 36px', marginBottom: 20, boxShadow: '0 6px 24px rgba(236,72,153,0.06)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
               <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: TEXT_DARK }}>Productos relacionados</h2>
               {categoryName && (
                 <Link href={`/productos?categoria=${encodeURIComponent(categoryName)}`} style={{ fontSize: 14, color: PINK_PRIMARY, textDecoration: 'none', fontWeight: 600 }}>Ver más →</Link>
               )}
             </div>
-            <div style={{ display: 'flex', gap: 18, overflowX: 'auto', paddingBottom: 8 }}>
+            <div className="pd-related-scroll pd-h-scroll" style={{ display: 'flex', gap: 18 }}>
               {related.map(p => {
                 const rcp = p.CURRENTPRICE ?? 0;
                 const rprice = rcp > 0 ? rcp : p.PRICE;
                 const rhasDisc = rcp > 0 && rcp < p.PRICE;
                 const rdisc = rhasDisc ? Math.round(((p.PRICE - rcp) / p.PRICE) * 100) : 0;
                 return (
-                  <Link key={p.$id} href={`/productos/${p.$id}`} style={{ flexShrink: 0, width: 180, textDecoration: 'none', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 16, overflow: 'hidden', background: '#fff', display: 'block', transition: 'all .25s' }}
+                  <Link key={p.$id} href={`/productos/${p.$id}`} className="pd-related-card" style={{ flexShrink: 0, width: 180, textDecoration: 'none', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 16, overflow: 'hidden', background: '#fff', display: 'block', transition: 'all .25s' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 28px rgba(236,72,153,0.18)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLElement).style.borderColor = PINK_LIGHT; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.borderColor = PINK_BG_DARK; }}
                   >
@@ -574,6 +593,24 @@ export default function ProductDetailPlantilla1() {
         <RecentlyViewed excludeId={product.$id} />
 
       </div>
+
+      {/* Barra fija de compra — mobile */}
+      {stock > 0 && (
+        <div className="pd-mobile-bar">
+          <div className="pd-mobile-bar-info">
+            <div className="pd-mobile-bar-price">{formatPrice(effectivePrice)}</div>
+            {(hasDisc && !isWholesaleQty) && <div className="pd-mobile-bar-meta">{discPct}% OFF · {stockLabel}</div>}
+            {!(hasDisc && !isWholesaleQty) && <div className="pd-mobile-bar-meta">{stockLabel}</div>}
+          </div>
+          <div className="pd-mobile-bar-actions">
+            <button type="button" className="pd-mbar-cart" onClick={handleAdd} aria-label="Agregar al carrito">
+              <ShoppingCart size={16} />
+              {added ? 'Listo' : 'Carrito'}
+            </button>
+            <button type="button" className="pd-mbar-buy" onClick={handleAdd}>Comprar</button>
+          </div>
+        </div>
+      )}
 
       {/* Payment Methods Modal */}
       {paymentModalOpen && (

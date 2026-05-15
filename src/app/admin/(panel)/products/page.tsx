@@ -243,15 +243,25 @@ export default function ProductsPage() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm('¿Eliminar este producto?')) return;
+    if (!confirm('¿Realmente deseas eliminar este producto? Esta acción no se puede deshacer.')) return;
     setDeleteId(id);
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
+      
+      console.log('Intentando eliminar producto:', id, 'en BD:', databaseId);
+      
       await databases.deleteDocument(databaseId, PRODUCTS_COLLECTION_ID, id);
       setProducts(prev => prev.filter(p => p.$id !== id));
-    } catch (e: any) { alert('Error: ' + e.message); }
-    finally { setDeleteId(null); }
+      
+      // Opcional: mostrar un toast o alert de éxito silencioso
+      console.log('Producto eliminado con éxito');
+    } catch (e: any) {
+      console.error('Error al eliminar producto:', e);
+      alert('Error al eliminar: ' + (e.response?.message || e.message || 'Error desconocido de Appwrite'));
+    } finally {
+      setDeleteId(null);
+    }
   };
 
   const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
@@ -495,7 +505,9 @@ export default function ProductsPage() {
                     <div className="flex items-center gap-1">
                       <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition" title="Editar"><Pencil className="w-3.5 h-3.5" /></button>
                       <button onClick={() => duplicate(p)} className="p-1.5 rounded-lg hover:bg-violet-50 text-gray-400 hover:text-violet-600 transition" title="Duplicar"><Copy className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => remove(p.$id)} disabled={deleteId === p.$id} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition" title="Eliminar"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => remove(p.$id)} disabled={deleteId === p.$id} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition disabled:opacity-50" title="Eliminar">
+                        {deleteId === p.$id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      </button>
                     </div>
                   </td>
                 </tr>
