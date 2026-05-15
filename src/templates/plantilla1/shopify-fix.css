@@ -645,7 +645,7 @@ cart-drawer.cart-sidebar::after {
   color: #ec4899 !important;
 }
 
-/* ─── Media gallery: move big title higher ─── */
+/* ─── Media gallery: move big title higher, remove opacity filters, video icons ─── */
 [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-gallery-wrapper {
   padding-top: 40px !important;
 }
@@ -653,6 +653,24 @@ cart-drawer.cart-sidebar::after {
   margin-top: -35px !important;
   margin-bottom: 22px !important;
   display: block !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-gallery-top-text {
+  margin-bottom: 20px !important;
+}
+/* Remove any opacity/filter on gallery items and videos */
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-gallery-item,
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-img,
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-img video {
+  opacity: 1 !important;
+  filter: none !important;
+}
+/* Video play/pause icon styling */
+[data-template="1"] .tpl1-video-play-icon,
+[data-template="1"] .tpl1-video-pause-icon {
+  transition: opacity 0.3s ease;
+}
+[data-template="1"] .media-img:hover .tpl1-video-pause-icon {
+  opacity: 1 !important;
 }
 
 /* ─── Countdown section: add top spacing to separate from featured product ─── */

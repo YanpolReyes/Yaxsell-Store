@@ -4382,7 +4382,7 @@ export default function HomePage1() {
         topText.style.fontSize = '16px';
         topText.style.fontWeight = '700';
         topText.style.color = settings.mediaGalleryTitleColor || '#000000';
-        topText.style.marginBottom = '12px';
+        topText.style.marginBottom = '20px';
         topText.style.letterSpacing = '2px';
         topText.style.textTransform = 'uppercase';
         topText.style.textAlign = 'center';
@@ -4441,6 +4441,7 @@ export default function HomePage1() {
         galleryItemCard.style.background = 'transparent';
         galleryItemCard.style.aspectRatio = '9/16';
         galleryItemCard.style.overflow = 'hidden';
+        galleryItemCard.style.filter = 'none';
       }
 
       const mediaImg = block.querySelector('.media-img') as HTMLElement;
@@ -4448,22 +4449,45 @@ export default function HomePage1() {
         if (item.mediaType === 'video') {
           const video = document.createElement('video');
           video.src = item.mediaUrl;
-          video.autoplay = true;
+          video.autoplay = false;
           video.muted = true;
           video.loop = true;
           video.playsInline = true;
           video.setAttribute('playsinline', '');
           video.setAttribute('muted', '');
-          video.setAttribute('autoplay', '');
+          video.preload = 'metadata';
           if (item.posterUrl) video.poster = item.posterUrl;
-          video.style.cssText = 'width:100%;aspect-ratio:9/16;object-fit:contain;display:block;border-radius:20px;cursor:pointer;background:#000;';
-          video.play().catch(() => {});
-          video.onclick = () => {
-            if (video.paused) video.play().catch(() => {});
-            else video.pause();
+          video.style.cssText = 'width:100%;aspect-ratio:9/16;object-fit:contain;display:block;border-radius:20px;cursor:pointer;background:#000;opacity:1;filter:none;';
+          // Play/pause overlay icon
+          const playIcon = document.createElement('div');
+          playIcon.className = 'tpl1-video-play-icon';
+          playIcon.innerHTML = `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="24" cy="24" r="24" fill="rgba(0,0,0,0.45)"/><polygon points="20,14 36,24 20,34" fill="white"/></svg>`;
+          playIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;transition:opacity 0.3s ease;opacity:1;';
+          const pauseIcon = document.createElement('div');
+          pauseIcon.className = 'tpl1-video-pause-icon';
+          pauseIcon.innerHTML = `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="24" cy="24" r="24" fill="rgba(0,0,0,0.45)"/><rect x="16" y="14" width="6" height="20" rx="2" fill="white"/><rect x="26" y="14" width="6" height="20" rx="2" fill="white"/></svg>`;
+          pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;transition:opacity 0.3s ease;opacity:0;';
+          const updateIcons = () => {
+            playIcon.style.opacity = video.paused ? '1' : '0';
+            pauseIcon.style.opacity = video.paused ? '0' : '1';
           };
+          video.onclick = () => {
+            if (video.paused) {
+              video.play().catch(() => {});
+            } else {
+              video.pause();
+            }
+            updateIcons();
+          };
+          video.onplay = updateIcons;
+          video.onpause = updateIcons;
           mediaImg.innerHTML = '';
+          mediaImg.style.position = 'relative';
+          mediaImg.style.opacity = '1';
+          mediaImg.style.filter = 'none';
           mediaImg.appendChild(video);
+          mediaImg.appendChild(playIcon);
+          mediaImg.appendChild(pauseIcon);
         } else {
           mediaImg.innerHTML = `<img src="${item.mediaUrl}" width="auto" height="auto" alt="${item.title || ''}" style="width:100%;aspect-ratio:9/16;object-fit:cover;display:block;border-radius:20px;" />`;
         }
