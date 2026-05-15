@@ -16,6 +16,7 @@ import { NotificationProvider } from '@/context/NotificationContext';
 import CookieConsent from '@/components/CookieConsent';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import ScrollToTop from '@/components/ScrollToTop';
+import HomeOnlyWidgets from '@/components/HomeOnlyWidgets';
 
 export const metadata: Metadata = {
   title: 'Tienda',
@@ -33,9 +34,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <CartProvider>
                   <TemplateProvider>
                     <StoreShell>{children}</StoreShell>
-                    <ChatBot />
+                    <HomeOnlyWidgets />
                     <BackToTop />
-                    <WhatsAppButton />
                     <CookieConsent />
                     <ScrollToTop />
                   </TemplateProvider>

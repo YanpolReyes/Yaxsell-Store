@@ -173,6 +173,7 @@ export default function LoyaltyLevel() {
     );
   }
 
+  const CurrentIcon = currentLevel.icon;
   const NextIcon = nextLevel?.icon;
   const ordersNeeded = nextLevel ? nextLevel.requiredOrders - paidOrdersCount : 0;
 
