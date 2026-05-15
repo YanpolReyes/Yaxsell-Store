@@ -48,6 +48,15 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
   const [claimedCode, setClaimedCode] = useState<string | null>(null);
   const [claiming, setClaiming] = useState(false);
 
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
   useEffect(() => {
     if (!isLoggedIn || !user) { setLoading(false); return; }
     (async () => {
@@ -223,7 +232,7 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
           <div className="flex items-center gap-6 relative z-10">
             <motion.div 
               whileHover={{ scale: 1.05, rotate: 5 }}
-              className="w-20 h-20 rounded-[28px] flex items-center justify-center text-4xl shadow-lg z-10 transition-shadow hover:shadow-xl" 
+              className={`${isMobile ? 'w-14 h-14 rounded-2xl text-2xl' : 'w-20 h-20 rounded-[28px] text-4xl'} flex items-center justify-center shadow-lg z-10 transition-shadow hover:shadow-xl`} 
               style={{ backgroundColor: tier.bg, border: `2px solid ${tier.color}20` }}
             >
               {tier.icon}
@@ -232,7 +241,7 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
               <div className="inline-flex items-center gap-1.5 mb-2 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider" style={{ backgroundColor: `${tier.color}15`, color: tier.color }}>
                 Nivel {tier.name}
               </div>
-              <h2 className="text-4xl font-black text-slate-900 tracking-tight leading-none">
+              <h2 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-black text-slate-900 tracking-tight leading-none`}>
                 {points.toLocaleString()} <span className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">pts</span>
               </h2>
             </div>

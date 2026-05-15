@@ -165,7 +165,6 @@ export default function LoyaltyLevel() {
     );
   }
 
-  const CurrentIcon = currentLevel.icon;
   const NextIcon = nextLevel?.icon;
   const ordersNeeded = nextLevel ? nextLevel.requiredOrders - paidOrdersCount : 0;
 
@@ -176,9 +175,9 @@ export default function LoyaltyLevel() {
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       style={{ 
         background: '#ffffff', 
-        borderRadius: 32, 
+        borderRadius: isMobile ? 24 : 32, 
         border: `1px solid ${PINK}10`, 
-        padding: 40, 
+        padding: isMobile ? '24px 20px' : 40, 
         fontFamily: FF,
         boxShadow: '0 20px 60px rgba(236,72,153,0.05), 0 4px 12px rgba(0,0,0,0.02)',
         position: 'relative',
@@ -210,7 +209,7 @@ export default function LoyaltyLevel() {
           <motion.div 
             whileHover={{ scale: 1.05, rotate: 5 }}
             style={{ 
-              width: 90, height: 90, borderRadius: 28, 
+              width: isMobile ? 60 : 90, height: isMobile ? 60 : 90, borderRadius: isMobile ? 20 : 28, 
               background: `linear-gradient(135deg, #fff, ${PINK}05)`, 
               border: `2px solid ${PINK}10`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -218,7 +217,7 @@ export default function LoyaltyLevel() {
               position: 'relative'
             }}
           >
-            <CurrentIcon size={44} color={currentLevel.color} strokeWidth={2.5} />
+            <CurrentIcon size={isMobile ? 32 : 44} color={currentLevel.color} strokeWidth={2.5} />
             <motion.div 
               animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 2 }}
               style={{ position: 'absolute', bottom: -8, right: -8, background: '#fff', borderRadius: '50%', padding: 6, boxShadow: '0 4px 15px rgba(236,72,153,0.2)' }}
@@ -233,13 +232,13 @@ export default function LoyaltyLevel() {
             >
               MI STATUS ACTUAL
             </motion.span>
-            <h2 style={{ margin: 0, fontSize: 42, fontWeight: 900, color: '#111827', letterSpacing: '-0.04em', lineHeight: 1 }}>{currentLevel.name}</h2>
+            <h2 style={{ margin: 0, fontSize: isMobile ? 28 : 42, fontWeight: 900, color: '#111827', letterSpacing: '-0.04em', lineHeight: 1 }}>{currentLevel.name}</h2>
           </div>
         </div>
       </div>
 
       {/* Main Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 40, position: 'relative', zIndex: 1 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 16, marginBottom: isMobile ? 24 : 40, position: 'relative', zIndex: 1 }}>
         {[
           { icon: Trophy, label: 'Pedidos Pagados', value: paidOrdersCount, color: '#3b82f6', bg: '#eff6ff' },
           { icon: Coins, label: 'Puntos Bella', value: points.toLocaleString(), color: PINK, bg: `${PINK}08` },
@@ -253,7 +252,7 @@ export default function LoyaltyLevel() {
             <div style={{ width: 44, height: 44, borderRadius: 14, background: stat.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, border: `1px solid ${stat.color}10` }}>
               <stat.icon size={22} color={stat.color} />
             </div>
-            <p style={{ margin: 0, fontSize: 26, fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>{stat.value}</p>
+            <p style={{ margin: 0, fontSize: isMobile ? 20 : 26, fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>{stat.value}</p>
             <p style={{ margin: '4px 0 0', fontSize: 11, color: '#9ca3af', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
           </motion.div>
         ))}
@@ -314,18 +313,18 @@ export default function LoyaltyLevel() {
               {/* Decorative sparkles */}
               <div style={{ position: 'absolute', top: 0, right: 0, width: '100%', height: '100%', background: 'url("https://www.transparenttextures.com/patterns/stardust.png")', opacity: 0.2, pointerEvents: 'none' }} />
               
-              <div style={{ display: 'flex', alignItems: 'center', gap: 24, position: 'relative', zIndex: 1 }}>
+              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 20 : 24, position: 'relative', zIndex: 1 }}>
                 <div style={{ width: 64, height: 64, borderRadius: 20, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }}>
                   <Gift size={32} color={PINK} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: '#fff' }}>¡Tu Recompensa del {nextLevel.couponPercent}%!</h3>
+                  <h3 style={{ margin: 0, fontSize: isMobile ? 18 : 22, fontWeight: 900, color: '#fff' }}>¡Tu Recompensa del {nextLevel.couponPercent}%!</h3>
                   <p style={{ margin: '4px 0 0', fontSize: 14, color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>Felicidades por subir a {nextLevel.name}. Úsalo en tu próxima compra.</p>
                 </div>
-                <motion.button
+                  <motion.button
                   whileHover={{ scale: 1.05, translateY: -2 }} whileTap={{ scale: 0.95 }}
                   onClick={generateCoupon}
-                  style={{ padding: '18px 36px', background: '#fff', color: PINK, border: 'none', borderRadius: 20, fontSize: 15, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 10px 25px rgba(0,0,0,0.15)', transition: 'all 0.2s ease', textTransform: 'uppercase', letterSpacing: '0.02em' }}
+                  style={{ width: isMobile ? '100%' : 'auto', padding: isMobile ? '14px 20px' : '18px 36px', background: '#fff', color: PINK, border: 'none', borderRadius: 20, fontSize: 13, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, boxShadow: '0 10px 25px rgba(0,0,0,0.15)', transition: 'all 0.2s ease', textTransform: 'uppercase', letterSpacing: '0.02em' }}
                 >
                   <Sparkles size={18} /> Reclamar Cupón
                 </motion.button>
@@ -354,7 +353,7 @@ export default function LoyaltyLevel() {
       )}
 
       {/* Benefits Area */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, position: 'relative', zIndex: 1 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 40 : 32, position: 'relative', zIndex: 1 }}>
         {/* Current Benefits */}
         <div>
           <h3 style={{ fontSize: 12, fontWeight: 900, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 20 }}>

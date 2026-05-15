@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -280,36 +280,24 @@ export default function Navbar1() {
         }
         @media (max-width: 768px) {
           .tpl1-auth-overlay { position: fixed; inset: 0; z-index: 10049; background: rgba(0,0,0,0.28); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: dropdownIn 0.2s ease; }
-          .tpl1-nav-auth-wrap { position: static !important; }
-          .tpl1-auth-popup.tpl1-auth-popup--sheet,
+          .tpl1-nav-auth-wrap { position: relative !important; }
           .tpl1-auth-popup {
-            position: fixed !important;
-            top: auto !important;
-            bottom: 0 !important;
-            left: 12px !important;
-            right: 12px !important;
-            width: auto !important;
-            max-width: none !important;
-            max-height: min(90dvh, calc(100vh - 16px)) !important;
-            overflow-y: auto !important;
-            border-radius: 20px 20px 0 0 !important;
+            position: absolute !important;
+            top: calc(100% + 10px) !important;
+            right: -10px !important;
+            width: 280px !important;
+            border-radius: 16px !important;
             z-index: 10050 !important;
-            animation: tpl1AuthSheetIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) !important;
-            box-shadow: 0 -8px 40px rgba(0,0,0,0.12), 0 20px 60px rgba(236,72,153,0.1) !important;
+            animation: dropdownIn 0.2s ease !important;
           }
           .tpl1-nav-dropdown {
-            position: fixed !important;
-            top: auto !important;
-            bottom: 0 !important;
-            left: 12px !important;
-            right: 12px !important;
-            width: auto !important;
-            min-width: 0 !important;
-            max-height: min(85dvh, calc(100vh - 16px)) !important;
-            overflow-y: auto !important;
-            border-radius: 20px 20px 0 0 !important;
+            position: absolute !important;
+            top: calc(100% + 10px) !important;
+            right: -10px !important;
+            width: 240px !important;
+            border-radius: 16px !important;
             z-index: 10050 !important;
-            animation: tpl1AuthSheetIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            animation: dropdownIn 0.2s ease !important;
           }
           .tpl1-nav { min-height: 48px !important; height: auto !important; background: rgba(255,255,255,0.98) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border-bottom: none !important; border-radius: 999px !important; box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important; margin: 10px 80px 0 !important; position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; z-index: 9999 !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
           .tpl1-nav.scrolled { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; margin: 0 !important; border-radius: 0 !important; min-height: 48px !important; box-shadow: 0 2px 16px rgba(0,0,0,0.08) !important; }
@@ -443,24 +431,49 @@ export default function Navbar1() {
                   <span className="tpl1-nav-account-name">{user.name?.split(' ')[0]}</span>
                 </button>
                 {accountOpen && (
-                  <div className="tpl1-nav-dropdown">
-                    <div className="tpl1-nav-dropdown-header">
-                      <div className="tpl1-nav-avatar lg">
-                        {avatarUrl ? <img src={avatarUrl} alt="" /> : (user.name?.charAt(0).toUpperCase() || 'U')}
+                  isMobile ? createPortal(
+                    <>
+                      <div className="tpl1-auth-overlay" onClick={() => setAccountOpen(false)} aria-hidden />
+                      <div className="tpl1-nav-dropdown">
+                        <div className="tpl1-nav-dropdown-header">
+                          <div className="tpl1-nav-avatar lg">
+                            {avatarUrl ? <img src={avatarUrl} alt="" /> : (user.name?.charAt(0).toUpperCase() || 'U')}
+                          </div>
+                          <div>
+                            <p className="tpl1-nav-dropdown-name">{user.name}</p>
+                            <p className="tpl1-nav-dropdown-email">{user.email}</p>
+                          </div>
+                        </div>
+                        <Link href="/cuenta" onClick={() => setAccountOpen(false)}><User size={16} /> Mi cuenta</Link>
+                        <Link href="/cuenta/pedidos" onClick={() => setAccountOpen(false)}><Receipt size={16} /> Mis pedidos</Link>
+                        <Link href="/cuenta/direcciones" onClick={() => setAccountOpen(false)}><MapPin size={16} /> Direcciones</Link>
+                        <Link href="/cuenta/notificaciones" onClick={() => setAccountOpen(false)}><Bell size={16} /> Notificaciones</Link>
+                        <Link href="/favoritos" onClick={() => setAccountOpen(false)}><Heart size={16} /> Favoritos</Link>
+                        <div className="tpl1-nav-divider" />
+                        <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesión</button>
                       </div>
-                      <div>
-                        <p className="tpl1-nav-dropdown-name">{user.name}</p>
-                        <p className="tpl1-nav-dropdown-email">{user.email}</p>
+                    </>,
+                    document.body
+                  ) : (
+                    <div className="tpl1-nav-dropdown">
+                      <div className="tpl1-nav-dropdown-header">
+                        <div className="tpl1-nav-avatar lg">
+                          {avatarUrl ? <img src={avatarUrl} alt="" /> : (user.name?.charAt(0).toUpperCase() || 'U')}
+                        </div>
+                        <div>
+                          <p className="tpl1-nav-dropdown-name">{user.name}</p>
+                          <p className="tpl1-nav-dropdown-email">{user.email}</p>
+                        </div>
                       </div>
+                      <Link href="/cuenta" onClick={() => setAccountOpen(false)}><User size={16} /> Mi cuenta</Link>
+                      <Link href="/cuenta/pedidos" onClick={() => setAccountOpen(false)}><Receipt size={16} /> Mis pedidos</Link>
+                      <Link href="/cuenta/direcciones" onClick={() => setAccountOpen(false)}><MapPin size={16} /> Direcciones</Link>
+                      <Link href="/cuenta/notificaciones" onClick={() => setAccountOpen(false)}><Bell size={16} /> Notificaciones</Link>
+                      <Link href="/favoritos" onClick={() => setAccountOpen(false)}><Heart size={16} /> Favoritos</Link>
+                      <div className="tpl1-nav-divider" />
+                      <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesión</button>
                     </div>
-                    <Link href="/cuenta" onClick={() => setAccountOpen(false)}><User size={16} /> Mi cuenta</Link>
-                    <Link href="/cuenta/pedidos" onClick={() => setAccountOpen(false)}><Receipt size={16} /> Mis pedidos</Link>
-                    <Link href="/cuenta/direcciones" onClick={() => setAccountOpen(false)}><MapPin size={16} /> Direcciones</Link>
-                    <Link href="/cuenta/notificaciones" onClick={() => setAccountOpen(false)}><Bell size={16} /> Notificaciones</Link>
-                    <Link href="/favoritos" onClick={() => setAccountOpen(false)}><Heart size={16} /> Favoritos</Link>
-                    <div className="tpl1-nav-divider" />
-                    <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesión</button>
-                  </div>
+                  )
                 )}
               </div>
             ) : (
