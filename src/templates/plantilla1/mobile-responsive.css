@@ -100,15 +100,21 @@
   }
 
   [data-template="1"] .banner-main-title,
-  [data-template="1"] .musk-banner-slider .banner-main-title {
-    font-size: clamp(36px, 9vw, 64px) !important;
-    line-height: 1.05 !important;
-    letter-spacing: -0.02em !important;
-  }
-
+  [data-template="1"] .musk-banner-slider .banner-main-title,
   [data-template="1"] .banner-fancy-sub-head,
   [data-template="1"] .musk-banner-slider .banner-fancy-sub-head {
-    font-size: clamp(14px, 3.5vw, 18px) !important;
+    display: none !important;
+  }
+
+  /* Logo centrado en hero banner mobile */
+  [data-template="1"] .musk-banner-slider .swiper-slide .banner-slide-content::before {
+    content: '' !important;
+    display: block !important;
+    width: 320px !important;
+    height: 320px !important;
+    margin: 0 auto 24px !important;
+    background: url('https://jumpseller.s3.eu-west-1.amazonaws.com/store/yes-bella/assets//Sin%20t%C3%ADtulo-1_5d514a8074f0023fe88b0eacda93c729.png?1743456840') center/contain no-repeat !important;
+    pointer-events: none !important;
   }
 
   [data-template="1"] .banner-slide-para {
@@ -942,67 +948,7 @@
     width: 100% !important;
   }
 
-  /* ─── SHOP THE LOOK: Fix broken hotspots on mobile ─── */
-  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg {
-    padding: 24px 0 !important;
-    overflow: hidden !important;
-  }
-  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .stl-image,
-  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .stl-image-wrapper,
-  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .shop-the-look-image {
-    position: relative !important;
-    width: 100% !important;
-    border-radius: 16px !important;
-    overflow: hidden !important;
-    margin: 0 !important;
-  }
-  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .stl-hotspot,
-  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .hotspot,
-  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg [class*="hotspot"] {
-    position: absolute !important;
-    width: 32px !important;
-    height: 32px !important;
-    border-radius: 50% !important;
-    background: rgba(255,255,255,0.95) !important;
-    border: 2px solid #ec4899 !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2), 0 0 0 4px rgba(236,72,153,0.2) !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    z-index: 5 !important;
-    cursor: pointer !important;
-  }
-  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .stl-products,
-  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .product-list {
-    display: flex !important;
-    flex-direction: row !important;
-    gap: 12px !important;
-    overflow-x: auto !important;
-    padding: 16px 12px !important;
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
-  }
-  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .stl-products::-webkit-scrollbar,
-  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .product-list::-webkit-scrollbar {
-    display: none !important;
-  }
-  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .stl-product-card,
-  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .product-card {
-    flex: 0 0 70% !important;
-    min-width: 70% !important;
-    border-radius: 14px !important;
-    overflow: hidden !important;
-  }
-  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .musk-h2-head {
-    font-size: 22px !important;
-    margin: 0 0 8px !important;
-    line-height: 1.2 !important;
-  }
-  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .stl-row,
-  [data-template="1"] #shopify-section-template--22405132419320__shop_the_look_tmNjgg .row {
-    display: flex !important;
-    flex-direction: column !important;
-  }
+  /* ─── SHOP THE LOOK: Handled by Premium JS Implementation ─── */
 
   /* ─── IMAGE OVERLAY (banner con texto): Mobile redesign ─── */
   [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd {

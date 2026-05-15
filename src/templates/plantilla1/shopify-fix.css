@@ -1156,16 +1156,57 @@ cart-drawer.cart-sidebar::after {
 
 /* ═══ Forzar nav y pill visibles también en <=1024px (el original las oculta) ═══ */
 @media screen and (max-width: 1024px) {
+  /* Hide the ugly white mobile header from Shopify */
+  [data-template="1"] .shopify-section-header,
+  [data-template="1"] #shopify-section-header,
+  [data-template="1"] header:not(.musk-main-header),
+  [data-template="1"] .header-wrapper:not(.musk-main-header),
+  [data-template="1"] .site-header,
+  [data-template="1"] .section-header:not([id*="header_fYEwWD"]) {
+    display: none !important;
+  }
   [data-template="1"] .musk-main-header .musk-navbar,
   [data-template="1"] .musk-main-header::before {
     display: block !important;
   }
   [data-template="1"] .musk-main-header .musk-navbar {
     display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 4px 12px !important;
+    padding: 6px 0 !important;
+    width: 100% !important;
+    order: 3 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: relative !important;
+    clip: auto !important;
+    clip-path: none !important;
+  }
+  [data-template="1"] .musk-main-header .musk-navbar .nav_li {
+    padding: 4px 0 !important;
+    display: list-item !important;
+  }
+  [data-template="1"] .musk-main-header .musk-navbar .nav_li a {
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+  [data-template="1"] .musk-main-header .musk-main-header-container {
+    flex-wrap: wrap !important;
+  }
+  [data-template="1"] .musk-main-header {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   [data-template="1"] .musk-main-header .menu-btn-3,
   [data-template="1"] .fusion-mobile-bottom-nav,
-  [data-template="1"] .fusion-mobile-menu-drawer {
+  [data-template="1"] .fusion-mobile-menu-drawer,
+  [data-template="1"] #tpl1-whatsapp-button,
+  [data-template="1"] #tpl1-chatbot-button {
     display: none !important;
   }
 }

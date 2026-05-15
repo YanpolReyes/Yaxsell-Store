@@ -28,33 +28,33 @@ import './mobile-responsive.css';
 /* ── Mapeo: ID de sección en config → ID del elemento en el HTML de Shopify ── */
 const TPL1_SECTION_HTML_MAP: Record<string, string> = {
   // Header group (fixed)
-  tpl1_announcement_bar:  'shopify-section-sections--22405132747000__announcement_bar_B8FdRK',
-  tpl1_navbar:            'shopify-section-sections--22405132747000__header_fYEwWD',
-  tpl1_hero:              'shopify-section-template--22405132419320__hero_banner_R6iEJ4',
-  tpl1_coupon_banner:     'tpl1-coupon-banner-section',
+  tpl1_announcement_bar: 'shopify-section-sections--22405132747000__announcement_bar_B8FdRK',
+  tpl1_navbar: 'shopify-section-sections--22405132747000__header_fYEwWD',
+  tpl1_hero: 'shopify-section-template--22405132419320__hero_banner_R6iEJ4',
+  tpl1_coupon_banner: 'tpl1-coupon-banner-section',
   // Body sections (reorderable)
-  tpl1_collection_list:    'shopify-section-template--22405132419320__collection_list_WrFbPe',
-  tpl1_marquee:            'shopify-section-template--22405132419320__marquee_mdGXX9',
-  tpl1_featured_collection:'shopify-section-template--22405132419320__featured_collection_UNXLgP',
-  tpl1_media_gallery:      'shopify-section-template--22405132419320__two_column_grid_WxQiPG',
-  tpl1_featured_product:   'shopify-section-template--22405132419320__featured_product_mtqd9n',
-  tpl1_countdown:          'shopify-section-template--22405132419320__countdown_timer_hYJrNM',
-  tpl1_products_filter:    'shopify-section-template--22405132419320__collection_tab_NGBXPp',
-  tpl1_before_after:       'shopify-section-template--22405132419320__before_after_3VVXkq',
-  tpl1_faq:                'shopify-section-template--22405132419320__faq_8cUkFL',
-  tpl1_shop_the_look:      'shopify-section-template--22405132419320__shop_the_look_tmNjgg',
-  tpl1_marquee_2:          'shopify-section-template--22405132419320__marquee_nP83AA',
-  tpl1_image_overlay:      'shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd',
-  tpl1_video_text:         'shopify-section-template--22405132419320__image_video_with_text_LEtqmt',
-  tpl1_testimonials:       'shopify-section-template--22405132419320__testimonial_hf6Hpn',
-  tpl1_brand_logos:        'shopify-section-template--22405132419320__brand_logos_N9XpeF',
-  tpl1_blog:               'shopify-section-template--22405132419320__blog_THeqL4',
-  tpl1_service_icons:      'shopify-section-template--22405132419320__icon_with_text_7MGWAj',
+  tpl1_collection_list: 'shopify-section-template--22405132419320__collection_list_WrFbPe',
+  tpl1_marquee: 'shopify-section-template--22405132419320__marquee_mdGXX9',
+  tpl1_featured_collection: 'shopify-section-template--22405132419320__featured_collection_UNXLgP',
+  tpl1_media_gallery: 'shopify-section-template--22405132419320__two_column_grid_WxQiPG',
+  tpl1_featured_product: 'shopify-section-template--22405132419320__featured_product_mtqd9n',
+  tpl1_countdown: 'shopify-section-template--22405132419320__countdown_timer_hYJrNM',
+  tpl1_products_filter: 'shopify-section-template--22405132419320__collection_tab_NGBXPp',
+  tpl1_before_after: 'shopify-section-template--22405132419320__before_after_3VVXkq',
+  tpl1_faq: 'shopify-section-template--22405132419320__faq_8cUkFL',
+  tpl1_shop_the_look: 'shopify-section-template--22405132419320__shop_the_look_tmNjgg',
+  tpl1_marquee_2: 'shopify-section-template--22405132419320__marquee_nP83AA',
+  tpl1_image_overlay: 'shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd',
+  tpl1_video_text: 'shopify-section-template--22405132419320__image_video_with_text_LEtqmt',
+  tpl1_testimonials: 'shopify-section-template--22405132419320__testimonial_hf6Hpn',
+  tpl1_brand_logos: 'shopify-section-template--22405132419320__brand_logos_N9XpeF',
+  tpl1_blog: 'shopify-section-template--22405132419320__blog_THeqL4',
+  tpl1_service_icons: 'shopify-section-template--22405132419320__icon_with_text_7MGWAj',
   // Footer group (fixed)
-  tpl1_subscribe_popup:   'shopify-section-sections--22405132714232__subscribe_popup_GX8btz',
-  tpl1_whatsapp_button:   'tpl1-whatsapp-button',
-  tpl1_chatbot_button:    'tpl1-chatbot-button',
-  tpl1_footer:             'shopify-section-sections--22405132714232__footer_pzLNtW',
+  tpl1_subscribe_popup: 'shopify-section-sections--22405132714232__subscribe_popup_GX8btz',
+  tpl1_whatsapp_button: 'tpl1-whatsapp-button',
+  tpl1_chatbot_button: 'tpl1-chatbot-button',
+  tpl1_footer: 'shopify-section-sections--22405132714232__footer_pzLNtW',
 };
 
 // Mapeo inverso: HTML ID → config ID (para hover/click en elementos con data-section-id original)
@@ -110,20 +110,22 @@ const JS_FILES: JsFile[] = [
   { src: `${SHOPIFY_BASE}/js/9jo523yvuya95av2-82653806840.shopifypreview.com/cdn/shop/t/3/assets/pubsub-lg5xyg.js` },
   { src: `${SHOPIFY_BASE}/js/9jo523yvuya95av2-82653806840.shopifypreview.com/cdn/shop/t/3/assets/global-t8fxpe.js` },
   { src: `${SHOPIFY_BASE}/js/9jo523yvuya95av2-82653806840.shopifypreview.com/cdn/shop/t/3/assets/base-iht69b.js` },
-  { src: `${SHOPIFY_BASE}/js/9jo523yvuya95av2-82653806840.shopifypreview.com/cdn/shop/t/3/assets/bootstrap-bm2tdv.js`, postLoad: () => {
-    // Fix: remove data-bs-toggle from elements whose targets don't exist in DOM
-    // This prevents Bootstrap's qi._isShown from crashing on null.classList
-    document.querySelectorAll('[data-bs-toggle], [data-toggle]').forEach((el) => {
-      const targetSel = (el as HTMLElement).getAttribute('data-bs-target')
-        || (el as HTMLElement).getAttribute('data-target')
-        || (el as HTMLElement).getAttribute('href');
-      if (targetSel && targetSel !== '#' && !document.querySelector(targetSel)) {
-        console.warn('[Plantilla1] Bootstrap: removing toggle from element with missing target:', targetSel, el);
-        (el as HTMLElement).removeAttribute('data-bs-toggle');
-        (el as HTMLElement).removeAttribute('data-toggle');
-      }
-    });
-  } },
+  {
+    src: `${SHOPIFY_BASE}/js/9jo523yvuya95av2-82653806840.shopifypreview.com/cdn/shop/t/3/assets/bootstrap-bm2tdv.js`, postLoad: () => {
+      // Fix: remove data-bs-toggle from elements whose targets don't exist in DOM
+      // This prevents Bootstrap's qi._isShown from crashing on null.classList
+      document.querySelectorAll('[data-bs-toggle], [data-toggle]').forEach((el) => {
+        const targetSel = (el as HTMLElement).getAttribute('data-bs-target')
+          || (el as HTMLElement).getAttribute('data-target')
+          || (el as HTMLElement).getAttribute('href');
+        if (targetSel && targetSel !== '#' && !document.querySelector(targetSel)) {
+          console.warn('[Plantilla1] Bootstrap: removing toggle from element with missing target:', targetSel, el);
+          (el as HTMLElement).removeAttribute('data-bs-toggle');
+          (el as HTMLElement).removeAttribute('data-toggle');
+        }
+      });
+    }
+  },
   { src: `${SHOPIFY_BASE}/js/9jo523yvuya95av2-82653806840.shopifypreview.com/cdn/shop/t/3/assets/swiper-slider-component-jszp6n.patched.js` },
   { src: `${SHOPIFY_BASE}/js/9jo523yvuya95av2-82653806840.shopifypreview.com/cdn/shop/t/3/assets/lazy-images-laxzs0.js` },
   { src: `${SHOPIFY_BASE}/js/9jo523yvuya95av2-82653806840.shopifypreview.com/cdn/shop/t/3/assets/main-vwayah.patched.js?v=tpl1-gsap-heading-10` },
@@ -789,18 +791,17 @@ export default function HomePage1() {
                 <label style="font-size:11px;color:#6b7280;font-weight:700;letter-spacing:0.3px;margin-bottom:6px;display:block;">ORDENAR POR</label>
                 <div class="tpl1-custom-select">
                   <button type="button" class="tpl1-select-btn" style="width:100%;padding:9px 12px;background:#fff;border:1.5px solid #f9a8d4;border-radius:10px;font-size:13px;color:#1f2937;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;transition:all 0.2s;">
-                    <span class="tpl1-select-label">${
-                      sortMode === 'popular' ? 'Popularidad' :
-                      sortMode === 'price-asc' ? 'Precio: menor a mayor' :
-                      sortMode === 'price-desc' ? 'Precio: mayor a menor' :
-                      sortMode === 'discount' ? 'Mayor descuento' : 'Nombre A-Z'
-                    }</span>
+                    <span class="tpl1-select-label">${sortMode === 'popular' ? 'Popularidad' :
+                sortMode === 'price-asc' ? 'Precio: menor a mayor' :
+                  sortMode === 'price-desc' ? 'Precio: mayor a menor' :
+                    sortMode === 'discount' ? 'Mayor descuento' : 'Nombre A-Z'
+              }</span>
                     <svg class="tpl1-select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.25s;"><polyline points="6 9 12 15 18 9"/></svg>
                   </button>
                   <div class="tpl1-select-menu" style="overflow:hidden;max-height:0;background:#fff;border-radius:0 0 10px 10px;transition:max-height 0.3s ease;margin-top:-1px;">
                     <div style="border:1.5px solid #f9a8d4;border-top:none;border-radius:0 0 10px 10px;overflow:hidden;">
-                      ${[['popular','Popularidad'],['price-asc','Precio: menor a mayor'],['price-desc','Precio: mayor a menor'],['discount','Mayor descuento'],['name','Nombre A-Z']].map(([v,l]) => `
-                        <div data-value="${v}" style="padding:9px 12px;font-size:13px;color:${sortMode===v?'#ec4899':'#1f2937'};font-weight:${sortMode===v?'700':'500'};cursor:pointer;transition:background 0.15s;background:${sortMode===v?'#fdf2f8':'#fff'};">${l}</div>
+                      ${[['popular', 'Popularidad'], ['price-asc', 'Precio: menor a mayor'], ['price-desc', 'Precio: mayor a menor'], ['discount', 'Mayor descuento'], ['name', 'Nombre A-Z']].map(([v, l]) => `
+                        <div data-value="${v}" style="padding:9px 12px;font-size:13px;color:${sortMode === v ? '#ec4899' : '#1f2937'};font-weight:${sortMode === v ? '700' : '500'};cursor:pointer;transition:background 0.15s;background:${sortMode === v ? '#fdf2f8' : '#fff'};">${l}</div>
                       `).join('')}
                     </div>
                   </div>
@@ -821,7 +822,7 @@ export default function HomePage1() {
               <!-- Toggles -->
               <div style="margin-bottom:14px;">
                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;color:#1f2937;font-weight:500;padding:6px;border-radius:6px;transition:background 0.15s;" class="tpl1-sale-label">
-                  <input type="checkbox" class="tpl1-sale-check" ${onSaleOnly?'checked':''} style="accent-color:#ec4899;width:16px;height:16px;cursor:pointer;" />
+                  <input type="checkbox" class="tpl1-sale-check" ${onSaleOnly ? 'checked' : ''} style="accent-color:#ec4899;width:16px;height:16px;cursor:pointer;" />
                   Solo en oferta
                 </label>
               </div>
@@ -908,8 +909,8 @@ export default function HomePage1() {
               const isActive = activeCategoryId === cat.$id;
               const iconHtml = cat.iconUrl
                 ? `<img src="${cat.iconUrl}" alt="" style="width:24px;height:24px;border-radius:6px;object-fit:cover;flex-shrink:0;" />`
-                : `<div style="width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#fce7f3,#f9a8d4);display:flex;align-items:center;justify-content:center;font-size:11px;color:#831843;font-weight:700;flex-shrink:0;">${(cat.name||cat.NAME||'?').charAt(0).toUpperCase()}</div>`;
-              item.innerHTML = `<a href="?categoria=${cat.$id}" data-cat-id="${cat.$id}" style="display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:8px;text-decoration:none;color:${isActive?'#ec4899':'#374151'};font-weight:${isActive?'700':'500'};font-size:13.5px;transition:all 0.2s;background:${isActive?'#fce7f3':'transparent'};">${iconHtml}<span class="collection_name" style="flex:1;">${cat.name || cat.NAME || cat.$id}</span></a>`;
+                : `<div style="width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#fce7f3,#f9a8d4);display:flex;align-items:center;justify-content:center;font-size:11px;color:#831843;font-weight:700;flex-shrink:0;">${(cat.name || cat.NAME || '?').charAt(0).toUpperCase()}</div>`;
+              item.innerHTML = `<a href="?categoria=${cat.$id}" data-cat-id="${cat.$id}" style="display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:8px;text-decoration:none;color:${isActive ? '#ec4899' : '#374151'};font-weight:${isActive ? '700' : '500'};font-size:13.5px;transition:all 0.2s;background:${isActive ? '#fce7f3' : 'transparent'};">${iconHtml}<span class="collection_name" style="flex:1;">${cat.name || cat.NAME || cat.$id}</span></a>`;
               collContainer.appendChild(item);
 
               const link = item.querySelector('a')!;
@@ -928,7 +929,7 @@ export default function HomePage1() {
                   list.style.cssText = 'padding:6px 0 10px 18px;display:flex;flex-direction:column;gap:2px;border-left:2px solid #ec4899;margin:4px 0 8px 18px;';
                   list.innerHTML = subs.map(s => {
                     const isSubActive = activeSubcategoryId === s.$id;
-                    return `<a href="?subcategoria=${s.$id}" data-subcat-id="${s.$id}" style="font-size:12.5px;color:${isSubActive?'#fff':'#555'};background:${isSubActive?'#ec4899':'transparent'};text-decoration:none;padding:5px 10px;border-radius:6px;transition:all 0.2s;">› ${s.name || s.NAME || s.$id}</a>`;
+                    return `<a href="?subcategoria=${s.$id}" data-subcat-id="${s.$id}" style="font-size:12.5px;color:${isSubActive ? '#fff' : '#555'};background:${isSubActive ? '#ec4899' : 'transparent'};text-decoration:none;padding:5px 10px;border-radius:6px;transition:all 0.2s;">› ${s.name || s.NAME || s.$id}</a>`;
                   }).join('');
                   item.appendChild(list);
                   list.querySelectorAll('a').forEach(a => {
@@ -976,12 +977,12 @@ export default function HomePage1() {
                 <div style="font-size:13px;color:#9ca3af;margin-top:4px;">Prueba ajustando los filtros</div>
               </div>`;
               return;
-            }            productGrid.innerHTML = products.map((doc: any, i: number) => {
+            } productGrid.innerHTML = products.map((doc: any, i: number) => {
               const price = doc.CURRENTPRICE && doc.CURRENTPRICE > 0 ? doc.CURRENTPRICE : doc.PRICE;
               const hasDiscount = doc.CURRENTPRICE && doc.CURRENTPRICE > 0 && doc.CURRENTPRICE < doc.PRICE;
               const discountPct = hasDiscount ? Math.round(((doc.PRICE - doc.CURRENTPRICE) / doc.PRICE) * 100) : 0;
               const img2 = doc.IMAGEURL2 || doc.SECONDARYIMAGEURL || '';
-              return `<div class="tpl1-pc-wrap" style="perspective:700px;position:relative;z-index:1;animation:tpl1CardPop 0.4s ${Math.min(i*0.04,0.4)}s both ease-out;">
+              return `<div class="tpl1-pc-wrap" style="perspective:700px;position:relative;z-index:1;animation:tpl1CardPop 0.4s ${Math.min(i * 0.04, 0.4)}s both ease-out;">
                 <div class="tpl1-prod-card" data-product-id="${doc.$id}" style="position:relative;display:flex;flex-direction:column;background:#fff;border-radius:16px;overflow:hidden;border:1px solid rgba(0,0,0,0.06);box-shadow:0 1px 3px rgba(0,0,0,0.06);transition:box-shadow .35s cubic-bezier(.4,0,.2,1),border-color .35s ease,transform .35s cubic-bezier(.4,0,.2,1);will-change:transform,box-shadow;transform-style:preserve-3d;height:100%;">
 
                   <!-- Discount badge top-left below heart -->
@@ -1570,7 +1571,7 @@ export default function HomePage1() {
 
       const userName = user?.name || 'Usuario';
       const userEmail = user?.email || '';
-      
+
       // Get avatar file ID from Appwrite prefs
       let avatarUrl = '';
       try {
@@ -1581,7 +1582,7 @@ export default function HomePage1() {
         if (avatarFileId) {
           avatarUrl = getFilePreviewUrl(avatarFileId);
         }
-      } catch {}
+      } catch { }
 
       // Mark as just opened to prevent immediate close
       userDropdownJustOpened = true;
@@ -1746,7 +1747,7 @@ export default function HomePage1() {
                 svgEl.replaceWith(initial);
               }
             }
-          } catch {}
+          } catch { }
         })();
       }
     };
@@ -2300,10 +2301,10 @@ export default function HomePage1() {
         if (settings.productWidgetButtonColor) cartBtn.style.backgroundColor = settings.productWidgetButtonColor;
         if (settings.productWidgetButtonTextColor) cartBtn.style.color = settings.productWidgetButtonTextColor;
         if (settings.productWidgetButtonRadius !== undefined) cartBtn.style.borderRadius = `${settings.productWidgetButtonRadius}px`;
-        
+
         // Store product ID on container for cart button
         el.dataset.productId = productData.productId || '';
-        
+
         cartBtn.onclick = (e) => {
           e.preventDefault();
           const pid = el.dataset.productId;
@@ -2716,14 +2717,14 @@ export default function HomePage1() {
                   }
                   video.style.opacity = '1';
                 };
-                video.play().catch(() => {});
+                video.play().catch(() => { });
                 videoElement = video;
                 videoCreated = true;
               }
             } else if (videoElement) {
               // Already created: toggle play/pause based on visibility
               if (entry.isIntersecting) {
-                videoElement.play().catch(() => {});
+                videoElement.play().catch(() => { });
               } else {
                 videoElement.pause();
               }
@@ -2789,12 +2790,27 @@ export default function HomePage1() {
     }
   }, [bodyHtml, sectionCfg, featuredProduct]);
 
-  /* ── Shop The Look (tpl1): vincular imagen + 4 hotspots a la estructura existente ── */
+  /* ── Shop The Look (tpl1): Premium Mobile Grid + Multiple Looks Support ── */
   useEffect(() => {
     if (!bodyHtml) return;
-    const sectionId = 'template--22405132419320__shop_the_look_tmNjgg';
-    const section = document.getElementById(`shopify-section-${sectionId}`);
+
+    // 1) Robust section targeting
+    const sectionIds = [
+      'template--22405132419320__shop_the_look_tmNjgg',
+      'template--22405132747000__look_C7KqPk',
+      'template--22405132419320__shop_the_look_tmNjgg_optimized'
+    ];
+    let section: HTMLElement | null = null;
+    for (const id of sectionIds) {
+      section = document.getElementById(`shopify-section-${id}`);
+      if (section) break;
+    }
+    if (!section) {
+      section = document.querySelector('.shopify-section:has(.fusion-shoplook-wrapper), .shopify-section:has(.shop-the-look-row)') as HTMLElement;
+    }
     if (!section) return;
+
+    section.classList.add('tpl1-premium-shoplook');
 
     let alive = true;
 
@@ -2802,385 +2818,440 @@ export default function HomePage1() {
       try {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
+
+        // 2) Fetch ALL active panels for this template
         const panelsRes = await databases.listDocuments(databaseId, HOTSPOT_PANELS_COLLECTION, [
-          Query.equal('MOSAICGROUP', 'plantilla1'), Query.orderAsc('CELLINDEX'), Query.limit(5),
+          Query.equal('MOSAICGROUP', 'plantilla1'),
+          Query.equal('ISACTIVE', true),
+          Query.orderAsc('CELLINDEX'),
+          Query.limit(6),
         ]);
-        if (!alive) return;
-        const mainPanel = (panelsRes.documents as any[]).find(p => p.CELLINDEX === 0 && p.ISACTIVE);
-        if (!mainPanel) return;
+        if (!alive || panelsRes.total === 0) return;
 
-        // 1) Cambiar imagen del look principal + forzar object-fit:contain y aspect ratio para consistencia con admin
-        const leftContent = section.querySelector('.left-content') as HTMLElement | null;
-        const heroImg = section.querySelector('.left-content > img') as HTMLImageElement | null;
-        if (heroImg && mainPanel.IMAGEURL) {
-          heroImg.src = mainPanel.IMAGEURL;
-          if (mainPanel.TITLE) heroImg.alt = mainPanel.TITLE;
-          // object-fit:cover + width/height:100% para que llene el contenedor igual que el admin
-          heroImg.style.objectFit = 'cover';
-          heroImg.style.width = '100%';
-          heroImg.style.height = '100%';
-        }
-        // Forzar aspect-ratio 4/3 en el contenedor para coincidir con el admin
-        if (leftContent) {
-          leftContent.style.aspectRatio = '4 / 3';
-          leftContent.style.position = 'relative';
-          leftContent.style.overflow = 'hidden';
-        }
+        const allPanels = panelsRes.documents as any[];
+        const panelIds = allPanels.map(p => p.$id);
 
-        // 2) Cargar hotspots del panel principal (máximo 4 — la plantilla tiene item1..item4)
+        // 3) Fetch ALL hotspots for these panels
         const hotspotsRes = await databases.listDocuments(databaseId, BANNER_OVERLAY_POSITIONS_COLLECTION, [
-          Query.equal('BANNERID', mainPanel.$id), Query.orderAsc('DISPLAYORDER'), Query.limit(10),
+          Query.equal('BANNERID', panelIds),
+          Query.equal('ISACTIVE', true),
+          Query.orderAsc('DISPLAYORDER'),
+          Query.limit(100),
         ]);
         if (!alive) return;
-        const hotspots = (hotspotsRes.documents as any[]).filter(h => h.ISACTIVE).slice(0, 4);
+        const allHotspots = hotspotsRes.documents as any[];
 
-        const productIds = Array.from(new Set(hotspots.map(h => h.PRODUCTID).filter(Boolean))) as string[];
-        let products: any[] = [];
+        // 4) Fetch ALL products for these hotspots
+        const productIds = Array.from(new Set(allHotspots.map(h => h.PRODUCTID).filter(Boolean))) as string[];
+        let allProducts: any[] = [];
         if (productIds.length > 0) {
+          // Appwrite might have a limit on 'in' query size, but 100 is usually fine
           const prodRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-            Query.equal('$id', productIds), Query.limit(productIds.length),
+            Query.equal('$id', productIds),
+            Query.limit(100),
           ]);
-          products = prodRes.documents;
+          allProducts = prodRes.documents;
         }
         if (!alive) return;
 
-        // 3) Posicionar bullets sobre la imagen — sobreescribiendo el CSS nth-child del tema
-        // Offset de -2% a la izquierda para calibración visual
-        const OFFSET_X = -2;
-        // Inyectar estilos rosa con animación completa para los hotspots
-        if (!document.getElementById('tpl1-hotspot-pulse-style')) {
+        // 5) Inject Global Styles (Pulse, Grid, Bottom Sheet)
+        if (!document.getElementById('tpl1-premium-stl-styles')) {
           const style = document.createElement('style');
-          style.id = 'tpl1-hotspot-pulse-style';
+          style.id = 'tpl1-premium-stl-styles';
           style.textContent = `
-            @keyframes tpl1HotspotPulse {
-              0%, 100% { box-shadow: 0 0 0 0 rgba(236,72,153,0.7), 0 0 20px rgba(236,72,153,0.4); }
-              50% { box-shadow: 0 0 0 14px rgba(236,72,153,0), 0 0 30px rgba(236,72,153,0.2); }
+            /* --- Hotspot Animations --- */
+            @keyframes tpl1PulseShadow {
+              0% { box-shadow: 0 0 0 0 rgba(236,72,153,0.6); }
+              70% { box-shadow: 0 0 0 12px rgba(236,72,153,0); }
+              100% { box-shadow: 0 0 0 0 rgba(236,72,153,0); }
             }
-            @keyframes tpl1HotspotDotPulse {
+            @keyframes tpl1PulseInner {
               0%, 100% { transform: scale(1); opacity: 1; }
-              50% { transform: scale(1.4); opacity: 0.6; }
+              50% { transform: scale(1.3); opacity: 0.8; }
             }
-            @keyframes tpl1HotspotRipple1 {
-              0% { transform: translate(-50%,-50%) scale(0.5); opacity: 0.8; }
-              100% { transform: translate(-50%,-50%) scale(2.5); opacity: 0; }
+            @keyframes tpl1SlideUp {
+              from { transform: translateY(100%); opacity: 0; }
+              to { transform: translateY(0); opacity: 1; }
             }
-            @keyframes tpl1HotspotRipple2 {
-              0% { transform: translate(-50%,-50%) scale(0.5); opacity: 0.6; }
-              100% { transform: translate(-50%,-50%) scale(2.5); opacity: 0; }
+            @keyframes tpl1FadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
             }
-            @keyframes tpl1HotspotFloat {
-              0%, 100% { transform: translate(-50%,-50%) translateY(0px); }
-              50% { transform: translate(-50%,-50%) translateY(-4px); }
-            }
-            @keyframes tpl1HotspotGlow {
-              0%, 100% { filter: brightness(1) drop-shadow(0 0 6px rgba(236,72,153,0.6)); }
-              50% { filter: brightness(1.2) drop-shadow(0 0 16px rgba(236,72,153,0.9)); }
-            }
-            #shopify-section-template--22405132419320__shop_the_look_tmNjgg .left-content .pagination-bullet {
-              background: linear-gradient(135deg, #ec4899, #f472b6) !important;
-              border: 2.5px solid rgba(255,255,255,0.95) !important;
-              border-radius: 50% !important;
-              width: 30px !important;
-              height: 30px !important;
-              animation: tpl1HotspotFloat 3s ease-in-out infinite, tpl1HotspotGlow 2s ease-in-out infinite !important;
-              cursor: pointer !important;
-              z-index: 10 !important;
-              position: absolute !important;
-              transition: background 0.2s ease !important;
-            }
-            #shopify-section-template--22405132419320__shop_the_look_tmNjgg .left-content .pagination-bullet::before {
-              content: '' !important;
-              position: absolute !important;
-              top: 50% !important;
-              left: 50% !important;
-              width: 30px !important;
-              height: 30px !important;
-              border-radius: 50% !important;
-              border: 2px solid rgba(236,72,153,0.6) !important;
-              animation: tpl1HotspotRipple1 2s ease-out infinite !important;
-              pointer-events: none !important;
-            }
-            #shopify-section-template--22405132419320__shop_the_look_tmNjgg .left-content .pagination-bullet::after {
-              content: '' !important;
-              position: absolute !important;
-              top: 50% !important;
-              left: 50% !important;
-              width: 30px !important;
-              height: 30px !important;
-              border-radius: 50% !important;
-              border: 2px solid rgba(236,72,153,0.4) !important;
-              animation: tpl1HotspotRipple2 2s ease-out infinite 0.6s !important;
-              pointer-events: none !important;
-            }
-            #shopify-section-template--22405132419320__shop_the_look_tmNjgg .left-content .pagination-bullet .details-toggle {
-              background: none !important;
-              width: 100% !important;
-              height: 100% !important;
+
+            /* --- Desktop Layout Overrides --- */
+            .tpl1-premium-shoplook .shop-the-look-row {
               display: flex !important;
-              align-items: center !important;
-              justify-content: center !important;
-              position: relative !important;
-              z-index: 2 !important;
+              gap: 30px !important;
+              align-items: flex-start !important;
             }
-            #shopify-section-template--22405132419320__shop_the_look_tmNjgg .left-content .pagination-bullet .details-toggle::before {
-              content: '' !important;
-              display: block !important;
-              width: 10px !important;
-              height: 10px !important;
-              border-radius: 50% !important;
-              background: rgba(255,255,255,0.95) !important;
-              animation: tpl1HotspotDotPulse 2s ease-in-out infinite !important;
-              box-shadow: 0 0 6px rgba(255,255,255,0.5) !important;
+
+            /* --- Premium Hotspot Style --- */
+            .tpl1-hotspot {
+              position: absolute;
+              width: 28px;
+              height: 28px;
+              border-radius: 50%;
+              background: rgba(255, 255, 255, 0.2);
+              backdrop-filter: blur(4px);
+              border: 1.5px solid rgba(255, 255, 255, 0.8);
+              cursor: pointer;
+              z-index: 100;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+              animation: tpl1PulseShadow 2s infinite;
             }
-            #shopify-section-template--22405132419320__shop_the_look_tmNjgg .left-content .pagination-bullet:hover {
-              background: linear-gradient(135deg, #db2777, #ec4899) !important;
-              transform: translate(-50%, -50%) scale(1.25) !important;
-              filter: brightness(1.3) drop-shadow(0 0 20px rgba(236,72,153,1)) !important;
+            .tpl1-hotspot::after {
+              content: '';
+              width: 10px;
+              height: 10px;
+              background: #ec4899;
+              border-radius: 50%;
+              box-shadow: 0 0 8px #ec4899;
+              animation: tpl1PulseInner 2s infinite;
+            }
+            .tpl1-hotspot:hover {
+              transform: scale(1.2);
+              background: rgba(255, 255, 255, 0.4);
+              border-color: #fff;
+              z-index: 101;
+            }
+
+            /* --- Mobile Grid of Looks --- */
+            @media (max-width: 768px) {
+              .tpl1-premium-shoplook .fusion-shoplook-wrapper,
+              .tpl1-premium-shoplook .shop-the-look-row {
+                display: block !important;
+                padding: 0 !important;
+              }
+              
+              /* Container for the grid of looks */
+              .tpl1-looks-grid {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 12px !important;
+                padding: 16px !important;
+              }
+              
+              .tpl1-look-item {
+                position: relative !important;
+                aspect-ratio: 3/4 !important;
+                border-radius: 16px !important;
+                overflow: hidden !important;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+                background: #f3f4f6 !important;
+              }
+              
+              .tpl1-look-item img {
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: cover !important;
+                transition: transform 0.5s ease !important;
+              }
+              
+              .tpl1-look-item:active img {
+                transform: scale(1.05) !important;
+              }
+
+              /* Hide the original right content (products) on mobile 
+                 if we are using the grid approach, or move it below */
+              .tpl1-premium-shoplook .right-content {
+                display: none !important;
+              }
+
+              .tpl1-hotspot {
+                width: 24px;
+                height: 24px;
+              }
+              .tpl1-hotspot::after {
+                width: 8px;
+                height: 8px;
+              }
+            }
+
+            /* --- Premium Bottom Sheet --- */
+            .tpl1-sheet-backdrop {
+              position: fixed;
+              inset: 0;
+              background: rgba(0,0,0,0.4);
+              backdrop-filter: blur(8px);
+              -webkit-backdrop-filter: blur(8px);
+              z-index: 99999;
+              animation: tpl1FadeIn 0.3s ease;
+            }
+            .tpl1-sheet {
+              position: fixed;
+              bottom: 0;
+              left: 0;
+              right: 0;
+              background: #fff;
+              border-top-left-radius: 32px;
+              border-top-right-radius: 32px;
+              z-index: 100000;
+              padding: 24px;
+              box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+              animation: tpl1SlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+              max-height: 85vh;
+              overflow-y: auto;
+              font-family: 'Outfit', sans-serif;
+            }
+            .tpl1-sheet-handle {
+              width: 40px;
+              height: 4px;
+              background: #e5e7eb;
+              border-radius: 2px;
+              margin: -8px auto 20px;
+            }
+            .tpl1-sheet-content {
+              display: flex;
+              flex-direction: column;
+              gap: 20px;
+            }
+            .tpl1-sheet-header {
+              display: flex;
+              gap: 16px;
+              align-items: flex-start;
+            }
+            .tpl1-sheet-img {
+              width: 120px;
+              height: 120px;
+              border-radius: 16px;
+              object-fit: cover;
+              background: #f9fafb;
+            }
+            .tpl1-sheet-info {
+              flex: 1;
+            }
+            .tpl1-sheet-name {
+              font-size: 18px;
+              font-weight: 700;
+              color: #111827;
+              margin-bottom: 4px;
+              line-height: 1.2;
+            }
+            .tpl1-sheet-price-row {
+              display: flex;
+              align-items: baseline;
+              gap: 8px;
+            }
+            .tpl1-sheet-price {
+              font-size: 22px;
+              font-weight: 800;
+              color: #ec4899;
+            }
+            .tpl1-sheet-old-price {
+              font-size: 14px;
+              color: #9ca3af;
+              text-decoration: line-through;
+            }
+            .tpl1-sheet-badge {
+              display: inline-block;
+              padding: 2px 8px;
+              background: #fdf2f8;
+              color: #ec4899;
+              font-size: 10px;
+              font-weight: 800;
+              border-radius: 99px;
+              text-transform: uppercase;
+              margin-bottom: 8px;
+            }
+            .tpl1-sheet-actions {
+              display: flex;
+              gap: 12px;
+              margin-top: 8px;
+            }
+            .tpl1-sheet-btn {
+              flex: 1;
+              height: 54px;
+              border-radius: 16px;
+              font-weight: 700;
+              font-size: 15px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: transform 0.2s ease;
+              border: none;
+            }
+            .tpl1-sheet-btn:active { transform: scale(0.96); }
+            .tpl1-sheet-btn-primary {
+              background: linear-gradient(135deg, #ec4899, #db2777);
+              color: #fff;
+              box-shadow: 0 4px 15px rgba(236,72,153,0.3);
+            }
+            .tpl1-sheet-btn-secondary {
+              background: #f3f4f6;
+              color: #374151;
             }
           `;
           document.head.appendChild(style);
         }
-        const bullets = Array.from(section.querySelectorAll('.left-content .pagination-bullet')) as HTMLElement[];
-        bullets.forEach((bullet, idx) => {
-          const h = hotspots[idx];
-          if (!h) {
-            bullet.style.display = 'none';
-            return;
-          }
-          bullet.style.display = '';
-          bullet.style.setProperty('left', `${(h.POSITIONX * 100) + OFFSET_X}%`, 'important');
-          bullet.style.setProperty('top', `${h.POSITIONY * 100}%`, 'important');
-          // El CSS original usa transform según nth-child; lo neutralizamos para centrar
-          bullet.style.setProperty('transform', 'translate(-50%, -50%)', 'important');
-          // Desactivar Bootstrap dropdown — usar click custom
-          const toggle = bullet.querySelector('.details-toggle') as HTMLElement | null;
-          if (toggle) {
-            toggle.removeAttribute('data-bs-toggle');
-            toggle.removeAttribute('aria-expanded');
-          }
-        });
 
-        // 3.5) Popup flotante inline al hacer click en hotspot
-        // Preparar datos de productos para popup
-        const fmt = (n: number) => `$${(n || 0).toLocaleString('es-CL')}`;
-        const stlCfg = sectionCfg.find(sc => sc.id === 'tpl1_shop_the_look');
-        const stlSettings = stlCfg?.settings || {};
-        const stlOverrides = [
-          stlSettings.stlProductImage1,
-          stlSettings.stlProductImage2,
-          stlSettings.stlProductImage3,
-          stlSettings.stlProductImage4,
-        ];
-        // Inyectar estilos del popup inline
-        if (!document.getElementById('tpl1-hotspot-popup-style')) {
-          const popStyle = document.createElement('style');
-          popStyle.id = 'tpl1-hotspot-popup-style';
-          popStyle.textContent = `
-            .tpl1-hotspot-popup {
-              position: absolute; z-index: 50;
-              width: 240px; background: #fff; border-radius: 16px;
-              box-shadow: 0 8px 30px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08);
-              overflow: hidden; animation: tpl1PopupScale 0.25s cubic-bezier(0.2,1,0.3,1);
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-              pointer-events: auto;
+        // 6) Determine if we should show the Grid (Multiple Looks) or Single Look
+        const isMobile = window.innerWidth <= 768;
+        
+        if (isMobile && allPanels.length > 1) {
+          // --- RENDER GRID OF LOOKS (MOBILE ONLY) ---
+          const wrapper = section.querySelector('.fusion-shoplook-wrapper') || section;
+          wrapper.innerHTML = `<div class="tpl1-looks-grid"></div>`;
+          const grid = wrapper.querySelector('.tpl1-looks-grid') as HTMLElement;
+          
+          allPanels.forEach(panel => {
+            const panelHotspots = allHotspots.filter(h => h.BANNERID === panel.$id);
+            const lookItem = document.createElement('div');
+            lookItem.className = 'tpl1-look-item';
+            lookItem.innerHTML = `<img src="${panel.IMAGEURL}" alt="${panel.TITLE || 'Look'}" />`;
+            
+            // Add hotspots to this look item
+            panelHotspots.forEach(h => {
+              const hotspot = document.createElement('div');
+              hotspot.className = 'tpl1-hotspot';
+              hotspot.style.left = `${h.POSITIONX * 100}%`;
+              hotspot.style.top = `${h.POSITIONY * 100}%`;
+              hotspot.style.transform = 'translate(-50%, -50%)';
+              
+              const product = allProducts.find(p => p.$id === h.PRODUCTID);
+              if (product) {
+                hotspot.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  openPremiumSheet(product);
+                });
+              }
+              lookItem.appendChild(hotspot);
+            });
+            
+            grid.appendChild(lookItem);
+          });
+        } else {
+          // --- RENDER SINGLE LOOK (DEFAULT/DESKTOP) ---
+          const mainPanel = allPanels.find(p => p.CELLINDEX === 0) || allPanels[0];
+          if (!mainPanel) return;
+
+          // Update main image
+          const leftContent = section.querySelector('.left-content') as HTMLElement | null;
+          const heroImg = section.querySelector('.left-content > img') as HTMLImageElement | null;
+          if (heroImg) {
+            heroImg.src = mainPanel.IMAGEURL;
+            heroImg.style.objectFit = 'cover';
+            heroImg.style.width = '100%';
+            heroImg.style.height = '100%';
+          }
+          if (leftContent) {
+            leftContent.style.aspectRatio = '4 / 3';
+            leftContent.style.position = 'relative';
+            leftContent.style.overflow = 'hidden';
+            
+            // Clear old bullets if any
+            const oldBullets = leftContent.querySelectorAll('.pagination-bullet, .tpl1-hotspot');
+            oldBullets.forEach(b => b.remove());
+
+            // Add premium hotspots
+            const panelHotspots = allHotspots.filter(h => h.BANNERID === mainPanel.$id);
+            panelHotspots.forEach(h => {
+              const hotspot = document.createElement('div');
+              hotspot.className = 'tpl1-hotspot';
+              hotspot.style.left = `${h.POSITIONX * 100}%`;
+              hotspot.style.top = `${h.POSITIONY * 100}%`;
+              hotspot.style.transform = 'translate(-50%, -50%)';
+              
+              const product = allProducts.find(p => p.$id === h.PRODUCTID);
+              if (product) {
+                hotspot.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  if (isMobile) {
+                    openPremiumSheet(product);
+                  } else {
+                    // Desktop behavior: scroll to or open quickview
+                    window.location.href = `/productos/${product.$id}`;
+                  }
+                });
+              }
+              leftContent.appendChild(hotspot);
+            });
+          }
+
+          // Link the right content cards (existing structure)
+          const panelHotspots = allHotspots.filter(h => h.BANNERID === mainPanel.$id).slice(0, 4);
+          panelHotspots.forEach((h, i) => {
+            const card = section.querySelector(`#item${i + 1}`) as HTMLElement | null;
+            if (!card) return;
+            const prod = allProducts.find(p => p.$id === h.PRODUCTID);
+            if (!prod) {
+              card.style.display = 'none';
+              return;
             }
-            .tpl1-hotspot-popup-img {
-              width: 100%; height: 180px; object-fit: cover; display: block;
-            }
-            .tpl1-hotspot-popup-body {
-              padding: 14px 16px;
-            }
-            .tpl1-hotspot-popup-name {
-              font-size: 13px; font-weight: 700; color: #111827; margin: 0 0 4px;
-              line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            }
-            .tpl1-hotspot-popup-prices {
-              display: flex; align-items: baseline; gap: 6px; margin-bottom: 12px;
-            }
-            .tpl1-hotspot-popup-price {
-              font-size: 18px; font-weight: 800; color: #ec4899;
-            }
-            .tpl1-hotspot-popup-compare {
-              font-size: 12px; font-weight: 500; color: #9ca3af;
-              text-decoration: line-through;
-            }
-            .tpl1-hotspot-popup-discount {
-              font-size: 10px; font-weight: 700; color: #fff;
-              background: #ec4899; border-radius: 20px; padding: 1px 6px;
-            }
-            .tpl1-hotspot-popup-actions {
-              display: flex; gap: 6px;
-            }
-            .tpl1-hotspot-popup-btn {
-              flex: 1; padding: 9px 0; border: none; border-radius: 10px;
-              font-size: 11px; font-weight: 700; cursor: pointer;
-              transition: all 0.15s ease; letter-spacing: 0.02em;
-            }
-            .tpl1-hotspot-popup-btn-cart {
-              background: #f3f4f6; color: #374151;
-            }
-            .tpl1-hotspot-popup-btn-cart:hover {
-              background: #e5e7eb;
-            }
-            .tpl1-hotspot-popup-btn-buy {
-              background: linear-gradient(135deg, #ec4899, #f472b6);
-              color: #fff;
-            }
-            .tpl1-hotspot-popup-btn-buy:hover {
-              background: linear-gradient(135deg, #db2777, #ec4899);
-              box-shadow: 0 3px 10px rgba(236,72,153,0.35);
-            }
-            .tpl1-hotspot-popup-close {
-              position: absolute; top: 8px; right: 8px;
-              width: 26px; height: 26px; border-radius: 50%;
-              background: rgba(255,255,255,0.85); border: none;
-              cursor: pointer; display: flex; align-items: center; justify-content: center;
-              font-size: 14px; color: #374151; transition: all 0.15s;
-              box-shadow: 0 1px 4px rgba(0,0,0,0.12);
-            }
-            .tpl1-hotspot-popup-close:hover {
-              background: #fff; transform: scale(1.1);
-            }
-            @keyframes tpl1PopupScale {
-              from { opacity: 0; transform: scale(0.85); }
-              to { opacity: 1; transform: scale(1); }
-            }
-          `;
-          document.head.appendChild(popStyle);
+            card.style.display = '';
+            const img = card.querySelector('.product-img img') as HTMLImageElement | null;
+            if (img) img.src = prod.IMAGEURL || '';
+            const name = card.querySelector('.product-name') as HTMLElement | null;
+            if (name) name.textContent = prod.NAME;
+            const price = card.querySelector('.p-price') as HTMLElement | null;
+            if (price) price.textContent = `$${(prod.CURRENTPRICE || prod.PRICE).toLocaleString('es-CL')}`;
+            
+            card.style.cursor = 'pointer';
+            card.onclick = () => { window.location.href = `/productos/${prod.$id}`; };
+          });
         }
-        // Click handler para cada bullet — popup inline
-        bullets.forEach((bullet, idx) => {
-          const h = hotspots[idx];
-          if (!h) return;
-          const prod = products.find(p => p.$id === h.PRODUCTID);
-          if (!prod) return;
-          const prevClickHandler = (bullet as any).__tpl1_popup_handler;
-          if (prevClickHandler) bullet.removeEventListener('click', prevClickHandler);
-          const clickHandler = (e: Event) => {
-            e.preventDefault();
-            e.stopPropagation();
-            // Cerrar popup existente
-            const existing = section.querySelector('.tpl1-hotspot-popup');
-            if (existing) existing.remove();
-            const imgUrl = stlOverrides[idx] || prod.IMAGEURL || '';
-            const hasDisc = prod.CURRENTPRICE && prod.CURRENTPRICE < prod.PRICE;
-            const current = hasDisc ? prod.CURRENTPRICE : prod.PRICE;
-            const discPct = hasDisc ? Math.round((1 - prod.CURRENTPRICE / prod.PRICE) * 100) : 0;
-            // Calcular posición del popup relativa al contenedor .left-content
-            const leftContent = section.querySelector('.left-content') as HTMLElement;
-            if (!leftContent) return;
-            const containerRect = leftContent.getBoundingClientRect();
-            const bulletRect = bullet.getBoundingClientRect();
-            const bulletCenterX = bulletRect.left + bulletRect.width / 2 - containerRect.left;
-            const bulletCenterY = bulletRect.top + bulletRect.height / 2 - containerRect.top;
-            // Posicionar: si el hotspot está a la derecha, popup a la izquierda, y viceversa
-            const popW = 240;
-            const popLeft = bulletCenterX > containerRect.width / 2
-              ? bulletCenterX - popW - 20
-              : bulletCenterX + 20;
-            const popTop = Math.max(10, bulletCenterY - 90);
-            const popup = document.createElement('div');
-            popup.className = 'tpl1-hotspot-popup';
-            popup.style.left = `${popLeft}px`;
-            popup.style.top = `${popTop}px`;
-            popup.innerHTML = `
-              <button class="tpl1-hotspot-popup-close">&times;</button>
-              ${imgUrl ? `<img class="tpl1-hotspot-popup-img" src="${imgUrl}" alt="${prod.NAME || ''}" />` : ''}
-              <div class="tpl1-hotspot-popup-body">
-                <div class="tpl1-hotspot-popup-name">${prod.NAME || 'Producto'}</div>
-                <div class="tpl1-hotspot-popup-prices">
-                  <span class="tpl1-hotspot-popup-price">${fmt(current)}</span>
-                  ${hasDisc ? `<span class="tpl1-hotspot-popup-compare">${fmt(prod.PRICE)}</span><span class="tpl1-hotspot-popup-discount">-${discPct}%</span>` : ''}
-                </div>
-                <div class="tpl1-hotspot-popup-actions">
-                  <button class="tpl1-hotspot-popup-btn tpl1-hotspot-popup-btn-cart" data-action="cart">Añadir al carrito</button>
-                  <button class="tpl1-hotspot-popup-btn tpl1-hotspot-popup-btn-buy" data-action="buy">Comprar ahora</button>
+
+        // --- Helper: Open Premium Bottom Sheet ---
+        function openPremiumSheet(product: any) {
+          const backdrop = document.createElement('div');
+          backdrop.className = 'tpl1-sheet-backdrop';
+          
+          const sheet = document.createElement('div');
+          sheet.className = 'tpl1-sheet';
+          
+          const hasDisc = product.CURRENTPRICE && product.CURRENTPRICE < product.PRICE;
+          const discPct = hasDisc ? Math.round((1 - product.CURRENTPRICE / product.PRICE) * 100) : 0;
+          const price = (product.CURRENTPRICE || product.PRICE).toLocaleString('es-CL');
+          const oldPrice = product.PRICE.toLocaleString('es-CL');
+
+          sheet.innerHTML = `
+            <div class="tpl1-sheet-handle"></div>
+            <div class="tpl1-sheet-content">
+              <div class="tpl1-sheet-header">
+                <img src="${product.IMAGEURL}" class="tpl1-sheet-img" alt="${product.NAME}" />
+                <div class="tpl1-sheet-info">
+                  ${hasDisc ? `<span class="tpl1-sheet-badge">¡Oferta! -${discPct}%</span>` : ''}
+                  <h3 class="tpl1-sheet-name">${product.NAME}</h3>
+                  <div class="tpl1-sheet-price-row">
+                    <span class="tpl1-sheet-price">$${price}</span>
+                    ${hasDisc ? `<span class="tpl1-sheet-old-price">$${oldPrice}</span>` : ''}
+                  </div>
                 </div>
               </div>
-            `;
-            // Cerrar con botón X
-            popup.querySelector('.tpl1-hotspot-popup-close')?.addEventListener('click', (ev: Event) => {
-              ev.stopPropagation();
-              popup.remove();
-            });
-            // Acciones de botones
-            popup.querySelector('[data-action="cart"]')?.addEventListener('click', (ev: Event) => {
-              ev.stopPropagation();
-              window.dispatchEvent(new CustomEvent('yaxsel:add-to-cart', { detail: { productId: prod.$id, quantity: 1 } }));
-              popup.remove();
-            });
-            popup.querySelector('[data-action="buy"]')?.addEventListener('click', (ev: Event) => {
-              ev.stopPropagation();
-              window.location.href = `/productos/${prod.$id}`;
-            });
-            // Insertar dentro de .left-content (position:relative ya existe)
-            leftContent.style.position = 'relative';
-            leftContent.appendChild(popup);
-            // Cerrar al click fuera
-            const closeOnOutside = (ev: MouseEvent) => {
-              if (!popup.contains(ev.target as Node) && !bullet.contains(ev.target as Node)) {
-                popup.remove();
-                document.removeEventListener('click', closeOnOutside);
-              }
-            };
-            setTimeout(() => document.addEventListener('click', closeOnOutside), 10);
+              <div class="tpl1-sheet-actions">
+                <button class="tpl1-sheet-btn tpl1-sheet-btn-secondary" id="tpl1-sheet-view">Ver detalle</button>
+                <button class="tpl1-sheet-btn tpl1-sheet-btn-primary" id="tpl1-sheet-buy">Comprar ahora</button>
+              </div>
+            </div>
+          `;
+
+          const close = () => {
+            backdrop.style.opacity = '0';
+            sheet.style.transform = 'translateY(100%)';
+            setTimeout(() => { backdrop.remove(); sheet.remove(); }, 300);
           };
-          (bullet as any).__tpl1_popup_handler = clickHandler;
-          bullet.addEventListener('click', clickHandler);
-        });
 
-        // 4) Vincular cards #item1..#item4 con los productos de los hotspots
-        for (let i = 0; i < 4; i++) {
-          const card = section.querySelector(`#item${i + 1}`) as HTMLElement | null;
-          if (!card) continue;
-          const h = hotspots[i];
-          const prod = h ? products.find(p => p.$id === h.PRODUCTID) : null;
-          if (!h || !prod) {
-            card.style.display = 'none';
-            continue;
-          }
-          card.style.display = '';
+          backdrop.onclick = close;
+          sheet.querySelector('#tpl1-sheet-view')?.addEventListener('click', () => { window.location.href = `/productos/${product.$id}`; });
+          sheet.querySelector('#tpl1-sheet-buy')?.addEventListener('click', () => { 
+             window.dispatchEvent(new CustomEvent('yaxsel:add-to-cart', { detail: { productId: product.$id, quantity: 1 } }));
+             close();
+          });
 
-          const imgEl = card.querySelector('.product-img img') as HTMLImageElement | null;
-          if (imgEl) {
-            // Usar imagen de override si existe, si no la del producto
-            imgEl.src = stlOverrides[i] || prod.IMAGEURL || '';
-            imgEl.alt = prod.NAME || '';
-          }
-          const nameEl = card.querySelector('.product-name') as HTMLElement | null;
-          if (nameEl) nameEl.textContent = prod.NAME || '';
-
-          const hasDisc = prod.CURRENTPRICE && prod.CURRENTPRICE < prod.PRICE;
-          const current = hasDisc ? prod.CURRENTPRICE : prod.PRICE;
-          const compareEl = card.querySelector('.compare_at_price') as HTMLElement | null;
-          const priceEl = card.querySelector('.p-price') as HTMLElement | null;
-          if (compareEl) {
-            if (hasDisc) {
-              compareEl.textContent = fmt(prod.PRICE);
-              compareEl.style.display = '';
-            } else {
-              compareEl.style.display = 'none';
-            }
-          }
-          if (priceEl) priceEl.textContent = fmt(current);
-
-          // Card clickeable → ir al producto
-          card.style.cursor = 'pointer';
-          const prevHandler = (card as any).__tpl1_stl_handler as ((e: MouseEvent) => void) | undefined;
-          if (prevHandler) card.removeEventListener('click', prevHandler);
-          const handler = (_e: MouseEvent) => {
-            window.location.href = `/productos/${prod.$id}`;
-          };
-          (card as any).__tpl1_stl_handler = handler;
-          card.addEventListener('click', handler);
+          document.body.appendChild(backdrop);
+          document.body.appendChild(sheet);
         }
+
       } catch (err) {
-        console.warn('[tpl1] Shop The Look bind error:', err);
+        console.warn('[tpl1] Shop The Look Premium error:', err);
       }
     })();
 
     return () => { alive = false; };
   }, [bodyHtml, sectionCfg]);
+
 
   /* ── Aplicar settings de Video con Texto (tpl1) ── */
   useEffect(() => {
@@ -3221,7 +3292,7 @@ export default function HomePage1() {
       row.style.gap = '30px';
       row.style.flexWrap = 'nowrap';
     }
-    
+
     // Asegurar que las columnas tengan el tamaño correcto
     if (vdCol) {
       vdCol.style.flex = '0 0 auto';
@@ -3298,12 +3369,12 @@ export default function HomePage1() {
               // Set up play/pause event handlers BEFORE calling play
               video.onplay = () => { playIcon.style.display = 'none'; pauseIcon.style.display = 'flex'; };
               video.onpause = () => { playIcon.style.display = 'flex'; pauseIcon.style.display = 'none'; };
-              video.play().catch(() => {});
+              video.play().catch(() => { });
               videoCreated = true;
               // Subsequent clicks
               videoContent.onclick = (e2) => {
                 e2.stopPropagation();
-                if (video.paused) video.play().catch(() => {});
+                if (video.paused) video.play().catch(() => { });
                 else video.pause();
               };
             }
@@ -3339,7 +3410,7 @@ export default function HomePage1() {
       rightContent.style.display = 'flex';
       rightContent.style.flexDirection = 'column';
       rightContent.style.gap = '24px';
-      
+
       const subtitle = rightContent.querySelector('.musk-fancy-sub-head') as HTMLElement;
       if (subtitle && s.vtSubtitle) {
         subtitle.textContent = s.vtSubtitle;
@@ -3363,7 +3434,7 @@ export default function HomePage1() {
         subtitle.style.position = 'relative';
         if (!subtitle.querySelector('span')) subtitle.appendChild(line);
       }
-      
+
       const heading = rightContent.querySelector('.musk-h2-head') as HTMLElement;
       if (heading && s.vtHeading) {
         heading.textContent = s.vtHeading;
@@ -3377,7 +3448,7 @@ export default function HomePage1() {
           text-shadow: 0 2px 10px rgba(236,72,153,0.15);
         `;
       }
-      
+
       const desc = rightContent.querySelector('.musk-para-text') as HTMLElement;
       if (desc && s.vtDescription) {
         desc.textContent = s.vtDescription;
@@ -3391,7 +3462,7 @@ export default function HomePage1() {
           max-width: 540px;
         `;
       }
-      
+
       const btnEl = rightContent.querySelector('.musk-btn') as HTMLElement;
       if (btnEl && s.vtBtnText) {
         btnEl.textContent = s.vtBtnText;
@@ -3509,12 +3580,12 @@ export default function HomePage1() {
             // Set up play/pause event handlers BEFORE calling play
             video.onplay = () => { playIcon.style.display = 'none'; pauseIcon.style.display = 'flex'; };
             video.onpause = () => { playIcon.style.display = 'flex'; pauseIcon.style.display = 'none'; };
-            video.play().catch(() => {});
+            video.play().catch(() => { });
             videoCreated = true;
             // Subsequent clicks
             container.onclick = (e2) => {
               e2.stopPropagation();
-              if (video.paused) video.play().catch(() => {});
+              if (video.paused) video.play().catch(() => { });
               else video.pause();
             };
           }
@@ -3657,19 +3728,19 @@ export default function HomePage1() {
         let shapeCSS = '';
         switch (shape) {
           case 'circle':
-            shapeCSS = `width:${size}px;height:${size}px;border-radius:50%;background:${pColor};box-shadow:0 0 ${size*2}px ${pColor};`;
+            shapeCSS = `width:${size}px;height:${size}px;border-radius:50%;background:${pColor};box-shadow:0 0 ${size * 2}px ${pColor};`;
             break;
           case 'star':
-            shapeCSS = `width:0;height:0;border-left:${size/2}px solid transparent;border-right:${size/2}px solid transparent;border-bottom:${size}px solid ${pColor};transform:rotate(${rot}deg);filter:drop-shadow(0 0 ${size}px ${pColor});`;
+            shapeCSS = `width:0;height:0;border-left:${size / 2}px solid transparent;border-right:${size / 2}px solid transparent;border-bottom:${size}px solid ${pColor};transform:rotate(${rot}deg);filter:drop-shadow(0 0 ${size}px ${pColor});`;
             break;
           case 'diamond':
-            shapeCSS = `width:${size}px;height:${size}px;background:${pColor};transform:rotate(45deg);box-shadow:0 0 ${size*2}px ${pColor};`;
+            shapeCSS = `width:${size}px;height:${size}px;background:${pColor};transform:rotate(45deg);box-shadow:0 0 ${size * 2}px ${pColor};`;
             break;
           case 'ring':
-            shapeCSS = `width:${size}px;height:${size}px;border-radius:50%;border:${Math.max(1,size/4)}px solid ${pColor};background:transparent;box-shadow:0 0 ${size*3}px ${pColor}40;`;
+            shapeCSS = `width:${size}px;height:${size}px;border-radius:50%;border:${Math.max(1, size / 4)}px solid ${pColor};background:transparent;box-shadow:0 0 ${size * 3}px ${pColor}40;`;
             break;
           case 'sparkle':
-            shapeCSS = `width:${size*0.3}px;height:${size}px;background:${pColor};border-radius:2px;box-shadow:${size*0.6}px 0 0 ${pColor},-${size*0.6}px 0 0 ${pColor},0 ${size*0.6}px 0 0 ${pColor},0 -${size*0.6}px 0 0 ${pColor};filter:blur(0.5px);`;
+            shapeCSS = `width:${size * 0.3}px;height:${size}px;background:${pColor};border-radius:2px;box-shadow:${size * 0.6}px 0 0 ${pColor},-${size * 0.6}px 0 0 ${pColor},0 ${size * 0.6}px 0 0 ${pColor},0 -${size * 0.6}px 0 0 ${pColor};filter:blur(0.5px);`;
             break;
           case 'ray':
             const rayLen = size * 8;
@@ -3687,7 +3758,7 @@ export default function HomePage1() {
             break;
           case 'flare':
             const fSize = size * 3;
-            shapeCSS = `width:${fSize}px;height:${fSize}px;border-radius:50%;background:radial-gradient(circle,${pColor}ff 0%,${pColor}80 20%,${pColor}30 40%,transparent 60%);box-shadow:0 0 ${fSize*2}px ${pColor}80,0 0 ${fSize*4}px ${pColor}30;`;
+            shapeCSS = `width:${fSize}px;height:${fSize}px;border-radius:50%;background:radial-gradient(circle,${pColor}ff 0%,${pColor}80 20%,${pColor}30 40%,transparent 60%);box-shadow:0 0 ${fSize * 2}px ${pColor}80,0 0 ${fSize * 4}px ${pColor}30;`;
             break;
           case 'hex':
             const hSize = size * 1.5;
@@ -3898,7 +3969,7 @@ export default function HomePage1() {
 
     // Aplicar imagen de fondo y opacidad
     const wrapper = section.querySelector('.fusion-countdown-wrapper') as HTMLElement;
-    
+
     // Imagen de fondo: prioridad a la imagen personalizada, luego la del producto vinculado
     if (wrapper) {
       const bgImage = settings.countdownBackgroundImage || countdownProduct?.IMAGEURL;
@@ -4043,7 +4114,7 @@ export default function HomePage1() {
         titleBox.style.setProperty('background-position', 'center', 'important');
         titleBox.style.setProperty('background-repeat', 'no-repeat', 'important');
         titleBox.style.setProperty('background-color', 'transparent', 'important');
-        
+
         // Ocultar pseudo-elemento :before (capa oscura)
         const styleId = 'faq-overlay-style';
         let styleEl = document.getElementById(styleId) as HTMLStyleElement;
@@ -4065,7 +4136,7 @@ export default function HomePage1() {
     const isMobileFAQ = window.innerWidth <= 768;
     if (settings.faqEnableParticles && !isMobileFAQ) {
       const titleBox = section.querySelector('.faq-titlebox') as HTMLElement;
-      
+
       if (titleBox) {
         // Remover TODOS los wrappers existentes (puede haber acumulados por activar/desactivar)
         section.querySelectorAll('.faq-particles-wrapper').forEach(w => w.remove());
@@ -4078,13 +4149,13 @@ export default function HomePage1() {
         canvasWrapper.className = 'faq-particles-wrapper';
         // z-index: 0 = justo encima del ::before (z-index:0 también) pero detrás de los demás hijos
         canvasWrapper.style.cssText = 'position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; border-radius: inherit;';
-        
+
         // Crear canvas para partículas (transparente por defecto)
         const canvas = document.createElement('canvas');
         canvas.className = 'faq-particles-canvas';
         canvas.style.cssText = 'display: block; width: 100%; height: 100%; background: transparent;';
         canvasWrapper.appendChild(canvas);
-        
+
         // Insertar al final del titleBox (no afecta primer-hijo)
         titleBox.appendChild(canvasWrapper);
 
@@ -4106,66 +4177,66 @@ export default function HomePage1() {
           canvasWrapper.remove();
         } else {
 
-        // Configurar tamaño del canvas
-        const resizeCanvas = () => {
-          canvas.width = titleBox.offsetWidth;
-          canvas.height = titleBox.offsetHeight;
-        };
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
+          // Configurar tamaño del canvas
+          const resizeCanvas = () => {
+            canvas.width = titleBox.offsetWidth;
+            canvas.height = titleBox.offsetHeight;
+          };
+          resizeCanvas();
+          window.addEventListener('resize', resizeCanvas);
 
-        // Configurar partículas
-        const particles: Array<{ x: number; y: number; vx: number; vy: number; radius: number; alpha: number }> = [];
-        const particleCount = 50;
+          // Configurar partículas
+          const particles: Array<{ x: number; y: number; vx: number; vy: number; radius: number; alpha: number }> = [];
+          const particleCount = 50;
 
-        for (let i = 0; i < particleCount; i++) {
-          particles.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            vx: (Math.random() - 0.5) * 0.5,
-            vy: (Math.random() - 0.5) * 0.5,
-            radius: Math.random() * 3 + 1,
-            alpha: Math.random() * 0.5 + 0.2
-          });
-        }
+          for (let i = 0; i < particleCount; i++) {
+            particles.push({
+              x: Math.random() * canvas.width,
+              y: Math.random() * canvas.height,
+              vx: (Math.random() - 0.5) * 0.5,
+              vy: (Math.random() - 0.5) * 0.5,
+              radius: Math.random() * 3 + 1,
+              alpha: Math.random() * 0.5 + 0.2
+            });
+          }
 
-        let rafId = 0;
-        // Animación de partículas
-        const animate = () => {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          
-          particles.forEach(p => {
-            p.x += p.vx;
-            p.y += p.vy;
+          let rafId = 0;
+          // Animación de partículas
+          const animate = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Rebotar en los bordes
-            if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-            if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+            particles.forEach(p => {
+              p.x += p.vx;
+              p.y += p.vy;
 
-            // Dibujar partícula
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
-            ctx.fill();
-          });
+              // Rebotar en los bordes
+              if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+              if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
 
-          rafId = requestAnimationFrame(animate);
-        };
+              // Dibujar partícula
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+              ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+              ctx.fill();
+            });
 
-        animate();
+            rafId = requestAnimationFrame(animate);
+          };
 
-        // Guardar cleanup para retornar al final del useEffect (NO retornar aquí, romperia el flujo)
-        particlesCleanup = () => {
-          window.removeEventListener('resize', resizeCanvas);
-          cancelAnimationFrame(rafId);
-          canvasWrapper.remove();
-          // Revertir z-index inline aplicado
-          titleBox.querySelectorAll('[data-faq-particles-z]').forEach(el => {
-            (el as HTMLElement).style.removeProperty('z-index');
-            (el as HTMLElement).style.removeProperty('position');
-            delete (el as HTMLElement).dataset.faqParticlesZ;
-          });
-        };
+          animate();
+
+          // Guardar cleanup para retornar al final del useEffect (NO retornar aquí, romperia el flujo)
+          particlesCleanup = () => {
+            window.removeEventListener('resize', resizeCanvas);
+            cancelAnimationFrame(rafId);
+            canvasWrapper.remove();
+            // Revertir z-index inline aplicado
+            titleBox.querySelectorAll('[data-faq-particles-z]').forEach(el => {
+              (el as HTMLElement).style.removeProperty('z-index');
+              (el as HTMLElement).style.removeProperty('position');
+              delete (el as HTMLElement).dataset.faqParticlesZ;
+            });
+          };
         } // fin else (ctx existe)
       }
     } else {
@@ -4253,10 +4324,16 @@ export default function HomePage1() {
           cats.map(c =>
             databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
               Query.equal('CATEGORYID', c.$id),
+              Query.greaterThan('STOCK', 0),
               Query.limit(perCat),
             ]).then(r => r.documents as unknown as Product[]).catch(() => [] as Product[])
           )
         );
+        if (!alive) return;
+
+        // Filtrar solo categorías que tienen productos con stock
+        const catsWithProducts = cats.filter((_, i) => productsPerCat[i] && productsPerCat[i].length > 0);
+        const productsForCats = catsWithProducts.map((_, i) => productsPerCat[cats.indexOf(catsWithProducts[i])]);
         if (!alive) return;
 
         // Reconstruir tabs
@@ -4272,7 +4349,7 @@ export default function HomePage1() {
           allLi.innerHTML = '<a href="#" data-filter="all">Todos</a>';
           filterUl.appendChild(allLi);
 
-          cats.forEach((c, i) => {
+          catsWithProducts.forEach((c, i) => {
             const className = i === 0 ? 'dummy1' : i === 1 ? 'dummy2' : i === 2 ? 'dummy3' : i === 3 ? 'dummy4' : 'dummy5';
             const li = document.createElement('li');
             li.innerHTML = `<a href="#" class="${className}" data-filter="${className}">${c.name}</a>`;
@@ -4287,9 +4364,9 @@ export default function HomePage1() {
           const fmt = (n: number) => `$${new Intl.NumberFormat('es-CL').format(n)}`;
           const escAttr = (s: string) => (s || '').replace(/"/g, '&quot;');
 
-          cats.forEach((c, i) => {
+          catsWithProducts.forEach((c, i) => {
             const className = i === 0 ? 'dummy1' : i === 1 ? 'dummy2' : i === 2 ? 'dummy3' : i === 3 ? 'dummy4' : 'dummy5';
-            (productsPerCat[i] || []).forEach(p => {
+            (productsForCats[i] || []).forEach(p => {
               const cp = p.CURRENTPRICE ?? 0;
               const price = cp > 0 ? cp : p.PRICE;
               const hasDisc = cp > 0 && cp < p.PRICE;
@@ -4299,7 +4376,7 @@ export default function HomePage1() {
               const stock = p.STOCK ?? 0;
               const img1 = p.IMAGEURL || '';
               const img2 = (p as any).IMAGEURL2 || '';
-              const stars = [1,2,3,4,5].map(n => `<svg width="11" height="11" viewBox="0 0 24 24" fill="${n <= Math.round(rating) ? '#FFB800' : 'none'}" stroke="${n <= Math.round(rating) ? '#E6A200' : '#D5D5D5'}" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`).join('');
+              const stars = [1, 2, 3, 4, 5].map(n => `<svg width="11" height="11" viewBox="0 0 24 24" fill="${n <= Math.round(rating) ? '#FFB800' : 'none'}" stroke="${n <= Math.round(rating) ? '#E6A200' : '#D5D5D5'}" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`).join('');
 
               const slide = document.createElement('div');
               slide.className = `swiper-slide item ${className} coln_page_product tpl1-pc-slide`;
@@ -4444,7 +4521,7 @@ export default function HomePage1() {
     if (items.length === 0) return;
 
     let blocks = Array.from(section.querySelectorAll('.media_gallery_items')) as HTMLElement[];
-    
+
     // Clone blocks if needed
     while (blocks.length < items.length) {
       const lastBlock = blocks[blocks.length - 1];
@@ -4452,14 +4529,14 @@ export default function HomePage1() {
       lastBlock.parentNode?.appendChild(clonedBlock);
       blocks.push(clonedBlock);
     }
-    
+
     items.forEach((item, idx) => {
       const block = blocks[idx];
-      
+
       // Change column size to fit 3 items per row
       block.classList.remove('col-sm-6');
       block.classList.add('col-sm-4');
-      
+
       const galleryItemCard = block.querySelector('.media-gallery-item') as HTMLElement;
       if (galleryItemCard) {
         galleryItemCard.style.opacity = '1';
@@ -4525,12 +4602,12 @@ export default function HomePage1() {
               // Use onplaying (not onplay) — fires when video actually renders a frame, preventing black flash
               video.onplaying = () => { video.style.opacity = '1'; playIcon.style.display = 'none'; pauseIcon.style.display = 'flex'; if (posterImg && posterImg.parentNode) posterImg.remove(); };
               video.onpause = () => { playIcon.style.display = 'flex'; pauseIcon.style.display = 'none'; };
-              video.play().catch(() => {});
+              video.play().catch(() => { });
               videoCreated = true;
               // Subsequent clicks on mediaImg
               mediaImg.onclick = (e2) => {
                 e2.stopPropagation();
-                if (video.paused) { video.play().catch(() => {}); }
+                if (video.paused) { video.play().catch(() => { }); }
                 else { video.pause(); }
               };
             }
@@ -4596,7 +4673,7 @@ export default function HomePage1() {
             const productTitle = item.title || '';
             notifyBtn.disabled = true;
             notifyBtn.textContent = 'Registrando...';
-            
+
             try {
               const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user') || '{}') : null;
               const response = await fetch('/api/product-votes', {
@@ -4609,7 +4686,7 @@ export default function HomePage1() {
                   userEmail: user?.EMAIL || null,
                 }),
               });
-              
+
               const data = await response.json();
               if (response.ok) {
                 notifyBtn.textContent = '✓ ¡Registrado!';
@@ -5413,7 +5490,7 @@ export default function HomePage1() {
     if (logoDiv) {
       logoDiv.innerHTML = '';
       logoDiv.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;width:100%;';
-      
+
       // 1) Descripción de la empresa (izquierda)
       if (s.companyDescription) {
         const descEl = document.createElement('p');
@@ -5422,7 +5499,7 @@ export default function HomePage1() {
         descEl.style.cssText = 'font-size:14px;line-height:1.6;color:#666;max-width:250px;';
         logoDiv.appendChild(descEl);
       }
-      
+
       // 2) Logo (centro)
       if (s.logoUrl) {
         const img = document.createElement('img');
@@ -5437,7 +5514,7 @@ export default function HomePage1() {
         nameSpan.style.cssText = 'font-size:20px;font-weight:700;color:#111;';
         logoDiv.appendChild(nameSpan);
       }
-      
+
       // 3) Mapa interactivo (derecha)
       if (s.showMap && s.mapEmbed) {
         const mapContainer = document.createElement('div');
@@ -5462,31 +5539,31 @@ export default function HomePage1() {
     const addrCol = footer.querySelector('.ftr-addr-info-col ul') as HTMLElement;
     if (addrCol) {
       addrCol.innerHTML = '';
-      
+
       if (s.address) {
         const li = document.createElement('li');
         li.innerHTML = `<strong>Dirección:</strong> ${s.address}`;
         addrCol.appendChild(li);
       }
-      
+
       if (s.email) {
         const li = document.createElement('li');
         li.innerHTML = `<strong>Email:</strong> <a href="mailto:${s.email}" style="color:inherit;text-decoration:underline;">${s.email}</a>`;
         addrCol.appendChild(li);
       }
-      
+
       if (s.phone) {
         const li = document.createElement('li');
         li.innerHTML = `<strong>Teléfono:</strong> <a href="tel:${s.phone.replace(/\s/g, '')}" style="color:inherit;text-decoration:underline;">${s.phone}</a>`;
         addrCol.appendChild(li);
       }
-      
+
       if (s.whatsapp) {
         const li = document.createElement('li');
         li.innerHTML = `<strong>WhatsApp:</strong> <a href="https://wa.me/${s.whatsapp.replace(/\D/g, '')}" target="_blank" style="color:inherit;text-decoration:underline;">${s.whatsapp}</a>`;
         addrCol.appendChild(li);
       }
-      
+
       if (s.address) {
         const li = document.createElement('li');
         const a = document.createElement('a');
@@ -5504,7 +5581,7 @@ export default function HomePage1() {
     if (socialIcons) {
       socialIcons.innerHTML = '';
       socialIcons.style.cssText = 'display:flex;gap:15px;margin-top:15px;';
-      
+
       if (s.instagram) {
         const a = document.createElement('a');
         a.href = `https://instagram.com/${s.instagram.replace('@', '')}`;
@@ -5513,7 +5590,7 @@ export default function HomePage1() {
         a.setAttribute('aria-label', 'Instagram');
         socialIcons.appendChild(a);
       }
-      
+
       if (s.facebook) {
         const a = document.createElement('a');
         a.href = `https://facebook.com/${s.facebook}`;
@@ -5522,7 +5599,7 @@ export default function HomePage1() {
         a.setAttribute('aria-label', 'Facebook');
         socialIcons.appendChild(a);
       }
-      
+
       if (s.tiktok) {
         const a = document.createElement('a');
         a.href = `https://tiktok.com/${s.tiktok.replace('@', '')}`;
@@ -5600,7 +5677,7 @@ export default function HomePage1() {
         opts.autoplay = { delay: 3000, disableOnInteraction: false };
         opts.centeredSlides = false;
         swiperEl.setAttribute('data-swiper-options', JSON.stringify(opts));
-      } catch {}
+      } catch { }
     }
 
     const logos = (s.logos || []) as { url: string; alt?: string; link?: string }[];
@@ -5635,7 +5712,7 @@ export default function HomePage1() {
         slide.style.transition = 'none';
         slide.style.minWidth = '0';
         const logo = logosForLoop[idx];
-        
+
         // Reemplazar SVG placeholder con imagen real
         if (logo.url) {
           const svgEl = slide.querySelector('.placeholder-svg');
@@ -5681,38 +5758,38 @@ export default function HomePage1() {
 
     // 0a. Apply announcement bar settings
     try {
-    const annBarSec = sectionCfg.find(s => s.id === 'tpl1_announcement_bar');
-    if (annBarSec && annBarSec.enabled) {
-      const annBarEl = document.getElementById('shopify-section-sections--22405132747000__announcement_bar_B8FdRK');
-      if (annBarEl) {
-        const s = annBarSec.settings || {};
-        const mainBar = annBarEl.querySelector('.announcement-bar-main') as HTMLElement;
-        const messages = annBarEl.querySelectorAll('.announcement-message') as NodeListOf<HTMLElement>;
-        const links = annBarEl.querySelectorAll('.announcement-content-slide a') as NodeListOf<HTMLElement>;
+      const annBarSec = sectionCfg.find(s => s.id === 'tpl1_announcement_bar');
+      if (annBarSec && annBarSec.enabled) {
+        const annBarEl = document.getElementById('shopify-section-sections--22405132747000__announcement_bar_B8FdRK');
+        if (annBarEl) {
+          const s = annBarSec.settings || {};
+          const mainBar = annBarEl.querySelector('.announcement-bar-main') as HTMLElement;
+          const messages = annBarEl.querySelectorAll('.announcement-message') as NodeListOf<HTMLElement>;
+          const links = annBarEl.querySelectorAll('.announcement-content-slide a') as NodeListOf<HTMLElement>;
 
-        // Apply padding if specified
-        if (s.padding !== undefined && mainBar) {
-          mainBar.style.padding = `${s.padding}px`;
-        }
+          // Apply padding if specified
+          if (s.padding !== undefined && mainBar) {
+            mainBar.style.padding = `${s.padding}px`;
+          }
 
-        // Apply custom gradient: blanco → rosa pastel → degradado original (default)
-        // If user selected a custom gradient, use that instead
-        const defaultGradient = 'linear-gradient(90deg, #ffffff 0%, rgba(255,255,255,0.96) 12%, #fbcfe8 34%, #f9a8d4 52%, rgba(251, 244, 202, 1) 68%, rgba(252, 218, 188, 1) 84%, rgba(254, 169, 162, 1) 100%)';
-        const activeGradient = s.bgGradient || defaultGradient;
-        
-        // Apply directly to the announcement bar element
-        if (mainBar) {
-          mainBar.style.setProperty('background', activeGradient, 'important');
-          mainBar.style.setProperty('background-size', '100% 100%', 'important');
-        }
-        
-        // Inject CSS rule with higher specificity for hero section
-        const styleId = 'tpl1-announcement-gradient-style';
-        const existingStyle = document.getElementById(styleId);
-        if (existingStyle) existingStyle.remove(); // Refresh with current gradient
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.textContent = `
+          // Apply custom gradient: blanco → rosa pastel → degradado original (default)
+          // If user selected a custom gradient, use that instead
+          const defaultGradient = 'linear-gradient(90deg, #ffffff 0%, rgba(255,255,255,0.96) 12%, #fbcfe8 34%, #f9a8d4 52%, rgba(251, 244, 202, 1) 68%, rgba(252, 218, 188, 1) 84%, rgba(254, 169, 162, 1) 100%)';
+          const activeGradient = s.bgGradient || defaultGradient;
+
+          // Apply directly to the announcement bar element
+          if (mainBar) {
+            mainBar.style.setProperty('background', activeGradient, 'important');
+            mainBar.style.setProperty('background-size', '100% 100%', 'important');
+          }
+
+          // Inject CSS rule with higher specificity for hero section
+          const styleId = 'tpl1-announcement-gradient-style';
+          const existingStyle = document.getElementById(styleId);
+          if (existingStyle) existingStyle.remove(); // Refresh with current gradient
+          const style = document.createElement('style');
+          style.id = styleId;
+          style.textContent = `
           /* Hero section para mantener consistencia con esquinas redondeadas */
           #shopify-section-template--22405132419320__hero_banner_R6iEJ4 {
             background: ${activeGradient} !important;
@@ -5724,454 +5801,454 @@ export default function HomePage1() {
             background: ${activeGradient} !important;
           }
         `;
-        document.head.appendChild(style);
+          document.head.appendChild(style);
 
-        // If no custom styles, restore original and skip
-        const hasCustomStyles = s.bgGradient || s.bgColor || s.textColor || s.textSize || s.textGradientStyle || s.title || s.buttonLink;
-        if (!hasCustomStyles) {
-          // whiteGradient already applied above, no need to restore original
-          messages.forEach(msg => {
-            msg.style.removeProperty('color');
-            msg.style.removeProperty('font-size');
-            msg.style.removeProperty('background');
-            msg.style.removeProperty('background-size');
-            msg.style.removeProperty('background-clip');
-            msg.style.removeProperty('-webkit-background-clip');
-            msg.style.removeProperty('-webkit-text-fill-color');
-            msg.style.removeProperty('animation');
-          });
-        } else {
-          // Background: gradient or solid color
-          // Helper: apply bg to hero section + inner banner for rounded corners (with !important to override color-scheme)
-          const applyBgToHero = (bg: string) => {
-            const heroSection = document.getElementById('shopify-section-template--22405132419320__hero_banner_R6iEJ4');
-            if (heroSection) {
-              heroSection.style.setProperty('background', bg, 'important');
-              const heroInner = heroSection.querySelector('.musk-main-banner') as HTMLElement;
-              if (heroInner) heroInner.style.setProperty('background', bg, 'important');
-              const swiperWrap = heroSection.querySelector('.swiper-wrapper') as HTMLElement;
-              if (swiperWrap) swiperWrap.style.setProperty('background', bg, 'important');
-            }
-            const parentSection = annBarEl.parentElement as HTMLElement;
-            if (parentSection) parentSection.style.setProperty('background', bg, 'important');
-          };
-          
-          // Apply hover effects to messages
-          const hoverEffect = s.textHoverEffect || 'none';
-          messages.forEach(msg => {
-            msg.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
-            msg.style.cursor = 'pointer';
-            switch (hoverEffect) {
-              case 'fall':
-                msg.onmouseenter = () => msg.style.transform = 'translateY(4px)';
-                msg.onmouseleave = () => msg.style.transform = 'translateY(0)';
-                break;
-              case 'bounce':
-                msg.onmouseenter = () => msg.style.transform = 'translateY(-4px)';
-                msg.onmouseleave = () => msg.style.transform = 'translateY(0)';
-                break;
-              case 'wave':
-                msg.onmouseenter = () => msg.style.transform = 'rotate(5deg)';
-                msg.onmouseleave = () => msg.style.transform = 'rotate(0deg)';
-                break;
-              case 'shake':
-                msg.onmouseenter = () => {
-                  msg.style.animation = 'shake 0.3s ease-in-out';
-                  if (!document.getElementById('tpl1-shake-kf')) {
-                    const style = document.createElement('style');
-                    style.id = 'tpl1-shake-kf';
-                    style.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}';
-                    document.head.appendChild(style);
-                  }
-                };
-                msg.onmouseleave = () => msg.style.animation = '';
-                break;
-              default:
-                msg.onmouseenter = null;
-                msg.onmouseleave = null;
-            }
-          });
-          
-          if (mainBar) {
-            if (s.bgGradient) {
-              // Usar el degradado seleccionado por el usuario
-              mainBar.style.setProperty('background', s.bgGradient, 'important');
-              mainBar.style.backgroundSize = '100% 100%';
-              applyBgToHero(s.bgGradient);
-              if (s.gradientAnimated) {
-                mainBar.style.animation = 'abar-flow 4s ease infinite';
-                if (!document.getElementById('abar-flow-kf')) {
-                  const style = document.createElement('style');
-                  style.id = 'abar-flow-kf';
-                  style.textContent = '@keyframes abar-flow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}';
-                  document.head.appendChild(style);
-                }
-              } else {
-                mainBar.style.animation = 'none';
-              }
-              // Auto-set text color for dark presets if no textColor specified
-              if (!s.textColor) {
-                const isDark = s.bgGradient.includes('#0a0a0a') || s.bgGradient.includes('#1a1a1a') || s.bgGradient.includes('#2d2d2d') || s.bgGradient.includes('#1e293b') || s.bgGradient.includes('#18181b') || s.bgGradient.includes('#27272a') || s.bgGradient.includes('#334155') || s.bgGradient.includes('#3d3d3d');
-                if (isDark) {
-                  messages.forEach(msg => { msg.style.color = '#ffffff'; });
-                } else {
-                  messages.forEach(msg => { msg.style.removeProperty('color'); });
-                }
-              }
-            } else if (s.bgColor) {
-              mainBar.style.setProperty('background', s.bgColor, 'important');
-              mainBar.style.animation = 'none';
-              applyBgToHero(s.bgColor);
-            }
-          }
-
-          // Text content
-          if (s.title) {
-            messages.forEach(msg => { msg.textContent = s.title || ''; });
-          }
-
-          // Text color
-          if (s.textColor) {
-            messages.forEach(msg => { msg.style.color = s.textColor || ''; });
-          }
-
-          // Text size
-          if (s.textSize) {
-            messages.forEach(msg => { msg.style.fontSize = s.textSize + 'px'; });
-          }
-
-          // Text gradient
-          if (s.textGradientStyle) {
+          // If no custom styles, restore original and skip
+          const hasCustomStyles = s.bgGradient || s.bgColor || s.textColor || s.textSize || s.textGradientStyle || s.title || s.buttonLink;
+          if (!hasCustomStyles) {
+            // whiteGradient already applied above, no need to restore original
             messages.forEach(msg => {
-              msg.style.background = s.textGradientStyle || '';
-              msg.style.backgroundSize = '300% 100%';
-              msg.style.backgroundClip = 'text';
-              msg.style.webkitBackgroundClip = 'text';
-              msg.style.webkitTextFillColor = 'transparent';
-              msg.style.color = 'transparent';
-              if (s.textGradientAnimated) {
-                msg.style.animation = 'abar-flow 3s ease infinite';
-              }
+              msg.style.removeProperty('color');
+              msg.style.removeProperty('font-size');
+              msg.style.removeProperty('background');
+              msg.style.removeProperty('background-size');
+              msg.style.removeProperty('background-clip');
+              msg.style.removeProperty('-webkit-background-clip');
+              msg.style.removeProperty('-webkit-text-fill-color');
+              msg.style.removeProperty('animation');
             });
           } else {
-            messages.forEach(msg => {
-              msg.style.backgroundClip = '';
-              msg.style.webkitBackgroundClip = '';
-              msg.style.webkitTextFillColor = '';
-              if (s.textColor) msg.style.color = s.textColor;
-            });
-          }
+            // Background: gradient or solid color
+            // Helper: apply bg to hero section + inner banner for rounded corners (with !important to override color-scheme)
+            const applyBgToHero = (bg: string) => {
+              const heroSection = document.getElementById('shopify-section-template--22405132419320__hero_banner_R6iEJ4');
+              if (heroSection) {
+                heroSection.style.setProperty('background', bg, 'important');
+                const heroInner = heroSection.querySelector('.musk-main-banner') as HTMLElement;
+                if (heroInner) heroInner.style.setProperty('background', bg, 'important');
+                const swiperWrap = heroSection.querySelector('.swiper-wrapper') as HTMLElement;
+                if (swiperWrap) swiperWrap.style.setProperty('background', bg, 'important');
+              }
+              const parentSection = annBarEl.parentElement as HTMLElement;
+              if (parentSection) parentSection.style.setProperty('background', bg, 'important');
+            };
 
-          // Link
-          if (s.buttonLink) {
-            links.forEach(a => { a.setAttribute('href', s.buttonLink || ''); });
+            // Apply hover effects to messages
+            const hoverEffect = s.textHoverEffect || 'none';
+            messages.forEach(msg => {
+              msg.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+              msg.style.cursor = 'pointer';
+              switch (hoverEffect) {
+                case 'fall':
+                  msg.onmouseenter = () => msg.style.transform = 'translateY(4px)';
+                  msg.onmouseleave = () => msg.style.transform = 'translateY(0)';
+                  break;
+                case 'bounce':
+                  msg.onmouseenter = () => msg.style.transform = 'translateY(-4px)';
+                  msg.onmouseleave = () => msg.style.transform = 'translateY(0)';
+                  break;
+                case 'wave':
+                  msg.onmouseenter = () => msg.style.transform = 'rotate(5deg)';
+                  msg.onmouseleave = () => msg.style.transform = 'rotate(0deg)';
+                  break;
+                case 'shake':
+                  msg.onmouseenter = () => {
+                    msg.style.animation = 'shake 0.3s ease-in-out';
+                    if (!document.getElementById('tpl1-shake-kf')) {
+                      const style = document.createElement('style');
+                      style.id = 'tpl1-shake-kf';
+                      style.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}';
+                      document.head.appendChild(style);
+                    }
+                  };
+                  msg.onmouseleave = () => msg.style.animation = '';
+                  break;
+                default:
+                  msg.onmouseenter = null;
+                  msg.onmouseleave = null;
+              }
+            });
+
+            if (mainBar) {
+              if (s.bgGradient) {
+                // Usar el degradado seleccionado por el usuario
+                mainBar.style.setProperty('background', s.bgGradient, 'important');
+                mainBar.style.backgroundSize = '100% 100%';
+                applyBgToHero(s.bgGradient);
+                if (s.gradientAnimated) {
+                  mainBar.style.animation = 'abar-flow 4s ease infinite';
+                  if (!document.getElementById('abar-flow-kf')) {
+                    const style = document.createElement('style');
+                    style.id = 'abar-flow-kf';
+                    style.textContent = '@keyframes abar-flow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}';
+                    document.head.appendChild(style);
+                  }
+                } else {
+                  mainBar.style.animation = 'none';
+                }
+                // Auto-set text color for dark presets if no textColor specified
+                if (!s.textColor) {
+                  const isDark = s.bgGradient.includes('#0a0a0a') || s.bgGradient.includes('#1a1a1a') || s.bgGradient.includes('#2d2d2d') || s.bgGradient.includes('#1e293b') || s.bgGradient.includes('#18181b') || s.bgGradient.includes('#27272a') || s.bgGradient.includes('#334155') || s.bgGradient.includes('#3d3d3d');
+                  if (isDark) {
+                    messages.forEach(msg => { msg.style.color = '#ffffff'; });
+                  } else {
+                    messages.forEach(msg => { msg.style.removeProperty('color'); });
+                  }
+                }
+              } else if (s.bgColor) {
+                mainBar.style.setProperty('background', s.bgColor, 'important');
+                mainBar.style.animation = 'none';
+                applyBgToHero(s.bgColor);
+              }
+            }
+
+            // Text content
+            if (s.title) {
+              messages.forEach(msg => { msg.textContent = s.title || ''; });
+            }
+
+            // Text color
+            if (s.textColor) {
+              messages.forEach(msg => { msg.style.color = s.textColor || ''; });
+            }
+
+            // Text size
+            if (s.textSize) {
+              messages.forEach(msg => { msg.style.fontSize = s.textSize + 'px'; });
+            }
+
+            // Text gradient
+            if (s.textGradientStyle) {
+              messages.forEach(msg => {
+                msg.style.background = s.textGradientStyle || '';
+                msg.style.backgroundSize = '300% 100%';
+                msg.style.backgroundClip = 'text';
+                msg.style.webkitBackgroundClip = 'text';
+                msg.style.webkitTextFillColor = 'transparent';
+                msg.style.color = 'transparent';
+                if (s.textGradientAnimated) {
+                  msg.style.animation = 'abar-flow 3s ease infinite';
+                }
+              });
+            } else {
+              messages.forEach(msg => {
+                msg.style.backgroundClip = '';
+                msg.style.webkitBackgroundClip = '';
+                msg.style.webkitTextFillColor = '';
+                if (s.textColor) msg.style.color = s.textColor;
+              });
+            }
+
+            // Link
+            if (s.buttonLink) {
+              links.forEach(a => { a.setAttribute('href', s.buttonLink || ''); });
+            }
           }
         }
       }
-    }
     } catch (e) { console.error('[TPL1] Error in announcement bar:', e); }
 
     // 0a1. Apply navbar settings
     const navbarSec = sectionCfg.find(s => s.id === 'tpl1_navbar');
     try {
-    if (navbarSec && navbarSec.enabled) {
-      const navbarEl = document.getElementById('shopify-section-sections--22405132747000__header_fYEwWD');
-      if (navbarEl) {
-        const ns = navbarSec.settings || {};
+      if (navbarSec && navbarSec.enabled) {
+        const navbarEl = document.getElementById('shopify-section-sections--22405132747000__header_fYEwWD');
+        if (navbarEl) {
+          const ns = navbarSec.settings || {};
 
-        // Intercept "Inicio" link to scroll to top (always run, regardless of navModel)
-        const navLinks = navbarEl.querySelectorAll('.musk-navbar .nav_li a') as NodeListOf<HTMLAnchorElement>;
-        navLinks.forEach(link => {
-          if (link.getAttribute('aria-label') === 'Inicio' || link.textContent.trim() === 'Inicio') {
-            link.addEventListener('click', (e) => {
-              e.preventDefault();
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            });
-            // Reorder: Inicio first
-            const li = link.closest('.nav_li') as HTMLElement | null;
-            if (li) li.style.order = '1';
-          }
-          // Change "Contacto" to address or "Agregar ubicación" based on saved address
-          if (link.getAttribute('aria-label') === 'Contacto' || link.getAttribute('aria-label') === 'Agregar ubicación' || link.textContent.trim() === 'Contacto') {
-            // Check if user has a saved address
-            let savedAddress = '';
-            if (isLoggedIn && user?.id) {
-              try {
-                const addrList = JSON.parse(localStorage.getItem(`addr_${user.id}`) || '[]');
-                if (addrList.length > 0 && addrList[0].fullAddress) {
-                  savedAddress = addrList[0].fullAddress;
-                  // Truncate if too long for navbar
-                  if (savedAddress.length > 30) savedAddress = savedAddress.substring(0, 28) + '…';
-                }
-              } catch {}
+          // Intercept "Inicio" link to scroll to top (always run, regardless of navModel)
+          const navLinks = navbarEl.querySelectorAll('.musk-navbar .nav_li a') as NodeListOf<HTMLAnchorElement>;
+          navLinks.forEach(link => {
+            if (link.getAttribute('aria-label') === 'Inicio' || link.textContent.trim() === 'Inicio') {
+              link.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              });
+              // Reorder: Inicio first
+              const li = link.closest('.nav_li') as HTMLElement | null;
+              if (li) li.style.order = '1';
             }
+            // Change "Contacto" to address or "Agregar ubicación" based on saved address
+            if (link.getAttribute('aria-label') === 'Contacto' || link.getAttribute('aria-label') === 'Agregar ubicación' || link.textContent.trim() === 'Contacto') {
+              // Check if user has a saved address
+              let savedAddress = '';
+              if (isLoggedIn && user?.id) {
+                try {
+                  const addrList = JSON.parse(localStorage.getItem(`addr_${user.id}`) || '[]');
+                  if (addrList.length > 0 && addrList[0].fullAddress) {
+                    savedAddress = addrList[0].fullAddress;
+                    // Truncate if too long for navbar
+                    if (savedAddress.length > 30) savedAddress = savedAddress.substring(0, 28) + '…';
+                  }
+                } catch { }
+              }
 
-            if (savedAddress) {
-              // Show address with white badge + pink text
-              link.innerHTML = `
+              if (savedAddress) {
+                // Show address with white badge + pink text
+                link.innerHTML = `
                 <span style="display:inline-flex;align-items:center;gap:7px;padding:7px 14px;background:#fff;color:#ec4899 !important;border-radius:999px;font-weight:600;font-size:13px;box-shadow:0 1px 4px rgba(236,72,153,0.12);border:1.5px solid rgba(236,72,153,0.15);transition:transform .2s ease, box-shadow .2s ease;white-space:nowrap;">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                   ${savedAddress}
                 </span>`;
-              link.setAttribute('aria-label', savedAddress);
-            } else {
-              // Show "Agregar ubicación" with pink badge
-              link.innerHTML = `
+                link.setAttribute('aria-label', savedAddress);
+              } else {
+                // Show "Agregar ubicación" with pink badge
+                link.innerHTML = `
                 <span style="display:inline-flex;align-items:center;gap:7px;padding:7px 14px;background:linear-gradient(135deg,#ec4899,#f9a8d4);color:#fff !important;border-radius:999px;font-weight:600;font-size:13px;box-shadow:0 2px 8px rgba(236,72,153,0.2);transition:transform .2s ease, box-shadow .2s ease;white-space:nowrap;">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                   Agregar ubicación
                 </span>`;
-              link.setAttribute('aria-label', 'Agregar ubicación');
-            }
-            link.href = isLoggedIn ? '/cuenta/direcciones' : '/login';
-            link.style.textDecoration = 'none';
-            // Reorder: Agregar ubicación second
-            const li = link.closest('.nav_li') as HTMLElement | null;
-            if (li) li.style.order = '2';
-            // Override click to check login status
-            link.addEventListener('click', (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (isLoggedIn) {
-                window.location.href = '/cuenta/direcciones';
-              } else {
-                window.location.href = '/login';
+                link.setAttribute('aria-label', 'Agregar ubicación');
               }
-            });
-            link.addEventListener('mouseenter', () => {
-              const el = link.firstElementChild as HTMLElement | null;
-              if (el) { el.style.transform = 'translateY(-1px)'; el.style.boxShadow = '0 4px 12px rgba(236,72,153,0.3)'; }
-            });
-            link.addEventListener('mouseleave', () => {
-              const el = link.firstElementChild as HTMLElement | null;
-              if (el) { el.style.transform = 'translateY(0)'; el.style.boxShadow = '0 2px 8px rgba(236,72,153,0.2)'; }
-            });
-          }
-          // Reorder: Catálogo third
-          if (link.getAttribute('aria-label') === 'Catálogo' || link.textContent.trim() === 'Catálogo') {
-            const li = link.closest('.nav_li') as HTMLElement | null;
-            if (li) li.style.order = '3';
-          }
-        });
+              link.href = isLoggedIn ? '/cuenta/direcciones' : '/login';
+              link.style.textDecoration = 'none';
+              // Reorder: Agregar ubicación second
+              const li = link.closest('.nav_li') as HTMLElement | null;
+              if (li) li.style.order = '2';
+              // Override click to check login status
+              link.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isLoggedIn) {
+                  window.location.href = '/cuenta/direcciones';
+                } else {
+                  window.location.href = '/login';
+                }
+              });
+              link.addEventListener('mouseenter', () => {
+                const el = link.firstElementChild as HTMLElement | null;
+                if (el) { el.style.transform = 'translateY(-1px)'; el.style.boxShadow = '0 4px 12px rgba(236,72,153,0.3)'; }
+              });
+              link.addEventListener('mouseleave', () => {
+                const el = link.firstElementChild as HTMLElement | null;
+                if (el) { el.style.transform = 'translateY(0)'; el.style.boxShadow = '0 2px 8px rgba(236,72,153,0.2)'; }
+              });
+            }
+            // Reorder: Catálogo third
+            if (link.getAttribute('aria-label') === 'Catálogo' || link.textContent.trim() === 'Catálogo') {
+              const li = link.closest('.nav_li') as HTMLElement | null;
+              if (li) li.style.order = '3';
+            }
+          });
 
-        if (ns.navModel) {
-          const headerEl = navbarEl.querySelector('.musk-main-header') as HTMLElement;
-          const headerContainer = navbarEl.querySelector('.musk-main-header-container') as HTMLElement;
-          const nav = navbarEl.querySelector('.musk-navbar') as HTMLElement;
-          const navItems = navbarEl.querySelectorAll('.musk-navbar .nav_li') as NodeListOf<HTMLElement>;
-          const logoLinks = navbarEl.querySelectorAll('.logo-col a, .logo-col span') as NodeListOf<HTMLElement>;
-          const iconLinks = navbarEl.querySelectorAll('.header-resource-link, .header-resource-link svg path') as NodeListOf<HTMLElement>;
-          const bg = ns.bgGradient || ns.bgColor;
+          if (ns.navModel) {
+            const headerEl = navbarEl.querySelector('.musk-main-header') as HTMLElement;
+            const headerContainer = navbarEl.querySelector('.musk-main-header-container') as HTMLElement;
+            const nav = navbarEl.querySelector('.musk-navbar') as HTMLElement;
+            const navItems = navbarEl.querySelectorAll('.musk-navbar .nav_li') as NodeListOf<HTMLElement>;
+            const logoLinks = navbarEl.querySelectorAll('.logo-col a, .logo-col span') as NodeListOf<HTMLElement>;
+            const iconLinks = navbarEl.querySelectorAll('.header-resource-link, .header-resource-link svg path') as NodeListOf<HTMLElement>;
+            const bg = ns.bgGradient || ns.bgColor;
 
-          if (ns.navModel === 'original') {
-            navbarEl.style.removeProperty('background');
-            if (headerEl) {
-              headerEl.style.removeProperty('background');
-              headerEl.style.removeProperty('background-size');
-              headerEl.style.removeProperty('animation');
-              headerEl.style.removeProperty('border-bottom');
-              headerEl.style.removeProperty('padding-top');
-              headerEl.style.removeProperty('padding-bottom');
-              headerEl.style.removeProperty('margin-top');
+            if (ns.navModel === 'original') {
+              navbarEl.style.removeProperty('background');
+              if (headerEl) {
+                headerEl.style.removeProperty('background');
+                headerEl.style.removeProperty('background-size');
+                headerEl.style.removeProperty('animation');
+                headerEl.style.removeProperty('border-bottom');
+                headerEl.style.removeProperty('padding-top');
+                headerEl.style.removeProperty('padding-bottom');
+                headerEl.style.removeProperty('margin-top');
+              }
+              if (headerContainer) {
+                headerContainer.style.removeProperty('min-height');
+                headerContainer.style.removeProperty('align-items');
+                headerContainer.style.removeProperty('display');
+                headerContainer.style.removeProperty('gap');
+              }
+              if (nav) {
+                nav.style.removeProperty('background');
+                nav.style.removeProperty('border-radius');
+                nav.style.removeProperty('padding');
+                nav.style.removeProperty('backdrop-filter');
+                nav.style.removeProperty('box-shadow');
+                nav.style.removeProperty('width');
+                nav.style.removeProperty('max-width');
+                nav.style.removeProperty('margin');
+              }
+              navItems.forEach(item => {
+                item.style.removeProperty('margin');
+                item.style.removeProperty('border-radius');
+                item.style.removeProperty('transition');
+              });
+              navLinks.forEach(link => {
+                link.style.removeProperty('color');
+                link.style.removeProperty('font-weight');
+                link.style.removeProperty('letter-spacing');
+                link.style.removeProperty('padding');
+                link.style.removeProperty('border-radius');
+                link.style.removeProperty('transition');
+                link.style.removeProperty('background');
+                link.style.removeProperty('transform');
+                link.onmouseenter = null;
+                link.onmouseleave = null;
+              });
+              logoLinks.forEach(el => {
+                el.style.removeProperty('color');
+                el.style.removeProperty('font-weight');
+              });
+              iconLinks.forEach(el => {
+                el.style.removeProperty('color');
+                el.style.removeProperty('fill');
+              });
+              const tagEl = navbarEl.querySelector('.tpl1-promo-tag') as HTMLElement;
+              if (tagEl) tagEl.remove();
+            } else {
+              if (headerEl && bg) {
+                navbarEl.style.setProperty('background', bg, 'important');
+                headerEl.style.setProperty('background', bg, 'important');
+                headerEl.style.setProperty('background-size', ns.gradientAnimated ? '300% 300%' : '100% 100%', 'important');
+                headerEl.style.setProperty('position', 'relative', 'important');
+                headerEl.style.setProperty('padding-top', '12px', 'important');
+                headerEl.style.setProperty('padding-bottom', '12px', 'important');
+                headerEl.style.setProperty('margin-top', '0', 'important');
+                headerEl.style.setProperty('transition', 'all .25s ease', 'important');
+                if (ns.gradientAnimated) headerEl.style.setProperty('animation', 'tpl1-nav-gradient 8s ease infinite', 'important');
+                else headerEl.style.removeProperty('animation');
+              }
+              if (headerContainer) {
+                headerContainer.style.setProperty('min-height', `${ns.navHeight || 72}px`, 'important');
+                headerContainer.style.setProperty('align-items', 'center', 'important');
+                headerContainer.style.setProperty('display', 'flex', 'important');
+                headerContainer.style.setProperty('gap', '24px', 'important');
+              }
+              if (nav) {
+                nav.style.setProperty('background', ns.searchBgColor || 'rgba(255,255,255,.08)', 'important');
+                nav.style.setProperty('border-radius', '999px', 'important');
+                nav.style.setProperty('padding', '10px 18px', 'important');
+                nav.style.setProperty('backdrop-filter', 'blur(10px)', 'important');
+                nav.style.setProperty('box-shadow', '0 8px 22px rgba(0,0,0,.12)', 'important');
+                nav.style.setProperty('width', 'auto', 'important');
+                nav.style.setProperty('max-width', 'fit-content', 'important');
+                nav.style.setProperty('margin', '0 auto', 'important');
+              }
+              navItems.forEach(item => {
+                item.style.setProperty('margin', '0 3px', 'important');
+                item.style.setProperty('border-radius', '999px', 'important');
+                item.style.setProperty('transition', 'all .2s ease', 'important');
+              });
+              navLinks.forEach(link => {
+                link.style.setProperty('color', ns.textColor || '', 'important');
+                link.style.setProperty('font-weight', '800', 'important');
+                link.style.setProperty('letter-spacing', '.04em', 'important');
+                link.style.setProperty('padding', '8px 18px', 'important');
+                link.style.setProperty('border-radius', '999px', 'important');
+                link.style.setProperty('transition', 'all .2s ease', 'important');
+                link.onmouseenter = () => {
+                  link.style.setProperty('background', ns.accentColor || 'rgba(255,255,255,.14)', 'important');
+                  link.style.setProperty('color', '#ffffff', 'important');
+                  link.style.setProperty('transform', 'translateY(-1px)', 'important');
+                };
+                link.onmouseleave = () => {
+                  link.style.removeProperty('background');
+                  link.style.setProperty('color', ns.textColor || '', 'important');
+                  link.style.setProperty('transform', 'translateY(0)', 'important');
+                };
+              });
+              logoLinks.forEach(el => {
+                el.style.setProperty('color', ns.textColor || '', 'important');
+                el.style.setProperty('font-weight', '900', 'important');
+              });
+              iconLinks.forEach(el => {
+                el.style.setProperty('color', ns.textColor || '', 'important');
+                el.style.setProperty('fill', ns.textColor || '', 'important');
+              });
+              if (ns.borderBottom !== undefined && headerEl) {
+                headerEl.style.setProperty('border-bottom', ns.borderBottom ? `1px solid ${ns.borderBottomColor || '#e5e7eb'}` : 'none', 'important');
+              }
+              if (!document.getElementById('tpl1-nav-gradient-kf')) {
+                const style = document.createElement('style');
+                style.id = 'tpl1-nav-gradient-kf';
+                style.textContent = '@keyframes tpl1-nav-gradient{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}';
+                document.head.appendChild(style);
+              }
             }
-            if (headerContainer) {
-              headerContainer.style.removeProperty('min-height');
-              headerContainer.style.removeProperty('align-items');
-              headerContainer.style.removeProperty('display');
-              headerContainer.style.removeProperty('gap');
+          }
+
+          // Apply promo tag
+          if (ns.navModel !== 'original' && ns.promoTagStyle && ns.promoTagText) {
+            let tagEl = navbarEl.querySelector('.tpl1-promo-tag') as HTMLElement;
+            if (!tagEl) {
+              tagEl = document.createElement('div');
+              tagEl.className = 'tpl1-promo-tag';
+              tagEl.style.cssText = 'position:absolute;top:50%;right:22px;transform:translateY(-50%);z-index:10;cursor:pointer;max-width:120px;overflow:hidden;text-overflow:ellipsis;';
+              const headerEl = navbarEl.querySelector('.musk-main-header') as HTMLElement;
+              if (headerEl) {
+                headerEl.style.position = 'relative';
+                headerEl.appendChild(tagEl);
+              }
             }
-            if (nav) {
-              nav.style.removeProperty('background');
-              nav.style.removeProperty('border-radius');
-              nav.style.removeProperty('padding');
-              nav.style.removeProperty('backdrop-filter');
-              nav.style.removeProperty('box-shadow');
-              nav.style.removeProperty('width');
-              nav.style.removeProperty('max-width');
-              nav.style.removeProperty('margin');
-            }
-            navItems.forEach(item => {
-              item.style.removeProperty('margin');
-              item.style.removeProperty('border-radius');
-              item.style.removeProperty('transition');
-            });
-            navLinks.forEach(link => {
-              link.style.removeProperty('color');
-              link.style.removeProperty('font-weight');
-              link.style.removeProperty('letter-spacing');
-              link.style.removeProperty('padding');
-              link.style.removeProperty('border-radius');
-              link.style.removeProperty('transition');
-              link.style.removeProperty('background');
-              link.style.removeProperty('transform');
-              link.onmouseenter = null;
-              link.onmouseleave = null;
-            });
-            logoLinks.forEach(el => {
-              el.style.removeProperty('color');
-              el.style.removeProperty('font-weight');
-            });
-            iconLinks.forEach(el => {
-              el.style.removeProperty('color');
-              el.style.removeProperty('fill');
-            });
-            const tagEl = navbarEl.querySelector('.tpl1-promo-tag') as HTMLElement;
-            if (tagEl) tagEl.remove();
-          } else {
-          if (headerEl && bg) {
-            navbarEl.style.setProperty('background', bg, 'important');
-            headerEl.style.setProperty('background', bg, 'important');
-            headerEl.style.setProperty('background-size', ns.gradientAnimated ? '300% 300%' : '100% 100%', 'important');
-            headerEl.style.setProperty('position', 'relative', 'important');
-            headerEl.style.setProperty('padding-top', '12px', 'important');
-            headerEl.style.setProperty('padding-bottom', '12px', 'important');
-            headerEl.style.setProperty('margin-top', '0', 'important');
-            headerEl.style.setProperty('transition', 'all .25s ease', 'important');
-            if (ns.gradientAnimated) headerEl.style.setProperty('animation', 'tpl1-nav-gradient 8s ease infinite', 'important');
-            else headerEl.style.removeProperty('animation');
-          }
-          if (headerContainer) {
-            headerContainer.style.setProperty('min-height', `${ns.navHeight || 72}px`, 'important');
-            headerContainer.style.setProperty('align-items', 'center', 'important');
-            headerContainer.style.setProperty('display', 'flex', 'important');
-            headerContainer.style.setProperty('gap', '24px', 'important');
-          }
-          if (nav) {
-            nav.style.setProperty('background', ns.searchBgColor || 'rgba(255,255,255,.08)', 'important');
-            nav.style.setProperty('border-radius', '999px', 'important');
-            nav.style.setProperty('padding', '10px 18px', 'important');
-            nav.style.setProperty('backdrop-filter', 'blur(10px)', 'important');
-            nav.style.setProperty('box-shadow', '0 8px 22px rgba(0,0,0,.12)', 'important');
-            nav.style.setProperty('width', 'auto', 'important');
-            nav.style.setProperty('max-width', 'fit-content', 'important');
-            nav.style.setProperty('margin', '0 auto', 'important');
-          }
-          navItems.forEach(item => {
-            item.style.setProperty('margin', '0 3px', 'important');
-            item.style.setProperty('border-radius', '999px', 'important');
-            item.style.setProperty('transition', 'all .2s ease', 'important');
-          });
-          navLinks.forEach(link => {
-            link.style.setProperty('color', ns.textColor || '', 'important');
-            link.style.setProperty('font-weight', '800', 'important');
-            link.style.setProperty('letter-spacing', '.04em', 'important');
-            link.style.setProperty('padding', '8px 18px', 'important');
-            link.style.setProperty('border-radius', '999px', 'important');
-            link.style.setProperty('transition', 'all .2s ease', 'important');
-            link.onmouseenter = () => {
-              link.style.setProperty('background', ns.accentColor || 'rgba(255,255,255,.14)', 'important');
-              link.style.setProperty('color', '#ffffff', 'important');
-              link.style.setProperty('transform', 'translateY(-1px)', 'important');
+            const safePromoText = (ns.promoTagText || '').replace('Â¡EnvÃ­o GRATIS!', '¡Envío GRATIS!').replace('EnvÃ­o', 'Envío');
+            tagEl.textContent = safePromoText;
+            tagEl.onclick = () => { if (ns.promoTagLink) window.location.href = ns.promoTagLink; };
+
+            // Apply tag style
+            const tagStyles: Record<string, React.CSSProperties> = {
+              pill: { background: '#3483fa', color: '#fff', borderRadius: 20, padding: '4px 12px', fontSize: 9, fontWeight: 600 },
+              outline: { background: 'transparent', color: '#333', borderRadius: 20, padding: '3px 11px', fontSize: 9, fontWeight: 600, border: '1.5px solid #333' },
+              soft: { background: '#eef2ff', color: '#4338ca', borderRadius: 8, padding: '4px 12px', fontSize: 9, fontWeight: 600 },
+              dark: { background: '#18181b', color: '#fafafa', borderRadius: 8, padding: '4px 12px', fontSize: 9, fontWeight: 600 },
+              'accent-left': { background: '#fff', color: '#1e293b', borderRadius: 6, padding: '4px 12px', fontSize: 9, fontWeight: 600, borderLeft: '3px solid #3483fa' },
+              underline: { background: '#fafafa', color: '#18181b', borderRadius: 0, padding: '4px 12px', fontSize: 9, fontWeight: 700, borderBottom: '2px solid #ef4444' },
+              ribbon: { background: '#ef4444', color: '#fff', borderRadius: '0 6px 6px 0', padding: '4px 14px 4px 10px', fontSize: 9, fontWeight: 600, borderLeft: '3px solid #b91c1c' },
+              stamp: { background: '#fff', color: '#dc2626', borderRadius: 4, padding: '3px 10px', fontSize: 8, fontWeight: 800, border: '2px solid #dc2626', textTransform: 'uppercase', letterSpacing: 1.5 },
+              glass: { background: 'rgba(255,255,255,.25)', backdropFilter: 'blur(8px)', color: '#1a1a1a', borderRadius: 10, padding: '4px 12px', fontSize: 9, fontWeight: 600, border: '1px solid rgba(0,0,0,.08)' },
+              gold: { background: 'linear-gradient(135deg,#d4a03c,#f0d060)', color: '#3d2200', borderRadius: 6, padding: '4px 12px', fontSize: 9, fontWeight: 700 },
+              neon: { background: '#0a0a14', color: '#00e5c3', borderRadius: 6, padding: '4px 12px', fontSize: 9, fontWeight: 600, border: '1px solid #00e5c3' },
+              gradient: { background: 'linear-gradient(135deg,#6366f1,#a855f7)', color: '#fff', borderRadius: 10, padding: '4px 12px', fontSize: 9, fontWeight: 600 },
             };
-            link.onmouseleave = () => {
-              link.style.removeProperty('background');
-              link.style.setProperty('color', ns.textColor || '', 'important');
-              link.style.setProperty('transform', 'translateY(0)', 'important');
-            };
-          });
-          logoLinks.forEach(el => {
-            el.style.setProperty('color', ns.textColor || '', 'important');
-            el.style.setProperty('font-weight', '900', 'important');
-          });
-          iconLinks.forEach(el => {
-            el.style.setProperty('color', ns.textColor || '', 'important');
-            el.style.setProperty('fill', ns.textColor || '', 'important');
-          });
-          if (ns.borderBottom !== undefined && headerEl) {
-            headerEl.style.setProperty('border-bottom', ns.borderBottom ? `1px solid ${ns.borderBottomColor || '#e5e7eb'}` : 'none', 'important');
-          }
-          if (!document.getElementById('tpl1-nav-gradient-kf')) {
-            const style = document.createElement('style');
-            style.id = 'tpl1-nav-gradient-kf';
-            style.textContent = '@keyframes tpl1-nav-gradient{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}';
-            document.head.appendChild(style);
-          }
-          }
-        }
-        
-        // Apply promo tag
-        if (ns.navModel !== 'original' && ns.promoTagStyle && ns.promoTagText) {
-          let tagEl = navbarEl.querySelector('.tpl1-promo-tag') as HTMLElement;
-          if (!tagEl) {
-            tagEl = document.createElement('div');
-            tagEl.className = 'tpl1-promo-tag';
-            tagEl.style.cssText = 'position:absolute;top:50%;right:22px;transform:translateY(-50%);z-index:10;cursor:pointer;max-width:120px;overflow:hidden;text-overflow:ellipsis;';
-            const headerEl = navbarEl.querySelector('.musk-main-header') as HTMLElement;
-            if (headerEl) {
-              headerEl.style.position = 'relative';
-              headerEl.appendChild(tagEl);
+            const style = tagStyles[ns.promoTagStyle];
+            if (style) {
+              Object.entries(style).forEach(([key, value]) => {
+                (tagEl.style as any)[key] = value;
+              });
             }
           }
-          const safePromoText = (ns.promoTagText || '').replace('Â¡EnvÃ­o GRATIS!', '¡Envío GRATIS!').replace('EnvÃ­o', 'Envío');
-          tagEl.textContent = safePromoText;
-          tagEl.onclick = () => { if (ns.promoTagLink) window.location.href = ns.promoTagLink; };
-          
-          // Apply tag style
-          const tagStyles: Record<string, React.CSSProperties> = {
-            pill: { background: '#3483fa', color: '#fff', borderRadius: 20, padding: '4px 12px', fontSize: 9, fontWeight: 600 },
-            outline: { background: 'transparent', color: '#333', borderRadius: 20, padding: '3px 11px', fontSize: 9, fontWeight: 600, border: '1.5px solid #333' },
-            soft: { background: '#eef2ff', color: '#4338ca', borderRadius: 8, padding: '4px 12px', fontSize: 9, fontWeight: 600 },
-            dark: { background: '#18181b', color: '#fafafa', borderRadius: 8, padding: '4px 12px', fontSize: 9, fontWeight: 600 },
-            'accent-left': { background: '#fff', color: '#1e293b', borderRadius: 6, padding: '4px 12px', fontSize: 9, fontWeight: 600, borderLeft: '3px solid #3483fa' },
-            underline: { background: '#fafafa', color: '#18181b', borderRadius: 0, padding: '4px 12px', fontSize: 9, fontWeight: 700, borderBottom: '2px solid #ef4444' },
-            ribbon: { background: '#ef4444', color: '#fff', borderRadius: '0 6px 6px 0', padding: '4px 14px 4px 10px', fontSize: 9, fontWeight: 600, borderLeft: '3px solid #b91c1c' },
-            stamp: { background: '#fff', color: '#dc2626', borderRadius: 4, padding: '3px 10px', fontSize: 8, fontWeight: 800, border: '2px solid #dc2626', textTransform: 'uppercase', letterSpacing: 1.5 },
-            glass: { background: 'rgba(255,255,255,.25)', backdropFilter: 'blur(8px)', color: '#1a1a1a', borderRadius: 10, padding: '4px 12px', fontSize: 9, fontWeight: 600, border: '1px solid rgba(0,0,0,.08)' },
-            gold: { background: 'linear-gradient(135deg,#d4a03c,#f0d060)', color: '#3d2200', borderRadius: 6, padding: '4px 12px', fontSize: 9, fontWeight: 700 },
-            neon: { background: '#0a0a14', color: '#00e5c3', borderRadius: 6, padding: '4px 12px', fontSize: 9, fontWeight: 600, border: '1px solid #00e5c3' },
-            gradient: { background: 'linear-gradient(135deg,#6366f1,#a855f7)', color: '#fff', borderRadius: 10, padding: '4px 12px', fontSize: 9, fontWeight: 600 },
-          };
-          const style = tagStyles[ns.promoTagStyle];
-          if (style) {
-            Object.entries(style).forEach(([key, value]) => {
-              (tagEl.style as any)[key] = value;
-            });
+
+          // Apply search placeholder
+          if (ns.searchPlaceholder) {
+            const searchInput = navbarEl.querySelector('.search__input') as HTMLInputElement;
+            if (searchInput) searchInput.placeholder = ns.searchPlaceholder;
           }
-        }
-        
-        // Apply search placeholder
-        if (ns.searchPlaceholder) {
-          const searchInput = navbarEl.querySelector('.search__input') as HTMLInputElement;
-          if (searchInput) searchInput.placeholder = ns.searchPlaceholder;
-        }
-        
-        // Apply floating particles (PC only — skip on mobile for performance)
-        const isMobileNav = window.innerWidth <= 768;
-        if (ns.navParticlesEnabled && !isMobileNav) {
-          const particlesText = ns.navParticlesText || '✦,◆,●';
-          const particlesColor = ns.navParticlesColor || '#6366f1';
-          const particlesCount = ns.navParticlesCount || 24;
-          const particlesSize = ns.navParticlesSize || 14;
-          const particlesOpacity = ns.navParticlesOpacity || 0.35;
-          
-          let particlesContainer = navbarEl.querySelector('.tpl1-nav-particles') as HTMLElement;
-          if (!particlesContainer) {
-            particlesContainer = document.createElement('div');
-            particlesContainer.className = 'tpl1-nav-particles';
-            particlesContainer.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0;';
-            const headerEl = navbarEl.querySelector('.musk-main-header') as HTMLElement;
-            if (headerEl) {
-              headerEl.style.position = 'relative';
-              headerEl.insertBefore(particlesContainer, headerEl.firstChild);
+
+          // Apply floating particles (PC only — skip on mobile for performance)
+          const isMobileNav = window.innerWidth <= 768;
+          if (ns.navParticlesEnabled && !isMobileNav) {
+            const particlesText = ns.navParticlesText || '✦,◆,●';
+            const particlesColor = ns.navParticlesColor || '#6366f1';
+            const particlesCount = ns.navParticlesCount || 24;
+            const particlesSize = ns.navParticlesSize || 14;
+            const particlesOpacity = ns.navParticlesOpacity || 0.35;
+
+            let particlesContainer = navbarEl.querySelector('.tpl1-nav-particles') as HTMLElement;
+            if (!particlesContainer) {
+              particlesContainer = document.createElement('div');
+              particlesContainer.className = 'tpl1-nav-particles';
+              particlesContainer.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0;';
+              const headerEl = navbarEl.querySelector('.musk-main-header') as HTMLElement;
+              if (headerEl) {
+                headerEl.style.position = 'relative';
+                headerEl.insertBefore(particlesContainer, headerEl.firstChild);
+              }
             }
-          }
-          particlesContainer.innerHTML = '';
-          const symbols = particlesText.split(',').map(s => s.trim());
-          for (let i = 0; i < particlesCount; i++) {
-            const particle = document.createElement('span');
-            particle.textContent = symbols[i % symbols.length];
-            particle.style.cssText = `position:absolute;font-size:${particlesSize}px;color:${particlesColor};opacity:${particlesOpacity};left:${Math.random() * 100}%;top:${Math.random() * 100}%;animation:float${i % 3} ${3 + Math.random() * 4}s ease-in-out infinite;animation-delay:${Math.random() * 3}s;`;
-            particlesContainer.appendChild(particle);
-          }
-          if (!document.getElementById('tpl1-float-kf')) {
-            const style = document.createElement('style');
-            style.id = 'tpl1-float-kf';
-            style.textContent = '@keyframes float0{0%,100%{transform:translate(0,0)}50%{transform:translate(10px,-10px)}}@keyframes float1{0%,100%{transform:translate(0,0)}50%{transform:translate(-8px,8px)}}@keyframes float2{0%,100%{transform:translate(0,0)}50%{transform:translate(5px,-5px)}}';
-            document.head.appendChild(style);
+            particlesContainer.innerHTML = '';
+            const symbols = particlesText.split(',').map(s => s.trim());
+            for (let i = 0; i < particlesCount; i++) {
+              const particle = document.createElement('span');
+              particle.textContent = symbols[i % symbols.length];
+              particle.style.cssText = `position:absolute;font-size:${particlesSize}px;color:${particlesColor};opacity:${particlesOpacity};left:${Math.random() * 100}%;top:${Math.random() * 100}%;animation:float${i % 3} ${3 + Math.random() * 4}s ease-in-out infinite;animation-delay:${Math.random() * 3}s;`;
+              particlesContainer.appendChild(particle);
+            }
+            if (!document.getElementById('tpl1-float-kf')) {
+              const style = document.createElement('style');
+              style.id = 'tpl1-float-kf';
+              style.textContent = '@keyframes float0{0%,100%{transform:translate(0,0)}50%{transform:translate(10px,-10px)}}@keyframes float1{0%,100%{transform:translate(0,0)}50%{transform:translate(-8px,8px)}}@keyframes float2{0%,100%{transform:translate(0,0)}50%{transform:translate(5px,-5px)}}';
+              document.head.appendChild(style);
+            }
           }
         }
       }
-    }
     } catch (e) { console.error('[TPL1] Error in navbar:', e); }
 
     console.log('[TPL1] Finished announcement bar, about to search for tpl1_hero section...');
@@ -6203,7 +6280,7 @@ export default function HomePage1() {
               opts.speed = hs.heroTransitionSpeed;
             }
             sliderEl.dataset.swiperOptions = JSON.stringify(opts);
-          } catch {}
+          } catch { }
         }
 
         // Apply slide content
@@ -6295,7 +6372,7 @@ export default function HomePage1() {
             containers.forEach(logo => {
               const spans = logo.querySelectorAll('span');
               spans.forEach(span => (span as HTMLElement).style.display = 'none');
-              
+
               let img = logo.querySelector('img') as HTMLImageElement;
               if (!img) {
                 img = document.createElement('img');
@@ -6471,7 +6548,7 @@ export default function HomePage1() {
                 video.style.opacity = '1';
                 video.style.display = '';
                 if (slideImg) slideImg.style.opacity = '0';
-                video.play().catch(() => {});
+                video.play().catch(() => { });
               };
 
               video.onloadeddata = showVideo;
@@ -6594,7 +6671,7 @@ export default function HomePage1() {
                 videos.forEach(video => {
                   if (entry.isIntersecting) {
                     video.currentTime = 0;
-                    video.play().catch(() => {});
+                    video.play().catch(() => { });
                   } else {
                     video.pause();
                     video.currentTime = 0;
@@ -6639,8 +6716,8 @@ export default function HomePage1() {
 
         // No box-shadow/blur — just solid color for performance
         particle.style.cssText = isLine
-          ? `position:absolute;width:${size}px;height:${size*3}px;background:${color};border-radius:1px;opacity:0;left:${Math.random()*100}%;top:${Math.random()*100}%;`
-          : `position:absolute;width:${size}px;height:${size}px;background:${color};border-radius:50%;opacity:0;left:${Math.random()*100}%;top:${Math.random()*100}%;`;
+          ? `position:absolute;width:${size}px;height:${size * 3}px;background:${color};border-radius:1px;opacity:0;left:${Math.random() * 100}%;top:${Math.random() * 100}%;`
+          : `position:absolute;width:${size}px;height:${size}px;background:${color};border-radius:50%;opacity:0;left:${Math.random() * 100}%;top:${Math.random() * 100}%;`;
         particlesContainer.appendChild(particle);
         particles.push(particle);
 
@@ -6850,7 +6927,7 @@ export default function HomePage1() {
     if (!bodyHtml) return;
     if (window.innerWidth <= 767) return;
 
-    let ctx = gsap.context(() => {});
+    let ctx = gsap.context(() => { });
     let guardObserver: MutationObserver | null = null;
     let pollTimer: ReturnType<typeof setInterval> | null = null;
     let building = false;
@@ -7179,19 +7256,19 @@ export default function HomePage1() {
     const whatsappEnabled = isSectionEnabled(sectionCfg, 'tpl1_whatsapp_button');
     const chatbotEnabled = isSectionEnabled(sectionCfg, 'tpl1_chatbot_button');
 
-    // Remove previously injected buttons
+    // Remove previously injected buttons (now in navbar on mobile)
     const existingWa = document.getElementById('tpl1-whatsapp-button');
     const existingCb = document.getElementById('tpl1-chatbot-button');
     if (existingWa) existingWa.remove();
     if (existingCb) existingCb.remove();
 
-    // Inject WhatsApp button
+    // Inject WhatsApp button (desktop only - mobile uses navbar fabs)
     if (whatsappEnabled) {
       const waBtn = document.createElement('div');
       waBtn.id = 'tpl1-whatsapp-button';
       waBtn.dataset.sectionId = 'tpl1_whatsapp_button';
-      waBtn.style.cssText = 'position:fixed;bottom:24px;left:24px;z-index:9999;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(37,211,102,0.4);transition:transform 0.2s,box-shadow 0.2s;';
-      waBtn.innerHTML = `<svg viewBox="0 0 24 24" width="28" height="28" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"></path></svg>`;
+      waBtn.style.cssText = 'position:fixed;bottom:24px;left:24px;z-index:9999;width:44px;height:44px;border-radius:50%;background:#25D366;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.12);transition:transform 0.2s;';
+      waBtn.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"></path></svg>`;
       waBtn.onclick = () => window.open('https://wa.me/1234567890', '_blank');
       document.body.appendChild(waBtn);
     }
@@ -7201,11 +7278,17 @@ export default function HomePage1() {
       const cbBtn = document.createElement('button');
       cbBtn.id = 'tpl1-chatbot-button';
       cbBtn.dataset.sectionId = 'tpl1_chatbot_button';
-      cbBtn.style.cssText = 'position:fixed;bottom:90px;left:24px;z-index:9999;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,rgb(52,131,250),rgb(99,102,241));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:rgba(52,131,250,0.4)0 4px 20px;transition:transform 0.2s,box-shadow 0.2s;';
-      cbBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>`;
+      cbBtn.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,rgb(52,131,250),rgb(99,102,241));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.12);transition:transform 0.2s;';
+      cbBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>`;
       document.body.appendChild(cbBtn);
     }
     setSettingsApplied(true);
+    return () => {
+      const wa = document.getElementById('tpl1-whatsapp-button');
+      const cb = document.getElementById('tpl1-chatbot-button');
+      if (wa) wa.remove();
+      if (cb) cb.remove();
+    };
   }, [bodyHtml, sectionCfg]);
 
   /* ── Loading state ── */

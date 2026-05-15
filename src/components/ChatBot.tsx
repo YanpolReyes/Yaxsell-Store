@@ -73,9 +73,6 @@ export default function ChatBot() {
   const inputRef = useRef<HTMLInputElement>(null);
   const pathname = usePathname();
 
-  // Ocultar en rutas admin e inventario
-  if (pathname?.startsWith('/admin') || pathname === '/inventario') return null;
-
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -85,6 +82,9 @@ export default function ChatBot() {
   useEffect(() => {
     if (open && inputRef.current) inputRef.current.focus();
   }, [open]);
+
+  // Solo mostrar en la página principal
+  if (pathname !== '/') return null;
 
   async function handleSend() {
     const text = input.trim();
@@ -112,26 +112,26 @@ export default function ChatBot() {
         <button
           onClick={() => setOpen(true)}
           style={{
-            position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
-            width: 56, height: 56, borderRadius: '50%',
+            position: 'fixed', bottom: 90, right: 20, zIndex: 9999,
+            width: 44, height: 44, borderRadius: '50%',
             background: 'linear-gradient(135deg, #3483fa, #6366f1)',
             border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 20px rgba(52,131,250,0.4)',
-            transition: 'transform 0.2s, box-shadow 0.2s',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+            transition: 'transform 0.2s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(52,131,250,0.5)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(52,131,250,0.4)'; }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
         >
-          <MessageCircle size={24} color="#fff" />
+          <MessageCircle size={20} color="#fff" />
         </button>
       )}
 
       {/* Chat panel */}
       {open && (
         <div style={{
-          position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
-          width: 370, maxWidth: 'calc(100vw - 32px)',
+          position: 'fixed', bottom: 140, right: 20, zIndex: 9999,
+          width: 370, maxWidth: 'calc(100vw - 40px)',
           height: 520, maxHeight: 'calc(100vh - 48px)',
           background: '#fff', borderRadius: 16,
           boxShadow: '0 8px 40px rgba(0,0,0,0.18)',

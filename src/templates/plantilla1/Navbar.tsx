@@ -3,11 +3,12 @@
 import { useEffect, useState, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search, ShoppingCart, User, Heart, Menu, X, MapPin, Bell, Receipt, LogOut, Package, Minus, Plus, Trash2 } from 'lucide-react';
+import { Search, ShoppingCart, User, Heart, Menu, X, MapPin, Bell, Receipt, LogOut, Package, Minus, Plus, Trash2, Home, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/context/CartContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { getServices, getAppwriteConfig, USER_PHOTOS_BUCKET, formatPrice } from '@/lib/appwrite';
+import SearchOverlay from '@/components/SearchOverlay';
 
 const PINK_PRIMARY = '#ec4899';
 const PINK_LIGHT = '#f9a8d4';
@@ -96,15 +97,14 @@ export default function Navbar1() {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth <= 1024);
+    const check = () => setIsMobile(window.innerWidth <= 768);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // En homepage el HomePage1 ya tiene su propio header (desktop)
-  // En mobile mostramos este navbar en todas las páginas
-  if (isHome && !isMobile) return null;
+  // En desktop (no mobile) solo mostrar fuera de homepage
+  if (!isMobile && isHome) return null;
 
   const NAV_LINKS = [
     { label: 'Inicio', href: '/' },
@@ -214,24 +214,84 @@ export default function Navbar1() {
         /* Mobile user header */
         .tpl1-nav-mobile-user { display: flex; align-items: center; gap: 12px; padding: 16px; background: linear-gradient(135deg, #fef2f8, #fdf2f8); border-radius: 14px; margin-bottom: 8px; }
 
+        /* Bottom mobile nav */
+        .tpl1-bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 9998; background: #fff; border-top: 1px solid #f3f4f6; padding: 6px 0 env(safe-area-inset-bottom, 8px); box-shadow: 0 -2px 12px rgba(0,0,0,0.06); }
+        .tpl1-bottom-nav-inner { display: flex; justify-content: space-around; align-items: center; max-width: 500px; margin: 0 auto; }
+        .tpl1-bottom-nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; padding: 4px 8px; border-radius: 12px; transition: all 0.2s ease; position: relative; background: transparent; border: none; cursor: pointer; }
+        .tpl1-bottom-nav-item svg { width: 22px; height: 22px; color: #999; transition: color 0.2s; }
+        .tpl1-bottom-nav-item span { font-size: 10px; font-weight: 600; color: #999; font-family: 'DM Sans', system-ui, sans-serif; transition: color 0.2s; }
+        .tpl1-bottom-nav-item.active svg { color: ${PINK_PRIMARY}; }
+        .tpl1-bottom-nav-item.active span { color: ${PINK_PRIMARY}; }
+        .tpl1-bottom-nav-item .tpl1-bottom-badge { position: absolute; top: 0; right: 0; background: linear-gradient(135deg, ${PINK_PRIMARY}, #db2777); color: #fff; font-size: 8px; font-weight: 800; border-radius: 999px; min-width: 14px; height: 14px; padding: 0 3px; display: flex; align-items: center; justify-content: center; border: 1.5px solid #fff; }
+        /* Mobile search overlay */
+        .tpl1-search-overlay { display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); flex-direction: column; padding: 0; animation: tpl1SearchSlideIn 0.25s ease-out; }
+        .tpl1-search-overlay.open { display: flex; }
+        .tpl1-search-overlay-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #fce7f3; }
+        .tpl1-search-overlay-back { width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #666; flex-shrink: 0; }
+        .tpl1-search-overlay-form { flex: 1; display: flex; align-items: center; background: linear-gradient(135deg, #fef2f8, #fdf2f8); border: 1.5px solid rgba(236,72,153,0.25); border-radius: 999px; padding: 0 14px; height: 40px; }
+        .tpl1-search-overlay-form input { border: none; background: transparent; outline: none; font-size: 15px; width: 100%; color: #333; font-family: 'DM Sans', system-ui, sans-serif; }
+        .tpl1-search-overlay-form input::placeholder { color: #f9a8d4; }
+        .tpl1-search-overlay-suggestions { padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+        .tpl1-search-overlay-suggestions p { font-size: 12px; font-weight: 600; color: #999; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .tpl1-search-overlay-tag { display: inline-block; padding: 8px 16px; background: #fef2f8; border: 1px solid rgba(236,72,153,0.15); border-radius: 999px; font-size: 13px; color: #ec4899; cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', system-ui, sans-serif; }
+        .tpl1-search-overlay-tag:hover { background: rgba(236,72,153,0.1); }
+        .tpl1-search-overlay-results { padding: 0 16px; flex: 1; overflow-y: auto; }
+        .tpl1-search-overlay-result { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f5f5f5; text-decoration: none; color: #333; }
+        .tpl1-search-overlay-result img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: #f9f9f9; }
+        .tpl1-search-overlay-result-info { flex: 1; }
+        .tpl1-search-overlay-result-name { font-size: 14px; font-weight: 500; color: #333; }
+        .tpl1-search-overlay-result-price { font-size: 13px; color: #ec4899; font-weight: 600; }
+        .tpl1-search-overlay-empty { text-align: center; padding: 40px 16px; color: #999; font-size: 14px; }
+        @keyframes tpl1SearchSlideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Mobile fabs (WhatsApp + ChatBot) in navbar */
+        .tpl1-nav-mobile-fabs { display: none; align-items: center; gap: 6px; flex-shrink: 0; flex-grow: 0; }
+        .tpl1-nav-mobile-fab { width: 20px !important; height: 20px !important; max-width: 20px !important; max-height: 20px !important; min-width: 20px !important; min-height: 20px !important; aspect-ratio: 1 !important; border-radius: 50% !important; border: none !important; cursor: pointer !important; display: flex !important; align-items: center !important; justify-content: center !important; transition: transform 0.2s !important; overflow: hidden !important; flex-shrink: 0 !important; flex-grow: 0 !important; padding: 0 !important; line-height: 0 !important; font-size: 0 !important; text-decoration: none !important; align-self: center !important; box-sizing: border-box !important; }
+        .tpl1-nav-mobile-fab:hover { transform: scale(1.05); }
+        .tpl1-nav-mobile-fab svg { width: 12px !important; height: 12px !important; min-width: 12px !important; min-height: 12px !important; max-width: 12px !important; max-height: 12px !important; flex-shrink: 0 !important; display: block !important; }
+        .tpl1-nav-mobile-fab--wa { background: #25D366 !important; }
+        .tpl1-nav-mobile-fab--cb { background: linear-gradient(135deg, #3483fa, #6366f1) !important; }
+        @media (max-width: 768px) {
+          .tpl1-bottom-nav { display: block; }
+          body { padding-bottom: 64px; }
+        }
+
         @media (max-width: 1024px) {
           .tpl1-nav-addr { display: none; }
           .tpl1-nav-account-name { display: none; }
           .tpl1-auth-popup { right: -10px; }
         }
         @media (max-width: 768px) {
-          .tpl1-nav-links { display: none; }
-          .tpl1-nav-hamburger { display: flex !important; }
-          .tpl1-nav-inner { padding: 0 12px; height: 60px; }
-          .tpl1-nav-logo img { height: 38px; max-width: 120px; }
-          .tpl1-nav-btn { width: 36px; height: 36px; }
-          .tpl1-nav-btn svg { width: 18px; height: 18px; }
-          .tpl1-nav-avatar { width: 24px; height: 24px; font-size: 10px; border-width: 1.5px; }
-          .tpl1-nav-user-avatar { width: 24px; height: 24px; margin-top: 0; }
-          .tpl1-nav-account-btn { gap: 4px; }
-          .tpl1-nav-actions { gap: 2px; }
+          .tpl1-nav { min-height: 48px !important; height: auto !important; background: rgba(255,255,255,0.98) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border-bottom: none !important; border-radius: 999px !important; box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important; margin: 10px 80px 0 !important; position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; z-index: 9999 !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
+          .tpl1-nav.scrolled { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; margin: 0 !important; border-radius: 0 !important; min-height: 48px !important; box-shadow: 0 2px 16px rgba(0,0,0,0.08) !important; }
+          .tpl1-nav.scrolled .tpl1-nav-inner { height: 48px !important; min-height: 48px !important; padding: 0 12px !important; }
+          .tpl1-nav.scrolled .tpl1-nav-btn { width: 34px !important; height: 34px !important; }
+          .tpl1-nav.scrolled .tpl1-nav-btn svg { width: 17px !important; height: 17px !important; }
+          .tpl1-nav.scrolled .tpl1-nav-avatar { width: 24px !important; height: 24px !important; font-size: 10px !important; }
+          .tpl1-nav.scrolled .tpl1-nav-user-avatar { width: 24px !important; height: 24px !important; }
+          .tpl1-nav.scrolled .tpl1-nav-mobile-fab { width: 24px !important; height: 24px !important; }
+          .tpl1-nav.scrolled .tpl1-nav-mobile-fab svg { width: 14px !important; height: 14px !important; }
+          .tpl1-nav-links { display: none !important; }
+          .tpl1-nav-logo { display: none !important; }
+          .tpl1-nav-mobile-fabs { display: flex !important; }
+          .tpl1-nav-hamburger { display: none !important; }
+          .tpl1-nav-inner { padding: 0 10px !important; height: 48px !important; min-height: 48px !important; gap: 0 !important; justify-content: space-between !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; position: relative !important; }
+          .tpl1-nav-mobile-center { position: absolute !important; left: 50% !important; transform: translateX(-50%) !important; display: flex !important; align-items: center !important; gap: 4px !important; font-size: 10px !important; color: #be185d !important; white-space: nowrap !important; max-width: 140px !important; overflow: hidden !important; text-overflow: ellipsis !important; background: linear-gradient(135deg, #fef2f8, #fdf2f8) !important; border: 1px solid rgba(236,72,153,0.25) !important; border-radius: 999px !important; padding: 4px 10px !important; font-weight: 500 !important; font-family: 'DM Sans', system-ui, sans-serif !important; pointer-events: none !important; transition: none !important; animation: none !important; }
+          .tpl1-nav-mobile-center svg { flex-shrink: 0 !important; }
+          .tpl1-nav-logo img { height: 22px !important; max-width: 58px !important; }
+          .tpl1-nav-btn { width: 32px !important; height: 32px !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
+          .tpl1-nav-btn svg { width: 16px !important; height: 16px !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
+          .tpl1-nav-avatar { width: 24px !important; height: 24px !important; font-size: 9px !important; border-width: 1px !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
+          .tpl1-nav-user-avatar { width: 24px !important; height: 24px !important; margin-top: 0 !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
+          .tpl1-nav-account-btn { gap: 2px !important; }
+          .tpl1-nav-actions { gap: 1px !important; }
 
-          /* Search overlay on mobile */
+          /* Hide favorites and cart buttons on mobile */
+          .tpl1-nav-actions a[href="/favoritos"],
+          .tpl1-nav-actions button[title="Carrito"] {
+            display: none !important;
+          }
+
+          /* Search on mobile - use overlay instead of inline */
           .tpl1-nav-search-wrap { display: none !important; }
 
           /* Remove hover animations on mobile */
@@ -251,11 +311,28 @@ export default function Navbar1() {
 
       <div className={`tpl1-nav-mobile-overlay ${menuOpen ? 'open' : ''}`} onClick={() => setMenuOpen(false)} />
 
+      {/* Top navbar: on mobile only show on homepage */}
+      {!(isMobile && !isHome) && (
       <nav className={`tpl1-nav ${scrolled ? 'scrolled' : ''}`} style={{ background: scrolled ? 'rgba(255,255,255,0.95)' : '#fff', borderBottom: `1px solid ${scrolled ? '#fce7f3' : '#f5f5f5'}` }}>
         <div className="tpl1-nav-inner">
+          {/* Mobile center: address */}
+          <div className="tpl1-nav-mobile-center">
+            <MapPin size={10} color={PINK_PRIMARY} />
+            <span>{primaryAddress || (isLoggedIn ? 'Mi ubicación' : 'Ubicación')}</span>
+          </div>
           <Link href="/" className="tpl1-nav-logo">
             <img src={LOGO_URL} alt="Yes Bella" />
           </Link>
+
+          {/* Mobile fabs - WhatsApp + ChatBot (replaces logo on mobile) */}
+          <div className="tpl1-nav-mobile-fabs">
+            <a href="https://wa.me/56912345678" target="_blank" rel="noopener noreferrer" className="tpl1-nav-mobile-fab tpl1-nav-mobile-fab--wa" title="WhatsApp">
+              <svg viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            </a>
+            <button className="tpl1-nav-mobile-fab tpl1-nav-mobile-fab--cb" title="ChatBot" onClick={() => { /* ChatBot is handled by the ChatBot component */ }}>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
+            </button>
+          </div>
 
           <div className="tpl1-nav-links">
             {NAV_LINKS.map(link => (
@@ -272,9 +349,7 @@ export default function Navbar1() {
                 <input placeholder="Buscar productos..." autoFocus={searchOpen} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
               </form>
             </div>
-            <Link href="/productos" title="Buscar">
-              <button className="tpl1-nav-btn"><Search size={20} /></button>
-            </Link>
+            <button className="tpl1-nav-btn" onClick={() => setSearchOpen(!searchOpen)} title="Buscar"><Search size={20} /></button>
 
             {/* Dirección primaria */}
             <Link href="/cuenta/direcciones" className="tpl1-nav-addr" title="Mis direcciones">
@@ -405,6 +480,7 @@ export default function Navbar1() {
           )}
         </div>
       </nav>
+      )}
 
       {/* ── Cart Drawer ── */}
       {cartOpen && (
@@ -490,6 +566,36 @@ export default function Navbar1() {
           </div>
         </div>
       )}
+
+      {/* Bottom mobile nav */}
+      <nav className="tpl1-bottom-nav">
+        <div className="tpl1-bottom-nav-inner">
+          <Link href="/" className={`tpl1-bottom-nav-item ${pathname === '/' ? 'active' : ''}`}>
+            <Home />
+            <span>Inicio</span>
+          </Link>
+          <Link href="/productos" className={`tpl1-bottom-nav-item ${pathname === '/productos' ? 'active' : ''}`}>
+            <Search />
+            <span>Catálogo</span>
+          </Link>
+          <Link href="/favoritos" className={`tpl1-bottom-nav-item ${pathname === '/favoritos' ? 'active' : ''}`}>
+            <Heart />
+            <span>Favoritos</span>
+          </Link>
+          <Link href="/carrito" className={`tpl1-bottom-nav-item ${pathname === '/carrito' ? 'active' : ''}`}>
+            <ShoppingCart />
+            {totalItems > 0 && <span className="tpl1-bottom-badge">{totalItems > 99 ? '99+' : totalItems}</span>}
+            <span>Carrito</span>
+          </Link>
+          <Link href="/cuenta/pedidos" className={`tpl1-bottom-nav-item ${pathname === '/cuenta/pedidos' ? 'active' : ''}`}>
+            <Package />
+            <span>Pedidos</span>
+          </Link>
+        </div>
+      </nav>
+
+      {/* Mobile search overlay */}
+      {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
     </>
   );
 }

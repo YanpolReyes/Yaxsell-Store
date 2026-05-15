@@ -482,8 +482,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .admin-sidebar { position: relative !important; }
     }
     @media (max-width: 1023px) {
-      .admin-topbar { height: 68px !important; }
-      .admin-sidebar { box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important; top: 68px !important; }
+      .admin-topbar { height: 60px !important; }
+      .admin-sidebar { box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important; top: 60px !important; }
     }
     /* ── Global mobile fixes for all admin pages ── */
     @media (max-width: 768px) {

@@ -98,22 +98,22 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
   const showSuggestions = !query.trim() || query.length < 2;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
-      <div style={{ background: '#ffe600', maxWidth: 640, margin: '0 auto', maxHeight: '80vh', overflow: 'auto' }}
+    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} onClick={onClose}>
+      <div style={{ background: '#fff', maxWidth: 640, margin: '0 auto', maxHeight: '85vh', overflow: 'auto', borderRadius: 16, marginTop: 12, boxShadow: '0 8px 40px rgba(0,0,0,0.15)' }}
         onClick={e => e.stopPropagation()}>
         {/* Search input */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #e6e6e6' }}>
-          <Search size={18} color="#666" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #fce7f3', background: 'linear-gradient(135deg, #fef2f8, #fdf2f8)' }}>
+          <Search size={18} color="#ec4899" />
           <input
             ref={inputRef}
             value={query}
             onChange={e => handleChange(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') goSearch(); if (e.key === 'Escape') onClose(); }}
             placeholder="Buscar productos, marcas y más..."
-            style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: '#333', padding: '8px 0', background: '#fff', borderRadius: 2, boxShadow: 'inset 0 1px 2px rgba(0,0,0,.1)' }}
+            style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: '#333', padding: '8px 0', background: 'transparent', fontFamily: "'DM Sans', system-ui, sans-serif" }}
           />
-          {query && <button onClick={() => { setQuery(''); setResults([]); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}><X size={16} color="#666" /></button>}
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#3483fa', fontWeight: 600, padding: '4px 8px' }}>Cerrar</button>
+          {query && <button onClick={() => { setQuery(''); setResults([]); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}><X size={16} color="#ec4899" /></button>}
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#ec4899', fontWeight: 600, padding: '4px 8px' }}>Cerrar</button>
         </div>
 
         {showSuggestions ? (
@@ -123,7 +123,7 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
               <div style={{ marginBottom: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#999', textTransform: 'uppercase' }}>Búsquedas recientes</p>
-                  <button onClick={clearHistory} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#3483fa' }}>Limpiar</button>
+                  <button onClick={clearHistory} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#ec4899' }}>Limpiar</button>
                 </div>
                 {history.map(h => (
                   <div key={h} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid #f8f8f8' }}>
@@ -140,8 +140,8 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {TRENDING.map(t => (
                   <button key={t} onClick={() => goSearch(t)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: '#f5f5f5', border: 'none', borderRadius: 20, cursor: 'pointer', fontSize: 13, color: '#333' }}>
-                    <TrendingUp size={12} color="#999" /> {t}
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: '#fef2f8', border: '1px solid rgba(236,72,153,0.15)', borderRadius: 20, cursor: 'pointer', fontSize: 13, color: '#be185d' }}>
+                    <TrendingUp size={12} color="#ec4899" /> {t}
                   </button>
                 ))}
               </div>
@@ -158,7 +158,7 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
               return (
                 <Link key={p.$id} href={`/productos/${p.$id}`} onClick={() => { addToHistory(query); onClose(); }}
                   style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', textDecoration: 'none', borderBottom: '1px solid #f8f8f8', transition: 'background .15s' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#f8f8f8')}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#fef2f8')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   {p.IMAGEURL && (
                     <div style={{ width: 44, height: 44, borderRadius: 6, overflow: 'hidden', flexShrink: 0, background: '#f5f5f5' }}>
@@ -167,14 +167,14 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: 14, color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.NAME}</p>
-                    <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 700, color: '#333' }}>{formatPrice(price)}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 700, color: '#ec4899' }}>{formatPrice(price)}</p>
                   </div>
                 </Link>
               );
             })}
             {results.length > 0 && (
               <button onClick={() => goSearch()}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#3483fa', fontWeight: 600 }}>
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#ec4899', fontWeight: 600 }}>
                 Ver todos los resultados <ArrowRight size={14} />
               </button>
             )}
