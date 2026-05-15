@@ -2270,6 +2270,21 @@ export default function HomePage1() {
     const settings = widgetCfg?.settings || {};
     const mode = settings.productWidgetMode || 'single';
     const wrappers = document.querySelectorAll('.product_hero_banner_wrapp');
+    const hideAllWidgets = () => {
+      wrappers.forEach(w => { (w as HTMLElement).style.display = 'none'; });
+    };
+    const isInStock = (p: Product | Record<string, unknown>) => (Number((p as Product).STOCK) || 0) > 0;
+    const productDisplayPrice = (p: Product) => {
+      const price = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
+      return formatPrice(price ?? 0);
+    };
+    const productToWidgetData = (p: Product) => ({
+      title: p.NAME,
+      price: productDisplayPrice(p),
+      imageUrl: p.IMAGEURL || '',
+      link: `/producto/${p.$id}`,
+      productId: p.$id,
+    });
 
     // Helper: apply visual styles to a widget element
     const applyWidgetStyles = (el: HTMLElement, productData: { title: string; price: string; imageUrl: string; link: string; productId?: string }) => {
@@ -2389,31 +2404,44 @@ export default function HomePage1() {
       el.style.setProperty('transform', 'translate(-50%, -50%)', 'important');
     };
 
-    // Single mode: apply static product data
+    // Single mode: producto fijo (solo si hay stock cuando viene de Appwrite)
     if (mode === 'single') {
-      wrappers.forEach(wrapper => {
-        const el = wrapper as HTMLElement;
-        applyLayoutStyles(el);
-        if (!enabled) return;
-        applyWidgetStyles(el, {
-          title: settings.productWidgetTitle || 'Título del Producto',
-          price: settings.productWidgetPrice || '$20.00',
-          imageUrl: settings.productWidgetImageUrl || '',
-          link: settings.productWidgetLink || '/productos',
-          productId: settings.productWidgetProductId || '',
-        });
-      });
-      // For single mode, fetch the product for add_to_cart
-      if (settings.productWidgetButtonAction === 'add_to_cart' && settings.productWidgetProductId) {
-        (async () => {
+      wrappers.forEach(wrapper => applyLayoutStyles(wrapper as HTMLElement));
+      if (!enabled) return;
+
+      (async () => {
+        if (settings.productWidgetProductId) {
           try {
             const { databaseId } = getAppwriteConfig();
             const { databases } = getServices();
             const doc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, settings.productWidgetProductId!);
-            rotationProducts = [doc as unknown as Product];
-          } catch { /* ignore */ }
-        })();
-      }
+            const product = doc as unknown as Product;
+            if (!isInStock(product)) {
+              hideAllWidgets();
+              return;
+            }
+            rotationProducts = [product];
+            const data = productToWidgetData(product);
+            wrappers.forEach(wrapper => {
+              applyLayoutStyles(wrapper as HTMLElement);
+              applyWidgetStyles(wrapper as HTMLElement, data);
+            });
+          } catch {
+            hideAllWidgets();
+          }
+          return;
+        }
+
+        wrappers.forEach(wrapper => {
+          applyWidgetStyles(wrapper as HTMLElement, {
+            title: settings.productWidgetTitle || 'Título del Producto',
+            price: settings.productWidgetPrice || '$20.00',
+            imageUrl: settings.productWidgetImageUrl || '',
+            link: settings.productWidgetLink || '/productos',
+            productId: '',
+          });
+        });
+      })();
       return;
     }
 
@@ -2423,7 +2451,10 @@ export default function HomePage1() {
     let products: Product[] = [];
 
     const startRotation = () => {
-      if (products.length === 0) return;
+      if (products.length === 0) {
+        hideAllWidgets();
+        return;
+      }
       rotationProducts = products;
       const interval = (settings.productWidgetSlideInterval || 5) * 1000;
 
@@ -2431,13 +2462,7 @@ export default function HomePage1() {
       wrappers.forEach(wrapper => {
         const el = wrapper as HTMLElement;
         applyLayoutStyles(el);
-        if (enabled) applyWidgetStyles(el, {
-          title: products[0].NAME,
-          price: products[0].CURRENTPRICE ? `$${products[0].CURRENTPRICE}` : products[0].PRICE ? `$${products[0].PRICE}` : '',
-          imageUrl: products[0].IMAGEURL || '',
-          link: `/producto/${products[0].$id}`,
-          productId: products[0].$id,
-        });
+        if (enabled) applyWidgetStyles(el, productToWidgetData(products[0]));
       });
 
       // Rotate every N seconds with card shuffle animation
@@ -2452,13 +2477,7 @@ export default function HomePage1() {
           el.style.opacity = '0';
           setTimeout(() => {
             // Update content
-            applyWidgetStyles(el, {
-              title: p.NAME,
-              price: p.CURRENTPRICE ? `$${p.CURRENTPRICE}` : p.PRICE ? `$${p.PRICE}` : '',
-              imageUrl: p.IMAGEURL || '',
-              link: `/producto/${p.$id}`,
-              productId: p.$id,
-            });
+            applyWidgetStyles(el, productToWidgetData(p));
             // Slide in from right with opposite rotation
             el.style.transform = 'translate(-50%, -50%) translateX(100px) rotate(15deg)';
             setTimeout(() => {
@@ -2476,7 +2495,7 @@ export default function HomePage1() {
         const { databaseId } = getAppwriteConfig();
         const { databases } = getServices();
         const count = settings.productWidgetProductCount || 10;
-        const queries: any[] = [Query.limit(count)];
+        const queries: any[] = [Query.greaterThan('STOCK', 0), Query.limit(count)];
 
         if (mode === 'category' && settings.productWidgetCategoryId) {
           queries.push(Query.equal('CATEGORYID', settings.productWidgetCategoryId));
@@ -2484,11 +2503,11 @@ export default function HomePage1() {
           queries.push(Query.equal('SUBCATEGORYID', settings.productWidgetSubcategoryId));
         } else if (mode === 'random') {
           // Shuffle: fetch more and pick random subset
-          queries.push(Query.limit(100));
+          queries[1] = Query.limit(100);
         }
 
         const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, queries);
-        let docs = res.documents as unknown as Product[];
+        let docs = (res.documents as unknown as Product[]).filter(isInStock);
 
         if (mode === 'random' && docs.length > count) {
           // Fisher-Yates shuffle
@@ -2500,21 +2519,14 @@ export default function HomePage1() {
         }
 
         products = docs;
+        if (products.length === 0) {
+          hideAllWidgets();
+          return;
+        }
         startRotation();
       } catch (e) {
         console.error('[TPL1] Error fetching products for widget rotation:', e);
-        // Fallback to single mode
-        wrappers.forEach(wrapper => {
-          const el = wrapper as HTMLElement;
-          applyLayoutStyles(el);
-          if (enabled) applyWidgetStyles(el, {
-            title: settings.productWidgetTitle || 'Título del Producto',
-            price: settings.productWidgetPrice || '$20.00',
-            imageUrl: settings.productWidgetImageUrl || '',
-            link: settings.productWidgetLink || '/productos',
-            productId: settings.productWidgetProductId || '',
-          });
-        });
+        hideAllWidgets();
       }
     })();
 
@@ -2592,6 +2604,35 @@ export default function HomePage1() {
       }
     });
 
+    const layoutCollectionTitlesMobile = () => {
+      const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
+      slides.forEach(slide => {
+        const imgContent = slide.querySelector('.img-content');
+        const titleLink = slide.querySelector('.collection_list_title_main') as HTMLAnchorElement | null;
+        const slideWrap = slide.querySelector('.musk-collection-slide') as HTMLElement | null;
+        if (!imgContent || !titleLink || !slideWrap) return;
+
+        const footer = slide.querySelector('.tpl1-collection-footer') as HTMLElement | null;
+        if (isMobile) {
+          if (titleLink.parentElement === imgContent) {
+            const bar = footer || document.createElement('div');
+            if (!footer) {
+              bar.className = 'tpl1-collection-footer';
+              imgContent.removeChild(titleLink);
+              bar.appendChild(titleLink);
+              slideWrap.appendChild(bar);
+            }
+          }
+        } else if (footer && titleLink.parentElement === footer) {
+          footer.removeChild(titleLink);
+          imgContent.appendChild(titleLink);
+          footer.remove();
+        }
+      });
+    };
+    layoutCollectionTitlesMobile();
+    window.addEventListener('resize', layoutCollectionTitlesMobile);
+
     // Hide extra slides
     for (let i = items.length; i < slides.length; i++) {
       slides[i].style.display = 'none';
@@ -2599,6 +2640,10 @@ export default function HomePage1() {
     for (let i = 0; i < Math.min(items.length, slides.length); i++) {
       slides[i].style.display = '';
     }
+
+    return () => {
+      window.removeEventListener('resize', layoutCollectionTitlesMobile);
+    };
   }, [bodyHtml, sectionCfg]);
 
   useEffect(() => {

@@ -1232,9 +1232,8 @@
     font-size: 12px !important;
   }
 
-  /* ─── Colecciones: nombres visibles en móvil (sin depender del hover) ─── */
-  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content {
-    position: relative !important;
+  /* ─── Colecciones: nombre debajo de la imagen, rosa (anula overlay blanco del tema) ─── */
+  [data-template="1"] .musk_collection1 .musk-collection-slide {
     display: flex !important;
     flex-direction: column !important;
     border-radius: 16px !important;
@@ -1243,22 +1242,42 @@
     border: 1px solid rgba(252, 231, 243, 0.95) !important;
     box-shadow: 0 8px 24px rgba(236, 72, 153, 0.1) !important;
   }
+  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content {
+    position: relative !important;
+    display: block !important;
+    flex: 0 0 auto !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+    background: #f9fafb !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
   [data-template="1"] .musk_collection1 .musk-collection-slide .img-content img,
   [data-template="1"] .musk_collection1 .musk-collection-slide .img-content svg.placeholder-svg {
     position: relative !important;
+    display: block !important;
     width: 100% !important;
     height: auto !important;
     aspect-ratio: 1 / 1 !important;
     top: auto !important;
     left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
     object-fit: cover !important;
   }
-  [data-template="1"] .musk_collection1 .collection_list_title_main {
-    position: relative !important;
+  [data-template="1"] .musk_collection1 .tpl1-collection-footer,
+  [data-template="1"] .musk_collection1 .swiper-slide .collection_list_title_main {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
     bottom: auto !important;
+    order: unset !important;
     width: 100% !important;
+    margin: 0 !important;
     padding: 12px 14px !important;
-    background: #fff !important;
+    background: linear-gradient(180deg, #fdf2f8 0%, #ffffff 100%) !important;
+    border-top: 2px solid #fce7f3 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
@@ -1267,13 +1286,22 @@
     z-index: 2 !important;
     pointer-events: auto !important;
   }
-  [data-template="1"] .musk_collection1 .slide-title {
-    color: #111827 !important;
+  [data-template="1"] .musk_collection1 .swiper-slide .slide-title,
+  [data-template="1"] .musk_collection1 .swiper-slide .collection_list_title_main,
+  [data-template="1"] .musk_collection1 .swiper-slide .inner_heading_color {
+    color: #ec4899 !important;
+    -webkit-text-fill-color: #ec4899 !important;
+    text-shadow: none !important;
     font-size: 14px !important;
     font-weight: 800 !important;
     line-height: 1.25 !important;
     opacity: 1 !important;
     visibility: visible !important;
+  }
+  [data-template="1"] .musk_collection1 .swiper-slide:hover .slide-title,
+  [data-template="1"] .musk_collection1 .swiper-slide:hover .collection_list_title_main {
+    color: #db2777 !important;
+    -webkit-text-fill-color: #db2777 !important;
   }
   [data-template="1"] .musk_collection1 .collection_list_title_right svg path {
     fill: #ec4899 !important;
