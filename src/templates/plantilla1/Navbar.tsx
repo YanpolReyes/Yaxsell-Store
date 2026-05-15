@@ -108,9 +108,8 @@ export default function Navbar1() {
 
   const NAV_LINKS = [
     { label: 'Inicio', href: '/' },
-    { label: 'Productos', href: '/productos' },
-    { label: 'Ofertas', href: '/productos?sort=offers' },
-    { label: 'Categorías', href: '/productos?view=categorias' },
+    { label: 'Catálogo', href: '/productos' },
+    { label: 'Mis Pedidos', href: '/cuenta/pedidos' },
   ];
 
   const handleSearch = (e: React.FormEvent) => {
@@ -134,7 +133,7 @@ export default function Navbar1() {
         .tpl1-nav.scrolled { box-shadow: 0 2px 12px rgba(236,72,153,0.04); backdrop-filter: blur(12px); }
         .tpl1-nav-inner { max-width: 1600px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; height: 76px; }
         .tpl1-nav-logo { display: flex; align-items: center; text-decoration: none; gap: 10px; }
-        .tpl1-nav-logo img { height: 48px; width: auto; object-fit: contain; transition: transform 0.3s ease; }
+        .tpl1-nav-logo img { height: 48px; max-width: 160px; width: auto; object-fit: contain; transition: transform 0.3s ease; flex-shrink: 0; }
         .tpl1-nav-logo:hover img { transform: scale(1.05); }
         .tpl1-nav-links { display: flex; gap: 4px; align-items: center; }
         .tpl1-nav-links a { font-family: 'DM Sans', system-ui, sans-serif; font-size: 14px; font-weight: 600; color: #444; text-decoration: none; padding: 10px 20px; border-radius: 999px; transition: all 0.25s ease; position: relative; }
@@ -165,8 +164,8 @@ export default function Navbar1() {
         .tpl1-nav-addr span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         /* Avatar */
-        .tpl1-nav-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, ${PINK_PRIMARY}, ${PINK_LIGHT}); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 700; overflow: hidden; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 2px 8px rgba(236,72,153,0.3); }
-        .tpl1-nav-avatar.lg { width: 48px; height: 48px; font-size: 18px; }
+        .tpl1-nav-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, ${PINK_PRIMARY}, ${PINK_LIGHT}); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 700; overflow: hidden; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 2px 8px rgba(236,72,153,0.3); }
+        .tpl1-nav-avatar.lg { width: 40px; height: 40px; font-size: 16px; }
         .tpl1-nav-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
         /* Account button */
@@ -209,7 +208,7 @@ export default function Navbar1() {
         .tpl1-auth-popup-footer a { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: 13px; font-weight: 600; color: #444; text-decoration: none; font-family: 'DM Sans', system-ui, sans-serif; transition: all 0.2s; }
         .tpl1-auth-popup-footer a:hover { border-color: ${PINK_PRIMARY}; color: ${PINK_PRIMARY}; background: rgba(236,72,153,0.04); }
         /* Nav avatar circle on button */
-        .tpl1-nav-user-avatar { width: 64px; height: 64px; border-radius: 50%; overflow: hidden; margin-top: -8px; }
+        .tpl1-nav-user-avatar { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; margin-top: 0; }
         .tpl1-nav-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
         /* Mobile user header */
@@ -224,22 +223,16 @@ export default function Navbar1() {
           .tpl1-nav-links { display: none; }
           .tpl1-nav-hamburger { display: flex !important; }
           .tpl1-nav-inner { padding: 0 12px; height: 60px; }
-          .tpl1-nav-logo img { height: 38px; }
+          .tpl1-nav-logo img { height: 38px; max-width: 120px; }
           .tpl1-nav-btn { width: 36px; height: 36px; }
           .tpl1-nav-btn svg { width: 18px; height: 18px; }
-          .tpl1-nav-avatar { width: 26px; height: 26px; font-size: 11px; border-width: 1.5px; }
-          .tpl1-nav-user-avatar { width: 26px; height: 26px; margin-top: 0; }
+          .tpl1-nav-avatar { width: 24px; height: 24px; font-size: 10px; border-width: 1.5px; }
+          .tpl1-nav-user-avatar { width: 24px; height: 24px; margin-top: 0; }
           .tpl1-nav-account-btn { gap: 4px; }
           .tpl1-nav-actions { gap: 2px; }
 
           /* Search overlay on mobile */
           .tpl1-nav-search-wrap { display: none !important; }
-          .tpl1-nav-search-mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.98); z-index: 10000; flex-direction: column; padding: 16px; }
-          .tpl1-nav-search-mobile-overlay.open { display: flex; }
-          .tpl1-nav-search-mobile-overlay form { display: flex; align-items: center; background: #fef2f8; border: 1.5px solid rgba(236,72,153,0.25); border-radius: 999px; padding: 0 16px; height: 48px; width: 100%; }
-          .tpl1-nav-search-mobile-overlay input { border: none; background: transparent; outline: none; font-size: 16px; width: 100%; color: #333; font-family: 'DM Sans', system-ui, sans-serif; }
-          .tpl1-nav-search-mobile-overlay input::placeholder { color: #c084a0; }
-          .tpl1-nav-search-mobile-close { position: absolute; top: 16px; right: 16px; width: 40px; height: 40px; border-radius: 50%; border: none; background: #f3f4f6; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #666; }
 
           /* Remove hover animations on mobile */
           *:hover { transform: none !important; box-shadow: inherit !important; }
@@ -257,25 +250,6 @@ export default function Navbar1() {
       `}</style>
 
       <div className={`tpl1-nav-mobile-overlay ${menuOpen ? 'open' : ''}`} onClick={() => setMenuOpen(false)} />
-
-      {/* Mobile search overlay */}
-      <div className={`tpl1-nav-search-mobile-overlay ${searchOpen ? 'open' : ''}`}>
-        <div style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }} />
-        <form onSubmit={handleSearch} style={{ position: 'relative', marginTop: 8 }}>
-          <Search size={18} color={PINK_PRIMARY} style={{ marginRight: 10, flexShrink: 0 }} />
-          <input placeholder="Buscar productos..." autoFocus={searchOpen} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-        </form>
-        <button className="tpl1-nav-search-mobile-close" onClick={() => { setSearchOpen(false); setSearchQuery(''); }}>
-          <X size={18} />
-        </button>
-        {searchQuery.trim() && (
-          <div style={{ marginTop: 16, textAlign: 'center' }}>
-            <button onClick={handleSearch} style={{ padding: '12px 32px', background: `linear-gradient(135deg, ${PINK_PRIMARY}, #db2777)`, color: '#fff', border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-              Buscar "{searchQuery.trim()}"
-            </button>
-          </div>
-        )}
-      </div>
 
       <nav className={`tpl1-nav ${scrolled ? 'scrolled' : ''}`} style={{ background: scrolled ? 'rgba(255,255,255,0.95)' : '#fff', borderBottom: `1px solid ${scrolled ? '#fce7f3' : '#f5f5f5'}` }}>
         <div className="tpl1-nav-inner">
@@ -298,9 +272,9 @@ export default function Navbar1() {
                 <input placeholder="Buscar productos..." autoFocus={searchOpen} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
               </form>
             </div>
-            <button className="tpl1-nav-btn" onClick={() => setSearchOpen(!searchOpen)} title="Buscar">
-              <Search size={20} />
-            </button>
+            <Link href="/productos" title="Buscar">
+              <button className="tpl1-nav-btn"><Search size={20} /></button>
+            </Link>
 
             {/* Dirección primaria */}
             <Link href="/cuenta/direcciones" className="tpl1-nav-addr" title="Mis direcciones">

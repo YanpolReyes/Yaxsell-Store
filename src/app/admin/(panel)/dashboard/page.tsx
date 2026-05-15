@@ -1310,7 +1310,7 @@ export default function DashboardPage() {
       {/* ═══ Panel Estadístico Empresarial ═══ */}
       <div className="db-card db-stats-panel" style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', padding: '24px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', marginBottom: 24 }}>
         {/* KPIs compactos en fila */}
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${newUsers > 0 ? 6 : 5}, 1fr)`, gap: 0, marginBottom: 20, borderBottom: '1px solid #f1f5f9', paddingBottom: 20 }}>
+        <div className="db-kpi-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${newUsers > 0 ? 6 : 5}, 1fr)`, gap: 0, marginBottom: 20, borderBottom: '1px solid #f1f5f9', paddingBottom: 20 }}>
           {[
             { label: 'Ingresos totales', value: fmt(stats.totalRevenue), icon: <DollarSign size={14} color="#6366f1" />, color: '#6366f1', bg: '#eef2ff', trend: dateRange !== 'all' && prevRevenue > 0 ? ((stats.totalRevenue - prevRevenue) / prevRevenue) * 100 : undefined },
             { label: 'Pedidos', value: String(stats.totalOrders), icon: <ShoppingCart size={14} color="#0891b2" />, color: '#0891b2', bg: '#ecfeff', trend: dateRange !== 'all' && prevOrders > 0 ? ((stats.totalOrders - prevOrders) / prevOrders) * 100 : undefined },
@@ -1548,7 +1548,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ═══ Revenue chart + Order status ═══ */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 16, marginBottom: 24 }}>
+      <div className="db-revenue-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 16, marginBottom: 24 }}>
 
         {/* Revenue area chart */}
         <div className="db-card" style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', padding: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
@@ -1757,7 +1757,7 @@ export default function DashboardPage() {
             </span>
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.4fr) 1fr 1fr', gap: 24, alignItems: 'stretch', paddingBottom: 0, flex: 1 }}>
+        <div className="db-map-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.4fr) 1fr 1fr', gap: 24, alignItems: 'stretch', paddingBottom: 0, flex: 1 }}>
           <ChileMap regionCounts={(() => { const c: Record<string,number> = {}; for (const o of rangeOrders) { const rg = normalizeRegion(o.REGION||''); if (rg) c[rg] = (c[rg]||0)+1; } return c; })()} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxHeight: 600, overflowY: 'auto', paddingRight: 0 }}>
             {(() => {
@@ -1961,7 +1961,7 @@ export default function DashboardPage() {
       {/* ═══ Quick actions ═══ */}
       <div style={{ marginBottom: 8 }}>
         <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: '0 0 14px' }}>Acciones rápidas</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+        <div className="db-quick-actions" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
           {[
             { label: 'Agregar producto', href: '/admin/products', color: '#6366f1', bg: '#eef2ff', icon: <Plus size={16} color="#6366f1" /> },
             { label: 'Ver pedidos', href: '/admin/orders', color: '#0891b2', bg: '#ecfeff', icon: <ShoppingCart size={16} color="#0891b2" /> },

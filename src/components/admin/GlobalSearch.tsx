@@ -188,7 +188,7 @@ export default function GlobalSearch() {
           <span style={{ flex: 1, textAlign: 'left', display: 'flex', alignItems: 'center' }}>
             {placeholder}<span className="gs-cursor" />
           </span>
-          <span style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+          <span className="hidden sm:flex" style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
             <kbd style={kbdStyle}>CTRL</kbd>
             <kbd style={kbdStyle}>K</kbd>
           </span>

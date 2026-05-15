@@ -4,14 +4,17 @@ export { ID, Query };
 
 function getConfig() {
   if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem('appwrite_config');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (parsed?.endpoint && parsed?.projectId && parsed?.databaseId) {
-          return parsed;
-        }
-      } catch {}
+    // Check both keys: admin uses 'yaxsel_appwrite_config', store uses 'appwrite_config'
+    for (const key of ['yaxsel_appwrite_config', 'appwrite_config']) {
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed?.endpoint && parsed?.projectId && parsed?.databaseId) {
+            return parsed;
+          }
+        } catch {}
+      }
     }
   }
   return {
@@ -25,14 +28,18 @@ export function getAppwriteConfig() {
   return getConfig();
 }
 
+let _client: Client | null = null;
+
 export function getServices() {
   const { endpoint, projectId } = getConfig();
-  const client = new Client().setEndpoint(endpoint).setProject(projectId);
+  if (!_client) {
+    _client = new Client().setEndpoint(endpoint).setProject(projectId);
+  }
   return {
-    client,
-    databases: new Databases(client),
-    account: new Account(client),
-    storage: new Storage(client),
+    client: _client,
+    databases: new Databases(_client),
+    account: new Account(_client),
+    storage: new Storage(_client),
   };
 }
 

@@ -75,50 +75,53 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
     );
   }
 
+  const PINK = '#ec4899';
+
   return (
-    <div style={{ background: '#fff', borderRadius: 10, padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-        <div style={{ width: 48, height: 48, borderRadius: '50%', background: `${tier.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
+    <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', border: '1px solid #fce7f3' }}>
+      {/* Header with tier */}
+      <div style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 12, background: `${tier.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
           {tier.icon}
         </div>
-        <div>
-          <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#333' }}>{points.toLocaleString()} puntos</p>
-          <p style={{ margin: 0, fontSize: 13, color: '#888' }}>Nivel {tier.name}</p>
+        <div style={{ flex: 1 }}>
+          <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#111827', letterSpacing: '-0.02em' }}>{points.toLocaleString()} <span style={{ fontSize: 13, fontWeight: 600, color: '#9ca3af' }}>puntos</span></p>
+          <p style={{ margin: '2px 0 0', fontSize: 12, color: tier.color, fontWeight: 700 }}>Nivel {tier.name}</p>
         </div>
       </div>
 
       {/* Progress bar */}
       {next && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-            <span style={{ fontSize: 11, color: '#888' }}>{tier.icon} {tier.name}</span>
-            <span style={{ fontSize: 11, color: '#888' }}>{next.icon} {next.name}</span>
+        <div style={{ padding: '0 18px 12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>{tier.icon} {tier.name}</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: next.color }}>{next.icon} {next.name}</span>
           </div>
-          <div style={{ height: 8, background: '#f0f0f0', borderRadius: 4, overflow: 'hidden' }}>
-            <div style={{ height: '100%', background: `linear-gradient(90deg, ${tier.color}, ${next.color})`, borderRadius: 4, width: `${Math.min(100, progress)}%`, transition: 'width .5s ease' }} />
+          <div style={{ height: 6, background: '#f3f4f6', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: '100%', background: `linear-gradient(90deg, ${tier.color}, ${PINK})`, borderRadius: 3, width: `${Math.min(100, progress)}%`, transition: 'width .5s ease' }} />
           </div>
-          <p style={{ margin: '4px 0 0', fontSize: 11, color: '#999', textAlign: 'center' }}>
-            Faltan {(next.min - points).toLocaleString()} pts para {next.name}
+          <p style={{ margin: '4px 0 0', fontSize: 11, color: '#6b7280', textAlign: 'center', fontWeight: 500 }}>
+            Faltan <strong style={{ color: PINK }}>{(next.min - points).toLocaleString()}</strong> pts para {next.name}
           </p>
         </div>
       )}
 
-      {/* Stats */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <div style={{ flex: 1, background: '#f9f9f9', borderRadius: 8, padding: '10px 12px', textAlign: 'center' }}>
-          <TrendingUp size={16} color="#3483fa" style={{ margin: '0 auto 4px' }} />
-          <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#333' }}>{orderCount}</p>
-          <p style={{ margin: 0, fontSize: 10, color: '#888' }}>Compras</p>
+      {/* Stats row */}
+      <div style={{ display: 'flex', borderTop: '1px solid #fce7f3' }}>
+        <div style={{ flex: 1, padding: '12px 8px', textAlign: 'center', borderRight: '1px solid #fce7f3' }}>
+          <TrendingUp size={15} color={PINK} style={{ margin: '0 auto 3px' }} />
+          <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#111827' }}>{orderCount}</p>
+          <p style={{ margin: 0, fontSize: 10, color: '#9ca3af', fontWeight: 600 }}>Compras</p>
         </div>
-        <div style={{ flex: 1, background: '#f9f9f9', borderRadius: 8, padding: '10px 12px', textAlign: 'center' }}>
-          <Gift size={16} color="#e53935" style={{ margin: '0 auto 4px' }} />
-          <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#333' }}>${Math.round(totalSpent).toLocaleString()}</p>
-          <p style={{ margin: 0, fontSize: 10, color: '#888' }}>Total gastado</p>
+        <div style={{ flex: 1, padding: '12px 8px', textAlign: 'center', borderRight: '1px solid #fce7f3' }}>
+          <Gift size={15} color={PINK} style={{ margin: '0 auto 3px' }} />
+          <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#111827' }}>${Math.round(totalSpent).toLocaleString()}</p>
+          <p style={{ margin: 0, fontSize: 10, color: '#9ca3af', fontWeight: 600 }}>Total gastado</p>
         </div>
-        <div style={{ flex: 1, background: '#f9f9f9', borderRadius: 8, padding: '10px 12px', textAlign: 'center' }}>
-          <Star size={16} color="#f59e0b" style={{ margin: '0 auto 4px' }} />
-          <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#333' }}>{POINTS_PER_1000}x</p>
-          <p style={{ margin: 0, fontSize: 10, color: '#888' }}>Pts/$1.000</p>
+        <div style={{ flex: 1, padding: '12px 8px', textAlign: 'center' }}>
+          <Star size={15} color={PINK} style={{ margin: '0 auto 3px' }} />
+          <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#111827' }}>{POINTS_PER_1000}x</p>
+          <p style={{ margin: 0, fontSize: 10, color: '#9ca3af', fontWeight: 600 }}>Pts/$1.000</p>
         </div>
       </div>
     </div>

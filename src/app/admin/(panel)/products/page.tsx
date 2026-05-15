@@ -13,6 +13,15 @@ const PRODUCTS_BUCKET_ID = '67f41e05000d0adb6f12';
 
 const EMPTY: Partial<Product> = { NAME: '', DESCRIPTION: '', PRICE: 0, STOCK: 0, COST: 0, WHOLESALEPRICE: 0, WHOLESALEMINQUANTITY: 0, IMAGEURL: '', IMAGEURL2: '', IMAGEURL3: '', IMAGEURL4: '', IMAGEURL5: '', CATEGORYID: '' };
 
+const FieldInput = ({ label, field, type = 'text', value, onChange }: { label: string; field: string; type?: string; value: any; onChange: (val: any) => void }) => (
+  <div>
+    <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+    <input type={type} value={value ?? ''}
+      onChange={e => onChange(type === 'number' ? Number(e.target.value) : e.target.value)}
+      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+  </div>
+);
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -20,9 +29,9 @@ export default function ProductsPage() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('');
-  const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'out'>('all');
+  const [stockFilter, setStockFilter] = useState<'all' | 'instock' | 'low' | 'out'>('instock');
   const [noImageOnly, setNoImageOnly] = useState(false);
-  const [sort, setSort] = useState<{ key: 'NAME' | 'PRICE' | 'STOCK' | 'SOLDQUANTITY' | 'MARGIN'; dir: 'asc' | 'desc' }>({ key: 'NAME', dir: 'asc' });
+  const [sort, setSort] = useState<{ key: 'NAME' | 'PRICE' | 'STOCK' | 'SOLDQUANTITY' | 'MARGIN' | 'CREATED'; dir: 'asc' | 'desc' }>({ key: 'CREATED', dir: 'desc' });
   const [modal, setModal] = useState<{ mode: 'add' | 'edit'; data: Partial<Product> } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -91,23 +100,22 @@ export default function ProductsPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      // Carga todos los productos con paginación
+      // Carga todos los productos con paginación eficiente
       const allProducts: Product[] = [];
       let cursor: string | undefined;
       while (true) {
-        const queries = [Query.limit(100)];
+        const queries: any[] = [Query.limit(500)];
         if (cursor) queries.push(Query.cursorAfter(cursor));
         const resp: any = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
         const docs = resp.documents as unknown as Product[];
         if (!docs.length) break;
         allProducts.push(...docs);
-        if (docs.length < 100) break;
-        cursor = (docs[docs.length - 1] as any).$id;
+        if (docs.length < 500) break;
+        cursor = docs[docs.length - 1].$id;
       }
-      // Filtrar client-side: solo productos con stock > 0
-      const activeProducts = allProducts.filter(p => (p.STOCK || 0) > 0);
+      allProducts.sort((a, b) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime());
       const cr = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]);
-      setProducts(activeProducts);
+      setProducts(allProducts);
       setCategories(cr.documents as unknown as Category[]);
     } catch (e: any) { setError(e.message); }
     finally { setIsLoading(false); }
@@ -304,6 +312,7 @@ export default function ProductsPage() {
     );
     const matchCat = !catFilter || p.CATEGORYID === catFilter;
     const matchStock = stockFilter === 'all' ? true
+      : stockFilter === 'instock' ? (p.STOCK ?? 0) > 0
       : stockFilter === 'out' ? (p.STOCK ?? 0) === 0
       : (p.STOCK ?? 0) > 0 && (p.STOCK ?? 0) <= 10;
     const matchNoImage = !noImageOnly || !p.IMAGEURL;
@@ -313,21 +322,15 @@ export default function ProductsPage() {
     if (sort.key === 'MARGIN') {
       av = (a.COST && a.PRICE) ? ((a.PRICE - a.COST) / a.PRICE) : -1;
       bv = (b.COST && b.PRICE) ? ((b.PRICE - b.COST) / b.PRICE) : -1;
+    } else if (sort.key === 'CREATED') {
+      av = new Date(a.$createdAt).getTime();
+      bv = new Date(b.$createdAt).getTime();
     } else {
       av = a[sort.key] ?? 0; bv = b[sort.key] ?? 0;
     }
     const cmp = typeof av === 'string' ? av.localeCompare(bv as string) : (av as number) - (bv as number);
     return sort.dir === 'asc' ? cmp : -cmp;
   });
-
-  const F = ({ label, field, type = 'text' }: { label: string; field: keyof Product; type?: string }) => (
-    <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-      <input type={type} value={(modal?.data[field] as string) ?? ''}
-        onChange={e => setModal(m => m ? { ...m, data: { ...m.data, [field]: type === 'number' ? Number(e.target.value) : e.target.value } } : m)}
-        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-    </div>
-  );
 
   return (
     <div className="space-y-5">
@@ -366,8 +369,8 @@ export default function ProductsPage() {
 
       {/* Stock quick filter */}
       <div className="flex gap-2 flex-wrap">
-        {([['all','Todos'], ['low','Stock bajo'], ['out','Agotados']] as const).map(([k, label]) => {
-          const cnt = k === 'all' ? products.length : k === 'low' ? products.filter(p => (p.STOCK ?? 0) > 0 && (p.STOCK ?? 0) <= 10).length : products.filter(p => (p.STOCK ?? 0) === 0).length;
+        {([['all','Todos'], ['instock','En stock'], ['low','Stock bajo'], ['out','Agotados']] as const).map(([k, label]) => {
+          const cnt = k === 'all' ? products.length : k === 'instock' ? products.filter(p => (p.STOCK ?? 0) > 0).length : k === 'low' ? products.filter(p => (p.STOCK ?? 0) > 0 && (p.STOCK ?? 0) <= 10).length : products.filter(p => (p.STOCK ?? 0) === 0).length;
           return (
             <button key={k} onClick={() => setStockFilter(k)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition ${
@@ -517,8 +520,8 @@ export default function ProductsPage() {
 
       {/* Modal */}
       {modal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center overflow-y-auto p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-4">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center overflow-y-auto p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <h2 className="font-bold text-gray-900">{modal.mode === 'add' ? 'Agregar Producto' : 'Editar Producto'}</h2>
               <button onClick={() => setModal(null)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X className="w-4 h-4" /></button>
@@ -570,9 +573,9 @@ export default function ProductsPage() {
                 <textarea value={modal.data.DESCRIPTION || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, DESCRIPTION: e.target.value } } : m)}
                   rows={3} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
               </div>
-              <F label="Precio Normal (CLP)" field="PRICE" type="number" />
+              <FieldInput label="Precio Normal (CLP)" field="PRICE" type="number" value={modal?.data.PRICE} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, PRICE: v } } : m)} />
               <div>
-                <F label="Stock" field="STOCK" type="number" />
+                <FieldInput label="Stock" field="STOCK" type="number" value={modal?.data.STOCK} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, STOCK: v } } : m)} />
                 {Number(modal.data.STOCK) === 0 && (
                   <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
                     <span>⚠</span> Stock en 0 — este producto aparecerá como agotado
@@ -593,7 +596,7 @@ export default function ProductsPage() {
                   className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
               <div>
-                <F label="Costo" field="COST" type="number" />
+                <FieldInput label="Costo" field="COST" type="number" value={modal?.data.COST} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, COST: v } } : m)} />
                 {(() => {
                   const price = Number(modal.data.CURRENTPRICE || modal.data.PRICE) || 0;
                   const cost = Number(modal.data.COST) || 0;
@@ -618,8 +621,8 @@ export default function ProductsPage() {
                   <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
               </div>
-              <F label="Precio Mayorista" field="WHOLESALEPRICE" type="number" />
-              <F label="Cant. Mínima Mayorista" field="WHOLESALEMINQUANTITY" type="number" />
+              <FieldInput label="Precio Mayorista" field="WHOLESALEPRICE" type="number" value={modal?.data.WHOLESALEPRICE} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEPRICE: v } } : m)} />
+              <FieldInput label="Cant. Mínima Mayorista" field="WHOLESALEMINQUANTITY" type="number" value={modal?.data.WHOLESALEMINQUANTITY} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEMINQUANTITY: v } } : m)} />
                             <div className="sm:col-span-2">
                 <ImageUploadField label="Imagen Principal" bucketId={PRODUCTS_BUCKET_ID}
                   value={modal.data.IMAGEURL || ''}
@@ -637,8 +640,8 @@ export default function ProductsPage() {
               <ImageUploadField label="Imagen 5" bucketId={PRODUCTS_BUCKET_ID}
                 value={modal.data.IMAGEURL5 || ''}
                 onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL5: v } } : m)} />
-              <div className="sm:col-span-2"><F label="Tags (separados por coma)" field="TAGS" /></div>
-              <div className="sm:col-span-2"><F label="Características" field="FEATURES" /></div>
+              <div className="sm:col-span-2"><FieldInput label="Tags (separados por coma)" field="TAGS" value={modal?.data.TAGS} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, TAGS: v } } : m)} /></div>
+              <div className="sm:col-span-2"><FieldInput label="Características" field="FEATURES" value={modal?.data.FEATURES} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, FEATURES: v } } : m)} /></div>
             </div>
             <div className="flex justify-end gap-3 p-5 border-t border-gray-100">
               <button onClick={() => setModal(null)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition">Cancelar</button>

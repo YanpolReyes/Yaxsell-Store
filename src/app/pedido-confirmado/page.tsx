@@ -37,12 +37,12 @@ function loadBankDetails(): BankField[] {
     }
   } catch {}
   return [
-    { key: 'holder', label: 'Titular',        value: 'No configurado', icon: <User size={14} /> },
-    { key: 'rut',    label: 'RUT',            value: 'No configurado', icon: <Hash size={14} /> },
-    { key: 'bank',   label: 'Banco',          value: 'No configurado', icon: <Building2 size={14} /> },
-    { key: 'type',   label: 'Tipo de cuenta', value: 'Cuenta Vista',   icon: <CreditCard size={14} /> },
-    { key: 'number', label: 'N° de cuenta',   value: 'No configurado', icon: <Hash size={14} /> },
-    { key: 'email',  label: 'Email',          value: 'No configurado', icon: <Mail size={14} /> },
+    { key: 'holder', label: 'Titular',        value: 'YESBELLA LTDA.',  icon: <User size={14} /> },
+    { key: 'rut',    label: 'RUT',            value: '77.270.689-8',   icon: <Hash size={14} /> },
+    { key: 'bank',   label: 'Banco',          value: 'BCI',            icon: <Building2 size={14} /> },
+    { key: 'type',   label: 'Tipo de cuenta', value: 'Cuenta Corriente', icon: <CreditCard size={14} /> },
+    { key: 'number', label: 'N° de cuenta',   value: '32590547',       icon: <Hash size={14} /> },
+    { key: 'email',  label: 'Email',          value: 'kevincoco0819@gmail.com', icon: <Mail size={14} /> },
   ];
 }
 

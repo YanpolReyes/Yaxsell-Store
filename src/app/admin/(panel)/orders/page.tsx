@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Query } from 'appwrite';
-import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Order, OrderStatus } from '@/types/admin';
 import { Search, RefreshCw, ChevronDown, Eye, AlertTriangle, X, Download, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import Link from 'next/link';
@@ -70,6 +70,27 @@ function OrdersContent() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
+
+      // If bulk cancelling, restore stock for all selected orders
+      if (newStatus === 'cancelled') {
+        const selectedOrders = orders.filter(o => selected.has(o.$id));
+        for (const order of selectedOrders) {
+          let items: { id?: string; qty?: number }[] = [];
+          try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
+          for (const item of items) {
+            if (item.id && item.qty) {
+              try {
+                const product = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id);
+                const currentStock = (product as any).STOCK || 0;
+                await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id, {
+                  STOCK: currentStock + item.qty,
+                });
+              } catch (err) { console.error('Error restoring stock for product', item.id, err); }
+            }
+          }
+        }
+      }
+
       await Promise.all([...selected].map(id =>
         databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, id, { STATUS: newStatus, UPDATEDAT: Date.now() })
       ));
@@ -84,6 +105,27 @@ function OrdersContent() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
+
+      // If cancelling, restore stock
+      if (newStatus === 'cancelled') {
+        const order = orders.find(o => o.$id === orderId);
+        if (order) {
+          let items: { id?: string; qty?: number }[] = [];
+          try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
+          for (const item of items) {
+            if (item.id && item.qty) {
+              try {
+                const product = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id);
+                const currentStock = (product as any).STOCK || 0;
+                await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id, {
+                  STOCK: currentStock + item.qty,
+                });
+              } catch (err) { console.error('Error restoring stock for product', item.id, err); }
+            }
+          }
+        }
+      }
+
       await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, {
         STATUS: newStatus,
         UPDATEDAT: Date.now(),
@@ -315,13 +357,14 @@ function OrdersContent() {
                   const isOverdue = order.STATUS === 'pending' && ageMs > 3 * 86400000;
                   return (
                     <React.Fragment key={order.$id}>
-                    <tr className={`hover:bg-gray-50 transition-colors ${selected.has(order.$id) ? 'bg-indigo-50/60' : ''} ${isOverdue ? 'bg-red-50/50' : ''}`}>
-                      <td className="px-4 py-3">
+                    <tr className={`hover:bg-gray-50 transition-colors cursor-pointer ${selected.has(order.$id) ? 'bg-indigo-50/60' : ''} ${isOverdue ? 'bg-red-50/50' : ''}`}
+                      onClick={() => window.location.href = `/admin/orders/${order.$id}`}>
+                      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                         <input type="checkbox" checked={selected.has(order.$id)}
                           onChange={() => toggleSelect(order.$id)}
                           className="w-4 h-4 rounded text-indigo-600 border-gray-300 cursor-pointer" />
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-gray-600">{order.ORDERCODE || '—'}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-indigo-600 font-semibold hover:underline">{order.ORDERCODE || '—'}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
                           <p className="font-medium text-gray-900 truncate max-w-[130px]">{order.CUSTOMERNAME}</p>
@@ -341,7 +384,7 @@ function OrdersContent() {
                         <p className="font-semibold text-gray-900">{fmt(order.TOTAL)}</p>
                         {(() => { try { const items = JSON.parse(order.ITEMS || '[]'); return items.length > 0 ? <p className="text-[10px] text-gray-400">{items.length} art.</p> : null; } catch { return null; } })()}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-center" onClick={e => e.stopPropagation()}>
                         <div className="relative inline-block">
                           <select
                             value={order.STATUS}

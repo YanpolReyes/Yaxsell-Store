@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Save, CheckCircle, CreditCard, Copy, Check } from 'lucide-react';
+import { Save, CheckCircle, CreditCard, Copy, Check, DollarSign, AlertTriangle } from 'lucide-react';
 
 interface BankDetails {
   bankAccountHolder: string;
@@ -11,16 +11,18 @@ interface BankDetails {
   bankAccountNumber: string;
   bankEmail: string;
   bankInstructions: string;
+  minimumPurchase: string;
 }
 
 const DEFAULT: BankDetails = {
-  bankAccountHolder: '',
-  bankRut: '',
-  bankName: '',
-  bankAccountType: 'Cuenta Vista',
-  bankAccountNumber: '',
-  bankEmail: '',
+  bankAccountHolder: 'YESBELLA LTDA.',
+  bankRut: '77.270.689-8',
+  bankName: 'BCI',
+  bankAccountType: 'Cuenta Corriente',
+  bankAccountNumber: '32590547',
+  bankEmail: 'kevincoco0819@gmail.com',
   bankInstructions: 'Transfiere el monto exacto del pedido y sube el comprobante para confirmar tu orden.',
+  minimumPurchase: '50000',
 };
 
 const BANK_TYPES = ['Cuenta Vista', 'Cuenta Corriente', 'Cuenta de Ahorro', 'Cuenta RUT'];
@@ -135,6 +137,36 @@ export default function PagosPage() {
             <textarea value={form.bankInstructions} onChange={e => set('bankInstructions', e.target.value)}
               className={`${inp} resize-none`} rows={3}
               placeholder="Instrucciones adicionales que verá el cliente en la página de confirmación..." />
+          </div>
+        </div>
+      </div>
+
+      {/* Mínimo de compra */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="flex items-center gap-2 mb-5">
+          <span className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
+            <DollarSign className="w-4 h-4 text-amber-600" />
+          </span>
+          <div>
+            <p className="font-semibold text-gray-900 text-sm">Monto mínimo de compra</p>
+            <p className="text-xs text-gray-500">Pedidos por debajo de este monto no podrán completarse</p>
+          </div>
+        </div>
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <label className={lbl}>Monto mínimo (CLP)</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium">$</span>
+              <input type="number" min="0" value={form.minimumPurchase} onChange={e => set('minimumPurchase', e.target.value)}
+                className={`${inp} pl-7`} placeholder="50000" />
+            </div>
+          </div>
+          <div className="pb-2">
+            <p className="text-xs text-gray-500">
+              {Number(form.minimumPurchase) > 0
+                ? <>Mínimo: <strong className="text-gray-800">${Number(form.minimumPurchase).toLocaleString('es-CL')}</strong></>
+                : <span className="text-amber-600 flex items-center gap-1"><AlertTriangle className="w-3 h-3" />Sin mínimo</span>}
+            </p>
           </div>
         </div>
       </div>

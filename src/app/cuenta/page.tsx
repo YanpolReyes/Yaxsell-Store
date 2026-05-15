@@ -12,6 +12,7 @@ import {
 
 import { useAuth } from '@/hooks/useAuth';
 import LoyaltyPoints from '@/components/LoyaltyPoints';
+import { useCuentaBg } from './CuentaBgContext';
 
 const FF = '"DM Sans",system-ui,sans-serif';
 const PINK = '#ec4899';
@@ -20,12 +21,12 @@ interface MenuItem { icon: any; label: string; href: string; desc?: string; badg
 
 const MIS_COMPRAS_ITEMS: MenuItem[] = [
   { icon: Receipt,      label: 'Mis Pedidos',   href: '/cuenta/pedidos',    desc: 'Seguí el estado de tus pedidos' },
-  { icon: Heart,        label: 'Mis Favoritos', href: '/favoritos',         desc: 'Productos que guardaste' },
+  { icon: Heart,        label: 'Mis Favoritos', href: '/cuenta/favoritos',  desc: 'Productos que guardaste' },
   { icon: ShoppingCart, label: 'Mi Carrito',    href: '/carrito',           desc: 'Productos en tu carrito' },
 ];
 
 const CUENTA_ITEMS: MenuItem[] = [
-  { icon: User,   label: 'Información Personal', href: '/cuenta/perfil',      desc: 'Nombre, foto de perfil y portada' },
+  { icon: User,   label: 'Información Personal', href: '/cuenta',      desc: 'Nombre, foto de perfil y portada' },
   { icon: Phone,  label: 'Datos de Contacto',    href: '/cuenta/info',        desc: 'Teléfono y RUT guardados' },
   { icon: MapPin, label: 'Mis Direcciones',       href: '/cuenta/direcciones', desc: 'Direcciones de envío guardadas' },
 ];
@@ -40,10 +41,9 @@ const CONFIG_ITEMS: MenuItem[] = [
 const ALL_CARDS: MenuItem[] = [...MIS_COMPRAS_ITEMS, ...CUENTA_ITEMS, ...CONFIG_ITEMS];
 
 const SIDEBAR_NAV = [
-  { icon: ShoppingBag, label: 'Compras',        href: '/cuenta/pedidos'        },
-  { icon: Heart,       label: 'Favoritos',      href: '/favoritos'             },
+  { icon: ShoppingBag, label: 'Pedidos',       href: '/cuenta/pedidos'        },
+  { icon: Heart,       label: 'Favoritos',      href: '/cuenta/favoritos'      },
   { icon: Bell,        label: 'Notificaciones', href: '/cuenta/notificaciones' },
-  { icon: User,        label: 'Mi perfil',      href: '/cuenta/perfil'         },
   { icon: MapPin,      label: 'Direcciones',    href: '/cuenta/direcciones'    },
   { icon: HelpCircle,  label: 'Soporte',        href: '/cuenta/tickets'        },
 ];
@@ -53,8 +53,11 @@ function getFilePreviewUrl(fileId: string): string {
   return `${endpoint}/storage/buckets/${USER_PHOTOS_BUCKET}/files/${fileId}/view?project=${projectId}`;
 }
 
+const BG_CUENTA = 'https://t4.ftcdn.net/jpg/06/51/36/51/360_F_651365167_W04PhefXV6zXetrfI0KG9uwWBMjbaYX4.jpg';
+
 export default function CuentaPage() {
   const { user, isLoggedIn, isLoading, logout } = useAuth();
+  useCuentaBg(BG_CUENTA);
   const router = useRouter();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
@@ -113,32 +116,21 @@ export default function CuentaPage() {
   const initials = user.name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fafafa', fontFamily: FF }}>
+    <>
       <style>{`
         .cuenta-desktop { display: none }
         .cuenta-mobile  { display: block }
         @media (min-width: 900px) {
-          .cuenta-desktop { display: flex !important }
+          .cuenta-desktop { display: block !important }
           .cuenta-mobile  { display: none !important }
         }
 
-        .sb-link {
-          display: flex; align-items: center; justify-content: space-between; gap: 12px;
-          padding: 11px 14px; border-radius: 10px;
-          text-decoration: none; color: #4b5563; font-size: 14px; font-weight: 500;
-          width: 100%; box-sizing: border-box; border: none; background: transparent; cursor: pointer;
-          font-family: ${FF}; transition: all 0.18s;
-        }
-        .sb-link:hover { background: #f9fafb; color: #1a1a1a; }
-        .sb-link.active { background: #fef2f8; color: ${PINK}; font-weight: 700; }
-        .sb-link-content { display: flex; align-items: center; gap: 12px; }
-
         .dcard {
-          display: flex; flex-direction: column;
-          background: #fff; border-radius: 16px;
-          padding: 22px; text-decoration: none;
+          display: flex; flex-direction: row; align-items: center;
+          background: #fff; border-radius: 18px;
+          padding: 24px; text-decoration: none;
           border: 1px solid #f0f0f0;
-          min-height: 160px; box-sizing: border-box;
+          min-height: 100px; box-sizing: border-box;
           transition: all 0.2s ease;
         }
         .dcard:hover {
@@ -149,94 +141,44 @@ export default function CuentaPage() {
         .dcard:hover .dcard-icon-wrap { background: ${PINK}; }
         .dcard:hover .dcard-icon-wrap svg { stroke: #fff; }
         .dcard-icon-wrap {
-          width: 42px; height: 42px; border-radius: 11px;
+          width: 52px; height: 52px; border-radius: 14px;
           background: #fef2f8;
           display: flex; align-items: center; justify-content: center;
-          margin-bottom: 14px;
+          margin-right: 18px; flex-shrink: 0;
           transition: background 0.2s;
         }
         .dcard-icon-wrap svg { transition: stroke 0.2s; }
       `}</style>
 
       {/* ════════════════ DESKTOP ════════════════ */}
-      <div className="cuenta-desktop" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 60px', gap: 28, boxSizing: 'border-box' }}>
-
-        {/* ── Sidebar ── */}
-        <aside style={{ width: 260, flexShrink: 0 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: 16, border: '1px solid #f0f0f0', position: 'sticky', top: 24 }}>
-            {/* Profile mini */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 6px 16px', borderBottom: '1px solid #f3f4f6', marginBottom: 8 }}>
-              <div style={{ width: 44, height: 44, borderRadius: '50%', background: avatarUrl ? 'transparent' : '#fef2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, color: PINK, fontWeight: 700, fontSize: 15 }}>
-                {avatarUrl ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#1a1a1a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name}</p>
-                <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9ca3af', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email}</p>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {SIDEBAR_NAV.map(({ icon: Icon, label, href }) => {
-                const isActive = label === 'Mi perfil';
-                return (
-                  <Link key={label} href={href} className={`sb-link ${isActive ? 'active' : ''}`}>
-                    <div className="sb-link-content">
-                      <Icon size={18} strokeWidth={2} />
-                      <span>{label}</span>
-                    </div>
-                    <ChevronRight size={14} style={{ opacity: 0.3 }} />
-                  </Link>
-                );
-              })}
-
-              <div style={{ height: 1, background: '#f3f4f6', margin: '8px 0' }}></div>
-
-              <button onClick={handleLogout} className="sb-link" style={{ color: '#dc2626' }}>
-                <div className="sb-link-content">
-                  <LogOut size={18} strokeWidth={2} />
-                  <span>Cerrar sesión</span>
-                </div>
-              </button>
-            </div>
+      <div className="cuenta-desktop" style={{ display: 'none' }}>
+        {/* Hero header */}
+        <div style={{ background: '#fff', borderRadius: 20, marginBottom: 24, border: '1px solid #f0f0f0', overflow: 'hidden' }}>
+          <div style={{ height: 160, background: coverUrl ? 'none' : 'linear-gradient(135deg,#fef2f8,#fce7f3)', position: 'relative', overflow: 'hidden' }}>
+            {coverUrl && <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(to bottom,transparent,#fff)' }} />
           </div>
-        </aside>
-
-        {/* ── Contenido principal ── */}
-        <main style={{ flex: 1, minWidth: 0 }}>
-
-          {/* Hero header */}
-          <div style={{ background: '#fff', borderRadius: 20, marginBottom: 24, border: '1px solid #f0f0f0', overflow: 'hidden' }}>
-            {/* Cover band */}
-            <div style={{ height: 160, background: coverUrl ? 'none' : 'linear-gradient(135deg,#fef2f8,#fce7f3)', position: 'relative', overflow: 'hidden' }}>
-              {coverUrl && <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-              {/* Gradient fade to white at bottom */}
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(to bottom,transparent,#fff)' }} />
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 20, padding: '0 28px 32px', marginTop: -55, position: 'relative', zIndex: 2 }}>
+            <div style={{ width: 130, height: 130, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, fontWeight: 800, color: PINK, flexShrink: 0, overflow: 'hidden', border: '4px solid #fff', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
+              {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
             </div>
-            {/* Avatar + info — overlaps cover */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 20, padding: '0 28px 32px', marginTop: -55, position: 'relative', zIndex: 2 }}>
-              <div style={{ width: 130, height: 130, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, fontWeight: 800, color: PINK, flexShrink: 0, overflow: 'hidden', border: '4px solid #fff', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
-                {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
-              </div>
-              <div style={{ paddingBottom: 6, flex: 1 }}>
-                <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.02em' }}>¡Hola, {user.name.split(' ')[0]}!</h1>
-                <p style={{ margin: '4px 0 0', fontSize: 14, color: '#6b7280' }}>{user.email}</p>
-              </div>
-              <Link href="/cuenta/perfil" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 18px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 10, textDecoration: 'none', marginBottom: 6 }}>
-                Editar perfil <ChevronRight size={14} />
-              </Link>
+            <div style={{ paddingBottom: 6, flex: 1 }}>
+              <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.02em' }}>¡Hola, {user.name.split(' ')[0]}!</h1>
+              <p style={{ margin: '4px 0 0', fontSize: 14, color: '#6b7280' }}>{user.email}</p>
             </div>
+            <Link href="/cuenta" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 18px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 10, textDecoration: 'none', marginBottom: 6 }}>
+              Editar perfil <ChevronRight size={14} />
+            </Link>
           </div>
+        </div>
 
-          {/* Loyalty Points */}
-          <div style={{ marginBottom: 24 }}>
-            <LoyaltyPoints />
-          </div>
+        <div style={{ marginBottom: 24 }}>
+          <LoyaltyPoints />
+        </div>
 
-          {/* Grid 3 columnas */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-            {ALL_CARDS.map(item => <DesktopCard key={item.label} item={item} />)}
-          </div>
-        </main>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
+          {ALL_CARDS.map(item => <DesktopCard key={item.label} item={item} />)}
+        </div>
       </div>
 
       {/* ════════════════ MOBILE ════════════════ */}
@@ -250,7 +192,6 @@ export default function CuentaPage() {
           ) : (
             <div style={{ height: 110, background: 'linear-gradient(135deg,#fef2f8,#fce7f3)' }} />
           )}
-          {/* Avatar floating over cover */}
           <div style={{ position: 'absolute', bottom: 0, left: 16, display: 'flex', alignItems: 'flex-end', gap: 14 }}>
             <div style={{ width: 96, height: 96, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 800, color: PINK, overflow: 'hidden', border: '4px solid #fff', boxShadow: '0 4px 14px rgba(0,0,0,0.1)' }}>
               {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
@@ -260,15 +201,15 @@ export default function CuentaPage() {
         <div style={{ background: '#fff', padding: '16px 16px 20px', borderBottom: '1px solid #f0f0f0' }}>
           <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#1a1a1a', lineHeight: 1.2 }}>¡Hola, {user.name.split(' ')[0]}!</p>
           <p style={{ margin: '2px 0 0', fontSize: 13, color: '#6b7280' }}>{user.email}</p>
-          <Link href="/cuenta/perfil" style={{ display: 'inline-block', marginTop: 10, padding: '8px 14px', background: PINK, color: '#fff', fontSize: 12, fontWeight: 700, textDecoration: 'none', borderRadius: 8 }}>Editar perfil →</Link>
+          <Link href="/cuenta" style={{ display: 'inline-block', marginTop: 10, padding: '8px 14px', background: PINK, color: '#fff', fontSize: 12, fontWeight: 700, textDecoration: 'none', borderRadius: 8 }}>Editar perfil →</Link>
         </div>
 
-        <div style={{ maxWidth: 700, margin: '0 auto', padding: '16px 12px 40px' }}>
+        <div style={{ maxWidth: 700, margin: '0 auto', padding: '12px 8px 40px' }}>
           <div style={{ marginBottom: 12 }}>
             <LoyaltyPoints />
           </div>
 
-          <Section title="Mis Compras">{MIS_COMPRAS_ITEMS.map(item => <MenuRow key={item.label} item={item} />)}</Section>
+          <Section title="Mis Pedidos">{MIS_COMPRAS_ITEMS.map(item => <MenuRow key={item.label} item={item} />)}</Section>
           <Section title="Cuenta">{CUENTA_ITEMS.map(item => <MenuRow key={item.label} item={item} />)}</Section>
           <Section title="Configuración">{CONFIG_ITEMS.map(item => <MenuRow key={item.label} item={item} />)}</Section>
 
@@ -284,7 +225,7 @@ export default function CuentaPage() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -295,12 +236,12 @@ function DesktopCard({ item }: { item: MenuItem }) {
   return (
     <Link href={item.href} className="dcard">
       <div className="dcard-icon-wrap">
-        <Icon size={20} color={PINK} strokeWidth={2} />
+        <Icon size={22} color={PINK} strokeWidth={2} />
       </div>
-      <div style={{ marginTop: 'auto' }}>
-        <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 700, color: '#1a1a1a', letterSpacing: '-0.01em' }}>{item.label}</p>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700, color: '#1a1a1a', letterSpacing: '-0.01em' }}>{item.label}</p>
         {item.desc && (
-          <p style={{ margin: 0, fontSize: 13, color: '#9ca3af', lineHeight: 1.4 }}>{item.desc}</p>
+          <p style={{ margin: 0, fontSize: 14, color: '#9ca3af', lineHeight: 1.4 }}>{item.desc}</p>
         )}
       </div>
     </Link>
@@ -310,7 +251,7 @@ function DesktopCard({ item }: { item: MenuItem }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #f0f0f0', marginBottom: 12, overflow: 'hidden' }}>
-      <p style={{ margin: 0, padding: '14px 16px 6px', fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.08em' }}>
+      <p style={{ margin: 0, padding: '16px 18px 6px', fontSize: 12, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.08em' }}>
         {title}
       </p>
       {children}
@@ -322,14 +263,14 @@ function MenuRow({ item }: { item: MenuItem }) {
   const Icon = item.icon;
   return (
     <Link href={item.href}
-      style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', textDecoration: 'none', borderTop: '1px solid #f9fafb', transition: 'background .15s' }}
+      style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', textDecoration: 'none', borderTop: '1px solid #f9fafb', transition: 'background .15s' }}
       onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#fafafa'}
       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}
     >
-      <div style={{ width: 36, height: 36, borderRadius: 9, background: '#fef2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <Icon size={17} color={PINK} />
+      <div style={{ width: 40, height: 40, borderRadius: 10, background: '#fef2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Icon size={19} color={PINK} />
       </div>
-      <span style={{ flex: 1, fontSize: 14, color: '#1a1a1a', fontWeight: 600 }}>{item.label}</span>
+      <span style={{ flex: 1, fontSize: 15, color: '#1a1a1a', fontWeight: 600 }}>{item.label}</span>
       {item.badge !== undefined && (
         <span style={{ minWidth: 20, height: 20, padding: '0 6px', borderRadius: 10, background: item.badgeColor || PINK, color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {item.badge}

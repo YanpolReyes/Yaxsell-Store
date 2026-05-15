@@ -33,6 +33,7 @@ export default function ProductDetailPlantilla1() {
   const [related, setRelated] = useState<Product[]>([]);
   const [categoryName, setCategoryName] = useState('');
   const [categoryBg, setCategoryBg] = useState('');
+  const [categoryBgLoaded, setCategoryBgLoaded] = useState(false);
   const [categoryColor, setCategoryColor] = useState(PINK_PRIMARY);
   const [categoryIcon, setCategoryIcon] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -75,7 +76,7 @@ export default function ProductDetailPlantilla1() {
             ]);
             const cat = catDoc as any;
             setCategoryName(cat.name || '');
-            setCategoryBg(cat.BACKGROUND_IMAGE_URL || '');
+            setCategoryBg(cat.BACKGROUND_IMAGE_URL || 'https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2Fyoung-asian-woman-sunglasses-going-shopping-holding-bags-from-malls-stores-smiling-standi.jpg?alt=media&token=515133e5-8477-4c58-948c-e28477f1f912');
             setCategoryColor(cat.COLOR || PINK_PRIMARY);
             setCategoryIcon(cat.iconUrl || '');
             setRelated((relRes.documents as unknown as Product[]).filter(r => r.$id !== id).slice(0, 6));
@@ -200,10 +201,14 @@ export default function ProductDetailPlantilla1() {
         position: 'relative', width: '100%', height: 600, overflow: 'hidden',
         background: categoryBg ? '#000' : `linear-gradient(135deg, ${PINK_PRIMARY} 0%, ${PINK_LIGHT} 50%, ${PINK_BG_DARK} 100%)`,
       }}>
+        {categoryBg && !categoryBgLoaded && (
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,#fef2f8,#fce7f3,#fef2f8)', backgroundSize: '200% 100%', animation: 'skeletonShimmer 1.5s ease infinite' }} />
+        )}
         {categoryBg
-          ? <Image src={categoryBg} alt={categoryName} fill style={{ objectFit: 'cover', opacity: 0.7 }} />
+          ? <Image src={categoryBg} alt={categoryName} fill style={{ objectFit: 'cover', opacity: 0.9 }} onLoad={() => setCategoryBgLoaded(true)} />
           : null}
         <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to bottom, transparent 0%, transparent 50%, #f5f5f5 100%)` }} />
+        <style>{`@keyframes skeletonShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
       </div>
 
       <div className="pd-container" style={{ maxWidth: 1400, margin: '-550px auto 0', padding: '0 16px 16px', position: 'relative', zIndex: 2 }}>
@@ -362,7 +367,7 @@ export default function ProductDetailPlantilla1() {
           {/* Column 3: Sticky buy box */}
           <div style={{ position: 'sticky', top: 16, background: '#fff', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 16, padding: '18px 18px 22px', boxShadow: '0 4px 16px rgba(236,72,153,0.08)' }}>
             <p style={{ margin: '0 0 4px', fontSize: 14, color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Truck size={15} /> Llega gratis
+              <Truck size={15} /> Llega entre hoy y mañana
             </p>
             <p style={{ margin: '0 0 12px', fontSize: 13, color: TEXT_MUTED }}>
               Envío disponible a todo Chile. <Link href="#" style={{ color: PINK_PRIMARY, textDecoration: 'none', fontWeight: 500 }}>Más detalles</Link>

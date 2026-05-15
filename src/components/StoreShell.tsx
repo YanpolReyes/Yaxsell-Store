@@ -10,8 +10,7 @@ import { useTemplate } from '@/context/TemplateContext';
 const FOOTER_LINKS = [
   { title: 'Tienda', items: [
     { label: 'Productos', href: '/productos' },
-    { label: 'Ofertas', href: '/productos?sort=offers' },
-    { label: 'Categorías', href: '/productos' },
+    { label: 'Mis Pedidos', href: '/cuenta/pedidos' },
     { label: 'Clips', href: '/clips' },
   ]},
   { title: 'Mi cuenta', items: [
@@ -32,9 +31,8 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
   const { template } = useTemplate();
   const isAdmin       = pathname.startsWith('/admin');
   const isAuth        = pathname.startsWith('/login');
-  const isCuentaSub   = pathname.startsWith('/cuenta/');
 
-  if (isAdmin || isAuth || isCuentaSub) {
+  if (isAdmin || isAuth) {
     return <>{children}</>;
   }
 

@@ -236,19 +236,9 @@ export default function InventarioPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      // Carga TODOS los productos (incluyendo inactivos) con paginación
-      const allProds: Product[] = [];
-      let cursor: string | undefined;
-      while (true) {
-        const queries: string[] = [Query.limit(100)];
-        if (cursor) queries.push(Query.cursorAfter(cursor));
-        const resp: any = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
-        const docs = resp.documents as unknown as Product[];
-        if (!docs.length) break;
-        allProds.push(...docs);
-        if (docs.length < 100) break;
-        cursor = (docs[docs.length - 1] as any).$id;
-      }
+      // Carga TODOS los productos en una sola consulta
+      const resp: any = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(1000)]);
+      const allProds = resp.documents as unknown as Product[];
       const [cr, sr] = await Promise.all([
         databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]),
         databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.limit(500)]),

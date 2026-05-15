@@ -33,6 +33,7 @@ function ProductosInner() {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
   const [activePriceRange, setActivePriceRange] = useState<[number, number] | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const { addItem } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
 
@@ -58,22 +59,22 @@ function ProductosInner() {
         if (found) setSelectedCat(found.$id);
       }
 
-      // 3. Cargar productos con el ID resuelto
-      const queries: string[] = [Query.limit(100)];
-      if (catIdToUse) queries.push(Query.equal('CATEGORYID', catIdToUse));
-      if (selectedSubcat) queries.push(Query.equal('SUBCATEGORYID', selectedSubcat));
+      // 3. Cargar TODOS los productos (filtrado client-side)
+      const queries: string[] = [Query.limit(1000), Query.greaterThan('STOCK', 0)];
       if (sortBy === 'newest') queries.push(Query.orderDesc('$createdAt'));
       else if (sortBy === 'price_asc') queries.push(Query.orderAsc('PRICE'));
       else if (sortBy === 'price_desc') queries.push(Query.orderDesc('PRICE'));
 
+      console.log('📦 Loading products with config:', { databaseId, collection: PRODUCTS_COLLECTION, queries });
       const prodRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, queries);
-      setProducts((prodRes.documents as unknown as Product[]).filter(p => (p.STOCK || 0) > 0));
+      console.log('📦 Products loaded:', prodRes.documents.length, 'total:', prodRes.total);
+      setProducts(prodRes.documents as unknown as Product[]);
 
       // 4. Cargar subcategorías para la categoría seleccionada
-      if (catIdToUse) {
+      if (catIdToUse || selectedCat) {
         try {
           const subRes = await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [
-            Query.equal('categoryId', catIdToUse),
+            Query.equal('categoryId', catIdToUse || selectedCat),
             Query.orderAsc('ORDER'),
             Query.limit(50),
           ]);
@@ -107,6 +108,10 @@ function ProductosInner() {
   }, [products]);
 
   const filtered = products.filter(p => {
+    // Category filter (client-side)
+    if (selectedCat && p.CATEGORYID !== selectedCat) return false;
+    // Subcategory filter (client-side)
+    if (selectedSubcat && p.SUBCATEGORYID !== selectedSubcat) return false;
     // Tag filter
     if (selectedTag) {
       const pTags = !p.TAGS ? [] : typeof p.TAGS === 'string' ? (p.TAGS as string).split(',').map(t => t.trim()) : (p.TAGS as string[]);
@@ -128,9 +133,18 @@ function ProductosInner() {
     setActivePriceRange(priceRange);
   };
 
+  // Product count per category
+  const catCountMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    products.forEach(p => {
+      if (p.CATEGORYID) map[p.CATEGORYID] = (map[p.CATEGORYID] || 0) + 1;
+    });
+    return map;
+  }, [products]);
+
   // Sidebar filters component (shared between desktop and mobile drawer)
   const FiltersSidebar = () => (
-    <div style={{ background: '#fff', borderRadius: 20, padding: 22, border: '1px solid #fce7f3', boxShadow: '0 4px 16px rgba(236,72,153,0.06)' }}>
+    <div style={{ background: 'rgba(255,255,255,0.86)', borderRadius: 24, padding: 22, border: '1px solid rgba(252,231,243,0.95)', boxShadow: '0 14px 40px rgba(236,72,153,0.1)', backdropFilter: 'blur(14px)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
         <h3 style={{ fontSize: 15, fontWeight: 800, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
           <SlidersHorizontal size={16} color="#ec4899" /> Filtros
@@ -142,41 +156,9 @@ function ProductosInner() {
         )}
       </div>
 
-      {/* Categorías */}
-      <div style={{ marginBottom: 18 }}>
-        <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>Categorías</p>
-        <button onClick={() => { setSelectedCat(''); setSelectedSubcat(''); }}
-          style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: !selectedCat ? 700 : 500, color: !selectedCat ? '#ec4899' : '#6b7280', background: !selectedCat ? '#fef2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 4, transition: 'all 0.15s' }}>
-          ✨ Todas
-        </button>
-        {categories.map(c => (
-          <button key={c.$id} onClick={() => { setSelectedCat(c.$id); setSelectedSubcat(''); }}
-            style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: selectedCat === c.$id ? 700 : 500, color: selectedCat === c.$id ? '#ec4899' : '#6b7280', background: selectedCat === c.$id ? '#fef2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 4, transition: 'all 0.15s' }}>
-            {c.name}
-          </button>
-        ))}
-      </div>
-
-      {/* Subcategorías */}
-      {subcategories.length > 0 && selectedCat && (
-        <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px solid #fce7f3' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>Subcategorías</p>
-          <button onClick={() => setSelectedSubcat('')}
-            style={{ width: '100%', textAlign: 'left', padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: !selectedSubcat ? 700 : 500, color: !selectedSubcat ? '#ec4899' : '#9ca3af', background: !selectedSubcat ? '#fef2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 3 }}>
-            Todas
-          </button>
-          {subcategories.map(sc => (
-            <button key={sc.$id} onClick={() => setSelectedSubcat(sc.$id)}
-              style={{ width: '100%', textAlign: 'left', padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: selectedSubcat === sc.$id ? 700 : 500, color: selectedSubcat === sc.$id ? '#ec4899' : '#9ca3af', background: selectedSubcat === sc.$id ? '#fef2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 3 }}>
-              {sc.name}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Precio */}
+      {/* Precio — FIRST */}
       {priceRange[1] > 0 && activePriceRange && (
-        <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px solid #fce7f3' }}>
+        <div style={{ marginBottom: 18 }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>Precio</p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, color: '#ec4899', marginBottom: 10 }}>
             <span>{formatPrice(activePriceRange[0])}</span>
@@ -192,6 +174,53 @@ function ProductosInner() {
             <input type="number" value={activePriceRange[1]} onChange={e => setActivePriceRange([activePriceRange[0], Number(e.target.value) || 0])}
               style={{ flex: 1, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #fce7f3', fontSize: 12, color: '#111', outline: 'none', fontFamily: 'inherit' }} placeholder="Max" />
           </div>
+        </div>
+      )}
+
+      {/* Categorías */}
+      <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px solid #fce7f3' }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>Categorías</p>
+        <button onClick={() => { setSelectedCat(''); setSelectedSubcat(''); }}
+          style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: !selectedCat ? 700 : 500, color: !selectedCat ? '#ec4899' : '#6b7280', background: !selectedCat ? '#fef2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 4, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: !selectedCat ? '#ec4899' : '#d1d5db', flexShrink: 0 }} />
+          <span style={{ flex: 1 }}>Todas</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{products.length}</span>
+        </button>
+        {categories.map(c => {
+          const count = catCountMap[c.$id] || 0;
+          if (count === 0) return null;
+          return (
+            <button key={c.$id} onClick={() => { setSelectedCat(c.$id); setSelectedSubcat(''); }}
+              style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: selectedCat === c.$id ? 700 : 500, color: selectedCat === c.$id ? '#ec4899' : '#6b7280', background: selectedCat === c.$id ? '#fef2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 4, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: selectedCat === c.$id ? '#ec4899' : '#d1d5db', flexShrink: 0 }} />
+              <span style={{ flex: 1 }}>{c.name}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: selectedCat === c.$id ? '#fce7f3' : '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Subcategorías */}
+      {subcategories.length > 0 && selectedCat && (
+        <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px solid #fce7f3' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>Subcategorías</p>
+          <button onClick={() => setSelectedSubcat('')}
+            style={{ width: '100%', textAlign: 'left', padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: !selectedSubcat ? 700 : 500, color: !selectedSubcat ? '#ec4899' : '#9ca3af', background: !selectedSubcat ? '#fef2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: !selectedSubcat ? '#ec4899' : '#d1d5db', flexShrink: 0 }} />
+            Todas
+          </button>
+          {subcategories.map(sc => {
+            const scCount = products.filter(p => p.SUBCATEGORYID === sc.$id).length;
+            if (scCount === 0) return null;
+            return (
+              <button key={sc.$id} onClick={() => setSelectedSubcat(sc.$id)}
+                style={{ width: '100%', textAlign: 'left', padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: selectedSubcat === sc.$id ? 700 : 500, color: selectedSubcat === sc.$id ? '#ec4899' : '#9ca3af', background: selectedSubcat === sc.$id ? '#fef2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: selectedSubcat === sc.$id ? '#ec4899' : '#d1d5db', flexShrink: 0 }} />
+                <span style={{ flex: 1 }}>{sc.name}</span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: '#9ca3af', background: '#f3f4f6', padding: '2px 6px', borderRadius: 999 }}>{scCount}</span>
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -217,45 +246,81 @@ function ProductosInner() {
   );
 
   return (
-    <div style={{ fontFamily: FF, background: 'linear-gradient(180deg,#fff5f8 0%,#fff 280px)', minHeight: '100vh' }}>
-      <div className="pk-products-container" style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 20px 60px' }}>
+    <div style={{ fontFamily: FF, minHeight: '100vh', position: 'relative' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden' }}>
+        <img src="https://img.freepik.com/free-psd/3d-rendering-beauty-banner_23-2150159867.jpg?semt=ais_hybrid&w=740&q=80" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(4px) brightness(1.08) saturate(1.08)', transform: 'scale(1.15)', animation: 'pkBgFloat 20s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 15% 10%,rgba(236,72,153,0.16),transparent 32%), linear-gradient(180deg,rgba(255,245,248,0.72) 0%,rgba(255,255,255,0.92) 100%)' }} />
+      </div>
+      <div className="pk-products-container" style={{ position: 'relative', zIndex: 1, maxWidth: 1600, margin: '0 auto', padding: '32px 20px 60px' }}>
         {/* Hero header */}
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#fef2f8', color: '#ec4899', padding: '5px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 10 }}>
-            <Sparkles size={13} /> Nuestra tienda
+        <div className="pk-hero-header" style={{ marginBottom: 24, padding: 24, borderRadius: 28, background: 'rgba(255,255,255,0.68)', border: '1px solid rgba(252,231,243,0.9)', boxShadow: '0 18px 50px rgba(236,72,153,0.12)', backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
+            <img src="https://kevincoco-official.com/cdn/shop/files/52f32db865885fc4a91bee12d6b70ff0.jpg?v=1763188428&width=2528" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }} />
           </div>
-          <h1 className="pk-products-title" style={{ fontSize: 36, fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-            Productos
-          </h1>
-          <p style={{ fontSize: 14, color: '#6b7280', margin: '6px 0 0' }}>
-            Descubrí nuestra selección de productos exclusivos
-          </p>
+          <div className="pk-hero-text" style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.92)', color: '#ec4899', padding: '6px 13px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 10, border: '1px solid #fce7f3' }}>
+              <Sparkles size={13} /> Nuestra tienda
+            </div>
+            <h1 className="pk-products-title" style={{ fontSize: 42, fontWeight: 950, color: '#fff', margin: 0, letterSpacing: '-0.04em', lineHeight: 1.05 }}>
+              Productos
+            </h1>
+            <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.95)', margin: '8px 0 18px', maxWidth: 520, lineHeight: 1.55 }}>
+              Descubrí nuestra selección de productos exclusivos
+            </p>
+            <div className="pk-hero-stats" style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              <div style={{ padding: '9px 14px', borderRadius: 16, background: 'rgba(255,255,255,0.92)', border: '1px solid #fce7f3', boxShadow: '0 4px 14px rgba(236,72,153,0.15)' }}>
+                <span style={{ display: 'block', fontSize: 18, fontWeight: 900, color: '#ec4899' }}>{products.length}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Productos</span>
+              </div>
+              <div style={{ padding: '9px 14px', borderRadius: 16, background: 'rgba(255,255,255,0.92)', border: '1px solid #fce7f3', boxShadow: '0 4px 14px rgba(236,72,153,0.15)' }}>
+                <span style={{ display: 'block', fontSize: 18, fontWeight: 900, color: '#ec4899' }}>{categories.length}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Categorías</span>
+              </div>
+            </div>
+          </div>
+          <div className="pk-hero-logo" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
+            <img src="https://jumpseller.s3.eu-west-1.amazonaws.com/store/yes-bella/assets//Sin%20t%C3%ADtulo-1_5d514a8074f0023fe88b0eacda93c729.png?1743456840" alt="Logo" className="pk-hero-logo" style={{ height: 100, objectFit: 'contain' }} />
+          </div>
         </div>
 
         {/* Top toolbar */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20, alignItems: 'center' }}>
-          <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
+        <div className="pk-toolbar" style={{ position: 'sticky', top: 10, zIndex: 20, display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20, alignItems: 'center', padding: 12, borderRadius: 22, background: 'rgba(255,255,255,0.74)', border: '1px solid rgba(252,231,243,0.9)', backdropFilter: 'blur(16px)', boxShadow: '0 10px 34px rgba(236,72,153,0.1)' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
             <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#ec4899' }} />
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Buscar productos..."
-              style={{ width: '100%', padding: '12px 38px 12px 42px', borderRadius: 14, border: '1.5px solid #fce7f3', background: '#fff', fontSize: 14, color: '#111', outline: 'none', boxShadow: '0 2px 8px rgba(236,72,153,0.05)', fontFamily: 'inherit', transition: 'all 0.2s' }}
+              style={{ width: '100%', padding: '13px 38px 13px 42px', borderRadius: 16, border: '1.5px solid #fce7f3', background: '#fff', fontSize: 14, color: '#111', outline: 'none', boxShadow: '0 2px 8px rgba(236,72,153,0.05)', fontFamily: 'inherit', transition: 'all 0.2s', minWidth: 0 }}
               onFocus={e => { e.currentTarget.style.borderColor = '#ec4899'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(236,72,153,0.1)'; }}
               onBlur={e => { e.currentTarget.style.borderColor = '#fce7f3'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(236,72,153,0.05)'; }} />
             {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: '#fef2f8', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ec4899' }}><X size={14} /></button>}
           </div>
 
-          <button onClick={() => setMobileFiltersOpen(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '12px 16px', borderRadius: 14, border: '1.5px solid #fce7f3', background: '#fff', fontSize: 13, fontWeight: 700, color: '#ec4899', cursor: 'pointer', fontFamily: 'inherit' }} className="md:hidden">
+          <button onClick={() => setMobileFiltersOpen(true)} style={{ alignItems: 'center', gap: 7, padding: '12px 16px', borderRadius: 14, border: '1.5px solid #fce7f3', background: '#fff', fontSize: 13, fontWeight: 700, color: '#ec4899', cursor: 'pointer', fontFamily: 'inherit' }} className="md:hidden">
             <SlidersHorizontal size={15} /> Filtros
           </button>
 
           <div style={{ position: 'relative' }}>
-            <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-              style={{ appearance: 'none', padding: '12px 38px 12px 16px', borderRadius: 14, border: '1.5px solid #fce7f3', background: '#fff', fontSize: 13, color: '#111', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minWidth: 180 }}>
-              <option value="newest">✨ Más recientes</option>
-              <option value="price_asc">↑ Precio: menor a mayor</option>
-              <option value="price_desc">↓ Precio: mayor a menor</option>
-            </select>
-            <ChevronDown size={15} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#ec4899', pointerEvents: 'none' }} />
+            <button onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+              className="pk-sort-btn" style={{ padding: '12px 38px 12px 16px', borderRadius: 14, border: '1.5px solid #fce7f3', background: '#fff', fontSize: 13, color: '#111', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              {sortBy === 'newest' ? 'Más recientes' : sortBy === 'price_asc' ? '↑ Precio: menor a mayor' : '↓ Precio: mayor a menor'}
+              <ChevronDown size={15} style={{ color: '#ec4899', transition: 'transform 0.2s', transform: sortDropdownOpen ? 'rotate(180deg)' : 'none' }} />
+            </button>
+            {sortDropdownOpen && (
+              <>
+                <div onClick={() => setSortDropdownOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
+                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, background: '#fff', borderRadius: 14, border: '1.5px solid #fce7f3', boxShadow: '0 10px 30px rgba(236,72,153,0.15)', zIndex: 100, overflow: 'hidden' }}>
+                  <button onClick={() => { setSortBy('newest'); setSortDropdownOpen(false); }} style={{ width: '100%', padding: '10px 14px', background: sortBy === 'newest' ? '#fef2f8' : 'transparent', color: sortBy === 'newest' ? '#ec4899' : '#111', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: sortBy === 'newest' ? 700 : 500, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
+                    Más recientes
+                  </button>
+                  <button onClick={() => { setSortBy('price_asc'); setSortDropdownOpen(false); }} style={{ width: '100%', padding: '10px 14px', background: sortBy === 'price_asc' ? '#fef2f8' : 'transparent', color: sortBy === 'price_asc' ? '#ec4899' : '#111', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: sortBy === 'price_asc' ? 700 : 500, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
+                    ↑ Precio: menor a mayor
+                  </button>
+                  <button onClick={() => { setSortBy('price_desc'); setSortDropdownOpen(false); }} style={{ width: '100%', padding: '10px 14px', background: sortBy === 'price_desc' ? '#fef2f8' : 'transparent', color: sortBy === 'price_desc' ? '#ec4899' : '#111', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: sortBy === 'price_desc' ? 700 : 500, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
+                    ↓ Precio: mayor a menor
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
           <div style={{ display: 'flex', background: '#fff', borderRadius: 14, border: '1.5px solid #fce7f3', overflow: 'hidden' }}>
@@ -266,7 +331,7 @@ function ProductosInner() {
 
         {/* Active filter chips */}
         {hasActiveFilters && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+          <div className="pk-filter-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
             {selectedCat && categories.find(c => c.$id === selectedCat) && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 10px 5px 12px', background: '#fef2f8', color: '#ec4899', borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
                 {categories.find(c => c.$id === selectedCat)?.name}
@@ -290,7 +355,7 @@ function ProductosInner() {
 
         <div className="pk-products-layout" style={{ display: 'flex', gap: 28 }}>
           {/* Desktop sidebar */}
-          <aside className="hidden md:block" style={{ width: 260, flexShrink: 0 }}>
+          <aside className="hidden md:block" style={{ width: 220, flexShrink: 0 }}>
             <div style={{ position: 'sticky', top: 20 }}>
               <FiltersSidebar />
             </div>
@@ -309,12 +374,19 @@ function ProductosInner() {
 
           {/* Products */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 13, color: '#9ca3af', margin: '0 0 14px', fontWeight: 600 }}>
-              <span style={{ color: '#ec4899', fontWeight: 800 }}>{filtered.length}</span> producto{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
-            </p>
+            <div className="pk-result-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, margin: '0 0 14px', padding: '10px 14px', borderRadius: 16, background: 'rgba(255,255,255,0.72)', border: '1px solid #fce7f3', backdropFilter: 'blur(10px)' }}>
+              <p style={{ fontSize: 13, color: '#9ca3af', margin: 0, fontWeight: 700 }}>
+                <span style={{ color: '#ec4899', fontWeight: 900 }}>{filtered.length}</span> producto{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
+              </p>
+              {hasActiveFilters && (
+                <button onClick={clearAllFilters} style={{ padding: '6px 12px', background: '#fef2f8', color: '#ec4899', border: 'none', borderRadius: 999, fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Limpiar todo
+                </button>
+              )}
+            </div>
 
             {isLoading ? (
-              <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 18 }}>
+              <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
                 {[...Array(8)].map((_, i) => (
                   <div key={i} style={{ background: '#fff', borderRadius: 18, overflow: 'hidden', border: '1px solid #fce7f3' }}>
                     <div style={{ aspectRatio: '1/1', background: 'linear-gradient(90deg,#fef2f8,#fce7f3,#fef2f8)', backgroundSize: '200% 100%', animation: 'pkShimmer 1.4s ease infinite' }} />
@@ -326,12 +398,12 @@ function ProductosInner() {
                 ))}
               </div>
             ) : filtered.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '80px 20px', background: '#fff', borderRadius: 20, border: '1px solid #fce7f3' }}>
-                <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#fef2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <div className="pk-empty-state" style={{ textAlign: 'center', padding: '86px 20px', background: 'rgba(255,255,255,0.86)', borderRadius: 26, border: '1px solid #fce7f3', boxShadow: '0 14px 42px rgba(236,72,153,0.09)', backdropFilter: 'blur(14px)' }}>
+                <div className="pk-empty-icon" style={{ width: 96, height: 96, borderRadius: '50%', background: 'linear-gradient(135deg,#fef2f8,#fce7f3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px', boxShadow: '0 10px 28px rgba(236,72,153,0.15)' }}>
                   <ShoppingCart size={36} color="#ec4899" />
                 </div>
-                <p style={{ fontSize: 17, fontWeight: 800, color: '#111', margin: '0 0 6px' }}>Sin resultados</p>
-                <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 16px' }}>No encontramos productos con esos filtros</p>
+                <p style={{ fontSize: 22, fontWeight: 900, color: '#111', margin: '0 0 8px', letterSpacing: '-0.02em' }}>Sin resultados</p>
+                <p style={{ fontSize: 14, color: '#6b7280', margin: '0 auto 18px', maxWidth: 360, lineHeight: 1.55 }}>No encontramos productos con esos filtros. Probá quitar alguno o buscar con otra palabra.</p>
                 {hasActiveFilters && (
                   <button onClick={clearAllFilters} style={{ padding: '10px 22px', background: 'linear-gradient(135deg,#ec4899,#f9a8d4)', color: '#fff', border: 'none', borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 20px rgba(236,72,153,0.25)', fontFamily: 'inherit' }}>
                     Limpiar filtros
@@ -339,16 +411,16 @@ function ProductosInner() {
                 )}
               </div>
             ) : view === 'grid' ? (
-              <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 18 }}>
+              <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
                 {filtered.map(p => {
                   const price = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
                   const hasDisc = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
                   const disc = hasDisc ? Math.round(((p.PRICE - price) / p.PRICE) * 100) : 0;
                   const fav = isFavorite(p.$id);
                   return (
-                    <div key={p.$id} className="pk-card" style={{ background: '#fff', borderRadius: 18, overflow: 'hidden', border: '1px solid #fce7f3', transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                    <div key={p.$id} className="pk-card" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 22, overflow: 'hidden', border: '1px solid rgba(252,231,243,0.95)', transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(236,72,153,0.08)', backdropFilter: 'blur(10px)' }}>
                       <Link href={`/productos/${p.$id}`} style={{ display: 'block', position: 'relative' }}>
-                        <div style={{ position: 'relative', aspectRatio: '1/1', background: '#fef2f8', overflow: 'hidden' }}>
+                        <div style={{ position: 'relative', aspectRatio: '1/1', background: 'linear-gradient(135deg,#fef2f8,#fff)', overflow: 'hidden' }}>
                           {p.IMAGEURL ? (
                             <Image src={p.IMAGEURL} alt={p.NAME} fill className="pk-card-img" style={{ objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.16,1,0.3,1)' }} sizes="(max-width: 768px) 50vw, 25vw" />
                           ) : (
@@ -356,7 +428,7 @@ function ProductosInner() {
                           )}
                           <ProductBadges product={p} style={{ position: 'absolute', top: 10, left: 10, zIndex: 2 }} />
                           {hasDisc && (
-                            <div style={{ position: 'absolute', top: 10, right: 10, padding: '4px 10px', background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 800, zIndex: 2, boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}>
+                            <div className="pk-disc-badge" style={{ position: 'absolute', top: 10, right: 10, padding: '4px 10px', background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 800, zIndex: 2, boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}>
                               -{disc}%
                             </div>
                           )}
@@ -386,17 +458,17 @@ function ProductosInner() {
                           </div>
                         </div>
                       </Link>
-                      <div style={{ padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                      <div className="pk-card-body" style={{ padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
                         <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 36, lineHeight: 1.4, transition: 'color 0.2s' }}>
                             {p.NAME}
                           </p>
                         </Link>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 'auto' }}>
-                          <span style={{ fontSize: 19, fontWeight: 800, color: '#111', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
+                          <span className="pk-price" style={{ fontSize: 19, fontWeight: 800, color: '#111', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
                           {hasDisc && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500 }}>{formatPrice(p.PRICE)}</span>}
                         </div>
-                        <button onClick={() => p.STOCK !== 0 && addItem(p)} disabled={p.STOCK === 0}
+                        <button onClick={() => p.STOCK !== 0 && addItem(p)} disabled={p.STOCK === 0} className="pk-add-btn"
                           style={{ marginTop: 10, padding: '9px 12px', borderRadius: 12, border: 'none', background: p.STOCK === 0 ? '#f3f4f6' : 'linear-gradient(135deg,#ec4899,#f9a8d4)', color: p.STOCK === 0 ? '#9ca3af' : '#fff', fontSize: 12, fontWeight: 700, cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.2s', boxShadow: p.STOCK === 0 ? 'none' : '0 4px 14px rgba(236,72,153,0.25)', fontFamily: 'inherit' }}>
                           <ShoppingCart size={13} /> {p.STOCK === 0 ? 'Sin stock' : 'Agregar'}
                         </button>
@@ -457,25 +529,60 @@ function ProductosInner() {
       <style>{`
         @keyframes pkShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         @keyframes slideInLeft { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        @keyframes pkBgFloat { 0%,100% { transform: scale(1.15) translateY(0); } 50% { transform: scale(1.18) translateY(-10px); } }
         .pk-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(236,72,153,0.15); border-color: #fbcfe8; }
         .pk-card:hover .pk-card-img { transform: scale(1.08); }
         .pk-card:hover .pk-card-actions { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
         .pk-card-actions button:hover { transform: scale(1.1); }
         .pk-card-list:hover { border-color: #fbcfe8; box-shadow: 0 8px 24px rgba(236,72,153,0.1); }
 
+        /* ─── Mobile filter button ─── */
+        button.md:hidden { display: inline-flex; }
+
         /* ─── Mobile responsive ─── */
         @media (max-width: 900px) {
           .pk-products-layout { flex-direction: column !important; gap: 16px !important; }
+          .pk-products-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 14px !important; }
         }
         @media (max-width: 700px) {
-          .pk-products-container { padding: 20px 14px 50px !important; }
-          .pk-products-title { font-size: 28px !important; }
-          .pk-products-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
-          /* Show actions overlay on tap (mobile lacks hover) */
+          .pk-products-container { padding: 14px 10px 50px !important; }
+          .pk-products-title { font-size: 26px !important; }
+          .pk-products-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
           .pk-card-actions { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
+          .pk-hero-text { display: none !important; }
+          .pk-hero-header { min-height: 140px !important; flex-direction: row !important; align-items: center !important; }
+          .pk-hero-logo { margin-left: auto !important; }
+          .pk-hero-logo img { height: 40px !important; }
         }
-        @media (max-width: 420px) {
-          .pk-products-grid { gap: 10px !important; }
+        @media (max-width: 480px) {
+          .pk-hero-header { padding: 16px !important; border-radius: 20px !important; flex-direction: column !important; align-items: flex-start !important; }
+          .pk-hero-header .pk-hero-logo { height: 70px !important; align-self: flex-end !important; margin-top: -10px; }
+          .pk-hero-header h1 { font-size: 24px !important; }
+          .pk-hero-header p { font-size: 13px !important; margin-bottom: 12px !important; }
+          .pk-hero-stats { gap: 8px !important; }
+          .pk-hero-stats > div { padding: 7px 10px !important; border-radius: 12px !important; }
+          .pk-hero-stats span:first-child { font-size: 15px !important; }
+          .pk-toolbar { padding: 8px !important; border-radius: 16px !important; gap: 8px !important; }
+          .pk-toolbar .pk-sort-btn { min-width: 140px !important; padding: 10px 32px 10px 12px !important; font-size: 12px !important; }
+          .pk-toolbar input { padding: 10px 34px 10px 36px !important; font-size: 13px !important; }
+          .pk-result-bar { padding: 8px 10px !important; border-radius: 12px !important; }
+          .pk-result-bar p { font-size: 12px !important; }
+          .pk-products-grid { gap: 8px !important; }
+          .pk-card { border-radius: 16px !important; }
+          .pk-card .pk-card-body { padding: 10px !important; }
+          .pk-card .pk-card-body p { font-size: 12px !important; min-height: 30px !important; }
+          .pk-card .pk-card-body .pk-price { font-size: 16px !important; }
+          .pk-card .pk-card-body .pk-add-btn { padding: 7px 10px !important; font-size: 11px !important; border-radius: 10px !important; }
+          .pk-card .pk-disc-badge { padding: 3px 7px !important; font-size: 10px !important; }
+          .pk-card-actions button { width: 30px !important; height: 30px !important; }
+          .pk-card-actions button svg { width: 13px !important; height: 13px !important; }
+          .pk-empty-state { padding: 50px 16px !important; border-radius: 20px !important; }
+          .pk-empty-state .pk-empty-icon { width: 72px !important; height: 72px !important; }
+          .pk-empty-state .pk-empty-icon svg { width: 28px !important; height: 28px !important; }
+          .pk-empty-state p:first-of-type { font-size: 18px !important; }
+          .pk-empty-state p:last-of-type { font-size: 13px !important; }
+          .pk-filter-chips { gap: 6px !important; }
+          .pk-filter-chips span { font-size: 11px !important; padding: 4px 8px 4px 10px !important; }
         }
       `}</style>
     </div>
@@ -486,9 +593,9 @@ export default function ProductosPage() {
   return (
     <Suspense fallback={
       <div style={{ fontFamily: FF, background: 'linear-gradient(180deg,#fff5f8 0%,#fff 280px)', minHeight: '100vh' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 20px 60px' }}>
+        <div style={{ maxWidth: 1600, margin: '0 auto', padding: '32px 20px 60px' }}>
           <div style={{ height: 36, width: 200, background: '#fce7f3', borderRadius: 10, marginBottom: 30 }} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 18 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
             {[...Array(8)].map((_, i) => (
               <div key={i} style={{ height: 320, background: '#fff', borderRadius: 18, border: '1px solid #fce7f3' }} />
             ))}

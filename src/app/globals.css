@@ -72,11 +72,11 @@ input:focus, select:focus, textarea:focus {
 }
 
 input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.3); }
-select option { background: #1a1a2e; color: #f0f0f8; }
+select option { background: #fff; color: #111; }
 
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #0a0a0f; }
-::-webkit-scrollbar-thumb { background: #3d1a78; border-radius: 3px; }
+::-webkit-scrollbar-track { background: #f3f4f6; }
+::-webkit-scrollbar-thumb { background: #9ca3af; border-radius: 3px; }
 
 /* ── Offer section responsive ── */
 @media (max-width: 768px) {

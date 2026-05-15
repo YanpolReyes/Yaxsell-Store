@@ -46,9 +46,14 @@ export function exportAppwriteConfig(): string {
   return JSON.stringify(cfg, null, 2);
 }
 
+let _client: Client | null = null;
+
 export function createAppwriteClient(): Client {
   const cfg = getAppwriteConfig();
-  return new Client().setEndpoint(cfg.endpoint).setProject(cfg.projectId);
+  if (!_client) {
+    _client = new Client().setEndpoint(cfg.endpoint).setProject(cfg.projectId);
+  }
+  return _client;
 }
 
 export function getServices() {

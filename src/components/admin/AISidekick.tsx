@@ -209,7 +209,7 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
         .sk-typing-cursor::after { content:'|'; animation:sk-cursor 0.7s step-end infinite; color:#a78bfa; font-weight:300; margin-left:1px; }
       `}</style>
 
-      <div className={closing ? 'sk-panel-exit' : 'sk-panel-enter'} style={{
+      <div className={`${closing ? 'sk-panel-exit' : 'sk-panel-enter'} sk-side-panel`} style={{
         width: 370, flexShrink: 0, display: visible ? 'flex' : 'none', flexDirection: 'column',
         background: '#131313', borderLeft: '1px solid rgba(255,255,255,0.06)',
         position: 'relative', overflow: 'hidden',

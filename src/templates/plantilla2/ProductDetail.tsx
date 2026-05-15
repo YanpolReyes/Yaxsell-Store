@@ -25,6 +25,7 @@ export default function ProductDetailPlantilla2() {
   const [related, setRelated] = useState<Product[]>([]);
   const [categoryName, setCategoryName] = useState('');
   const [categoryBg, setCategoryBg] = useState('');
+  const [categoryBgLoaded, setCategoryBgLoaded] = useState(false);
   const [categoryColor, setCategoryColor] = useState('#3483fa');
   const [categoryIcon, setCategoryIcon] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -66,7 +67,7 @@ export default function ProductDetailPlantilla2() {
             ]);
             const cat = catDoc as any;
             setCategoryName(cat.name || '');
-            setCategoryBg(cat.BACKGROUND_IMAGE_URL || '');
+            setCategoryBg(cat.BACKGROUND_IMAGE_URL || 'https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2Fyoung-asian-woman-sunglasses-going-shopping-holding-bags-from-malls-stores-smiling-standi.jpg?alt=media&token=515133e5-8477-4c58-948c-e28477f1f912');
             setCategoryColor(cat.COLOR || '#3483fa');
             setCategoryIcon(cat.iconUrl || '');
             setRelated((relRes.documents as unknown as Product[]).filter(r => r.$id !== id).slice(0, 6));
@@ -192,10 +193,14 @@ export default function ProductDetailPlantilla2() {
         position: 'relative', width: '100%', height: 240, overflow: 'hidden',
         background: categoryBg ? '#000' : (categoryColor ? `linear-gradient(135deg,${categoryColor}cc,${categoryColor}55)` : 'linear-gradient(135deg,#3483fa99,#3483fa33)'),
       }}>
+        {categoryBg && !categoryBgLoaded && (
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,#e5e7eb,#d1d5db,#e5e7eb)', backgroundSize: '200% 100%', animation: 'skeletonShimmer 1.5s ease infinite' }} />
+        )}
         {categoryBg
-          ? <Image src={categoryBg} alt={categoryName} fill style={{ objectFit: 'cover', opacity: 0.82 }} />
+          ? <Image src={categoryBg} alt={categoryName} fill style={{ objectFit: 'cover', opacity: 0.9 }} onLoad={() => setCategoryBgLoaded(true)} />
           : null}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.15) 50%, rgba(235,235,235,0.95) 100%)' }} />
+        <style>{`@keyframes skeletonShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
         {(categoryName || categoryIcon) && (
           <div style={{
             position: 'absolute', bottom: 140, left: '12%',

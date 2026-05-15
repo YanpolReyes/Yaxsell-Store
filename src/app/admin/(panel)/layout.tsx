@@ -159,22 +159,22 @@ function IATopBarButton({ isOpen, onClick }: { isOpen: boolean; onClick: () => v
         .ia-cursor { display:inline-block; width:1.5px; height:11px; background:rgba(139,92,246,0.8); animation:ia-blink 0.6s step-end infinite; margin-left:1px; vertical-align:middle; border-radius:1px; }
         @keyframes ia-blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
       `}</style>
-      <button onClick={onClick} title="Asistente IA" style={{
+      <button onClick={onClick} title="Asistente IA" className="ia-topbar-btn" style={{
         display: 'flex', alignItems: 'center', gap: 10, padding: '4px 14px 4px 10px',
         borderRadius: 10, border: '1px solid rgba(139,92,246,0.2)', cursor: 'pointer',
         background: isOpen ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.06)',
         transition: 'all .2s', height: 38, flexShrink: 0,
       }}>
-        {/* Typing phrase — ancho fijo para que no mueva nada */}
-        <span style={{
+        {/* Typing phrase — hidden on mobile */}
+        <span className="hidden lg:inline-block" style={{
           width: 148, display: 'inline-block', overflow: 'hidden', whiteSpace: 'nowrap',
           color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 500,
           textAlign: 'right',
         }}>
           {phrase}<span className="ia-cursor" />
         </span>
-        {/* Separator */}
-        <span style={{ width: 1, height: 18, background: 'rgba(139,92,246,0.25)', flexShrink: 0 }} />
+        {/* Separator — hidden on mobile */}
+        <span className="hidden lg:block" style={{ width: 1, height: 18, background: 'rgba(139,92,246,0.25)', flexShrink: 0 }} />
         {/* IA text — grande y separado */}
         <span className="ia-text">IA</span>
       </button>
@@ -226,7 +226,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const toggleItem = (label: string) => {
-    setOpenItems(prev => ({ ...prev, [label]: !prev[label] }));
+    setOpenItems(prev => {
+      const wasOpen = prev[label] ?? false;
+      if (wasOpen) return { ...prev, [label]: false };
+      // Accordion: close all others, open only this one
+      return { [label]: true };
+    });
   };
 
   const fetchBadges = useCallback(async () => {
@@ -345,11 +350,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   /* ── sidebar JSX — Shopify dark style ── */
   const sidebarJsx = (
-    <aside className={`sf-sidebar-shine fixed inset-y-0 left-0 top-[56px] z-30 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} lg:!static lg:!transform-none`} style={{
+    <aside className={`sf-sidebar-shine admin-sidebar fixed inset-y-0 left-0 top-[56px] z-30 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} lg:!static lg:!transform-none`} style={{
       width: 240, flexShrink: 0, display: 'flex', flexDirection: 'column',
       background: '#1a1a1a',
       boxShadow: 'inset -1px 0 0 rgba(255,255,255,0.04), inset 1px 0 0 rgba(255,255,255,0.02)',
-      transition: 'transform .3s', overflow: 'hidden', position: 'relative',
+      transition: 'transform .3s', overflow: 'hidden',
     }}
     >
       <style>{`
@@ -416,7 +421,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       `}</style>
 
       {/* Nav — flat Shopify style with expandable groups */}
-      <nav className="sf-sidebar-scroll" style={{ flex: 1, overflowY: 'auto', padding: '12px 8px 8px' }}>
+      <nav className="sf-sidebar-scroll" style={{ flex: 1, overflowY: 'auto', padding: '0 8px 0' }}>
         {(() => {
           const ctr = { i: 0 };
           return NAV_GROUPS.map(group => {
@@ -425,7 +430,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             if (isMain) {
               return (
-                <div key={group.label} style={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: 4 }}>
+                <div key={group.label} style={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: 0 }}>
                   {group.items.map(item => renderItem(item, ctr))}
                 </div>
               );
@@ -433,10 +438,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             const headerDelay = `${(ctr.i++ * 0.065).toFixed(3)}s`;
             return (
-              <div key={group.label} style={{ marginBottom: 2 }}>
+              <div key={group.label} style={{ marginBottom: 0 }}>
                 <button onClick={() => toggleGroup(group.label)} style={{
                   width: '100%', display: 'flex', alignItems: 'center',
-                  padding: '18px 12px 6px', border: 'none', cursor: 'pointer',
+                  padding: '6px 12px 2px', border: 'none', cursor: 'pointer',
                   background: 'transparent', transition: 'all .15s',
                   animation: `sf-curtain-drop 0.55s cubic-bezier(0.16,1,0.3,1) ${headerDelay} both`,
                 }}>
@@ -469,6 +474,76 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       inset: 0;
       background: #000;
       z-index: 0;
+    }
+    /* ── Responsive admin layout ── */
+    @media (min-width: 1024px) {
+      .admin-content-wrap { border-radius: 24px !important; border: 3px solid #000000 !important; }
+      .admin-main-content { padding: 24px 24px 40px !important; border-radius: 24px; }
+      .admin-sidebar { position: relative !important; }
+    }
+    @media (max-width: 1023px) {
+      .admin-topbar { height: 64px !important; }
+      .admin-sidebar { box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important; top: 64px !important; }
+    }
+    /* ── Global mobile fixes for all admin pages ── */
+    @media (max-width: 768px) {
+      /* Headings & titles */
+      .admin-main-content h1 { font-size: 20px !important; }
+      .admin-main-content h2 { font-size: 15px !important; }
+      .admin-main-content h3 { font-size: 14px !important; }
+      /* Force any auto-fit grid > 200px to fit smaller */
+      .admin-main-content [style*="grid-template-columns: repeat(auto-fit"] {
+        grid-template-columns: 1fr !important;
+      }
+      /* Tables wrap with horizontal scroll */
+      .admin-main-content table { font-size: 12px !important; }
+      .admin-main-content .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+      /* Reduce padding on big cards only */
+      .admin-main-content .db-card { padding: 14px !important; }
+      /* Buttons stay clickable */
+      .admin-main-content button { min-height: 36px; }
+      /* Inputs full width */
+      .admin-main-content input[type="text"],
+      .admin-main-content input[type="email"],
+      .admin-main-content input[type="number"],
+      .admin-main-content input[type="search"],
+      .admin-main-content textarea,
+      .admin-main-content select { width: 100% !important; max-width: 100% !important; box-sizing: border-box; }
+      /* Force flex containers with explicit fixed widths to wrap */
+      .admin-main-content > div > div[style*="justify-content: space-between"] { flex-wrap: wrap; gap: 8px !important; }
+    }
+    /* ── Dashboard responsive ── */
+    @media (max-width: 640px) {
+      .db-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+      .db-kpi-grid > div { border-right: none !important; border-bottom: 1px solid rgb(241,245,249); padding: 10px 8px !important; }
+      .db-kpi-grid > div:nth-child(even) { border-right: none !important; }
+      .db-kpi-grid > div:nth-last-child(-n+2) { border-bottom: none !important; }
+      .db-kpi-value { font-size: 18px !important; }
+      .db-greeting { font-size: 18px !important; }
+      .db-range-group { flex-wrap: wrap; }
+      .db-bar-chart { gap: 2px !important; }
+      .db-bar-tip { display: none !important; }
+      .db-map-grid { grid-template-columns: 1fr !important; }
+      .db-map-canvas { min-height: 300px !important; }
+      .db-quick-actions { grid-template-columns: repeat(2, 1fr) !important; }
+      .db-quick-actions a span:last-child { font-size: 11px !important; }
+      .db-quick-actions a div:first-child { width: 28px !important; height: 28px !important; }
+      .db-order-row span:first-child { width: 48px !important; font-size: 10px !important; }
+      .db-stats-panel { padding: 16px 12px !important; }
+      .db-card { padding: 14px 12px !important; }
+      .admin-main-content { padding: 12px 8px 24px !important; }
+    }
+    @media (min-width: 641px) and (max-width: 1023px) {
+      .db-kpi-grid { grid-template-columns: repeat(3, 1fr) !important; }
+      .db-kpi-grid > div:nth-child(3n) { border-right: none !important; }
+      .db-map-grid { grid-template-columns: 1fr 1fr !important; }
+      .db-quick-actions { grid-template-columns: repeat(2, 1fr) !important; }
+      .db-revenue-grid { grid-template-columns: 1fr !important; }
+    }
+    @media (max-width: 640px) {
+      .db-revenue-grid { grid-template-columns: 1fr !important; }
+      .sk-side-panel { position: fixed !important; inset: 0 !important; width: 100% !important; z-index: 50 !important; border-left: none !important; }
+      .admin-2col-grid { grid-template-columns: 1fr !important; }
     }
     @keyframes sf-shine-first {
       0%   { left: 80px; opacity: 0; transform: skewX(-20deg) scaleX(0.4); filter: blur(6px); }
@@ -507,21 +582,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#1a1a1a', overflow: 'hidden' }}>
       {/* ═══ Top bar — unified with sidebar ═══ */}
       <header style={{
-        height: 72,
+        height: 56,
         background: '#1a1a1a',
         display: 'flex', alignItems: 'center',
-        padding: '0 20px', gap: 14, flexShrink: 0, zIndex: 40,
+        padding: '0 12px', gap: 10, flexShrink: 0, zIndex: 40,
         boxShadow: 'none',
         position: 'relative',
       }}
-      className="sf-topbar-shine"
+      className="sf-topbar-shine admin-topbar"
       >
                 <button onClick={() => setSidebarOpen(o => !o)} className="lg:hidden" style={{ padding: 6, borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', color: 'rgba(255,255,255,0.7)' }}>
           {sidebarOpen ? <X size={20}/> : <Menu size={20}/>}
         </button>
 
         {/* Logo in top bar on desktop */}
-        <div className="hidden lg:block sf-logo-animate" style={{ width: 180, height: 90, flexShrink: 0, marginRight: 12, position: 'relative' }}>
+        <div className="hidden lg:block sf-logo-animate" style={{ width: 160, height: 40, flexShrink: 0, marginRight: 8, position: 'relative', alignSelf: 'flex-end', marginBottom: 6 }}>
           <Link href="/admin/dashboard" style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
             <Image
               src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/Yaxsell%2Flogo.png?alt=media&token=3c24b115-53b7-4603-badf-1af26b586a6a"
@@ -534,7 +609,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Centered search bar */}
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+        <div className="admin-search-wrap" style={{ flex: 1, display: 'flex', justifyContent: 'center', minWidth: 0 }}>
           <GlobalSearch />
         </div>
 
@@ -572,10 +647,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               }}>
                 {user?.name?.charAt(0).toUpperCase() || 'A'}
               </div>
-              <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: 500, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span className="hidden sm:inline" style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: 500, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {user?.name || 'Admin'}
               </span>
-              <ChevronDown size={13} style={{ color: 'rgba(255,255,255,0.4)', transition: 'transform .2s', transform: userMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+              <ChevronDown size={13} className="hidden sm:inline" style={{ color: 'rgba(255,255,255,0.4)', transition: 'transform .2s', transform: userMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
             </button>
 
             {(userMenuOpen || userMenuClosing) && (
@@ -599,6 +674,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   .um-item:nth-child(3){animation-delay:0.12s;} .um-item:nth-child(4){animation-delay:0.16s;}
                   .um-item:nth-child(5){animation-delay:0.20s;} .um-item:nth-child(6){animation-delay:0.24s;}
                   .um-item:hover { background: rgba(255,255,255,0.06) !important; }
+                  @media (max-width: 640px) {
+                    .um-dropdown { position: fixed !important; top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important; width: 100% !important; border-radius: 16px 16px 0 0 !important; }
+                  }
                 `}</style>
                 {/* Header */}
                 <div className="um-item" style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
@@ -647,13 +725,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {sidebarJsx}
         {/* Main content area — clean, centered */}
         <div className="admin-content-wrap" style={{
-          flex: 1, position: 'relative', overflow: 'hidden', borderRadius: 24, background: '#ffffff', border: '3px solid #000000',
+          flex: 1, position: 'relative', overflow: 'hidden', background: '#ffffff',
         }}>
-          <main ref={contentRef} style={{
+          <main ref={contentRef} className="admin-main-content" style={{
             position: 'relative', zIndex: 1, height: '100%',
             overflowY: 'auto', overflowX: 'hidden',
-            padding: '24px 24px 40px', background: '#ffffff',
-            borderRadius: 24, margin: 0,
+            padding: '16px 12px 32px', background: '#ffffff',
+            margin: 0,
           }}>
             {children}
           </main>

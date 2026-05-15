@@ -16,7 +16,6 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center gap-6 text-sm text-gray-600">
           <Link href="/productos" className="hover:text-gray-900 transition-colors">Productos</Link>
-          <Link href="/ofertas" className="hover:text-gray-900 transition-colors">Ofertas</Link>
           <Link href="/cuenta/pedidos" className="hover:text-gray-900 transition-colors">Mis Pedidos</Link>
         </div>
 
@@ -44,7 +43,6 @@ export default function Navbar() {
       {menuOpen && (
         <div className="md:hidden glass border-t border-gray-200 px-6 py-4 flex flex-col gap-4 text-sm">
           <Link href="/productos" onClick={() => setMenuOpen(false)} className="text-gray-600 hover:text-gray-900 flex items-center gap-2"><Package size={16}/> Productos</Link>
-          <Link href="/ofertas" onClick={() => setMenuOpen(false)} className="text-gray-600 hover:text-gray-900">Ofertas</Link>
           <Link href="/cuenta/pedidos" onClick={() => setMenuOpen(false)} className="text-gray-600 hover:text-gray-900 flex items-center gap-2"><User size={16}/> Mis Pedidos</Link>
         </div>
       )}

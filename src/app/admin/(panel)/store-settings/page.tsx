@@ -161,7 +161,7 @@ export default function StoreSettingsPage() {
       )}
 
       {/* ─── Two Column Layout ─── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <div className="admin-2col-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
 
         {/* ─── Card: Información de Contacto ─── */}
         <div style={{

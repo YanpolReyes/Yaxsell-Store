@@ -69,7 +69,7 @@ export default function QuickView({ product, onClose }: Props) {
         transition: 'background .3s, backdrop-filter .3s',
       }}>
         <div onClick={e => e.stopPropagation()} style={{
-          background: '#fff', borderRadius: 20, width: '100%', maxWidth: 820, maxHeight: '92vh',
+          background: '#fff', borderRadius: 20, width: '100%', maxWidth: 1100, maxHeight: '92vh',
           overflow: 'hidden', position: 'relative',
           boxShadow: '0 25px 60px rgba(0,0,0,0.2), 0 8px 20px rgba(0,0,0,0.1)',
           animation: open ? 'qv-in 0.35s cubic-bezier(0.16,1,0.3,1) forwards' : 'qv-out 0.25s ease forwards',
@@ -89,7 +89,7 @@ export default function QuickView({ product, onClose }: Props) {
 
           <div style={{ display: 'flex', maxHeight: '92vh' }}>
             {/* ── LEFT: Image Gallery ── */}
-            <div style={{ width: 400, flexShrink: 0, background: '#f8f8f8', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ width: 520, flexShrink: 0, background: '#f8f8f8', position: 'relative', display: 'flex', flexDirection: 'column' }}>
               {/* Main image */}
               <div style={{ position: 'relative', flex: 1, minHeight: 360 }}>
                 {images[imgIdx] ? (
@@ -150,9 +150,9 @@ export default function QuickView({ product, onClose }: Props) {
                   {hasDisc && <span style={{ fontSize: 15, color: '#b0b0b0', textDecoration: 'line-through' }}>{formatPrice(product.PRICE)}</span>}
                   {hasDisc && <span style={{ fontSize: 12, fontWeight: 700, color: '#00a650', background: '#e8f5e9', padding: '2px 8px', borderRadius: 10 }}>{discPct}% OFF</span>}
                 </div>
-                {hasWholesale && (
+                {hasWholesale && price * qty >= 300000 && (
                   <div style={{ marginTop: 6, fontSize: 12, color: '#f57c00', fontWeight: 600 }}>
-                    <Zap size={12} style={{ display: 'inline', verticalAlign: -2 }} /> Precio mayorista: {formatPrice(product.WHOLESALEPRICE!)}
+                    <Zap size={12} style={{ display: 'inline', verticalAlign: -2 }} /> Precio mayorista: {formatPrice(product.WHOLESALEPRICE!)} (pedidos +$300.000)
                   </div>
                 )}
               </div>
@@ -181,7 +181,7 @@ export default function QuickView({ product, onClose }: Props) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', marginBottom: 16, padding: '10px 0', borderTop: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>
                 <div className="qv-feature"><Truck size={13} color="#3483fa" /><span>Envío rápido</span></div>
                 <div className="qv-feature"><Shield size={13} color="#00a650" /><span>Compra segura</span></div>
-                <div className="qv-feature"><RotateCcw size={13} color="#f57c00" /><span>Devolución gratis</span></div>
+                <div className="qv-feature"><Truck size={13} color="#f57c00" /><span>Despacho en 24h</span></div>
                 <div className="qv-feature"><Heart size={13} color="#e53935" /><span>Garantía incluida</span></div>
               </div>
 

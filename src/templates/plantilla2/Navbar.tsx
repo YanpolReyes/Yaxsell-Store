@@ -571,7 +571,7 @@ export default function Navbar2({ initialSettings }: { initialSettings?: Record<
               </div>
               {[
                 { label: 'Inicio', href: '/' },
-                { label: 'Productos', href: '/productos' },
+                { label: 'Catálogo', href: '/productos' },
                 { label: 'Ofertas', href: '/productos' },
                 { label: 'Favoritos', href: '/favoritos' },
                 { label: 'Mi cuenta', href: '/cuenta' },
