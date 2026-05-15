@@ -102,7 +102,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 text-white">

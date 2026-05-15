@@ -25,7 +25,7 @@ export default function WhatsAppButton() {
     };
   }, [pathname]);
 
-  if (pathname.startsWith('/admin') || pathname.startsWith('/login') || hidden) return null;
+  if (pathname.startsWith('/admin') || pathname.startsWith('/login') || pathname.startsWith('/inventario') || hidden) return null;
 
   const url = getWhatsAppUrl();
 

@@ -148,11 +148,22 @@ export default function InventarioPage() {
         ISACTIVE: newStock > 0,
       };
       // Save section if selected
+      let finalFeatures = editStockModal.FEATURES || '';
       if (editSectionValue) {
-        const features = editStockModal.FEATURES || '';
-        const cleaned = features.replace(/\nSection:\s*\d+/gi, '').replace(/^Section:\s*\d+\n?/gi, '');
-        payload.FEATURES = cleaned ? `${cleaned}\nSection: ${editSectionValue}` : `Section: ${editSectionValue}`;
+        finalFeatures = finalFeatures.replace(/\nSection:\s*\d+/gi, '').replace(/^Section:\s*\d+\n?/gi, '');
+        finalFeatures = finalFeatures ? `${finalFeatures}\nSection: ${editSectionValue}` : `Section: ${editSectionValue}`;
       }
+      
+      // Also save barcode if it was entered inline
+      const inlineBarcode = barcodeEdits[editStockModal.$id]?.trim();
+      if (inlineBarcode && !finalFeatures.toLowerCase().includes('barcode:')) {
+        finalFeatures = finalFeatures ? `${finalFeatures}\nBarcode: ${inlineBarcode}` : `Barcode: ${inlineBarcode}`;
+      }
+
+      if (finalFeatures !== (editStockModal.FEATURES || '')) {
+        payload.FEATURES = finalFeatures;
+      }
+
       await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, editStockModal.$id, payload);
       setProducts(prev => prev.map(p => p.$id === editStockModal.$id
         ? { ...p, PACKQTY: newPackQty, STOCK: newStock, ISACTIVE: newStock > 0, ...(payload.FEATURES ? { FEATURES: payload.FEATURES } : {}) }
@@ -948,8 +959,8 @@ export default function InventarioPage() {
         </div>
       )}
 
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3">
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex flex-col gap-4">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-indigo-600 flex items-center justify-center">
@@ -1147,7 +1158,15 @@ export default function InventarioPage() {
                                   +2
                                 </button>
                                 <button
-                                  onClick={() => assignStock(p.$id)}
+                                   onClick={() => { 
+                                     setEditStockModal(p); 
+                                     setEditPackagesValue(editing || '1'); 
+                                     setEditPackQtyValue(hasPack ? String(p.PACKQTY) : (inlinePack || '12'));
+                                     // Also pass barcode if it was entered inline
+                                     if (!hasBarcode && inlineBarcode) {
+                                       setBarcodeEdits(prev => ({ ...prev, [p.$id]: inlineBarcode }));
+                                     }
+                                   }}
                                   disabled={saving || !editing || pkgs <= 0 || (!hasPack && (!inlinePack || parseInt(inlinePack, 10) <= 0))}
                                   className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-medium rounded transition">
                                   {saving ? (
@@ -1285,7 +1304,15 @@ export default function InventarioPage() {
                               />
                             </div>
                             <button
-                              onClick={() => assignStock(p.$id)}
+                               onClick={() => { 
+                                 setEditStockModal(p); 
+                                 setEditPackagesValue(editing || '1'); 
+                                 setEditPackQtyValue(hasPack ? String(p.PACKQTY) : (inlinePack || '12'));
+                                 // Also pass barcode if it was entered inline
+                                 if (!hasBarcode && inlineBarcode) {
+                                   setBarcodeEdits(prev => ({ ...prev, [p.$id]: inlineBarcode }));
+                                 }
+                               }}
                               disabled={saving || !editing || pkgs <= 0 || (!hasPack && (!inlinePack || parseInt(inlinePack, 10) <= 0))}
                               className="flex items-center gap-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition shrink-0">
                               {saving ? (

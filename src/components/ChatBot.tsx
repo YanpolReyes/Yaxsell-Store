@@ -131,7 +131,7 @@ export default function ChatBot() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isHiddenRoute = pathname.startsWith('/admin') || pathname.startsWith('/login');
+  const isHiddenRoute = pathname.startsWith('/admin') || pathname.startsWith('/login') || pathname.startsWith('/inventario');
 
   const close = useCallback(() => setOpen(false), []);
 

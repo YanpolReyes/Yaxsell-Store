@@ -88,6 +88,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
     setScreen('register');
     setQuery('');
     setSelectedProduct(null);
+    setShowScanner(true);
   };
 
   const doSearch = useCallback((q: string) => {
@@ -153,8 +154,8 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
   return (
     <>
       {showScanner && <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />}
-      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center" onClick={onClose}>
-        <div className="bg-white w-full max-h-[95vh] sm:max-w-lg sm:rounded-2xl rounded-t-3xl shadow-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center" onClick={onClose}>
+        <div className="bg-white w-full max-h-[95vh] sm:max-w-lg sm:rounded-2xl rounded-t-3xl shadow-2xl overflow-hidden flex flex-col" onClick={(e: any) => e.stopPropagation()}>
           
           {/* Header */}
           <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-5 py-4 flex items-center gap-3 shrink-0">
@@ -234,7 +235,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                 <div className="flex gap-2">
                   <div className="flex-1 relative">
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input value={query} onChange={e => { setQuery(e.target.value); doSearch(e.target.value); }}
+                    <input value={query} onChange={(e: any) => { setQuery(e.target.value); doSearch(e.target.value); }}
                       placeholder="SKU, código de barras, nombre o # sección"
                       autoFocus className="w-full pl-9 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
                   </div>
@@ -281,7 +282,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                 <div className="flex gap-2">
                   <div className="flex-1 relative">
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input value={query} onChange={e => { setQuery(e.target.value); doRegisterSearch(e.target.value); }}
+                    <input value={query} onChange={(e: any) => { setQuery(e.target.value); doRegisterSearch(e.target.value); }}
                       placeholder="Escanea o busca por SKU / código de barras"
                       autoFocus className="w-full pl-9 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500" />
                   </div>
