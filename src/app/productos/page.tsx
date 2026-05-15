@@ -18,9 +18,10 @@ const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif
 function ProductosInner() {
   const searchParams = useSearchParams();
   const catParam = searchParams.get('categoria') || '';
+  const qParam = searchParams.get('q') || '';
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(qParam);
   const [selectedCat, setSelectedCat] = useState('');
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [selectedSubcat, setSelectedSubcat] = useState('');
