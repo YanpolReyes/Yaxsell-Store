@@ -7045,7 +7045,11 @@ export default function HomePage1() {
       // Desktop: show Shopify section, remove mobile overlay if any
       section.style.display = '';
       const existing = document.getElementById('tpl1-mobile-countdown');
-      if (existing) { countdownMobileRootRef.current?.unmount(); countdownMobileRootRef.current = null; existing.remove(); }
+      if (existing) {
+        const rootToUnmount = countdownMobileRootRef.current;
+        countdownMobileRootRef.current = null;
+        setTimeout(() => { rootToUnmount?.unmount(); existing.remove(); }, 0);
+      }
       return;
     }
 
@@ -7053,7 +7057,11 @@ export default function HomePage1() {
     if (!countdownOffer) {
       section.style.display = 'none';
       const existing = document.getElementById('tpl1-mobile-countdown');
-      if (existing) { countdownMobileRootRef.current?.unmount(); countdownMobileRootRef.current = null; existing.remove(); }
+      if (existing) {
+        const rootToUnmount = countdownMobileRootRef.current;
+        countdownMobileRootRef.current = null;
+        setTimeout(() => { rootToUnmount?.unmount(); existing.remove(); }, 0);
+      }
       return;
     }
 
@@ -7096,9 +7104,9 @@ export default function HomePage1() {
     const enabled = isSectionEnabled(sectionCfg, 'tpl1_coupon_banner');
     const existing = document.getElementById('tpl1-coupon-banner-section');
     if (!enabled) {
-      couponRootRef.current?.unmount();
+      const rootToUnmount = couponRootRef.current;
       couponRootRef.current = null;
-      existing?.remove();
+      setTimeout(() => { rootToUnmount?.unmount(); existing?.remove(); }, 0);
       return;
     }
 
