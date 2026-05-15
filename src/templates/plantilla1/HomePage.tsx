@@ -2700,6 +2700,18 @@ export default function HomePage1() {
         slide.style.cursor = 'pointer';
 
         let videoCreated = false;
+        // Autoplay when featured product scrolls into view
+        const fpObserver = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting && !videoCreated) {
+              fpObserver.disconnect();
+              // Trigger same logic as click
+              slide.click();
+            }
+          });
+        }, { threshold: 0.5 });
+        fpObserver.observe(slide);
+
         slide.onclick = (e) => {
           e.stopPropagation();
           if (!videoCreated) {

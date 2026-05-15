@@ -722,6 +722,16 @@ cart-drawer.cart-sidebar::after {
 [data-template="1"] .tpl1-video-pause-icon.is-playing {
   opacity: 1 !important;
 }
+/* Smaller SVG icons inside play/pause circles */
+[data-template="1"] .tpl1-video-play-icon svg {
+  width: 18px !important;
+  height: 20px !important;
+  margin-left: 2px !important;
+}
+[data-template="1"] .tpl1-video-pause-icon svg {
+  width: 18px !important;
+  height: 20px !important;
+}
 
 /* ─── Countdown section: add top spacing to separate from featured product ─── */
 [data-template="1"] #shopify-section-template--22405132419320__countdown_timer_hYJrNM {
