@@ -680,13 +680,17 @@ cart-drawer.cart-sidebar::after {
 [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .musk-h2-head {
   margin-bottom: 16px !important;
 }
-/* Remove any opacity/filter/overlay on gallery items and videos */
+/* Remove opacity/filter on gallery items — only images and containers, NOT videos (JS controls video opacity) */
 [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-gallery-item,
-[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-gallery-item *,
 [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-img,
-[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-img *,
-[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-img video {
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-img img {
   opacity: 1 !important;
+  filter: none !important;
+}
+/* Play/pause icons controlled by JS */
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-img .tpl1-video-play-icon,
+[data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG .media-img .tpl1-video-pause-icon {
+  opacity: unset !important;
   filter: none !important;
 }
 /* Kill any Shopify overlay layers inside media items */
@@ -705,7 +709,17 @@ cart-drawer.cart-sidebar::after {
 [data-template="1"] .tpl1-video-pause-icon {
   transition: opacity 0.3s ease;
 }
-[data-template="1"] .media-img:hover .tpl1-video-pause-icon {
+/* Video icon state is controlled by JS classes */
+[data-template="1"] .tpl1-video-play-icon {
+  opacity: 1 !important;
+}
+[data-template="1"] .tpl1-video-play-icon.is-hidden {
+  opacity: 0 !important;
+}
+[data-template="1"] .tpl1-video-pause-icon {
+  opacity: 0 !important;
+}
+[data-template="1"] .tpl1-video-pause-icon.is-playing {
   opacity: 1 !important;
 }
 

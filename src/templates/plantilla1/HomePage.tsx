@@ -2692,7 +2692,7 @@ export default function HomePage1() {
         // Pause icon — hidden until video plays
         const pauseIcon = document.createElement('div');
         pauseIcon.className = 'tpl1-video-pause-icon';
-        pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
+        pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:none;align-items:center;justify-content:center;';
         pauseIcon.innerHTML = `<svg width="30" height="36" viewBox="0 0 30 36" fill="white"><rect x="2" y="0" width="9" height="36" rx="3"/><rect x="19" y="0" width="9" height="36" rx="3"/></svg>`;
         videoWrap.appendChild(pauseIcon);
 
@@ -2712,19 +2712,18 @@ export default function HomePage1() {
             video.setAttribute('playsinline', '');
             video.setAttribute('muted', '');
             video.preload = 'auto';
-            video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;';
-            // Remove poster, insert video
+            video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;opacity:0;transition:opacity 0.15s ease;';
+            // Insert video — hidden (opacity:0) until it actually plays
             const posterImg = videoWrap.querySelector('.tpl1-fp-poster');
-            if (posterImg) posterImg.remove();
+            if (posterImg) (posterImg as HTMLElement).style.position = 'relative';
             videoWrap.insertBefore(video, playIcon);
+            // Set up play/pause event handlers BEFORE calling play
+            // Use onplaying (not onplay) — fires when video actually renders a frame, preventing black flash
+            video.onplaying = () => { video.style.opacity = '1'; playIcon.style.display = 'none'; pauseIcon.style.display = 'flex'; if (posterImg && posterImg.parentNode) posterImg.remove(); };
+            video.onpause = () => { playIcon.style.display = 'flex'; pauseIcon.style.display = 'none'; };
             video.play().catch(() => {});
-            playIcon.style.opacity = '0';
-            pauseIcon.style.opacity = '1';
             videoCreated = true;
             // Toggle play/pause on subsequent clicks
-            video.onplay = () => { playIcon.style.opacity = '0'; pauseIcon.style.opacity = '1'; };
-            video.onpause = () => { playIcon.style.opacity = '1'; pauseIcon.style.opacity = '0'; };
-            // Subsequent clicks
             slide.onclick = (e2) => {
               e2.stopPropagation();
               if (video.paused) { video.play().catch(() => {}); }
@@ -3296,12 +3295,11 @@ export default function HomePage1() {
               video.preload = 'auto';
               video.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit;background:#000;';
               videoContent.insertBefore(video, playIcon);
+              // Set up play/pause event handlers BEFORE calling play
+              video.onplay = () => { playIcon.style.display = 'none'; pauseIcon.style.display = 'flex'; };
+              video.onpause = () => { playIcon.style.display = 'flex'; pauseIcon.style.display = 'none'; };
               video.play().catch(() => {});
-              playIcon.style.opacity = '0';
-              pauseIcon.style.opacity = '1';
               videoCreated = true;
-              video.onplay = () => { playIcon.style.opacity = '0'; pauseIcon.style.opacity = '1'; };
-              video.onpause = () => { playIcon.style.opacity = '1'; pauseIcon.style.opacity = '0'; };
               // Subsequent clicks
               videoContent.onclick = (e2) => {
                 e2.stopPropagation();
@@ -3508,12 +3506,11 @@ export default function HomePage1() {
             source.type = 'video/mp4';
             video.appendChild(source);
             container.insertBefore(video, container.firstChild);
+            // Set up play/pause event handlers BEFORE calling play
+            video.onplay = () => { playIcon.style.display = 'none'; pauseIcon.style.display = 'flex'; };
+            video.onpause = () => { playIcon.style.display = 'flex'; pauseIcon.style.display = 'none'; };
             video.play().catch(() => {});
-            playIcon.style.opacity = '0';
-            pauseIcon.style.opacity = '1';
             videoCreated = true;
-            video.onplay = () => { playIcon.style.opacity = '0'; pauseIcon.style.opacity = '1'; };
-            video.onpause = () => { playIcon.style.opacity = '1'; pauseIcon.style.opacity = '0'; };
             // Subsequent clicks
             container.onclick = (e2) => {
               e2.stopPropagation();
@@ -4502,7 +4499,7 @@ export default function HomePage1() {
           // Pause icon — hidden until video plays
           const pauseIcon = document.createElement('div');
           pauseIcon.className = 'tpl1-video-pause-icon';
-          pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
+          pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:none;align-items:center;justify-content:center;';
           pauseIcon.innerHTML = `<svg width="24" height="28" viewBox="0 0 24 28" fill="white"><rect x="2" y="0" width="7" height="28" rx="2"/><rect x="14" y="0" width="7" height="28" rx="2"/></svg>`;
           mediaImg.appendChild(pauseIcon);
 
@@ -4519,20 +4516,18 @@ export default function HomePage1() {
               video.setAttribute('playsinline', '');
               video.setAttribute('muted', '');
               video.preload = 'auto';
-              video.style.cssText = 'width:100%;aspect-ratio:9/16;object-fit:contain;display:block;border-radius:20px;background:#000;';
-              // Remove poster, insert video
+              video.style.cssText = 'width:100%;aspect-ratio:9/16;object-fit:contain;display:block;border-radius:20px;background:#000;position:absolute;top:0;left:0;opacity:0;transition:opacity 0.15s ease;';
+              // Insert video — hidden (opacity:0) until it actually plays
               const posterImg = mediaImg.querySelector('img');
-              if (posterImg) posterImg.remove();
+              if (posterImg) posterImg.style.position = 'relative';
               mediaImg.insertBefore(video, playIcon);
+              // Set up play/pause event handlers BEFORE calling play
+              // Use onplaying (not onplay) — fires when video actually renders a frame, preventing black flash
+              video.onplaying = () => { video.style.opacity = '1'; playIcon.style.display = 'none'; pauseIcon.style.display = 'flex'; if (posterImg && posterImg.parentNode) posterImg.remove(); };
+              video.onpause = () => { playIcon.style.display = 'flex'; pauseIcon.style.display = 'none'; };
               video.play().catch(() => {});
-              playIcon.style.opacity = '0';
-              pauseIcon.style.opacity = '1';
               videoCreated = true;
-              // Toggle play/pause on subsequent clicks
-              video.onplay = () => { playIcon.style.opacity = '0'; pauseIcon.style.opacity = '1'; };
-              video.onpause = () => { playIcon.style.opacity = '1'; pauseIcon.style.opacity = '0'; };
               // Subsequent clicks on mediaImg
-              const origOnclick = mediaImg.onclick;
               mediaImg.onclick = (e2) => {
                 e2.stopPropagation();
                 if (video.paused) { video.play().catch(() => {}); }
