@@ -36,14 +36,32 @@ export default function FavoritosPage() {
     <>
       <style>{`
         .fav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
-        .fav-card { background: #fff; border-radius: 14px; overflow: hidden; border: 1px solid #f0f0f0; display: flex; flex-direction: column; transition: all 0.2s; }
+        .fav-card { background: #fff; border-radius: 0 0 14px 14px; overflow: hidden; border: 1px solid #f0f0f0; display: flex; flex-direction: column; transition: all 0.2s; }
         .fav-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); border-color: rgba(236,72,153,0.2); }
         .fav-add-btn { flex: 1; padding: 8px 0; border: none; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all .2s; font-family: ${FF}; }
         .fav-del-btn { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all .2s; }
+
+        @media (max-width: 768px) {
+          .fav-page-header { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; margin-bottom: 16px !important; }
+          .fav-page-header h1 { font-size: 20px !important; }
+          .fav-page-header button { width: 100%; justify-content: center; padding: 12px !important; }
+          .fav-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
+          .fav-card { border-radius: 0 0 16px 16px !important; border-color: #fce7f3 !important; box-shadow: 0 6px 20px rgba(236,72,153,0.08) !important; }
+          .fav-card > a > div { height: 140px !important; }
+          .fav-card > div { padding: 10px !important; }
+          .fav-card p { font-size: 12px !important; }
+          .fav-add-btn { padding: 10px 0 !important; font-size: 11px !important; border-radius: 10px !important; }
+          .fav-del-btn { width: 40px !important; height: 40px !important; }
+          .fav-empty { padding-top: 32px !important; padding-bottom: 24px !important; }
+          .fav-empty-icon { width: 110px !important; height: 110px !important; margin-bottom: 20px !important; }
+          .fav-empty h2 { font-size: 20px !important; }
+          .fav-empty p { font-size: 14px !important; padding: 0 8px !important; }
+          .fav-empty a { width: 100%; max-width: 280px; justify-content: center; box-sizing: border-box; }
+        }
       `}</style>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div className="fav-page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#1a1a1a', display: 'flex', alignItems: 'center', gap: 10 }}>
           <Heart size={22} color={PINK} fill={PINK} /> Mis Favoritos
           {favs.length > 0 && <span style={{ fontSize: 14, fontWeight: 500, color: '#9ca3af' }}>({favs.length})</span>}
@@ -62,8 +80,8 @@ export default function FavoritosPage() {
       </div>
 
       {favs.length === 0 ? (
-        <div style={{ textAlign: 'center', paddingTop: 60, paddingBottom: 40 }}>
-          <div style={{ width: 140, height: 140, borderRadius: '50%', background: 'linear-gradient(135deg,#fef2f8,#fce7f3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 28px', boxShadow: '0 8px 24px rgba(236,72,153,0.15)' }}>
+        <div className="fav-empty" style={{ textAlign: 'center', paddingTop: 60, paddingBottom: 40 }}>
+          <div className="fav-empty-icon" style={{ width: 140, height: 140, borderRadius: '50%', background: 'linear-gradient(135deg,#fef2f8,#fce7f3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 28px', boxShadow: '0 8px 24px rgba(236,72,153,0.15)' }}>
             <Heart size={64} color={PINK} fill={PINK} style={{ opacity: 0.7 }} />
           </div>
           <h2 style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a', margin: '0 0 12px', letterSpacing: '-0.01em' }}>Aún no tienes favoritos</h2>

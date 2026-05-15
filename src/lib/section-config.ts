@@ -1108,7 +1108,7 @@ export const SECTION_DEFAULTS: SectionConfig[] = [
       address: 'Toesca 2537, Santiago Centro, Chile',
       phone: '+56 9 8234 2539',
       email: 'contacto@kevincocochile.cl',
-      whatsapp: '+56982342539',
+      whatsapp: '+56999149712',
       instagram: '@kevincoco.chile',
       facebook: 'kevincocochile',
       tiktok: '@kevincoco.live',
@@ -1455,6 +1455,22 @@ export function resetSectionConfig(): void {
 export function isSectionEnabled(sections: SectionConfig[], id: string): boolean {
   const s = sections.find(s => s.id === id);
   return s ? s.enabled : true;
+}
+
+/** Aplica visibilidad en DOM (clase con !important; no la pisan otros effects con style.display) */
+export function applyTpl1SectionsVisibility(
+  sections: SectionConfig[],
+  htmlMap: Record<string, string>,
+): void {
+  if (typeof document === 'undefined') return;
+  sections.filter(s => s.id.startsWith('tpl1_')).forEach(sec => {
+    const htmlId = htmlMap[sec.id];
+    if (!htmlId) return;
+    const el = document.getElementById(htmlId);
+    if (!el) return;
+    el.dataset.sectionId = sec.id;
+    el.classList.toggle('tpl1-section-hidden', !sec.enabled);
+  });
 }
 
 export function getSectionSettings(sections: SectionConfig[], id: string): SectionSettings {

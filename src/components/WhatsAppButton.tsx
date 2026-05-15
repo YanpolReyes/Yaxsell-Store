@@ -1,19 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-
-const PHONE = '56912345678'; // Número de WhatsApp de la tienda
-const MSG = 'Hola, tengo una consulta sobre la tienda 🛒';
+import { getWhatsAppUrl } from '@/lib/store-contact';
 
 export default function WhatsAppButton() {
   const [hover, setHover] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const pathname = usePathname();
 
-  // Solo mostrar en la página principal
-  if (pathname !== '/') return null;
+  useEffect(() => {
+    const check = () => {
+      const injected = !!document.getElementById('tpl1-whatsapp-button');
+      const mobileHome = pathname === '/' && window.innerWidth <= 768;
+      setHidden(injected || mobileHome);
+    };
+    check();
+    window.addEventListener('resize', check);
+    const obs = new MutationObserver(check);
+    obs.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      window.removeEventListener('resize', check);
+      obs.disconnect();
+    };
+  }, [pathname]);
 
-  const url = `https://wa.me/${PHONE}?text=${encodeURIComponent(MSG)}`;
+  if (pathname.startsWith('/admin') || pathname.startsWith('/login') || hidden) return null;
+
+  const url = getWhatsAppUrl();
 
   return (
     <a
@@ -34,8 +48,8 @@ export default function WhatsAppButton() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
-        transform: 'scale(1)',
+        boxShadow: hover ? '0 4px 16px rgba(37,211,102,0.45)' : '0 1px 4px rgba(0,0,0,0.12)',
+        transform: hover ? 'scale(1.05)' : 'scale(1)',
         transition: 'all .2s ease',
         textDecoration: 'none',
       }}

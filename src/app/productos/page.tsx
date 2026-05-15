@@ -460,7 +460,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                   const disc = hasDisc ? Math.round(((p.PRICE - price) / p.PRICE) * 100) : 0;
                   const fav = isFavorite(p.$id);
                   return (
-                    <div key={p.$id} className="pk-card" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 22, overflow: 'hidden', border: '1px solid rgba(252,231,243,0.95)', transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(236,72,153,0.08)', backdropFilter: 'blur(10px)' }}>
+                    <div key={p.$id} className="pk-card" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '0 0 22px 22px', overflow: 'hidden', border: '1px solid rgba(252,231,243,0.95)', transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(236,72,153,0.08)', backdropFilter: 'blur(10px)' }}>
                       <Link href={`/productos/${p.$id}`} className="pk-card-media-link" onClick={e => handleCardImageClick(p, e)} style={{ display: 'block', position: 'relative' }}>
                         <div className="pk-card-image" style={{ position: 'relative', aspectRatio: '1/1', background: 'linear-gradient(135deg,#fef2f8,#fff)', overflow: 'hidden' }}>
                           {p.IMAGEURL ? (
@@ -652,7 +652,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           .pk-page { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
           .pk-products-container { padding: 12px 12px 48px !important; }
           .pk-hero-header { border-radius: 20px !important; margin-bottom: 16px !important; }
-          .pk-hero-banner { aspect-ratio: 2.15 / 1 !important; min-height: 118px !important; max-height: 200px !important; }
+          .pk-hero-banner { aspect-ratio: 2.6 / 1 !important; min-height: 88px !important; max-height: 128px !important; }
           .pk-hero-banner-img { object-fit: cover !important; object-position: center 42% !important; }
           .pk-hero-body { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; padding: 14px 16px 16px !important; }
           .pk-hero-text { display: block !important; }
@@ -671,7 +671,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           .pk-filter-chips { margin-bottom: 14px !important; padding-bottom: 2px !important; }
           .pk-filter-chips span { flex-shrink: 0; font-size: 11px !important; }
           .pk-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
-          .pk-card { border-radius: 16px !important; }
+          .pk-card { border-radius: 0 0 18px 18px !important; }
           .pk-card-fav { display: flex !important; }
           .pk-card-actions--desktop { display: none !important; }
           .pk-card-list-actions { display: none !important; }
@@ -689,12 +689,12 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
 
         @media (max-width: 480px) {
           .pk-hero-banner {
-            aspect-ratio: auto !important; min-height: 0 !important; max-height: none !important;
-            display: flex; align-items: center; justify-content: center;
+            aspect-ratio: 2.8 / 1 !important; min-height: 72px !important; max-height: 108px !important;
+            display: block !important;
           }
           .pk-hero-banner-img {
-            object-fit: contain !important; object-position: center !important;
-            width: 100% !important; height: auto !important; max-height: 168px;
+            object-fit: cover !important; object-position: center 40% !important;
+            width: 100% !important; height: 100% !important; max-height: none !important;
           }
         }
 

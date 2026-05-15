@@ -11,7 +11,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { getSectionConfig, getSectionConfigAsync, invalidateSectionCache, isSectionEnabled, type SectionConfig, type CollectionItem, type MediaGalleryItem } from '@/lib/section-config';
+import { getSectionConfig, getSectionConfigAsync, invalidateSectionCache, isSectionEnabled, applyTpl1SectionsVisibility, type SectionConfig, type CollectionItem, type MediaGalleryItem } from '@/lib/section-config';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, TIMED_OFFERS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, HOTSPOT_PANELS_COLLECTION, BANNER_OVERLAY_POSITIONS_COLLECTION, USER_PHOTOS_BUCKET } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 import type { Product, TimedOffer, Category } from '@/types';
@@ -19,6 +19,7 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPrice } from '@/lib/appwrite';
 import CouponBanner from '@/components/CouponBanner';
+import { getWhatsAppUrl, openChatbot } from '@/lib/store-contact';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import lottie from 'lottie-web';
@@ -300,6 +301,15 @@ export default function HomePage1() {
   useEffect(() => {
     getSectionConfigAsync().then(setSectionCfg).catch(() => setSectionCfg(getSectionConfig()));
   }, []);
+
+  /* Reaplicar visibilidad de secciones (después de otros effects que tocan display) */
+  useEffect(() => {
+    if (!bodyHtml || sectionCfg.length === 0) return;
+    const apply = () => applyTpl1SectionsVisibility(sectionCfg, TPL1_SECTION_HTML_MAP);
+    apply();
+    const raf = requestAnimationFrame(() => requestAnimationFrame(apply));
+    return () => cancelAnimationFrame(raf);
+  }, [bodyHtml, sectionCfg]);
 
   useEffect(() => {
     function handleEditorMsg(e: MessageEvent) {
@@ -1373,6 +1383,74 @@ export default function HomePage1() {
       populateSearchResults();
     }
 
+    const ensureTpl1PanelKeyframes = () => {
+      if (document.getElementById('tpl1-auth-keyframes')) return;
+      const ks = document.createElement('style');
+      ks.id = 'tpl1-auth-keyframes';
+      ks.textContent =
+        '@keyframes tpl1AuthIn{from{opacity:0;transform:translateY(-12px) scale(0.96)}to{opacity:1;transform:translateY(0) scale(1)}}' +
+        '@keyframes tpl1AuthSheetIn{from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)}}' +
+        '@keyframes yaxselSkeletonShimmer{0%{background-color:#fce7f3}50%{background-color:#fbcfe8}100%{background-color:#fce7f3}}';
+      document.head.appendChild(ks);
+    };
+
+    /** Panel usuario / auth: bottom sheet en móvil, dropdown anclado en desktop */
+    const layoutTpl1UserPanel = (anchor: HTMLElement, popup: HTMLElement, panelWidth = 340) => {
+      const mobile = window.matchMedia('(max-width: 768px)').matches;
+      const pad = 12;
+      popup.classList.add('yaxsel-user-panel');
+
+      if (mobile) {
+        popup.style.top = 'auto';
+        popup.style.bottom = '0';
+        popup.style.left = `${pad}px`;
+        popup.style.right = `${pad}px`;
+        popup.style.width = 'auto';
+        popup.style.maxWidth = 'none';
+        popup.style.maxHeight = 'min(92dvh, calc(100vh - env(safe-area-inset-top, 0px) - 16px))';
+        popup.style.overflowY = 'auto';
+        popup.style.borderRadius = '20px 20px 0 0';
+        popup.style.transform = 'none';
+        popup.style.animation = 'tpl1AuthSheetIn .32s cubic-bezier(0.16,1,0.3,1)';
+        return;
+      }
+
+      popup.style.animation = 'tpl1AuthIn .3s cubic-bezier(0.16,1,0.3,1)';
+      popup.style.bottom = 'auto';
+      popup.style.width = `${panelWidth}px`;
+      popup.style.left = 'auto';
+      popup.style.maxHeight = `${window.innerHeight - pad * 2}px`;
+      popup.style.overflowY = 'auto';
+      popup.style.borderRadius = panelWidth >= 340 ? '24px' : '20px';
+      popup.style.transform = 'none';
+
+      const rect = anchor.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      const place = () => {
+        const ph = popup.offsetHeight;
+        const pw = popup.offsetWidth;
+        let top = rect.bottom + 14;
+        let right = Math.max(pad, vw - rect.right);
+
+        if (top + ph > vh - pad) {
+          const above = rect.top - ph - 14;
+          top = above >= pad ? above : Math.max(pad, vh - ph - pad);
+        }
+
+        const left = vw - right - pw;
+        if (left < pad) {
+          right = Math.max(pad, vw - pw - pad);
+        }
+
+        popup.style.top = `${top}px`;
+        popup.style.right = `${right}px`;
+      };
+
+      requestAnimationFrame(place);
+    };
+
     // ── Auth popup for non-logged-in users ──
     let authPopupEl: HTMLDivElement | null = null;
     let authOverlayEl: HTMLDivElement | null = null;
@@ -1460,13 +1538,10 @@ export default function HomePage1() {
         </div>
       `;
 
-      // Position near the anchor
-      const rect = anchor.getBoundingClientRect();
-      popup.style.top = `${rect.bottom + 14}px`;
-      popup.style.right = `${Math.max(12, window.innerWidth - rect.right)}px`;
-
       document.body.appendChild(popup);
       authPopupEl = popup;
+      ensureTpl1PanelKeyframes();
+      layoutTpl1UserPanel(anchor, popup, 340);
 
       // Skeleton loading for header cover image
       const authHeader = popup.querySelector('#yaxsel-auth-header') as HTMLElement | null;
@@ -1490,14 +1565,6 @@ export default function HomePage1() {
           }
         };
         img.src = 'https://kevincococolombia.com/wp-content/uploads/2026/04/1-41.jpg';
-      }
-
-      // Inject keyframe if not yet
-      if (!document.getElementById('tpl1-auth-keyframes')) {
-        const ks = document.createElement('style');
-        ks.id = 'tpl1-auth-keyframes';
-        ks.textContent = '@keyframes tpl1AuthIn{from{opacity:0;transform:translateY(-12px) scale(0.96)}to{opacity:1;transform:translateY(0) scale(1)}} @keyframes yaxselSkeletonShimmer{0%{background-color:#fce7f3}50%{background-color:#fbcfe8}100%{background-color:#fce7f3}}';
-        document.head.appendChild(ks);
       }
 
       // Close button hover
@@ -1550,14 +1617,16 @@ export default function HomePage1() {
         el.addEventListener('mouseleave', () => { el.style.borderColor = 'rgba(236,72,153,0.15)'; el.style.transform = ''; el.style.boxShadow = 'none'; });
       });
 
-      // Close on outside click
-      const onOutside = (ev: MouseEvent) => {
-        if (!popup.contains(ev.target as Node) && !anchor.contains(ev.target as Node)) {
-          popup.remove(); authPopupEl = null;
-          document.removeEventListener('mousedown', onOutside);
-        }
-      };
-      setTimeout(() => document.addEventListener('mousedown', onOutside), 0);
+      // Close on outside click (solo desktop; en móvil usa overlay)
+      if (!window.matchMedia('(max-width: 768px)').matches) {
+        const onOutside = (ev: MouseEvent) => {
+          if (!popup.contains(ev.target as Node) && !anchor.contains(ev.target as Node)) {
+            closeAuthPopup();
+            document.removeEventListener('mousedown', onOutside);
+          }
+        };
+        setTimeout(() => document.addEventListener('mousedown', onOutside), 0);
+      }
     };
 
     // ── User dropdown for logged-in users ──
@@ -1654,21 +1723,10 @@ export default function HomePage1() {
         </div>
       `;
 
-      // Position near the anchor
-      const rect = anchor.getBoundingClientRect();
-      popup.style.top = `${rect.bottom + 10}px`;
-      popup.style.right = `${Math.max(12, window.innerWidth - rect.right)}px`;
-
       document.body.appendChild(popup);
       userDropdownEl = popup;
-
-      // Inject keyframe if not yet
-      if (!document.getElementById('tpl1-auth-keyframes')) {
-        const ks = document.createElement('style');
-        ks.id = 'tpl1-auth-keyframes';
-        ks.textContent = '@keyframes tpl1AuthIn{from{opacity:0;transform:translateY(-12px) scale(0.96)}to{opacity:1;transform:translateY(0) scale(1)}}';
-        document.head.appendChild(ks);
-      }
+      ensureTpl1PanelKeyframes();
+      layoutTpl1UserPanel(anchor, popup, 300);
 
       // Hover effects for menu items
       const menuItems = popup.querySelectorAll('a');
@@ -2544,6 +2602,37 @@ export default function HomePage1() {
     const sectionId = 'template--22405132419320__collection_list_WrFbPe';
     const section = document.querySelector(`[data-section-id="${sectionId}"]`) || document.getElementById(`shopify-section-${sectionId}`);
     if (!section) return;
+    if (!cfg.enabled) return;
+
+    const COLLECTION_TITLE_STYLE =
+      'color:#ec4899;-webkit-text-fill-color:#ec4899;opacity:1;visibility:visible;font-size:15px;font-weight:800;line-height:1.25;text-shadow:none;display:block;';
+
+    const layoutCollectionTitles = () => {
+      const slides = section.querySelectorAll('.swiper-slide') as NodeListOf<HTMLElement>;
+      slides.forEach(slide => {
+        const imgContent = slide.querySelector('.img-content');
+        const titleLink = slide.querySelector('.collection_list_title_main') as HTMLAnchorElement | null;
+        const slideWrap = slide.querySelector('.musk-collection-slide') as HTMLElement | null;
+        if (!imgContent || !titleLink || !slideWrap) return;
+
+        let footer = slide.querySelector('.tpl1-collection-footer') as HTMLElement | null;
+        if (!footer) {
+          footer = document.createElement('div');
+          footer.className = 'tpl1-collection-footer';
+        }
+        if (titleLink.parentElement !== footer) {
+          if (titleLink.parentElement === imgContent) imgContent.removeChild(titleLink);
+          footer.appendChild(titleLink);
+          if (!footer.parentElement) slideWrap.appendChild(footer);
+        }
+
+        const slideTitle = titleLink.querySelector('.slide-title') as HTMLElement | null;
+        if (slideTitle) slideTitle.setAttribute('style', COLLECTION_TITLE_STYLE);
+        titleLink.style.cssText =
+          'position:static;display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 14px;background:linear-gradient(180deg,#fdf2f8,#fff);border-top:2px solid #fce7f3;text-decoration:none;opacity:1;visibility:visible;';
+        titleLink.querySelectorAll('.tpl1-collection-visible-name').forEach(el => el.remove());
+      });
+    };
 
     // Title, subtitle, description
     const subHead = section.querySelector('.musk-fancy-sub-head') as HTMLElement;
@@ -2555,9 +2644,11 @@ export default function HomePage1() {
 
     // Collection items → update slides
     const items = (settings.collectionItems || []) as CollectionItem[];
-    if (items.length === 0) return;
-
     const slides = section.querySelectorAll('.swiper-slide') as NodeListOf<HTMLElement>;
+    if (items.length === 0) {
+      layoutCollectionTitles();
+      return;
+    }
     items.forEach((item, idx) => {
       if (idx >= slides.length) return;
       const slide = slides[idx];
@@ -2588,7 +2679,10 @@ export default function HomePage1() {
 
       // Update title
       const slideTitle = slide.querySelector('.slide-title') as HTMLElement;
-      if (slideTitle) slideTitle.textContent = item.name;
+      if (slideTitle) {
+        slideTitle.textContent = item.name;
+        slideTitle.setAttribute('style', COLLECTION_TITLE_STYLE);
+      }
 
       const href = collectionItemHref(item);
       const titleLink = slide.querySelector('.collection_list_title_main') as HTMLAnchorElement;
@@ -2604,34 +2698,8 @@ export default function HomePage1() {
       }
     });
 
-    const layoutCollectionTitlesMobile = () => {
-      const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
-      slides.forEach(slide => {
-        const imgContent = slide.querySelector('.img-content');
-        const titleLink = slide.querySelector('.collection_list_title_main') as HTMLAnchorElement | null;
-        const slideWrap = slide.querySelector('.musk-collection-slide') as HTMLElement | null;
-        if (!imgContent || !titleLink || !slideWrap) return;
-
-        const footer = slide.querySelector('.tpl1-collection-footer') as HTMLElement | null;
-        if (isMobile) {
-          if (titleLink.parentElement === imgContent) {
-            const bar = footer || document.createElement('div');
-            if (!footer) {
-              bar.className = 'tpl1-collection-footer';
-              imgContent.removeChild(titleLink);
-              bar.appendChild(titleLink);
-              slideWrap.appendChild(bar);
-            }
-          }
-        } else if (footer && titleLink.parentElement === footer) {
-          footer.removeChild(titleLink);
-          imgContent.appendChild(titleLink);
-          footer.remove();
-        }
-      });
-    };
-    layoutCollectionTitlesMobile();
-    window.addEventListener('resize', layoutCollectionTitlesMobile);
+    layoutCollectionTitles();
+    window.addEventListener('resize', layoutCollectionTitles);
 
     // Hide extra slides
     for (let i = items.length; i < slides.length; i++) {
@@ -2642,7 +2710,7 @@ export default function HomePage1() {
     }
 
     return () => {
-      window.removeEventListener('resize', layoutCollectionTitlesMobile);
+      window.removeEventListener('resize', layoutCollectionTitles);
     };
   }, [bodyHtml, sectionCfg]);
 
@@ -3978,16 +4046,22 @@ export default function HomePage1() {
     const section = document.getElementById(`shopify-section-${sectionId}`);
     if (!section) return;
 
-    const settings = sectionCfg.find(s => s.id === 'tpl1_countdown')?.settings || {};
+    const countdownCfg = sectionCfg.find(s => s.id === 'tpl1_countdown');
+    if (!countdownCfg?.enabled) {
+      section.classList.add('tpl1-section-hidden');
+      return;
+    }
+    section.classList.remove('tpl1-section-hidden');
+
+    const settings = countdownCfg.settings || {};
     const countdownOfferId = settings.countdownOfferId;
 
     // Ocultar sección si no hay oferta vinculada ni configuración manual
     if (!countdownOfferId && !settings.countdownTitle) {
-      section.style.display = 'none';
+      section.classList.add('tpl1-section-hidden');
       return;
-    } else {
-      section.style.display = '';
     }
+    section.classList.remove('tpl1-section-hidden');
 
     // Resolver datos según oferta vinculada o modo manual
     let title = settings.countdownTitle || '';
@@ -5735,6 +5809,11 @@ export default function HomePage1() {
         opts.loop = true; // Loop infinito
         opts.autoplay = { delay: 3000, disableOnInteraction: false };
         opts.centeredSlides = false;
+        if (opts.breakpoints) {
+          opts.breakpoints['320'] = { ...(opts.breakpoints['320'] || {}), slidesPerView: 2.2, spaceBetween: 16 };
+          opts.breakpoints['768'] = { ...(opts.breakpoints['768'] || {}), slidesPerView: 4, spaceBetween: 28 };
+          opts.breakpoints['992'] = { ...(opts.breakpoints['992'] || {}), slidesPerView: 5, spaceBetween: 36 };
+        }
         swiperEl.setAttribute('data-swiper-options', JSON.stringify(opts));
       } catch { }
     }
@@ -5779,7 +5858,7 @@ export default function HomePage1() {
             const img = document.createElement('img');
             img.src = logo.url;
             img.alt = logo.alt || '';
-            img.style.cssText = 'width:100px;height:60px;object-fit:contain;border-radius:8px;border:2px solid #f3f4f6;background:#fff;padding:8px;box-sizing:border-box;';
+            img.style.cssText = 'width:200px;height:120px;min-width:200px;min-height:120px;object-fit:contain;border-radius:12px;border:1px solid #f3f4f6;background:#fff;padding:12px;box-sizing:border-box;';
             svgEl.replaceWith(img);
           }
         }
@@ -5805,15 +5884,7 @@ export default function HomePage1() {
 
     const LOCKED = ['tpl1_announcement_bar', 'tpl1_navbar', 'tpl1_hero', 'tpl1_product_widget', 'tpl1_subscribe_popup', 'tpl1_whatsapp_button', 'tpl1_chatbot_button', 'tpl1_footer'];
 
-    // 0. Aplicar data-section-id a TODAS las secciones (incluidas las fijas)
-    sectionCfg.filter(s => s.id.startsWith('tpl1_')).forEach(sec => {
-      const htmlId = TPL1_SECTION_HTML_MAP[sec.id];
-      if (!htmlId) return;
-      const el = document.getElementById(htmlId);
-      if (!el) return;
-      el.dataset.sectionId = sec.id;
-      el.style.display = sec.enabled ? '' : 'none';
-    });
+    applyTpl1SectionsVisibility(sectionCfg, TPL1_SECTION_HTML_MAP);
 
     // 0a. Apply announcement bar settings
     try {
@@ -6338,6 +6409,14 @@ export default function HomePage1() {
             if (hs.heroTransitionSpeed !== undefined) {
               opts.speed = hs.heroTransitionSpeed;
             }
+            if (window.matchMedia('(max-width: 768px)').matches) {
+              opts.loop = false;
+              opts.autoplay = false;
+              opts.allowTouchMove = false;
+              opts.simulateTouch = false;
+              opts.noSwiping = true;
+              opts.watchOverflow = true;
+            }
             sliderEl.dataset.swiperOptions = JSON.stringify(opts);
           } catch { }
         }
@@ -6716,6 +6795,37 @@ export default function HomePage1() {
           for (let i = 0; i < Math.min(slides.length, swiperSlides.length); i++) {
             swiperSlides[i].style.display = '';
           }
+
+          const applyHeroMobileLock = () => {
+            const isMobile = window.matchMedia('(max-width: 768px)').matches;
+            if (!heroEl) return;
+            if (isMobile) {
+              heroEl.classList.add('tpl1-hero-mobile-locked');
+              swiperSlides.forEach((slide, i) => {
+                slide.style.display = i === 0 ? '' : 'none';
+              });
+              const lockSwiper = () => {
+                const slider = heroEl.querySelector('fuzion-hero-banner-slider') as HTMLElement & { swiper?: { allowTouchMove: boolean; autoplay?: { stop?: () => void }; disable?: () => void; touchRatio?: number } };
+                const sw = slider?.swiper || (heroEl.querySelector('.swiper') as HTMLElement & { swiper?: typeof slider.swiper })?.swiper;
+                if (sw) {
+                  sw.allowTouchMove = false;
+                  sw.touchRatio = 0;
+                  sw.autoplay?.stop?.();
+                  try { sw.disable?.(); } catch { /* ignore */ }
+                }
+              };
+              lockSwiper();
+              [400, 900, 1200, 2200, 3500].forEach((ms) => setTimeout(lockSwiper, ms));
+              const sliderEl = heroEl.querySelector('fuzion-hero-banner-slider');
+              sliderEl?.addEventListener?.('swiper:init', lockSwiper as EventListener);
+              sliderEl?.addEventListener?.('swiper:ready', lockSwiper as EventListener);
+            } else {
+              heroEl.classList.remove('tpl1-hero-mobile-locked');
+              swiperSlides.forEach(slide => { slide.style.display = ''; });
+            }
+          };
+          applyHeroMobileLock();
+          window.addEventListener('resize', applyHeroMobileLock);
 
           // Video visibility observer: pause when off-screen, restart when visible (PC only — skip on mobile)
           const heroSection = document.querySelector('[data-section-id="template--22405132419320__hero_banner_R6iEJ4"]') || document.querySelector('.musk-main-banner');
@@ -7214,12 +7324,24 @@ export default function HomePage1() {
     const isMobile = window.innerWidth <= 768;
     const sectionId = 'template--22405132419320__countdown_timer_hYJrNM';
     const section = document.getElementById(`shopify-section-${sectionId}`);
+    const countdownEnabled = isSectionEnabled(sectionCfg, 'tpl1_countdown');
 
     if (!section) return;
 
+    if (!countdownEnabled) {
+      section.classList.add('tpl1-section-hidden');
+      const existingOff = document.getElementById('tpl1-mobile-countdown');
+      if (existingOff) {
+        const rootToUnmount = countdownMobileRootRef.current;
+        countdownMobileRootRef.current = null;
+        setTimeout(() => { rootToUnmount?.unmount(); existingOff.remove(); }, 0);
+      }
+      return;
+    }
+
     if (!isMobile) {
       // Desktop: show Shopify section, remove mobile overlay if any
-      section.style.display = '';
+      section.classList.remove('tpl1-section-hidden', 'tpl1-countdown-mobile-source-hidden');
       const existing = document.getElementById('tpl1-mobile-countdown');
       if (existing) {
         const rootToUnmount = countdownMobileRootRef.current;
@@ -7231,7 +7353,7 @@ export default function HomePage1() {
 
     // Mobile: hide Shopify section, inject simple React countdown
     if (!countdownOffer) {
-      section.style.display = 'none';
+      section.classList.add('tpl1-section-hidden');
       const existing = document.getElementById('tpl1-mobile-countdown');
       if (existing) {
         const rootToUnmount = countdownMobileRootRef.current;
@@ -7241,7 +7363,7 @@ export default function HomePage1() {
       return;
     }
 
-    section.style.display = 'none';
+    section.classList.add('tpl1-countdown-mobile-source-hidden');
 
     let endTimeMs: number | null = null;
     if (countdownOffer.timeType === 'endDateTime' && countdownOffer.endDateTime) {
@@ -7272,7 +7394,7 @@ export default function HomePage1() {
         buttonHref={buttonHref}
       />
     );
-  }, [bodyHtml, countdownOffer, countdownProduct]);
+  }, [bodyHtml, sectionCfg, countdownOffer, countdownProduct]);
 
   /* ── Inject TPL1 coupon banner before Colecciones ── */
   useEffect(() => {
@@ -7328,7 +7450,7 @@ export default function HomePage1() {
       waBtn.dataset.sectionId = 'tpl1_whatsapp_button';
       waBtn.style.cssText = 'position:fixed;bottom:24px;left:24px;z-index:9999;width:44px;height:44px;border-radius:50%;background:#25D366;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.12);transition:transform 0.2s;';
       waBtn.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"></path></svg>`;
-      waBtn.onclick = () => window.open('https://wa.me/1234567890', '_blank');
+      waBtn.onclick = () => window.open(getWhatsAppUrl(), '_blank');
       document.body.appendChild(waBtn);
     }
 
@@ -7339,6 +7461,7 @@ export default function HomePage1() {
       cbBtn.dataset.sectionId = 'tpl1_chatbot_button';
       cbBtn.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,rgb(52,131,250),rgb(99,102,241));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.12);transition:transform 0.2s;';
       cbBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>`;
+      cbBtn.onclick = () => openChatbot();
       document.body.appendChild(cbBtn);
     }
     setSettingsApplied(true);

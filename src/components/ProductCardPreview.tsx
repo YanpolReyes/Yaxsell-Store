@@ -13,23 +13,31 @@ interface Props {
   onClose: () => void;
 }
 
+type Phase = 'entering' | 'open' | 'closing';
+
 export default function ProductCardPreview({ product, onClose }: Props) {
   const { addItem } = useCart();
-  const [open, setOpen] = useState(false);
+  const [phase, setPhase] = useState<Phase>('entering');
 
   useEffect(() => {
-    requestAnimationFrame(() => setOpen(true));
+    const t = requestAnimationFrame(() => setPhase('open'));
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+    return () => {
+      cancelAnimationFrame(t);
+      document.body.style.overflow = prev;
+    };
   }, []);
 
   const price = product.CURRENTPRICE && product.CURRENTPRICE > 0 ? product.CURRENTPRICE : product.PRICE;
   const outOfStock = product.STOCK === 0;
+  const isOpen = phase === 'open';
+  const isClosing = phase === 'closing';
 
   function close() {
-    setOpen(false);
-    setTimeout(onClose, 220);
+    if (isClosing) return;
+    setPhase('closing');
+    setTimeout(onClose, 340);
   }
 
   function handleBuy() {
@@ -44,10 +52,12 @@ export default function ProductCardPreview({ product, onClose }: Props) {
       onClick={close}
       style={{
         position: 'fixed', inset: 0, zIndex: 10050,
-        background: open ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0)',
-        backdropFilter: open ? 'blur(6px)' : 'none',
+        background: isOpen ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0)',
+        backdropFilter: isOpen ? 'blur(8px)' : 'blur(0px)',
+        WebkitBackdropFilter: isOpen ? 'blur(8px)' : 'blur(0px)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-        transition: 'background 0.25s',
+        transition: 'background 0.32s ease, backdrop-filter 0.32s ease',
+        opacity: isClosing ? 0 : 1,
       }}
     >
       <div
@@ -55,14 +65,22 @@ export default function ProductCardPreview({ product, onClose }: Props) {
         onClick={e => e.stopPropagation()}
         style={{
           position: 'relative', width: '100%', maxWidth: 480, background: '#fff',
-          borderRadius: '20px 20px 0 0', overflow: 'hidden',
+          borderRadius: '0 0 22px 22px', overflow: 'hidden',
           marginBottom: 'calc(56px + env(safe-area-inset-bottom, 0px))',
-          boxShadow: '0 -12px 40px rgba(0,0,0,0.2)',
-          transform: open ? 'translateY(0)' : 'translateY(100%)',
-          transition: 'transform 0.32s cubic-bezier(0.16,1,0.3,1)',
+          boxShadow: isOpen ? '0 -16px 48px rgba(0,0,0,0.22)' : '0 -4px 20px rgba(0,0,0,0.08)',
+          transform: isOpen ? 'translateY(0) scale(1)' : 'translateY(100%) scale(0.96)',
+          opacity: isOpen ? 1 : 0,
+          transition: 'transform 0.36s cubic-bezier(0.16,1,0.3,1), opacity 0.28s ease, box-shadow 0.36s ease',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 4px' }}>
+        <div
+          style={{
+            display: 'flex', justifyContent: 'center', padding: '10px 0 4px',
+            transform: isOpen ? 'scaleX(1)' : 'scaleX(0.4)',
+            opacity: isOpen ? 1 : 0,
+            transition: 'transform 0.3s ease, opacity 0.25s ease',
+          }}
+        >
           <div style={{ width: 40, height: 4, borderRadius: 999, background: '#e5e7eb' }} />
         </div>
         <button
@@ -75,18 +93,36 @@ export default function ProductCardPreview({ product, onClose }: Props) {
             background: 'rgba(255,255,255,0.95)', color: '#ec4899', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
+            transform: isOpen ? 'scale(1) rotate(0deg)' : 'scale(0.8) rotate(-90deg)',
+            opacity: isOpen ? 1 : 0,
+            transition: 'transform 0.3s cubic-bezier(0.16,1,0.3,1), opacity 0.25s ease',
           }}
         >
           <X size={18} />
         </button>
-        <div style={{ position: 'relative', width: '100%', aspectRatio: '1', background: 'linear-gradient(135deg,#fef2f8,#fff)' }}>
+        <div
+          style={{
+            position: 'relative', width: '100%', aspectRatio: '1',
+            background: 'linear-gradient(135deg,#fef2f8,#fff)',
+            transform: isOpen ? 'scale(1)' : 'scale(1.04)',
+            opacity: isOpen ? 1 : 0.85,
+            transition: 'transform 0.38s cubic-bezier(0.16,1,0.3,1), opacity 0.32s ease',
+          }}
+        >
           {product.IMAGEURL ? (
             <Image src={product.IMAGEURL} alt={product.NAME} fill style={{ objectFit: 'contain' }} sizes="100vw" priority />
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 64 }}>📦</div>
           )}
         </div>
-        <div style={{ padding: '16px 16px 20px' }}>
+        <div
+          style={{
+            padding: '16px 16px 20px',
+            transform: isOpen ? 'translateY(0)' : 'translateY(12px)',
+            opacity: isOpen ? 1 : 0,
+            transition: 'transform 0.34s cubic-bezier(0.16,1,0.3,1) 0.05s, opacity 0.28s ease 0.05s',
+          }}
+        >
           <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: '#111827', lineHeight: 1.35 }}>{product.NAME}</p>
           <p style={{ margin: '0 0 14px', fontSize: 22, fontWeight: 800, color: '#ec4899' }}>{formatPrice(price)}</p>
           <button

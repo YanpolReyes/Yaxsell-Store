@@ -9,6 +9,7 @@ import { useCart } from '@/context/CartContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { getServices, getAppwriteConfig, USER_PHOTOS_BUCKET, formatPrice } from '@/lib/appwrite';
 import SearchOverlay from '@/components/SearchOverlay';
+import { getWhatsAppUrl, openChatbot } from '@/lib/store-contact';
 
 const PINK_PRIMARY = '#ec4899';
 const PINK_LIGHT = '#f9a8d4';
@@ -38,6 +39,14 @@ export default function Navbar1() {
   const [authEmail, setAuthEmail] = useState('');
   const accountDropdownRef = useRef<HTMLDivElement>(null);
   const authPopupRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -90,18 +99,16 @@ export default function Navbar1() {
         setAuthPopupOpen(false);
       }
     };
-    if (authPopupOpen) document.addEventListener('mousedown', handler);
+    if (authPopupOpen && !isMobile) document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [authPopupOpen]);
-
-  const [isMobile, setIsMobile] = useState(false);
+  }, [authPopupOpen, isMobile]);
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth <= 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
+    if (!authPopupOpen || !isMobile) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [authPopupOpen, isMobile]);
 
   // En desktop (no mobile) solo mostrar fuera de homepage
   if (!isMobile && isHome) return null;
@@ -255,12 +262,44 @@ export default function Navbar1() {
           body { padding-bottom: 64px; }
         }
 
+        @keyframes tpl1AuthSheetIn { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
+
         @media (max-width: 1024px) {
           .tpl1-nav-addr { display: none; }
           .tpl1-nav-account-name { display: none; }
-          .tpl1-auth-popup { right: -10px; }
         }
         @media (max-width: 768px) {
+          .tpl1-auth-overlay { position: fixed; inset: 0; z-index: 10049; background: rgba(0,0,0,0.28); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: dropdownIn 0.2s ease; }
+          .tpl1-nav-auth-wrap { position: static !important; }
+          .tpl1-auth-popup {
+            position: fixed !important;
+            top: auto !important;
+            bottom: 0 !important;
+            left: 12px !important;
+            right: 12px !important;
+            width: auto !important;
+            max-width: none !important;
+            max-height: min(90dvh, calc(100vh - 16px)) !important;
+            overflow-y: auto !important;
+            border-radius: 20px 20px 0 0 !important;
+            z-index: 10050 !important;
+            animation: tpl1AuthSheetIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            box-shadow: 0 -8px 40px rgba(0,0,0,0.12), 0 20px 60px rgba(236,72,153,0.1) !important;
+          }
+          .tpl1-nav-dropdown {
+            position: fixed !important;
+            top: auto !important;
+            bottom: 0 !important;
+            left: 12px !important;
+            right: 12px !important;
+            width: auto !important;
+            min-width: 0 !important;
+            max-height: min(85dvh, calc(100vh - 16px)) !important;
+            overflow-y: auto !important;
+            border-radius: 20px 20px 0 0 !important;
+            z-index: 10050 !important;
+            animation: tpl1AuthSheetIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          }
           .tpl1-nav { min-height: 48px !important; height: auto !important; background: rgba(255,255,255,0.98) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border-bottom: none !important; border-radius: 999px !important; box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important; margin: 10px 80px 0 !important; position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; z-index: 9999 !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
           .tpl1-nav.scrolled { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; margin: 0 !important; border-radius: 0 !important; min-height: 48px !important; box-shadow: 0 2px 16px rgba(0,0,0,0.08) !important; }
           .tpl1-nav.scrolled .tpl1-nav-inner { height: 48px !important; min-height: 48px !important; padding: 0 12px !important; }
@@ -331,10 +370,10 @@ export default function Navbar1() {
 
           {/* Mobile fabs - WhatsApp + ChatBot (replaces logo on mobile) */}
           <div className="tpl1-nav-mobile-fabs">
-            <a href="https://wa.me/56912345678" target="_blank" rel="noopener noreferrer" className="tpl1-nav-mobile-fab tpl1-nav-mobile-fab--wa" title="WhatsApp">
+            <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="tpl1-nav-mobile-fab tpl1-nav-mobile-fab--wa" title="WhatsApp">
               <svg viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
             </a>
-            <button className="tpl1-nav-mobile-fab tpl1-nav-mobile-fab--cb" title="ChatBot" onClick={() => { /* ChatBot is handled by the ChatBot component */ }}>
+            <button type="button" className="tpl1-nav-mobile-fab tpl1-nav-mobile-fab--cb" title="ChatBot" onClick={() => openChatbot()}>
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
             </button>
           </div>
@@ -415,10 +454,13 @@ export default function Navbar1() {
                 )}
               </div>
             ) : (
-              <div ref={authPopupRef} style={{ position: 'relative' }}>
+              <div className="tpl1-nav-auth-wrap" ref={authPopupRef} style={{ position: 'relative' }}>
                 <button className="tpl1-nav-btn" onClick={() => setAuthPopupOpen(!authPopupOpen)} title="Iniciar sesión">
                   <User size={20} />
                 </button>
+                {authPopupOpen && isMobile && (
+                  <div className="tpl1-auth-overlay" onClick={() => setAuthPopupOpen(false)} aria-hidden />
+                )}
                 {authPopupOpen && (
                   <div className="tpl1-auth-popup">
                     <p className="tpl1-auth-popup-title">Iniciar sesión o crear cuenta</p>

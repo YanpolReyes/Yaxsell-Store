@@ -510,26 +510,110 @@ cart-drawer.cart-sidebar::after {
 [data-template="1"] .musk_collection1 .collection-num {
   display: none !important;
 }
-/* ─── Collection slides: pink glow on hover ─── */
+/* ─── Collection slides: título visible debajo de la imagen (rosa) ─── */
+[data-template="1"] .musk_collection1 .musk-collection-slide {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  border-radius: 16px !important;
+  background: #fff !important;
+  border: 1px solid #fce7f3 !important;
+}
+[data-template="1"] .musk_collection1 .musk-collection-slide .img-content {
+  position: relative !important;
+  overflow: hidden !important;
+  flex: 0 0 auto !important;
+}
+[data-template="1"] .musk_collection1 .musk-collection-slide .img-content img,
+[data-template="1"] .musk_collection1 .musk-collection-slide .img-content svg.placeholder-svg {
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1 !important;
+  object-fit: cover !important;
+  top: auto !important;
+  left: auto !important;
+}
+[data-template="1"] .musk_collection1 .tpl1-collection-footer,
+[data-template="1"] .musk_collection1 .collection_list_title_main {
+  position: static !important;
+  top: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  right: auto !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 12px 14px !important;
+  background: linear-gradient(180deg, #fdf2f8 0%, #ffffff 100%) !important;
+  border-top: 2px solid #fce7f3 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+[data-template="1"] .musk_collection1 .slide-title,
+[data-template="1"] .musk_collection1 .tpl1-collection-visible-name {
+  color: #ec4899 !important;
+  -webkit-text-fill-color: #ec4899 !important;
+  text-shadow: none !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+}
+[data-template="1"] .musk_collection1 .collection_list_title_right svg path {
+  fill: #ec4899 !important;
+}
 [data-template="1"] .musk_collection1 .swiper-slide:hover .img-content img {
-  filter: brightness(1.12) !important;
-  transform: scale(1.05) !important;
+  filter: brightness(1.06) !important;
+  transform: scale(1.03) !important;
   transition: filter 0.3s ease, transform 0.3s ease !important;
 }
-[data-template="1"] .musk_collection1 .swiper-slide .collection_list_title_main {
-  background: linear-gradient(to top, rgba(17, 24, 39, 0.72) 0%, rgba(17, 24, 39, 0.2) 55%, transparent 100%) !important;
+/* ─── Secciones ocultas desde el editor ─── */
+[data-template="1"] .tpl1-countdown-mobile-source-hidden {
+  display: none !important;
 }
-[data-template="1"] .musk_collection1 .swiper-slide .slide-title,
-[data-template="1"] .musk_collection1 .swiper-slide .collection_list_title_main {
-  transition: color 0.2s ease !important;
+[data-template="1"] .tpl1-section-hidden,
+.tpl1-section-hidden {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
 }
-[data-template="1"] .musk_collection1 .swiper-slide .slide-title {
-  color: #fff !important;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35) !important;
+/* ─── Logos de marcas: tamaño grande ─── */
+[data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .company-logo-wrapper {
+  padding-top: 48px !important;
+  padding-bottom: 48px !important;
 }
-[data-template="1"] .musk_collection1 .swiper-slide:hover .slide-title,
-[data-template="1"] .musk_collection1 .swiper-slide:hover .collection_list_title_main {
-  color: #ec4899 !important;
+[data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .logo-img-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  min-width: 200px !important;
+  height: auto !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .logo-img-item img,
+[data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .logo-img-item .placeholder-svg {
+  width: 200px !important;
+  height: 120px !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  border-radius: 12px !important;
+  border: 1px solid #f3f4f6 !important;
+  background: #fff !important;
+  padding: 12px !important;
+  box-sizing: border-box !important;
 }
 /* ─── Hide dark hover overlay element from theme ─── */
 [data-template="1"] .musk_collection1 .collection_inner_product_main {

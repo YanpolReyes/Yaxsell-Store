@@ -96,7 +96,40 @@
 @media screen and (max-width: 768px) {
   [data-template="1"] .musk-banner-slider,
   [data-template="1"] .musk-main-banner {
-    min-height: 70vh !important;
+    min-height: 46vh !important;
+    max-height: 520px !important;
+  }
+
+  /* Hero móvil: un solo slide, sin deslizar ni extras */
+  [data-template="1"] .tpl1-hero-mobile-locked .musk-banner-slider,
+  [data-template="1"] .tpl1-hero-mobile-locked .musk-main-banner,
+  [data-template="1"] .tpl1-hero-mobile-locked fuzion-hero-banner-slider {
+    touch-action: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    overflow: hidden !important;
+  }
+  [data-template="1"] .tpl1-hero-mobile-locked .musk-banner-slider .swiper,
+  [data-template="1"] .tpl1-hero-mobile-locked fuzion-hero-banner-slider .swiper {
+    touch-action: none !important;
+    pointer-events: none !important;
+  }
+  [data-template="1"] .tpl1-hero-mobile-locked .musk-banner-slider .swiper-wrapper {
+    transform: translate3d(0, 0, 0) !important;
+    transition: none !important;
+    width: 100% !important;
+  }
+  [data-template="1"] .tpl1-hero-mobile-locked .swiper-pagination,
+  [data-template="1"] .tpl1-hero-mobile-locked .swiper-button-next,
+  [data-template="1"] .tpl1-hero-mobile-locked .swiper-button-prev,
+  [data-template="1"] .tpl1-hero-mobile-locked .banner-slide-para,
+  [data-template="1"] .tpl1-hero-mobile-locked .banner-btn-row,
+  [data-template="1"] .tpl1-hero-mobile-locked .button_secondary,
+  [data-template="1"] .tpl1-hero-mobile-locked .musk-banner-button.btn-link-3 {
+    display: none !important;
+  }
+  [data-template="1"] .tpl1-hero-mobile-locked .musk-banner-slider .swiper-slide:not(:first-child) {
+    display: none !important;
   }
 
   [data-template="1"] .banner-main-title,
@@ -1314,22 +1347,40 @@
   }
 
   /* ─── BRAND LOGOS carousel mobile fix ─── */
-  [data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .swiper-slide {
-    width: auto !important;
-    min-width: 0 !important;
-    padding: 6px 8px !important;
+  [data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .logo-img-item {
+    min-width: 150px !important;
   }
-  [data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .swiper-slide img {
-    width: 70px !important;
-    height: 40px !important;
-    object-fit: contain !important;
-    border-radius: 6px !important;
-    border: 1px solid #f3f4f6 !important;
-    padding: 4px !important;
-    background: #fff !important;
+  [data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .logo-img-item img,
+  [data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .logo-img-item .placeholder-svg {
+    width: 150px !important;
+    height: 90px !important;
+    min-width: 150px !important;
+    padding: 10px !important;
   }
   [data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .brand-logos-title {
     font-size: 18px !important;
     margin-bottom: 12px !important;
+  }
+}
+
+/* ─── Popup usuario / auth (home Shopify header + fallback) ─── */
+@media screen and (max-width: 768px) {
+  #yaxsel-auth-overlay,
+  #yaxsel-user-overlay {
+    z-index: 10001 !important;
+  }
+  #yaxsel-auth-popup.yaxsel-user-panel,
+  #yaxsel-user-dropdown.yaxsel-user-panel {
+    top: auto !important;
+    bottom: 0 !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: min(92dvh, calc(100vh - env(safe-area-inset-top, 0px) - 16px)) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 20px 20px 0 0 !important;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.12) !important;
   }
 }
