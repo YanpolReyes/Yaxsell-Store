@@ -205,7 +205,7 @@ function LoginInner() {
                       >
                         <InputField 
                           label="Correo electrónico" icon={<Mail size={18} />} type="email" placeholder="tu@correo.com"
-                          value={loginForm.email} onChange={e => setLoginForm(f => ({ ...f, email: e.target.value }))} autoFocus
+                          value={loginForm.email} onChange={(e: any) => setLoginForm(f => ({ ...f, email: e.target.value }))} autoFocus
                         />
                         <div className="flex flex-col gap-2">
                           <div className="flex justify-between items-center">
@@ -220,7 +220,7 @@ function LoginInner() {
                             </div>
                             <input 
                               type={showPass ? 'text' : 'password'} value={loginForm.password}
-                              onChange={e => setLoginForm(f => ({ ...f, password: e.target.value }))}
+                              onChange={(e: any) => setLoginForm(f => ({ ...f, password: e.target.value }))}
                               placeholder="••••••••"
                               className="w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-sm font-medium focus:bg-white focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 transition-all outline-none"
                             />
@@ -254,15 +254,15 @@ function LoginInner() {
                         onSubmit={handleRegister} className="flex flex-col gap-4"
                       >
                         <div className="grid grid-cols-2 gap-4">
-                          <InputField label="Nombres *" icon={<User size={18} />} value={regForm.firstName} onChange={e => setRegForm(f => ({ ...f, firstName: e.target.value }))} placeholder="Juan" autoFocus />
-                          <InputField label="Apellidos *" icon={<User size={18} />} value={regForm.lastName} onChange={e => setRegForm(f => ({ ...f, lastName: e.target.value }))} placeholder="Pérez" />
+                          <InputField label="Nombres *" icon={<User size={18} />} value={regForm.firstName} onChange={(e: any) => setRegForm(f => ({ ...f, firstName: e.target.value }))} placeholder="Juan" autoFocus />
+                          <InputField label="Apellidos *" icon={<User size={18} />} value={regForm.lastName} onChange={(e: any) => setRegForm(f => ({ ...f, lastName: e.target.value }))} placeholder="Pérez" />
                         </div>
-                        <InputField label="Correo electrónico *" icon={<Mail size={18} />} type="email" value={regForm.email} onChange={e => setRegForm(f => ({ ...f, email: e.target.value }))} placeholder="tu@correo.com" />
+                        <InputField label="Correo electrónico *" icon={<Mail size={18} />} type="email" value={regForm.email} onChange={(e: any) => setRegForm(f => ({ ...f, email: e.target.value }))} placeholder="tu@correo.com" />
                         
                         <div className="grid grid-cols-2 gap-4">
-                          <InputField label="Teléfono (opc)" icon={<Phone size={18} />} type="tel" value={regForm.phone} onChange={e => setRegForm(f => ({ ...f, phone: e.target.value }))} placeholder="+569..." />
+                          <InputField label="Teléfono (opc)" icon={<Phone size={18} />} type="tel" value={regForm.phone} onChange={(e: any) => setRegForm(f => ({ ...f, phone: e.target.value }))} placeholder="+569..." />
                           <InputField label="RUT (opc)" icon={<CreditCard size={18} />} value={regForm.rut} 
-                            onChange={e => {
+                            onChange={(e: any) => {
                               const clean = e.target.value.replace(/[^0-9kK]/g, '').toUpperCase();
                               if (clean.length <= 1) { setRegForm(f => ({ ...f, rut: clean })); return; }
                               const formatted = `${clean.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${clean.slice(-1)}`;
@@ -280,7 +280,7 @@ function LoginInner() {
                             </div>
                             <input 
                               type={showPass ? 'text' : 'password'} value={regForm.password}
-                              onChange={e => setRegForm(f => ({ ...f, password: e.target.value }))}
+                              onChange={(e: any) => setRegForm(f => ({ ...f, password: e.target.value }))}
                               placeholder="Mínimo 8 caracteres"
                               className="w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-sm font-medium focus:bg-white focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 transition-all outline-none"
                             />
@@ -301,7 +301,7 @@ function LoginInner() {
                             </div>
                             <input 
                               type="password" value={regForm.confirm}
-                              onChange={e => setRegForm(f => ({ ...f, confirm: e.target.value }))}
+                              onChange={(e: any) => setRegForm(f => ({ ...f, confirm: e.target.value }))}
                               placeholder="Repite tu contraseña"
                               className={`w-full pl-11 pr-4 py-3.5 bg-slate-50 border rounded-2xl text-slate-900 text-sm font-medium focus:bg-white focus:ring-4 transition-all outline-none
                                 ${regForm.confirm && regForm.confirm !== regForm.password ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/10' : 'border-slate-200 focus:border-pink-500 focus:ring-pink-500/10'}`}
