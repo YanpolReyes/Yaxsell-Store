@@ -1466,10 +1466,30 @@ export function applyTpl1SectionsVisibility(
   sections.filter(s => s.id.startsWith('tpl1_')).forEach(sec => {
     const htmlId = htmlMap[sec.id];
     if (!htmlId) return;
-    const el = document.getElementById(htmlId);
-    if (!el) return;
-    el.dataset.sectionId = sec.id;
-    el.classList.toggle('tpl1-section-hidden', !sec.enabled);
+
+    const hidden = !sec.enabled;
+    const seen = new Set<HTMLElement>();
+
+    const mark = (el: HTMLElement) => {
+      if (seen.has(el)) return;
+      seen.add(el);
+      el.dataset.sectionId = sec.id;
+      el.classList.toggle('tpl1-section-hidden', hidden);
+    };
+
+    const byId = document.getElementById(htmlId);
+    if (byId) mark(byId);
+
+    const shopifyKey = htmlId.startsWith('shopify-section-')
+      ? htmlId.slice('shopify-section-'.length)
+      : null;
+    if (shopifyKey) {
+      document
+        .querySelectorAll<HTMLElement>(
+          `#shopify-section-${shopifyKey}, [data-section-id="${shopifyKey}"]`,
+        )
+        .forEach(mark);
+    }
   });
 }
 

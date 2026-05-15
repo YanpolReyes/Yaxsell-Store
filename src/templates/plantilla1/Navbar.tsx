@@ -1,6 +1,7 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search, ShoppingCart, User, Heart, Menu, X, MapPin, Bell, Receipt, LogOut, Package, Minus, Plus, Trash2, Home, ArrowLeft } from 'lucide-react';
@@ -40,8 +41,10 @@ export default function Navbar1() {
   const accountDropdownRef = useRef<HTMLDivElement>(null);
   const authPopupRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const check = () => setIsMobile(window.innerWidth <= 768);
     check();
     window.addEventListener('resize', check);
@@ -67,7 +70,7 @@ export default function Navbar1() {
     })();
   }, [isLoggedIn, user?.id]);
 
-  // Cargar dirección primaria desde localStorage
+  // Cargar direcciÃ³n primaria desde localStorage
   useEffect(() => {
     if (!user?.id) { setPrimaryAddress(null); return; }
     try {
@@ -115,7 +118,7 @@ export default function Navbar1() {
 
   const NAV_LINKS = [
     { label: 'Inicio', href: '/' },
-    { label: 'Catálogo', href: '/productos' },
+    { label: 'CatÃ¡logo', href: '/productos' },
     { label: 'Mis Pedidos', href: '/cuenta/pedidos' },
   ];
 
@@ -132,6 +135,36 @@ export default function Navbar1() {
     setAccountOpen(false);
     router.push('/');
   };
+
+  const authPopupPanel = (
+    <div className={`tpl1-auth-popup${isMobile ? ' tpl1-auth-popup--sheet' : ''}`}>
+      <p className="tpl1-auth-popup-title">Iniciar sesiÃ³n o crear cuenta</p>
+      <button type="button" className="tpl1-auth-popup-close" onClick={() => setAuthPopupOpen(false)}><X size={14} /></button>
+      <Link href="/login" className="tpl1-auth-primary-btn" onClick={() => setAuthPopupOpen(false)}>Iniciar sesiÃ³n</Link>
+      <div className="tpl1-auth-divider"><span>o</span></div>
+      <form onSubmit={e => { e.preventDefault(); if (authEmail.trim()) { router.push(`/login?email=${encodeURIComponent(authEmail)}`); setAuthPopupOpen(false); } }}>
+        <div className="tpl1-auth-email-wrap">
+          <input type="email" placeholder="Correo electrÃ³nico" value={authEmail} onChange={e => setAuthEmail(e.target.value)} />
+          <button type="submit"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+        </div>
+      </form>
+      <label className="tpl1-auth-newsletter">
+        <input type="checkbox" />
+        Enviarme novedades y ofertas por correo electrÃ³nico
+      </label>
+      <div className="tpl1-auth-popup-footer">
+        <Link href="/cuenta/pedidos" onClick={() => setAuthPopupOpen(false)}><Package size={15} /> Pedidos</Link>
+        <Link href="/login" onClick={() => setAuthPopupOpen(false)}><User size={15} /> Perfil</Link>
+      </div>
+    </div>
+  );
+
+  const authPopupMobileLayer = authPopupOpen && mounted && isMobile ? (
+    <>
+      <div className="tpl1-auth-overlay" onClick={() => setAuthPopupOpen(false)} aria-hidden />
+      {authPopupPanel}
+    </>
+  ) : null;
 
   return (
     <>
@@ -165,7 +198,7 @@ export default function Navbar1() {
         /* Badge para cart/notif */
         .tpl1-nav-badge { position: absolute; top: 2px; right: 2px; background: linear-gradient(135deg, ${PINK_PRIMARY}, #db2777); color: #fff; font-size: 9px; font-weight: 800; border-radius: 999px; min-width: 16px; height: 16px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(236,72,153,0.4); }
 
-        /* Dirección pill */
+        /* DirecciÃ³n pill */
         .tpl1-nav-addr { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: linear-gradient(135deg, #fef2f8, #fdf2f8); border: 1px solid rgba(236,72,153,0.15); border-radius: 999px; font-size: 12px; font-weight: 600; color: #555; text-decoration: none; max-width: 180px; transition: all 0.2s ease; }
         .tpl1-nav-addr:hover { background: linear-gradient(135deg, #fce7f3, #fbcfe8); border-color: rgba(236,72,153,0.3); transform: translateY(-1px); }
         .tpl1-nav-addr span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -271,6 +304,7 @@ export default function Navbar1() {
         @media (max-width: 768px) {
           .tpl1-auth-overlay { position: fixed; inset: 0; z-index: 10049; background: rgba(0,0,0,0.28); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: dropdownIn 0.2s ease; }
           .tpl1-nav-auth-wrap { position: static !important; }
+          .tpl1-auth-popup.tpl1-auth-popup--sheet,
           .tpl1-auth-popup {
             position: fixed !important;
             top: auto !important;
@@ -357,11 +391,11 @@ export default function Navbar1() {
       {!(isMobile && !isHome) && (
       <nav className={`tpl1-nav ${scrolled ? 'scrolled' : ''}`} style={{ background: scrolled ? 'rgba(255,255,255,0.95)' : '#fff', borderBottom: `1px solid ${scrolled ? '#fce7f3' : '#f5f5f5'}` }}>
         <div className="tpl1-nav-inner">
-          {/* Mobile center: address — solo visible con navbar expandida (scroll) */}
+          {/* Mobile center: address â€” solo visible con navbar expandida (scroll) */}
           {isMobile && scrolled && (
             <div className="tpl1-nav-mobile-center" aria-live="polite">
               <MapPin size={10} color={PINK_PRIMARY} />
-              <span>{primaryAddress || (isLoggedIn ? 'Mi ubicación' : 'Ubicación')}</span>
+              <span>{primaryAddress || (isLoggedIn ? 'Mi ubicaciÃ³n' : 'UbicaciÃ³n')}</span>
             </div>
           )}
           <Link href="/" className="tpl1-nav-logo">
@@ -395,10 +429,10 @@ export default function Navbar1() {
             </div>
             <button className="tpl1-nav-btn" onClick={() => setSearchOpen(!searchOpen)} title="Buscar"><Search size={20} /></button>
 
-            {/* Dirección primaria */}
+            {/* DirecciÃ³n primaria */}
             <Link href="/cuenta/direcciones" className="tpl1-nav-addr" title="Mis direcciones">
               <MapPin size={14} color={PINK_PRIMARY} />
-              <span>{primaryAddress || (isLoggedIn ? 'Agregar ubicación' : 'Ingresa ubicación')}</span>
+              <span>{primaryAddress || (isLoggedIn ? 'Agregar ubicaciÃ³n' : 'Ingresa ubicaciÃ³n')}</span>
             </Link>
 
             <Link href="/favoritos" title="Favoritos">
@@ -449,7 +483,7 @@ export default function Navbar1() {
                     <Link href="/cuenta/notificaciones" onClick={() => setAccountOpen(false)}><Bell size={16} /> Notificaciones</Link>
                     <Link href="/favoritos" onClick={() => setAccountOpen(false)}><Heart size={16} /> Favoritos</Link>
                     <div className="tpl1-nav-divider" />
-                    <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesión</button>
+                    <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesiÃ³n</button>
                   </div>
                 )}
               </div>
@@ -458,31 +492,7 @@ export default function Navbar1() {
                 <button className="tpl1-nav-btn" onClick={() => setAuthPopupOpen(!authPopupOpen)} title="Iniciar sesión">
                   <User size={20} />
                 </button>
-                {authPopupOpen && isMobile && (
-                  <div className="tpl1-auth-overlay" onClick={() => setAuthPopupOpen(false)} aria-hidden />
-                )}
-                {authPopupOpen && (
-                  <div className="tpl1-auth-popup">
-                    <p className="tpl1-auth-popup-title">Iniciar sesión o crear cuenta</p>
-                    <button className="tpl1-auth-popup-close" onClick={() => setAuthPopupOpen(false)}><X size={14} /></button>
-                    <Link href="/login" className="tpl1-auth-primary-btn" onClick={() => setAuthPopupOpen(false)}>Iniciar sesión</Link>
-                    <div className="tpl1-auth-divider"><span>o</span></div>
-                    <form onSubmit={e => { e.preventDefault(); if (authEmail.trim()) { router.push(`/login?email=${encodeURIComponent(authEmail)}`); setAuthPopupOpen(false); } }}>
-                      <div className="tpl1-auth-email-wrap">
-                        <input type="email" placeholder="Correo electrónico" value={authEmail} onChange={e => setAuthEmail(e.target.value)} />
-                        <button type="submit"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
-                      </div>
-                    </form>
-                    <label className="tpl1-auth-newsletter">
-                      <input type="checkbox" />
-                      Enviarme novedades y ofertas por correo electrónico
-                    </label>
-                    <div className="tpl1-auth-popup-footer">
-                      <Link href="/cuenta/pedidos" onClick={() => setAuthPopupOpen(false)}><Package size={15} /> Pedidos</Link>
-                      <Link href="/login" onClick={() => setAuthPopupOpen(false)}><User size={15} /> Perfil</Link>
-                    </div>
-                  </div>
-                )}
+                {authPopupOpen && !isMobile && authPopupPanel}
               </div>
             )}
 
@@ -517,7 +527,7 @@ export default function Navbar1() {
             <>
               <Link href="/cuenta" onClick={() => setMenuOpen(false)}><User size={16} /> Mi cuenta</Link>
               <Link href="/cuenta/pedidos" onClick={() => setMenuOpen(false)}><Receipt size={16} /> Mis pedidos</Link>
-              <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesión</button>
+              <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesiÃ³n</button>
             </>
           ) : (
             <>
@@ -529,7 +539,7 @@ export default function Navbar1() {
       </nav>
       )}
 
-      {/* ── Cart Drawer ── */}
+      {/* â”€â”€ Cart Drawer â”€â”€ */}
       {cartOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9998, display: 'flex', justifyContent: 'flex-end' }}>
           <div onClick={() => setCartOpen(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)' }} />
@@ -551,8 +561,8 @@ export default function Navbar1() {
             {items.length === 0 ? (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32, color: '#aaa' }}>
                 <ShoppingCart size={56} strokeWidth={1} color="#f9a8d4" />
-                <p style={{ margin: 0, fontSize: 15, color: '#888', fontFamily: 'DM Sans, system-ui, sans-serif' }}>Tu carrito está vacío</p>
-                <Link href="/productos" onClick={() => setCartOpen(false)} style={{ color: PINK_PRIMARY, fontSize: 13, fontWeight: 700, textDecoration: 'none', padding: '9px 20px', border: `1.5px solid ${PINK_LIGHT}`, borderRadius: 999, transition: 'all .2s' }}>Ver productos →</Link>
+                <p style={{ margin: 0, fontSize: 15, color: '#888', fontFamily: 'DM Sans, system-ui, sans-serif' }}>Tu carrito estÃ¡ vacÃ­o</p>
+                <Link href="/productos" onClick={() => setCartOpen(false)} style={{ color: PINK_PRIMARY, fontSize: 13, fontWeight: 700, textDecoration: 'none', padding: '9px 20px', border: `1.5px solid ${PINK_LIGHT}`, borderRadius: 999, transition: 'all .2s' }}>Ver productos â†’</Link>
               </div>
             ) : (
               <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
@@ -603,7 +613,7 @@ export default function Navbar1() {
                 <Link href="/checkout" onClick={() => setCartOpen(false)} style={{ display: 'block', textAlign: 'center', background: `linear-gradient(135deg, ${PINK_PRIMARY}, #db2777)`, color: '#fff', padding: '14px', borderRadius: 12, fontWeight: 700, fontSize: 15, textDecoration: 'none', boxShadow: '0 6px 20px rgba(236,72,153,0.3)', marginBottom: 10, fontFamily: 'DM Sans, system-ui, sans-serif', transition: 'all .25s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 28px rgba(236,72,153,0.4)'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(236,72,153,0.3)'; }}>
-                  Ir al checkout →
+                  Ir al checkout â†’
                 </Link>
                 <Link href="/carrito" onClick={() => setCartOpen(false)} style={{ display: 'block', textAlign: 'center', color: PINK_PRIMARY, fontSize: 13, fontWeight: 600, padding: '8px', textDecoration: 'none', fontFamily: 'DM Sans, system-ui, sans-serif' }}>
                   Ver carrito completo
@@ -623,7 +633,7 @@ export default function Navbar1() {
           </Link>
           <Link href="/productos" className={`tpl1-bottom-nav-item ${pathname === '/productos' ? 'active' : ''}`}>
             <Search />
-            <span>Catálogo</span>
+            <span>CatÃ¡logo</span>
           </Link>
           <Link href="/favoritos" className={`tpl1-bottom-nav-item ${pathname === '/favoritos' ? 'active' : ''}`}>
             <Heart />
@@ -642,6 +652,8 @@ export default function Navbar1() {
       </nav>
 
       {/* Mobile search overlay */}
+      {authPopupMobileLayer && createPortal(authPopupMobileLayer, document.body)}
+
       {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
     </>
   );

@@ -308,7 +308,15 @@ export default function HomePage1() {
     const apply = () => applyTpl1SectionsVisibility(sectionCfg, TPL1_SECTION_HTML_MAP);
     apply();
     const raf = requestAnimationFrame(() => requestAnimationFrame(apply));
-    return () => cancelAnimationFrame(raf);
+    const t1 = window.setTimeout(apply, 400);
+    const t2 = window.setTimeout(apply, 1500);
+    const t3 = window.setTimeout(apply, 3500);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.clearTimeout(t3);
+    };
   }, [bodyHtml, sectionCfg]);
 
   useEffect(() => {
@@ -1427,17 +1435,12 @@ export default function HomePage1() {
       const rect = anchor.getBoundingClientRect();
       const vw = window.innerWidth;
       const vh = window.innerHeight;
+      const gap = 14;
 
       const place = () => {
-        const ph = popup.offsetHeight;
         const pw = popup.offsetWidth;
-        let top = rect.bottom + 14;
+        const top = Math.min(rect.bottom + gap, vh - pad - 80);
         let right = Math.max(pad, vw - rect.right);
-
-        if (top + ph > vh - pad) {
-          const above = rect.top - ph - 14;
-          top = above >= pad ? above : Math.max(pad, vh - ph - pad);
-        }
 
         const left = vw - right - pw;
         if (left < pad) {
@@ -1446,6 +1449,7 @@ export default function HomePage1() {
 
         popup.style.top = `${top}px`;
         popup.style.right = `${right}px`;
+        popup.style.maxHeight = `${Math.max(160, vh - top - pad)}px`;
       };
 
       requestAnimationFrame(place);
@@ -2920,14 +2924,28 @@ export default function HomePage1() {
 
   /* ── Shop The Look (tpl1): Premium Mobile Grid + Multiple Looks Support ── */
   useEffect(() => {
-    if (!bodyHtml) return;
+    if (!bodyHtml || sectionCfg.length === 0) return;
 
-    // 1) Robust section targeting
+    const shopLookEnabled = isSectionEnabled(sectionCfg, 'tpl1_shop_the_look');
     const sectionIds = [
       'template--22405132419320__shop_the_look_tmNjgg',
       'template--22405132747000__look_C7KqPk',
-      'template--22405132419320__shop_the_look_tmNjgg_optimized'
+      'template--22405132419320__shop_the_look_tmNjgg_optimized',
     ];
+
+    if (!shopLookEnabled) {
+      for (const id of sectionIds) {
+        const sec = document.getElementById(`shopify-section-${id}`);
+        if (sec) {
+          sec.classList.add('tpl1-section-hidden');
+          sec.classList.remove('tpl1-premium-shoplook');
+        }
+      }
+      applyTpl1SectionsVisibility(sectionCfg, TPL1_SECTION_HTML_MAP);
+      return;
+    }
+
+    // 1) Robust section targeting
     let section: HTMLElement | null = null;
     for (const id of sectionIds) {
       section = document.getElementById(`shopify-section-${id}`);
@@ -2938,6 +2956,7 @@ export default function HomePage1() {
     }
     if (!section) return;
 
+    section.classList.remove('tpl1-section-hidden');
     section.classList.add('tpl1-premium-shoplook');
 
     let alive = true;
@@ -7404,7 +7423,11 @@ export default function HomePage1() {
     if (!enabled) {
       const rootToUnmount = couponRootRef.current;
       couponRootRef.current = null;
-      setTimeout(() => { rootToUnmount?.unmount(); existing?.remove(); }, 0);
+      setTimeout(() => {
+        rootToUnmount?.unmount();
+        existing?.remove();
+        applyTpl1SectionsVisibility(sectionCfg, TPL1_SECTION_HTML_MAP);
+      }, 0);
       return;
     }
 
@@ -7422,11 +7445,13 @@ export default function HomePage1() {
     }
 
     if (!couponRootRef.current) couponRootRef.current = createRoot(host);
+    host.classList.remove('tpl1-section-hidden');
     couponRootRef.current.render(
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
         <CouponBanner settings={cfg?.settings || {}} />
       </div>
     );
+    applyTpl1SectionsVisibility(sectionCfg, TPL1_SECTION_HTML_MAP);
 
     return undefined;
   }, [bodyHtml, sectionCfg]);

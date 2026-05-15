@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import { MessageCircle, X, Send, Bot, User as UserIcon, Loader2 } from 'lucide-react';
 import {
@@ -122,6 +123,7 @@ async function getReply(messages: Message[]): Promise<string> {
 export default function ChatBot() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [hideFab, setHideFab] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -130,6 +132,8 @@ export default function ChatBot() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const isHiddenRoute = pathname.startsWith('/admin') || pathname.startsWith('/login');
+
+  const close = useCallback(() => setOpen(false), []);
 
   const handleSend = useCallback(async (textOverride?: string) => {
     const text = (textOverride ?? input).trim();
@@ -151,11 +155,22 @@ export default function ChatBot() {
   }, [input, loading, messages]);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, loading]);
 
   useEffect(() => {
     if (open && inputRef.current) inputRef.current.focus();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
   }, [open]);
 
   useEffect(() => {
@@ -173,6 +188,220 @@ export default function ChatBot() {
   }, [pathname]);
 
   if (isHiddenRoute) return null;
+
+  const fullscreenChat = open && mounted ? (
+    <div className="yaxsel-chat-fullscreen" role="dialog" aria-modal="true" aria-label="Chat de asistencia">
+      <div className="yaxsel-chat-fullscreen__backdrop" onClick={close} aria-hidden />
+      <div className="yaxsel-chat-fullscreen__panel">
+        <header className="yaxsel-chat-fullscreen__header">
+          <div className="yaxsel-chat-fullscreen__brand">
+            <div className="yaxsel-chat-fullscreen__avatar">
+              <Bot size={22} color="#fff" />
+            </div>
+            <div>
+              <p className="yaxsel-chat-fullscreen__title">Yaxsel AI</p>
+              <p className="yaxsel-chat-fullscreen__subtitle">{STORE_NAME}</p>
+            </div>
+          </div>
+          <button type="button" className="yaxsel-chat-fullscreen__close" onClick={close} aria-label="Cerrar chat">
+            <X size={20} color="#fff" />
+          </button>
+        </header>
+
+        <div ref={scrollRef} className="yaxsel-chat-fullscreen__messages">
+          {messages.length === 0 && (
+            <div className="yaxsel-chat-fullscreen__welcome">
+              <Bot size={48} color="#f9a8d4" />
+              <p className="yaxsel-chat-fullscreen__welcome-title">¡Hola! Soy Yaxsel AI</p>
+              <p className="yaxsel-chat-fullscreen__welcome-text">{WELCOME}</p>
+              <div className="yaxsel-chat-fullscreen__quick">
+                {QUICK_QUESTIONS.map(q => (
+                  <button key={q} type="button" onClick={() => handleSend(q)}>{q}</button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {messages.map((m, i) => (
+            <div key={i} className={`yaxsel-chat-msg yaxsel-chat-msg--${m.role}`}>
+              <div className="yaxsel-chat-msg__avatar">
+                {m.role === 'user' ? <UserIcon size={14} color="#666" /> : <Bot size={14} color="#fff" />}
+              </div>
+              <div className="yaxsel-chat-msg__bubble">{m.content}</div>
+            </div>
+          ))}
+
+          {loading && (
+            <div className="yaxsel-chat-msg yaxsel-chat-msg--assistant">
+              <div className="yaxsel-chat-msg__avatar"><Bot size={14} color="#fff" /></div>
+              <div className="yaxsel-chat-msg__bubble yaxsel-chat-msg__bubble--loading">
+                <Loader2 size={18} color="#999" className="yaxsel-chat-spin" />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <footer className="yaxsel-chat-fullscreen__footer">
+          <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="yaxsel-chat-fullscreen__wa">
+            ¿Prefieres humano? WhatsApp {WHATSAPP_DISPLAY}
+          </a>
+          <div className="yaxsel-chat-fullscreen__input-row">
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              placeholder="Escribe tu mensaje..."
+            />
+            <button type="button" onClick={() => handleSend()} disabled={!input.trim() || loading} aria-label="Enviar">
+              <Send size={18} color="#fff" />
+            </button>
+          </div>
+        </footer>
+      </div>
+
+      <style>{`
+        .yaxsel-chat-fullscreen {
+          position: fixed; inset: 0; z-index: 10060;
+          display: flex; flex-direction: column;
+          animation: yaxselChatIn .28s ease;
+        }
+        .yaxsel-chat-fullscreen__backdrop {
+          position: absolute; inset: 0;
+          background: rgba(0,0,0,0.45);
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
+        }
+        .yaxsel-chat-fullscreen__panel {
+          position: relative; z-index: 1;
+          display: flex; flex-direction: column;
+          width: 100%; height: 100%;
+          max-width: 100%; max-height: 100%;
+          background: #fff;
+          overflow: hidden;
+        }
+        .yaxsel-chat-fullscreen__header {
+          flex-shrink: 0;
+          display: flex; align-items: center; justify-content: space-between;
+          padding: max(14px, env(safe-area-inset-top, 0px)) 16px 14px;
+          background: linear-gradient(135deg, #ec4899, #f472b6);
+        }
+        .yaxsel-chat-fullscreen__brand { display: flex; align-items: center; gap: 12px; }
+        .yaxsel-chat-fullscreen__avatar {
+          width: 42px; height: 42px; border-radius: 50%;
+          background: rgba(255,255,255,0.2);
+          display: flex; align-items: center; justify-content: center;
+        }
+        .yaxsel-chat-fullscreen__title {
+          margin: 0; font-size: 17px; font-weight: 700; color: #fff;
+          font-family: "DM Sans", system-ui, sans-serif;
+        }
+        .yaxsel-chat-fullscreen__subtitle {
+          margin: 2px 0 0; font-size: 12px; color: rgba(255,255,255,0.9);
+          font-family: "DM Sans", system-ui, sans-serif;
+        }
+        .yaxsel-chat-fullscreen__close {
+          width: 40px; height: 40px; border-radius: 50%;
+          border: none; background: rgba(255,255,255,0.18);
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer;
+        }
+        .yaxsel-chat-fullscreen__messages {
+          flex: 1; overflow-y: auto;
+          padding: 16px 14px;
+          display: flex; flex-direction: column; gap: 12px;
+          background: #fafafa;
+        }
+        .yaxsel-chat-fullscreen__welcome {
+          text-align: center; padding: 24px 12px 12px;
+          display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
+        .yaxsel-chat-fullscreen__welcome-title {
+          margin: 0; font-size: 18px; font-weight: 700; color: #333;
+          font-family: "DM Sans", system-ui, sans-serif;
+        }
+        .yaxsel-chat-fullscreen__welcome-text {
+          margin: 0 0 12px; font-size: 14px; color: #777; line-height: 1.5;
+          max-width: 320px;
+          font-family: "DM Sans", system-ui, sans-serif;
+        }
+        .yaxsel-chat-fullscreen__quick {
+          display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 340px;
+        }
+        .yaxsel-chat-fullscreen__quick button {
+          padding: 12px 16px; background: #fef2f8; border: 1px solid #fce7f3;
+          border-radius: 12px; font-size: 13px; color: #ec4899; cursor: pointer;
+          text-align: left; font-family: "DM Sans", system-ui, sans-serif; font-weight: 600;
+        }
+        .yaxsel-chat-msg { display: flex; gap: 10px; align-items: flex-end; }
+        .yaxsel-chat-msg--user { flex-direction: row-reverse; }
+        .yaxsel-chat-msg__avatar {
+          width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center;
+          background: linear-gradient(135deg, #ec4899, #f472b6);
+        }
+        .yaxsel-chat-msg--user .yaxsel-chat-msg__avatar { background: #e5e7eb; }
+        .yaxsel-chat-msg__bubble {
+          max-width: min(82%, 520px); padding: 12px 16px; border-radius: 16px;
+          font-size: 14px; line-height: 1.55; white-space: pre-wrap; word-break: break-word;
+          font-family: "DM Sans", system-ui, sans-serif;
+        }
+        .yaxsel-chat-msg--assistant .yaxsel-chat-msg__bubble {
+          background: #fff; color: #333; border-bottom-left-radius: 4px;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .yaxsel-chat-msg--user .yaxsel-chat-msg__bubble {
+          background: #ec4899; color: #fff; border-bottom-right-radius: 4px;
+        }
+        .yaxsel-chat-msg__bubble--loading { padding: 14px 18px; }
+        .yaxsel-chat-fullscreen__footer {
+          flex-shrink: 0;
+          padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+          border-top: 1px solid #f0f0f0; background: #fff;
+          display: flex; flex-direction: column; gap: 10px;
+        }
+        .yaxsel-chat-fullscreen__wa {
+          font-size: 12px; color: #ec4899; text-align: center;
+          text-decoration: none; font-weight: 600;
+          font-family: "DM Sans", system-ui, sans-serif;
+        }
+        .yaxsel-chat-fullscreen__input-row { display: flex; gap: 10px; align-items: center; }
+        .yaxsel-chat-fullscreen__input-row input {
+          flex: 1; padding: 14px 18px; border: 1.5px solid #e5e7eb;
+          border-radius: 999px; font-size: 15px; outline: none;
+          color: #333; background: #fafafa;
+          font-family: "DM Sans", system-ui, sans-serif;
+        }
+        .yaxsel-chat-fullscreen__input-row input:focus { border-color: #ec4899; background: #fff; }
+        .yaxsel-chat-fullscreen__input-row button {
+          width: 48px; height: 48px; border-radius: 50%; border: none;
+          background: #ec4899; display: flex; align-items: center; justify-content: center;
+          cursor: pointer; flex-shrink: 0;
+          box-shadow: 0 4px 14px rgba(236,72,153,0.35);
+        }
+        .yaxsel-chat-fullscreen__input-row button:disabled {
+          background: #e0e0e0; cursor: not-allowed; box-shadow: none;
+        }
+        .yaxsel-chat-spin { animation: yaxselChatSpin 1s linear infinite; }
+        @keyframes yaxselChatIn {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes yaxselChatSpin { to { transform: rotate(360deg); } }
+        @media (min-width: 769px) {
+          .yaxsel-chat-fullscreen__panel {
+            max-width: 480px; max-height: 92vh;
+            margin: auto; border-radius: 20px;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.22);
+          }
+          .yaxsel-chat-fullscreen {
+            align-items: center; justify-content: center;
+            padding: 24px;
+          }
+        }
+      `}</style>
+    </div>
+  ) : null;
 
   return (
     <>
@@ -194,120 +423,7 @@ export default function ChatBot() {
         </button>
       )}
 
-      {open && (
-        <div style={{
-          position: 'fixed', bottom: 140, right: 20, zIndex: 9999,
-          width: 370, maxWidth: 'calc(100vw - 40px)',
-          height: 520, maxHeight: 'calc(100vh - 48px)',
-          background: '#fff', borderRadius: 16,
-          boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
-          display: 'flex', flexDirection: 'column', overflow: 'hidden',
-          animation: 'chatSlideUp 0.25s ease-out',
-        }}>
-          <div style={{
-            background: 'linear-gradient(135deg, #ec4899, #f472b6)',
-            padding: '16px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Bot size={20} color="#fff" />
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#fff' }}>Yaxsel AI</p>
-                <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.85)' }}>{STORE_NAME}</p>
-              </div>
-            </div>
-            <button type="button" onClick={() => setOpen(false)} aria-label="Cerrar chat" style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-              <X size={16} color="#fff" />
-            </button>
-          </div>
-
-          <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {messages.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '24px 12px' }}>
-                <Bot size={40} color="#f9a8d4" style={{ margin: '0 auto 12px' }} />
-                <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600, color: '#333' }}>¡Hola! Soy Yaxsel AI</p>
-                <p style={{ margin: '0 0 16px', fontSize: 13, color: '#999', lineHeight: 1.5 }}>{WELCOME}</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {QUICK_QUESTIONS.map(q => (
-                    <button key={q} type="button" onClick={() => handleSend(q)}
-                      style={{ padding: '8px 14px', background: '#fef2f8', border: '1px solid #fce7f3', borderRadius: 8, fontSize: 12, color: '#ec4899', cursor: 'pointer', textAlign: 'left' }}>
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {messages.map((m, i) => (
-              <div key={i} style={{ display: 'flex', gap: 8, flexDirection: m.role === 'user' ? 'row-reverse' : 'row', alignItems: 'flex-end' }}>
-                <div style={{
-                  width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-                  background: m.role === 'user' ? '#e5e7eb' : 'linear-gradient(135deg, #ec4899, #f472b6)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {m.role === 'user' ? <UserIcon size={14} color="#666" /> : <Bot size={14} color="#fff" />}
-                </div>
-                <div style={{
-                  maxWidth: '75%', padding: '10px 14px', borderRadius: 14,
-                  background: m.role === 'user' ? '#ec4899' : '#f5f5f5',
-                  color: m.role === 'user' ? '#fff' : '#333',
-                  fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                  borderBottomRightRadius: m.role === 'user' ? 4 : 14,
-                  borderBottomLeftRadius: m.role === 'user' ? 14 : 4,
-                }}>
-                  {m.content}
-                </div>
-              </div>
-            ))}
-
-            {loading && (
-              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #ec4899, #f472b6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Bot size={14} color="#fff" />
-                </div>
-                <div style={{ padding: '10px 14px', background: '#f5f5f5', borderRadius: 14, borderBottomLeftRadius: 4 }}>
-                  <Loader2 size={16} color="#999" style={{ animation: 'chatSpin 1s linear infinite' }} />
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div style={{ padding: '12px 14px', borderTop: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: 11, color: '#ec4899', textAlign: 'center', textDecoration: 'none', fontWeight: 600 }}>
-              ¿Prefieres humano? WhatsApp {WHATSAPP_DISPLAY}
-            </a>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                ref={inputRef}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder="Escribe tu mensaje..."
-                style={{ flex: 1, padding: '10px 14px', border: '1px solid #e0e0e0', borderRadius: 24, fontSize: 13, outline: 'none', color: '#333', background: '#fafafa' }}
-              />
-              <button type="button" onClick={() => handleSend()} disabled={!input.trim() || loading}
-                style={{
-                  width: 38, height: 38, borderRadius: '50%',
-                  background: input.trim() && !loading ? '#ec4899' : '#e0e0e0',
-                  border: 'none', cursor: input.trim() && !loading ? 'pointer' : 'not-allowed',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>
-                <Send size={16} color="#fff" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        @keyframes chatSlideUp {
-          from { opacity: 0; transform: translateY(20px) scale(0.95); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes chatSpin { to { transform: rotate(360deg); } }
-      `}</style>
+      {fullscreenChat && createPortal(fullscreenChat, document.body)}
     </>
   );
 }
