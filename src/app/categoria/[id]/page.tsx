@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { useParams } from 'next/navigation';
-import { ProductosInner } from '@/app/productos/page';
+import { ProductosInner } from '@/app/productos/ProductosInner';
 
 function CategoriaContent() {
   const params = useParams<{ id: string }>();
