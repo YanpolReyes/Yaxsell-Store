@@ -350,7 +350,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   /* ── sidebar JSX — Shopify dark style ── */
   const sidebarJsx = (
-    <aside className={`sf-sidebar-shine admin-sidebar fixed inset-y-0 left-0 top-[56px] z-30 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} lg:!static lg:!transform-none`} style={{
+    <aside className={`sf-sidebar-shine admin-sidebar fixed inset-y-0 left-0 top-[64px] z-30 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} lg:!static lg:!transform-none`} style={{
       width: 240, flexShrink: 0, display: 'flex', flexDirection: 'column',
       background: '#1a1a1a',
       boxShadow: 'inset -1px 0 0 rgba(255,255,255,0.04), inset 1px 0 0 rgba(255,255,255,0.02)',
@@ -482,8 +482,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .admin-sidebar { position: relative !important; }
     }
     @media (max-width: 1023px) {
-      .admin-topbar { height: 64px !important; }
-      .admin-sidebar { box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important; top: 64px !important; }
+      .admin-topbar { height: 68px !important; }
+      .admin-sidebar { box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important; top: 68px !important; }
     }
     /* ── Global mobile fixes for all admin pages ── */
     @media (max-width: 768px) {
@@ -582,10 +582,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#1a1a1a', overflow: 'hidden' }}>
       {/* ═══ Top bar — unified with sidebar ═══ */}
       <header style={{
-        height: 56,
+        height: 64,
         background: '#1a1a1a',
         display: 'flex', alignItems: 'center',
-        padding: '0 12px', gap: 10, flexShrink: 0, zIndex: 40,
+        padding: '0 16px', gap: 12, flexShrink: 0, zIndex: 40,
         boxShadow: 'none',
         position: 'relative',
       }}
@@ -596,7 +596,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </button>
 
         {/* Logo in top bar on desktop */}
-        <div className="hidden lg:block sf-logo-animate" style={{ width: 160, height: 40, flexShrink: 0, marginRight: 8, position: 'relative', alignSelf: 'flex-end', marginBottom: 6 }}>
+        <div className="hidden lg:block sf-logo-animate" style={{ width: 200, height: 48, flexShrink: 0, position: 'relative', alignSelf: 'flex-end', marginBottom: 0, marginLeft: 'auto' }}>
           <Link href="/admin/dashboard" style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
             <Image
               src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/Yaxsell%2Flogo.png?alt=media&token=3c24b115-53b7-4603-badf-1af26b586a6a"
