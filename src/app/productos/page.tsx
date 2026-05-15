@@ -251,18 +251,19 @@ function ProductosInner() {
       </div>
       <div className="pk-products-container" style={{ position: 'relative', zIndex: 1, maxWidth: 1600, margin: '0 auto', padding: '32px 20px 60px' }}>
         {/* Hero header */}
-        <div className="pk-hero-header" style={{ marginBottom: 24, padding: 24, borderRadius: 28, background: 'rgba(255,255,255,0.68)', border: '1px solid rgba(252,231,243,0.9)', boxShadow: '0 18px 50px rgba(236,72,153,0.12)', backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
-            <img src="https://kevincoco-official.com/cdn/shop/files/52f32db865885fc4a91bee12d6b70ff0.jpg?v=1763188428&width=2528" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }} />
+        <div className="pk-hero-header" style={{ marginBottom: 24, borderRadius: 28, border: '1px solid rgba(252,231,243,0.9)', boxShadow: '0 18px 50px rgba(236,72,153,0.12)', overflow: 'hidden', background: '#fff' }}>
+          <div className="pk-hero-banner">
+            <img className="pk-hero-banner-img" src="https://kevincoco-official.com/cdn/shop/files/52f32db865885fc4a91bee12d6b70ff0.jpg?v=1763188428&width=2528" alt="Portada catálogo" />
           </div>
-          <div className="pk-hero-text" style={{ position: 'relative', zIndex: 1 }}>
+          <div className="pk-hero-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, padding: 24 }}>
+          <div className="pk-hero-text">
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.92)', color: '#ec4899', padding: '6px 13px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 10, border: '1px solid #fce7f3' }}>
               <Sparkles size={13} /> Nuestra tienda
             </div>
-            <h1 className="pk-products-title" style={{ fontSize: 42, fontWeight: 950, color: '#fff', margin: 0, letterSpacing: '-0.04em', lineHeight: 1.05 }}>
+            <h1 className="pk-products-title" style={{ fontSize: 42, fontWeight: 950, color: '#111827', margin: 0, letterSpacing: '-0.04em', lineHeight: 1.05 }}>
               Productos
             </h1>
-            <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.95)', margin: '8px 0 18px', maxWidth: 520, lineHeight: 1.55 }}>
+            <p className="pk-hero-subtitle" style={{ fontSize: 15, color: '#6b7280', margin: '8px 0 18px', maxWidth: 520, lineHeight: 1.55 }}>
               Descubrí nuestra selección de productos exclusivos
             </p>
             <div className="pk-hero-stats" style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
@@ -276,8 +277,9 @@ function ProductosInner() {
               </div>
             </div>
           </div>
-          <div className="pk-hero-logo" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
-            <img src="https://jumpseller.s3.eu-west-1.amazonaws.com/store/yes-bella/assets//Sin%20t%C3%ADtulo-1_5d514a8074f0023fe88b0eacda93c729.png?1743456840" alt="Logo" className="pk-hero-logo" style={{ height: 100, objectFit: 'contain' }} />
+          <div className="pk-hero-logo-wrap" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="https://jumpseller.s3.eu-west-1.amazonaws.com/store/yes-bella/assets//Sin%20t%C3%ADtulo-1_5d514a8074f0023fe88b0eacda93c729.png?1743456840" alt="Logo" className="pk-hero-logo-img" style={{ height: 100, objectFit: 'contain' }} />
+          </div>
           </div>
         </div>
 
@@ -564,6 +566,21 @@ function ProductosInner() {
           box-shadow: 0 6px 20px rgba(236,72,153,0.35);
         }
 
+
+        .pk-hero-header { display: flex; flex-direction: column; padding: 0 !important; }
+        .pk-hero-banner {
+          position: relative; width: 100%; overflow: hidden;
+          aspect-ratio: 2.4 / 1; min-height: 140px; max-height: 320px;
+          background: linear-gradient(135deg, #fef2f8, #fce7f3);
+        }
+        .pk-hero-banner-img {
+          width: 100%; height: 100%; display: block;
+          object-fit: cover; object-position: center center;
+        }
+        .pk-hero-body { flex: 1; min-width: 0; }
+        .pk-hero-logo-wrap { flex-shrink: 0; }
+        .pk-hero-logo-img { height: 100px; width: auto; object-fit: contain; }
+
         @media (hover: hover) and (pointer: fine) {
           .pk-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(236,72,153,0.15); border-color: #fbcfe8; }
           .pk-card:hover .pk-card-img { transform: scale(1.06); }
@@ -582,14 +599,17 @@ function ProductosInner() {
         @media (max-width: 768px) {
           .pk-page { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
           .pk-products-container { padding: 12px 12px 48px !important; }
-          .pk-hero-header { padding: 16px !important; border-radius: 20px !important; min-height: auto !important; flex-direction: column !important; align-items: stretch !important; gap: 12px !important; margin-bottom: 16px !important; }
+          .pk-hero-header { border-radius: 20px !important; margin-bottom: 16px !important; }
+          .pk-hero-banner { aspect-ratio: 2.15 / 1 !important; min-height: 118px !important; max-height: 200px !important; }
+          .pk-hero-banner-img { object-fit: cover !important; object-position: center 42% !important; }
+          .pk-hero-body { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; padding: 14px 16px 16px !important; }
           .pk-hero-text { display: block !important; }
           .pk-products-title { font-size: 28px !important; }
-          .pk-hero-text p { font-size: 13px !important; margin: 6px 0 12px !important; max-width: 100% !important; }
+          .pk-hero-subtitle { font-size: 13px !important; margin: 6px 0 12px !important; max-width: 100% !important; }
           .pk-hero-stats { gap: 8px !important; }
           .pk-hero-stats > div { padding: 8px 12px !important; border-radius: 12px !important; }
-          .pk-hero-logo { align-self: center !important; margin: 0 !important; }
-          .pk-hero-logo img { height: 52px !important; }
+          .pk-hero-logo-wrap { align-self: center !important; }
+          .pk-hero-logo-img { height: 56px !important; }
           .pk-toolbar { top: 0 !important; padding: 10px !important; border-radius: 16px !important; gap: 8px !important; margin-bottom: 14px !important; }
           .pk-toolbar > div:first-child { flex: 1 1 100% !important; min-width: 100% !important; order: 1; }
           .pk-filters-btn { order: 2; flex: 1; justify-content: center; min-height: 44px; }
@@ -611,6 +631,17 @@ function ProductosInner() {
           .pk-card-list > div:last-child { flex-direction: row !important; justify-content: center; gap: 8px !important; }
           .pk-result-bar { padding: 8px 10px !important; flex-wrap: wrap; }
           .pk-result-bar p { font-size: 12px !important; }
+        }
+
+        @media (max-width: 480px) {
+          .pk-hero-banner {
+            aspect-ratio: auto !important; min-height: 0 !important; max-height: none !important;
+            display: flex; align-items: center; justify-content: center;
+          }
+          .pk-hero-banner-img {
+            object-fit: contain !important; object-position: center !important;
+            width: 100% !important; height: auto !important; max-height: 168px;
+          }
         }
 
         @media (max-width: 400px) {
