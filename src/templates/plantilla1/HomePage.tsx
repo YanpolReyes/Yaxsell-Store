@@ -273,6 +273,12 @@ function MobileCountdown({ title, subtitle, endTimeMs, bgImage, buttonHref }: {
   );
 }
 
+function collectionItemHref(item: CollectionItem): string {
+  if (item.categoryId) return `/categoria/${item.categoryId}`;
+  if (item.link && item.link.startsWith('/')) return item.link;
+  return item.link || '/productos';
+}
+
 export default function HomePage1() {
   const containerRef = useRef<HTMLDivElement>(null);
   const couponRootRef = useRef<Root | null>(null);
@@ -2572,9 +2578,18 @@ export default function HomePage1() {
       const slideTitle = slide.querySelector('.slide-title') as HTMLElement;
       if (slideTitle) slideTitle.textContent = item.name;
 
-      // Update link
+      const href = collectionItemHref(item);
       const titleLink = slide.querySelector('.collection_list_title_main') as HTMLAnchorElement;
-      if (titleLink && item.link) titleLink.href = item.link;
+      if (titleLink) {
+        titleLink.href = href;
+        titleLink.setAttribute('aria-label', item.name);
+        titleLink.removeAttribute('tabindex');
+      }
+      const cardLink = slide.querySelector('.collectiony_main_card_inner') as HTMLAnchorElement;
+      if (cardLink) {
+        cardLink.href = href;
+        cardLink.setAttribute('aria-label', item.name);
+      }
     });
 
     // Hide extra slides
@@ -4934,9 +4949,8 @@ export default function HomePage1() {
       const productContent = slide.querySelector('.product-content') as HTMLElement;
       if (productContent) {
         productContent.style.cursor = 'pointer';
-        productContent.onclick = () => {
-          if (item.link) window.location.href = item.link;
-        };
+        const href = collectionItemHref(item);
+        productContent.onclick = () => { window.location.href = href; };
 
         // Add accent bar if not present
         if (!productContent.querySelector('.tpl1-cat-accent-bar')) {
@@ -4978,7 +4992,7 @@ export default function HomePage1() {
         nameLink.textContent = item.name;
         nameLink.setAttribute('aria-label', item.name);
         nameLink.removeAttribute('aria-disabled');
-        if (item.link) nameLink.href = item.link;
+        nameLink.href = collectionItemHref(item);
       }
 
       const price = slide.querySelector('.product-price') as HTMLElement;

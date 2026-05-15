@@ -1232,6 +1232,59 @@
     font-size: 12px !important;
   }
 
+  /* ─── Colecciones: nombres visibles en móvil (sin depender del hover) ─── */
+  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    background: #fff !important;
+    border: 1px solid rgba(252, 231, 243, 0.95) !important;
+    box-shadow: 0 8px 24px rgba(236, 72, 153, 0.1) !important;
+  }
+  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content img,
+  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content svg.placeholder-svg {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1 !important;
+    top: auto !important;
+    left: auto !important;
+    object-fit: cover !important;
+  }
+  [data-template="1"] .musk_collection1 .collection_list_title_main {
+    position: relative !important;
+    bottom: auto !important;
+    width: 100% !important;
+    padding: 12px 14px !important;
+    background: #fff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    text-decoration: none !important;
+    z-index: 2 !important;
+    pointer-events: auto !important;
+  }
+  [data-template="1"] .musk_collection1 .slide-title {
+    color: #111827 !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    line-height: 1.25 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  [data-template="1"] .musk_collection1 .collection_list_title_right svg path {
+    fill: #ec4899 !important;
+  }
+  [data-template="1"] .musk_collection1 .collection-num {
+    display: none !important;
+  }
+  [data-template="1"] .musk_collection1 .collectiony_main_card_inner {
+    z-index: 1 !important;
+  }
+
   /* ─── BRAND LOGOS carousel mobile fix ─── */
   [data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .swiper-slide {
     width: auto !important;

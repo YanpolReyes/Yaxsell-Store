@@ -15,14 +15,14 @@ import ProductBadges from '@/components/ProductBadges';
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 
-function ProductosInner() {
+export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
   const searchParams = useSearchParams();
-  const catParam = searchParams.get('categoria') || '';
+  const catParam = lockCategoryId || searchParams.get('categoria') || '';
   const qParam = searchParams.get('q') || '';
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState(qParam);
-  const [selectedCat, setSelectedCat] = useState('');
+  const [selectedCat, setSelectedCat] = useState(lockCategoryId || '');
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [selectedSubcat, setSelectedSubcat] = useState('');
   const [sortBy, setSortBy] = useState('newest');
@@ -36,6 +36,11 @@ function ProductosInner() {
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const { addItem } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
+
+  const lockedCategory = lockCategoryId ? categories.find(c => c.$id === lockCategoryId) : null;
+  const categoryProductCount = lockCategoryId
+    ? products.filter(p => p.CATEGORYID === lockCategoryId).length
+    : products.length;
 
   const handleCardImageClick = (p: Product, e: React.MouseEvent) => {
     if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) {
@@ -132,9 +137,12 @@ function ProductosInner() {
     return p.NAME.toLowerCase().includes(q) || (p.DESCRIPTION || '').toLowerCase().includes(q);
   });
 
-  const hasActiveFilters = !!(selectedCat || selectedSubcat || selectedTag || search || (activePriceRange && (activePriceRange[0] !== priceRange[0] || activePriceRange[1] !== priceRange[1])));
+  const hasActiveFilters = !!(
+    (selectedCat && selectedCat !== lockCategoryId) || selectedSubcat || selectedTag || search
+    || (activePriceRange && (activePriceRange[0] !== priceRange[0] || activePriceRange[1] !== priceRange[1]))
+  );
   const clearAllFilters = () => {
-    setSelectedCat(''); setSelectedSubcat(''); setSelectedTag(''); setSearch('');
+    setSelectedCat(lockCategoryId || ''); setSelectedSubcat(''); setSelectedTag(''); setSearch('');
     setActivePriceRange(priceRange);
   };
 
@@ -259,33 +267,52 @@ function ProductosInner() {
       <div className="pk-products-container" style={{ position: 'relative', zIndex: 1, maxWidth: 1600, margin: '0 auto', padding: '32px 20px 60px' }}>
         {/* Hero header */}
         <div className="pk-hero-header" style={{ marginBottom: 24, borderRadius: 28, border: '1px solid rgba(252,231,243,0.9)', boxShadow: '0 18px 50px rgba(236,72,153,0.12)', overflow: 'hidden', background: '#fff' }}>
-          <div className="pk-hero-banner">
-            <img className="pk-hero-banner-img" src="https://kevincoco-official.com/cdn/shop/files/52f32db865885fc4a91bee12d6b70ff0.jpg?v=1763188428&width=2528" alt="Portada catálogo" />
+          <div className="pk-hero-banner" style={{ position: 'relative' }}>
+            {lockedCategory?.iconUrl ? (
+              <img className="pk-hero-banner-img" src={lockedCategory.iconUrl} alt={lockedCategory.name || 'Categoría'} style={{ objectFit: 'contain', padding: 24, background: 'linear-gradient(135deg,#fef2f8,#fff)' }} />
+            ) : lockCategoryId ? (
+              <div className="pk-hero-banner-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,#ec4899,#f9a8d4)', color: '#fff', fontSize: 56, fontWeight: 900 }}>
+                {(lockedCategory?.name || 'C').charAt(0).toUpperCase()}
+              </div>
+            ) : (
+              <img className="pk-hero-banner-img" src="https://kevincoco-official.com/cdn/shop/files/52f32db865885fc4a91bee12d6b70ff0.jpg?v=1763188428&width=2528" alt="Portada catálogo" />
+            )}
           </div>
           <div className="pk-hero-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, padding: 24 }}>
           <div className="pk-hero-text">
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.92)', color: '#ec4899', padding: '6px 13px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 10, border: '1px solid #fce7f3' }}>
-              <Sparkles size={13} /> Nuestra tienda
+              <Sparkles size={13} /> {lockCategoryId ? 'Categoría' : 'Nuestra tienda'}
             </div>
             <h1 className="pk-products-title" style={{ fontSize: 42, fontWeight: 950, color: '#111827', margin: 0, letterSpacing: '-0.04em', lineHeight: 1.05 }}>
-              Productos
+              {lockedCategory?.name || 'Productos'}
             </h1>
             <p className="pk-hero-subtitle" style={{ fontSize: 15, color: '#6b7280', margin: '8px 0 18px', maxWidth: 520, lineHeight: 1.55 }}>
-              Descubrí nuestra selección de productos exclusivos
+              {lockCategoryId ? `Productos de la categoría ${lockedCategory?.name || ''}. Filtrá, ordená y comprá en un solo lugar.` : 'Descubrí nuestra selección de productos exclusivos'}
             </p>
             <div className="pk-hero-stats" style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               <div style={{ padding: '9px 14px', borderRadius: 16, background: 'rgba(255,255,255,0.92)', border: '1px solid #fce7f3', boxShadow: '0 4px 14px rgba(236,72,153,0.15)' }}>
-                <span style={{ display: 'block', fontSize: 18, fontWeight: 900, color: '#ec4899' }}>{products.length}</span>
+                <span style={{ display: 'block', fontSize: 18, fontWeight: 900, color: '#ec4899' }}>{lockCategoryId ? categoryProductCount : products.length}</span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Productos</span>
               </div>
+              {!lockCategoryId && (
               <div style={{ padding: '9px 14px', borderRadius: 16, background: 'rgba(255,255,255,0.92)', border: '1px solid #fce7f3', boxShadow: '0 4px 14px rgba(236,72,153,0.15)' }}>
                 <span style={{ display: 'block', fontSize: 18, fontWeight: 900, color: '#ec4899' }}>{categories.length}</span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Categorías</span>
               </div>
+              )}
+              {lockCategoryId && (
+                <Link href="/productos" style={{ padding: '9px 14px', borderRadius: 16, background: '#fef2f8', border: '1px solid #fce7f3', fontSize: 12, fontWeight: 700, color: '#ec4899', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+                  Ver catálogo completo
+                </Link>
+              )}
             </div>
           </div>
           <div className="pk-hero-logo-wrap" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src="https://jumpseller.s3.eu-west-1.amazonaws.com/store/yes-bella/assets//Sin%20t%C3%ADtulo-1_5d514a8074f0023fe88b0eacda93c729.png?1743456840" alt="Logo" className="pk-hero-logo-img" style={{ height: 100, objectFit: 'contain' }} />
+            {lockedCategory?.iconUrl ? (
+              <img src={lockedCategory.iconUrl} alt={lockedCategory.name} className="pk-hero-logo-img" style={{ height: 100, objectFit: 'contain' }} />
+            ) : (
+              <img src="https://jumpseller.s3.eu-west-1.amazonaws.com/store/yes-bella/assets//Sin%20t%C3%ADtulo-1_5d514a8074f0023fe88b0eacda93c729.png?1743456840" alt="Logo" className="pk-hero-logo-img" style={{ height: 100, objectFit: 'contain' }} />
+            )}
           </div>
           </div>
         </div>

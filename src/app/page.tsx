@@ -193,7 +193,7 @@ export default function HomePage() {
           <h2 className="text-2xl font-bold mb-8">Explorar categorías</h2>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {categories.map(cat => (
-              <Link key={cat.$id} href={`/productos?categoria=${cat.$id}`}
+              <Link key={cat.$id} href={`/categoria/${cat.$id}`}
                 className="glass rounded-2xl px-6 py-4 flex flex-col items-center gap-2 min-w-[120px] hover:bg-white/10 transition-colors card-hover text-center">
                 {cat.iconUrl && (
                   <div className="relative w-10 h-10 rounded-full overflow-hidden">

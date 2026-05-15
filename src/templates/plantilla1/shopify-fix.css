@@ -516,9 +516,16 @@ cart-drawer.cart-sidebar::after {
   transform: scale(1.05) !important;
   transition: filter 0.3s ease, transform 0.3s ease !important;
 }
+[data-template="1"] .musk_collection1 .swiper-slide .collection_list_title_main {
+  background: linear-gradient(to top, rgba(17, 24, 39, 0.72) 0%, rgba(17, 24, 39, 0.2) 55%, transparent 100%) !important;
+}
 [data-template="1"] .musk_collection1 .swiper-slide .slide-title,
 [data-template="1"] .musk_collection1 .swiper-slide .collection_list_title_main {
   transition: color 0.2s ease !important;
+}
+[data-template="1"] .musk_collection1 .swiper-slide .slide-title {
+  color: #fff !important;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35) !important;
 }
 [data-template="1"] .musk_collection1 .swiper-slide:hover .slide-title,
 [data-template="1"] .musk_collection1 .swiper-slide:hover .collection_list_title_main {
