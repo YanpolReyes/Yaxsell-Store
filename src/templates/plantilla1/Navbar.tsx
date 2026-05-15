@@ -588,8 +588,8 @@ export default function Navbar1() {
         </div>
       )}
 
-      {/* Bottom mobile nav */}
-      <nav className="tpl1-bottom-nav">
+      {/* Bottom mobile nav — hidden on /inventario */}
+      <nav className={`tpl1-bottom-nav${pathname?.startsWith('/inventario') ? ' !hidden' : ''}`}>
         <div className="tpl1-bottom-nav-inner">
           <Link href="/" className={`tpl1-bottom-nav-item ${pathname === '/' ? 'active' : ''}`}>
             <Home />

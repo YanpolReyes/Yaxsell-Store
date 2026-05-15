@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Query } from 'appwrite';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Order, OrderStatus } from '@/types/admin';
-import { Search, RefreshCw, ChevronDown, Eye, AlertTriangle, X, Download, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, RefreshCw, ChevronDown, Eye, AlertTriangle, X, Download, ArrowUpDown, ArrowUp, ArrowDown, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
@@ -40,6 +40,7 @@ function OrdersContent() {
   const [regionFilter, setRegionFilter] = useState<string>('all');
   const [liveOnly, setLiveOnly] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [productLocations, setProductLocations] = useState<Record<string, { section: number | null; gondola: string | null }>>({}); // product id -> location
 
   const toggleSort = (col: 'date' | 'total') => {
     if (sortBy === col) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
@@ -407,7 +408,41 @@ function OrdersContent() {
                         </p>
                       </td>
                       <td className="px-4 py-3">
-                        <button onClick={() => setExpandedOrderId(expandedOrderId === order.$id ? null : order.$id)}
+                        <button onClick={async () => {
+                          const newId = expandedOrderId === order.$id ? null : order.$id;
+                          setExpandedOrderId(newId);
+                          // Fetch product locations for this order
+                          if (newId) {
+                            try {
+                              let items: { id?: string }[] = [];
+                              try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
+                              const ids = items.map(i => i.id).filter(Boolean) as string[];
+                              if (ids.length > 0) {
+                                const { databases } = getServices();
+                                const { databaseId } = getAppwriteConfig();
+                                const locs: Record<string, { section: number | null; gondola: string | null }> = { ...productLocations };
+                                for (const pid of ids) {
+                                  if (locs[pid]) continue; // already cached
+                                  try {
+                                    const doc: any = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, pid);
+                                    const feat = doc.FEATURES || '';
+                                    const m = feat.match(/Section:\s*(\d+)/i);
+                                    const sec = m ? parseInt(m[1], 10) : null;
+                                    let gon: string | null = null;
+                                    if (sec !== null) {
+                                      if (sec >= 1 && sec <= 9) gon = 'A';
+                                      else if (sec >= 10 && sec <= 18) gon = 'B';
+                                      else if (sec >= 19 && sec <= 27) gon = 'C';
+                                      else if (sec >= 28 && sec <= 36) gon = 'D';
+                                    }
+                                    locs[pid] = { section: sec, gondola: gon };
+                                  } catch { locs[pid] = { section: null, gondola: null }; }
+                                }
+                                setProductLocations(locs);
+                              }
+                            } catch {}
+                          }
+                        }}
                           className={`p-1.5 rounded-lg transition-colors inline-flex ${expandedOrderId === order.$id ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-indigo-50 text-gray-400 hover:text-indigo-600'}`}>
                           <Eye className="w-4 h-4" />
                         </button>
@@ -426,14 +461,22 @@ function OrdersContent() {
                               <div className="lg:col-span-2">
                                 <p className="text-xs font-semibold text-gray-500 mb-2">PRODUCTOS ({items.length})</p>
                                 <div className="space-y-1.5">
-                                  {items.map((it, i) => (
+                                  {items.map((it: any, i: number) => {
+                                  const loc = it.id ? productLocations[it.id] : null;
+                                  return (
                                     <div key={i} className="flex items-center gap-3 bg-white rounded-lg px-3 py-2 border border-gray-100">
                                       {it.img && <img src={it.img} alt="" className="w-8 h-8 object-contain rounded" />}
                                       <span className="text-sm text-gray-700 flex-1 truncate">{it.name}</span>
+                                      {loc && loc.section !== null && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-[10px] font-bold shrink-0">
+                                          <MapPin className="w-2.5 h-2.5" /> G{loc.gondola} S{loc.section}
+                                        </span>
+                                      )}
                                       <span className="text-xs text-gray-400">×{it.qty}</span>
                                       <span className="text-sm font-medium text-gray-900">{fmt(it.total || it.price * it.qty)}</span>
                                     </div>
-                                  ))}
+                                  );
+                                })}
                                 </div>
                               </div>
                               {/* Details sidebar */}

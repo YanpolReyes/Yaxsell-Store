@@ -184,9 +184,9 @@ export default function LoyaltyLevel() {
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       style={{ 
         background: '#ffffff', 
-        borderRadius: isMobile ? 24 : 32, 
+        borderRadius: isMobile ? 16 : 32, 
         border: `1px solid ${PINK}10`, 
-        padding: isMobile ? '24px 20px' : 40, 
+        padding: isMobile ? '16px 14px' : 40, 
         fontFamily: FF,
         boxShadow: '0 20px 60px rgba(236,72,153,0.05), 0 4px 12px rgba(0,0,0,0.02)',
         position: 'relative',
@@ -213,12 +213,12 @@ export default function LoyaltyLevel() {
       )}
 
       {/* Header Profile Section */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40, position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 16 : 40, position: 'relative', zIndex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 24 }}>
           <motion.div 
             whileHover={{ scale: 1.05, rotate: 5 }}
             style={{ 
-              width: isMobile ? 60 : 90, height: isMobile ? 60 : 90, borderRadius: isMobile ? 20 : 28, 
+              width: isMobile ? 44 : 90, height: isMobile ? 44 : 90, borderRadius: isMobile ? 14 : 28, 
               background: `linear-gradient(135deg, #fff, ${PINK}05)`, 
               border: `2px solid ${PINK}10`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -226,60 +226,60 @@ export default function LoyaltyLevel() {
               position: 'relative'
             }}
           >
-            <CurrentIcon size={isMobile ? 32 : 44} color={currentLevel.color} strokeWidth={2.5} />
+            <CurrentIcon size={isMobile ? 22 : 44} color={currentLevel.color} strokeWidth={2.5} />
             <motion.div 
               animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 2 }}
-              style={{ position: 'absolute', bottom: -8, right: -8, background: '#fff', borderRadius: '50%', padding: 6, boxShadow: '0 4px 15px rgba(236,72,153,0.2)' }}
+              style={{ position: 'absolute', bottom: isMobile ? -5 : -8, right: isMobile ? -5 : -8, background: '#fff', borderRadius: '50%', padding: isMobile ? 3 : 6, boxShadow: '0 4px 15px rgba(236,72,153,0.2)' }}
             >
-              <Zap size={16} color={PINK} fill={PINK} />
+              <Zap size={isMobile ? 10 : 16} color={PINK} fill={PINK} />
             </motion.div>
           </motion.div>
           <div>
             <motion.span 
               initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-              style={{ display: 'inline-block', padding: '6px 14px', background: `${PINK}08`, color: PINK, borderRadius: 999, fontSize: 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6, border: `1px solid ${PINK}10` }}
+              style={{ display: 'inline-block', padding: isMobile ? '3px 8px' : '6px 14px', background: `${PINK}08`, color: PINK, borderRadius: 999, fontSize: isMobile ? 9 : 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: isMobile ? 3 : 6, border: `1px solid ${PINK}10` }}
             >
               MI STATUS ACTUAL
             </motion.span>
-            <h2 style={{ margin: 0, fontSize: isMobile ? 28 : 42, fontWeight: 900, color: '#111827', letterSpacing: '-0.04em', lineHeight: 1 }}>{currentLevel.name}</h2>
+            <h2 style={{ margin: 0, fontSize: isMobile ? 20 : 42, fontWeight: 900, color: '#111827', letterSpacing: '-0.04em', lineHeight: 1 }}>{currentLevel.name}</h2>
           </div>
         </div>
       </div>
 
       {/* Main Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 16, marginBottom: isMobile ? 24 : 40, position: 'relative', zIndex: 1 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(3, 1fr)', gap: isMobile ? 8 : 16, marginBottom: isMobile ? 16 : 40, position: 'relative', zIndex: 1 }}>
         {[
-          { icon: Trophy, label: 'Pedidos Pagados', value: paidOrdersCount, color: '#3b82f6', bg: '#eff6ff' },
-          { icon: Coins, label: 'Puntos Bella', value: points.toLocaleString(), color: PINK, bg: `${PINK}08` },
-          { icon: TrendingUp, label: 'Total Invertido', value: formatPrice(totalSpent), color: '#10b981', bg: '#ecfdf5' }
+          { icon: Trophy, label: 'Pedidos', value: paidOrdersCount, color: '#3b82f6', bg: '#eff6ff' },
+          { icon: Coins, label: 'Puntos', value: points.toLocaleString(), color: PINK, bg: `${PINK}08` },
+          { icon: TrendingUp, label: 'Invertido', value: formatPrice(totalSpent), color: '#10b981', bg: '#ecfdf5' }
         ].map((stat, i) => (
           <motion.div 
             key={i}
             whileHover={{ y: -6, boxShadow: '0 20px 40px rgba(236,72,153,0.06)', borderColor: `${PINK}20` }}
-            style={{ padding: 24, background: '#fff', borderRadius: 24, border: '1px solid #f1f5f9', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}
+            style={{ padding: isMobile ? '12px 8px' : 24, background: '#fff', borderRadius: isMobile ? 14 : 24, border: '1px solid #f1f5f9', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)', textAlign: isMobile ? 'center' : 'left' }}
           >
-            <div style={{ width: 44, height: 44, borderRadius: 14, background: stat.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, border: `1px solid ${stat.color}10` }}>
-              <stat.icon size={22} color={stat.color} />
+            <div style={{ width: isMobile ? 32 : 44, height: isMobile ? 32 : 44, borderRadius: isMobile ? 10 : 14, background: stat.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: isMobile ? 6 : 16, border: `1px solid ${stat.color}10`, ...(isMobile ? { margin: '0 auto 6px' } : {}) }}>
+              <stat.icon size={isMobile ? 16 : 22} color={stat.color} />
             </div>
-            <p style={{ margin: 0, fontSize: isMobile ? 20 : 26, fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>{stat.value}</p>
-            <p style={{ margin: '4px 0 0', fontSize: 11, color: '#9ca3af', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
+            <p style={{ margin: 0, fontSize: isMobile ? 15 : 26, fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>{stat.value}</p>
+            <p style={{ margin: '2px 0 0', fontSize: isMobile ? 9 : 11, color: '#9ca3af', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
           </motion.div>
         ))}
       </div>
 
       {/* Progress & Motivation Section */}
       {nextLevel && (
-        <div style={{ marginBottom: 40, position: 'relative', zIndex: 1, padding: 32, background: `linear-gradient(135deg, ${PINK}04, #fff)`, borderRadius: 28, border: `1px solid ${PINK}08` }}>
+        <div style={{ marginBottom: isMobile ? 16 : 40, position: 'relative', zIndex: 1, padding: isMobile ? '14px 16px' : 32, background: `linear-gradient(135deg, ${PINK}04, #fff)`, borderRadius: isMobile ? 16 : 28, border: `1px solid ${PINK}08` }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 }}>
             <div>
-              <p style={{ margin: 0, fontSize: 18, fontWeight: 900, color: '#111827', letterSpacing: '-0.01em' }}>
+              <p style={{ margin: 0, fontSize: isMobile ? 14 : 18, fontWeight: 900, color: '#111827', letterSpacing: '-0.01em' }}>
                 {ordersNeeded > 0 ? (
                   <>Estás a <span style={{ color: PINK }}>{ordersNeeded} pedidos</span> de <span style={{ color: nextLevel.color }}>{nextLevel.name}</span></>
                 ) : (
                   <span style={{ color: '#10b981' }}>🎉 ¡Ya puedes reclamar tu nuevo nivel!</span>
                 )}
               </p>
-              <p style={{ margin: '6px 0 0', fontSize: 14, color: '#6b7280', fontWeight: 500 }}>
+              <p style={{ margin: '4px 0 0', fontSize: isMobile ? 11 : 14, color: '#6b7280', fontWeight: 500 }}>
                 {ordersNeeded > 0 ? 'Desbloquea beneficios exclusivos con tu próxima compra.' : 'Haz clic abajo para generar tu cupón de recompensa.'}
               </p>
             </div>
@@ -289,7 +289,7 @@ export default function LoyaltyLevel() {
             </div>
           </div>
 
-          <div style={{ height: 16, background: '#f1f5f9', borderRadius: 999, overflow: 'hidden', position: 'relative', border: '1px solid #e2e8f0' }}>
+          <div style={{ height: isMobile ? 10 : 16, background: '#f1f5f9', borderRadius: 999, overflow: 'hidden', position: 'relative', border: '1px solid #e2e8f0' }}>
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: `${progressPercent}%` }}
@@ -362,17 +362,17 @@ export default function LoyaltyLevel() {
       )}
 
       {/* Benefits Area */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 40 : 32, position: 'relative', zIndex: 1 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 16 : 32, position: 'relative', zIndex: 1 }}>
         {/* Current Benefits */}
         <div>
-          <h3 style={{ fontSize: 12, fontWeight: 900, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 20 }}>
+          <h3 style={{ fontSize: isMobile ? 10 : 12, fontWeight: 900, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: isMobile ? 10 : 20 }}>
             TUS PRIVILEGIOS {currentLevel.name.toUpperCase()}
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 6 : 12 }}>
             {currentLevel.benefits.map((benefit, i) => (
               <motion.div 
                 initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
-                key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, background: '#fff', padding: '16px 20px', borderRadius: 16, border: '1px solid #f1f5f9', boxShadow: '0 4px 10px rgba(0,0,0,0.01)' }}
+                key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: isMobile ? 8 : 14, background: '#fff', padding: isMobile ? '10px 12px' : '16px 20px', borderRadius: isMobile ? 12 : 16, border: '1px solid #f1f5f9', boxShadow: '0 4px 10px rgba(0,0,0,0.01)' }}
               >
                 <div style={{ marginTop: 2, color: currentLevel.color }}>
                   <CheckCircle2 size={18} />

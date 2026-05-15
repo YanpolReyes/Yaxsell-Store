@@ -9,7 +9,7 @@ import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLL
 import { Product, Category, Subcategory } from '@/types/admin';
 import {
   Upload, Search, Package, CheckCircle2, RefreshCw,
-  X, FileSpreadsheet, ArrowUpCircle, Plus, Eye, EyeOff, Sparkles, Languages, FolderTree, Camera, MapPin
+  X, FileSpreadsheet, ArrowUpCircle, Plus, Eye, EyeOff, Sparkles, Languages, FolderTree, Camera, MapPin, ChevronDown
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false });
@@ -115,7 +115,7 @@ export default function InventarioPage() {
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrateProgress, setMigrateProgress] = useState(0);
   const [migrateResults, setMigrateResults] = useState<{ activated: number; deactivated: number; errors: number } | null>(null);
-  const [view, setView] = useState<'excel' | 'catalog' | 'withStock'>('excel');
+  const [view, setView] = useState<'excel' | 'catalog' | 'withStock' | 'located'>('catalog');
   const [catalogSearch, setCatalogSearch] = useState('');
   const [stockEdits, setStockEdits] = useState<Record<string, string>>({});
   const [packQtyEdits, setPackQtyEdits] = useState<Record<string, string>>({});
@@ -124,7 +124,10 @@ export default function InventarioPage() {
   const [showScanner, setShowScanner] = useState(false);
   const [scanTarget, setScanTarget] = useState<'search' | string>('search');
   const [barcodeSuggestion, setBarcodeSuggestion] = useState<{ product: Product; scannedBarcode: string; step: 'confirm-product' | 'confirm-add-barcode' } | null>(null);
-  const [stockNotification, setStockNotification] = useState<{ product: Product; scannedCode: string } | null>(null);
+  // Modal instead of toast for scan-found-with-stock
+  const [stockModal, setStockModal] = useState<{ product: Product; scannedCode: string } | null>(null);
+  // Unregistered product modal
+  const [unregisteredModal, setUnregisteredModal] = useState<{ code: string } | null>(null);
   const [editStockModal, setEditStockModal] = useState<Product | null>(null);
   const [editPackQtyValue, setEditPackQtyValue] = useState<string>('');
   const [editPackagesValue, setEditPackagesValue] = useState<string>('');
@@ -181,32 +184,39 @@ export default function InventarioPage() {
 
   const handleBarcodeScan = (code: string) => {
     if (scanTarget === 'search') {
-      setCatalogSearch(code);
-
-      // Respect current view — don't force switch to catalog
-      if (view === 'excel') setView('catalog');
-
       const codeLower = code.toLowerCase().trim();
       const directMatch = products.find(p => {
         const bc = getBarcode(p).toLowerCase();
         const sku = getSku(p).toLowerCase();
-        const name = (p.NAME || '').toLowerCase();
-        return bc === codeLower || sku === codeLower || name.includes(codeLower);
+        return bc === codeLower || sku === codeLower;
       });
 
-      // If product found and already has stock, notify (especially useful in "Sin stock" view)
-      if (directMatch && (directMatch.STOCK || 0) > 0 && view === 'catalog') {
-        setStockNotification({ product: directMatch, scannedCode: code });
-      }
-
-      if (!directMatch && code.length >= 4) {
-        const last4 = code.slice(-4).toLowerCase();
-        const suggested = products.find(p => {
-          const sku = getSku(p).toLowerCase();
-          return sku && sku.endsWith(last4) && !getBarcode(p);
-        });
-        if (suggested) {
-          setBarcodeSuggestion({ product: suggested, scannedBarcode: code, step: 'confirm-product' });
+      if (directMatch) {
+        // Found — check if has stock
+        if ((directMatch.STOCK || 0) > 0) {
+          // Show modal: "already has stock, add more or edit?"
+          setStockModal({ product: directMatch, scannedCode: code });
+        } else {
+          // No stock — jump to Sin Stock and highlight
+          setCatalogSearch(code);
+          setView('catalog');
+        }
+      } else {
+        // Not found at all — try last4 suggestion
+        if (code.length >= 4) {
+          const last4 = code.slice(-4).toLowerCase();
+          const suggested = products.find(p => {
+            const sku = getSku(p).toLowerCase();
+            return sku && sku.endsWith(last4) && !getBarcode(p);
+          });
+          if (suggested) {
+            setBarcodeSuggestion({ product: suggested, scannedBarcode: code, step: 'confirm-product' });
+          } else {
+            // Totally unknown
+            setUnregisteredModal({ code });
+          }
+        } else {
+          setUnregisteredModal({ code });
         }
       }
     } else {
@@ -352,6 +362,7 @@ export default function InventarioPage() {
       });
 
       setRows(parsed);
+      setView('excel');
     } catch (e: any) {
       alert('Error al leer el archivo: ' + e.message);
     } finally {
@@ -704,8 +715,15 @@ export default function InventarioPage() {
     }
   };
 
+  const getSection = (p: Product): number | null => {
+    const m = p.FEATURES?.match(/Section:\s*(\d+)/i);
+    return m ? parseInt(m[1], 10) : null;
+  };
+
   const zeroStockProducts = products.filter(p => (p.STOCK || 0) === 0);
   const withStockProducts = products.filter(p => (p.STOCK || 0) > 0);
+  const locatedProducts = products.filter(p => getSection(p) !== null && (p.STOCK || 0) > 0);
+  const unlocatedProducts = products.filter(p => getSection(p) === null && (p.STOCK || 0) > 0);
   const catalogFiltered = zeroStockProducts.filter(p => {
     if (!catalogSearch) return true;
     const q = catalogSearch.toLowerCase();
@@ -741,7 +759,9 @@ export default function InventarioPage() {
   if (authLoading || !isLoggedIn) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div className="min-h-screen bg-gray-50 text-gray-900 pb-safe" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0)' }}>
+      {/* Hide bottom navbar on /inventario */}
+      <style>{`[data-bottom-nav], .tpl1-mobile-bottom-nav, nav[class*='bottom'], .bottom-nav { display: none !important; }`}</style>
       {showScanner && (
         <BarcodeScanner onScan={handleBarcodeScan} onClose={() => setShowScanner(false)} />
       )}
@@ -826,27 +846,69 @@ export default function InventarioPage() {
         </div>
       )}
 
-      {/* Stock notification — product already has stock */}
-      {stockNotification && (
-        <div className="fixed inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 bottom-4 sm:bottom-4 z-50 sm:max-w-sm">
-          <div className="bg-amber-500 text-white rounded-xl sm:rounded-2xl shadow-2xl p-3 sm:px-6 sm:py-4 flex items-center gap-3 sm:gap-4">
-            {stockNotification.product.IMAGEURL && (
-              <img src={stockNotification.product.IMAGEURL} alt="" className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg sm:rounded-xl border-2 border-white/30 shrink-0" />
-            )}
-            <div className="flex-1 min-w-0">
-              <div className="font-bold text-xs sm:text-sm">⚠ Ya tiene stock</div>
-              <div className="text-[11px] sm:text-xs text-white/90 line-clamp-1">{stockNotification.product.NAME}</div>
-              <div className="text-[10px] sm:text-xs text-white/70">{stockNotification.product.STOCK} uds</div>
+      {/* Stock modal — product already has stock */}
+      {stockModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-4">
+              <h3 className="text-lg font-bold">⚠ Este producto ya tiene stock</h3>
+              <p className="text-xs text-white/80 mt-0.5">¿Qué deseas hacer?</p>
             </div>
-            <div className="flex flex-col gap-1 shrink-0">
-              <button onClick={() => { setView('withStock'); setCatalogSearch(getSku(stockNotification.product)); setStockNotification(null); }}
-                className="px-2.5 py-1 bg-white text-amber-700 text-[10px] sm:text-[11px] font-bold rounded-lg hover:bg-amber-50 transition whitespace-nowrap">
-                Ver stock
+            <div className="p-5 flex items-center gap-4">
+              {stockModal.product.IMAGEURL && (
+                <img src={stockModal.product.IMAGEURL} alt="" className="w-16 h-16 object-cover rounded-xl shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-gray-900 line-clamp-1">{stockModal.product.NAME}</div>
+                <div className="text-xs font-mono text-gray-500">SKU: {getSku(stockModal.product)}</div>
+                <div className="text-sm font-bold text-emerald-600 mt-1">{stockModal.product.STOCK} unidades actuales</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 px-5 pb-5">
+              <button
+                onClick={() => {
+                  setView('catalog');
+                  setCatalogSearch(getSku(stockModal.product));
+                  setStockModal(null);
+                }}
+                className="py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition">
+                + Agregar más
               </button>
-              <button onClick={() => setStockNotification(null)}
-                className="px-2.5 py-1 bg-white/20 text-white text-[10px] sm:text-[11px] font-medium rounded-lg hover:bg-white/30 transition whitespace-nowrap">
-                Cerrar
+              <button
+                onClick={() => {
+                  setEditStockModal(stockModal.product);
+                  setEditPackQtyValue(String(stockModal.product.PACKQTY || ''));
+                  setEditPackagesValue(String(Math.round((stockModal.product.STOCK || 0) / (stockModal.product.PACKQTY || 1))));
+                  setStockModal(null);
+                }}
+                className="py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition">
+                Editar
               </button>
+            </div>
+            <button onClick={() => setStockModal(null)} className="w-full pb-5 text-xs text-gray-400 hover:text-gray-600 transition">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Unregistered product modal */}
+      {unregisteredModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-rose-500 to-pink-600 text-white px-6 py-4">
+              <h3 className="text-lg font-bold">Producto no registrado</h3>
+              <p className="text-xs text-white/80 mt-0.5">Código: {unregisteredModal.code}</p>
+            </div>
+            <div className="p-6 text-center">
+              <p className="text-gray-700 font-medium">Este código no coincide con ningún producto en el sistema.</p>
+              <p className="text-sm text-gray-500 mt-1">¿Deseas registrarlo como producto nuevo?</p>
+            </div>
+            <div className="flex border-t border-gray-100">
+              <button onClick={() => setUnregisteredModal(null)}
+                className="flex-1 px-4 py-3 text-gray-600 hover:bg-gray-50 font-semibold transition">No</button>
+              <button onClick={() => { setView('excel'); setUnregisteredModal(null); }}
+                className="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition">Sí, agregar</button>
             </div>
           </div>
         </div>
@@ -960,54 +1022,54 @@ export default function InventarioPage() {
       )}
 
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex flex-col gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-5 flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-indigo-600 flex items-center justify-center">
-                <FileSpreadsheet className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+                <FileSpreadsheet className="w-4 h-4 text-white" />
               </div>
               <div>
-                <h1 className="text-sm sm:text-lg font-bold text-gray-900">Inventario</h1>
-                <p className="text-xs text-gray-500 hidden sm:block">Excel → Traduce con IA → Sincroniza con Yaxsel</p>
+                <h1 className="text-sm font-bold text-gray-900">Inventario</h1>
+                <p className="text-xs text-gray-500 hidden sm:block">{products.length} productos</p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <button onClick={() => setShowLocator(true)} title="Ubicar Producto" className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-lg text-xs font-bold transition shadow-md"><MapPin className="w-3.5 h-3.5" /><span className="hidden sm:inline">Ubicar</span></button>
-              <span className="text-xs text-gray-400 hidden sm:inline">{products.length} productos</span>
-              <button onClick={handleMigrateActive} disabled={isMigrating || loadingProducts}
-                title="Migrar: marcar productos con stock=0 como inactivos"
-                className="flex items-center gap-1 px-2 py-1.5 sm:px-3 sm:py-2 bg-rose-600 hover:bg-rose-700 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-lg text-xs font-medium transition">
-                {isMigrating ? (
-                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <EyeOff className="w-3.5 h-3.5" />
-                )}
-                <span className="hidden sm:inline">Migrar</span>
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => setShowLocator(true)} title="Ubicar Producto"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-lg text-xs font-bold transition shadow-md">
+                <MapPin className="w-3.5 h-3.5" />
+                <span>Ubicación</span>
               </button>
+              {/* Excel upload icon */}
+              <label title="Subir Excel" className="cursor-pointer">
+                <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} className="hidden" disabled={isLoading} />
+                <div className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200 transition">
+                  {isLoading ? <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /> : <Upload className="w-4 h-4" />}
+                </div>
+              </label>
               <button onClick={loadProducts} disabled={loadingProducts}
-                className="p-1.5 sm:p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition disabled:opacity-50">
+                className="p-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition disabled:opacity-50">
                 <RefreshCw className={`w-4 h-4 ${loadingProducts ? 'animate-spin' : ''}`} />
               </button>
             </div>
           </div>
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button onClick={() => setView('excel')}
-              className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition ${view === 'excel' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-              Subir Excel
-            </button>
+          <div className="flex bg-gray-100 rounded-lg p-1 overflow-x-auto">
             <button onClick={() => setView('catalog')}
-              className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition ${view === 'catalog' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition whitespace-nowrap ${view === 'catalog' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
               Sin stock ({zeroStockProducts.length})
             </button>
             <button onClick={() => setView('withStock')}
-              className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition ${view === 'withStock' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition whitespace-nowrap ${view === 'withStock' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
               Con stock ({withStockProducts.length})
+            </button>
+            <button onClick={() => setView('located')}
+              className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition whitespace-nowrap ${view === 'located' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              Ubicados ({locatedProducts.length})
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-5">
+      <main className="max-w-7xl mx-auto px-4 py-6 space-y-5 pb-24">
         {view === 'catalog' && (
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="p-3 sm:p-5 border-b border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -1933,7 +1995,107 @@ export default function InventarioPage() {
         )}
         </>
         )}
+        {view === 'located' && (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-900">Productos Ubicados</h2>
+              <p className="text-xs text-gray-500 mt-0.5">{locatedProducts.length} con sección asignada · {unlocatedProducts.length} sin sección</p>
+            </div>
+
+            {/* Located group */}
+            <details open className="border-b border-gray-100">
+              <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none hover:bg-gray-50">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <span className="text-sm font-semibold text-gray-900">Con sección asignada</span>
+                  <span className="text-xs text-gray-400">({locatedProducts.length})</span>
+                </div>
+                <ChevronDown className="w-4 h-4 text-gray-400" />
+              </summary>
+              <div className="divide-y divide-gray-50">
+                {locatedProducts.map(p => {
+                  const sec = getSection(p);
+                  const gondola = ['A','B','C','D'].find(g => {
+                    const ranges: Record<string, number[]> = { A: [1,9], B: [10,18], C: [19,27], D: [28,36] };
+                    return sec !== null && sec >= ranges[g][0] && sec <= ranges[g][1];
+                  });
+                  return (
+                    <div key={p.$id} className="flex items-center gap-3 px-4 py-2.5">
+                      {p.IMAGEURL ? (
+                        <img src={p.IMAGEURL} alt="" className="w-10 h-10 object-cover rounded-lg shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                          <Package className="w-4 h-4 text-gray-300" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-gray-900 line-clamp-1">{p.NAME}</div>
+                        <div className="text-xs text-gray-500">{getSku(p)} · {p.STOCK} uds</div>
+                      </div>
+                      <div className="shrink-0">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-100 text-indigo-700 text-xs font-bold">
+                          <MapPin className="w-3 h-3" /> G{gondola} S{sec}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+                {locatedProducts.length === 0 && (
+                  <div className="px-4 py-6 text-center text-sm text-gray-400">Ningún producto ubicado aún</div>
+                )}
+              </div>
+            </details>
+
+            {/* Unlocated group */}
+            <details className="">
+              <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none hover:bg-gray-50">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-amber-400" />
+                  <span className="text-sm font-semibold text-gray-900">Sin sección registrada</span>
+                  <span className="text-xs text-gray-400">({unlocatedProducts.length})</span>
+                </div>
+                <ChevronDown className="w-4 h-4 text-gray-400" />
+              </summary>
+              <div className="divide-y divide-gray-50">
+                {unlocatedProducts.map(p => (
+                  <div key={p.$id} className="flex items-center gap-3 px-4 py-2.5">
+                    {p.IMAGEURL ? (
+                      <img src={p.IMAGEURL} alt="" className="w-10 h-10 object-cover rounded-lg shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                        <Package className="w-4 h-4 text-gray-300" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 line-clamp-1">{p.NAME}</div>
+                      <div className="text-xs text-gray-500">{getSku(p)} · {p.STOCK} uds</div>
+                    </div>
+                    <button
+                      onClick={() => setShowLocator(true)}
+                      className="shrink-0 px-2 py-1 rounded-lg bg-amber-100 text-amber-700 text-xs font-bold hover:bg-amber-200 transition">
+                      Ubicar
+                    </button>
+                  </div>
+                ))}
+                {unlocatedProducts.length === 0 && (
+                  <div className="px-4 py-6 text-center text-sm text-gray-400">¡Todos los productos con stock están ubicados!</div>
+                )}
+              </div>
+            </details>
+          </div>
+        )}
+
       </main>
+
+      {/* Floating camera widget */}
+      <button
+        onClick={() => { setScanTarget('search'); setShowScanner(true); }}
+        className="fixed bottom-6 right-5 z-40 w-14 h-14 bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform active:scale-95"
+        title="Escanear producto"
+      >
+        <Camera className="w-6 h-6" />
+      </button>
+
       <ProductLocator isOpen={showLocator} onClose={() => setShowLocator(false)} products={products as any} onProductsUpdate={setProducts as any} />
     </div>
   );

@@ -5,7 +5,7 @@ import * as XLSX from 'xlsx';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Product, Category } from '@/types/admin';
-import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin } from 'lucide-react';
 import ImageUploadField from '@/components/admin/ImageUploadField';
 import { generateProductTitle, generateProductDescription } from '@/lib/aiAdmin';
 
@@ -293,6 +293,18 @@ export default function ProductsPage() {
     return p.jumpseller_id || skuTag || p.$id;
   };
 
+  const getSection = (p: Product): { section: number; gondola: string } | null => {
+    const m = p.FEATURES?.match(/Section:\s*(\d+)/i);
+    if (!m) return null;
+    const sec = parseInt(m[1], 10);
+    let gon = '?';
+    if (sec >= 1 && sec <= 9) gon = 'A';
+    else if (sec >= 10 && sec <= 18) gon = 'B';
+    else if (sec >= 19 && sec <= 27) gon = 'C';
+    else if (sec >= 28 && sec <= 36) gon = 'D';
+    return { section: sec, gondola: gon };
+  };
+
   const exportXLSX = () => {
     const data = filtered.map(p => ({
       SKU: getSku(p), ID: p.$id, Nombre: p.NAME || '', Descripción: p.DESCRIPTION || '',
@@ -496,9 +508,19 @@ export default function ProductsPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${p.STOCK === 0 ? 'bg-red-100 text-red-700' : p.STOCK <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                      {p.STOCK}
-                    </span>
+                    <div className="flex flex-col items-center gap-1">
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${p.STOCK === 0 ? 'bg-red-100 text-red-700' : p.STOCK <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                        {p.STOCK}
+                      </span>
+                      {(() => {
+                        const loc = getSection(p);
+                        return loc ? (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-indigo-600">
+                            <MapPin className="w-2.5 h-2.5" />G{loc.gondola} S{loc.section}
+                          </span>
+                        ) : null;
+                      })()}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-right text-gray-500 hidden md:table-cell">{p.SOLDQUANTITY ?? 0}</td>
                   <td className="px-4 py-3">

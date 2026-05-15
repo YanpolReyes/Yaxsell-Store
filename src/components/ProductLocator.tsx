@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { X, Search, MapPin, Package, Camera, CheckCircle2, ChevronLeft, Loader2 } from 'lucide-react';
-import { Query, ID } from 'appwrite';
+import { X, Search, MapPin, Package, Camera, CheckCircle2, ChevronLeft, ChevronDown, ChevronRight } from 'lucide-react';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import dynamic from 'next/dynamic';
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false });
@@ -18,25 +17,12 @@ interface Product {
   [key: string]: any;
 }
 
-// 4 góndolas, cada una con 9 secciones = 36 secciones
 const GONDOLAS = [
-  { id: 'A', name: 'Góndola A', sections: [1,2,3,4,5,6,7,8,9], zone: 'Zona Norte' },
-  { id: 'B', name: 'Góndola B', sections: [10,11,12,13,14,15,16,17,18], zone: 'Zona Norte' },
-  { id: 'C', name: 'Góndola C', sections: [19,20,21,22,23,24,25,26,27], zone: 'Zona Sur' },
-  { id: 'D', name: 'Góndola D', sections: [28,29,30,31,32,33,34,35,36], zone: 'Zona Sur' },
+  { id: 'A', name: 'Góndola A', sections: [1,2,3,4,5,6,7,8,9], color: 'from-blue-500 to-indigo-600', light: 'bg-blue-50 border-blue-200', dot: 'bg-blue-500' },
+  { id: 'B', name: 'Góndola B', sections: [10,11,12,13,14,15,16,17,18], color: 'from-cyan-500 to-blue-600', light: 'bg-cyan-50 border-cyan-200', dot: 'bg-cyan-500' },
+  { id: 'C', name: 'Góndola C', sections: [19,20,21,22,23,24,25,26,27], color: 'from-pink-500 to-rose-600', light: 'bg-pink-50 border-pink-200', dot: 'bg-pink-500' },
+  { id: 'D', name: 'Góndola D', sections: [28,29,30,31,32,33,34,35,36], color: 'from-orange-500 to-red-600', light: 'bg-orange-50 border-orange-200', dot: 'bg-orange-500' },
 ];
-
-const ZONE_COLORS: Record<string, { bg: string; border: string; text: string; accent: string }> = {
-  'Zona Norte': { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', accent: 'bg-blue-500' },
-  'Zona Sur': { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', accent: 'bg-rose-500' },
-};
-
-const GONDOLA_COLORS: Record<string, string> = {
-  A: 'from-blue-500 to-indigo-600',
-  B: 'from-cyan-500 to-blue-600',
-  C: 'from-pink-500 to-rose-600',
-  D: 'from-orange-500 to-red-600',
-};
 
 function getSku(p: Product): string {
   const m = p.FEATURES?.match(/SKU:\s*(.+)/i);
@@ -63,7 +49,7 @@ interface Props {
   onProductsUpdate: (updater: (prev: Product[]) => Product[]) => void;
 }
 
-type Screen = 'menu' | 'search' | 'register' | 'select-section' | 'results';
+type Screen = 'menu' | 'search' | 'register' | 'select-section';
 
 export default function ProductLocator({ isOpen, onClose, products, onProductsUpdate }: Props) {
   const [screen, setScreen] = useState<Screen>('menu');
@@ -73,23 +59,18 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
   const [saving, setSaving] = useState(false);
   const [savedSection, setSavedSection] = useState<number | null>(null);
   const [showScanner, setShowScanner] = useState(false);
+  const [expandedGondola, setExpandedGondola] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen) { setScreen('menu'); setQuery(''); setSearchResults([]); setSelectedProduct(null); setSavedSection(null); }
+    if (isOpen) {
+      setScreen('menu');
+      setQuery('');
+      setSearchResults([]);
+      setSelectedProduct(null);
+      setSavedSection(null);
+      setExpandedGondola(null);
+    }
   }, [isOpen]);
-
-  const handleSearchBySection = () => {
-    setScreen('search');
-    setQuery('');
-    setSearchResults([]);
-  };
-
-  const handleRegister = () => {
-    setScreen('register');
-    setQuery('');
-    setSelectedProduct(null);
-    setShowScanner(true);
-  };
 
   const doSearch = useCallback((q: string) => {
     if (!q.trim()) { setSearchResults([]); return; }
@@ -154,13 +135,18 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
   return (
     <>
       {showScanner && <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />}
-      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center" onClick={onClose}>
-        <div className="bg-white w-full max-h-[95vh] sm:max-w-lg sm:rounded-2xl rounded-t-3xl shadow-2xl overflow-hidden flex flex-col" onClick={(e: any) => e.stopPropagation()}>
-          
+      <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center" onClick={onClose}>
+        <div
+          className="bg-white w-full max-h-[92dvh] sm:max-w-lg sm:rounded-2xl rounded-t-3xl shadow-2xl overflow-hidden flex flex-col"
+          onClick={(e: any) => e.stopPropagation()}
+        >
           {/* Header */}
           <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-5 py-4 flex items-center gap-3 shrink-0">
             {screen !== 'menu' && (
-              <button onClick={() => screen === 'select-section' ? setScreen('register') : setScreen('menu')} className="p-1 hover:bg-white/20 rounded-lg transition">
+              <button
+                onClick={() => screen === 'select-section' ? setScreen('register') : setScreen('menu')}
+                className="p-1 hover:bg-white/20 rounded-lg transition"
+              >
                 <ChevronLeft size={20} />
               </button>
             )}
@@ -168,62 +154,116 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
             <div className="flex-1">
               <h2 className="font-bold text-base">Ubicar Producto</h2>
               <p className="text-xs text-white/70">
-                {screen === 'menu' ? 'Sistema de góndolas' : screen === 'search' ? 'Buscar por sección' : screen === 'register' ? 'Registrar ubicación' : screen === 'select-section' ? 'Seleccionar sección' : 'Resultados'}
+                {screen === 'menu' ? 'Sistema de góndolas' : screen === 'search' ? 'Buscar por sección' : screen === 'register' ? 'Registrar ubicación' : 'Seleccionar sección'}
               </p>
             </div>
             <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-lg transition"><X size={20} /></button>
           </div>
 
           <div className="flex-1 overflow-y-auto">
+
             {/* MENU */}
             {screen === 'menu' && (
-              <div className="p-6 space-y-4">
-                <button onClick={handleSearchBySection} className="w-full flex items-center gap-4 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl hover:border-blue-400 transition group">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg group-hover:scale-105 transition">
-                    <Search size={24} className="text-white" />
-                  </div>
-                  <div className="text-left flex-1">
-                    <div className="font-bold text-gray-900 text-base">Buscar Sección</div>
-                    <div className="text-xs text-gray-500 mt-0.5">Encuentra en qué góndola está un producto</div>
-                  </div>
-                </button>
-                <button onClick={handleRegister} className="w-full flex items-center gap-4 p-5 bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-2xl hover:border-emerald-400 transition group">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg group-hover:scale-105 transition">
-                    <MapPin size={24} className="text-white" />
-                  </div>
-                  <div className="text-left flex-1">
-                    <div className="font-bold text-gray-900 text-base">Registrar Sección</div>
-                    <div className="text-xs text-gray-500 mt-0.5">Escanea un producto y asigna su góndola</div>
-                  </div>
-                </button>
+              <div className="p-5 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => { setScreen('search'); setQuery(''); setSearchResults([]); }}
+                    className="flex flex-col items-center gap-3 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl hover:border-blue-400 transition group"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg group-hover:scale-105 transition">
+                      <Search size={24} className="text-white" />
+                    </div>
+                    <div className="text-center">
+                      <div className="font-bold text-gray-900 text-sm">Buscar Sección</div>
+                      <div className="text-xs text-gray-500 mt-0.5">¿Dónde está un producto?</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => { setScreen('register'); setQuery(''); setSelectedProduct(null); setShowScanner(true); }}
+                    className="flex flex-col items-center gap-3 p-5 bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-2xl hover:border-emerald-400 transition group"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg group-hover:scale-105 transition">
+                      <MapPin size={24} className="text-white" />
+                    </div>
+                    <div className="text-center">
+                      <div className="font-bold text-gray-900 text-sm">Registrar Sección</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Asignar góndola a producto</div>
+                    </div>
+                  </button>
+                </div>
 
-                {/* Mini gondola map */}
-                <div className="mt-4 pt-4 border-t border-gray-100">
+                {/* Gondola map — A col1, BCD col2 stacked */}
+                <div>
                   <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Mapa de Góndolas</h3>
                   <div className="grid grid-cols-2 gap-3">
-                    {GONDOLAS.map(g => {
-                      const colors = ZONE_COLORS[g.zone];
-                      const prodCount = products.filter(p => { const s = getSection(p); return s !== null && g.sections.includes(s); }).length;
-                      return (
-                        <div key={g.id} className={`${colors.bg} ${colors.border} border rounded-xl p-3`}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className={`w-6 h-6 rounded-lg bg-gradient-to-br ${GONDOLA_COLORS[g.id]} flex items-center justify-center text-white text-xs font-black`}>{g.id}</div>
-                            <span className="text-xs font-bold text-gray-700">{g.name}</span>
+                    {/* Col 1: Góndola A */}
+                    <div className="flex flex-col gap-2">
+                      {GONDOLAS.filter(g => g.id === 'A').map(g => {
+                        const prodCount = products.filter(p => { const s = getSection(p); return s !== null && g.sections.includes(s); }).length;
+                        const expanded = expandedGondola === g.id;
+                        return (
+                          <div key={g.id} className={`${g.light} border rounded-xl overflow-hidden`}>
+                            <button
+                              onClick={() => setExpandedGondola(expanded ? null : g.id)}
+                              className="w-full flex items-center gap-2 p-3"
+                            >
+                              <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${g.color} flex items-center justify-center text-white text-xs font-black shrink-0`}>{g.id}</div>
+                              <div className="flex-1 text-left">
+                                <div className="text-xs font-bold text-gray-700">{g.name}</div>
+                                <div className="text-[10px] text-gray-500">{prodCount} productos</div>
+                              </div>
+                              {expanded ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
+                            </button>
+                            {expanded && (
+                              <div className="grid grid-cols-3 gap-1 px-3 pb-3">
+                                {g.sections.map(s => {
+                                  const has = products.some(p => getSection(p) === s);
+                                  return (
+                                    <div key={s} className={`text-center py-1.5 rounded text-[11px] font-bold ${has ? `${g.dot} text-white` : 'bg-white/70 text-gray-400'}`}>
+                                      {s}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
-                          <div className="grid grid-cols-3 gap-1">
-                            {g.sections.map(s => {
-                              const hasProducts = products.some(p => getSection(p) === s);
-                              return (
-                                <div key={s} className={`text-center py-1 rounded text-[10px] font-bold ${hasProducts ? `${colors.accent} text-white` : 'bg-white/70 text-gray-400'}`}>
-                                  {s}
-                                </div>
-                              );
-                            })}
+                        );
+                      })}
+                    </div>
+                    {/* Col 2: Góndolas B, C, D stacked */}
+                    <div className="flex flex-col gap-2">
+                      {GONDOLAS.filter(g => g.id !== 'A').map(g => {
+                        const prodCount = products.filter(p => { const s = getSection(p); return s !== null && g.sections.includes(s); }).length;
+                        const expanded = expandedGondola === g.id;
+                        return (
+                          <div key={g.id} className={`${g.light} border rounded-xl overflow-hidden`}>
+                            <button
+                              onClick={() => setExpandedGondola(expanded ? null : g.id)}
+                              className="w-full flex items-center gap-2 p-3"
+                            >
+                              <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${g.color} flex items-center justify-center text-white text-xs font-black shrink-0`}>{g.id}</div>
+                              <div className="flex-1 text-left">
+                                <div className="text-xs font-bold text-gray-700">{g.name}</div>
+                                <div className="text-[10px] text-gray-500">{prodCount} prods.</div>
+                              </div>
+                              {expanded ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
+                            </button>
+                            {expanded && (
+                              <div className="grid grid-cols-3 gap-1 px-3 pb-3">
+                                {g.sections.map(s => {
+                                  const has = products.some(p => getSection(p) === s);
+                                  return (
+                                    <div key={s} className={`text-center py-1.5 rounded text-[11px] font-bold ${has ? `${g.dot} text-white` : 'bg-white/70 text-gray-400'}`}>
+                                      {s}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
-                          <div className="text-[10px] text-gray-500 mt-1.5">{prodCount} productos · {g.zone}</div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -259,7 +299,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                             <div className="text-[11px] text-gray-500 font-mono">SKU: {getSku(product)}</div>
                           </div>
                           <div className="text-right shrink-0">
-                            <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r ${GONDOLA_COLORS[gondola?.id || 'A']} text-white text-xs font-bold`}>
+                            <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r ${gondola?.color || 'from-gray-400 to-gray-600'} text-white text-xs font-bold`}>
                               <MapPin size={12} /> S{section}
                             </div>
                             <div className="text-[10px] text-gray-400 mt-0.5">{gondola?.name}</div>
@@ -276,7 +316,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
               </div>
             )}
 
-            {/* REGISTER */}
+            {/* REGISTER — no product yet */}
             {screen === 'register' && !selectedProduct && (
               <div className="p-4 space-y-3">
                 <div className="flex gap-2">
@@ -321,7 +361,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
               </div>
             )}
 
-            {/* SELECT SECTION — Interactive gondola grid */}
+            {/* SELECT SECTION */}
             {screen === 'select-section' && selectedProduct && (
               <div className="p-4">
                 {savedSection ? (
@@ -338,34 +378,52 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                       <div className="text-sm font-bold text-gray-900 line-clamp-1">{selectedProduct.NAME}</div>
                       <div className="text-xs text-gray-500">Toca la sección donde pusiste este producto</div>
                     </div>
-                    <div className="space-y-4">
-                      {GONDOLAS.map(g => {
-                        const colors = ZONE_COLORS[g.zone];
-                        return (
-                          <div key={g.id} className={`${colors.bg} ${colors.border} border rounded-2xl p-4`}>
-                            <div className="flex items-center gap-2 mb-3">
-                              <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${GONDOLA_COLORS[g.id]} flex items-center justify-center text-white text-sm font-black shadow-md`}>{g.id}</div>
-                              <div>
-                                <div className="text-sm font-bold text-gray-800">{g.name}</div>
-                                <div className="text-[10px] text-gray-500">{g.zone} · 3 mesas · 9 secciones</div>
-                              </div>
+                    {/* Two-column layout: A | BCD */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Col 1 — Góndola A */}
+                      <div>
+                        {GONDOLAS.filter(g => g.id === 'A').map(g => (
+                          <div key={g.id} className={`${g.light} border rounded-2xl p-3`}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className={`w-7 h-7 rounded-xl bg-gradient-to-br ${g.color} flex items-center justify-center text-white text-xs font-black shadow`}>{g.id}</div>
+                              <div className="text-xs font-bold text-gray-700">{g.name}</div>
                             </div>
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-3 gap-1.5">
                               {g.sections.map(s => (
                                 <button key={s} onClick={() => saveSection(s)} disabled={saving}
-                                  className={`relative py-4 rounded-xl text-center font-black text-lg border-2 transition-all active:scale-95 ${
-                                    saving ? 'opacity-50 cursor-wait' : 'hover:scale-105 hover:shadow-md cursor-pointer'
-                                  } bg-white border-gray-200 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 active:bg-indigo-100`}>
+                                  className={`py-3 rounded-xl text-center font-black text-base border-2 transition-all active:scale-95 bg-white border-gray-200 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 ${saving ? 'opacity-50 cursor-wait' : 'cursor-pointer hover:scale-105'}`}>
                                   {s}
                                   {products.some(p => p.$id !== selectedProduct.$id && getSection(p) === s) && (
-                                    <span className="absolute top-1 right-1.5 w-2 h-2 rounded-full bg-emerald-400" />
+                                    <span className="block w-1.5 h-1.5 rounded-full bg-emerald-400 mx-auto mt-0.5" />
                                   )}
                                 </button>
                               ))}
                             </div>
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
+                      {/* Col 2 — Góndolas B, C, D stacked */}
+                      <div className="flex flex-col gap-3">
+                        {GONDOLAS.filter(g => g.id !== 'A').map(g => (
+                          <div key={g.id} className={`${g.light} border rounded-2xl p-3`}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className={`w-7 h-7 rounded-xl bg-gradient-to-br ${g.color} flex items-center justify-center text-white text-xs font-black shadow`}>{g.id}</div>
+                              <div className="text-xs font-bold text-gray-700">{g.name}</div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1">
+                              {g.sections.map(s => (
+                                <button key={s} onClick={() => saveSection(s)} disabled={saving}
+                                  className={`py-2 rounded-lg text-center font-black text-sm border-2 transition-all active:scale-95 bg-white border-gray-200 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 ${saving ? 'opacity-50 cursor-wait' : 'cursor-pointer hover:scale-105'}`}>
+                                  {s}
+                                  {products.some(p => p.$id !== selectedProduct.$id && getSection(p) === s) && (
+                                    <span className="block w-1 h-1 rounded-full bg-emerald-400 mx-auto mt-0.5" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </>
                 )}

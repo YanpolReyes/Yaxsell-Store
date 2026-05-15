@@ -98,6 +98,7 @@ const NAV_GROUPS: NavGroup[] = [
     { href: '/admin/pagos',    label: 'Pagos',            icon: Ico.Pagos },
     { href: '/admin/agencias', label: 'Agencias de envío', icon: Ico.Agencias },
     { href: '/admin/support',  label: 'Soporte',          icon: Ico.Soporte },
+    { href: '/inventario',     label: 'BODEGAPP',         icon: Ico.Inventario },
   ]},
 ];
 
@@ -161,12 +162,19 @@ function IATopBarButton({ isOpen, onClick }: { isOpen: boolean; onClick: () => v
       `}</style>
       <button onClick={onClick} title="Asistente IA" className="ia-topbar-btn" style={{
         display: 'flex', alignItems: 'center', gap: 10, padding: '4px 14px 4px 10px',
-        borderRadius: 10, border: '1px solid rgba(139,92,246,0.2)', cursor: 'pointer',
+        borderRadius: 10, border: '1px solid rgba(139,92,246,0.20)', cursor: 'pointer',
         background: isOpen ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.06)',
         transition: 'all .2s', height: 38, flexShrink: 0,
       }}>
+        <style>{`
+          @media (max-width: 1023px) {
+            .ia-topbar-btn { gap: 0 !important; padding: 4px 8px !important; }
+            .ia-phrase-wrap, .ia-sep { display: none !important; }
+            .ia-text { font-size: 20px !important; }
+          }
+        `}</style>
         {/* Typing phrase — hidden on mobile */}
-        <span className="hidden lg:inline-block" style={{
+        <span className="hidden lg:inline-block ia-phrase-wrap" style={{
           width: 148, display: 'inline-block', overflow: 'hidden', whiteSpace: 'nowrap',
           color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 500,
           textAlign: 'right',
@@ -174,7 +182,7 @@ function IATopBarButton({ isOpen, onClick }: { isOpen: boolean; onClick: () => v
           {phrase}<span className="ia-cursor" />
         </span>
         {/* Separator — hidden on mobile */}
-        <span className="hidden lg:block" style={{ width: 1, height: 18, background: 'rgba(139,92,246,0.25)', flexShrink: 0 }} />
+        <span className="hidden lg:block ia-sep" style={{ width: 1, height: 18, background: 'rgba(139,92,246,0.25)', flexShrink: 0 }} />
         {/* IA text — grande y separado */}
         <span className="ia-text">IA</span>
       </button>
@@ -482,8 +490,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .admin-sidebar { position: relative !important; }
     }
     @media (max-width: 1023px) {
-      .admin-topbar { height: 60px !important; }
+      .admin-topbar { height: 60px !important; padding: 0 8px !important; gap: 6px !important; }
       .admin-sidebar { box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important; top: 60px !important; }
+      .admin-search-wrap { margin: 0 4px !important; }
     }
     /* ── Global mobile fixes for all admin pages ── */
     @media (max-width: 768px) {

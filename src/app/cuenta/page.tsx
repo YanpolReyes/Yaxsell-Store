@@ -7,7 +7,7 @@ import { getServices, getAppwriteConfig, USER_PHOTOS_BUCKET } from '@/lib/appwri
 import {
   ShoppingBag, Bell, Heart, ShoppingCart, MessageCircle,
   User, MapPin, Receipt, HelpCircle, Phone,
-  Loader2, ChevronRight, LogOut, Building2, Trophy,
+  Loader2, ChevronRight, LogOut, Building2, Trophy, Tag, Star, Settings, Ticket,
 } from 'lucide-react';
 
 import { useAuth } from '@/hooks/useAuth';
@@ -42,12 +42,12 @@ const CONFIG_ITEMS: MenuItem[] = [
 
 const ALL_CARDS: MenuItem[] = [...MIS_COMPRAS_ITEMS, ...CUENTA_ITEMS, ...CONFIG_ITEMS];
 
-const SIDEBAR_NAV = [
-  { icon: ShoppingBag, label: 'Pedidos',       href: '/cuenta/pedidos'        },
-  { icon: Heart,       label: 'Favoritos',      href: '/cuenta/favoritos'      },
-  { icon: Bell,        label: 'Notificaciones', href: '/cuenta/notificaciones' },
-  { icon: MapPin,      label: 'Direcciones',    href: '/cuenta/direcciones'    },
-  { icon: HelpCircle,  label: 'Soporte',        href: '/cuenta/tickets'        },
+/* Quick shortcuts — these are the most important for the customer */
+const QUICK_SHORTCUTS = [
+  { icon: Receipt,      label: 'Pedidos',    href: '/cuenta/pedidos',     color: '#6366f1', bg: '#eef2ff' },
+  { icon: Heart,        label: 'Favoritos',  href: '/cuenta/favoritos',   color: '#ec4899', bg: '#fdf2f8' },
+  { icon: ShoppingCart, label: 'Carrito',     href: '/carrito',            color: '#f59e0b', bg: '#fffbeb' },
+  { icon: MapPin,       label: 'Direcciones', href: '/cuenta/direcciones', color: '#10b981', bg: '#ecfdf5' },
 ];
 
 function getFilePreviewUrl(fileId: string): string {
@@ -55,7 +55,7 @@ function getFilePreviewUrl(fileId: string): string {
   return `${endpoint}/storage/buckets/${USER_PHOTOS_BUCKET}/files/${fileId}/view?project=${projectId}`;
 }
 
-const BG_CUENTA = 'https://t4.ftcdn.net/jpg/06/51/36/51/360_F_651365167_W04PhefXV6zXetrfI0KG9uwWBMjbaYX4.jpg';
+const BG_CUENTA = 'https://png.pngtree.com/background/20210715/original/pngtree-cute-pink-gradient-sakura-picture-image_1282310.jpg';
 
 export default function CuentaPage() {
   const { user, isLoggedIn, isLoading, logout } = useAuth();
@@ -116,6 +116,7 @@ export default function CuentaPage() {
   }
 
   const initials = user.name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
+  const firstName = user.name.split(' ')[0];
 
   return (
     <>
@@ -150,13 +151,24 @@ export default function CuentaPage() {
           transition: background 0.2s;
         }
         .dcard-icon-wrap svg { transition: stroke 0.2s; }
+
+        /* Quick shortcut hover */
+        .qsc:active { transform: scale(0.95); }
+        .qsc { transition: transform 0.15s; }
       `}</style>
 
       {/* ════════════════ DESKTOP ════════════════ */}
       <div className="cuenta-desktop" style={{ display: 'none' }}>
         {/* Hero header */}
         <div style={{ background: '#fff', borderRadius: 20, marginBottom: 24, border: '1px solid #f0f0f0', overflow: 'hidden' }}>
-          <div style={{ height: 160, background: coverUrl ? 'none' : 'linear-gradient(135deg,#fef2f8,#fce7f3)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ 
+            height: 160, 
+            background: coverUrl ? 'none' : `url(${BG_CUENTA})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            position: 'relative', 
+            overflow: 'hidden' 
+          }}>
             {coverUrl && <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(to bottom,transparent,#fff)' }} />
           </div>
@@ -165,7 +177,7 @@ export default function CuentaPage() {
               {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
             </div>
             <div style={{ paddingBottom: 6, flex: 1 }}>
-              <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.02em' }}>¡Hola, {user.name.split(' ')[0]}!</h1>
+              <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.02em' }}>¡Hola, {firstName}!</h1>
               <p style={{ margin: '4px 0 0', fontSize: 14, color: '#6b7280' }}>{user.email}</p>
             </div>
             <Link href="/cuenta" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 18px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 10, textDecoration: 'none', marginBottom: 6 }}>
@@ -186,49 +198,126 @@ export default function CuentaPage() {
         </div>
       </div>
 
-      {/* ════════════════ MOBILE ════════════════ */}
-      <div className="cuenta-mobile">
-        <div style={{ background: '#fff', position: 'relative', paddingBottom: 50 }}>
-          {coverUrl ? (
-            <div style={{ height: 130, overflow: 'hidden', position: 'relative' }}>
-              <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      {/* ════════════════ MOBILE — Rappi/PedidosYa style ════════════════ */}
+      <div className="cuenta-mobile" style={{ fontFamily: FF }}>
+        {/* Hero header — Card style like PC */}
+        <div style={{ padding: '12px 12px 0' }}>
+          <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #f0f0f0', overflow: 'hidden' }}>
+            <div style={{ 
+              height: 130, 
+              background: coverUrl ? 'none' : `url(${BG_CUENTA})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              position: 'relative', 
+              overflow: 'hidden' 
+            }}>
+              {coverUrl && <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
               <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 50, background: 'linear-gradient(to bottom,transparent,#fff)' }} />
             </div>
-          ) : (
-            <div style={{ height: 110, background: 'linear-gradient(135deg,#fef2f8,#fce7f3)' }} />
-          )}
-          <div style={{ position: 'absolute', bottom: 0, left: 16, display: 'flex', alignItems: 'flex-end', gap: 14 }}>
-            <div style={{ width: 96, height: 96, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 800, color: PINK, overflow: 'hidden', border: '4px solid #fff', boxShadow: '0 4px 14px rgba(0,0,0,0.1)' }}>
-              {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
+            
+            {/* Avatar + name row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '0 16px 20px', marginTop: -40, position: 'relative', zIndex: 2 }}>
+              <div style={{
+                width: 80, height: 80, borderRadius: '50%', background: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 28, fontWeight: 800, color: PINK, overflow: 'hidden',
+                border: '4px solid #fff', boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
+                flexShrink: 0,
+              }}>
+                {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
+              </div>
+              <div style={{ flex: 1, minWidth: 0, paddingTop: 10 }}>
+                <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1a1a1a', lineHeight: 1.2 }}>
+                  ¡Hola, {firstName}! 👋
+                </p>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user.email}
+                </p>
+              </div>
+              <Link href="/cuenta" style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 32, height: 32, borderRadius: 10, background: '#f3f4f6',
+                textDecoration: 'none', flexShrink: 0, marginTop: 10
+              }}>
+                <Settings size={16} color="#6b7280" />
+              </Link>
             </div>
           </div>
         </div>
-        <div style={{ background: '#fff', padding: '16px 16px 20px', borderBottom: '1px solid #f0f0f0' }}>
-          <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#1a1a1a', lineHeight: 1.2 }}>¡Hola, {user.name.split(' ')[0]}!</p>
-          <p style={{ margin: '2px 0 0', fontSize: 13, color: '#6b7280' }}>{user.email}</p>
-          <Link href="/cuenta" style={{ display: 'inline-block', marginTop: 10, padding: '8px 14px', background: PINK, color: '#fff', fontSize: 12, fontWeight: 700, textDecoration: 'none', borderRadius: 8 }}>Editar perfil →</Link>
-        </div>
 
-        <div style={{ maxWidth: 700, margin: '0 auto', padding: '12px 8px 40px' }}>
-          <div style={{ marginBottom: 12 }}>
+        {/* Quick action shortcuts — 4 columns, just like Rappi */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0,
+          padding: '12px 12px 8px',
+        }}>
+            {QUICK_SHORTCUTS.map(sc => {
+              const Icon = sc.icon;
+              return (
+                <Link key={sc.label} href={sc.href} className="qsc" style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                  textDecoration: 'none', padding: '8px 4px',
+                }}>
+                  <div style={{
+                    width: 48, height: 48, borderRadius: 14, background: sc.bg,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Icon size={22} color={sc.color} strokeWidth={2} />
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#374151', textAlign: 'center', lineHeight: 1.2 }}>
+                    {sc.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+
+        {/* Loyalty section — compact */}
+        <div style={{ padding: '8px 12px 0' }}>
+          <div style={{ marginBottom: 10 }}>
             <LoyaltyLevel />
           </div>
-          <div style={{ marginBottom: 12 }}>
+          <div style={{ marginBottom: 10 }}>
             <LoyaltyPoints />
           </div>
+        </div>
 
-          <Section title="Mis Pedidos">{MIS_COMPRAS_ITEMS.map(item => <MenuRow key={item.label} item={item} />)}</Section>
-          <Section title="Cuenta">{CUENTA_ITEMS.map(item => <MenuRow key={item.label} item={item} />)}</Section>
-          <Section title="Configuración">{CONFIG_ITEMS.map(item => <MenuRow key={item.label} item={item} />)}</Section>
+        {/* Menu sections */}
+        <div style={{ padding: '4px 12px 40px' }}>
+          <MobileSection title="Mis compras">
+            <MobileMenuItem icon={Receipt} label="Mis Pedidos" href="/cuenta/pedidos" desc="Estado de tus compras" />
+            <MobileMenuItem icon={Heart} label="Favoritos" href="/cuenta/favoritos" desc="Productos guardados" />
+            <MobileMenuItem icon={ShoppingCart} label="Mi Carrito" href="/carrito" desc="Tu carrito de compras" />
+          </MobileSection>
 
+          <MobileSection title="Mi cuenta">
+            <MobileMenuItem icon={User} label="Datos personales" href="/cuenta" desc="Nombre, foto y perfil" />
+            <MobileMenuItem icon={Phone} label="Contacto" href="/cuenta/info" desc="Teléfono y RUT" />
+            <MobileMenuItem icon={MapPin} label="Direcciones" href="/cuenta/direcciones" desc="Envíos guardados" />
+          </MobileSection>
+
+          <MobileSection title="Más opciones">
+            <MobileMenuItem icon={Trophy} label="Mis Niveles" href="/cuenta/niveles" desc="Lealtad y recompensas" />
+            <MobileMenuItem icon={Building2} label="Cuenta Mayorista" href="/mayorista" desc="Precios especiales" />
+            <MobileMenuItem icon={Bell} label="Notificaciones" href="/cuenta/notificaciones" desc="Alertas de tu cuenta" />
+            <MobileMenuItem icon={HelpCircle} label="Soporte" href="/cuenta/tickets" desc="Ayuda y tickets" />
+            <MobileMenuItem icon={MessageCircle} label="Conversaciones" href="/cuenta/conversaciones" desc="Historial de chats" />
+          </MobileSection>
+
+          {/* Logout button */}
           <button onClick={handleLogout}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '14px 16px', background: '#fff', border: '1px solid #f0f0f0', borderRadius: 12, cursor: 'pointer', color: '#dc2626', fontSize: 15, fontWeight: 700, fontFamily: FF, marginTop: 4 }}>
-            <LogOut size={18} />Cerrar sesión
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '13px 16px', background: '#fef2f2', border: '1px solid #fecaca',
+              borderRadius: 14, cursor: 'pointer', color: '#dc2626', fontSize: 14, fontWeight: 700,
+              fontFamily: FF, marginTop: 6, transition: 'all .15s',
+            }}>
+            <LogOut size={16} />Cerrar sesión
           </button>
 
-          <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: '6px 16px', justifyContent: 'center' }}>
-            {['Términos y condiciones', 'Privacidad', 'Ayuda'].map(t => (
-              <span key={t} style={{ fontSize: 12, color: '#9ca3af', cursor: 'pointer' }}>{t}</span>
+          {/* Footer links */}
+          <div style={{ marginTop: 16, display: 'flex', gap: 16, justifyContent: 'center' }}>
+            {['Términos', 'Privacidad', 'Ayuda'].map(t => (
+              <span key={t} style={{ fontSize: 11, color: '#9ca3af', cursor: 'pointer' }}>{t}</span>
             ))}
           </div>
         </div>
@@ -237,7 +326,7 @@ export default function CuentaPage() {
   );
 }
 
-/* ════════ Componentes ════════ */
+/* ════════ Components ════════ */
 
 function DesktopCard({ item }: { item: MenuItem }) {
   const Icon = item.icon;
@@ -256,35 +345,44 @@ function DesktopCard({ item }: { item: MenuItem }) {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function MobileSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #f0f0f0', marginBottom: 12, overflow: 'hidden' }}>
-      <p style={{ margin: 0, padding: '16px 18px 6px', fontSize: 12, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.08em' }}>
+    <div style={{ marginBottom: 10 }}>
+      <p style={{
+        margin: '0 0 6px', padding: '0 4px', fontSize: 12, fontWeight: 800,
+        color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.06em',
+      }}>
         {title}
       </p>
-      {children}
+      <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #f0f0f0', overflow: 'hidden' }}>
+        {children}
+      </div>
     </div>
   );
 }
 
-function MenuRow({ item }: { item: MenuItem }) {
-  const Icon = item.icon;
+function MobileMenuItem({ icon: Icon, label, href, desc }: { icon: any; label: string; href: string; desc?: string }) {
   return (
-    <Link href={item.href}
-      style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', textDecoration: 'none', borderTop: '1px solid #f9fafb', transition: 'background .15s' }}
+    <Link href={href}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
+        textDecoration: 'none', borderBottom: '1px solid #f9fafb',
+        transition: 'background .12s',
+      }}
       onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#fafafa'}
       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}
     >
-      <div style={{ width: 40, height: 40, borderRadius: 10, background: '#fef2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <Icon size={19} color={PINK} />
+      <div style={{
+        width: 36, height: 36, borderRadius: 10, background: '#fef2f8',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      }}>
+        <Icon size={17} color={PINK} strokeWidth={2} />
       </div>
-      <span style={{ flex: 1, fontSize: 15, color: '#1a1a1a', fontWeight: 600 }}>{item.label}</span>
-      {item.badge !== undefined && (
-        <span style={{ minWidth: 20, height: 20, padding: '0 6px', borderRadius: 10, background: item.badgeColor || PINK, color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {item.badge}
-        </span>
-      )}
-      <ChevronRight size={16} color="#d1d5db" />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 14, color: '#1a1a1a', fontWeight: 600, lineHeight: 1.2 }}>{label}</p>
+        {desc && <p style={{ margin: '1px 0 0', fontSize: 11, color: '#9ca3af', lineHeight: 1.3 }}>{desc}</p>}
+      </div>
+      <ChevronRight size={15} color="#d1d5db" />
     </Link>
   );
 }
