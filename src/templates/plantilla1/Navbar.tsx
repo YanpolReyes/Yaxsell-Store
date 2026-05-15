@@ -431,49 +431,24 @@ export default function Navbar1() {
                   <span className="tpl1-nav-account-name">{user.name?.split(' ')[0]}</span>
                 </button>
                 {accountOpen && (
-                  isMobile ? createPortal(
-                    <>
-                      <div className="tpl1-auth-overlay" onClick={() => setAccountOpen(false)} aria-hidden />
-                      <div className="tpl1-nav-dropdown">
-                        <div className="tpl1-nav-dropdown-header">
-                          <div className="tpl1-nav-avatar lg">
-                            {avatarUrl ? <img src={avatarUrl} alt="" /> : (user.name?.charAt(0).toUpperCase() || 'U')}
-                          </div>
-                          <div>
-                            <p className="tpl1-nav-dropdown-name">{user.name}</p>
-                            <p className="tpl1-nav-dropdown-email">{user.email}</p>
-                          </div>
-                        </div>
-                        <Link href="/cuenta" onClick={() => setAccountOpen(false)}><User size={16} /> Mi cuenta</Link>
-                        <Link href="/cuenta/pedidos" onClick={() => setAccountOpen(false)}><Receipt size={16} /> Mis pedidos</Link>
-                        <Link href="/cuenta/direcciones" onClick={() => setAccountOpen(false)}><MapPin size={16} /> Direcciones</Link>
-                        <Link href="/cuenta/notificaciones" onClick={() => setAccountOpen(false)}><Bell size={16} /> Notificaciones</Link>
-                        <Link href="/favoritos" onClick={() => setAccountOpen(false)}><Heart size={16} /> Favoritos</Link>
-                        <div className="tpl1-nav-divider" />
-                        <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesión</button>
+                  <div className="tpl1-nav-dropdown">
+                    <div className="tpl1-nav-dropdown-header">
+                      <div className="tpl1-nav-avatar lg">
+                        {avatarUrl ? <img src={avatarUrl} alt="" /> : (user.name?.charAt(0).toUpperCase() || 'U')}
                       </div>
-                    </>,
-                    document.body
-                  ) : (
-                    <div className="tpl1-nav-dropdown">
-                      <div className="tpl1-nav-dropdown-header">
-                        <div className="tpl1-nav-avatar lg">
-                          {avatarUrl ? <img src={avatarUrl} alt="" /> : (user.name?.charAt(0).toUpperCase() || 'U')}
-                        </div>
-                        <div>
-                          <p className="tpl1-nav-dropdown-name">{user.name}</p>
-                          <p className="tpl1-nav-dropdown-email">{user.email}</p>
-                        </div>
+                      <div>
+                        <p className="tpl1-nav-dropdown-name">{user.name}</p>
+                        <p className="tpl1-nav-dropdown-email">{user.email}</p>
                       </div>
-                      <Link href="/cuenta" onClick={() => setAccountOpen(false)}><User size={16} /> Mi cuenta</Link>
-                      <Link href="/cuenta/pedidos" onClick={() => setAccountOpen(false)}><Receipt size={16} /> Mis pedidos</Link>
-                      <Link href="/cuenta/direcciones" onClick={() => setAccountOpen(false)}><MapPin size={16} /> Direcciones</Link>
-                      <Link href="/cuenta/notificaciones" onClick={() => setAccountOpen(false)}><Bell size={16} /> Notificaciones</Link>
-                      <Link href="/favoritos" onClick={() => setAccountOpen(false)}><Heart size={16} /> Favoritos</Link>
-                      <div className="tpl1-nav-divider" />
-                      <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesión</button>
                     </div>
-                  )
+                    <Link href="/cuenta" onClick={() => setAccountOpen(false)}><User size={16} /> Mi cuenta</Link>
+                    <Link href="/cuenta/pedidos" onClick={() => setAccountOpen(false)}><Receipt size={16} /> Mis pedidos</Link>
+                    <Link href="/cuenta/direcciones" onClick={() => setAccountOpen(false)}><MapPin size={16} /> Direcciones</Link>
+                    <Link href="/cuenta/notificaciones" onClick={() => setAccountOpen(false)}><Bell size={16} /> Notificaciones</Link>
+                    <Link href="/favoritos" onClick={() => setAccountOpen(false)}><Heart size={16} /> Favoritos</Link>
+                    <div className="tpl1-nav-divider" />
+                    <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesión</button>
+                  </div>
                 )}
               </div>
             ) : (
