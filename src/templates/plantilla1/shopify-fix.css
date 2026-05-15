@@ -546,43 +546,86 @@ cart-drawer.cart-sidebar::after {
   object-fit: contain !important;
 }
 
-/* ─── Featured collection as categories with centered icons ─── */
+/* ─── Featured collection as categories — Premium 3D cards ─── */
 [data-template="1"] .tpl1-featured-cat-slide .fusion-product-item {
-  border-radius: 28px !important;
-  overflow: hidden !important;
-  background: linear-gradient(180deg, #fff 0%, #fff5f8 100%) !important;
-  box-shadow: 0 10px 30px rgba(236, 72, 153, 0.12) !important;
+  border-radius: 20px !important;
+  overflow: visible !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 [data-template="1"] .tpl1-featured-cat-slide .product-content {
-  min-height: 220px !important;
+  min-height: 200px !important;
   display: flex !important;
+  flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 28px !important;
-}
-[data-template="1"] .tpl1-featured-cat-slide .tpl1-featured-cat-icon-wrap {
-  width: 140px !important;
-  height: 140px !important;
-  margin: 0 auto !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: 999px !important;
+  padding: 24px 16px 20px !important;
+  position: relative !important;
   background: #fff !important;
-  box-shadow: inset 0 0 0 1px rgba(236, 72, 153, 0.16), 0 12px 26px rgba(236, 72, 153, 0.16) !important;
+  border: 1.5px solid rgba(236, 72, 153, 0.08) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 2px 8px rgba(190, 24, 93, 0.06), 0 8px 24px rgba(190, 24, 93, 0.04) !important;
+  transition: transform .35s cubic-bezier(.4,0,.2,1), box-shadow .35s cubic-bezier(.4,0,.2,1), border-color .35s ease !important;
+  transform-style: preserve-3d !important;
+  will-change: transform !important;
+  cursor: pointer !important;
+}
+[data-template="1"] .tpl1-featured-cat-slide .product-content:hover {
+  border-color: rgba(236, 72, 153, 0.25) !important;
+  box-shadow: 0 12px 36px rgba(190, 24, 93, 0.14), 0 4px 12px rgba(190, 24, 93, 0.06) !important;
+}
+/* Accent bar top */
+[data-template="1"] .tpl1-featured-cat-slide .tpl1-cat-accent-bar {
+  position: absolute !important;
+  top: 0 !important;
+  left: 18% !important;
+  right: 18% !important;
+  height: 3px !important;
+  background: linear-gradient(90deg, transparent, #ec4899, transparent) !important;
+  border-radius: 0 0 4px 4px !important;
+  opacity: 0 !important;
+  transition: opacity .3s ease !important;
+}
+[data-template="1"] .tpl1-featured-cat-slide:hover .tpl1-cat-accent-bar {
+  opacity: 1 !important;
+}
+/* Icon wrap — rounded square like plantilla2 */
+[data-template="1"] .tpl1-featured-cat-slide .tpl1-featured-cat-icon-wrap {
+  width: 88px !important;
+  height: 88px !important;
+  margin: 0 auto 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 22px !important;
+  background: linear-gradient(145deg, rgba(236,72,153,0.06), rgba(236,72,153,0.12)) !important;
+  border: 1.5px solid rgba(236,72,153,0.1) !important;
+  transition: transform .3s cubic-bezier(.4,0,.2,1), box-shadow .3s ease !important;
+}
+[data-template="1"] .tpl1-featured-cat-slide:hover .tpl1-featured-cat-icon-wrap {
+  transform: scale(1.06) !important;
+  box-shadow: 0 4px 16px rgba(236,72,153,0.12) !important;
 }
 [data-template="1"] .tpl1-featured-cat-slide .tpl1-featured-cat-icon {
-  width: 82px !important;
-  height: 82px !important;
+  width: 60px !important;
+  height: 60px !important;
   object-fit: contain !important;
+  transition: transform .3s ease !important;
 }
+[data-template="1"] .tpl1-featured-cat-slide:hover .tpl1-featured-cat-icon {
+  transform: scale(1.05) !important;
+}
+/* Product name */
 [data-template="1"] .tpl1-featured-cat-slide .product-details {
   text-align: center !important;
-  padding-top: 16px !important;
+  padding-top: 0 !important;
 }
 [data-template="1"] .tpl1-featured-cat-slide .product-name a {
   font-weight: 700 !important;
-  color: #111827 !important;
+  font-size: 13px !important;
+  color: #1a1a1a !important;
+  letter-spacing: -0.2px !important;
+  transition: color .25s ease !important;
 }
 [data-template="1"] .tpl1-featured-cat-slide:hover .product-name a {
   color: #ec4899 !important;

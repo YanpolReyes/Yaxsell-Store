@@ -4685,41 +4685,63 @@ export default function HomePage1() {
           line-height: 1.85 !important;
         }
         [data-section-id="${sectionId}"] .tpl1-featured-cat-slide .product-content {
-          background: linear-gradient(145deg, rgba(255,255,255,.78), rgba(255,230,241,.62)) !important;
-          border: 1px solid rgba(236,72,153,.18) !important;
-          border-radius: 28px !important;
-          box-shadow: 0 18px 55px rgba(190, 24, 93, .13) !important;
-          backdrop-filter: blur(16px) !important;
-          -webkit-backdrop-filter: blur(16px) !important;
-          padding: 26px 18px !important;
-          transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease !important;
+          background: #fff !important;
+          border: 1.5px solid rgba(236,72,153,.08) !important;
+          border-radius: 20px !important;
+          box-shadow: 0 2px 8px rgba(190,24,93,.06), 0 8px 24px rgba(190,24,93,.04) !important;
+          padding: 24px 16px 20px !important;
+          transition: transform .35s cubic-bezier(.4,0,.2,1), box-shadow .35s cubic-bezier(.4,0,.2,1), border-color .35s ease !important;
+          transform-style: preserve-3d !important;
+          will-change: transform !important;
+          cursor: pointer !important;
+          position: relative !important;
         }
         [data-section-id="${sectionId}"] .tpl1-featured-cat-slide .product-content:hover {
-          transform: translateY(-8px) scale(1.025) !important;
-          border-color: rgba(236,72,153,.38) !important;
-          box-shadow: 0 28px 80px rgba(190, 24, 93, .22) !important;
+          border-color: rgba(236,72,153,.25) !important;
+          box-shadow: 0 12px 36px rgba(190,24,93,.14), 0 4px 12px rgba(190,24,93,.06) !important;
         }
         [data-section-id="${sectionId}"] .tpl1-featured-cat-icon-wrap {
-          background: radial-gradient(circle, rgba(255,255,255,.95), rgba(252,231,243,.9)) !important;
-          border-radius: 999px !important;
-          box-shadow: inset 0 0 0 1px rgba(236,72,153,.14), 0 14px 30px rgba(236,72,153,.12) !important;
-          padding: 18px !important;
+          background: linear-gradient(145deg, rgba(236,72,153,.06), rgba(236,72,153,.12)) !important;
+          border-radius: 22px !important;
+          border: 1.5px solid rgba(236,72,153,.1) !important;
+          transition: transform .3s cubic-bezier(.4,0,.2,1), box-shadow .3s ease !important;
+        }
+        [data-section-id="${sectionId}"] .product-content:hover .tpl1-featured-cat-icon-wrap {
+          transform: scale(1.06) !important;
+          box-shadow: 0 4px 16px rgba(236,72,153,.12) !important;
         }
         [data-section-id="${sectionId}"] .tpl1-featured-cat-icon {
-          width: 92px !important;
-          height: 92px !important;
+          width: 60px !important;
+          height: 60px !important;
           object-fit: contain !important;
-          filter: drop-shadow(0 12px 18px rgba(190,24,93,.16)) !important;
-          transition: transform .25s ease !important;
+          transition: transform .3s ease !important;
         }
         [data-section-id="${sectionId}"] .product-content:hover .tpl1-featured-cat-icon {
-          transform: scale(1.08) rotate(-3deg) !important;
+          transform: scale(1.05) !important;
         }
         [data-section-id="${sectionId}"] .product-name a {
-          color: #831843 !important;
-          font-weight: 800 !important;
-          letter-spacing: .04em !important;
-          text-transform: uppercase !important;
+          color: #1a1a1a !important;
+          font-weight: 700 !important;
+          font-size: 13px !important;
+          letter-spacing: -0.2px !important;
+          transition: color .25s ease !important;
+        }
+        [data-section-id="${sectionId}"] .product-content:hover .product-name a {
+          color: #ec4899 !important;
+        }
+        [data-section-id="${sectionId}"] .tpl1-cat-accent-bar {
+          position: absolute !important;
+          top: 0 !important;
+          left: 18% !important;
+          right: 18% !important;
+          height: 3px !important;
+          background: linear-gradient(90deg, transparent, #ec4899, transparent) !important;
+          border-radius: 0 0 4px 4px !important;
+          opacity: 0 !important;
+          transition: opacity .3s ease !important;
+        }
+        [data-section-id="${sectionId}"] .product-content:hover .tpl1-cat-accent-bar {
+          opacity: 1 !important;
         }
       `;
       document.head.appendChild(style);
@@ -4740,6 +4762,29 @@ export default function HomePage1() {
         productContent.onclick = () => {
           if (item.link) window.location.href = item.link;
         };
+
+        // Add accent bar if not present
+        if (!productContent.querySelector('.tpl1-cat-accent-bar')) {
+          const bar = document.createElement('div');
+          bar.className = 'tpl1-cat-accent-bar';
+          productContent.appendChild(bar);
+        }
+
+        // Add 3D tilt effect like plantilla2
+        productContent.addEventListener('mousemove', (e: Event) => {
+          const me = e as MouseEvent;
+          const el = me.currentTarget as HTMLElement;
+          el.style.transition = 'box-shadow .3s, border-color .3s';
+          const r = el.getBoundingClientRect();
+          const rx = ((me.clientY - r.top) / r.height - 0.5) * 12;
+          const ry = ((me.clientX - r.left) / r.width - 0.5) * -12;
+          el.style.transform = `perspective(600px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-4px) scale(1.03)`;
+        });
+        productContent.addEventListener('mouseleave', (e: Event) => {
+          const el = (e.currentTarget as HTMLElement);
+          el.style.transition = '';
+          el.style.transform = '';
+        });
       }
 
       const productImg = slide.querySelector('.product-img') as HTMLElement;
