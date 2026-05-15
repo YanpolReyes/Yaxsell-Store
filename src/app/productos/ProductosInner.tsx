@@ -280,10 +280,8 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           </div>
           <div className="pk-hero-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, padding: 24 }}>
           <div className="pk-hero-logo-wrap">
-            {lockedCategory?.iconUrl ? (
+            {lockedCategory?.iconUrl && (
               <img src={lockedCategory.iconUrl} alt={lockedCategory.name} className="pk-hero-logo-img" />
-            ) : (
-              <img src="https://jumpseller.s3.eu-west-1.amazonaws.com/store/yes-bella/assets//Sin%20t%C3%ADtulo-1_5d514a8074f0023fe88b0eacda93c729.png?1743456840" alt="Logo Yes Bella" className="pk-hero-logo-img" />
             )}
           </div>
           <div className="pk-hero-text">

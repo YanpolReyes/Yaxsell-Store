@@ -7,11 +7,12 @@ import { getServices, getAppwriteConfig, USER_PHOTOS_BUCKET } from '@/lib/appwri
 import {
   ShoppingBag, Bell, Heart, ShoppingCart, MessageCircle,
   User, MapPin, Receipt, HelpCircle, Phone,
-  Loader2, ChevronRight, LogOut, Building2,
+  Loader2, ChevronRight, LogOut, Building2, Trophy,
 } from 'lucide-react';
 
 import { useAuth } from '@/hooks/useAuth';
 import LoyaltyPoints from '@/components/LoyaltyPoints';
+import LoyaltyLevel from '@/components/LoyaltyLevel';
 import { useCuentaBg } from './CuentaBgContext';
 
 const FF = '"DM Sans",system-ui,sans-serif';
@@ -32,6 +33,7 @@ const CUENTA_ITEMS: MenuItem[] = [
 ];
 
 const CONFIG_ITEMS: MenuItem[] = [
+  { icon: Trophy,        label: 'Mis Niveles',       href: '/cuenta/niveles',         desc: 'Programa de lealtad y cupones' },
   { icon: Building2,     label: 'Cuenta Mayorista',  href: '/mayorista',             desc: 'Solicita precios especiales por volumen' },
   { icon: Bell,          label: 'Notificaciones',    href: '/cuenta/notificaciones', desc: 'Alertas y avisos de tu cuenta' },
   { icon: HelpCircle,    label: 'Soporte / Tickets', href: '/cuenta/tickets',        desc: 'Solicitudes de ayuda' },
@@ -173,6 +175,9 @@ export default function CuentaPage() {
         </div>
 
         <div style={{ marginBottom: 24 }}>
+          <LoyaltyLevel />
+        </div>
+        <div style={{ marginBottom: 24 }}>
           <LoyaltyPoints />
         </div>
 
@@ -205,6 +210,9 @@ export default function CuentaPage() {
         </div>
 
         <div style={{ maxWidth: 700, margin: '0 auto', padding: '12px 8px 40px' }}>
+          <div style={{ marginBottom: 12 }}>
+            <LoyaltyLevel />
+          </div>
           <div style={{ marginBottom: 12 }}>
             <LoyaltyPoints />
           </div>

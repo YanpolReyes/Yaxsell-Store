@@ -157,9 +157,17 @@ export class AuthService {
       return { success: true, user: userObj };
     } catch (error: any) {
       console.error('Register error:', error);
+      const msg = error?.message || '';
+      // Handle "user already exists" specifically
+      if (msg.includes('already exists') || error?.code === 409 || error?.type === 'user_already_exists') {
+        return {
+          success: false,
+          error: 'Ya existe una cuenta con este correo electrónico. Intenta iniciar sesión.'
+        };
+      }
       return {
         success: false,
-        error: error.message || 'Error al registrarse'
+        error: msg || 'Error al registrarse'
       };
     }
   }

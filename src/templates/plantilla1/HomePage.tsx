@@ -2520,9 +2520,6 @@ export default function HomePage1() {
     if (!section) return;
     if (!cfg.enabled) return;
 
-    const COLLECTION_TITLE_STYLE =
-      'color:#ec4899;-webkit-text-fill-color:#ec4899;opacity:1;visibility:visible;font-size:15px;font-weight:800;line-height:1.25;text-shadow:none;display:block;';
-
     const layoutCollectionTitles = () => {
       const slides = section.querySelectorAll('.swiper-slide') as NodeListOf<HTMLElement>;
       slides.forEach(slide => {
@@ -2545,10 +2542,9 @@ export default function HomePage1() {
         const slideTitle = titleLink.querySelector('.slide-title') as HTMLElement | null;
         if (slideTitle) {
           slideTitle.classList.remove('display-font-6', 'heading_color', 'inner_heading_color');
-          slideTitle.setAttribute('style', COLLECTION_TITLE_STYLE);
+          slideTitle.removeAttribute('style'); // Let CSS handle it
         }
-        titleLink.style.cssText =
-          'position:static;display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 14px;background:linear-gradient(180deg,#fdf2f8,#fff);border-top:2px solid #fce7f3;text-decoration:none;opacity:1;visibility:visible;';
+        titleLink.removeAttribute('style'); // Let CSS handle it
         titleLink.removeAttribute('tabindex');
         titleLink.querySelectorAll('.tpl1-collection-visible-name').forEach(el => el.remove());
       });
@@ -2612,7 +2608,7 @@ export default function HomePage1() {
       const slideTitle = slide.querySelector('.slide-title') as HTMLElement;
       if (slideTitle) {
         slideTitle.textContent = item.name;
-        slideTitle.setAttribute('style', COLLECTION_TITLE_STYLE);
+        slideTitle.removeAttribute('style'); // Let CSS handle it
       }
 
       const href = collectionItemHref(item);

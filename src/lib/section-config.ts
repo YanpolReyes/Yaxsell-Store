@@ -1351,7 +1351,8 @@ export async function getSectionConfigAsync(): Promise<SectionConfig[]> {
       const data = await res.json();
       if (data.success && data.sections) {
         const parsed: SectionConfig[] = typeof data.sections === 'string' ? JSON.parse(data.sections) : data.sections;
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        // Accept any array, even empty, to avoid forced reset to defaults if user intentionally has few sections
+        if (Array.isArray(parsed)) {
           const merged = mergeWithDefaults(parsed);
           cachedConfig = merged;
           cacheTimestamp = now;

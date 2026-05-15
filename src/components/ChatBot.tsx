@@ -301,10 +301,16 @@ export default function ChatBot() {
           font-family: "DM Sans", system-ui, sans-serif;
         }
         .yaxsel-chat-fullscreen__close {
-          width: 40px; height: 40px; border-radius: 50%;
-          border: none; background: rgba(255,255,255,0.18);
+          width: 44px; height: 44px; border-radius: 50%;
+          border: 2px solid rgba(255,255,255,0.5);
+          background: rgba(255,255,255,0.25);
           display: flex; align-items: center; justify-content: center;
           cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .yaxsel-chat-fullscreen__close:hover {
+          background: rgba(255,255,255,0.4);
+          transform: scale(1.05);
         }
         .yaxsel-chat-fullscreen__messages {
           flex: 1; overflow-y: auto;

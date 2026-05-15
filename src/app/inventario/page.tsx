@@ -9,10 +9,11 @@ import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLL
 import { Product, Category, Subcategory } from '@/types/admin';
 import {
   Upload, Search, Package, CheckCircle2, RefreshCw,
-  X, FileSpreadsheet, ArrowUpCircle, Plus, Eye, EyeOff, Sparkles, Languages, FolderTree, Camera
+  X, FileSpreadsheet, ArrowUpCircle, Plus, Eye, EyeOff, Sparkles, Languages, FolderTree, Camera, MapPin
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false });
+const ProductLocator = dynamic(() => import('@/components/ProductLocator'), { ssr: false });
 
 interface InventoryRow {
   sku: string;
@@ -127,6 +128,8 @@ export default function InventarioPage() {
   const [editStockModal, setEditStockModal] = useState<Product | null>(null);
   const [editPackQtyValue, setEditPackQtyValue] = useState<string>('');
   const [editPackagesValue, setEditPackagesValue] = useState<string>('');
+  const [editSectionValue, setEditSectionValue] = useState<number | null>(null);
+  const [showLocator, setShowLocator] = useState(false);
 
   const savePackQty = async () => {
     if (!editStockModal) return;
@@ -139,17 +142,25 @@ export default function InventarioPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, editStockModal.$id, {
+      const payload: Record<string, any> = {
         PACKQTY: newPackQty,
         STOCK: newStock,
         ISACTIVE: newStock > 0,
-      });
+      };
+      // Save section if selected
+      if (editSectionValue) {
+        const features = editStockModal.FEATURES || '';
+        const cleaned = features.replace(/\nSection:\s*\d+/gi, '').replace(/^Section:\s*\d+\n?/gi, '');
+        payload.FEATURES = cleaned ? `${cleaned}\nSection: ${editSectionValue}` : `Section: ${editSectionValue}`;
+      }
+      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, editStockModal.$id, payload);
       setProducts(prev => prev.map(p => p.$id === editStockModal.$id
-        ? { ...p, PACKQTY: newPackQty, STOCK: newStock, ISACTIVE: newStock > 0 }
+        ? { ...p, PACKQTY: newPackQty, STOCK: newStock, ISACTIVE: newStock > 0, ...(payload.FEATURES ? { FEATURES: payload.FEATURES } : {}) }
         : p));
       setEditStockModal(null);
       setEditPackQtyValue('');
       setEditPackagesValue('');
+      setEditSectionValue(null);
     } catch (e: any) {
       alert('Error: ' + e.message);
     } finally {
@@ -908,6 +919,19 @@ export default function InventarioPage() {
                   <span className="font-bold text-emerald-600 text-lg">{parseInt(editPackagesValue, 10) * parseInt(editPackQtyValue, 10)} unidades</span>
                 </div>
               )}
+              {/* Section picker */}
+              <div>
+                <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1 block">Sección (góndola)</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {Array.from({ length: 36 }, (_, i) => i + 1).map(s => (
+                    <button key={s} type="button" onClick={() => setEditSectionValue(editSectionValue === s ? null : s)}
+                      className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${editSectionValue === s ? 'bg-indigo-600 text-white shadow-md scale-110' : 'bg-gray-100 text-gray-600 hover:bg-indigo-100 hover:text-indigo-700'}`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                {editSectionValue && <div className="text-xs text-indigo-600 font-semibold mt-1.5">📍 Sección {editSectionValue} seleccionada</div>}
+              </div>
               <button
                 onClick={savePackQty}
                 disabled={savingStockId === editStockModal.$id || !editPackagesValue || !editPackQtyValue}
@@ -937,6 +961,7 @@ export default function InventarioPage() {
               </div>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2">
+              <button onClick={() => setShowLocator(true)} title="Ubicar Producto" className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-lg text-xs font-bold transition shadow-md"><MapPin className="w-3.5 h-3.5" /><span className="hidden sm:inline">Ubicar</span></button>
               <span className="text-xs text-gray-400 hidden sm:inline">{products.length} productos</span>
               <button onClick={handleMigrateActive} disabled={isMigrating || loadingProducts}
                 title="Migrar: marcar productos con stock=0 como inactivos"
@@ -1882,6 +1907,7 @@ export default function InventarioPage() {
         </>
         )}
       </main>
+      <ProductLocator isOpen={showLocator} onClose={() => setShowLocator(false)} products={products as any} onProductsUpdate={setProducts as any} />
     </div>
   );
 }

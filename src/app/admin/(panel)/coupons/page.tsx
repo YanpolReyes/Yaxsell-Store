@@ -19,13 +19,16 @@ interface Coupon {
   $createdAt: string;
   // Aliases for UI
   code: string;
-  discountType: 'percent' | 'fixed';
+  discountType: 'percent' | 'percentage' | 'fixed';
   discountValue: number;
   minOrderAmount?: number;
   maxDiscount?: number;
   isActive: boolean;
   usedCount?: number;
   expiresAt?: string;
+  maxUses?: number;
+  userRestriction?: string;
+  description?: string;
 }
 
 export default function CouponsPage() {
@@ -62,17 +65,20 @@ export default function CouponsPage() {
       const resp = await databases.listDocuments(databaseId, COUPONS_COLLECTION_ID, [
         Query.orderDesc('$createdAt'), Query.limit(100),
       ]);
-      // Normalize UPPERCASE attributes to lowercase aliases for UI
+      // Normalize attributes to aliases for UI (supporting both old and new schema)
       const normalized = resp.documents.map((doc: any) => ({
         ...doc,
         code: doc.CODE,
-        discountType: doc.TYPE,
-        discountValue: doc.VALUE,
-        minOrderAmount: doc.MINORDERAMOUNT,
+        discountType: doc.DISCOUNTTYPE || doc.TYPE || 'percent',
+        discountValue: doc.DISCOUNTVALUE || doc.VALUE || 0,
+        minOrderAmount: doc.MINORDERVALUE || doc.MINORDERAMOUNT,
         maxDiscount: doc.MAXDISCOUNT,
-        usedCount: doc.USEDCOUNT || 0,
-        isActive: doc.ACTIVE,
-        expiresAt: doc.ENDAT ? new Date(doc.ENDAT * 1000).toISOString() : undefined,
+        usedCount: doc.USES || doc.USEDCOUNT || 0,
+        maxUses: doc.MAXUSES,
+        isActive: doc.ISACTIVE !== undefined ? doc.ISACTIVE : doc.ACTIVE,
+        expiresAt: doc.EXPIRESAT ? doc.EXPIRESAT : doc.ENDAT ? new Date(doc.ENDAT * 1000).toISOString() : undefined,
+        userRestriction: doc.USERRESTRICTION,
+        description: doc.DESCRIPTION,
       }));
       setCoupons(normalized as unknown as Coupon[]);
     } catch (e: any) { setError(e.message); }
@@ -100,14 +106,25 @@ export default function CouponsPage() {
       const { databaseId } = getAppwriteConfig();
       const payload: Record<string, any> = {
         CODE: d.code.toUpperCase().trim(),
-        TYPE: d.discountType || 'percent',
-        VALUE: Number(d.discountValue),
-        ACTIVE: d.isActive ?? true,
+        DISCOUNTTYPE: d.discountType || 'percent',
+        TYPE: d.discountType || 'percent', // legacy
+        DISCOUNTVALUE: Number(d.discountValue),
+        VALUE: Number(d.discountValue), // legacy
+        ISACTIVE: d.isActive ?? true,
+        ACTIVE: d.isActive ?? true, // legacy
       };
-      if (d.minOrderAmount) payload.MINORDERAMOUNT = Number(d.minOrderAmount);
+      if (d.minOrderAmount) {
+         payload.MINORDERVALUE = Number(d.minOrderAmount);
+         payload.MINORDERAMOUNT = Number(d.minOrderAmount);
+      }
       if (d.maxDiscount) payload.MAXDISCOUNT = Number(d.maxDiscount);
-      if (d.expiresAt) payload.ENDAT = Math.floor(new Date(d.expiresAt).getTime() / 1000);
-
+      if (d.maxUses) payload.MAXUSES = Number(d.maxUses);
+      if (d.userRestriction) payload.USERRESTRICTION = d.userRestriction;
+      if (d.description) payload.DESCRIPTION = d.description;
+      if (d.expiresAt) {
+        payload.EXPIRESAT = new Date(d.expiresAt).toISOString();
+        payload.ENDAT = Math.floor(new Date(d.expiresAt).getTime() / 1000);
+      }
       if (modal.mode === 'add') {
         const doc = await databases.createDocument(databaseId, COUPONS_COLLECTION_ID, ID.unique(), payload);
         const normalized = { ...doc, code: doc.CODE, discountType: doc.TYPE, discountValue: doc.VALUE, minOrderAmount: doc.MINORDERAMOUNT, maxDiscount: doc.MAXDISCOUNT, isActive: doc.ACTIVE, expiresAt: doc.ENDAT ? new Date(doc.ENDAT * 1000).toISOString() : undefined };
@@ -136,7 +153,7 @@ export default function CouponsPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      await databases.updateDocument(databaseId, COUPONS_COLLECTION_ID, coupon.$id, { ACTIVE: !coupon.isActive });
+      await databases.updateDocument(databaseId, COUPONS_COLLECTION_ID, coupon.$id, { ISACTIVE: !coupon.isActive, ACTIVE: !coupon.isActive });
       setCoupons(prev => prev.map(c => c.$id === coupon.$id ? { ...c, isActive: !c.isActive } : c));
     } catch (e: any) { alert('Error: ' + e.message); }
   };
@@ -147,11 +164,15 @@ export default function CouponsPage() {
       const { databaseId } = getAppwriteConfig();
       const newCode = generateCode();
       const payload: Record<string, any> = {
-        CODE: newCode, TYPE: c.discountType, VALUE: c.discountValue,
-        ACTIVE: false,
+        CODE: newCode, 
+        DISCOUNTTYPE: c.discountType, TYPE: c.discountType, 
+        DISCOUNTVALUE: c.discountValue, VALUE: c.discountValue,
+        ISACTIVE: false, ACTIVE: false,
       };
-      if (c.minOrderAmount) payload.MINORDERAMOUNT = c.minOrderAmount;
+      if (c.minOrderAmount) { payload.MINORDERVALUE = c.minOrderAmount; payload.MINORDERAMOUNT = c.minOrderAmount; }
       if (c.maxDiscount) payload.MAXDISCOUNT = c.maxDiscount;
+      if (c.maxUses) payload.MAXUSES = c.maxUses;
+      if (c.description) payload.DESCRIPTION = c.description + ' (Copia)';
       const doc = await databases.createDocument(databaseId, COUPONS_COLLECTION_ID, ID.unique(), payload);
       const normalized = { ...doc, code: doc.CODE, discountType: doc.TYPE, discountValue: doc.VALUE, minOrderAmount: doc.MINORDERAMOUNT, maxUses: doc.MAXUSES, usedCount: doc.USEDCOUNT, isActive: doc.ACTIVE, expiresAt: doc.ENDAT ? new Date(doc.ENDAT * 1000).toISOString() : undefined };
       setCoupons(prev => [normalized as unknown as Coupon, ...prev]);
@@ -176,12 +197,12 @@ export default function CouponsPage() {
     return { text: new Date(expiresAt).toLocaleDateString('es-CL'), cls: 'text-gray-500' };
   };
 
-  const fmt = (c: Coupon) => c.discountType === 'percent' ? `-${c.discountValue}%` : `-$${c.discountValue.toLocaleString('es-CL')}`;
+  const fmt = (c: Coupon) => (c.discountType === 'percent' || c.discountType === 'percentage') ? `-${c.discountValue}%` : `-$${c.discountValue.toLocaleString('es-CL')}`;
 
   const exportCSV = () => {
     const headers = ['Código', 'Tipo', 'Descuento', 'Mín. Pedido', 'Estado', 'Vence'];
     const rows = filtered.map(c => [
-      c.code, c.discountType === 'percent' ? 'Porcentaje' : 'Fijo',
+      c.code, (c.discountType === 'percent' || c.discountType === 'percentage') ? 'Porcentaje' : 'Fijo',
       c.discountValue, c.minOrderAmount || '',
       !c.isActive ? 'Inactivo' : isExpired(c) ? 'Expirado' : 'Activo',
       c.expiresAt ? new Date(c.expiresAt).toLocaleDateString('es-CL') : '',
@@ -428,16 +449,38 @@ export default function CouponsPage() {
                     className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Mínimo de compra ($)</label>
-                <input type="number" min="0" value={modal.data.minOrderAmount ?? ''}
-                  onChange={e => setModal(m => m ? { ...m, data: { ...m.data, minOrderAmount: e.target.value ? Number(e.target.value) : undefined } } : m)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Mínimo de compra ($)</label>
+                  <input type="number" min="0" value={modal.data.minOrderAmount ?? ''}
+                    onChange={e => setModal(m => m ? { ...m, data: { ...m.data, minOrderAmount: e.target.value ? Number(e.target.value) : undefined } } : m)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Máx Usos</label>
+                  <input type="number" min="0" value={modal.data.maxUses ?? ''} placeholder="Ilimitado"
+                    onChange={e => setModal(m => m ? { ...m, data: { ...m.data, maxUses: e.target.value ? Number(e.target.value) : undefined } } : m)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Fecha de expiración</label>
+                  <input type="date" value={modal.data.expiresAt ? modal.data.expiresAt.slice(0, 10) : ''}
+                    onChange={e => setModal(m => m ? { ...m, data: { ...m.data, expiresAt: e.target.value } } : m)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Usuario (ID o email)</label>
+                  <input type="text" value={modal.data.userRestriction || ''} placeholder="Opcional"
+                    onChange={e => setModal(m => m ? { ...m, data: { ...m.data, userRestriction: e.target.value } } : m)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Fecha de expiración</label>
-                <input type="date" value={modal.data.expiresAt ? modal.data.expiresAt.slice(0, 10) : ''}
-                  onChange={e => setModal(m => m ? { ...m, data: { ...m.data, expiresAt: e.target.value } } : m)}
+                <label className="block text-xs font-medium text-gray-600 mb-1">Descripción</label>
+                <input type="text" value={modal.data.description || ''} placeholder="Opcional"
+                  onChange={e => setModal(m => m ? { ...m, data: { ...m.data, description: e.target.value } } : m)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
               <div className="flex items-center gap-2">

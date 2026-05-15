@@ -1,9 +1,9 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   MOBILE RESPONSIVE OVERRIDES — plantilla1
-   Aplica fixes para mobile tanto en HomePage como en páginas globales (productos, login, etc.)
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   MOBILE RESPONSIVE OVERRIDES â€” plantilla1
+   Aplica fixes para mobile tanto en HomePage como en pÃ¡ginas globales (productos, login, etc.)
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-/* ─── Global: prevent horizontal scroll on small screens ─── */
+/* â”€â”€â”€ Global: prevent horizontal scroll on small screens â”€â”€â”€ */
 @media screen and (max-width: 768px) {
   html, body {
     overflow-x: hidden !important;
@@ -18,12 +18,12 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    HOMEPAGE NAVBAR MOBILE
-   ═══════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 1024px) {
-  /* Ocultar el header de Shopify y announcement bar en mobile — Navbar1 toma el control */
+  /* Ocultar el header de Shopify y announcement bar en mobile â€” Navbar1 toma el control */
   [data-template="1"] .musk-main-header,
   [data-template="1"] #shopify-section-sections--22405132747000__header_fYEwWD,
   [data-template="1"] #shopify-section-sections--22405132747000__announcement_bar_B8FdRK,
@@ -57,14 +57,14 @@
     padding-bottom: 0 !important;
   }
 
-  /* Header padding más compacto en mobile */
+  /* Header padding mÃ¡s compacto en mobile */
   [data-template="1"] header.musk-main-header,
   [data-template="1"] header.musk-main-header .musk-main-header-container {
     padding-left: 16px !important;
     padding-right: 16px !important;
   }
 
-  /* Logo más pequeño */
+  /* Logo mÃ¡s pequeÃ±o */
   [data-template="1"] header.musk-main-header .logo-col img {
     max-width: 110px !important;
     height: auto !important;
@@ -89,9 +89,9 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    HERO BANNER MOBILE
-   ═══════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 768px) {
   [data-template="1"] .musk-banner-slider,
@@ -100,7 +100,7 @@
     max-height: 520px !important;
   }
 
-  /* Hero móvil: un solo slide, sin deslizar ni extras */
+  /* Hero mÃ³vil: un solo slide, sin deslizar ni extras */
   [data-template="1"] .tpl1-hero-mobile-locked .musk-banner-slider,
   [data-template="1"] .tpl1-hero-mobile-locked .musk-main-banner,
   [data-template="1"] .tpl1-hero-mobile-locked fuzion-hero-banner-slider {
@@ -139,15 +139,96 @@
     display: none !important;
   }
 
-  /* Logo centrado en hero banner mobile */
-  [data-template="1"] .musk-banner-slider .swiper-slide .banner-slide-content::before {
-    content: '' !important;
-    display: block !important;
-    width: 320px !important;
-    height: 320px !important;
-    margin: 0 auto 24px !important;
-    background: url('https://jumpseller.s3.eu-west-1.amazonaws.com/store/yes-bella/assets//Sin%20t%C3%ADtulo-1_5d514a8074f0023fe88b0eacda93c729.png?1743456840') center/contain no-repeat !important;
+  /* ─── HERO BANNER Mobile Logo & Overlay Fix ─── */
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .musk-banner-slider,
+  [data-template="1"] .musk-banner-slider,
+  [data-template="1"] .musk-banner-slider .swiper-container,
+  [data-template="1"] .musk-banner-slider .swiper-wrapper,
+  [data-template="1"] .musk-banner-slider .swiper-slide {
+    position: relative !important;
+    touch-action: pan-y pinch-zoom !important; /* Allow vertical scrolling */
+  }
+
+  /* Desactivar interacciones con partículas/canvas de fondo en móvil para ahorrar rendimiento */
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 canvas,
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .particles-js-canvas-el {
     pointer-events: none !important;
+  }
+  
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .musk-banner-slider::after,
+  [data-section-id="tpl1_hero"] .musk-banner-slider::after {
+    content: '' !important;
+    position: absolute !important;
+    top: 42% !important; /* Moved logo slightly lower as requested */
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 340px !important; /* Made bigger */
+    height: 150px !important;
+    background: url('https://jumpseller.s3.eu-west-1.amazonaws.com/store/yes-bella/assets//Sin%20t%C3%ADtulo-1_5d514a8074f0023fe88b0eacda93c729.png?1743456840') center/contain no-repeat !important;
+    z-index: 99 !important;
+    pointer-events: none !important;
+    filter: drop-shadow(0 4px 15px rgba(236,72,153,0.3)) !important;
+    display: block !important;
+    animation: tpl1LogoFloat 3s ease-in-out infinite alternate !important; /* Added animation */
+  }
+
+  @keyframes tpl1LogoFloat {
+    0% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 4px 10px rgba(236,72,153,0.2)); }
+    100% { transform: translate(-50%, -55%) scale(1.05); filter: drop-shadow(0 8px 20px rgba(236,72,153,0.6)); }
+  }
+
+  /* Force remove ALL dark layers/overlays from hero on mobile */
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .overlay,
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .musk-banner-slider::before,
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-slide::before,
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-slide::after,
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .slide-image::before,
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .slide-image::after,
+  .musk-overlay-layer,
+  .swiper-slide-shadow {
+    display: none !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    opacity: 0 !important;
+    filter: none !important;
+  }
+
+  /* ─── COLLECTION TITLES VISIBILITY ─── */
+  .musk-h2-head,
+  .heading_color,
+  #shopify-section-template--22405132419320__collection_list_WrFbPe .musk-h2-head {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    color: #111827 !important;
+    font-size: 24px !important;
+    font-weight: 800 !important;
+    text-align: center !important;
+    margin-top: 20px !important;
+    margin-bottom: 20px !important;
+  }
+
+  /* Fix Section Titles (Colecciones, etc) visibility on mobile */
+  [data-template="1"] .musk-sec-title,
+  [data-template="1"] .musk-h2-head,
+  [data-template="1"] .musk-fancy-sub-head {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  
+  [data-template="1"] .musk-sec-title .musk-h2-head {
+    font-size: 24px !important;
+    margin-bottom: 8px !important;
+    text-align: center !important;
+  }
+  
+  [data-template="1"] .musk-sec-title .musk-fancy-sub-head {
+    font-size: 14px !important;
+    text-align: center !important;
+    margin-bottom: 4px !important;
   }
 
   [data-template="1"] .banner-slide-para {
@@ -168,9 +249,9 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    COUPON BANNER MOBILE
-   ═══════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 768px) {
   /* Reducir padding del host container */
@@ -181,7 +262,7 @@
     padding: 0 12px !important;
   }
 
-  /* Banner interno más compacto */
+  /* Banner interno mÃ¡s compacto */
   .cb-banner {
     padding: 16px 14px !important;
   }
@@ -192,7 +273,7 @@
     gap: 12px !important;
   }
 
-  /* Porcentaje más pequeño */
+  /* Porcentaje mÃ¡s pequeÃ±o */
   .cb-hero-percent {
     font-size: 32px !important;
   }
@@ -203,13 +284,13 @@
     display: none !important;
   }
 
-  /* Ticket icon más pequeño */
+  /* Ticket icon mÃ¡s pequeÃ±o */
   .cb-ticket-icon {
     width: 20px !important;
     height: 20px !important;
   }
 
-  /* Code box más compacta */
+  /* Code box mÃ¡s compacta */
   .cb-code-box {
     padding: 10px 14px !important;
   }
@@ -217,7 +298,7 @@
     font-size: 15px !important;
   }
 
-  /* Copy button más compacto */
+  /* Copy button mÃ¡s compacto */
   .cb-copy-btn {
     padding: 10px 16px !important;
     font-size: 12px !important;
@@ -244,9 +325,9 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   MEDIA GALLERY (3 VIDEOS) MOBILE — apilar centrados
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   MEDIA GALLERY (3 VIDEOS) MOBILE â€” apilar centrados
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 768px) {
   /* Apilar los 3 videos verticalmente */
@@ -269,7 +350,7 @@
     justify-content: center !important;
   }
 
-  /* Reducir padding de la sección */
+  /* Reducir padding de la secciÃ³n */
   [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG {
     padding-left: 12px !important;
     padding-right: 12px !important;
@@ -279,12 +360,12 @@
     padding-bottom: 20px !important;
   }
 
-  /* Título stroke más pequeño */
+  /* TÃ­tulo stroke mÃ¡s pequeÃ±o */
   [data-template="1"] .fusion-stroke-text {
     font-size: clamp(32px, 10vw, 60px) !important;
   }
 
-  /* Botón avísame más pequeño */
+  /* BotÃ³n avÃ­same mÃ¡s pequeÃ±o */
   [data-template="1"] .notify-arrival-btn {
     padding: 8px 16px !important;
     font-size: 12px !important;
@@ -293,12 +374,12 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   FEATURED PRODUCT SECTION MOBILE — centrar videos, apilar vertical
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   FEATURED PRODUCT SECTION MOBILE â€” centrar videos, apilar vertical
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 768px) {
-  /* Apilar galería y detalle verticalmente */
+  /* Apilar galerÃ­a y detalle verticalmente */
   [data-template="1"] .product-gallery-row {
     flex-direction: column !important;
     align-items: center !important;
@@ -313,7 +394,7 @@
     padding-right: 0 !important;
   }
 
-  /* Centrar la galería de videos */
+  /* Centrar la galerÃ­a de videos */
   [data-template="1"] .left-content {
     display: flex !important;
     flex-direction: column !important;
@@ -359,27 +440,27 @@
     justify-content: center !important;
   }
 
-  /* Reducir padding de la sección */
+  /* Reducir padding de la secciÃ³n */
   [data-template="1"] .fusion-featured-wrapper {
     padding-top: 40px !important;
     padding-bottom: 30px !important;
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   COUNTDOWN TIMER MOBILE — Shopify section hidden, React component replaces
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   COUNTDOWN TIMER MOBILE â€” Shopify section hidden, React component replaces
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 768px) {
-  /* Hide the Shopify countdown section on mobile — React MobileCountdown replaces it */
+  /* Hide the Shopify countdown section on mobile â€” React MobileCountdown replaces it */
   [data-template="1"] #shopify-section-template--22405132419320__countdown_timer_hYJrNM {
     display: none !important;
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   VIDEO WITH CONTENT SECTION MOBILE — apilar verticalmente
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   VIDEO WITH CONTENT SECTION MOBILE â€” apilar verticalmente
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 768px) {
   [data-template="1"] .video-with-content-row {
@@ -390,7 +471,7 @@
     border-radius: 12px !important;
   }
 
-  /* Video column — full width, no min-width */
+  /* Video column â€” full width, no min-width */
   [data-template="1"] .video-with-content-row .vd-col {
     width: 100% !important;
     min-width: 0 !important;
@@ -413,7 +494,7 @@
     object-fit: contain !important;
   }
 
-  /* Content column — full width, readable */
+  /* Content column â€” full width, readable */
   [data-template="1"] .video-with-content-row .vd-content-col {
     width: 100% !important;
     min-width: 0 !important;
@@ -445,9 +526,9 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   GRIDS DE PRODUCTOS / CATEGORÍAS — pasar a 2 cols en mobile
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   GRIDS DE PRODUCTOS / CATEGORÃAS â€” pasar a 2 cols en mobile
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 768px) {
   [data-template="1"] .row.row-cols-lg-4,
@@ -495,9 +576,9 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   SECCIONES HOME — paddings y headings
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SECCIONES HOME â€” paddings y headings
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 768px) {
   [data-template="1"] section,
@@ -526,7 +607,7 @@
     font-size: clamp(20px, 5vw, 26px) !important;
   }
 
-  /* Categorías scroll horizontal en mobile */
+  /* CategorÃ­as scroll horizontal en mobile */
   [data-template="1"] .musk-category-slider,
   [data-template="1"] .categories-list {
     overflow-x: auto !important;
@@ -535,9 +616,9 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   CART DRAWER — full width en mobile
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   CART DRAWER â€” full width en mobile
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 600px) {
   [data-template="1"] .cart-sidebar,
@@ -546,7 +627,7 @@
     max-width: 100vw !important;
   }
 
-  /* Header del cart con padding más razonable y gap menor */
+  /* Header del cart con padding mÃ¡s razonable y gap menor */
   [data-template="1"] .cart-sidebar .cart-sidebar-header {
     padding: 16px 18px !important;
     gap: 12px !important;
@@ -557,7 +638,7 @@
     font-size: 17px !important;
   }
 
-  /* Items del cart más compactos */
+  /* Items del cart mÃ¡s compactos */
   [data-template="1"] .cart-sidebar .cart-product,
   [data-template="1"] .cart-sidebar .cart-item {
     padding: 12px 18px !important;
@@ -576,9 +657,9 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    FOOTER MOBILE
-   ═══════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 768px) {
   [data-template="1"] .musk-main-footer,
@@ -587,7 +668,7 @@
     text-align: center !important;
   }
 
-  /* Footer row — 2 column grid */
+  /* Footer row â€” 2 column grid */
   [data-template="1"] .musk-main-footer .row,
   [data-template="1"] .musk-main-footer .footer-row {
     display: grid !important;
@@ -655,9 +736,9 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    BOTONES Y CTAs MOBILE
-   ═══════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 600px) {
   [data-template="1"] .btn,
@@ -668,14 +749,14 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   PÁGINAS GLOBALES (productos, login, checkout, pedido-confirmado)
-   Estas páginas usan inline styles, pero podemos targets generales.
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   PÃGINAS GLOBALES (productos, login, checkout, pedido-confirmado)
+   Estas pÃ¡ginas usan inline styles, pero podemos targets generales.
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   CATÁLOGO /productos — layout, cards, filtros drawer
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   CATÃLOGO /productos â€” layout, cards, filtros drawer
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 1024px) {
   .pk-page .pk-sidebar-desktop,
@@ -740,7 +821,7 @@
   }
 }
 
-/* Páginas con maxWidth y padding (productos, login, pedido-confirmado) */
+/* PÃ¡ginas con maxWidth y padding (productos, login, pedido-confirmado) */
 @media screen and (max-width: 600px) {
   [class*="page"] [style*="maxWidth: 1280"],
   [class*="page"] [style*="maxWidth: 720"],
@@ -750,9 +831,9 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   PRODUCT DETAIL PAGE — colapsar grid de 3 columnas en mobile
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   PRODUCT DETAIL PAGE â€” colapsar grid de 3 columnas en mobile
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 1024px) {
   .pd-main-grid {
@@ -887,12 +968,12 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   PEDIDO-CONFIRMADO + LOGIN + CHECKOUT — paddings y grids
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   PEDIDO-CONFIRMADO + LOGIN + CHECKOUT â€” paddings y grids
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 768px) {
-  /* Genérico: cualquier página con grid 2 cols se vuelve 1 col */
+  /* GenÃ©rico: cualquier pÃ¡gina con grid 2 cols se vuelve 1 col */
   body [style*="gridTemplateColumns: '1.5fr 1fr'"],
   body [style*="grid-template-columns: 1.5fr 1fr"],
   body [style*="gridTemplateColumns: '2fr 1fr'"],
@@ -903,12 +984,12 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MEJORAS GENERALES UX MOBILE
-   ═══════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 768px) {
-  /* Tap targets mínimo 44px */
+  /* Tap targets mÃ­nimo 44px */
   [data-template="1"] a,
   [data-template="1"] button {
     min-height: 40px;
@@ -925,14 +1006,14 @@
     font-size: 16px !important;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     REMOVE HOVER ANIMATIONS ON MOBILE — no mouse = no hover
-     ═══════════════════════════════════════════════════════════════════════════ */
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+     REMOVE HOVER ANIMATIONS ON MOBILE â€” no mouse = no hover
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
   [data-template="1"] *:hover {
     transform: none !important;
   }
 
-  /* Product cards — no 3D tilt, no scale, no shadow change */
+  /* Product cards â€” no 3D tilt, no scale, no shadow change */
   [data-template="1"] .tpl1-product-card:hover {
     box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
     border-color: rgba(0,0,0,0.05) !important;
@@ -960,7 +1041,7 @@
     color: #333 !important;
   }
 
-  /* Collection slides — no hover effects */
+  /* Collection slides â€” no hover effects */
   [data-template="1"] .musk_collection1 .swiper-slide:hover .img-content img {
     filter: none !important;
     transform: none !important;
@@ -970,7 +1051,7 @@
     color: inherit !important;
   }
 
-  /* General buttons — no hover transforms */
+  /* General buttons â€” no hover transforms */
   [data-template="1"] .btn:hover,
   [data-template="1"] .musk-button:hover,
   [data-template="1"] .musk-primary-btn:hover,
@@ -979,21 +1060,21 @@
     box-shadow: inherit !important;
   }
 
-  /* Nav links — no hover transforms */
+  /* Nav links â€” no hover transforms */
   [data-template="1"] .musk-main-header a:hover,
   [data-template="1"] .musk-main-header button:hover {
     transform: none !important;
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   MOBILE FIXES — Comprehensive fixes for plantilla1 sections (mobile only)
-   Solo aplica en pantallas pequeñas para no afectar PC
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   MOBILE FIXES â€” Comprehensive fixes for plantilla1 sections (mobile only)
+   Solo aplica en pantallas pequeÃ±as para no afectar PC
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 768px) {
 
-  /* ─── HERO: Hide ALL particle effects on mobile (lag + visual clutter) ─── */
+  /* â”€â”€â”€ HERO: Hide ALL particle effects on mobile (lag + visual clutter) â”€â”€â”€ */
   [data-template="1"] .tpl1-overlay-particles,
   [data-template="1"] .tpl1-nav-particles,
   [data-template="1"] .faq-particles-wrapper,
@@ -1008,7 +1089,7 @@
     opacity: 0 !important;
   }
 
-  /* ─── HERO: Eliminate white space below hero on mobile ─── */
+  /* â”€â”€â”€ HERO: Eliminate white space below hero on mobile â”€â”€â”€ */
   [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 {
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
@@ -1028,7 +1109,7 @@
     margin-top: 0 !important;
   }
 
-  /* ─── MEDIA GALLERY (Pronto en Kevin y Coco): Compact title on mobile ─── */
+  /* â”€â”€â”€ MEDIA GALLERY (Pronto en Kevin y Coco): Compact title on mobile â”€â”€â”€ */
   [data-template="1"] #shopify-section-template--22405132419320__two_column_grid_WxQiPG {
     padding-top: 24px !important;
     padding-bottom: 16px !important;
@@ -1077,7 +1158,7 @@
     padding: 0 16px !important;
   }
 
-  /* ─── ANTES Y DESPUÉS: Fix slider bar position on mobile ─── */
+  /* â”€â”€â”€ ANTES Y DESPUÃ‰S: Fix slider bar position on mobile â”€â”€â”€ */
   [data-template="1"] #shopify-section-template--22405132419320__before_after_3VVXkq {
     padding-top: 30px !important;
     padding-bottom: 30px !important;
@@ -1112,7 +1193,7 @@
     padding: 0 12px !important;
   }
 
-  /* ─── VIDEO PLAY/PAUSE: Smaller SVG icons on mobile ─── */
+  /* â”€â”€â”€ VIDEO PLAY/PAUSE: Smaller SVG icons on mobile â”€â”€â”€ */
   [data-template="1"] .tpl1-video-play-icon svg {
     width: 16px !important;
     height: 18px !important;
@@ -1123,7 +1204,7 @@
     height: 18px !important;
   }
 
-  /* ─── ANTES Y DESPUÉS: Wider and shorter on mobile ─── */
+  /* â”€â”€â”€ ANTES Y DESPUÃ‰S: Wider and shorter on mobile â”€â”€â”€ */
   [data-template="1"] #shopify-section-template--22405132419320__before_after_3VVXkq .before-after,
   [data-template="1"] #shopify-section-template--22405132419320__before_after_3VVXkq .bf-af-item {
     aspect-ratio: 16 / 9 !important;
@@ -1138,9 +1219,9 @@
     width: 100% !important;
   }
 
-  /* ─── SHOP THE LOOK: Handled by Premium JS Implementation ─── */
+  /* â”€â”€â”€ SHOP THE LOOK: Handled by Premium JS Implementation â”€â”€â”€ */
 
-  /* ─── IMAGE OVERLAY (banner con texto): Mobile redesign ─── */
+  /* â”€â”€â”€ IMAGE OVERLAY (banner con texto): Mobile redesign â”€â”€â”€ */
   [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd {
     padding: 0 !important;
     margin: 16px 0 !important;
@@ -1186,7 +1267,7 @@
     padding: 10px 24px !important;
   }
 
-  /* ─── VIDEO WITH TEXT: Remove white borders, fix layout ─── */
+  /* â”€â”€â”€ VIDEO WITH TEXT: Remove white borders, fix layout â”€â”€â”€ */
   [data-template="1"] #shopify-section-template--22405132419320__image_video_with_text_LEtqmt {
     padding: 24px 0 !important;
     background: transparent !important;
@@ -1236,7 +1317,7 @@
     margin: 0 0 14px !important;
   }
 
-  /* ─── FEATURED COLLECTION: Reduce padding on mobile (no need for hover space) ─── */
+  /* â”€â”€â”€ FEATURED COLLECTION: Reduce padding on mobile (no need for hover space) â”€â”€â”€ */
   [data-template="1"] #shopify-section-template--22405132419320__featured_collection_UNXLgP {
     padding-top: 12px !important;
     padding-bottom: 12px !important;
@@ -1265,88 +1346,12 @@
     font-size: 12px !important;
   }
 
-  /* ─── Colecciones: nombre debajo de la imagen, rosa (anula overlay blanco del tema) ─── */
-  [data-template="1"] .musk_collection1 .musk-collection-slide {
-    display: flex !important;
-    flex-direction: column !important;
-    border-radius: 16px !important;
-    overflow: hidden !important;
-    background: #fff !important;
-    border: 1px solid rgba(252, 231, 243, 0.95) !important;
-    box-shadow: 0 8px 24px rgba(236, 72, 153, 0.1) !important;
-  }
-  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content {
-    position: relative !important;
-    display: block !important;
-    flex: 0 0 auto !important;
-    border-radius: 0 !important;
-    overflow: hidden !important;
-    background: #f9fafb !important;
-    border: none !important;
-    box-shadow: none !important;
-  }
-  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content img,
-  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content svg.placeholder-svg {
-    position: relative !important;
-    display: block !important;
-    width: 100% !important;
-    height: auto !important;
-    aspect-ratio: 1 / 1 !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    object-fit: cover !important;
-  }
-  [data-template="1"] .musk_collection1 .tpl1-collection-footer,
-  [data-template="1"] .musk_collection1 .swiper-slide .collection_list_title_main {
-    position: static !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    order: unset !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 12px 14px !important;
-    background: linear-gradient(180deg, #fdf2f8 0%, #ffffff 100%) !important;
-    border-top: 2px solid #fce7f3 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 8px !important;
-    text-decoration: none !important;
-    z-index: 2 !important;
-    pointer-events: auto !important;
-  }
-  [data-template="1"] .musk_collection1 .swiper-slide .slide-title,
-  [data-template="1"] .musk_collection1 .swiper-slide .collection_list_title_main,
-  [data-template="1"] .musk_collection1 .swiper-slide .inner_heading_color {
-    color: #ec4899 !important;
-    -webkit-text-fill-color: #ec4899 !important;
-    text-shadow: none !important;
-    font-size: 14px !important;
-    font-weight: 800 !important;
-    line-height: 1.25 !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-  }
-  [data-template="1"] .musk_collection1 .swiper-slide:hover .slide-title,
-  [data-template="1"] .musk_collection1 .swiper-slide:hover .collection_list_title_main {
-    color: #db2777 !important;
-    -webkit-text-fill-color: #db2777 !important;
-  }
-  [data-template="1"] .musk_collection1 .collection_list_title_right svg path {
-    fill: #ec4899 !important;
-  }
-  [data-template="1"] .musk_collection1 .collection-num {
-    display: none !important;
-  }
+  /* ─── Colecciones: estilos delegados a shopify-fix.css (overlay glass) ─── */
   [data-template="1"] .musk_collection1 .collectiony_main_card_inner {
     z-index: 1 !important;
   }
 
-  /* ─── BRAND LOGOS carousel mobile fix ─── */
+  /* â”€â”€â”€ BRAND LOGOS carousel mobile fix â”€â”€â”€ */
   [data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .logo-img-item {
     min-width: 220px !important;
   }
@@ -1363,7 +1368,7 @@
   }
 }
 
-/* ─── Popup usuario / auth (home Shopify header + fallback) ─── */
+/* â”€â”€â”€ Popup usuario / auth (home Shopify header + fallback) â”€â”€â”€ */
 @media screen and (max-width: 768px) {
   #yaxsel-auth-overlay,
   #yaxsel-user-overlay {
@@ -1384,3 +1389,24 @@
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.12) !important;
   }
 }
+
+/* Fix collection title visibility on mobile */
+@media screen and (max-width: 768px) {
+  [data-template="1"] .collection-card-title,
+  [data-template="1"] .collection-title,
+  [data-template="1"] .musk-collection-item h3,
+  [data-template="1"] .collection-list-item h3,
+  [data-template="1"] .musk-category-slider h3,
+  [data-template="1"] .musk-collection-card h3,
+  [data-template="1"] .category-title,
+  [data-template="1"] .tpl1-collection-footer,
+  [data-template="1"] .slide-title {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    font-size: 14px !important;
+    text-align: center !important;
+    margin-top: 8px !important;
+  }
+}
+

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -193,8 +193,6 @@ function ThemeEditorPage() {
   useEffect(() => {
     // Invalidate cache to ensure fresh data with new tpl1_ sections
     invalidateSectionCache();
-    // Force clear localStorage section config so new sections are merged
-    try { localStorage.removeItem('sectionConfig'); } catch {}
     getSectionConfigAsync().then(config => {
       let mapped = config.map(s => assignGroup(s, isCustomTemplate, isTemplate1));
       let filtered = isTemplate1
@@ -342,7 +340,9 @@ function ThemeEditorPage() {
   const persistAndSync = useCallback((newSections: EditorSection[]) => {
     const reordered = newSections.map((s, i) => ({ ...s, order: i }));
     // Merge with sections from the other template to avoid data loss
-    const allCurrent = getSectionConfig();
+    // We fetch current from localStorage to ensure we have the most up-to-date state
+    const allCurrent = getSectionConfig(); 
+    
     let otherSections: SectionConfig[];
     if (isTemplate1) {
       otherSections = allCurrent.filter(s => !s.id.startsWith('tpl1_'));
@@ -352,17 +352,10 @@ function ThemeEditorPage() {
       otherSections = allCurrent.filter(s => s.id.startsWith('cm_') || s.id.startsWith('tpl1_'));
     }
     
-    // Merge settings from current config to preserve user data
-    const merged = reordered.map(s => {
-      const existing = allCurrent.find(c => c.id === s.id);
-      if (existing) {
-        // Preserve existing settings, merge with new ones
-        return { ...s, settings: { ...existing.settings, ...s.settings } };
-      }
-      return s;
-    });
+    // IMPORTANT: newSections already have the latest settings from the editor UI
+    // We only need to merge them with otherSections (the ones not being edited right now)
+    const newConfig = [...otherSections, ...reordered];
     
-    const newConfig = [...otherSections, ...merged];
     saveSectionConfig(newConfig);
     setHasChanges(true);
     // Tell iframe to update its local state instantly
