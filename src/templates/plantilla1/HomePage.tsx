@@ -2694,17 +2694,18 @@ export default function HomePage1() {
         // Play/pause overlay icon — glassmorphism style
         const playIcon = document.createElement('div');
         playIcon.className = 'tpl1-video-play-icon';
-        playIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;transition:opacity 0.3s ease;opacity:1;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
-        playIcon.innerHTML = `<svg width="22" height="26" viewBox="0 0 22 26" fill="white"><polygon points="2,0 22,13 2,26"/></svg>`;
+        playIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:1;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
+        playIcon.innerHTML = `<svg width="24" height="28" viewBox="0 0 24 28" fill="white" style="margin-left:3px;"><polygon points="2,0 24,14 2,28"/></svg>`;
         const pauseIcon = document.createElement('div');
         pauseIcon.className = 'tpl1-video-pause-icon';
-        pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
-        pauseIcon.innerHTML = `<svg width="22" height="26" viewBox="0 0 22 26" fill="white"><rect x="2" y="0" width="6" height="26" rx="2"/><rect x="14" y="0" width="6" height="26" rx="2"/></svg>`;
+        pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
+        pauseIcon.innerHTML = `<svg width="24" height="28" viewBox="0 0 24 28" fill="white"><rect x="2" y="0" width="7" height="28" rx="2"/><rect x="15" y="0" width="7" height="28" rx="2"/></svg>`;
         const updateIcons = () => {
           playIcon.style.opacity = video.paused ? '1' : '0';
           pauseIcon.style.opacity = video.paused ? '0' : '1';
         };
         slide.style.position = 'relative';
+        slide.style.cursor = 'pointer';
         slide.appendChild(playIcon);
         slide.appendChild(pauseIcon);
 
@@ -2724,7 +2725,9 @@ export default function HomePage1() {
           showVideo();
         }
 
-        video.onclick = () => {
+        // Click handler on entire slide (poster + video + icons all trigger play/pause)
+        slide.onclick = (e) => {
+          e.stopPropagation();
           if (video.paused) {
             video.play().catch(() => {});
           } else {
@@ -4468,23 +4471,15 @@ export default function HomePage1() {
           // Play/pause overlay icon — glassmorphism style
           const playIcon = document.createElement('div');
           playIcon.className = 'tpl1-video-play-icon';
-          playIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;transition:opacity 0.3s ease;opacity:1;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
-          playIcon.innerHTML = `<svg width="22" height="26" viewBox="0 0 22 26" fill="white"><polygon points="2,0 22,13 2,26"/></svg>`;
+          playIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:1;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
+          playIcon.innerHTML = `<svg width="24" height="28" viewBox="0 0 24 28" fill="white" style="margin-left:3px;"><polygon points="2,0 24,14 2,28"/></svg>`;
           const pauseIcon = document.createElement('div');
           pauseIcon.className = 'tpl1-video-pause-icon';
-          pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
-          pauseIcon.innerHTML = `<svg width="22" height="26" viewBox="0 0 22 26" fill="white"><rect x="2" y="0" width="6" height="26" rx="2"/><rect x="14" y="0" width="6" height="26" rx="2"/></svg>`;
+          pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
+          pauseIcon.innerHTML = `<svg width="24" height="28" viewBox="0 0 24 28" fill="white"><rect x="2" y="0" width="7" height="28" rx="2"/><rect x="15" y="0" width="7" height="28" rx="2"/></svg>`;
           const updateIcons = () => {
             playIcon.style.opacity = video.paused ? '1' : '0';
             pauseIcon.style.opacity = video.paused ? '0' : '1';
-          };
-          video.onclick = () => {
-            if (video.paused) {
-              video.play().catch(() => {});
-            } else {
-              video.pause();
-            }
-            updateIcons();
           };
           video.onplay = updateIcons;
           video.onpause = updateIcons;
@@ -4492,9 +4487,20 @@ export default function HomePage1() {
           mediaImg.style.position = 'relative';
           mediaImg.style.opacity = '1';
           mediaImg.style.filter = 'none';
+          mediaImg.style.cursor = 'pointer';
           mediaImg.appendChild(video);
           mediaImg.appendChild(playIcon);
           mediaImg.appendChild(pauseIcon);
+          // Click on entire mediaImg container to play/pause
+          mediaImg.onclick = (e) => {
+            e.stopPropagation();
+            if (video.paused) {
+              video.play().catch(() => {});
+            } else {
+              video.pause();
+            }
+            updateIcons();
+          };
         } else {
           mediaImg.innerHTML = `<img src="${item.mediaUrl}" width="auto" height="auto" alt="${item.title || ''}" style="width:100%;aspect-ratio:9/16;object-fit:cover;display:block;border-radius:20px;" />`;
         }
