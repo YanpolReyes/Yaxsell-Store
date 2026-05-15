@@ -8,14 +8,14 @@ export default function BackToTop() {
   const [visible, setVisible] = useState(false);
   const pathname = usePathname();
 
-  // Ocultar en rutas admin
-  if (pathname?.startsWith('/admin')) return null;
-
   useEffect(() => {
     const onScroll = () => setVisible(window.scrollY > 400);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // Ocultar en rutas admin
+  if (pathname?.startsWith('/admin')) return null;
 
   if (!visible) return null;
 
