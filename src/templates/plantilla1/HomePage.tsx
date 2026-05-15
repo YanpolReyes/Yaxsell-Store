@@ -2686,13 +2686,22 @@ export default function HomePage1() {
           video.style.display = '';
           const posterImg = slide.querySelector('.tpl1-fp-poster') as HTMLImageElement;
           if (posterImg) posterImg.style.opacity = '0';
-          // Solo reproducir si es visible
-          const obs = new IntersectionObserver(([e]) => {
-            if (e.isIntersecting) video.play().catch(() => {});
-            else video.pause();
-            obs.disconnect();
-          }, { threshold: 0.1 });
-          obs.observe(slide);
+          // Skip autoplay on mobile (lag) — just show poster
+          if (window.innerWidth <= 768) {
+            video.pause();
+            video.removeAttribute('autoplay');
+            video.preload = 'none';
+            if (posterImg) posterImg.style.opacity = '1';
+            video.style.display = 'none';
+          } else {
+            // Solo reproducir si es visible (PC)
+            const obs = new IntersectionObserver(([e]) => {
+              if (e.isIntersecting) video.play().catch(() => {});
+              else video.pause();
+              obs.disconnect();
+            }, { threshold: 0.1 });
+            obs.observe(slide);
+          }
         };
 
         video.onloadeddata = showVideo;
@@ -3267,21 +3276,32 @@ export default function HomePage1() {
           directVideo.src = s.vtVideoUrl;
           directVideo.dataset.src = s.vtVideoUrl;
           directVideo.load();
-          // Solo reproducir si es visible
-          const vtObs = new IntersectionObserver(([e]) => {
-            if (e.isIntersecting) directVideo.play().catch(() => {});
-            else directVideo.pause();
-            vtObs.disconnect();
-          }, { threshold: 0.1 });
-          vtObs.observe(videoContent);
+          // Skip autoplay on mobile (lag)
+          if (window.innerWidth <= 768) {
+            directVideo.pause();
+            directVideo.preload = 'none';
+          } else {
+            // Solo reproducir si es visible (PC)
+            const vtObs = new IntersectionObserver(([e]) => {
+              if (e.isIntersecting) directVideo.play().catch(() => {});
+              else directVideo.pause();
+              vtObs.disconnect();
+            }, { threshold: 0.1 });
+            vtObs.observe(videoContent);
+          }
         } else {
-          // Solo reproducir si es visible
-          const vtObs = new IntersectionObserver(([e]) => {
-            if (e.isIntersecting) directVideo.play().catch(() => {});
-            else directVideo.pause();
-            vtObs.disconnect();
-          }, { threshold: 0.1 });
-          vtObs.observe(videoContent);
+          // Video URL unchanged — solo reproducir si es visible
+          if (window.innerWidth <= 768) {
+            directVideo.pause();
+            directVideo.preload = 'none';
+          } else {
+            const vtObs = new IntersectionObserver(([e]) => {
+              if (e.isIntersecting) directVideo.play().catch(() => {});
+              else directVideo.pause();
+              vtObs.disconnect();
+            }, { threshold: 0.1 });
+            vtObs.observe(videoContent);
+          }
         }
       }
       // 6) Imagen poster / reemplazo - enfoque directo
@@ -3462,13 +3482,18 @@ export default function HomePage1() {
         video.appendChild(source);
         container.style.position = 'relative';
         container.insertBefore(video, container.firstChild);
-        // Solo reproducir si es visible
-        const ovObs = new IntersectionObserver(([e]) => {
-          if (e.isIntersecting) video.play().catch(() => {});
-          else video.pause();
-          ovObs.disconnect();
-        }, { threshold: 0.1 });
-        ovObs.observe(container);
+        // Skip autoplay on mobile (lag) — only play on PC when visible
+        if (window.innerWidth <= 768) {
+          video.pause();
+          video.preload = 'none';
+        } else {
+          const ovObs = new IntersectionObserver(([e]) => {
+            if (e.isIntersecting) video.play().catch(() => {});
+            else video.pause();
+            ovObs.disconnect();
+          }, { threshold: 0.1 });
+          ovObs.observe(container);
+        }
       } else {
         const source = existingVideo.querySelector('source');
         if (source) source.src = s.overlayVideoUrl;
@@ -6484,9 +6509,9 @@ export default function HomePage1() {
             swiperSlides[i].style.display = '';
           }
 
-          // Video visibility observer: pause when off-screen, restart when visible
+          // Video visibility observer: pause when off-screen, restart when visible (PC only — skip on mobile)
           const heroSection = document.querySelector('[data-section-id="template--22405132419320__hero_banner_R6iEJ4"]') || document.querySelector('.musk-main-banner');
-          if (heroSection && !document.getElementById('tpl1-hero-video-observer')) {
+          if (heroSection && !document.getElementById('tpl1-hero-video-observer') && window.innerWidth > 768) {
             const marker = document.createElement('div');
             marker.id = 'tpl1-hero-video-observer';
             marker.style.display = 'none';
