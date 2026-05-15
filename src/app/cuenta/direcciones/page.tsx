@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, MapPin, Plus, Trash2, Pencil, X, Loader2, Navigation, Search, Truck, Check } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { getServices, getAppwriteConfig, ADDRESSES_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { ID, Query } from 'appwrite';
 
 const FF = '"Proxima Nova",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif';
 const GMAPS_KEY = 'AIzaSyD7Kxz2ATHmOIlLlxIts5ONCZKg1N71QTk';
@@ -37,11 +39,65 @@ const ALIAS_OPTIONS = [
 
 const EMPTY_FORM = { alias: 'Casa', name: '', phone: '', fullAddress: '', commune: '', region: '', lat: DEFAULT_CENTER.lat, lng: DEFAULT_CENTER.lng };
 
-function loadAddresses(userId: string): Address[] {
+function loadAddressesLocal(userId: string): Address[] {
   try { return JSON.parse(localStorage.getItem(`addr_${userId}`) || '[]'); } catch { return []; }
 }
-function saveAddresses(userId: string, list: Address[]) {
+function saveAddressesLocal(userId: string, list: Address[]) {
   localStorage.setItem(`addr_${userId}`, JSON.stringify(list));
+}
+
+async function loadAddressesDB(userId: string): Promise<Address[]> {
+  try {
+    const { databases } = getServices();
+    const { databaseId } = getAppwriteConfig();
+    const res = await databases.listDocuments(databaseId, ADDRESSES_COLLECTION_ID, [
+      Query.equal('userId', userId),
+      Query.limit(100),
+    ]);
+    return res.documents.map((doc: any) => ({
+      id: doc.$id,
+      alias: doc.alias || 'Otro',
+      name: doc.name || '',
+      phone: doc.phone || '',
+      fullAddress: doc.fullAddress || '',
+      commune: doc.commune || '',
+      region: doc.region || '',
+      lat: doc.lat || DEFAULT_CENTER.lat,
+      lng: doc.lng || DEFAULT_CENTER.lng,
+    }));
+  } catch { return []; }
+}
+
+async function saveAddressesDB(userId: string, list: Address[]) {
+  try {
+    const { databases } = getServices();
+    const { databaseId } = getAppwriteConfig();
+    // Get existing docs for this user
+    const existing = await databases.listDocuments(databaseId, ADDRESSES_COLLECTION_ID, [
+      Query.equal('userId', userId),
+      Query.limit(100),
+    ]);
+    // Delete all existing
+    for (const doc of existing.documents) {
+      await databases.deleteDocument(databaseId, ADDRESSES_COLLECTION_ID, doc.$id);
+    }
+    // Create new ones
+    for (const addr of list) {
+      await databases.createDocument(databaseId, ADDRESSES_COLLECTION_ID, ID.unique(), {
+        userId,
+        alias: addr.alias,
+        name: addr.name,
+        phone: addr.phone,
+        fullAddress: addr.fullAddress,
+        commune: addr.commune,
+        region: addr.region,
+        lat: addr.lat,
+        lng: addr.lng,
+      });
+    }
+  } catch (e) {
+    console.error('Failed to save addresses to DB:', e);
+  }
 }
 function loadAgencies(): Agency[] {
   try { return JSON.parse(localStorage.getItem('shippingAgencies') || '[]').filter((a: any) => a.active !== false); } catch { return []; }
@@ -79,7 +135,22 @@ export default function DireccionesPage() {
   // No forzar login - mostrar prompt si no está logueado
 
   useEffect(() => {
-    if (user) setAddresses(loadAddresses(user.id));
+    if (user) {
+      // Load from DB first, fallback to localStorage
+      loadAddressesDB(user.id).then(dbAddrs => {
+        if (dbAddrs.length > 0) {
+          setAddresses(dbAddrs);
+          saveAddressesLocal(user.id, dbAddrs);
+        } else {
+          // Migrate localStorage addresses to DB
+          const localAddrs = loadAddressesLocal(user.id);
+          if (localAddrs.length > 0) {
+            setAddresses(localAddrs);
+            saveAddressesDB(user.id, localAddrs);
+          }
+        }
+      });
+    }
   }, [user]);
 
   /* ── Load Google Maps API once ── */
@@ -286,7 +357,8 @@ export default function DireccionesPage() {
       ? addresses.map(a => a.id === editing.id ? { ...form, id: editing.id } : a)
       : [...addresses, { ...form, id: Date.now().toString() }];
     setAddresses(updated);
-    saveAddresses(user!.id, updated);
+    saveAddressesLocal(user!.id, updated);
+    saveAddressesDB(user!.id, updated);
     setShowMap(false);
     setEditing(null);
   }
@@ -294,7 +366,8 @@ export default function DireccionesPage() {
   function handleDelete(id: string) {
     const updated = addresses.filter(a => a.id !== id);
     setAddresses(updated);
-    saveAddresses(user!.id, updated);
+    saveAddressesLocal(user!.id, updated);
+    saveAddressesDB(user!.id, updated);
   }
 
   function openNew() { setEditing(null); setForm({ ...EMPTY_FORM }); setShowMap(true); }

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { User, MapPin, Package, ChevronDown, ChevronRight, Shield, Truck, RefreshCw, Plus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION, SEQUENCES_COLLECTION, COUPONS_COLLECTION, PRODUCTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
+import { ADDRESSES_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { CHILE_REGIONES } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { Query } from 'appwrite';
@@ -100,20 +101,59 @@ function CheckoutInner() {
   }, []);
 
   useEffect(() => {
-    // Load saved addresses
+    // Load saved addresses from DB first, fallback to localStorage
     if (user?.id) {
-      try {
-        const stored = localStorage.getItem(`addr_${user.id}`);
-        if (stored) {
-          const addresses: SavedAddress[] = JSON.parse(stored);
-          setSavedAddresses(addresses);
-          // Auto-select first address
-          if (addresses.length > 0) {
-            setSelectedAddressId(addresses[0].id);
-            fillFormFromAddress(addresses[0]);
+      (async () => {
+        try {
+          const { databases } = getServices();
+          const { databaseId } = getAppwriteConfig();
+          const res = await databases.listDocuments(databaseId, ADDRESSES_COLLECTION_ID, [
+            Query.equal('userId', user.id),
+            Query.limit(100),
+          ]);
+          const dbAddrs: SavedAddress[] = res.documents.map((doc: any) => ({
+            id: doc.$id,
+            alias: doc.alias || 'Otro',
+            name: doc.name || '',
+            phone: doc.phone || '',
+            fullAddress: doc.fullAddress || '',
+            commune: doc.commune || '',
+            region: doc.region || '',
+            lat: doc.lat || 0,
+            lng: doc.lng || 0,
+          }));
+          if (dbAddrs.length > 0) {
+            setSavedAddresses(dbAddrs);
+            setSelectedAddressId(dbAddrs[0].id);
+            fillFormFromAddress(dbAddrs[0]);
+            localStorage.setItem(`addr_${user.id}`, JSON.stringify(dbAddrs));
+          } else {
+            // Fallback to localStorage
+            const stored = localStorage.getItem(`addr_${user.id}`);
+            if (stored) {
+              const addresses: SavedAddress[] = JSON.parse(stored);
+              setSavedAddresses(addresses);
+              if (addresses.length > 0) {
+                setSelectedAddressId(addresses[0].id);
+                fillFormFromAddress(addresses[0]);
+              }
+            }
           }
+        } catch {
+          // Fallback to localStorage on error
+          try {
+            const stored = localStorage.getItem(`addr_${user.id}`);
+            if (stored) {
+              const addresses: SavedAddress[] = JSON.parse(stored);
+              setSavedAddresses(addresses);
+              if (addresses.length > 0) {
+                setSelectedAddressId(addresses[0].id);
+                fillFormFromAddress(addresses[0]);
+              }
+            }
+          } catch {}
         }
-      } catch {}
+      })();
     }
   }, [user]);
 

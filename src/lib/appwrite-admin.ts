@@ -84,6 +84,7 @@ export const CLIPS_COLLECTION_ID = 'clips';
 export const RAFFLES_COLLECTION_ID = 'live_raffles';
 export const RAFFLE_PARTICIPANTS_COLLECTION_ID = 'raffle_participants';
 export const STOCK_ALERTS_COLLECTION_ID = 'stock_alerts';
+export const ADDRESSES_COLLECTION_ID = 'addresses';
 
 // Backward-compatible exports (reads config at call time for SSR safety)
 export const DATABASE_ID = typeof window !== 'undefined'

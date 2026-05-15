@@ -2682,67 +2682,55 @@ export default function HomePage1() {
           videoWrap.appendChild(posterEl);
         }
 
-        // Play icon — always visible until video plays
-        const playIcon = document.createElement('div');
-        playIcon.className = 'tpl1-video-play-icon';
-        playIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:1;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;';
-        playIcon.innerHTML = `<svg width="30" height="36" viewBox="0 0 30 36" fill="white" style="margin-left:4px;"><polygon points="2,0 30,18 2,36"/></svg>`;
-        videoWrap.appendChild(playIcon);
-
-        // Pause icon — hidden until video plays
-        const pauseIcon = document.createElement('div');
-        pauseIcon.className = 'tpl1-video-pause-icon';
-        pauseIcon.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:opacity 0.3s ease;opacity:0;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.3);display:none;align-items:center;justify-content:center;';
-        pauseIcon.innerHTML = `<svg width="30" height="36" viewBox="0 0 30 36" fill="white"><rect x="2" y="0" width="9" height="36" rx="3"/><rect x="19" y="0" width="9" height="36" rx="3"/></svg>`;
-        videoWrap.appendChild(pauseIcon);
-
         slide.appendChild(videoWrap);
-        slide.style.cursor = 'pointer';
 
         let videoCreated = false;
-        // Autoplay when featured product scrolls into view
+        let videoElement: HTMLVideoElement | null = null;
+
+        // Play/pause based on viewport visibility
         const fpObserver = new IntersectionObserver((entries) => {
           entries.forEach(entry => {
-            if (entry.isIntersecting && !videoCreated) {
-              fpObserver.disconnect();
-              // Trigger same logic as click
-              slide.click();
+            if (!videoCreated) {
+              if (entry.isIntersecting) {
+                // First time visible: create and play video
+                const video = document.createElement('video');
+                video.src = media.url;
+                video.muted = true;
+                video.loop = true;
+                video.playsInline = true;
+                video.setAttribute('playsinline', '');
+                video.setAttribute('muted', '');
+                video.preload = 'auto';
+                video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;opacity:0;transition:opacity 0.15s ease;';
+                const posterImg = videoWrap.querySelector('.tpl1-fp-poster');
+                if (posterImg) (posterImg as HTMLElement).style.position = 'relative';
+                videoWrap.insertBefore(video, posterImg || null);
+                video.onplaying = () => {
+                  // Simple fade transition - no brightness effect
+                  if (posterImg) {
+                    (posterImg as HTMLElement).style.transition = 'opacity 0.3s ease';
+                    (posterImg as HTMLElement).style.opacity = '0';
+                    setTimeout(() => {
+                      if (posterImg.parentNode) posterImg.remove();
+                    }, 300);
+                  }
+                  video.style.opacity = '1';
+                };
+                video.play().catch(() => {});
+                videoElement = video;
+                videoCreated = true;
+              }
+            } else if (videoElement) {
+              // Already created: toggle play/pause based on visibility
+              if (entry.isIntersecting) {
+                videoElement.play().catch(() => {});
+              } else {
+                videoElement.pause();
+              }
             }
           });
         }, { threshold: 0.5 });
         fpObserver.observe(slide);
-
-        slide.onclick = (e) => {
-          e.stopPropagation();
-          if (!videoCreated) {
-            // First click: create video, replace poster, play
-            const video = document.createElement('video');
-            video.src = media.url;
-            video.muted = true;
-            video.loop = true;
-            video.playsInline = true;
-            video.setAttribute('playsinline', '');
-            video.setAttribute('muted', '');
-            video.preload = 'auto';
-            video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;opacity:0;transition:opacity 0.15s ease;';
-            // Insert video — hidden (opacity:0) until it actually plays
-            const posterImg = videoWrap.querySelector('.tpl1-fp-poster');
-            if (posterImg) (posterImg as HTMLElement).style.position = 'relative';
-            videoWrap.insertBefore(video, playIcon);
-            // Set up play/pause event handlers BEFORE calling play
-            // Use onplaying (not onplay) — fires when video actually renders a frame, preventing black flash
-            video.onplaying = () => { video.style.opacity = '1'; playIcon.style.display = 'none'; pauseIcon.style.display = 'flex'; if (posterImg && posterImg.parentNode) posterImg.remove(); };
-            video.onpause = () => { playIcon.style.display = 'flex'; pauseIcon.style.display = 'none'; };
-            video.play().catch(() => {});
-            videoCreated = true;
-            // Toggle play/pause on subsequent clicks
-            slide.onclick = (e2) => {
-              e2.stopPropagation();
-              if (video.paused) { video.play().catch(() => {}); }
-              else { video.pause(); }
-            };
-          }
-        };
       } else {
         const img = slide.querySelector('img') as HTMLImageElement | null;
         if (img) {
