@@ -2718,6 +2718,18 @@ export default function HomePage1() {
           playIcon.style.opacity = video.paused ? '1' : '0';
           pauseIcon.style.opacity = video.paused ? '0' : '1';
         };
+        let userInitiatedPlay = false;
+        video.onplay = () => {
+          // Block browser silent autoplay — only allow user-initiated play
+          if (!userInitiatedPlay) {
+            video.pause();
+            userInitiatedPlay = false;
+            return;
+          }
+          updateIcons();
+          userInitiatedPlay = false;
+        };
+        video.onpause = updateIcons;
         videoWrap.appendChild(playIcon);
         videoWrap.appendChild(pauseIcon);
         slide.appendChild(videoWrap);
@@ -2745,14 +2757,13 @@ export default function HomePage1() {
         slide.onclick = (e) => {
           e.stopPropagation();
           if (video.paused) {
+            userInitiatedPlay = true;
             video.play().catch(() => {});
           } else {
             video.pause();
           }
           updateIcons();
         };
-        video.onplay = updateIcons;
-        video.onpause = updateIcons;
       } else {
         const img = slide.querySelector('img') as HTMLImageElement | null;
         if (img) {
@@ -4520,7 +4531,17 @@ export default function HomePage1() {
             playIcon.style.opacity = video.paused ? '1' : '0';
             pauseIcon.style.opacity = video.paused ? '0' : '1';
           };
-          video.onplay = updateIcons;
+          let userInitiatedPlay = false;
+          video.onplay = () => {
+            // Block browser silent autoplay — only allow user-initiated play
+            if (!userInitiatedPlay) {
+              video.pause();
+              userInitiatedPlay = false;
+              return;
+            }
+            updateIcons();
+            userInitiatedPlay = false;
+          };
           video.onpause = updateIcons;
           mediaImg.innerHTML = '';
           mediaImg.style.position = 'relative';
@@ -4536,6 +4557,7 @@ export default function HomePage1() {
           mediaImg.onclick = (e) => {
             e.stopPropagation();
             if (video.paused) {
+              userInitiatedPlay = true;
               video.play().catch(() => {});
             } else {
               video.pause();
