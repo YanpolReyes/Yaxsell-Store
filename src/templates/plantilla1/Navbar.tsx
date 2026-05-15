@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -141,8 +141,8 @@ export default function Navbar1() {
       <div className="tpl1-auth-popup-icon" aria-hidden><User size={22} strokeWidth={2.2} /></div>
       <p className="tpl1-auth-popup-title">Inicia sesión o crea tu cuenta</p>
       <p className="tpl1-auth-popup-sub">Para realizar pedidos necesitas iniciar sesión o registrarte.</p>
-      <Link href="/login?redirect=/checkout" className="tpl1-auth-primary-btn" onClick={() => setAuthPopupOpen(false)}>Iniciar sesión</Link>
-      <Link href="/login?tab=register&redirect=/checkout" className="tpl1-auth-secondary-btn" onClick={() => setAuthPopupOpen(false)}>Crear cuenta</Link>
+      <Link href="/login" className="tpl1-auth-primary-btn" onClick={() => setAuthPopupOpen(false)}>Iniciar sesión</Link>
+      <Link href="/login?tab=register" className="tpl1-auth-secondary-btn" onClick={() => setAuthPopupOpen(false)}>Crear cuenta</Link>
     </div>
   );
 

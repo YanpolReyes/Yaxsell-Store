@@ -1499,8 +1499,8 @@ export default function HomePage1() {
           </div>
           <p style="font-size:18px;font-weight:800;color:#111;margin:0 0 8px;letter-spacing:-0.02em;">Inicia sesión o crea tu cuenta</p>
           <p style="font-size:13px;color:#6b7280;margin:0 0 20px;line-height:1.45;">Para realizar pedidos necesitas iniciar sesión o registrarte.</p>
-          <a href="/login?redirect=/checkout" id="yaxsel-auth-login-btn" style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;box-shadow:0 6px 20px rgba(236,72,153,0.3);margin-bottom:10px;">Iniciar sesión</a>
-          <a href="/login?tab=register&redirect=/checkout" style="display:block;width:100%;padding:13px;background:#fff;color:#ec4899;border:2px solid #fce7f3;border-radius:14px;font-size:15px;font-weight:700;text-align:center;text-decoration:none;">Crear cuenta</a>
+          <a href="/login" id="yaxsel-auth-login-btn" style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;box-shadow:0 6px 20px rgba(236,72,153,0.3);margin-bottom:10px;">Iniciar sesión</a>
+          <a href="/login?tab=register" style="display:block;width:100%;padding:13px;background:#fff;color:#ec4899;border:2px solid #fce7f3;border-radius:14px;font-size:15px;font-weight:700;text-align:center;text-decoration:none;">Crear cuenta</a>
         </div>
       `;
 
@@ -2543,30 +2543,14 @@ export default function HomePage1() {
         }
 
         const slideTitle = titleLink.querySelector('.slide-title') as HTMLElement | null;
-        const nameText =
-          slideTitle?.textContent?.trim() ||
-          titleLink.getAttribute('aria-label')?.trim() ||
-          '';
         if (slideTitle) {
           slideTitle.classList.remove('display-font-6', 'heading_color', 'inner_heading_color');
           slideTitle.setAttribute('style', COLLECTION_TITLE_STYLE);
         }
         titleLink.style.cssText =
-          'position:static;display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 14px;background:linear-gradient(180deg,#fdf2f8,#fff);border-top:2px solid #fce7f3;text-decoration:none;opacity:1;visibility:visible;z-index:5;';
+          'position:static;display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 14px;background:linear-gradient(180deg,#fdf2f8,#fff);border-top:2px solid #fce7f3;text-decoration:none;opacity:1;visibility:visible;';
         titleLink.removeAttribute('tabindex');
-
-        let visibleName = titleLink.querySelector('.tpl1-collection-visible-name') as HTMLElement | null;
-        const titleLeft = titleLink.querySelector('.collection_list_title_left') as HTMLElement | null;
-        if (nameText) {
-          if (!visibleName) {
-            visibleName = document.createElement('span');
-            visibleName.className = 'tpl1-collection-visible-name';
-            if (titleLeft) titleLeft.insertBefore(visibleName, titleLeft.firstChild);
-            else titleLink.insertBefore(visibleName, titleLink.firstChild);
-          }
-          visibleName.textContent = nameText;
-          visibleName.setAttribute('style', COLLECTION_TITLE_STYLE);
-        }
+        titleLink.querySelectorAll('.tpl1-collection-visible-name').forEach(el => el.remove());
       });
     };
 
@@ -2581,13 +2565,12 @@ export default function HomePage1() {
     // Collection items → update slides
     const bindCollectionLayout = () => {
       layoutCollectionTitles();
-      const layoutTimers = [120, 500, 1500].map(ms => window.setTimeout(layoutCollectionTitles, ms));
-      const collectionObserver = new MutationObserver(() => layoutCollectionTitles());
-      collectionObserver.observe(section, { childList: true, subtree: true });
+      const t1 = window.setTimeout(layoutCollectionTitles, 200);
+      const t2 = window.setTimeout(layoutCollectionTitles, 800);
       window.addEventListener('resize', layoutCollectionTitles);
       return () => {
-        layoutTimers.forEach(id => window.clearTimeout(id));
-        collectionObserver.disconnect();
+        window.clearTimeout(t1);
+        window.clearTimeout(t2);
         window.removeEventListener('resize', layoutCollectionTitles);
       };
     };
@@ -5776,9 +5759,6 @@ export default function HomePage1() {
       } catch { }
     }
 
-    const BRAND_LOGO_IMG_STYLE =
-      'width:280px;height:168px;min-width:280px;min-height:168px;object-fit:contain;border-radius:14px;border:1px solid #f3f4f6;background:#fff;padding:16px;box-sizing:border-box;';
-
     const logos = (s.logos || []) as { url: string; alt?: string; link?: string }[];
     if (logos.length === 0) return;
 
@@ -5812,20 +5792,22 @@ export default function HomePage1() {
         slide.style.minWidth = '0';
         const logo = logosForLoop[idx];
 
-        // Reemplazar SVG placeholder o actualizar imagen existente
+        // Reemplazar SVG placeholder con imagen real
         if (logo.url) {
-          const svgEl = slide.querySelector('.placeholder-svg');
-          const existingImg = slide.querySelector('img') as HTMLImageElement | null;
-          if (svgEl) {
-            const img = document.createElement('img');
-            img.src = logo.url;
-            img.alt = logo.alt || '';
-            img.style.cssText = BRAND_LOGO_IMG_STYLE;
-            svgEl.replaceWith(img);
-          } else if (existingImg) {
-            existingImg.src = logo.url;
-            existingImg.alt = logo.alt || '';
-            existingImg.style.cssText = BRAND_LOGO_IMG_STYLE;
+          const imgEl = slide.querySelector('.logo-img-item img, img') as HTMLImageElement | null;
+          if (imgEl) {
+            imgEl.src = logo.url;
+            if (logo.alt) imgEl.alt = logo.alt;
+            imgEl.style.cssText = 'width:280px;height:168px;min-width:280px;min-height:168px;max-width:min(280px,90vw);object-fit:contain;border-radius:14px;border:1px solid #f3f4f6;background:#fff;padding:14px;box-sizing:border-box;display:block;';
+          } else {
+            const svgEl = slide.querySelector('.placeholder-svg');
+            if (svgEl) {
+              const img = document.createElement('img');
+              img.src = logo.url;
+              img.alt = logo.alt || '';
+              img.style.cssText = 'width:280px;height:168px;min-width:280px;min-height:168px;max-width:min(280px,90vw);object-fit:contain;border-radius:14px;border:1px solid #f3f4f6;background:#fff;padding:14px;box-sizing:border-box;display:block;';
+              svgEl.replaceWith(img);
+            }
           }
         }
 

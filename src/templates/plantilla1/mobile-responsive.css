@@ -1351,13 +1351,11 @@
     min-width: 220px !important;
   }
   [data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .logo-img-item img,
-  [data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .logo-img-item .placeholder-svg,
-  [data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .swiper-slide img {
-    width: 220px !important;
-    height: 132px !important;
+  [data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .logo-img-item .placeholder-svg {
+    width: 150px !important;
+    height: 90px !important;
     min-width: 220px !important;
-    min-height: 132px !important;
-    padding: 12px !important;
+    padding: 10px !important;
   }
   [data-template="1"] #shopify-section-template--22405132419320__brand_logos_N9XpeF .brand-logos-title {
     font-size: 18px !important;

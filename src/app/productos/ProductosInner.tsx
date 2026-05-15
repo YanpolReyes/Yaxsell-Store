@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -279,6 +279,13 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             )}
           </div>
           <div className="pk-hero-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, padding: 24 }}>
+          <div className="pk-hero-logo-wrap">
+            {lockedCategory?.iconUrl ? (
+              <img src={lockedCategory.iconUrl} alt={lockedCategory.name} className="pk-hero-logo-img" />
+            ) : (
+              <img src="https://jumpseller.s3.eu-west-1.amazonaws.com/store/yes-bella/assets//Sin%20t%C3%ADtulo-1_5d514a8074f0023fe88b0eacda93c729.png?1743456840" alt="Logo Yes Bella" className="pk-hero-logo-img" />
+            )}
+          </div>
           <div className="pk-hero-text">
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.92)', color: '#ec4899', padding: '6px 13px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 10, border: '1px solid #fce7f3' }}>
               <Sparkles size={13} /> {lockCategoryId ? 'Categoría' : 'Nuestra tienda'}
@@ -620,7 +627,18 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           width: 100%; height: 100%; display: block;
           object-fit: cover; object-position: center center;
         }
-        .pk-hero-body { flex: 1; min-width: 0; }
+        .pk-hero-body {
+          flex: 1; min-width: 0; display: flex; flex-direction: row-reverse;
+          align-items: center; justify-content: space-between; gap: 24px;
+        }
+        .pk-hero-text { flex: 1; min-width: 0; }
+        .pk-hero-logo-wrap {
+          flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+        }
+        .pk-hero-logo-img {
+          height: 148px; width: auto; max-width: min(240px, 42vw);
+          object-fit: contain; display: block;
+        }
         .pk-card-fav { display: none; align-items: center; justify-content: center; }
 
         @media (hover: hover) and (pointer: fine) {
@@ -650,6 +668,9 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           .pk-hero-subtitle { font-size: 13px !important; margin: 6px 0 12px !important; max-width: 100% !important; }
           .pk-hero-stats { gap: 8px !important; }
           .pk-hero-stats > div { padding: 8px 12px !important; border-radius: 12px !important; }
+          .pk-hero-body { flex-direction: column !important; align-items: stretch !important; gap: 14px !important; }
+          .pk-hero-logo-wrap { align-self: center !important; order: -1 !important; width: 100% !important; }
+          .pk-hero-logo-img { height: 96px !important; max-width: min(220px, 78vw) !important; }
           .pk-toolbar { top: 0 !important; padding: 10px !important; border-radius: 16px !important; gap: 8px !important; margin-bottom: 14px !important; }
           .pk-toolbar > div:first-child { flex: 1 1 100% !important; min-width: 100% !important; order: 1; }
           .pk-filters-btn { order: 2; flex: 1; justify-content: center; min-height: 44px; }
@@ -692,5 +713,24 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
         }
       `}</style>
     </div>
+  );
+}
+
+export default function ProductosPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ fontFamily: FF, background: 'linear-gradient(180deg,#fff5f8 0%,#fff 280px)', minHeight: '100vh' }}>
+        <div style={{ maxWidth: 1600, margin: '0 auto', padding: '32px 20px 60px' }}>
+          <div style={{ height: 36, width: 200, background: '#fce7f3', borderRadius: 10, marginBottom: 30 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
+            {[...Array(8)].map((_, i) => (
+              <div key={i} style={{ height: 320, background: '#fff', borderRadius: 18, border: '1px solid #fce7f3' }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    }>
+      <ProductosInner />
+    </Suspense>
   );
 }
