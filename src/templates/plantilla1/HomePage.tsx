@@ -3577,9 +3577,10 @@ export default function HomePage1() {
       if (btnEl && s.overlayBtnLink) btnEl.setAttribute('href', s.overlayBtnLink);
     }
 
-    // 6) Partículas complejas
+    // 6) Partículas complejas (PC only — skip on mobile for performance)
+    const isMobileView = window.innerWidth <= 768;
     let particlesContainer = container.querySelector('.tpl1-overlay-particles') as HTMLElement | null;
-    if (s.overlayParticlesEnabled) {
+    if (s.overlayParticlesEnabled && !isMobileView) {
       if (!particlesContainer) {
         particlesContainer = document.createElement('div');
         particlesContainer.className = 'tpl1-overlay-particles';
@@ -4009,9 +4010,10 @@ export default function HomePage1() {
       }
     }
 
-    // Activar partículas animadas
+    // Activar partículas animadas (PC only — skip on mobile for performance)
     let particlesCleanup: (() => void) | undefined;
-    if (settings.faqEnableParticles) {
+    const isMobileFAQ = window.innerWidth <= 768;
+    if (settings.faqEnableParticles && !isMobileFAQ) {
       const titleBox = section.querySelector('.faq-titlebox') as HTMLElement;
       
       if (titleBox) {
@@ -6036,8 +6038,9 @@ export default function HomePage1() {
           if (searchInput) searchInput.placeholder = ns.searchPlaceholder;
         }
         
-        // Apply floating particles
-        if (ns.navParticlesEnabled) {
+        // Apply floating particles (PC only — skip on mobile for performance)
+        const isMobileNav = window.innerWidth <= 768;
+        if (ns.navParticlesEnabled && !isMobileNav) {
           const particlesText = ns.navParticlesText || '✦,◆,●';
           const particlesColor = ns.navParticlesColor || '#6366f1';
           const particlesCount = ns.navParticlesCount || 24;
@@ -6508,9 +6511,10 @@ export default function HomePage1() {
       }
     }
 
-    // 0b. Subtle complex particles + hero image movement
+    // 0b. Subtle complex particles + hero image movement (PC only — skip on mobile for performance)
     const heroBannerEl = document.getElementById('shopify-section-template--22405132419320__hero_banner_R6iEJ4');
-    if (heroBannerEl && !document.getElementById('tpl1-hero-particles')) {
+    const isMobile = window.innerWidth <= 768;
+    if (heroBannerEl && !document.getElementById('tpl1-hero-particles') && !isMobile) {
       // Set initial hero image state
       const heroImages = heroBannerEl.querySelectorAll('.slide-image img, .slide-image__img');
       heroImages.forEach((img) => {
