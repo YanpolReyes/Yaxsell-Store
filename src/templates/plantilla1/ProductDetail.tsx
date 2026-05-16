@@ -521,13 +521,6 @@ export default function ProductDetailPlantilla1() {
                   <span style={{ fontSize: 11, color: '#666' }}>A partir de {formatPrice(product.WHOLESALEPRICE! * product.WHOLESALEMINQUANTITY!)} en el total del pedido</span>
                 </p>
               )}
-              {hasWholesale && !isWholesaleUser && (
-                <p style={{ margin: '8px 0 0', fontSize: 12, color: '#f59e0b', background: '#fff7ed', padding: '6px 10px', borderRadius: 6, border: `1px solid #f59e0b` }}>
-                  💡 <strong>Precio mayorista disponible:</strong> {formatPrice(product.WHOLESALEPRICE!)} c/u al comprar {product.WHOLESALEMINQUANTITY}+ unidades
-                  <br />
-                  <span style={{ fontSize: 11, color: '#666' }}>A partir de {formatPrice(product.WHOLESALEPRICE! * product.WHOLESALEMINQUANTITY!)} en el total del pedido</span>
-                </p>
-              )}
             </div>
 
             {/* Características rápidas */}
