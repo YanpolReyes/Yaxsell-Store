@@ -155,8 +155,8 @@ export default function ProductDetailPlantilla2() {
   const discPct = hasDisc ? Math.round(((product.PRICE - product.CURRENTPRICE!) / product.PRICE) * 100) : 0;
   const hasWholesale = !!(product.WHOLESALEPRICE && product.WHOLESALEMINQUANTITY && product.WHOLESALEPRICE > 0);
   const isWholesaleUser = user?.isWholesale || false;
-  const isWholesaleQty = hasWholesale && isWholesaleUser && qty >= (product.WHOLESALEMINQUANTITY || 0);
-  const effectivePrice = isWholesaleQty ? product.WHOLESALEPRICE! : displayPrice;
+  const isWholesaleQty = hasWholesale && qty >= (product.WHOLESALEMINQUANTITY || 0);
+  const effectivePrice = isWholesaleQty && isWholesaleUser ? product.WHOLESALEPRICE! : displayPrice;
   const lineTotal = effectivePrice * qty;
   const stock = product.STOCK ?? 0;
   const rating = product.RATING ?? 0;
@@ -168,7 +168,7 @@ export default function ProductDetailPlantilla2() {
   const hasOffer = hasDisc && discPct >= 10;
 
   function handleAdd() {
-    addItem(product!, qty, undefined, undefined, isWholesaleQty ? product?.WHOLESALEPRICE : undefined);
+    addItem(product!, qty, undefined, undefined, isWholesaleQty && isWholesaleUser ? product?.WHOLESALEPRICE : undefined);
     setAdded(true);
     setTimeout(() => setAdded(false), 2500);
   }
