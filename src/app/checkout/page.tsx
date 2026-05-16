@@ -340,11 +340,6 @@ function CheckoutInner() {
         }
       }
     } catch {}
-    // Validate minimum $50,000 when coupon is applied
-    if (couponApplied && total < 50000) {
-      setError('Para usar un cupón, el monto mínimo de compra es $50.000');
-      return;
-    }
     setSubmitting(true); setError('');
     try {
       const { databases } = getServices();
