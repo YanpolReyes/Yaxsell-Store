@@ -30,7 +30,7 @@ function LoginInner() {
 
   const emailParam = params.get('email') || '';
   const [loginForm, setLoginForm] = useState({ email: emailParam, password: '' });
-  const [regForm, setRegForm] = useState({ firstName: '', lastName: '', email: '', phone: '', rut: '', birthDate: '', password: '', confirm: '' });
+  const [regForm, setRegForm] = useState({ firstName: '', lastName: '', email: '', phone: '', rut: '', birthMonth: '', birthDay: '', password: '', confirm: '' });
 
   const redirectTo = (() => {
     const r = params.get('redirect');
@@ -53,17 +53,14 @@ function LoginInner() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
-    if (!regForm.firstName || !regForm.lastName || !regForm.email || !regForm.birthDate || !regForm.password) { setError('Completá todos los campos obligatorios'); return; }
-    const birth = new Date(regForm.birthDate);
-    const today = new Date();
-    if (Number.isNaN(birth.getTime()) || birth > today) { setError('Ingresá una fecha de nacimiento válida'); return; }
-    const age = today.getFullYear() - birth.getFullYear() - (today < new Date(today.getFullYear(), birth.getMonth(), birth.getDate()) ? 1 : 0);
-    if (age < 13) { setError('Debes tener al menos 13 años para registrarte'); return; }
+    if (!regForm.firstName || !regForm.lastName || !regForm.email || !regForm.birthMonth || !regForm.birthDay || !regForm.password) { setError('Completá todos los campos obligatorios'); return; }
     if (regForm.password !== regForm.confirm) { setError('Las contraseñas no coinciden'); return; }
     if (regForm.password.length < 8) { setError('La contraseña debe tener al menos 8 caracteres'); return; }
     setSubmitting(true); setError('');
     const fullName = `${regForm.firstName.trim()} ${regForm.lastName.trim()}`;
-    const res = await register(regForm.email, regForm.password, fullName, regForm.phone || undefined, regForm.rut || undefined, regForm.birthDate);
+    // Crear fecha con día y mes (año actual)
+    const birthDate = `${new Date().getFullYear()}-${regForm.birthMonth}-${regForm.birthDay}`;
+    const res = await register(regForm.email, regForm.password, fullName, regForm.phone || undefined, regForm.rut || undefined, birthDate);
     setSubmitting(false);
     if (res.success) {
       confetti({
@@ -264,14 +261,43 @@ function LoginInner() {
                         </div>
                         <InputField label="Correo electrónico *" icon={<Mail size={18} />} type="email" value={regForm.email} onChange={(e: any) => setRegForm(f => ({ ...f, email: e.target.value }))} placeholder="tu@correo.com" />
 
-                        <InputField
-                          label="Fecha de nacimiento *"
-                          icon={<Calendar size={18} />}
-                          type="date"
-                          value={regForm.birthDate}
-                          onChange={(e: any) => setRegForm(f => ({ ...f, birthDate: e.target.value }))}
-                          max={new Date().toISOString().split('T')[0]}
-                        />
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Mes de nacimiento *</label>
+                            <select
+                              value={regForm.birthMonth}
+                              onChange={(e: any) => setRegForm(f => ({ ...f, birthMonth: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                              <option value="">Seleccionar mes</option>
+                              <option value="01">Enero</option>
+                              <option value="02">Febrero</option>
+                              <option value="03">Marzo</option>
+                              <option value="04">Abril</option>
+                              <option value="05">Mayo</option>
+                              <option value="06">Junio</option>
+                              <option value="07">Julio</option>
+                              <option value="08">Agosto</option>
+                              <option value="09">Septiembre</option>
+                              <option value="10">Octubre</option>
+                              <option value="11">Noviembre</option>
+                              <option value="12">Diciembre</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Día de nacimiento *</label>
+                            <select
+                              value={regForm.birthDay}
+                              onChange={(e: any) => setRegForm(f => ({ ...f, birthDay: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                              <option value="">Seleccionar día</option>
+                              {Array.from({ length: 31 }, (_, i) => (
+                                <option key={i + 1} value={String(i + 1).padStart(2, '0')}>{i + 1}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
                         
                         <div className="grid grid-cols-2 gap-4">
                           <InputField label="Teléfono (opc)" icon={<Phone size={18} />} type="tel" value={regForm.phone} onChange={(e: any) => setRegForm(f => ({ ...f, phone: e.target.value }))} placeholder="+569..." />
