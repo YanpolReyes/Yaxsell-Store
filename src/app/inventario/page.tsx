@@ -804,7 +804,7 @@ export default function InventarioPage() {
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
             {barcodeSuggestion.step === 'confirm-product' ? (
               <>
-                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-4">
+                <div className="bg-gradient-to-r from-pink-400 to-pink-500 text-white px-6 py-4">
                   <h3 className="text-lg font-bold">¿Es este el producto?</h3>
                   <p className="text-xs text-white/80 mt-0.5">Coincide con los últimos 4 dígitos del código escaneado</p>
                 </div>
@@ -897,7 +897,7 @@ export default function InventarioPage() {
                   setCatalogSearch(getSku(stockModal.product));
                   setStockModal(null);
                 }}
-                className="py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition">
+                className="py-3 px-4 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-xl text-sm transition">
                 + Agregar más
               </button>
               <button
@@ -934,7 +934,7 @@ export default function InventarioPage() {
               <button onClick={() => setUnregisteredModal(null)}
                 className="flex-1 px-4 py-3 text-gray-600 hover:bg-gray-50 font-semibold transition">No</button>
               <button onClick={() => { setView('excel'); setUnregisteredModal(null); }}
-                className="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition">Sí, agregar</button>
+                className="flex-1 px-4 py-3 bg-pink-500 hover:bg-pink-600 text-white font-semibold transition">Sí, agregar</button>
             </div>
           </div>
         </div>
@@ -971,15 +971,15 @@ export default function InventarioPage() {
                 />
                 <div className="flex gap-2 mt-2">
                   <button type="button" onClick={() => setEditPackagesValue('1')}
-                    className="flex-1 py-2 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition">
+                    className="flex-1 py-2 text-xs font-bold bg-pink-50 hover:bg-pink-100 text-pink-600 rounded-lg transition">
                     +1
                   </button>
                   <button type="button" onClick={() => setEditPackagesValue('2')}
-                    className="flex-1 py-2 text-xs font-bold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg transition border border-indigo-300">
+                    className="flex-1 py-2 text-xs font-bold bg-pink-100 hover:bg-pink-200 text-pink-600 rounded-lg transition border border-pink-300">
                     +2
                   </button>
                   <button type="button" onClick={() => setEditPackagesValue('3')}
-                    className="flex-1 py-2 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition">
+                    className="flex-1 py-2 text-xs font-bold bg-pink-50 hover:bg-pink-100 text-pink-600 rounded-lg transition">
                     +3
                   </button>
                 </div>
@@ -1024,12 +1024,12 @@ export default function InventarioPage() {
                 <div className="flex flex-wrap gap-1.5">
                   {Array.from({ length: 36 }, (_, i) => i + 1).map(s => (
                     <button key={s} type="button" onClick={() => setEditSectionValue(editSectionValue === s ? null : s)}
-                      className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${editSectionValue === s ? 'bg-indigo-600 text-white shadow-md scale-110' : 'bg-gray-100 text-gray-600 hover:bg-indigo-100 hover:text-indigo-700'}`}>
+                      className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${editSectionValue === s ? 'bg-pink-500 text-white shadow-md scale-110' : 'bg-gray-100 text-gray-600 hover:bg-pink-100 hover:text-pink-600'}`}>
                       {s}
                     </button>
                   ))}
                 </div>
-                {editSectionValue && <div className="text-xs text-indigo-600 font-semibold mt-1.5">📍 Sección {editSectionValue} seleccionada</div>}
+                {editSectionValue && <div className="text-xs text-pink-600 font-semibold mt-1.5">📍 Sección {editSectionValue} seleccionada</div>}
               </div>
               <button
                 onClick={savePackQty}
@@ -1051,7 +1051,7 @@ export default function InventarioPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-5 flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-pink-500 flex items-center justify-center">
                 <FileSpreadsheet className="w-4 h-4 text-white" />
               </div>
               <div>
@@ -1061,7 +1061,7 @@ export default function InventarioPage() {
             </div>
             <div className="flex items-center gap-1.5">
               <button onClick={() => setShowLocator(true)} title="Ubicar Producto"
-                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-lg text-xs font-bold transition shadow-md">
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-pink-400 to-pink-500 hover:from-pink-500 hover:to-pink-600 text-white rounded-lg text-xs font-bold transition shadow-md">
                 <MapPin className="w-3.5 h-3.5" />
                 <span>Ubicación</span>
               </button>
@@ -1110,7 +1110,7 @@ export default function InventarioPage() {
                   value={catalogSearch}
                   onChange={e => setCatalogSearch(e.target.value)}
                   placeholder="Nombre, SKU o código de barras..."
-                  className="w-full pl-9 pr-16 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
+                  className="w-full pl-9 pr-16 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-pink-500"
                 />
                 {catalogSearch && (
                   <button onClick={() => setCatalogSearch('')}
@@ -1120,7 +1120,7 @@ export default function InventarioPage() {
                   </button>
                 )}
                 <button onClick={() => { setScanTarget('search'); setShowScanner(true); }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-indigo-600 transition"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-pink-600 transition"
                   title="Escanear código de barras">
                   <Camera className="w-4 h-4" />
                 </button>
@@ -1175,7 +1175,7 @@ export default function InventarioPage() {
                             <div className="text-xs text-gray-400 line-clamp-1">{p.DESCRIPTION || ''}</div>
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                               {hasPack ? (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-medium rounded">
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-pink-50 text-pink-600 text-[10px] font-medium rounded">
                                   <Package className="w-3 h-3" />{p.PACKQTY} u/paquete
                                 </span>
                               ) : (
@@ -1238,10 +1238,10 @@ export default function InventarioPage() {
                                   onKeyDown={e => { if (e.key === 'Enter') assignStock(p.$id); }}
                                   placeholder="paq."
                                   title="Cantidad de paquetes"
-                                  className="w-16 px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:border-indigo-500"
+                                  className="w-16 px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:border-pink-500"
                                 />
                                 <button type="button" onClick={() => setStockEdits(prev => ({ ...prev, [p.$id]: '2' }))}
-                                  className="px-2 py-1.5 text-[11px] font-bold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded border border-indigo-300 transition"
+                                  className="px-2 py-1.5 text-[11px] font-bold bg-pink-100 hover:bg-pink-200 text-pink-600 rounded border border-pink-300 transition"
                                   title="Atajo: 2 paquetes">
                                   +2
                                 </button>
@@ -1324,7 +1324,7 @@ export default function InventarioPage() {
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className="text-sm text-gray-700">${(p.PRICE || 0).toLocaleString('es-CL')}</span>
                               {hasPack ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[11px] font-medium rounded-full">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-pink-50 text-pink-600 text-[11px] font-medium rounded-full">
                                   <Package className="w-3 h-3" />{p.PACKQTY} u/paquete
                                 </span>
                               ) : (
@@ -1388,7 +1388,7 @@ export default function InventarioPage() {
                                 onKeyDown={e => { if (e.key === 'Enter') assignStock(p.$id); }}
                                 placeholder="Ej: 3"
                                 title="Cantidad de paquetes"
-                                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
+                                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-pink-500"
                               />
                             </div>
                             <button
@@ -1444,15 +1444,15 @@ export default function InventarioPage() {
                           {/* Quick-action chips — paquetes */}
                           <div className="flex gap-2 mt-1">
                             <button type="button" onClick={() => setStockEdits(prev => ({ ...prev, [p.$id]: '1' }))}
-                              className="flex-1 py-2 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition border border-indigo-200 text-center">
+                              className="flex-1 py-2 text-xs font-bold bg-pink-50 hover:bg-pink-100 text-pink-600 rounded-lg transition border border-pink-200 text-center">
                               +1 paq
                             </button>
                             <button type="button" onClick={() => setStockEdits(prev => ({ ...prev, [p.$id]: '2' }))}
-                              className="flex-1 py-2 text-xs font-bold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg transition border border-indigo-300 text-center">
+                              className="flex-1 py-2 text-xs font-bold bg-pink-100 hover:bg-pink-200 text-pink-600 rounded-lg transition border border-pink-300 text-center">
                               +2 paq
                             </button>
                             <button type="button" onClick={() => setStockEdits(prev => ({ ...prev, [p.$id]: '3' }))}
-                              className="flex-1 py-2 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition border border-indigo-200 text-center">
+                              className="flex-1 py-2 text-xs font-bold bg-pink-50 hover:bg-pink-100 text-pink-600 rounded-lg transition border border-pink-200 text-center">
                               +3 paq
                             </button>
                           </div>
@@ -1488,7 +1488,7 @@ export default function InventarioPage() {
                   value={catalogSearch}
                   onChange={e => setCatalogSearch(e.target.value)}
                   placeholder="Nombre, SKU o código de barras..."
-                  className="w-full pl-9 pr-10 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
+                  className="w-full pl-9 pr-10 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-pink-500"
                 />
                 {catalogSearch && (
                   <button onClick={() => setCatalogSearch('')}
@@ -1498,7 +1498,7 @@ export default function InventarioPage() {
                   </button>
                 )}
                 <button onClick={() => { setScanTarget('search'); setShowScanner(true); }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-indigo-600 transition"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-pink-600 transition"
                   title="Escanear código de barras">
                   <Camera className="w-4 h-4" />
                 </button>
@@ -1549,7 +1549,7 @@ export default function InventarioPage() {
                             <div className="font-medium text-gray-900 line-clamp-1">{p.NAME || '—'}</div>
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                               {hasPack ? (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-medium rounded">
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-pink-50 text-pink-600 text-[10px] font-medium rounded">
                                   <Package className="w-3 h-3" />{p.PACKQTY} u/paquete
                                 </span>
                               ) : (
@@ -1652,7 +1652,7 @@ export default function InventarioPage() {
                               <span className="text-sm font-semibold text-emerald-600">{p.STOCK} uds</span>
                               <span className="text-sm text-gray-700">${(p.PRICE || 0).toLocaleString('es-CL')}</span>
                               {hasPack ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[11px] font-medium rounded-full">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-pink-50 text-pink-600 text-[11px] font-medium rounded-full">
                                   <Package className="w-3 h-3" />{p.PACKQTY} u/paquete
                                 </span>
                               ) : (
@@ -1744,7 +1744,7 @@ export default function InventarioPage() {
             </div>
             <label className="cursor-pointer">
               <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} className="hidden" disabled={isLoading} />
-              <div className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition">
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-pink-500 hover:bg-pink-600 text-white rounded-xl text-sm font-medium transition">
                 {isLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Upload className="w-4 h-4" />}
                 {isLoading ? 'Procesando...' : 'Seleccionar archivo'}
               </div>
@@ -1759,7 +1759,7 @@ export default function InventarioPage() {
                 { label: 'Total', value: rows.length, color: 'text-gray-900' },
                 { label: 'Ya existen', value: matchedCount, color: 'text-emerald-600' },
                 { label: 'Nuevos', value: newCount, color: 'text-blue-600' },
-                { label: 'Traducidos', value: translatedCount, color: 'text-violet-600' },
+                { label: 'Traducidos', value: translatedCount, color: 'text-pink-600' },
                 { label: 'Con imagen', value: rows.filter(r => r.imageUrl).length, color: 'text-orange-600' },
               ].map(s => (
                 <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-3 text-center shadow-sm">
@@ -1770,7 +1770,7 @@ export default function InventarioPage() {
             </div>
             <div className="flex flex-col gap-2">
               <button onClick={handleTranslate} disabled={isTranslating}
-                className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-xl text-sm font-medium transition whitespace-nowrap">
+                className="flex items-center gap-2 px-4 py-2.5 bg-pink-500 hover:bg-pink-600 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-xl text-sm font-medium transition whitespace-nowrap">
                 {isTranslating ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -1798,7 +1798,7 @@ export default function InventarioPage() {
                 )}
               </button>
               <button onClick={handleSave} disabled={isSaving || selectedCount === 0}
-                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-xl text-sm font-medium transition whitespace-nowrap">
+                className="flex items-center gap-2 px-4 py-2.5 bg-pink-500 hover:bg-pink-600 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-xl text-sm font-medium transition whitespace-nowrap">
                 {isSaving ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -1816,13 +1816,13 @@ export default function InventarioPage() {
         )}
 
         {isTranslating && (
-          <div className="bg-white rounded-xl border border-violet-200 p-4 shadow-sm">
+          <div className="bg-white rounded-xl border border-pink-200 p-4 shadow-sm">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-violet-700">Traduciendo con Gemini AI...</p>
-              <p className="text-sm font-bold text-violet-600">{translateProgress}%</p>
+              <p className="text-sm text-pink-700">Traduciendo con Gemini AI...</p>
+              <p className="text-sm font-bold text-pink-600">{translateProgress}%</p>
             </div>
             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div className="h-full bg-violet-500 rounded-full transition-all duration-500" style={{ width: `${translateProgress}%` }} />
+              <div className="h-full bg-pink-400 rounded-full transition-all duration-500" style={{ width: `${translateProgress}%` }} />
             </div>
           </div>
         )}
@@ -1875,12 +1875,12 @@ export default function InventarioPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar por SKU o nombre..."
-                className="w-full pl-9 pr-9 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                className="w-full pl-9 pr-9 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500" />
               {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><X className="w-4 h-4" /></button>}
             </div>
             {(['all', 'matched', 'new', 'unmatched'] as const).map(f => (
               <button key={f} onClick={() => setFilterStatus(f)}
-                className={`px-3 py-2 rounded-xl text-xs font-medium transition ${filterStatus === f ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
+                className={`px-3 py-2 rounded-xl text-xs font-medium transition ${filterStatus === f ? 'bg-pink-500 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
                 {f === 'all' ? 'Todos' : f === 'matched' ? 'Existentes' : f === 'new' ? 'Nuevos' : 'Sin match'}
               </button>
             ))}
@@ -1898,7 +1898,7 @@ export default function InventarioPage() {
                       <input type="checkbox"
                         checked={filtered.length > 0 && filtered.every(r => r.selected)}
                         onChange={toggleAll}
-                        className="w-4 h-4 rounded border-gray-300 bg-white text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0" />
+                        className="w-4 h-4 rounded border-gray-300 bg-white text-pink-600 focus:ring-pink-500 focus:ring-offset-0" />
                     </th>
                     <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Producto</th>
                     <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase hidden lg:table-cell">Categoría</th>
@@ -1916,11 +1916,11 @@ export default function InventarioPage() {
                     const displayName = row.nameEs || row.nameTranslated || row.nameCn;
                     const displayNameSub = row.translated ? row.nameTranslated : row.nameCn;
                     return (
-                      <tr key={realIdx} className={`transition-colors ${row.selected ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}>
+                      <tr key={realIdx} className={`transition-colors ${row.selected ? 'bg-pink-50' : 'hover:bg-gray-50'}`}>
                         <td className="px-3 py-2.5">
                           <input type="checkbox" checked={row.selected}
                             onChange={() => toggleRow(realIdx)}
-                            className="w-4 h-4 rounded border-gray-300 bg-white text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0" />
+                            className="w-4 h-4 rounded border-gray-300 bg-white text-pink-600 focus:ring-pink-500 focus:ring-offset-0" />
                         </td>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-3">
@@ -1941,7 +1941,7 @@ export default function InventarioPage() {
                               <div className="flex items-center gap-1.5">
                                 <p className="text-xs text-gray-500 font-mono">{row.sku}</p>
                                 {row.translated && (
-                                  <span className="text-[10px] px-1 py-0.5 rounded bg-violet-100 text-violet-700 flex items-center gap-0.5">
+                                  <span className="text-[10px] px-1 py-0.5 rounded bg-pink-100 text-pink-700 flex items-center gap-0.5">
                                     <Sparkles className="w-2.5 h-2.5" />ES
                                   </span>
                                 )}
@@ -1984,7 +1984,7 @@ export default function InventarioPage() {
                           <input type="number" min="0" value={row.newStock}
                             onChange={e => updateNewStock(realIdx, parseInt(e.target.value) || 0)}
                             placeholder="Stock"
-                            className="w-20 px-2 py-1 text-center bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                            className="w-20 px-2 py-1 text-center bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500" />
                         </td>
                         <td className="px-3 py-2.5 text-right text-gray-700 hidden md:table-cell">
                           ${row.priceRetail.toLocaleString()}
@@ -2059,7 +2059,7 @@ export default function InventarioPage() {
                         <div className="text-xs text-gray-500">{getSku(p)} · {p.STOCK} uds</div>
                       </div>
                       <div className="shrink-0">
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-100 text-indigo-700 text-xs font-bold">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-pink-100 text-pink-600 text-xs font-bold">
                           <MapPin className="w-3 h-3" /> G{gondola} S{sec}
                         </span>
                       </div>
@@ -2116,7 +2116,7 @@ export default function InventarioPage() {
       {/* Floating camera widget */}
       <button
         onClick={() => { setScanTarget('search'); setShowScanner(true); }}
-        className="fixed bottom-6 right-5 z-40 w-14 h-14 bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform active:scale-95"
+        className="fixed bottom-6 right-5 z-40 w-14 h-14 bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform active:scale-95"
         title="Escanear producto"
       >
         <Camera className="w-6 h-6" />
