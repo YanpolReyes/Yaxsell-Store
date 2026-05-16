@@ -5043,6 +5043,15 @@ export default function HomePage1() {
     const section = document.querySelector(`[data-section-id="${sectionId}"]`) || document.getElementById(`shopify-section-${sectionId}`);
     if (!section) return;
 
+    // Ocultar sección si no hay items configurados
+    const items = (settings.featuredCollectionItems || []) as CollectionItem[];
+    if (items.length === 0) {
+      section.style.display = 'none';
+      return;
+    } else {
+      section.style.display = '';
+    }
+
     const subHead = section.querySelector('.musk-fancy-sub-head') as HTMLElement;
     const mainTitle = section.querySelector('.musk-h2-head') as HTMLElement;
     const mainPara = section.querySelector('.musk-main-para') as HTMLElement;
