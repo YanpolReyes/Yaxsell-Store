@@ -336,6 +336,8 @@ export default function ProductDetailPlantilla2() {
               {hasWholesale && !isWholesaleQty && (
                 <p style={{ margin: '8px 0 0', fontSize: 13, color: '#3483fa' }}>
                   Comprando {product.WHOLESALEMINQUANTITY}+ unidades: <strong>{formatPrice(product.WHOLESALEPRICE!)}</strong> c/u
+                  <br />
+                  <span style={{ fontSize: 12, color: '#666' }}>A partir de {formatPrice(product.WHOLESALEPRICE! * product.WHOLESALEMINQUANTITY!)} en el total del pedido</span>
                 </p>
               )}
             </div>
