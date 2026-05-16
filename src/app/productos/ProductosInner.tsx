@@ -453,9 +453,8 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             ) : view === 'grid' ? (
               <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
                 {filtered.map(p => {
-                  const price = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
-                  const hasDisc = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
-                  const disc = hasDisc ? Math.round(((p.PRICE - price) / p.PRICE) * 100) : 0;
+                  const originalPrice = p.PRICE;
+                  const promoPrice = originalPrice * 0.8; // 20% de descuento
                   const fav = isFavorite(p.$id);
                   return (
                     <div key={p.$id} className="pk-card" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '0 0 22px 22px', overflow: 'hidden', border: '1px solid rgba(252,231,243,0.95)', transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(236,72,153,0.08)', backdropFilter: 'blur(10px)' }}>
@@ -482,11 +481,9 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                           >
                             <Heart size={16} fill={fav ? '#fff' : 'none'} />
                           </button>
-                          {hasDisc && (
-                            <div className="pk-disc-badge" style={{ position: 'absolute', top: 10, right: 10, padding: '4px 10px', background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 800, zIndex: 2, boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}>
-                              -{disc}%
-                            </div>
-                          )}
+                          <div className="pk-disc-badge" style={{ position: 'absolute', top: 10, right: 10, padding: '4px 10px', background: 'linear-gradient(135deg,#ec4899,#f9a8d4)', color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 800, zIndex: 2, boxShadow: '0 4px 12px rgba(236,72,153,0.3)' }}>
+                            -20%
+                          </div>
                           {p.STOCK === 0 && (
                             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
                               <span style={{ padding: '6px 14px', background: '#fff', color: '#ef4444', borderRadius: 999, fontSize: 12, fontWeight: 800, border: '1.5px solid #fee2e2' }}>Sin stock</span>
@@ -520,9 +517,10 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                           </p>
                         </Link>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 'auto' }}>
-                          <span className="pk-price" style={{ fontSize: 19, fontWeight: 800, color: '#111', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
-                          {hasDisc && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500 }}>{formatPrice(p.PRICE)}</span>}
+                          <span className="pk-price" style={{ fontSize: 19, fontWeight: 800, color: '#111', letterSpacing: '-0.02em' }}>{formatPrice(promoPrice)}</span>
+                          <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500 }}>{formatPrice(originalPrice)}</span>
                         </div>
+                        <p style={{ fontSize: 10, color: '#ec4899', fontWeight: 600, marginTop: 4 }}>Promoción Apertura</p>
                         <button onClick={() => p.STOCK !== 0 && addItem(p)} disabled={p.STOCK === 0} className="pk-add-btn"
                           style={{ marginTop: 10, padding: '9px 12px', borderRadius: 12, border: 'none', background: p.STOCK === 0 ? '#f3f4f6' : 'linear-gradient(135deg,#ec4899,#f9a8d4)', color: p.STOCK === 0 ? '#9ca3af' : '#fff', fontSize: 12, fontWeight: 700, cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.2s', boxShadow: p.STOCK === 0 ? 'none' : '0 4px 14px rgba(236,72,153,0.25)', fontFamily: 'inherit' }}>
                           <ShoppingCart size={13} /> {p.STOCK === 0 ? 'Sin stock' : 'Agregar'}
@@ -535,15 +533,14 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {filtered.map(p => {
-                  const price = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
-                  const hasDisc = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
-                  const disc = hasDisc ? Math.round(((p.PRICE - price) / p.PRICE) * 100) : 0;
+                  const originalPrice = p.PRICE;
+                  const promoPrice = originalPrice * 0.8; // 20% de descuento
                   const fav = isFavorite(p.$id);
                   return (
                     <div key={p.$id} className="pk-card-list" style={{ background: '#fff', borderRadius: 18, border: '1px solid #fce7f3', display: 'flex', gap: 16, padding: 12, transition: 'all 0.2s', alignItems: 'center' }}>
                       <Link href={`/productos/${p.$id}`} className="pk-card-list-media" onClick={e => handleCardImageClick(p, e)} style={{ position: 'relative', width: 110, height: 110, borderRadius: 14, overflow: 'hidden', background: '#fef2f8', flexShrink: 0 }}>
                         {p.IMAGEURL ? <Image src={p.IMAGEURL} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="110px" /> : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 36 }}>📦</div>}
-                        {hasDisc && <div style={{ position: 'absolute', top: 6, left: 6, padding: '2px 7px', background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 800 }}>-{disc}%</div>}
+                        <div style={{ position: 'absolute', top: 6, left: 6, padding: '2px 7px', background: 'linear-gradient(135deg,#ec4899,#f9a8d4)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 800 }}>-20%</div>
                         <button type="button" className="pk-card-fav pk-card-list-fav" aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'} onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorite(p.$id); }} style={{ position: 'absolute', top: 6, right: 6, zIndex: 5, width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer', alignItems: 'center', justifyContent: 'center', background: fav ? 'linear-gradient(135deg,#ec4899,#f9a8d4)' : 'rgba(255,255,255,0.95)', color: fav ? '#fff' : '#ec4899', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}><Heart size={14} fill={fav ? '#fff' : 'none'} /></button>
                       </Link>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -552,9 +549,10 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                         </Link>
                         <p style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>{p.DESCRIPTION}</p>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                          <span style={{ fontSize: 18, fontWeight: 800, color: '#111' }}>{formatPrice(price)}</span>
-                          {hasDisc && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(p.PRICE)}</span>}
+                          <span style={{ fontSize: 18, fontWeight: 800, color: '#111' }}>{formatPrice(promoPrice)}</span>
+                          <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(originalPrice)}</span>
                         </div>
+                        <p style={{ fontSize: 10, color: '#ec4899', fontWeight: 600, marginTop: 4 }}>Promoción Apertura</p>
                       </div>
                       <div className="pk-card-list-actions" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         <button onClick={() => setPreviewProduct(p)} title="Vista rápida"
