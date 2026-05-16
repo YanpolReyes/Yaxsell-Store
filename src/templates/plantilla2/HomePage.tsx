@@ -1,5 +1,6 @@
 'use client';
-import React, { useEffect, useState, useRef } from 'react';
+import '@/templates/plantilla2/theme.css';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';

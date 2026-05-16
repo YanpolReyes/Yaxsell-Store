@@ -1,9 +1,5 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import '@/templates/plantilla1/theme.css';
-import '@/templates/plantilla1/mobile-responsive.css';
-import '@/templates/plantilla2/theme.css';
-import '@/templates/plantilla3/theme.css';
 import { CartProvider } from '@/context/CartContext';
 import { TemplateProvider } from '@/context/TemplateContext';
 import { AuthProvider } from '@/hooks/useAuth';

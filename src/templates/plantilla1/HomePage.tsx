@@ -8,7 +8,8 @@
    Las secciones se irán componentizando a JSX gradualmente para hacerlas
    editables desde el editor de secciones (sh_navbar, sh_hero, ...).
    ════════════════════════════════════════════════════════════════════ */
-
+import '@/templates/plantilla1/theme.css';
+import '@/templates/plantilla1/mobile-responsive.css';
 import { useEffect, useRef, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { getSectionConfig, getSectionConfigAsync, invalidateSectionCache, isSectionEnabled, applyTpl1SectionsVisibility, type SectionConfig, type CollectionItem, type MediaGalleryItem } from '@/lib/section-config';
