@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Query } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Product, Category } from '@/types/admin';
-import { Search, Pencil, RefreshCw, Boxes, DollarSign, Package } from 'lucide-react';
+import { Search, Pencil, RefreshCw, Boxes, DollarSign, Package, X } from 'lucide-react';
 
 export default function WholesaleProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -13,6 +13,10 @@ export default function WholesaleProductsPage() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('');
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editWholesalePrice, setEditWholesalePrice] = useState('');
+  const [editMinQuantity, setEditMinQuantity] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -63,6 +67,52 @@ export default function WholesaleProductsPage() {
     if (!p.COST || p.COST === 0) return 0;
     const price = p.WHOLESALEPRICE || p.PRICE;
     return Math.round(((price - p.COST) / price) * 100);
+  };
+
+  const openEditModal = (product: Product) => {
+    setEditingProduct(product);
+    setEditWholesalePrice(String(product.WHOLESALEPRICE || 0));
+    setEditMinQuantity(String(product.WHOLESALEMINQUANTITY || 0));
+  };
+
+  const saveWholesaleSettings = async () => {
+    if (!editingProduct) return;
+    setIsSaving(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      
+      const wholesalePrice = parseFloat(editWholesalePrice);
+      const minQuantity = parseInt(editMinQuantity, 10);
+      
+      if (isNaN(wholesalePrice) || wholesalePrice < 0) {
+        alert('El precio mayorista debe ser un número válido');
+        return;
+      }
+      if (isNaN(minQuantity) || minQuantity < 1) {
+        alert('La cantidad mínima debe ser al menos 1');
+        return;
+      }
+      
+      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, editingProduct.$id, {
+        WHOLESALEPRICE: wholesalePrice,
+        WHOLESALEMINQUANTITY: minQuantity
+      });
+      
+      setProducts(prev => prev.map(p => 
+        p.$id === editingProduct.$id 
+          ? { ...p, WHOLESALEPRICE: wholesalePrice, WHOLESALEMINQUANTITY: minQuantity }
+          : p
+      ));
+      
+      setEditingProduct(null);
+      setEditWholesalePrice('');
+      setEditMinQuantity('');
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -157,7 +207,7 @@ export default function WholesaleProductsPage() {
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600">Categoría</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600">Precio Normal</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600">Precio Mayorista</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600">Cant. Mínima</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600">Cantidad / Monto Mínimo (pedido)</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600">Stock</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600">Margen</th>
                 </tr>
@@ -178,10 +228,22 @@ export default function WholesaleProductsPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{getCategoryName(p.CATEGORYID || '')}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{formatPrice(p.PRICE)}</td>
-                    <td className="px-4 py-3 text-sm font-semibold text-green-600">
-                      {formatPrice(p.WHOLESALEPRICE || 0)}
+                    <td className="px-4 py-3 text-sm text-gray-600">{formatPrice(p.WHOLESALEPRICE || 0)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm">
+                          <div className="text-gray-900 font-medium">{p.WHOLESALEMINQUANTITY || 0}+ unidades</div>
+                          <div className="text-gray-500 text-xs">{formatPrice((p.WHOLESALEPRICE || 0) * (p.WHOLESALEMINQUANTITY || 0))} total</div>
+                        </div>
+                        <button 
+                          onClick={() => openEditModal(p)}
+                          className="p-1.5 hover:bg-gray-100 rounded-lg transition"
+                          title="Editar cantidad/monto mínimo"
+                        >
+                          <Pencil className="w-4 h-4 text-gray-500" />
+                        </button>
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{p.WHOLESALEMINQUANTITY || 0}+ unidades</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                         (p.STOCK || 0) > 10 ? 'bg-green-100 text-green-700' :
@@ -199,6 +261,85 @@ export default function WholesaleProductsPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de edición */}
+      {editingProduct && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Editar Configuración Mayorista</h3>
+              <button 
+                onClick={() => setEditingProduct(null)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Producto
+                </label>
+                <p className="text-sm text-gray-600">{editingProduct.NAME}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Precio Mayorista ($)
+                </label>
+                <input
+                  type="number"
+                  value={editWholesalePrice}
+                  onChange={(e) => setEditWholesalePrice(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="0"
+                  min="0"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Cantidad Mínima (unidades)
+                </label>
+                <input
+                  type="number"
+                  value={editMinQuantity}
+                  onChange={(e) => setEditMinQuantity(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="1"
+                  min="1"
+                />
+              </div>
+
+              <div className="pt-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Monto Mínimo del Pedido
+                </label>
+                <p className="text-sm text-gray-600">
+                  {formatPrice((parseFloat(editWholesalePrice) || 0) * (parseInt(editMinQuantity) || 0))}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditingProduct(null)}
+                className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={saveWholesaleSettings}
+                disabled={isSaving}
+                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-60"
+              >
+                {isSaving ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
