@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Query, ID } from 'appwrite';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import * as XLSX from 'xlsx';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { isAdminEmail } from '@/lib/admin-access';
+import { setBarcodeInFeatures, setSectionInFeatures } from '@/lib/product-features';
 import { Product, Category, Subcategory } from '@/types/admin';
 import {
   Upload, Search, Package, CheckCircle2, RefreshCw,
@@ -161,7 +162,42 @@ export default function InventarioPage() {
   const [editPackQtyValue, setEditPackQtyValue] = useState<string>('');
   const [editPackagesValue, setEditPackagesValue] = useState<string>('');
   const [editSectionValue, setEditSectionValue] = useState<number | null>(null);
+  const [editBarcodeValue, setEditBarcodeValue] = useState<string>('');
+  const [lastPlacedSection, setLastPlacedSection] = useState<number | null>(null);
   const [showLocator, setShowLocator] = useState(false);
+
+  const sectionProductCounts = useMemo(() => {
+    const counts: Record<number, number> = {};
+    products.forEach(p => {
+      const m = productFeaturesText(p).match(/Section:\s*(\d+)/i);
+      if (!m) return;
+      const sec = parseInt(m[1], 10);
+      if (sec >= 1 && sec <= 36) counts[sec] = (counts[sec] || 0) + 1;
+    });
+    return counts;
+  }, [products]);
+
+  const openEditStockModal = (p: Product, opts?: { packages?: string; packQty?: string }) => {
+    const features = productFeaturesText(p);
+    const sectionMatch = features.match(/Section:\s*(\d+)/i);
+    const existingBarcode = getBarcodeFromProduct(p) || barcodeEdits[p.$id]?.trim() || '';
+    setEditStockModal(p);
+    setEditPackQtyValue(opts?.packQty ?? String(p.PACKQTY || ''));
+    setEditPackagesValue(
+      opts?.packages ?? String(Math.round((p.STOCK || 0) / (p.PACKQTY || 1)) || '0'),
+    );
+    setEditSectionValue(sectionMatch ? parseInt(sectionMatch[1], 10) : null);
+    setEditBarcodeValue(existingBarcode);
+  };
+
+  const closeEditStockModal = () => {
+    setEditStockModal(null);
+    setEditPackQtyValue('');
+    setEditPackagesValue('');
+    setEditSectionValue(null);
+    setEditBarcodeValue('');
+    reopenScannerIfBulk();
+  };
 
   const openScanner = (target: 'search' | string, bulk = false) => {
     setScanTarget(target);
@@ -196,18 +232,11 @@ export default function InventarioPage() {
         STOCK: newStock,
         ISACTIVE: newStock > 0,
       };
-      // Save section if selected
       let finalFeatures = editStockModal.FEATURES || '';
-      if (editSectionValue) {
-        finalFeatures = finalFeatures.replace(/\nSection:\s*\d+/gi, '').replace(/^Section:\s*\d+\n?/gi, '');
-        finalFeatures = finalFeatures ? `${finalFeatures}\nSection: ${editSectionValue}` : `Section: ${editSectionValue}`;
-      }
-      
-      // Also save barcode if it was entered inline
-      const inlineBarcode = barcodeEdits[editStockModal.$id]?.trim();
-      if (inlineBarcode && !finalFeatures.toLowerCase().includes('barcode:')) {
-        finalFeatures = finalFeatures ? `${finalFeatures}\nBarcode: ${inlineBarcode}` : `Barcode: ${inlineBarcode}`;
-      }
+      finalFeatures = setSectionInFeatures(finalFeatures, editSectionValue);
+      const barcodeToSave =
+        editBarcodeValue.trim() || barcodeEdits[editStockModal.$id]?.trim() || '';
+      finalFeatures = setBarcodeInFeatures(finalFeatures, barcodeToSave);
 
       if (finalFeatures !== (editStockModal.FEATURES || '')) {
         payload.FEATURES = finalFeatures;
@@ -217,11 +246,15 @@ export default function InventarioPage() {
       setProducts(prev => prev.map(p => p.$id === editStockModal.$id
         ? { ...p, PACKQTY: newPackQty, STOCK: newStock, ISACTIVE: newStock > 0, ...(payload.FEATURES ? { FEATURES: payload.FEATURES } : {}) }
         : p));
-      setEditStockModal(null);
-      setEditPackQtyValue('');
-      setEditPackagesValue('');
-      setEditSectionValue(null);
-      reopenScannerIfBulk();
+      if (barcodeToSave) {
+        setBarcodeEdits(prev => {
+          const next = { ...prev };
+          delete next[editStockModal.$id];
+          return next;
+        });
+      }
+      if (editSectionValue) setLastPlacedSection(editSectionValue);
+      closeEditStockModal();
     } catch (e: any) {
       alert('Error: ' + e.message);
     } finally {
@@ -247,19 +280,17 @@ export default function InventarioPage() {
           if ((directMatch.STOCK || 0) > 0) {
             setStockModal({ product: directMatch, scannedCode: code });
           } else {
-            setEditStockModal(directMatch);
-            setEditPackQtyValue(String(directMatch.PACKQTY || ''));
-            setEditPackagesValue(String(Math.round((directMatch.STOCK || 0) / (directMatch.PACKQTY || 1))));
+            openEditStockModal(directMatch);
           }
-        } else if (code.length >= 4) {
+        } else if (code.length >= 8) {
           const last4 = code.slice(-4).toLowerCase();
-          const suggested = products.find(p => {
+          const matches = products.filter(p => {
             const sku = getSkuFromProduct(p).toLowerCase();
             return sku && sku.endsWith(last4) && !getBarcodeFromProduct(p);
           });
-          if (suggested) {
+          if (matches.length === 1) {
             setShowScanner(false);
-            setBarcodeSuggestion({ product: suggested, scannedBarcode: code, step: 'confirm-product' });
+            setBarcodeSuggestion({ product: matches[0], scannedBarcode: code, step: 'confirm-product' });
           } else {
             setShowScanner(false);
             setUnregisteredModal({ code });
@@ -268,6 +299,8 @@ export default function InventarioPage() {
           setShowScanner(false);
           setUnregisteredModal({ code });
         }
+      } else if (scanTarget === 'editBarcode') {
+        setEditBarcodeValue(code);
       } else {
         setBarcodeEdits(prev => ({ ...prev, [scanTarget]: code }));
       }
@@ -294,8 +327,7 @@ export default function InventarioPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const features = product.FEATURES || '';
-      const newFeatures = features ? `${features}\nBarcode: ${scannedBarcode}` : `Barcode: ${scannedBarcode}`;
+      const newFeatures = setBarcodeInFeatures(product.FEATURES || '', scannedBarcode);
       await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, product.$id, { FEATURES: newFeatures });
       setProducts(prev => prev.map(p => p.$id === product.$id ? { ...p, FEATURES: newFeatures } : p));
       setCatalogSearch(getSkuFromProduct(product));
@@ -932,9 +964,7 @@ export default function InventarioPage() {
               </button>
               <button
                 onClick={() => {
-                  setEditStockModal(stockModal.product);
-                  setEditPackQtyValue(String(stockModal.product.PACKQTY || ''));
-                  setEditPackagesValue(String(Math.round((stockModal.product.STOCK || 0) / (stockModal.product.PACKQTY || 1))));
+                  openEditStockModal(stockModal.product);
                   setStockModal(null);
                 }}
                 className="py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition">
@@ -972,9 +1002,12 @@ export default function InventarioPage() {
 
       {/* Edit stock modal — for Con Stock view */}
       {editStockModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center sm:p-4">
-          <div className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden">
-            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-5 py-3 flex items-center gap-3">
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center sm:p-4" onClick={closeEditStockModal}>
+          <div
+            className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden max-h-[92dvh] flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="sticky top-0 z-10 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-5 py-3 flex items-center gap-3 shrink-0">
               {editStockModal.IMAGEURL && (
                 <img src={editStockModal.IMAGEURL} alt="" className="w-10 h-10 object-cover rounded-lg border border-white/30" />
               )}
@@ -982,11 +1015,16 @@ export default function InventarioPage() {
                 <div className="font-bold text-sm line-clamp-1">{editStockModal.NAME}</div>
                 <div className="text-xs text-white/80">Stock actual: {editStockModal.STOCK} uds</div>
               </div>
-              <button onClick={() => { setEditStockModal(null); setEditPackQtyValue(''); setEditPackagesValue(''); reopenScannerIfBulk(); }} className="text-white/70 hover:text-white">
-                <X size={20} />
+              <button
+                type="button"
+                onClick={closeEditStockModal}
+                aria-label="Cerrar"
+                className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-white/25 hover:bg-white/40 text-white transition"
+              >
+                <X size={22} strokeWidth={2.5} />
               </button>
             </div>
-            <div className="p-5 space-y-4">
+            <div className="flex-1 overflow-y-auto p-5 space-y-4 overscroll-contain">
               {/* Packages input */}
               <div>
                 <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1 block">Cantidad de paquetes</label>
@@ -1048,18 +1086,62 @@ export default function InventarioPage() {
                   <span className="font-bold text-emerald-600 text-lg">{parseInt(editPackagesValue, 10) * parseInt(editPackQtyValue, 10)} unidades</span>
                 </div>
               )}
+              {/* Barcode */}
+              <div>
+                <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1 block">Código de barras</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={editBarcodeValue}
+                    onChange={e => setEditBarcodeValue(e.target.value)}
+                    placeholder="Escanear o escribir código"
+                    className="flex-1 px-4 py-2.5 text-sm font-mono border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => openScanner('editBarcode')}
+                    className="shrink-0 px-3 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition"
+                    title="Escanear código">
+                    <Camera size={20} />
+                  </button>
+                </div>
+              </div>
               {/* Section picker */}
               <div>
                 <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1 block">Sección (góndola)</label>
                 <div className="flex flex-wrap gap-1.5">
-                  {Array.from({ length: 36 }, (_, i) => i + 1).map(s => (
-                    <button key={s} type="button" onClick={() => setEditSectionValue(editSectionValue === s ? null : s)}
-                      className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${editSectionValue === s ? 'bg-pink-500 text-white shadow-md scale-110' : 'bg-gray-100 text-gray-600 hover:bg-pink-100 hover:text-pink-600'}`}>
-                      {s}
-                    </button>
-                  ))}
+                  {Array.from({ length: 36 }, (_, i) => i + 1).map(s => {
+                    const count = sectionProductCounts[s] || 0;
+                    const isSelected = editSectionValue === s;
+                    const isLastPlaced = lastPlacedSection === s && !isSelected;
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setEditSectionValue(isSelected ? null : s)}
+                        className={`relative w-10 h-10 rounded-lg text-xs font-bold transition-all ${
+                          isSelected
+                            ? 'bg-pink-500 text-white shadow-md scale-110'
+                            : isLastPlaced
+                              ? 'bg-emerald-500 text-white ring-2 ring-emerald-300 shadow-sm'
+                              : 'bg-gray-100 text-gray-600 hover:bg-pink-100 hover:text-pink-600'
+                        }`}
+                      >
+                        {count > 0 && (
+                          <span className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] px-0.5 rounded-full bg-indigo-600 text-white text-[9px] font-bold flex items-center justify-center leading-none shadow">
+                            {count > 99 ? '99+' : count}
+                          </span>
+                        )}
+                        {s}
+                      </button>
+                    );
+                  })}
                 </div>
                 {editSectionValue && <div className="text-xs text-pink-600 font-semibold mt-1.5">📍 Sección {editSectionValue} seleccionada</div>}
+                {lastPlacedSection && lastPlacedSection !== editSectionValue && (
+                  <div className="text-xs text-emerald-600 font-semibold mt-1">Última asignada: sección {lastPlacedSection} (verde)</div>
+                )}
               </div>
               <button
                 onClick={savePackQty}
@@ -1071,6 +1153,15 @@ export default function InventarioPage() {
                   <CheckCircle2 size={18} />
                 )}
                 Guardar
+              </button>
+            </div>
+            <div className="sticky bottom-0 shrink-0 border-t border-gray-100 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:hidden">
+              <button
+                type="button"
+                onClick={closeEditStockModal}
+                className="w-full py-3 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 transition flex items-center justify-center gap-2"
+              >
+                <X size={18} /> Cerrar
               </button>
             </div>
           </div>
@@ -1276,14 +1367,14 @@ export default function InventarioPage() {
                                   +2
                                 </button>
                                 <button
-                                   onClick={() => { 
-                                     setEditStockModal(p); 
-                                     setEditPackagesValue(editing || '1'); 
-                                     setEditPackQtyValue(hasPack ? String(p.PACKQTY) : (inlinePack || '12'));
-                                     // Also pass barcode if it was entered inline
+                                   onClick={() => {
                                      if (!hasBarcode && inlineBarcode) {
                                        setBarcodeEdits(prev => ({ ...prev, [p.$id]: inlineBarcode }));
                                      }
+                                     openEditStockModal(p, {
+                                       packages: editing || '1',
+                                       packQty: hasPack ? String(p.PACKQTY) : (inlinePack || '12'),
+                                     });
                                    }}
                                   disabled={saving || !editing || pkgs <= 0 || (!hasPack && (!inlinePack || parseInt(inlinePack, 10) <= 0))}
                                   className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-medium rounded transition">
@@ -1422,14 +1513,14 @@ export default function InventarioPage() {
                               />
                             </div>
                             <button
-                               onClick={() => { 
-                                 setEditStockModal(p); 
-                                 setEditPackagesValue(editing || '1'); 
-                                 setEditPackQtyValue(hasPack ? String(p.PACKQTY) : (inlinePack || '12'));
-                                 // Also pass barcode if it was entered inline
+                               onClick={() => {
                                  if (!hasBarcode && inlineBarcode) {
                                    setBarcodeEdits(prev => ({ ...prev, [p.$id]: inlineBarcode }));
                                  }
+                                 openEditStockModal(p, {
+                                   packages: editing || '1',
+                                   packQty: hasPack ? String(p.PACKQTY) : (inlinePack || '12'),
+                                 });
                                }}
                               disabled={saving || !editing || pkgs <= 0 || (!hasPack && (!inlinePack || parseInt(inlinePack, 10) <= 0))}
                               className="flex items-center gap-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition shrink-0">
@@ -1564,7 +1655,7 @@ export default function InventarioPage() {
                       const hasPack = !!(p.PACKQTY && p.PACKQTY > 0);
                       const hasBarcode = !!barcode;
                       return (
-                        <tr key={p.$id} className="hover:bg-gray-50 cursor-pointer" onClick={() => { setEditStockModal(p); setEditPackQtyValue(String(p.PACKQTY || '')); setEditPackagesValue(String(Math.round((p.STOCK || 0) / (p.PACKQTY || 1)))); }}>
+                        <tr key={p.$id} className="hover:bg-gray-50 cursor-pointer" onClick={() => openEditStockModal(p)}>
                           <td className="px-4 py-2">
                             {p.IMAGEURL ? (
                               <img src={p.IMAGEURL} alt="" className="w-10 h-10 object-cover rounded"
@@ -1660,7 +1751,7 @@ export default function InventarioPage() {
                     const hasPack = !!(p.PACKQTY && p.PACKQTY > 0);
                     const hasBarcode = !!barcode;
                     return (
-                      <div key={p.$id} className="p-4 cursor-pointer active:bg-gray-50 transition" onClick={() => { setEditStockModal(p); setEditPackQtyValue(String(p.PACKQTY || '')); setEditPackagesValue(String(Math.round((p.STOCK || 0) / (p.PACKQTY || 1)))); }}>
+                      <div key={p.$id} className="p-4 cursor-pointer active:bg-gray-50 transition" onClick={() => openEditStockModal(p)}>
                         <div className="flex gap-3">
                           <div className="shrink-0">
                             {p.IMAGEURL ? (

@@ -602,7 +602,7 @@ export const SECTION_DEFAULTS: SectionConfig[] = [
     icon: '🖼️',
     enabled: false,
     order: 20,
-    settings: { bgColor: '#111827', textColor: '#fff', accentColor: '#6366f1', height: 400, borderRadius: 0, buttonColor: '#6366f1', buttonTextColor: '#fff', overlayText: '¡Gran promoción de temporada!', buttonText: 'Ver más', buttonLink: '/productos' },
+    settings: { bgColor: '#111827', textColor: '#fff', accentColor: '#3483fa', height: 400, borderRadius: 0, buttonColor: '#3483fa', buttonTextColor: '#fff', overlayText: '¡Gran promoción de temporada!', buttonText: 'Ver más', buttonLink: '/productos' },
   },
   {
     id: 'featured_collection',
@@ -620,7 +620,7 @@ export const SECTION_DEFAULTS: SectionConfig[] = [
     icon: '📝',
     enabled: false,
     order: 22,
-    settings: { bgColor: '#ffffff', textColor: '#374151', headingColor: '#111', accentColor: '#6366f1', imagePosition: 'left', borderRadius: 12, buttonColor: '#6366f1', buttonTextColor: '#fff', title: 'Nuestra historia', description: 'Cuenta la historia de tu marca aquí.', buttonText: 'Saber más', buttonLink: '/nosotros' },
+    settings: { bgColor: '#ffffff', textColor: '#374151', headingColor: '#111', accentColor: '#3483fa', imagePosition: 'left', borderRadius: 12, buttonColor: '#3483fa', buttonTextColor: '#fff', title: 'Nuestra historia', description: 'Cuenta la historia de tu marca aquí.', buttonText: 'Saber más', buttonLink: '/nosotros' },
   },
   {
     id: 'collections_list',
@@ -653,7 +653,7 @@ export const SECTION_DEFAULTS: SectionConfig[] = [
     icon: '📧',
     enabled: false,
     order: 25,
-    settings: { bgColor: '#111827', textColor: '#f3f4f6', headingColor: '#fff', accentColor: '#6366f1', buttonColor: '#6366f1', buttonTextColor: '#fff', borderRadius: 0, padding: 48, title: '¿Quieres recibir ofertas exclusivas?', subtitle: 'Suscríbete a nuestro newsletter y no te pierdas nada.', placeholder: 'tu@email.com', buttonText: 'Suscribirme' },
+    settings: { bgColor: '#111827', textColor: '#f3f4f6', headingColor: '#fff', accentColor: '#3483fa', buttonColor: '#3483fa', buttonTextColor: '#fff', borderRadius: 0, padding: 48, title: '¿Quieres recibir ofertas exclusivas?', subtitle: 'Suscríbete a nuestro newsletter y no te pierdas nada.', placeholder: 'tu@email.com', buttonText: 'Suscribirme' },
   },
   {
     id: 'video',
@@ -671,7 +671,7 @@ export const SECTION_DEFAULTS: SectionConfig[] = [
     icon: '📄',
     enabled: false,
     order: 27,
-    settings: { bgColor: '#ffffff', textColor: '#374151', headingColor: '#111827', accentColor: '#6366f1', padding: 48, borderRadius: 0, title: 'Sobre nosotros', htmlContent: '<p>Escribe aquí el contenido de tu sección.</p>' },
+    settings: { bgColor: '#ffffff', textColor: '#374151', headingColor: '#111827', accentColor: '#3483fa', padding: 48, borderRadius: 0, title: 'Sobre nosotros', htmlContent: '<p>Escribe aquí el contenido de tu sección.</p>' },
   },
   {
     id: 'logo_list',
@@ -698,7 +698,7 @@ export const SECTION_DEFAULTS: SectionConfig[] = [
     icon: '❓',
     enabled: false,
     order: 30,
-    settings: { bgColor: '#ffffff', textColor: '#374151', headingColor: '#111827', accentColor: '#6366f1', padding: 48, borderRadius: 0, title: 'Preguntas frecuentes', faqs: [
+    settings: { bgColor: '#ffffff', textColor: '#374151', headingColor: '#111827', accentColor: '#3483fa', padding: 48, borderRadius: 0, title: 'Preguntas frecuentes', faqs: [
       { question: '¿Cuánto tarda el envío?', answer: 'Santiago: 2-5 días hábiles. Regiones: 3-7 días hábiles. Zonas extremas: 5-10 días hábiles.' },
       { question: '¿Realizan envíos a todo Chile?', answer: 'Sí, realizamos envíos a todo Chile continental. Algunas zonas extremas pueden tener restricciones.' },
       { question: '¿Quién paga el costo de envío?', answer: 'El costo de envío es pagado por el destinatario. El costo varía según destino, peso y volumen.' },
@@ -718,7 +718,7 @@ export const SECTION_DEFAULTS: SectionConfig[] = [
     icon: '📍',
     enabled: false,
     order: 31,
-    settings: { bgColor: '#ffffff', textColor: '#374151', headingColor: '#111827', accentColor: '#6366f1', padding: 32, borderRadius: 0, height: 400, title: 'Encuéntranos', mapEmbed: '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3329.7!2d-70.65!3d-33.44!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzPCsDI2JzI0LjAiUyA3MMKwMzknMDAuMCJX!5e0!3m2!1ses!2scl!4v1" width="100%" height="400" style="border:0" allowfullscreen loading="lazy"></iframe>' },
+    settings: { bgColor: '#ffffff', textColor: '#374151', headingColor: '#111827', accentColor: '#3483fa', padding: 32, borderRadius: 0, height: 400, title: 'Encuéntranos', mapEmbed: '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3329.7!2d-70.65!3d-33.44!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzPCsDI2JzI0LjAiUyA3MMKwMzknMDAuMCJX!5e0!3m2!1ses!2scl!4v1" width="100%" height="400" style="border:0" allowfullscreen loading="lazy"></iframe>' },
   },
 
   // ── PLANTILLA 1 (Shopify Venice) SECTIONS ──

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { X, Search, MapPin, Package, Camera, CheckCircle2, ChevronLeft, ChevronDown, ChevronRight } from 'lucide-react';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import dynamic from 'next/dynamic';
@@ -61,7 +61,18 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
   const [showScanner, setShowScanner] = useState(false);
   const [registerBulkScan, setRegisterBulkScan] = useState(false);
   const [registerManualSearch, setRegisterManualSearch] = useState(false);
+  const [registerCandidates, setRegisterCandidates] = useState<Product[]>([]);
+  const [lastPlacedSection, setLastPlacedSection] = useState<number | null>(null);
   const [expandedGondola, setExpandedGondola] = useState<string | null>(null);
+
+  const sectionProductCounts = useMemo(() => {
+    const counts: Record<number, number> = {};
+    products.forEach(p => {
+      const sec = getSection(p);
+      if (sec != null && sec >= 1 && sec <= 36) counts[sec] = (counts[sec] || 0) + 1;
+    });
+    return counts;
+  }, [products]);
 
   const openRegisterScanner = useCallback(() => {
     setScreen('register');
@@ -84,6 +95,8 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
       setShowScanner(false);
       setRegisterBulkScan(false);
       setRegisterManualSearch(false);
+      setRegisterCandidates([]);
+      setLastPlacedSection(null);
     }
   }, [isOpen]);
 
@@ -105,20 +118,52 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
   }, [products]);
 
   const doRegisterSearch = useCallback((q: string) => {
-    if (!q.trim()) { setSelectedProduct(null); return; }
-    const lower = q.toLowerCase().trim();
-    const found = products.find(p => {
+    const trimmed = q.trim();
+    if (!trimmed) {
+      setSelectedProduct(null);
+      setRegisterCandidates([]);
+      return;
+    }
+    const lower = trimmed.toLowerCase();
+
+    const exact = products.find(p => {
       const sku = getSku(p).toLowerCase();
       const barcode = getBarcode(p).toLowerCase();
-      const name = (p.NAME || '').toLowerCase();
-      return sku === lower || barcode === lower || name.includes(lower);
+      return sku === lower || barcode === lower;
     });
-    setSelectedProduct(found || null);
-    if (found) {
+    if (exact) {
+      setSelectedProduct(exact);
+      setRegisterCandidates([]);
       setShowScanner(false);
       setScreen('register');
+      return;
     }
+
+    if (lower.length < 3) {
+      setSelectedProduct(null);
+      setRegisterCandidates([]);
+      return;
+    }
+
+    const candidates = products
+      .filter(p => {
+        const sku = getSku(p).toLowerCase();
+        const barcode = getBarcode(p).toLowerCase();
+        return sku.includes(lower) || barcode.includes(lower);
+      })
+      .slice(0, 15);
+
+    setSelectedProduct(null);
+    setRegisterCandidates(candidates);
   }, [products]);
+
+  const pickRegisterCandidate = (product: Product) => {
+    setSelectedProduct(product);
+    setRegisterCandidates([]);
+    setQuery(getSku(product) || getBarcode(product));
+    setShowScanner(false);
+    setScreen('register');
+  };
 
   const reopenRegisterScanner = useCallback(() => {
     setSelectedProduct(null);
@@ -142,6 +187,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
       await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, selectedProduct.$id, { FEATURES: newFeatures });
       onProductsUpdate(prev => prev.map(p => p.$id === selectedProduct.$id ? { ...p, FEATURES: newFeatures } : p));
       setSavedSection(sectionNum);
+      setLastPlacedSection(sectionNum);
       setTimeout(() => {
         reopenRegisterScanner();
       }, 700);
@@ -379,7 +425,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                     </button>
                     <button
                       type="button"
-                      onClick={() => setRegisterManualSearch(true)}
+                      onClick={() => { setRegisterManualSearch(true); setRegisterCandidates([]); setSelectedProduct(null); setQuery(''); }}
                       className="text-xs text-gray-500 underline"
                     >
                       Buscar por SKU manualmente
@@ -402,10 +448,40 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                         <Camera size={20} />
                       </button>
                     </div>
-                    <button type="button" onClick={() => setRegisterManualSearch(false)} className="text-xs text-gray-400">
+                    <button type="button" onClick={() => { setRegisterManualSearch(false); setRegisterCandidates([]); setQuery(''); }} className="text-xs text-gray-400">
                       ← Volver al escaneo con cámara
                     </button>
-                    <div className="text-center py-6 text-gray-400 text-sm">Escribe o escanea un código</div>
+                    {registerCandidates.length > 0 ? (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        <p className="text-xs text-gray-500 font-medium">Coincidencias — toca el producto correcto:</p>
+                        {registerCandidates.map(p => (
+                          <button
+                            key={p.$id}
+                            type="button"
+                            onClick={() => pickRegisterCandidate(p)}
+                            className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 text-left transition"
+                          >
+                            {p.IMAGEURL ? (
+                              <img src={p.IMAGEURL} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                            ) : (
+                              <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                                <Package size={20} className="text-gray-300" />
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-semibold text-gray-900 line-clamp-2">{p.NAME}</div>
+                              <div className="text-[11px] text-gray-500 font-mono mt-0.5">SKU: {getSku(p) || '—'}</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    ) : query.trim().length > 0 && query.trim().length < 3 ? (
+                      <div className="text-center py-6 text-gray-400 text-sm">Escribe al menos 3 caracteres del SKU o código</div>
+                    ) : query.trim().length >= 3 ? (
+                      <div className="text-center py-6 text-gray-400 text-sm">No hay coincidencias. Sigue escribiendo el SKU completo.</div>
+                    ) : (
+                      <div className="text-center py-6 text-gray-400 text-sm">Escribe el SKU o código completo, o escanea</div>
+                    )}
                   </div>
                 )}
               </div>
@@ -462,12 +538,25 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                               <div className="text-xs font-bold text-gray-700">{g.name}</div>
                             </div>
                             <div className="grid grid-cols-3 gap-1.5">
-                              {g.sections.map(s => (
-                                <button key={s} type="button" onClick={() => saveSection(s)} disabled={saving}
-                                  className={`py-3 rounded-xl text-center font-black text-base border-2 transition-all active:scale-95 bg-white border-gray-200 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 ${saving ? 'opacity-50 cursor-wait' : ''}`}>
-                                  {s}
-                                </button>
-                              ))}
+                              {g.sections.map(s => {
+                                const count = sectionProductCounts[s] || 0;
+                                const isLast = lastPlacedSection === s;
+                                return (
+                                  <button key={s} type="button" onClick={() => saveSection(s)} disabled={saving}
+                                    className={`relative py-3 rounded-xl text-center font-black text-base border-2 transition-all active:scale-95 ${
+                                      isLast
+                                        ? 'bg-emerald-500 border-emerald-600 text-white ring-2 ring-emerald-300'
+                                        : 'bg-white border-gray-200 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50'
+                                    } ${saving ? 'opacity-50 cursor-wait' : ''}`}>
+                                    {count > 0 && (
+                                      <span className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] px-0.5 rounded-full bg-indigo-600 text-white text-[9px] font-bold flex items-center justify-center leading-none shadow">
+                                        {count > 99 ? '99+' : count}
+                                      </span>
+                                    )}
+                                    {s}
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
                         ))}
@@ -480,12 +569,25 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                               <div className="text-xs font-bold text-gray-700">{g.name}</div>
                             </div>
                             <div className="grid grid-cols-3 gap-1">
-                              {g.sections.map(s => (
-                                <button key={s} type="button" onClick={() => saveSection(s)} disabled={saving}
-                                  className={`py-2 rounded-lg text-center font-black text-sm border-2 transition-all active:scale-95 bg-white border-gray-200 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 ${saving ? 'opacity-50 cursor-wait' : ''}`}>
-                                  {s}
-                                </button>
-                              ))}
+                              {g.sections.map(s => {
+                                const count = sectionProductCounts[s] || 0;
+                                const isLast = lastPlacedSection === s;
+                                return (
+                                  <button key={s} type="button" onClick={() => saveSection(s)} disabled={saving}
+                                    className={`relative py-2 rounded-lg text-center font-black text-sm border-2 transition-all active:scale-95 ${
+                                      isLast
+                                        ? 'bg-emerald-500 border-emerald-600 text-white ring-2 ring-emerald-300'
+                                        : 'bg-white border-gray-200 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50'
+                                    } ${saving ? 'opacity-50 cursor-wait' : ''}`}>
+                                    {count > 0 && (
+                                      <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-0.5 rounded-full bg-indigo-600 text-white text-[8px] font-bold flex items-center justify-center leading-none shadow">
+                                        {count > 99 ? '99+' : count}
+                                      </span>
+                                    )}
+                                    {s}
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
                         ))}

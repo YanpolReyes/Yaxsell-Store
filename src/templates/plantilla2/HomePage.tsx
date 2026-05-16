@@ -392,7 +392,7 @@ function FaqSection({ s }: { s: SectionSettings }) {
   const [open, setOpen] = useState<number | null>(null);
   const contentRefs = useRef<(HTMLDivElement | null)[]>([]);
   const iconRefs = useRef<(HTMLSpanElement | null)[]>([]);
-  const bg = s.bgColor || '#fff'; const tx = s.textColor || '#374151'; const hd = s.headingColor || '#111827'; const ac = s.accentColor || '#6366f1'; const r = s.borderRadius ?? 0; const pad = s.padding ?? 48;
+  const bg = s.bgColor || '#fff'; const tx = s.textColor || '#374151'; const hd = s.headingColor || '#111827'; const ac = s.accentColor || '#3483fa'; const r = s.borderRadius ?? 0; const pad = s.padding ?? 48;
 
   // GSAP animation for opening/closing
   useEffect(() => {
@@ -453,7 +453,7 @@ function FaqSection({ s }: { s: SectionSettings }) {
 function NewsletterSection({ s }: { s: SectionSettings }) {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
-  const bg = s.bgColor || '#111827'; const tx = s.textColor || '#f3f4f6'; const hd = s.headingColor || '#fff'; const ac = s.accentColor || '#6366f1'; const btn = s.buttonColor || ac; const btnTx = s.buttonTextColor || '#fff'; const r = s.borderRadius ?? 0; const pad = s.padding ?? 48;
+  const bg = s.bgColor || '#111827'; const tx = s.textColor || '#f3f4f6'; const hd = s.headingColor || '#fff'; const ac = s.accentColor || '#3483fa'; const btn = s.buttonColor || ac; const btnTx = s.buttonTextColor || '#fff'; const r = s.borderRadius ?? 0; const pad = s.padding ?? 48;
   return (
     <div style={{ background: bg, borderRadius: r, padding: `${pad}px 24px`, textAlign: 'center', overflow: 'hidden' }}>
       {s.title && <h2 style={{ fontSize: 30, fontWeight: 800, color: hd, margin: '0 0 12px', lineHeight: 1.2 }}>{s.title}</h2>}
@@ -1125,6 +1125,23 @@ export default function HomePage2() {
     };
     tryFind();
   }, [activeHotspot]);
+
+  /* ── Apply banner_image text color with !important ── */
+  useEffect(() => {
+    if (!sectionCfg.length) return;
+    sectionCfg.forEach(cfg => {
+      if (cfg.id.startsWith('banner_image')) {
+        const sel = `[data-section-id="${cfg.id}"]`;
+        const textColor = cfg.settings.textColor;
+        if (textColor) {
+          const h2 = document.querySelector(`${sel} h2`) as HTMLElement;
+          const p = document.querySelector(`${sel} p`) as HTMLElement;
+          if (h2) h2.style.setProperty('color', textColor, 'important');
+          if (p) p.style.setProperty('color', textColor, 'important');
+        }
+      }
+    });
+  }, [sectionCfg]);
 
   if (configError) return (
     <div style={{ maxWidth: 480, margin: '80px auto', padding: '0 24px', textAlign: 'center', fontFamily: '"Proxima Nova",Arial,sans-serif' }}>
@@ -2309,7 +2326,7 @@ export default function HomePage2() {
                     {bS.buttonText && (
                       <Link href={bS.buttonLink || '#'} style={{
                         display: 'inline-flex', alignItems: 'center', gap: 8,
-                        padding: '14px 36px', background: bS.buttonColor || '#6366f1',
+                        padding: '14px 36px', background: bS.buttonColor || '#3483fa',
                         color: bS.buttonTextColor || '#fff', borderRadius: Math.max((bS.borderRadius || 0), 8),
                         fontWeight: 700, textDecoration: 'none', fontSize: 15,
                         boxShadow: '0 4px 20px rgba(0,0,0,0.25)', transition: 'transform .2s, box-shadow .2s',
@@ -2336,7 +2353,7 @@ export default function HomePage2() {
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 {iS.title && <h2 style={{ fontSize: 32, fontWeight: 800, fontFamily: 'Syne, sans-serif', color: txtColor || iS.headingColor || '#111', margin: '0 0 16px', lineHeight: 1.2, letterSpacing: '-0.5px' }}>{iS.title}</h2>}
                 {iS.description && <p style={{ fontSize: 16, color: txtColor ? `${txtColor}cc` : iS.textColor || '#374151', lineHeight: 1.75, margin: '0 0 28px', maxWidth: 480 }}>{iS.description}</p>}
-                {iS.buttonText && <div><Link href={iS.buttonLink || '#'} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 28px', background: iS.buttonColor || iS.accentColor || '#6366f1', color: iS.buttonTextColor || '#fff', borderRadius: r, fontWeight: 700, textDecoration: 'none', fontSize: 15, boxShadow: '0 2px 12px rgba(0,0,0,0.15)', transition: 'all .2s' }}>{iS.buttonText} <ChevronRight size={16} /></Link></div>}
+                {iS.buttonText && <div><Link href={iS.buttonLink || '#'} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 28px', background: iS.buttonColor || iS.accentColor || '#3483fa', color: iS.buttonTextColor || '#fff', borderRadius: r, fontWeight: 700, textDecoration: 'none', fontSize: 15, boxShadow: '0 2px 12px rgba(0,0,0,0.15)', transition: 'all .2s' }}>{iS.buttonText} <ChevronRight size={16} /></Link></div>}
               </div>
             );
 

@@ -8,6 +8,9 @@ import { Product, Category } from '@/types/admin';
 import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin } from 'lucide-react';
 import ImageUploadField from '@/components/admin/ImageUploadField';
 import { generateProductTitle, generateProductDescription } from '@/lib/aiAdmin';
+import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures } from '@/lib/product-features';
+
+type ProductModalData = Partial<Product> & { _barcode?: string; _sku?: string };
 
 const PRODUCTS_BUCKET_ID = '67f41e05000d0adb6f12';
 
@@ -32,7 +35,7 @@ export default function ProductsPage() {
   const [stockFilter, setStockFilter] = useState<'all' | 'instock' | 'low' | 'out'>('instock');
   const [noImageOnly, setNoImageOnly] = useState(false);
   const [sort, setSort] = useState<{ key: 'NAME' | 'PRICE' | 'STOCK' | 'SOLDQUANTITY' | 'MARGIN' | 'CREATED'; dir: 'asc' | 'desc' }>({ key: 'CREATED', dir: 'desc' });
-  const [modal, setModal] = useState<{ mode: 'add' | 'edit'; data: Partial<Product> } | null>(null);
+  const [modal, setModal] = useState<{ mode: 'add' | 'edit'; data: ProductModalData } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [priceModal, setPriceModal] = useState(false);
@@ -123,8 +126,15 @@ export default function ProductsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const openAdd = () => setModal({ mode: 'add', data: { ...EMPTY } });
-  const openEdit = (p: Product) => setModal({ mode: 'edit', data: { ...p } });
+  const openAdd = () => setModal({ mode: 'add', data: { ...EMPTY, _barcode: '', _sku: '' } });
+  const openEdit = (p: Product) => setModal({
+    mode: 'edit',
+    data: {
+      ...p,
+      _barcode: getBarcodeFromFeatures(p.FEATURES),
+      _sku: getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id),
+    },
+  });
 
   const duplicate = async (p: Product) => {
     try {
@@ -162,7 +172,13 @@ export default function ProductsPage() {
         IMAGEURL: d.IMAGEURL || '', IMAGEURL2: d.IMAGEURL2 || '',
         IMAGEURL3: d.IMAGEURL3 || '', IMAGEURL4: d.IMAGEURL4 || '',
         IMAGEURL5: d.IMAGEURL5 || '', CATEGORYID: d.CATEGORYID || '',
-        TAGS: d.TAGS || '', FEATURES: d.FEATURES || '',
+        TAGS: d.TAGS || '',
+        FEATURES: (() => {
+          let features = d.FEATURES || '';
+          features = setSkuInFeatures(features, d._sku || '');
+          features = setBarcodeInFeatures(features, d._barcode || '');
+          return features;
+        })(),
       };
       
       // Check if stock is being restocked (from 0 to >0) on edit
@@ -285,13 +301,10 @@ export default function ProductsPage() {
     a.click(); URL.revokeObjectURL(url);
   };
 
-  const getSku = (p: Product) => {
-    const featMatch = p.FEATURES?.match(/SKU:\s*(.+)/i);
-    if (featMatch) return featMatch[1].trim();
-    const tagParts = (p.TAGS || '').split(',').map(t => t.trim());
-    const skuTag = tagParts.find(t => /^[A-Z0-9]{4,}$/i.test(t) && !tagParts.includes(t.toLowerCase()));
-    return p.jumpseller_id || skuTag || p.$id;
-  };
+  const getSku = (p: Product) =>
+    getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id) || p.$id;
+
+  const getBarcode = (p: Product) => getBarcodeFromFeatures(p.FEATURES);
 
   const getSection = (p: Product): { section: number; gondola: string } | null => {
     const m = p.FEATURES?.match(/Section:\s*(\d+)/i);
@@ -307,7 +320,7 @@ export default function ProductsPage() {
 
   const exportXLSX = () => {
     const data = filtered.map(p => ({
-      SKU: getSku(p), ID: p.$id, Nombre: p.NAME || '', Descripción: p.DESCRIPTION || '',
+      SKU: getSku(p), 'Código de barras': getBarcode(p) || '', ID: p.$id, Nombre: p.NAME || '', Descripción: p.DESCRIPTION || '',
       Precio: p.PRICE, Stock: p.STOCK ?? 0, Categoría: catName(p.CATEGORYID),
       Costo: p.COST || 0,
       'Margen %': p.COST && p.PRICE ? Math.round(((p.PRICE - p.COST) / p.PRICE) * 100) : '',
@@ -330,7 +343,10 @@ export default function ProductsPage() {
     const matchSearch = !search || (
       p.NAME?.toLowerCase().includes(q) ||
       p.DESCRIPTION?.toLowerCase().includes(q) ||
-      p.TAGS?.toLowerCase().includes(q)
+      p.TAGS?.toLowerCase().includes(q) ||
+      getSku(p).toLowerCase().includes(q) ||
+      getBarcode(p).toLowerCase().includes(q) ||
+      p.FEATURES?.toLowerCase().includes(q)
     );
     const matchCat = !catFilter || p.CATEGORYID === catFilter;
     const matchStock = stockFilter === 'all' ? true
@@ -414,7 +430,7 @@ export default function ProductsPage() {
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar productos..."
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nombre, SKU o código de barras..."
             className="w-full pl-9 pr-9 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><X className="w-4 h-4" /></button>}
         </div>
@@ -455,6 +471,7 @@ export default function ProductsPage() {
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Producto</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Cód. barras</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Categoría</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer" onClick={() => toggleSort('PRICE')}>Precio {sort.key === 'PRICE' ? (sort.dir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <></>}</th>
                 <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer" onClick={() => toggleSort('STOCK')}>Stock {sort.key === 'STOCK' ? (sort.dir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <></>}</th>
@@ -467,7 +484,7 @@ export default function ProductsPage() {
               {isLoading ? Array.from({ length: 8 }).map((_, i) => (
                 <tr key={i}>{[1,2,3,4,5,6].map(j => <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-100 rounded animate-pulse" /></td>)}</tr>
               )) : filtered.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-12 text-center text-gray-400">No se encontraron productos</td></tr>
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-400">No se encontraron productos</td></tr>
               ) : filtered.map(p => (
                 <tr key={p.$id} className={`hover:bg-gray-50 transition-colors ${(p.STOCK ?? 0) === 0 ? 'bg-red-50/40' : ''}`}>
                   <td className="px-4 py-3">
@@ -485,8 +502,18 @@ export default function ProductsPage() {
                         {p.TAGS && <div className="flex flex-wrap gap-1 mt-0.5">{p.TAGS.split(',').map(t => t.trim()).filter(Boolean).slice(0, 3).map(t => <button key={t} onClick={e => { e.stopPropagation(); setSearch(t); }} className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full hover:bg-indigo-100 hover:text-indigo-600 transition cursor-pointer">{t}</button>)}</div>}
                         {p.WHOLESALEPRICE ? <p className="text-xs text-violet-600">Mayor: {fmt(p.WHOLESALEPRICE)} × {p.WHOLESALEMINQUANTITY}</p> : null}
                         {!p.IMAGEURL && <p className="text-[10px] text-amber-500 font-medium">sin imagen</p>}
+                        {getSku(p) && getSku(p) !== p.$id && (
+                          <p className="text-[10px] text-gray-400 font-mono mt-0.5">SKU: {getSku(p)}</p>
+                        )}
                       </div>
                     </div>
+                  </td>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    {getBarcode(p) ? (
+                      <span className="text-xs font-mono text-gray-700 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">{getBarcode(p)}</span>
+                    ) : (
+                      <span className="text-[10px] text-amber-500">sin código</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-gray-600 hidden sm:table-cell">{catName(p.CATEGORYID)}</td>
                   <td className="px-4 py-3 text-right">
@@ -657,7 +684,21 @@ export default function ProductsPage() {
               </div>
               <FieldInput label="Precio Mayorista" field="WHOLESALEPRICE" type="number" value={modal?.data.WHOLESALEPRICE} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEPRICE: v } } : m)} />
               <FieldInput label="Cant. Mínima Mayorista" field="WHOLESALEMINQUANTITY" type="number" value={modal?.data.WHOLESALEMINQUANTITY} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEMINQUANTITY: v } } : m)} />
-                            <div className="sm:col-span-2">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">SKU</label>
+                <input type="text" value={modal.data._sku ?? ''}
+                  onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _sku: e.target.value } } : m)}
+                  placeholder="Código interno del producto"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Código de barras</label>
+                <input type="text" value={modal.data._barcode ?? ''}
+                  onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _barcode: e.target.value } } : m)}
+                  placeholder="EAN / UPC / código escaneado"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div className="sm:col-span-2">
                 <ImageUploadField label="Imagen Principal" bucketId={PRODUCTS_BUCKET_ID}
                   value={modal.data.IMAGEURL || ''}
                   onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL: v } } : m)} />
@@ -675,7 +716,10 @@ export default function ProductsPage() {
                 value={modal.data.IMAGEURL5 || ''}
                 onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL5: v } } : m)} />
               <div className="sm:col-span-2"><FieldInput label="Tags (separados por coma)" field="TAGS" value={modal?.data.TAGS} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, TAGS: v } } : m)} /></div>
-              <div className="sm:col-span-2"><FieldInput label="Características" field="FEATURES" value={modal?.data.FEATURES} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, FEATURES: v } } : m)} /></div>
+              <div className="sm:col-span-2">
+                <FieldInput label="Características (otras)" field="FEATURES" value={modal?.data.FEATURES} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, FEATURES: v } } : m)} />
+                <p className="text-[10px] text-gray-400 mt-1">SKU y código de barras se guardan en los campos de arriba.</p>
+              </div>
             </div>
             <div className="flex justify-end gap-3 p-5 border-t border-gray-100">
               <button onClick={() => setModal(null)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition">Cancelar</button>

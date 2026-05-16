@@ -1716,38 +1716,17 @@ cart-drawer.cart-sidebar::after {
   animation: yaxsel-nav-ring-spin 3.2s linear infinite;
 }
 
-/* ─── Colores de texto en secciones (evitar negro invisible / gradiente roto) ─── */
-[data-template="1"] .musk-h2-head.heading_color,
-[data-template="1"] .musk-sec-title .musk-h2-head {
-  color: #831843 !important;
-  -webkit-text-fill-color: #831843 !important;
-  background: none !important;
-  -webkit-background-clip: unset !important;
-  background-clip: unset !important;
-}
-[data-template="1"] .musk-fancy-sub-head.heading_color,
-[data-template="1"] .musk-sec-title .musk-fancy-sub-head {
-  color: #db2777 !important;
-  -webkit-text-fill-color: #db2777 !important;
-}
-[data-template="1"] .musk-main-para,
-[data-template="1"] .body_color,
-[data-template="1"] .banner-slide-para {
-  color: #4b5563 !important;
-  -webkit-text-fill-color: unset !important;
+/* Texto de sección: el tema a veces deja -webkit-text-fill-color transparent sin gradiente visible.
+   No fijamos colores aquí — solo currentColor para que funcionen vars del tema y el editor. */
+[data-template="1"] .musk-sec-title .musk-h2-head,
+[data-template="1"] .musk-sec-title .musk-fancy-sub-head,
+[data-template="1"] .musk-sec-title .musk-main-para {
+  -webkit-text-fill-color: currentColor;
 }
 [data-template="1"] .marquee-text-box h3.heading_color {
-  color: #9d174d !important;
-  -webkit-text-fill-color: #9d174d !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.02em !important;
-  text-transform: none !important;
-}
-[data-template="1"] #shopify-section-template--22405132419320__marquee_mdGXX9 .marquee-text-fancy h3,
-[data-template="1"] #shopify-section-template--22405132419320__marquee_nP83AA .marquee-text-fancy h3 {
-  font-style: italic;
-  color: #be185d !important;
-  -webkit-text-fill-color: #be185d !important;
+  -webkit-text-fill-color: currentColor;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 [data-template="1"] .marquee-text-wrapper {
   overflow: hidden !important;
@@ -1804,10 +1783,4 @@ cart-drawer.cart-sidebar::after {
   [data-template="1"] #shopify-section-template--22405132419320__featured_product_mtqd9n .product-name {
     text-align: center !important;
   }
-}
-
-/* ─── Hero: título por defecto legible antes de cargar settings ─── */
-[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .banner-main-title {
-  color: #831843 !important;
-  -webkit-text-fill-color: #831843 !important;
 }
