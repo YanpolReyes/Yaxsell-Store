@@ -167,7 +167,7 @@ export default function LoyaltyLevel() {
         <motion.div 
           animate={{ rotate: 360 }}
           transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-          style={{ width: 40, height: 40, border: '3px solid #f3f4f6', borderTop: `3px solid ${PINK}`, borderRadius: '50%', margin: '0 auto' }} 
+          style={{ width: 40, height: 40, border: '3px solid #d1d5db', borderRadius: '50%', margin: '0 auto' }} 
         />
       </div>
     );
@@ -178,21 +178,66 @@ export default function LoyaltyLevel() {
   const ordersNeeded = nextLevel ? nextLevel.requiredOrders - paidOrdersCount : 0;
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+    <div 
       style={{ 
-        background: '#ffffff', 
-        borderRadius: isMobile ? 16 : 32, 
-        border: `1px solid ${PINK}10`, 
+        borderRadius: 22, 
         padding: isMobile ? '16px 14px' : 40, 
         fontFamily: FF,
-        boxShadow: '0 20px 60px rgba(236,72,153,0.05), 0 4px 12px rgba(0,0,0,0.02)',
+        background: '#ffffff',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)',
+        border: '1px solid rgba(0,0,0,0.07)',
         position: 'relative',
         overflow: 'hidden'
       }}
     >
+      <style>{`
+        /* ──────────────────────────────────────────────────────────────
+           LoyaltyLevel — Interacciones + borde animado (móvil/desktop)
+           ────────────────────────────────────────────────────────────── */
+        .loyalty-level-card{
+        }
+
+        .ll-chip{
+          position: relative;
+          overflow: hidden;
+        }
+        .ll-chip::after{
+          content:'';
+          position:absolute;
+          inset:-2px;
+          background: linear-gradient(120deg, transparent 0%, rgba(236,72,153,0.25) 45%, transparent 60%);
+          transform: translateX(-120%);
+          animation: llShine 3.2s ease-in-out infinite;
+          pointer-events:none;
+        }
+        @keyframes llShine{
+          0%   { transform: translateX(-120%); opacity: 0; }
+          18%  { opacity: 1; }
+          55%  { transform: translateX(120%); opacity: 1; }
+          100% { transform: translateX(120%); opacity: 0; }
+        }
+
+        .ll-iconWrap{
+          position: relative;
+          overflow: hidden;
+        }
+        .ll-orbit{
+          position:absolute;
+          inset:-16px;
+          border-radius: 999px;
+          background: conic-gradient(from 0deg, rgba(236,72,153,0.0), rgba(236,72,153,0.35), rgba(56,189,248,0.35), rgba(236,72,153,0.0));
+          filter: blur(8px);
+          opacity: 0.7;
+          animation: llOrbit 6s linear infinite;
+          pointer-events:none;
+        }
+        @keyframes llOrbit{ to { transform: rotate(360deg); } }
+
+        @media (prefers-reduced-motion: reduce){
+          .loyalty-level-card, .ll-chip::after, .ll-orbit { animation: none !important; }
+        }
+      `}</style>
+
       {/* Premium Background Elements */}
       <div style={{ position: 'absolute', top: -100, right: -100, width: 300, height: 300, background: `radial-gradient(circle, ${PINK}08 0%, transparent 70%)`, borderRadius: '50%', zIndex: 0 }} />
       <div style={{ position: 'absolute', bottom: -50, left: -50, width: 200, height: 200, background: `radial-gradient(circle, ${PINK}05 0%, transparent 70%)`, borderRadius: '50%', zIndex: 0 }} />
@@ -216,7 +261,9 @@ export default function LoyaltyLevel() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 16 : 40, position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 24 }}>
           <motion.div 
-            whileHover={{ scale: 1.05, rotate: 5 }}
+            whileHover={{ scale: 1.05, rotate: 4 }}
+            whileTap={{ scale: 0.98, rotate: -2 }}
+            className="ll-iconWrap"
             style={{ 
               width: isMobile ? 44 : 90, height: isMobile ? 44 : 90, borderRadius: isMobile ? 14 : 28, 
               background: `linear-gradient(135deg, #fff, ${PINK}05)`, 
@@ -226,6 +273,7 @@ export default function LoyaltyLevel() {
               position: 'relative'
             }}
           >
+            <div className="ll-orbit" aria-hidden="true" />
             <CurrentIcon size={isMobile ? 22 : 44} color={currentLevel.color} strokeWidth={2.5} />
             <motion.div 
               animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 2 }}
@@ -237,7 +285,8 @@ export default function LoyaltyLevel() {
           <div>
             <motion.span 
               initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-              style={{ display: 'inline-block', padding: isMobile ? '3px 8px' : '6px 14px', background: `${PINK}08`, color: PINK, borderRadius: 999, fontSize: isMobile ? 9 : 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: isMobile ? 3 : 6, border: `1px solid ${PINK}10` }}
+              className="ll-chip"
+              style={{ display: 'inline-block', padding: isMobile ? '3px 8px' : '6px 14px', background: '#f3f4f6', color: '#374151', borderRadius: 999, fontSize: isMobile ? 9 : 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: isMobile ? 3 : 6, border: '1px solid #d1d5db' }}
             >
               MI STATUS ACTUAL
             </motion.span>
@@ -255,10 +304,11 @@ export default function LoyaltyLevel() {
         ].map((stat, i) => (
           <motion.div 
             key={i}
-            whileHover={{ y: -6, boxShadow: '0 20px 40px rgba(236,72,153,0.06)', borderColor: `${PINK}20` }}
-            style={{ padding: isMobile ? '12px 8px' : 24, background: '#fff', borderRadius: isMobile ? 14 : 24, border: '1px solid #f1f5f9', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)', textAlign: isMobile ? 'center' : 'left' }}
+            whileHover={{ y: -6, boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 3px 0 rgba(0,0,0,0.03), 0 4px 12px 0 rgba(0,0,0,0.045), 0 8px 24px 0 rgba(0,0,0,0.025)', borderColor: '#9ca3af' }}
+            whileTap={{ scale: 0.98 }}
+            style={{ padding: isMobile ? '12px 8px' : 24, background: '#fff', borderRadius: isMobile ? 14 : 24, border: '1.5px solid #d1d5db', boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 2px 0 rgba(0,0,0,0.025), 0 2px 8px 0 rgba(0,0,0,0.035), 0 4px 16px 0 rgba(0,0,0,0.02)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)', textAlign: isMobile ? 'center' : 'left' }}
           >
-            <div style={{ width: isMobile ? 32 : 44, height: isMobile ? 32 : 44, borderRadius: isMobile ? 10 : 14, background: stat.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: isMobile ? 6 : 16, border: `1px solid ${stat.color}10`, ...(isMobile ? { margin: '0 auto 6px' } : {}) }}>
+            <div style={{ width: isMobile ? 32 : 44, height: isMobile ? 32 : 44, borderRadius: isMobile ? 10 : 14, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: isMobile ? 6 : 16, border: '1px solid #d1d5db', ...(isMobile ? { margin: '0 auto 6px' } : {}) }}>
               <stat.icon size={isMobile ? 16 : 22} color={stat.color} />
             </div>
             <p style={{ margin: 0, fontSize: isMobile ? 15 : 26, fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>{stat.value}</p>
@@ -269,7 +319,7 @@ export default function LoyaltyLevel() {
 
       {/* Progress & Motivation Section */}
       {nextLevel && (
-        <div style={{ marginBottom: isMobile ? 16 : 40, position: 'relative', zIndex: 1, padding: isMobile ? '14px 16px' : 32, background: `linear-gradient(135deg, ${PINK}04, #fff)`, borderRadius: isMobile ? 16 : 28, border: `1px solid ${PINK}08` }}>
+        <div style={{ marginBottom: isMobile ? 16 : 40, position: 'relative', zIndex: 1, padding: isMobile ? '14px 16px' : 32, background: 'linear-gradient(135deg, #f9fafb, #fff)', borderRadius: isMobile ? 16 : 28, border: '1.5px solid #d1d5db', boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 2px 0 rgba(0,0,0,0.025), 0 2px 8px 0 rgba(0,0,0,0.035), 0 4px 16px 0 rgba(0,0,0,0.02)' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 }}>
             <div>
               <p style={{ margin: 0, fontSize: isMobile ? 14 : 18, fontWeight: 900, color: '#111827', letterSpacing: '-0.01em' }}>
@@ -317,7 +367,7 @@ export default function LoyaltyLevel() {
           {(!couponGenerated && paidOrdersCount >= nextLevel.requiredOrders) ? (
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-              style={{ padding: 32, background: `linear-gradient(135deg, ${PINK}, #db2777)`, borderRadius: 28, marginBottom: 40, boxShadow: `0 20px 40px ${PINK}30`, position: 'relative', overflow: 'hidden' }}
+              style={{ padding: 32, background: '#f9fafb', borderRadius: 28, marginBottom: 40, border: '1.5px solid #d1d5db', boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 2px 0 rgba(0,0,0,0.025), 0 2px 8px 0 rgba(0,0,0,0.035), 0 4px 16px 0 rgba(0,0,0,0.02)', position: 'relative', overflow: 'hidden' }}
             >
               {/* Decorative sparkles */}
               <div style={{ position: 'absolute', top: 0, right: 0, width: '100%', height: '100%', background: 'url("https://www.transparenttextures.com/patterns/stardust.png")', opacity: 0.2, pointerEvents: 'none' }} />
@@ -327,8 +377,8 @@ export default function LoyaltyLevel() {
                   <Gift size={32} color={PINK} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: 0, fontSize: isMobile ? 18 : 22, fontWeight: 900, color: '#fff' }}>¡Tu Recompensa del {nextLevel.couponPercent}%!</h3>
-                  <p style={{ margin: '4px 0 0', fontSize: 14, color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>Felicidades por subir a {nextLevel.name}. Úsalo en tu próxima compra.</p>
+                  <h3 style={{ margin: 0, fontSize: isMobile ? 18 : 22, fontWeight: 900, color: '#111827' }}>¡Tu Recompensa del {nextLevel.couponPercent}%!</h3>
+                  <p style={{ margin: '4px 0 0', fontSize: 14, color: '#6b7280', fontWeight: 500 }}>Felicidades por subir a {nextLevel.name}. Úsalo en tu próxima compra.</p>
                 </div>
                   <motion.button
                   whileHover={{ scale: 1.05, translateY: -2 }} whileTap={{ scale: 0.95 }}
@@ -342,18 +392,18 @@ export default function LoyaltyLevel() {
           ) : couponGenerated && (
             <motion.div 
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              style={{ padding: 24, background: '#f0fdf4', borderRadius: 24, border: '2px solid #34d399', marginBottom: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 10px 30px rgba(16,185,129,0.05)' }}
+              style={{ padding: 24, background: '#f9fafb', borderRadius: 24, border: '1.5px solid #d1d5db', marginBottom: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 2px 0 rgba(0,0,0,0.025), 0 2px 8px 0 rgba(0,0,0,0.035), 0 4px 16px 0 rgba(0,0,0,0.02)' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(16,185,129,0.2)' }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#d1d5db', color: '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
                   <Award size={20} />
                 </div>
                 <div>
-                  <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: '#065f46' }}>Cupón Activo</p>
-                  <p style={{ margin: 0, fontSize: 13, color: '#047857', fontWeight: 500 }}>Añadido a tu cuenta para tu próxima compra</p>
+                  <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: '#374151' }}>Cupón Activo</p>
+                  <p style={{ margin: 0, fontSize: 13, color: '#6b7280', fontWeight: 500 }}>Añadido a tu cuenta para tu próxima compra</p>
                 </div>
               </div>
-              <div style={{ background: '#fff', padding: '12px 24px', borderRadius: 16, border: '2px dashed #a7f3d0', fontSize: 22, fontWeight: 900, color: '#065f46', letterSpacing: '0.1em', fontFamily: 'monospace' }}>
+              <div style={{ background: '#f3f4f6', padding: '12px 24px', borderRadius: 16, border: '1.5px dashed #d1d5db', fontSize: 22, fontWeight: 900, color: '#374151', letterSpacing: '0.1em', fontFamily: 'monospace' }}>
                 {couponCode}
               </div>
             </motion.div>
@@ -372,7 +422,7 @@ export default function LoyaltyLevel() {
             {currentLevel.benefits.map((benefit, i) => (
               <motion.div 
                 initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
-                key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: isMobile ? 8 : 14, background: '#fff', padding: isMobile ? '10px 12px' : '16px 20px', borderRadius: isMobile ? 12 : 16, border: '1px solid #f1f5f9', boxShadow: '0 4px 10px rgba(0,0,0,0.01)' }}
+                key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: isMobile ? 8 : 14, background: '#fff', padding: isMobile ? '10px 12px' : '16px 20px', borderRadius: isMobile ? 12 : 16, border: '1.5px solid #d1d5db', boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 2px 0 rgba(0,0,0,0.025), 0 2px 8px 0 rgba(0,0,0,0.035), 0 4px 16px 0 rgba(0,0,0,0.02)' }}
               >
                 <div style={{ marginTop: 2, color: currentLevel.color }}>
                   <CheckCircle2 size={18} />
@@ -391,7 +441,7 @@ export default function LoyaltyLevel() {
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {nextLevel.benefits.filter(b => !currentLevel.benefits.includes(b)).slice(0, 4).map((benefit, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, background: '#fff', border: '1px dashed #e2e8f0', padding: '16px 20px', borderRadius: 16, opacity: 0.6 }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, background: '#fff', border: '1.5px dashed #e2e8f0', padding: '16px 20px', borderRadius: 16, opacity: 0.6, boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.01), 0 1px 2px 0 rgba(0,0,0,0.02), 0 2px 6px 0 rgba(0,0,0,0.015)' }}>
                   <div style={{ marginTop: 2, color: '#cbd5e1' }}>
                     <Sparkles size={18} />
                   </div>
@@ -403,6 +453,6 @@ export default function LoyaltyLevel() {
         )}
       </div>
 
-    </motion.div>
+    </div>
   );
 }

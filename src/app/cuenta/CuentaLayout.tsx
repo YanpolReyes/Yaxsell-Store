@@ -68,7 +68,7 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Background image with blur */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden' }}>
         {bgUrl && <img key={bgUrl} src={bgUrl} alt="" className="cl-bg-fade" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(4px) brightness(1.1)', transform: 'scale(1.15)', animation: 'bgFloat 20s ease-in-out infinite, bgCrossFade 0.5s ease-out' }} />}
-        <div style={{ position: 'absolute', inset: 0, background: bgUrl ? 'linear-gradient(180deg,rgba(255,245,248,0.75) 0%,rgba(255,255,255,0.85) 100%)' : 'linear-gradient(180deg,#fef2f8 0%,#fff 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: bgUrl ? 'linear-gradient(180deg,rgba(255,255,255,0.75) 0%,rgba(255,255,255,0.85) 100%)' : 'linear-gradient(180deg,#ffffff 0%,#fff 100%)' }} />
       </div>
       <div style={{ position: 'relative', zIndex: 1 }}>
       <style>{`
@@ -106,7 +106,7 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
         <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
           {/* ── Sidebar (flex on desktop, hidden on mobile) ── */}
           <aside className="cl-sidebar" style={{ display: 'none', width: 280, flexShrink: 0 }}>
-            <div style={{ background: '#fff', borderRadius: 18, padding: 20, border: '1px solid #f0f0f0', boxShadow: '0 8px 28px rgba(236,72,153,0.08)', position: 'sticky', top: 92 }}>
+            <div style={{ background: '#fff', borderRadius: 18, padding: 20, border: '1.5px solid #d1d5db', boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.02), 0 1px 2px 0 rgba(0,0,0,0.03), 0 2px 8px 0 rgba(0,0,0,0.04), 0 4px 16px 0 rgba(0,0,0,0.02)', position: 'sticky', top: 92 }}>
               {/* Profile mini */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 8px 20px', borderBottom: '1px solid #f3f4f6', marginBottom: 10 }}>
                 <div style={{ width: 52, height: 52, borderRadius: '50%', background: avatarUrl ? 'transparent' : '#fef2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, color: PINK, fontWeight: 700, fontSize: 17 }}>

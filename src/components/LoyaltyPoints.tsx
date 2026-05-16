@@ -116,7 +116,7 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
     return (
       <motion.div 
         whileHover={{ scale: 1.02 }}
-        className="flex items-center gap-3 px-4 py-2 bg-white rounded-xl border border-pink-100 shadow-[0_2px_10px_rgba(236,72,153,0.06)]"
+        className="flex items-center gap-3 px-4 py-2 bg-white rounded-xl border border-gray-200 shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.015),0_1px_2px_0_rgba(0,0,0,0.025),0_2px_8px_0_rgba(0,0,0,0.035),0_4px_16px_0_rgba(0,0,0,0.02)]"
       >
         <span className="text-xl transform hover:scale-110 transition-transform">{tier.icon}</span>
         <div className="flex flex-col">
@@ -129,6 +129,32 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
 
   return (
     <div className="flex flex-col gap-6">
+      <style>{`
+        /* LoyaltyPoints — borde animado + micro-interacciones */
+        .lp-card{
+          border: 1px solid rgba(0,0,0,0.07);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07);
+        }
+        .lp-tierIcon{
+          position: relative;
+          overflow: hidden;
+        }
+        .lp-tierIcon::before{
+          content:'';
+          position:absolute;
+          inset:-16px;
+          border-radius: 999px;
+          background: conic-gradient(from 0deg, transparent, rgba(236,72,153,0.28), rgba(56,189,248,0.22), transparent);
+          filter: blur(10px);
+          opacity: 0.8;
+          animation: lpOrbit 7s linear infinite;
+          pointer-events:none;
+        }
+        @keyframes lpOrbit{ to { transform: rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce){
+          .lp-card, .lp-tierIcon::before { animation: none !important; }
+        }
+      `}</style>
       
       {/* ── Welcome Reward (First Registration) ── */}
       <AnimatePresence>
@@ -137,7 +163,8 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
             initial={{ opacity: 0, y: -20, scale: 0.95 }} 
             animate={{ opacity: 1, y: 0, scale: 1 }} 
             exit={{ opacity: 0, scale: 0.9, height: 0, overflow: 'hidden' }}
-            className="bg-white rounded-3xl p-1 shadow-[0_20px_50px_rgba(236,72,153,0.1)] border border-pink-100 relative overflow-hidden"
+            className="bg-white rounded-[22px] p-1 relative overflow-hidden"
+            style={{ boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)' }}
           >
             {/* Background Glow */}
             <div className="absolute top-[-50px] right-[-50px] w-48 h-48 bg-pink-100 rounded-full blur-[40px] opacity-40 z-0" />
@@ -220,9 +247,9 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
       </AnimatePresence>
 
       {/* ── Main Loyalty Points Card ── */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-[32px] overflow-hidden border border-slate-100 shadow-[0_15px_40px_rgba(0,0,0,0.03)]"
+      <div 
+        className="bg-white rounded-[22px] overflow-hidden"
+        style={{ boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)' }}
       >
         {/* Tier Header */}
         <div className="p-8 pb-6 relative overflow-hidden">
@@ -232,7 +259,8 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
           <div className="flex items-center gap-6 relative z-10">
             <motion.div 
               whileHover={{ scale: 1.05, rotate: 5 }}
-              className={`${isMobile ? 'w-14 h-14 rounded-2xl text-2xl' : 'w-20 h-20 rounded-[28px] text-4xl'} flex items-center justify-center shadow-lg z-10 transition-shadow hover:shadow-xl`} 
+              whileTap={{ scale: 0.98, rotate: -3 }}
+              className={`lp-tierIcon ${isMobile ? 'w-14 h-14 rounded-2xl text-2xl' : 'w-20 h-20 rounded-[28px] text-4xl'} flex items-center justify-center shadow-lg z-10 transition-shadow hover:shadow-xl`}
               style={{ backgroundColor: tier.bg, border: `2px solid ${tier.color}20` }}
             >
               {tier.icon}
@@ -289,8 +317,8 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
           ].map((stat, i) => (
             <motion.div 
               key={i} 
-              whileHover={{ y: -3, boxShadow: '0 8px 20px rgba(0,0,0,0.04)' }} 
-              className={`flex flex-col items-center justify-center p-5 rounded-2xl transition-all border border-transparent hover:border-slate-100 ${stat.bg}`}
+              whileHover={{ y: -3, boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 3px 0 rgba(0,0,0,0.03), 0 4px 12px 0 rgba(0,0,0,0.045), 0 8px 24px 0 rgba(0,0,0,0.025)' }} 
+              className={`flex flex-col items-center justify-center p-5 rounded-2xl transition-all border border-slate-100 hover:border-slate-200 ${stat.bg} shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.015),0_1px_2px_0_rgba(0,0,0,0.025),0_2px_8px_0_rgba(0,0,0,0.035),0_4px_16px_0_rgba(0,0,0,0.02)]`}
             >
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 shadow-sm ${stat.bg} border border-slate-50`}>
                 <stat.icon size={18} className={stat.color} />
@@ -300,7 +328,7 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
             </motion.div>
           ))}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

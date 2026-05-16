@@ -9,6 +9,7 @@ import {
   User, MapPin, Receipt, HelpCircle, Phone,
   Loader2, ChevronRight, LogOut, Building2, Trophy, Tag, Star, Settings, Ticket,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 import { useAuth } from '@/hooks/useAuth';
 import LoyaltyPoints from '@/components/LoyaltyPoints';
@@ -55,7 +56,7 @@ function getFilePreviewUrl(fileId: string): string {
   return `${endpoint}/storage/buckets/${USER_PHOTOS_BUCKET}/files/${fileId}/view?project=${projectId}`;
 }
 
-const BG_CUENTA = 'https://png.pngtree.com/background/20210715/original/pngtree-cute-pink-gradient-sakura-picture-image_1282310.jpg';
+const BG_CUENTA = 'https://static.vecteezy.com/system/resources/thumbnails/031/691/675/small/white-abstract-background-in-the-style-of-light-white-and-light-gray-created-with-generative-ai-photo.jpg';
 
 export default function CuentaPage() {
   const { user, isLoggedIn, isLoading, logout } = useAuth();
@@ -128,59 +129,135 @@ export default function CuentaPage() {
           .cuenta-mobile  { display: none !important }
         }
 
+        /* ── Elevation tokens ── */
+        :root {
+          --shadow-sm:   0 1px 2px rgba(0,0,0,0.04), 0 1px 4px rgba(0,0,0,0.04);
+          --shadow-md:   0 1px 2px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.06), 0 8px 20px rgba(0,0,0,0.05);
+          --shadow-lg:   0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07);
+          --shadow-pink: 0 4px 16px rgba(236,72,153,0.12), 0 2px 6px rgba(236,72,153,0.08);
+          --border-soft: 1px solid rgba(0,0,0,0.07);
+          --border-pink: 1px solid rgba(236,72,153,0.15);
+          --inset-top:   inset 0 1px 0 rgba(255,255,255,0.9);
+        }
+
+        /* ── Desktop cards ── */
         .dcard {
           display: flex; flex-direction: row; align-items: center;
-          background: #fff; border-radius: 18px;
-          padding: 24px; text-decoration: none;
-          border: 1px solid #f0f0f0;
-          min-height: 100px; box-sizing: border-box;
-          transition: all 0.2s ease;
+          background: #fff;
+          border-radius: 20px;
+          padding: 22px 24px;
+          text-decoration: none;
+          border: var(--border-soft);
+          box-shadow: var(--shadow-md);
+          min-height: 96px;
+          box-sizing: border-box;
+          transition: transform 0.2s cubic-bezier(.34,1.56,.64,1), box-shadow 0.2s ease, border-color 0.2s;
+          position: relative;
+          overflow: hidden;
+        }
+        .dcard::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 1px;
+          background: rgba(255,255,255,0.9);
+          border-radius: 20px 20px 0 0;
         }
         .dcard:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+          transform: translateY(-3px) scale(1.01);
+          box-shadow: var(--shadow-lg);
           border-color: rgba(236,72,153,0.2);
         }
-        .dcard:hover .dcard-icon-wrap { background: ${PINK}; }
+        .dcard:hover .dcard-icon-wrap {
+          background: ${PINK};
+          box-shadow: var(--shadow-pink);
+        }
         .dcard:hover .dcard-icon-wrap svg { stroke: #fff; }
         .dcard-icon-wrap {
           width: 52px; height: 52px; border-radius: 14px;
           background: #fef2f8;
+          border: 1px solid rgba(236,72,153,0.1);
           display: flex; align-items: center; justify-content: center;
           margin-right: 18px; flex-shrink: 0;
-          transition: background 0.2s;
+          transition: background 0.2s, box-shadow 0.2s;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,1);
         }
         .dcard-icon-wrap svg { transition: stroke 0.2s; }
 
-        /* Quick shortcut hover */
-        .qsc:active { transform: scale(0.95); }
-        .qsc { transition: transform 0.15s; }
+        /* ── Quick shortcut pills ── */
+        .qsc { transition: transform 0.18s cubic-bezier(.34,1.56,.64,1); }
+        .qsc:hover { transform: translateY(-2px) scale(1.04); }
+        .qsc-icon {
+          box-shadow: 0 2px 6px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+          border: 1px solid rgba(0,0,0,0.06);
+        }
+
+        /* ── Mobile menu rows ── */
+        .menu-row:last-child { border-bottom: none !important; }
+
+        /* ── Section containers ── */
+        .section-card {
+          background: #fff;
+          border-radius: 18px;
+          border: var(--border-soft);
+          box-shadow: var(--shadow-md);
+          overflow: hidden;
+          position: relative;
+        }
+        .section-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 1px;
+          background: rgba(255,255,255,0.95);
+          z-index: 1;
+        }
+
+        /* ── Hero card ── */
+        .hero-card {
+          background: #fff;
+          border-radius: 22px;
+          border: var(--border-soft);
+          box-shadow: var(--shadow-lg);
+          overflow: hidden;
+          position: relative;
+        }
+        .hero-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 1px;
+          background: rgba(255,255,255,0.9);
+          z-index: 10;
+          border-radius: 22px 22px 0 0;
+        }
       `}</style>
 
       {/* ════════════════ DESKTOP ════════════════ */}
       <div className="cuenta-desktop" style={{ display: 'none' }}>
         {/* Hero header */}
-        <div style={{ background: '#fff', borderRadius: 20, marginBottom: 24, border: '1px solid #f0f0f0', overflow: 'hidden' }}>
-          <div style={{ 
-            height: 160, 
-            background: coverUrl ? 'none' : `url(${BG_CUENTA})`,
+        <div style={{ background: '#fff', borderRadius: 22, marginBottom: 24, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', position: 'relative' }}>
+          <div style={{
+            height: 160,
+            backgroundImage: coverUrl ? 'none' : `url(${BG_CUENTA})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            position: 'relative', 
-            overflow: 'hidden' 
+            backgroundRepeat: 'no-repeat',
+            position: 'relative',
+            overflow: 'hidden'
           }}>
             {coverUrl && <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(to bottom,transparent,#fff)' }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 20, padding: '0 28px 32px', marginTop: -55, position: 'relative', zIndex: 2 }}>
-            <div style={{ width: 130, height: 130, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, fontWeight: 800, color: PINK, flexShrink: 0, overflow: 'hidden', border: '4px solid #fff', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
+            <div style={{ width: 130, height: 130, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, fontWeight: 800, color: PINK, flexShrink: 0, overflow: 'hidden', border: '4px solid #fff', boxShadow: '0 0 0 3px rgba(236,72,153,0.15), 0 4px 6px -1px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.15)' }}>
               {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
             </div>
             <div style={{ paddingBottom: 6, flex: 1 }}>
               <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.02em' }}>¡Hola, {firstName}!</h1>
               <p style={{ margin: '4px 0 0', fontSize: 14, color: '#6b7280' }}>{user.email}</p>
             </div>
-            <Link href="/cuenta" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 18px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 10, textDecoration: 'none', marginBottom: 6 }}>
+            <Link href="/cuenta/perfil" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 18px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 10, textDecoration: 'none', marginBottom: 6 }}>
               Editar perfil <ChevronRight size={14} />
             </Link>
           </div>
@@ -198,126 +275,181 @@ export default function CuentaPage() {
         </div>
       </div>
 
-      {/* ════════════════ MOBILE — Rappi/PedidosYa style ════════════════ */}
-      <div className="cuenta-mobile" style={{ fontFamily: FF }}>
-        {/* Hero header — Card style like PC */}
+      {/* ════════ MOBILE HARDCORE PREMIUM ════════ */}
+      <div className="cuenta-mobile" style={{ fontFamily: FF, background: 'transparent', minHeight: '100vh' }}>
+        <style>{`
+          .pm-pill:active { transform: scale(0.93); opacity: 0.85; }
+          .pm-pill { transition: transform 0.18s cubic-bezier(.34,1.56,.64,1); }
+          .pm-row { transition: background 0.12s; }
+          .pm-row:active { background: rgba(236,72,153,0.04) !important; }
+          .pm-logout:active { background: #fee2e2 !important; transform: scale(0.98); }
+          .pm-logout { transition: all 0.15s; }
+          @keyframes qa-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+          @keyframes qa-glow-pulse { 0%,100% { filter: drop-shadow(0 0 3px rgba(236,72,153,0.2)); } 50% { filter: drop-shadow(0 0 8px rgba(236,72,153,0.25)); } }
+          @keyframes qa-wiggle { 0% { transform: rotate(0deg); } 15% { transform: rotate(-8deg); } 30% { transform: rotate(6deg); } 45% { transform: rotate(-4deg); } 60% { transform: rotate(2deg); } 75% { transform: rotate(-1deg); } 100% { transform: rotate(0deg); } }
+          .qa-icon-float { animation: qa-float 3s ease-in-out infinite; }
+          .qa-icon-float:nth-child(1) { animation-delay: 0s; }
+          .qa-icon-float:nth-child(2) { animation-delay: 0.4s; }
+          .qa-icon-float:nth-child(3) { animation-delay: 0.8s; }
+          .qa-icon-float:nth-child(4) { animation-delay: 1.2s; }
+          .qa-icon-glow { animation: qa-glow-pulse 2.5s ease-in-out infinite; }
+          .qa-icon-wiggle:hover { animation: qa-wiggle 0.6s ease-in-out; }
+          .pm-card-3d {
+            background: #fff;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07) !important;
+            border: 1px solid rgba(0,0,0,0.07) !important;
+            transform: none !important;
+          }
+          .pm-card-3d * {
+            pointer-events: auto;
+          }
+          .pm-card-3d:hover {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07) !important;
+            border: 1px solid rgba(0,0,0,0.07) !important;
+            transform: none !important;
+          }
+        `}</style>
+
+        {/* ── HERO: card style like desktop ── */}
         <div style={{ padding: '12px 12px 0' }}>
-          <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #f0f0f0', overflow: 'hidden' }}>
-            <div style={{ 
-              height: 130, 
-              background: coverUrl ? 'none' : `url(${BG_CUENTA})`,
+          <div style={{ background: '#fff', borderRadius: 22, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', position: 'relative' }}>
+            {/* Cover image */}
+            <div style={{
+              height: 130,
+              backgroundImage: coverUrl ? 'none' : `url(${BG_CUENTA})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
-              position: 'relative', 
-              overflow: 'hidden' 
+              backgroundRepeat: 'no-repeat',
+              position: 'relative',
+              overflow: 'hidden'
             }}>
               {coverUrl && <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
               <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 50, background: 'linear-gradient(to bottom,transparent,#fff)' }} />
             </div>
-            
-            {/* Avatar + name row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '0 16px 20px', marginTop: -40, position: 'relative', zIndex: 2 }}>
-              <div style={{
-                width: 80, height: 80, borderRadius: '50%', background: '#fff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 28, fontWeight: 800, color: PINK, overflow: 'hidden',
-                border: '4px solid #fff', boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
-                flexShrink: 0,
-              }}>
+            {/* Avatar + info row */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14, padding: '0 18px 20px', marginTop: -40, position: 'relative', zIndex: 2 }}>
+              <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 800, color: PINK, flexShrink: 0, overflow: 'hidden', border: '3px solid #fff', boxShadow: '0 0 0 2px rgba(236,72,153,0.15), 0 4px 6px -1px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.12)' }}>
                 {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
               </div>
-              <div style={{ flex: 1, minWidth: 0, paddingTop: 10 }}>
-                <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1a1a1a', lineHeight: 1.2 }}>
-                  ¡Hola, {firstName}! 👋
-                </p>
-                <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {user.email}
-                </p>
+              <div style={{ paddingBottom: 4, flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.02em' }}>¡Hola, {firstName}! 👋</p>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</p>
               </div>
-              <Link href="/cuenta" style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 32, height: 32, borderRadius: 10, background: '#f3f4f6',
-                textDecoration: 'none', flexShrink: 0, marginTop: 10
-              }}>
-                <Settings size={16} color="#6b7280" />
+              <Link href="/cuenta/perfil" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '8px 14px', background: PINK, color: '#fff', fontSize: 12, fontWeight: 700, borderRadius: 10, textDecoration: 'none', marginBottom: 4, flexShrink: 0 }}>
+                Editar <ChevronRight size={13} />
               </Link>
             </div>
           </div>
         </div>
 
-        {/* Quick action shortcuts — 4 columns, just like Rappi */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0,
-          padding: '12px 12px 8px',
-        }}>
-            {QUICK_SHORTCUTS.map(sc => {
+        {/* ── QUICK ACTIONS: gradient pill cards ── */}
+        <div style={{ padding: '14px 14px 0' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
+            {[
+              { icon: Receipt,      label: 'Pedidos',    href: '/cuenta/pedidos',    g: 'linear-gradient(135deg,#6366f1,#8b5cf6)', shadow: 'rgba(99,102,241,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778902651562-pegada-1778902645915.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=OKWZOLTMN0DmNxF9i2zJvPKGsGgQbWbwKDU9L887E5hHYoSclN7CnFS8lcAEJid%2F5LgCmKwnOHozplzK7sG0iGALAcnAFpTVUFfp%2BDmN0iURUkPa%2BrFJHcxzEi8qvxfI7Kok8Ortf%2FV1SSEvPKkXcZgPGb41b3Sz6afLz2tK5JsLAUIHHCZ9V2nxi%2FO5lq7y1RDt0jT0q8RokkxREqSsAFF0IcKqwZ3Mlo2HZidVKzMr%2Br1iat82uZdAYv%2FYHCnf22%2BZYFtnyc4qG7ZiIfQ6w8p8VkEMeS6CYvYIcK%2FtZbliO9wzYCyvsATa4bdjzHLEaM6%2F3friX3cQtTkCkQz1Zg%3D%3D' },
+              { icon: Heart,        label: 'Favoritos',  href: '/cuenta/favoritos',  g: 'linear-gradient(135deg,#ec4899,#f472b6)', shadow: 'rgba(236,72,153,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778902478101-pegada-1778902467804.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=EvGR2FnJKKhIZbdkSdNJGqNoJFHBTllP%2BBOFV9XsK8UcickCvbvdOb7MH19huutIUHOQsVL9M861YRnfLguj9vzjrZbf%2FxbFO2JQS1O6l14DZwi68yKbxPw0x8XX8d5b7k9nR%2FsBKJxB4d3jKWqp%2F%2FU1ugoiGLAjwjsz2sdDE%2FVC4s%2BbfUgZAC2UxIT%2BlxmsxTZzEeqHqhfNdLNa%2FxduYPOvG03bGtua14S8bFqDFlIET5hhVO6QwviaHGcqP5%2BWq76I3J4My0bIVT458ffiuLuTE%2FoUH7HHqoMIGFyY1V2Uicyi1MFWVB8v8Bxp3u2SERQIVtJ7h6DkXmbZ%2BYDrIw%3D%3D' },
+              { icon: ShoppingCart, label: 'Carrito',    href: '/carrito',           g: 'linear-gradient(135deg,#f59e0b,#fbbf24)', shadow: 'rgba(245,158,11,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778902379478-pegada-1778902370345.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=GGHFIES%2FV94hc11MFQHV530dlVyT8jaH78MxLJR2bpsyP2B3A0HZ1GBRU7APMWfeD%2FsMBRPNUhq3qI3LFPKPFGRrVAXBljT5EGFJ5oOVj7OFycNxatFzoH6U7vy2sEXc145XWqsWyEDAimE%2Fr38dtJT2y81k%2FFhJSwvFiIcSMcI5K0Va%2BW1BYe3So1WdGRSyRfku6xFkCcSPrxAf%2FufWHBg47UtO69gLbsBit64sWqS68k9iPCNVEpusobTxDBgqtjZCNL6I45qcX1zU1vRA4VM2cVYIXbO9KR9ZzxYn8gywZw03x98ffG17ISjzs0k1iGLvYXuqpXLk78O%2BXUI4wg%3D%3D' },
+              { icon: MapPin,       label: 'Dirección',  href: '/cuenta/direcciones',g: 'linear-gradient(135deg,#10b981,#34d399)', shadow: 'rgba(16,185,129,0.35)', image: 'https://esmartyelevadores.com.br/assets/images/icon-endereo.webp' },
+            ].map((sc, idx) => {
               const Icon = sc.icon;
               return (
-                <Link key={sc.label} href={sc.href} className="qsc" style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                  textDecoration: 'none', padding: '8px 4px',
-                }}>
-                  <div style={{
-                    width: 48, height: 48, borderRadius: 14, background: sc.bg,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <Icon size={22} color={sc.color} strokeWidth={2} />
-                  </div>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#374151', textAlign: 'center', lineHeight: 1.2 }}>
-                    {sc.label}
-                  </span>
-                </Link>
+                <motion.div
+                  key={sc.label}
+                  initial={{ opacity: 0, y: 30, scale: 0.5 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20, delay: idx * 0.12 }}
+                >
+                  <Link href={sc.href} className="pm-pill" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
+                    <motion.div
+                      whileHover={{ scale: 1.2 }}
+                      whileTap={{ scale: 0.85 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+                      className="qa-icon-float qa-icon-wiggle"
+                      style={{
+                        width: 54, height: 54, borderRadius: 17,
+                        background: sc.image ? 'transparent' : sc.g,
+                        boxShadow: sc.image ? 'none' : `0 6px 18px ${sc.shadow}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        border: sc.image ? 'none' : '1.5px solid rgba(255,255,255,0.25)',
+                      }}
+                    >
+                      {sc.image ? (
+                        <img
+                          src={sc.image}
+                          alt={sc.label}
+                          style={{ width: 128, height: 128, objectFit: 'contain' }}
+                        />
+                      ) : (
+                        <Icon size={24} color="#fff" strokeWidth={2} />
+                      )}
+                    </motion.div>
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 + idx * 0.12 }}
+                      style={{ fontSize: 10.5, fontWeight: 700, color: '#374151', textAlign: 'center', lineHeight: 1.2 }}
+                    >{sc.label}</motion.span>
+                  </Link>
+                </motion.div>
               );
             })}
           </div>
-
-        {/* Loyalty section — compact */}
-        <div style={{ padding: '8px 12px 0' }}>
-          <div style={{ marginBottom: 10 }}>
-            <LoyaltyLevel />
-          </div>
-          <div style={{ marginBottom: 10 }}>
-            <LoyaltyPoints />
-          </div>
         </div>
 
-        {/* Menu sections */}
-        <div style={{ padding: '4px 12px 40px' }}>
-          <MobileSection title="Mis compras">
-            <MobileMenuItem icon={Receipt} label="Mis Pedidos" href="/cuenta/pedidos" desc="Estado de tus compras" />
-            <MobileMenuItem icon={Heart} label="Favoritos" href="/cuenta/favoritos" desc="Productos guardados" />
-            <MobileMenuItem icon={ShoppingCart} label="Mi Carrito" href="/carrito" desc="Tu carrito de compras" />
-          </MobileSection>
+        {/* ── LOYALTY compact card ── */}
+        <div style={{ padding: '14px 14px 0' }}>
+          <LoyaltyLevel />
+        </div>
+        <div style={{ padding: '10px 14px 0' }}>
+          <LoyaltyPoints />
+        </div>
 
-          <MobileSection title="Mi cuenta">
-            <MobileMenuItem icon={User} label="Datos personales" href="/cuenta" desc="Nombre, foto y perfil" />
-            <MobileMenuItem icon={Phone} label="Contacto" href="/cuenta/info" desc="Teléfono y RUT" />
-            <MobileMenuItem icon={MapPin} label="Direcciones" href="/cuenta/direcciones" desc="Envíos guardados" />
-          </MobileSection>
+        {/* ── MENU GROUPS ── */}
+        <div style={{ padding: '14px 14px 50px' }}>
 
-          <MobileSection title="Más opciones">
-            <MobileMenuItem icon={Trophy} label="Mis Niveles" href="/cuenta/niveles" desc="Lealtad y recompensas" />
-            <MobileMenuItem icon={Building2} label="Cuenta Mayorista" href="/mayorista" desc="Precios especiales" />
-            <MobileMenuItem icon={Bell} label="Notificaciones" href="/cuenta/notificaciones" desc="Alertas de tu cuenta" />
-            <MobileMenuItem icon={HelpCircle} label="Soporte" href="/cuenta/tickets" desc="Ayuda y tickets" />
-            <MobileMenuItem icon={MessageCircle} label="Conversaciones" href="/cuenta/conversaciones" desc="Historial de chats" />
-          </MobileSection>
+          {/* Section: Mis compras */}
+          <p style={{ margin: '0 0 7px 2px', fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.07em' }}>Mis compras</p>
+          <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', marginBottom: 16 }}>
+            <PmRow icon={Receipt} label="Mis Pedidos" desc="Seguí tus compras" href="/cuenta/pedidos" g="linear-gradient(135deg,#6366f1,#8b5cf6)" />
+            <PmRow icon={Heart} label="Favoritos" desc="Tus productos guardados" href="/cuenta/favoritos" g="linear-gradient(135deg,#ec4899,#f472b6)" />
+            <PmRow icon={ShoppingCart} label="Mi Carrito" desc="Listo para comprar" href="/carrito" g="linear-gradient(135deg,#f59e0b,#fbbf24)" last />
+          </div>
 
-          {/* Logout button */}
-          <button onClick={handleLogout}
-            style={{
-              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              padding: '13px 16px', background: '#fef2f2', border: '1px solid #fecaca',
-              borderRadius: 14, cursor: 'pointer', color: '#dc2626', fontSize: 14, fontWeight: 700,
-              fontFamily: FF, marginTop: 6, transition: 'all .15s',
-            }}>
-            <LogOut size={16} />Cerrar sesión
+          {/* Section: Mi cuenta */}
+          <p style={{ margin: '0 0 7px 2px', fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.07em' }}>Mi cuenta</p>
+          <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', marginBottom: 16 }}>
+            <PmRow icon={User} label="Datos personales" desc="Nombre, foto y perfil" href="/cuenta" g="linear-gradient(135deg,#3b82f6,#60a5fa)" />
+            <PmRow icon={Phone} label="Contacto" desc="Teléfono y RUT" href="/cuenta/info" g="linear-gradient(135deg,#06b6d4,#22d3ee)" />
+            <PmRow icon={MapPin} label="Direcciones" desc="Envíos guardados" href="/cuenta/direcciones" g="linear-gradient(135deg,#10b981,#34d399)" last />
+          </div>
+
+          {/* Section: Más */}
+          <p style={{ margin: '0 0 7px 2px', fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.07em' }}>Más opciones</p>
+          <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', marginBottom: 20 }}>
+            <PmRow icon={Trophy} label="Mis Niveles" desc="Programa de lealtad" href="/cuenta/niveles" g="linear-gradient(135deg,#f59e0b,#fbbf24)" />
+            <PmRow icon={Building2} label="Cuenta Mayorista" desc="Precios por volumen" href="/mayorista" g="linear-gradient(135deg,#8b5cf6,#a78bfa)" />
+            <PmRow icon={Bell} label="Notificaciones" desc="Alertas de tu cuenta" href="/cuenta/notificaciones" g="linear-gradient(135deg,#ec4899,#f472b6)" />
+            <PmRow icon={HelpCircle} label="Soporte" desc="Ayuda y tickets" href="/cuenta/tickets" g="linear-gradient(135deg,#64748b,#94a3b8)" />
+            <PmRow icon={MessageCircle} label="Conversaciones" desc="Historial de chats" href="/cuenta/conversaciones" g="linear-gradient(135deg,#0ea5e9,#38bdf8)" last />
+          </div>
+
+          {/* Logout */}
+          <button className="pm-logout" onClick={handleLogout} style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+            padding: '15px', background: '#fff', borderRadius: 18,
+            border: '1px solid rgba(220,38,38,0.15)',
+            boxShadow: '0 2px 12px rgba(220,38,38,0.08)',
+            cursor: 'pointer', color: '#dc2626', fontSize: 14.5, fontWeight: 700,
+            fontFamily: FF,
+          }}>
+            <LogOut size={17} />Cerrar sesión
           </button>
 
-          {/* Footer links */}
-          <div style={{ marginTop: 16, display: 'flex', gap: 16, justifyContent: 'center' }}>
+          <div style={{ marginTop: 20, display: 'flex', gap: 20, justifyContent: 'center' }}>
             {['Términos', 'Privacidad', 'Ayuda'].map(t => (
-              <span key={t} style={{ fontSize: 11, color: '#9ca3af', cursor: 'pointer' }}>{t}</span>
+              <span key={t} style={{ fontSize: 11, color: '#c4c9d4', cursor: 'pointer', fontWeight: 600 }}>{t}</span>
             ))}
           </div>
         </div>
@@ -345,6 +477,28 @@ function DesktopCard({ item }: { item: MenuItem }) {
   );
 }
 
+function PmRow({ icon: Icon, label, desc, href, g, last }: { icon: any; label: string; desc: string; href: string; g: string; last?: boolean }) {
+  return (
+    <Link href={href} className="pm-row" style={{
+      display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px',
+      textDecoration: 'none', borderBottom: last ? 'none' : '1px solid rgba(0,0,0,0.05)',
+    }}>
+      <div style={{
+        width: 40, height: 40, borderRadius: 13, background: g, flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+      }}>
+        <Icon size={18} color="#fff" strokeWidth={2.2} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 14.5, color: '#111827', fontWeight: 700, lineHeight: 1.2 }}>{label}</p>
+        <p style={{ margin: '2px 0 0', fontSize: 11.5, color: '#9ca3af', lineHeight: 1.3 }}>{desc}</p>
+      </div>
+      <ChevronRight size={16} color="#d1d5db" strokeWidth={2.5} />
+    </Link>
+  );
+}
+
 function MobileSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 10 }}>
@@ -354,7 +508,7 @@ function MobileSection({ title, children }: { title: string; children: React.Rea
       }}>
         {title}
       </p>
-      <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #f0f0f0', overflow: 'hidden' }}>
+      <div className="section-card">
         {children}
       </div>
     </div>
@@ -364,13 +518,20 @@ function MobileSection({ title, children }: { title: string; children: React.Rea
 function MobileMenuItem({ icon: Icon, label, href, desc }: { icon: any; label: string; href: string; desc?: string }) {
   return (
     <Link href={href}
+      className="menu-row"
       style={{
-        display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
-        textDecoration: 'none', borderBottom: '1px solid #f9fafb',
+        display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px',
+        textDecoration: 'none', borderBottom: '1px solid rgba(0,0,0,0.05)',
         transition: 'background .12s',
       }}
-      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#fafafa'}
-      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}
+      onMouseEnter={e => {
+        const el = e.currentTarget as HTMLElement;
+        el.style.background = '#fafafa';
+      }}
+      onMouseLeave={e => {
+        const el = e.currentTarget as HTMLElement;
+        el.style.background = '';
+      }}
     >
       <div style={{
         width: 36, height: 36, borderRadius: 10, background: '#fef2f8',
