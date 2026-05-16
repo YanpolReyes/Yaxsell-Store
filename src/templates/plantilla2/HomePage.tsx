@@ -1175,10 +1175,10 @@ export default function HomePage2() {
           --global-heading-color: ${fontCfg.globalHeadingColor || 'inherit'};
           --global-text-color: ${fontCfg.globalTextColor || 'inherit'};
         }
-        h1, h2, h3, h4, h5, h6 {
-          color: var(--global-heading-color, inherit);
+        h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+          color: var(--global-heading-color, inherit) !important;
         }
-        body, p, span, div {
+        .text-content, .description, p:not([class*="text-"]) {
           color: var(--global-text-color, inherit);
         }
         @keyframes hp-skeleton-wave { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
