@@ -1155,7 +1155,8 @@ export default function HomePage2() {
   const gFontsUrl = buildGoogleFontsUrl(fontCfg, sectionCfg);
   const globalFontStack = fontCfg.globalFont ? `"${fontCfg.globalFont}",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif` : '"Proxima Nova",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif';
 
-  // Aplicar colores globales dinámicamente
+  // Aplicar colores globales dinámicamente (desactivado temporalmente por problemas de CSS)
+  /*
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
@@ -1166,11 +1167,13 @@ export default function HomePage2() {
       root.style.setProperty('--global-text-color', fontCfg.globalTextColor);
     }
   }, [fontCfg.globalHeadingColor, fontCfg.globalTextColor]);
+  */
 
   return (
     <div style={{ background: '#fff', minHeight: '100vh', fontFamily: globalFontStack }}>
       {gFontsUrl && <link href={gFontsUrl} rel="stylesheet" />}
       <style>{`
+        /* Colores globales desactivados temporalmente por problemas de CSS
         :root {
           --global-heading-color: ${fontCfg.globalHeadingColor || 'inherit'};
           --global-text-color: ${fontCfg.globalTextColor || 'inherit'};
@@ -1181,6 +1184,7 @@ export default function HomePage2() {
         .text-content, .description, p:not([class*="text-"]) {
           color: var(--global-text-color, inherit);
         }
+        */
         @keyframes hp-skeleton-wave { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         @keyframes gradFlow { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
         .grad-animated { background-size: 300% 300% !important; animation: gradFlow 6s ease infinite; }
