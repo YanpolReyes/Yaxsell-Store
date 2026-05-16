@@ -340,6 +340,11 @@ function CheckoutInner() {
         }
       }
     } catch {}
+    // Validate minimum when coupon is applied (20% discount means subtotal must be >= $62,500 to have $50,000 after discount)
+    if (couponApplied && subtotal < 62500) {
+      setError('Para usar el cupón, el monto mínimo de compra es $62.500 (aplicando 20% de descuento queda en $50.000)');
+      return;
+    }
     setSubmitting(true); setError('');
     try {
       const { databases } = getServices();
