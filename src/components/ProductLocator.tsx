@@ -14,7 +14,7 @@ interface Product {
   FEATURES?: string;
   TAGS?: string;
   jumpseller_id?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 const GONDOLAS = [
@@ -59,7 +59,19 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
   const [saving, setSaving] = useState(false);
   const [savedSection, setSavedSection] = useState<number | null>(null);
   const [showScanner, setShowScanner] = useState(false);
+  const [registerBulkScan, setRegisterBulkScan] = useState(false);
+  const [registerManualSearch, setRegisterManualSearch] = useState(false);
   const [expandedGondola, setExpandedGondola] = useState<string | null>(null);
+
+  const openRegisterScanner = useCallback(() => {
+    setScreen('register');
+    setQuery('');
+    setSelectedProduct(null);
+    setSavedSection(null);
+    setRegisterManualSearch(false);
+    setRegisterBulkScan(true);
+    setShowScanner(true);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -69,6 +81,9 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
       setSelectedProduct(null);
       setSavedSection(null);
       setExpandedGondola(null);
+      setShowScanner(false);
+      setRegisterBulkScan(false);
+      setRegisterManualSearch(false);
     }
   }, [isOpen]);
 
@@ -99,7 +114,21 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
       return sku === lower || barcode === lower || name.includes(lower);
     });
     setSelectedProduct(found || null);
+    if (found) {
+      setShowScanner(false);
+      setScreen('register');
+    }
   }, [products]);
+
+  const reopenRegisterScanner = useCallback(() => {
+    setSelectedProduct(null);
+    setQuery('');
+    setSavedSection(null);
+    setScreen('register');
+    setRegisterManualSearch(false);
+    setRegisterBulkScan(true);
+    setShowScanner(true);
+  }, []);
 
   const saveSection = async (sectionNum: number) => {
     if (!selectedProduct) return;
@@ -113,9 +142,11 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
       await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, selectedProduct.$id, { FEATURES: newFeatures });
       onProductsUpdate(prev => prev.map(p => p.$id === selectedProduct.$id ? { ...p, FEATURES: newFeatures } : p));
       setSavedSection(sectionNum);
-      setTimeout(() => { setScreen('menu'); setSavedSection(null); setSelectedProduct(null); }, 1500);
-    } catch (e: any) {
-      alert('Error: ' + e.message);
+      setTimeout(() => {
+        reopenRegisterScanner();
+      }, 700);
+    } catch (e: unknown) {
+      alert('Error: ' + (e instanceof Error ? e.message : 'Error al guardar'));
     } finally {
       setSaving(false);
     }
@@ -124,8 +155,16 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
   const handleScan = (code: string) => {
     setShowScanner(false);
     setQuery(code);
-    if (screen === 'search') doSearch(code);
-    else if (screen === 'register') doRegisterSearch(code);
+    if (screen === 'search') {
+      doSearch(code);
+    } else if (screen === 'register' || registerBulkScan) {
+      doRegisterSearch(code);
+    }
+  };
+
+  const handleScannerClose = () => {
+    setShowScanner(false);
+    setRegisterBulkScan(false);
   };
 
   if (!isOpen) return null;
@@ -134,17 +173,31 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
 
   return (
     <>
-      {showScanner && <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />}
+      {showScanner && (
+        <BarcodeScanner
+          onScan={handleScan}
+          onClose={handleScannerClose}
+          continuous={registerBulkScan && screen === 'register' && !selectedProduct}
+        />
+      )}
       <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center" onClick={onClose}>
         <div
           className="bg-white w-full max-h-[92dvh] sm:max-w-lg sm:rounded-2xl rounded-t-3xl shadow-2xl overflow-hidden flex flex-col"
-          onClick={(e: any) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
           <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-5 py-4 flex items-center gap-3 shrink-0">
             {screen !== 'menu' && (
               <button
-                onClick={() => screen === 'select-section' ? setScreen('register') : setScreen('menu')}
+                type="button"
+                onClick={() => {
+                  if (screen === 'select-section') {
+                    setScreen('register');
+                    return;
+                  }
+                  setScreen('menu');
+                  setShowScanner(false);
+                  setRegisterBulkScan(false);
+                }}
                 className="p-1 hover:bg-white/20 rounded-lg transition"
               >
                 <ChevronLeft size={20} />
@@ -157,17 +210,17 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                 {screen === 'menu' ? 'Sistema de góndolas' : screen === 'search' ? 'Buscar por sección' : screen === 'register' ? 'Registrar ubicación' : 'Seleccionar sección'}
               </p>
             </div>
-            <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-lg transition"><X size={20} /></button>
+            <button type="button" onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-lg transition"><X size={20} /></button>
           </div>
 
           <div className="flex-1 overflow-y-auto">
 
-            {/* MENU */}
             {screen === 'menu' && (
               <div className="p-5 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <button
-                    onClick={() => { setScreen('search'); setQuery(''); setSearchResults([]); }}
+                    type="button"
+                    onClick={() => { setScreen('search'); setQuery(''); setSearchResults([]); setRegisterManualSearch(false); }}
                     className="flex flex-col items-center gap-3 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl hover:border-blue-400 transition group"
                   >
                     <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg group-hover:scale-105 transition">
@@ -179,7 +232,8 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                     </div>
                   </button>
                   <button
-                    onClick={() => { setScreen('register'); setQuery(''); setSelectedProduct(null); setShowScanner(true); }}
+                    type="button"
+                    onClick={openRegisterScanner}
                     className="flex flex-col items-center gap-3 p-5 bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-2xl hover:border-emerald-400 transition group"
                   >
                     <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg group-hover:scale-105 transition">
@@ -187,26 +241,21 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                     </div>
                     <div className="text-center">
                       <div className="font-bold text-gray-900 text-sm">Registrar Sección</div>
-                      <div className="text-xs text-gray-500 mt-0.5">Asignar góndola a producto</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Escaneo masivo</div>
                     </div>
                   </button>
                 </div>
 
-                {/* Gondola map — A col1, BCD col2 stacked */}
                 <div>
                   <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Mapa de Góndolas</h3>
                   <div className="grid grid-cols-2 gap-3">
-                    {/* Col 1: Góndola A */}
                     <div className="flex flex-col gap-2">
                       {GONDOLAS.filter(g => g.id === 'A').map(g => {
                         const prodCount = products.filter(p => { const s = getSection(p); return s !== null && g.sections.includes(s); }).length;
                         const expanded = expandedGondola === g.id;
                         return (
                           <div key={g.id} className={`${g.light} border rounded-xl overflow-hidden`}>
-                            <button
-                              onClick={() => setExpandedGondola(expanded ? null : g.id)}
-                              className="w-full flex items-center gap-2 p-3"
-                            >
+                            <button type="button" onClick={() => setExpandedGondola(expanded ? null : g.id)} className="w-full flex items-center gap-2 p-3">
                               <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${g.color} flex items-center justify-center text-white text-xs font-black shrink-0`}>{g.id}</div>
                               <div className="flex-1 text-left">
                                 <div className="text-xs font-bold text-gray-700">{g.name}</div>
@@ -219,9 +268,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                                 {g.sections.map(s => {
                                   const has = products.some(p => getSection(p) === s);
                                   return (
-                                    <div key={s} className={`text-center py-1.5 rounded text-[11px] font-bold ${has ? `${g.dot} text-white` : 'bg-white/70 text-gray-400'}`}>
-                                      {s}
-                                    </div>
+                                    <div key={s} className={`text-center py-1.5 rounded text-[11px] font-bold ${has ? `${g.dot} text-white` : 'bg-white/70 text-gray-400'}`}>{s}</div>
                                   );
                                 })}
                               </div>
@@ -230,17 +277,13 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                         );
                       })}
                     </div>
-                    {/* Col 2: Góndolas B, C, D stacked */}
                     <div className="flex flex-col gap-2">
                       {GONDOLAS.filter(g => g.id !== 'A').map(g => {
                         const prodCount = products.filter(p => { const s = getSection(p); return s !== null && g.sections.includes(s); }).length;
                         const expanded = expandedGondola === g.id;
                         return (
                           <div key={g.id} className={`${g.light} border rounded-xl overflow-hidden`}>
-                            <button
-                              onClick={() => setExpandedGondola(expanded ? null : g.id)}
-                              className="w-full flex items-center gap-2 p-3"
-                            >
+                            <button type="button" onClick={() => setExpandedGondola(expanded ? null : g.id)} className="w-full flex items-center gap-2 p-3">
                               <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${g.color} flex items-center justify-center text-white text-xs font-black shrink-0`}>{g.id}</div>
                               <div className="flex-1 text-left">
                                 <div className="text-xs font-bold text-gray-700">{g.name}</div>
@@ -253,9 +296,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                                 {g.sections.map(s => {
                                   const has = products.some(p => getSection(p) === s);
                                   return (
-                                    <div key={s} className={`text-center py-1.5 rounded text-[11px] font-bold ${has ? `${g.dot} text-white` : 'bg-white/70 text-gray-400'}`}>
-                                      {s}
-                                    </div>
+                                    <div key={s} className={`text-center py-1.5 rounded text-[11px] font-bold ${has ? `${g.dot} text-white` : 'bg-white/70 text-gray-400'}`}>{s}</div>
                                   );
                                 })}
                               </div>
@@ -269,17 +310,19 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
               </div>
             )}
 
-            {/* SEARCH */}
             {screen === 'search' && (
               <div className="p-4 space-y-3">
                 <div className="flex gap-2">
                   <div className="flex-1 relative">
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input value={query} onChange={(e: any) => { setQuery(e.target.value); doSearch(e.target.value); }}
+                    <input
+                      value={query}
+                      onChange={(e) => { setQuery(e.target.value); doSearch(e.target.value); }}
                       placeholder="SKU, código de barras, nombre o # sección"
-                      autoFocus className="w-full pl-9 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
+                      className="w-full pl-9 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500"
+                    />
                   </div>
-                  <button onClick={() => setShowScanner(true)} className="p-3 bg-indigo-100 text-indigo-600 rounded-xl hover:bg-indigo-200 transition">
+                  <button type="button" onClick={() => setShowScanner(true)} className="p-3 bg-indigo-100 text-indigo-600 rounded-xl hover:bg-indigo-200 transition">
                     <Camera size={20} />
                   </button>
                 </div>
@@ -316,25 +359,58 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
               </div>
             )}
 
-            {/* REGISTER — no product yet */}
             {screen === 'register' && !selectedProduct && (
-              <div className="p-4 space-y-3">
-                <div className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input value={query} onChange={(e: any) => { setQuery(e.target.value); doRegisterSearch(e.target.value); }}
-                      placeholder="Escanea o busca por SKU / código de barras"
-                      autoFocus className="w-full pl-9 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500" />
+              <div className="p-4 space-y-4">
+                {!registerManualSearch ? (
+                  <div className="text-center py-8 space-y-4">
+                    <div className="w-16 h-16 mx-auto rounded-2xl bg-emerald-100 flex items-center justify-center">
+                      <Camera size={32} className="text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">Modo escaneo masivo</p>
+                      <p className="text-sm text-gray-500 mt-1">Escanea el producto, elige la sección y vuelve al lector automáticamente</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setRegisterBulkScan(true); setShowScanner(true); }}
+                      className="w-full py-3.5 bg-emerald-600 text-white font-bold rounded-xl shadow-md"
+                    >
+                      Abrir lector de códigos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRegisterManualSearch(true)}
+                      className="text-xs text-gray-500 underline"
+                    >
+                      Buscar por SKU manualmente
+                    </button>
                   </div>
-                  <button onClick={() => setShowScanner(true)} className="p-3 bg-emerald-100 text-emerald-600 rounded-xl hover:bg-emerald-200 transition">
-                    <Camera size={20} />
-                  </button>
-                </div>
-                <div className="text-center py-10 text-gray-400 text-sm">Escanea el código de barras del producto</div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <div className="flex-1 relative">
+                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input
+                          value={query}
+                          onChange={(e) => { setQuery(e.target.value); doRegisterSearch(e.target.value); }}
+                          placeholder="SKU o código de barras"
+                          inputMode="search"
+                          className="w-full pl-9 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                      <button type="button" onClick={() => { setRegisterBulkScan(true); setShowScanner(true); }} className="p-3 bg-emerald-100 text-emerald-600 rounded-xl">
+                        <Camera size={20} />
+                      </button>
+                    </div>
+                    <button type="button" onClick={() => setRegisterManualSearch(false)} className="text-xs text-gray-400">
+                      ← Volver al escaneo con cámara
+                    </button>
+                    <div className="text-center py-6 text-gray-400 text-sm">Escribe o escanea un código</div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* REGISTER — Product found, confirm */}
             {screen === 'register' && selectedProduct && !savedSection && (
               <div className="p-5 flex flex-col items-center gap-4">
                 <div className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Producto encontrado</div>
@@ -352,16 +428,15 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                     </div>
                   )}
                 </div>
-                <button onClick={() => setScreen('select-section')}
-                  className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition text-sm">
+                <button type="button" onClick={() => setScreen('select-section')}
+                  className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl shadow-lg text-sm">
                   ¿Es este? Asignar sección →
                 </button>
-                <button onClick={() => { setSelectedProduct(null); setQuery(''); }}
-                  className="text-xs text-gray-400 hover:text-gray-600 transition">No es este, buscar otro</button>
+                <button type="button" onClick={reopenRegisterScanner}
+                  className="text-xs text-gray-400 hover:text-gray-600 transition">No es este, escanear otro</button>
               </div>
             )}
 
-            {/* SELECT SECTION */}
             {screen === 'select-section' && selectedProduct && (
               <div className="p-4">
                 {savedSection ? (
@@ -369,8 +444,8 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                     <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center animate-bounce">
                       <CheckCircle2 size={32} className="text-emerald-600" />
                     </div>
-                    <div className="text-lg font-bold text-emerald-700">¡Guardado!</div>
-                    <div className="text-sm text-gray-500">Sección {savedSection} asignada</div>
+                    <div className="text-lg font-bold text-emerald-700">¡Guardado en sección {savedSection}!</div>
+                    <div className="text-sm text-gray-500">Abriendo lector para el siguiente...</div>
                   </div>
                 ) : (
                   <>
@@ -378,9 +453,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                       <div className="text-sm font-bold text-gray-900 line-clamp-1">{selectedProduct.NAME}</div>
                       <div className="text-xs text-gray-500">Toca la sección donde pusiste este producto</div>
                     </div>
-                    {/* Two-column layout: A | BCD */}
                     <div className="grid grid-cols-2 gap-3">
-                      {/* Col 1 — Góndola A */}
                       <div>
                         {GONDOLAS.filter(g => g.id === 'A').map(g => (
                           <div key={g.id} className={`${g.light} border rounded-2xl p-3`}>
@@ -390,19 +463,15 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                             </div>
                             <div className="grid grid-cols-3 gap-1.5">
                               {g.sections.map(s => (
-                                <button key={s} onClick={() => saveSection(s)} disabled={saving}
-                                  className={`py-3 rounded-xl text-center font-black text-base border-2 transition-all active:scale-95 bg-white border-gray-200 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 ${saving ? 'opacity-50 cursor-wait' : 'cursor-pointer hover:scale-105'}`}>
+                                <button key={s} type="button" onClick={() => saveSection(s)} disabled={saving}
+                                  className={`py-3 rounded-xl text-center font-black text-base border-2 transition-all active:scale-95 bg-white border-gray-200 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 ${saving ? 'opacity-50 cursor-wait' : ''}`}>
                                   {s}
-                                  {products.some(p => p.$id !== selectedProduct.$id && getSection(p) === s) && (
-                                    <span className="block w-1.5 h-1.5 rounded-full bg-emerald-400 mx-auto mt-0.5" />
-                                  )}
                                 </button>
                               ))}
                             </div>
                           </div>
                         ))}
                       </div>
-                      {/* Col 2 — Góndolas B, C, D stacked */}
                       <div className="flex flex-col gap-3">
                         {GONDOLAS.filter(g => g.id !== 'A').map(g => (
                           <div key={g.id} className={`${g.light} border rounded-2xl p-3`}>
@@ -412,12 +481,9 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                             </div>
                             <div className="grid grid-cols-3 gap-1">
                               {g.sections.map(s => (
-                                <button key={s} onClick={() => saveSection(s)} disabled={saving}
-                                  className={`py-2 rounded-lg text-center font-black text-sm border-2 transition-all active:scale-95 bg-white border-gray-200 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 ${saving ? 'opacity-50 cursor-wait' : 'cursor-pointer hover:scale-105'}`}>
+                                <button key={s} type="button" onClick={() => saveSection(s)} disabled={saving}
+                                  className={`py-2 rounded-lg text-center font-black text-sm border-2 transition-all active:scale-95 bg-white border-gray-200 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 ${saving ? 'opacity-50 cursor-wait' : ''}`}>
                                   {s}
-                                  {products.some(p => p.$id !== selectedProduct.$id && getSection(p) === s) && (
-                                    <span className="block w-1 h-1 rounded-full bg-emerald-400 mx-auto mt-0.5" />
-                                  )}
                                 </button>
                               ))}
                             </div>

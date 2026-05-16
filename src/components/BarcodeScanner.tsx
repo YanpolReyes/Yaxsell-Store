@@ -1,14 +1,16 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Camera, X, RotateCcw, Zap } from 'lucide-react';
+import { Camera, X, RotateCcw, Zap, Check } from 'lucide-react';
 
 interface BarcodeScannerProps {
   onScan: (code: string) => void;
   onClose: () => void;
+  /** Tras confirmar, prepara otro escaneo sin cerrar la cámara. */
+  continuous?: boolean;
 }
 
-export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
+export default function BarcodeScanner({ onScan, onClose, continuous }: BarcodeScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [error, setError] = useState('');
@@ -19,7 +21,6 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
   const onScanRef = useRef(onScan);
   onScanRef.current = onScan;
 
-  // Start camera preview on mount — NO auto-scanning
   useEffect(() => {
     let cancelled = false;
 
@@ -49,7 +50,6 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
     };
   }, []);
 
-  // Capture current frame and scan for barcode
   const captureAndScan = async () => {
     const video = videoRef.current;
     if (!video) return;
@@ -66,10 +66,9 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
       let decodedText = '';
 
-      // Try native BarcodeDetector first (Chrome/Edge — faster, no DOM manipulation)
       if ('BarcodeDetector' in window) {
         try {
-          const detector = new (window as any).BarcodeDetector({
+          const detector = new (window as unknown as { BarcodeDetector: new (o: object) => { detect: (c: HTMLCanvasElement) => Promise<{ rawValue: string }[]> } }).BarcodeDetector({
             formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'qr_code', 'upc_a', 'upc_e']
           });
           const results = await detector.detect(canvas);
@@ -77,7 +76,6 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         } catch { /* fallback */ }
       }
 
-      // Fallback: html5-qrcode scanFileV2 (off-screen, no React DOM conflict)
       if (!decodedText) {
         const blob = await new Promise<Blob>((resolve, reject) => {
           canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png');
@@ -121,6 +119,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
     if (!code) return;
     try {
       onScanRef.current(code);
+      if (continuous) rescan();
     } catch (err) {
       console.error('[BarcodeScanner] onScan error:', err);
     }
@@ -133,92 +132,117 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center p-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}>
-      <div className="w-full max-w-sm">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 text-white">
-            <Camera className="w-5 h-5" />
-            <span className="text-sm font-medium">Escanear código de barras</span>
-          </div>
-          <button onClick={onClose} className="text-white/70 hover:text-white p-1">
-            <X className="w-5 h-5" />
-          </button>
+    <div
+      className="fixed inset-0 z-[200] bg-black flex flex-col"
+      style={{
+        paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))',
+        paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))',
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Lector de código de barras"
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute z-30 flex items-center justify-center w-12 h-12 rounded-full bg-black/70 border-2 border-white/30 text-white shadow-lg active:scale-95 transition-transform"
+        style={{
+          top: 'max(0.75rem, env(safe-area-inset-top, 0.75rem))',
+          right: 'max(0.75rem, env(safe-area-inset-right, 0.75rem))',
+        }}
+        aria-label="Cerrar lector"
+      >
+        <X className="w-7 h-7" strokeWidth={2.5} />
+      </button>
+
+      <div className="flex-1 flex flex-col items-center justify-center px-4 pt-14 pb-4 min-h-0 w-full max-w-md mx-auto">
+        <div className="flex items-center gap-2 text-white mb-3 w-full shrink-0">
+          <Camera className="w-5 h-5 shrink-0" />
+          <span className="text-sm font-semibold">Escanear código de barras</span>
+          {continuous && (
+            <span className="ml-auto text-[10px] font-bold uppercase tracking-wide text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full">
+              Modo ráfaga
+            </span>
+          )}
         </div>
 
-        <div className="relative w-full rounded-xl overflow-hidden bg-gray-900 border-2 border-white/20" style={{ minHeight: '240px' }}>
+        <div className="relative w-full flex-1 min-h-[200px] max-h-[50vh] rounded-xl overflow-hidden bg-gray-900 border-2 border-white/25">
           <video ref={videoRef} playsInline muted className="w-full h-full object-cover" />
           {ready && !detected && (
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-              <div className="w-[280px] h-[120px] border-2 border-white/40 rounded-lg" />
+              <div className="w-[min(280px,85%)] h-[120px] border-2 border-emerald-400/70 rounded-lg" />
             </div>
           )}
           {scanning && (
             <div className="absolute inset-0 bg-white/20 flex items-center justify-center">
-              <div className="w-8 h-8 border-[3px] border-white border-t-transparent rounded-full animate-spin" />
+              <div className="w-10 h-10 border-[3px] border-white border-t-transparent rounded-full animate-spin" />
             </div>
           )}
         </div>
 
         {!ready && !error && (
-          <div className="flex items-center justify-center py-4 text-white/50 text-sm">
+          <div className="flex items-center justify-center py-4 text-white/60 text-sm shrink-0">
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
             Iniciando cámara...
           </div>
         )}
 
-        {ready && !detected && (
-          <div className="mt-4 space-y-2">
-            <button
-              onClick={captureAndScan}
-              disabled={scanning}
-              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-800/70 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition text-lg shadow-lg active:scale-95"
-            >
-              {scanning ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Escaneando...
-                </>
-              ) : (
-                <>
-                  <Zap className="w-6 h-6" />
-                  Tomar foto y escanear
-                </>
-              )}
-            </button>
-            <p className="text-white/50 text-xs text-center">
-              Apunta la cámara al código y presiona el botón
-            </p>
-          </div>
-        )}
+        <div className="w-full shrink-0 mt-4 space-y-2">
+          {ready && !detected && (
+            <>
+              <button
+                type="button"
+                onClick={captureAndScan}
+                disabled={scanning}
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-900/80 text-white font-bold rounded-2xl flex items-center justify-center gap-2 text-lg shadow-lg active:scale-[0.98] transition"
+              >
+                {scanning ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Escaneando...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-6 h-6" />
+                    Tomar foto y escanear
+                  </>
+                )}
+              </button>
+              <p className="text-white/50 text-xs text-center">Apunta al código y pulsa el botón</p>
+            </>
+          )}
 
-        {error && (
-          <div className="text-amber-400 text-sm text-center py-3 bg-amber-500/10 rounded-lg mt-3 border border-amber-500/30">
-            {error}
-          </div>
-        )}
-
-        {detected && (
-          <div className="mt-4 space-y-2">
-            <div className="bg-green-500/20 border border-green-500 rounded-xl p-3 text-center">
-              <div className="text-green-400 text-xs font-medium mb-1">Código detectado</div>
-              <div className="text-white font-mono text-lg font-bold">{lastCode}</div>
+          {error && (
+            <div className="text-amber-300 text-sm text-center py-3 bg-amber-500/15 rounded-xl border border-amber-500/40">
+              {error}
             </div>
-            <button
-              onClick={confirmScan}
-              className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition"
-            >
-              <Camera className="w-5 h-5" />
-              Confirmar código
-            </button>
-            <button
-              onClick={rescan}
-              className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg flex items-center justify-center gap-2 transition"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Reescanear
-            </button>
-          </div>
-        )}
+          )}
+
+          {detected && (
+            <>
+              <div className="bg-emerald-500/20 border border-emerald-400 rounded-xl p-3 text-center">
+                <div className="text-emerald-300 text-xs font-semibold mb-1">Código detectado</div>
+                <div className="text-white font-mono text-lg font-bold break-all">{lastCode}</div>
+              </div>
+              <button
+                type="button"
+                onClick={confirmScan}
+                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2"
+              >
+                <Check className="w-5 h-5" />
+                Confirmar y continuar
+              </button>
+              <button
+                type="button"
+                onClick={rescan}
+                className="w-full py-2.5 bg-white/10 hover:bg-white/15 text-white text-sm font-medium rounded-xl flex items-center justify-center gap-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Reescanear
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -150,6 +150,7 @@ export default function InventarioPage() {
   const [barcodeEdits, setBarcodeEdits] = useState<Record<string, string>>({});
   const [savingStockId, setSavingStockId] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(false);
+  const [scannerBulkMode, setScannerBulkMode] = useState(false);
   const [scanTarget, setScanTarget] = useState<'search' | string>('search');
   const [barcodeSuggestion, setBarcodeSuggestion] = useState<{ product: Product; scannedBarcode: string; step: 'confirm-product' | 'confirm-add-barcode' } | null>(null);
   // Modal instead of toast for scan-found-with-stock
@@ -161,6 +162,23 @@ export default function InventarioPage() {
   const [editPackagesValue, setEditPackagesValue] = useState<string>('');
   const [editSectionValue, setEditSectionValue] = useState<number | null>(null);
   const [showLocator, setShowLocator] = useState(false);
+
+  const openScanner = (target: 'search' | string, bulk = false) => {
+    setScanTarget(target);
+    setScannerBulkMode(bulk);
+    setShowScanner(true);
+  };
+
+  const closeScanner = () => {
+    setShowScanner(false);
+    setScanTarget('search');
+    setScannerBulkMode(false);
+  };
+
+  const reopenScannerIfBulk = () => {
+    if (!scannerBulkMode) return;
+    window.setTimeout(() => openScanner('search', true), 450);
+  };
 
   const savePackQty = async () => {
     if (!editStockModal) return;
@@ -203,6 +221,7 @@ export default function InventarioPage() {
       setEditPackQtyValue('');
       setEditPackagesValue('');
       setEditSectionValue(null);
+      reopenScannerIfBulk();
     } catch (e: any) {
       alert('Error: ' + e.message);
     } finally {
@@ -224,11 +243,13 @@ export default function InventarioPage() {
         });
 
         if (directMatch) {
+          setShowScanner(false);
           if ((directMatch.STOCK || 0) > 0) {
             setStockModal({ product: directMatch, scannedCode: code });
           } else {
-            setCatalogSearch(code);
-            setView('catalog');
+            setEditStockModal(directMatch);
+            setEditPackQtyValue(String(directMatch.PACKQTY || ''));
+            setEditPackagesValue(String(Math.round((directMatch.STOCK || 0) / (directMatch.PACKQTY || 1))));
           }
         } else if (code.length >= 4) {
           const last4 = code.slice(-4).toLowerCase();
@@ -237,11 +258,14 @@ export default function InventarioPage() {
             return sku && sku.endsWith(last4) && !getBarcodeFromProduct(p);
           });
           if (suggested) {
+            setShowScanner(false);
             setBarcodeSuggestion({ product: suggested, scannedBarcode: code, step: 'confirm-product' });
           } else {
+            setShowScanner(false);
             setUnregisteredModal({ code });
           }
         } else {
+          setShowScanner(false);
           setUnregisteredModal({ code });
         }
       } else {
@@ -251,8 +275,9 @@ export default function InventarioPage() {
       console.error('[inventario] handleBarcodeScan:', err);
       alert('Error al procesar el código escaneado. Intenta de nuevo.');
     } finally {
-      setShowScanner(false);
-      setScanTarget('search');
+      if (!scannerBulkMode) {
+        closeScanner();
+      }
     }
   };
 
@@ -275,6 +300,7 @@ export default function InventarioPage() {
       setProducts(prev => prev.map(p => p.$id === product.$id ? { ...p, FEATURES: newFeatures } : p));
       setCatalogSearch(getSkuFromProduct(product));
       setBarcodeSuggestion(null);
+      reopenScannerIfBulk();
     } catch (e: any) {
       alert('Error al guardar código: ' + e.message);
     } finally {
@@ -789,7 +815,11 @@ export default function InventarioPage() {
       {/* Hide bottom navbar on /inventario */}
       <style>{`[data-bottom-nav], .tpl1-mobile-bottom-nav, nav[class*='bottom'], .bottom-nav { display: none !important; }`}</style>
       {showScanner && (
-        <BarcodeScanner onScan={handleBarcodeScan} onClose={() => setShowScanner(false)} />
+        <BarcodeScanner
+          onScan={handleBarcodeScan}
+          onClose={closeScanner}
+          continuous={scannerBulkMode && scanTarget === 'search'}
+        />
       )}
       {previewImg && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center cursor-pointer" onClick={() => setPreviewImg(null)}>
@@ -911,7 +941,7 @@ export default function InventarioPage() {
                 Editar
               </button>
             </div>
-            <button onClick={() => setStockModal(null)} className="w-full pb-5 text-xs text-gray-400 hover:text-gray-600 transition">
+            <button onClick={() => { setStockModal(null); reopenScannerIfBulk(); }} className="w-full pb-5 text-xs text-gray-400 hover:text-gray-600 transition">
               Cancelar
             </button>
           </div>
@@ -952,7 +982,7 @@ export default function InventarioPage() {
                 <div className="font-bold text-sm line-clamp-1">{editStockModal.NAME}</div>
                 <div className="text-xs text-white/80">Stock actual: {editStockModal.STOCK} uds</div>
               </div>
-              <button onClick={() => { setEditStockModal(null); setEditPackQtyValue(''); setEditPackagesValue(''); }} className="text-white/70 hover:text-white">
+              <button onClick={() => { setEditStockModal(null); setEditPackQtyValue(''); setEditPackagesValue(''); reopenScannerIfBulk(); }} className="text-white/70 hover:text-white">
                 <X size={20} />
               </button>
             </div>
@@ -1119,9 +1149,9 @@ export default function InventarioPage() {
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
-                <button onClick={() => { setScanTarget('search'); setShowScanner(true); }}
+                <button onClick={() => openScanner('search', true)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-pink-600 transition"
-                  title="Escanear código de barras">
+                  title="Escanear código de barras (modo ráfaga)">
                   <Camera className="w-4 h-4" />
                 </button>
               </div>
@@ -1204,7 +1234,7 @@ export default function InventarioPage() {
                                     title="Añadir código de barras"
                                     className="flex-1 px-2 py-1.5 text-sm border border-rose-300 bg-rose-50 rounded focus:outline-none focus:border-rose-500 font-mono"
                                   />
-                                  <button onClick={() => { setScanTarget(p.$id); setShowScanner(true); }}
+                                  <button onClick={() => openScanner(p.$id, false)}
                                     className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded transition"
                                     title="Escanear código de barras">
                                     <Camera className="w-4 h-4" />
@@ -1355,7 +1385,7 @@ export default function InventarioPage() {
                                   title="Añadir código de barras"
                                   className="flex-1 px-3 py-2 text-sm border border-rose-300 bg-rose-50 rounded-lg focus:outline-none focus:border-rose-500 font-mono"
                                 />
-                                <button onClick={() => { setScanTarget(p.$id); setShowScanner(true); }}
+                                <button onClick={() => openScanner(p.$id, false)}
                                   className="p-2.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition border border-rose-200"
                                   title="Escanear código de barras">
                                   <Camera className="w-5 h-5" />
@@ -1497,9 +1527,9 @@ export default function InventarioPage() {
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
-                <button onClick={() => { setScanTarget('search'); setShowScanner(true); }}
+                <button onClick={() => openScanner('search', true)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-pink-600 transition"
-                  title="Escanear código de barras">
+                  title="Escanear código de barras (modo ráfaga)">
                   <Camera className="w-4 h-4" />
                 </button>
               </div>
@@ -1579,7 +1609,7 @@ export default function InventarioPage() {
                                     title="Añadir código de barras"
                                     className="flex-1 px-2 py-1.5 text-sm border border-rose-300 bg-rose-50 rounded focus:outline-none focus:border-rose-500 font-mono"
                                   />
-                                  <button onClick={() => { setScanTarget(p.$id); setShowScanner(true); }}
+                                  <button onClick={() => openScanner(p.$id, false)}
                                     className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded transition"
                                     title="Escanear código de barras">
                                     <Camera className="w-4 h-4" />
@@ -1683,7 +1713,7 @@ export default function InventarioPage() {
                                     title="Añadir código de barras"
                                     className="flex-1 px-3 py-2 text-sm border border-rose-300 bg-rose-50 rounded-lg focus:outline-none focus:border-rose-500 font-mono"
                                   />
-                                  <button onClick={() => { setScanTarget(p.$id); setShowScanner(true); }}
+                                  <button onClick={() => openScanner(p.$id, false)}
                                     className="p-2.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition border border-rose-200"
                                     title="Escanear código de barras">
                                     <Camera className="w-5 h-5" />
@@ -2115,9 +2145,10 @@ export default function InventarioPage() {
 
       {/* Floating camera widget */}
       <button
-        onClick={() => { setScanTarget('search'); setShowScanner(true); }}
-        className="fixed bottom-6 right-5 z-40 w-14 h-14 bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform active:scale-95"
-        title="Escanear producto"
+        onClick={() => openScanner('search', true)}
+        className="fixed right-5 z-40 w-14 h-14 bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform active:scale-95"
+        style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+        title="Escanear producto (modo ráfaga)"
       >
         <Camera className="w-6 h-6" />
       </button>
