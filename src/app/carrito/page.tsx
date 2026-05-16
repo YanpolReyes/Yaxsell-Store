@@ -10,6 +10,7 @@ import RecentlyViewed from '@/components/RecentlyViewed';
 import CartLineRow from '@/components/CartLineRow';
 import { getServices, getAppwriteConfig, COUPONS_COLLECTION } from '@/lib/appwrite';
 import { Coupon } from '@/types';
+import { MINIMUM_ORDER_CLP, isBelowMinimumOrder, minimumOrderMessage } from '@/lib/order-rules';
 
 const PINK = '#ec4899';
 const FF = '"DM Sans",system-ui,sans-serif';
@@ -27,6 +28,7 @@ export default function CarritoPage() {
       : couponData.value
     : 0;
   const total = Math.max(0, subtotal - discount);
+  const belowMinimum = isBelowMinimumOrder(total);
 
   async function applyCoupon() {
     if (!couponCode.trim()) return;
@@ -206,11 +208,25 @@ export default function CarritoPage() {
                   <span style={{ fontSize: 24, fontWeight: 800, color: PINK }}>{formatPrice(total)}</span>
                 </div>
 
-                <Link href={`/checkout${couponData ? `?coupon=${couponData.$id}&discount=${discount}` : ''}`}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '14px 0', background: PINK, color: '#fff', textAlign: 'center', borderRadius: 12, fontSize: 16, fontWeight: 700, textDecoration: 'none', boxSizing: 'border-box', boxShadow: '0 6px 20px rgba(236,72,153,0.35)', transition: 'all 0.2s' }}
-                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)')}
-                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.transform = 'translateY(0)')}
-                >Continuar compra</Link>
+                {belowMinimum && (
+                  <p style={{ margin: '0 0 12px', fontSize: 12, color: '#b91c1c', background: '#fef2f2', padding: '10px 12px', borderRadius: 10, border: '1px solid #fecaca', lineHeight: 1.45 }}>
+                    ⚠ {minimumOrderMessage(total)}
+                  </p>
+                )}
+
+                {belowMinimum ? (
+                  <span
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '14px 0', background: '#e5e7eb', color: '#9ca3af', textAlign: 'center', borderRadius: 12, fontSize: 16, fontWeight: 700, boxSizing: 'border-box', cursor: 'not-allowed' }}
+                  >
+                    Mínimo {formatPrice(MINIMUM_ORDER_CLP)}
+                  </span>
+                ) : (
+                  <Link href={`/checkout${couponData ? `?coupon=${couponData.$id}&discount=${discount}` : ''}`}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '14px 0', background: PINK, color: '#fff', textAlign: 'center', borderRadius: 12, fontSize: 16, fontWeight: 700, textDecoration: 'none', boxSizing: 'border-box', boxShadow: '0 6px 20px rgba(236,72,153,0.35)', transition: 'all 0.2s' }}
+                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)')}
+                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.transform = 'translateY(0)')}
+                  >Continuar compra</Link>
+                )}
 
                 <div style={{ marginTop: 16, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                   <Shield size={14} color={PINK} style={{ flexShrink: 0, marginTop: 1 }} />

@@ -14,45 +14,30 @@ import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { Query, ID } from 'appwrite';
 import Image from 'next/image';
 import Link from 'next/link';
+import { isBelowMinimumOrder, minimumOrderMessage } from '@/lib/order-rules';
 
 interface AgencyOption { name: string; color: string; bg: string; desc: string; logo: string; active?: boolean; }
 interface SavedAddress { id: string; alias: string; name: string; phone: string; fullAddress: string; commune: string; region: string; lat: number; lng: number; }
 
-const DEFAULT_AGENCIES: AgencyOption[] = [
-  { name: 'STARKEN',          color: '#1a7f37', bg: '#e6f4ea', desc: 'Entrega rápida y confiable',   logo: 'https://media.licdn.com/dms/image/v2/C510BAQGf7frAaAcogw/company-logo_200_200/company-logo_200_200/0/1631323622266?e=2147483647&v=beta&t=PQt6O5DgEP72brYnRu0ypoR_k9rrAIQ7XAHmQL0Q1uM', active: true },
-  { name: 'BLUEXPRESS',       color: '#1558b0', bg: '#e8f0fe', desc: 'Servicio express premium',    logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSz2T8HSqmWqmSShlCx8iGNP2tkT_OGLK4cdg&s', active: true },
-  { name: 'VARMONTT',         color: '#c62828', bg: '#fce8e6', desc: 'Cobertura nacional completa', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQEPQN4hjn8F2PQXVmphZVnstiaQTEs4ILyArmNbu1DjCaj2EfwPxnUnEWLEUivCr_95IE&usqp=CAU', active: true },
-  { name: 'RETIRO EN TIENDA', color: '#e65c00', bg: '#fff3e0', desc: 'Retira en nuestra sucursal',  logo: '', active: true },
+const AGENCY_PALETTE = [
+  { color: '#1a7f37', bg: '#e6f4ea' },
+  { color: '#1558b0', bg: '#e8f0fe' },
+  { color: '#c62828', bg: '#fce8e6' },
+  { color: '#e65c00', bg: '#fff3e0' },
+  { color: '#7c3aed', bg: '#ede9fe' },
+  { color: '#0891b2', bg: '#ecfeff' },
 ];
 
-function loadAgencies(): AgencyOption[] {
-  try {
-    // Try admin agencies first (shippingAgencies from admin panel)
-    const adminStored = localStorage.getItem('shippingAgencies');
-    if (adminStored) {
-      const parsed = JSON.parse(adminStored);
-      // Convert admin format to checkout format
-      const agencies: AgencyOption[] = parsed.map((a: any) => ({
-        name: a.name || '',
-        color: a.color || '#3483fa',
-        bg: a.backgroundColor || '#e8f0fe',
-        desc: a.description || '',
-        logo: a.logoUrl || '',
-        active: a.isActive !== false,
-      })).filter((a: AgencyOption) => a.active && a.name);
-      if (agencies.length > 0) return agencies;
-    }
-    
-    // Fallback to old store_agencies key
-    const stored = localStorage.getItem('store_agencies');
-    if (stored) {
-      const parsed: AgencyOption[] = JSON.parse(stored);
-      const active = parsed.filter(a => a.active !== false);
-      if (active.length > 0) return active;
-    }
-  } catch {}
-  return DEFAULT_AGENCIES;
-}
+const CHECKOUT_AGENCY_NAMES = [
+  'STARKEN', 'PULMAN CARGO', 'VARMONTT', 'MENA', 'TRAMAR', 'CGS', 'CYC',
+  'VILLA PRATT', 'ATE', 'CARGO BARRIOS', 'TVP', 'FENIX', 'CHEVALIER',
+  'CACEM', 'CINCO SUR', 'CRUZ DEL SUR',
+] as const;
+
+const CHECKOUT_AGENCIES: AgencyOption[] = CHECKOUT_AGENCY_NAMES.map((name, i) => {
+  const p = AGENCY_PALETTE[i % AGENCY_PALETTE.length];
+  return { name, color: p.color, bg: p.bg, desc: 'Envío a coordinar tras confirmar', logo: '', active: true };
+});
 
 const PINK = '#ec4899'; const PINK_LIGHT = '#f9a8d4'; const PINK_BG = '#fef2f8'; const FF = '"DM Sans", system-ui, sans-serif';
 const inp: React.CSSProperties = { width: '100%', padding: '12px 14px', border: '1.5px solid #fce7f3', borderRadius: 12, fontSize: 14, outline: 'none', color: '#111', background: '#fff', boxSizing: 'border-box', transition: 'all .2s', fontFamily: FF };
@@ -74,7 +59,7 @@ function CheckoutInner() {
   });
   const [customerNote, setCustomerNote] = useState('');
   const [isGift, setIsGift] = useState(false);
-  const [agencies, setAgencies] = useState<AgencyOption[]>(DEFAULT_AGENCIES);
+  const [agencies, setAgencies] = useState<AgencyOption[]>(CHECKOUT_AGENCIES);
   const [agency, setAgency] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -94,6 +79,7 @@ function CheckoutInner() {
   const comunas = form.region ? CHILE_REGIONES[form.region] || [] : [];
   const totalDiscount = discountParam + couponDiscount;
   const total = Math.max(0, subtotal - totalDiscount);
+  const belowMinimum = isBelowMinimumOrder(total);
 
   useEffect(() => {
     if (items.length === 0 && !submittedRef.current) router.push('/carrito');
@@ -106,9 +92,8 @@ function CheckoutInner() {
   }, [authLoading, isLoggedIn, router]);
 
   useEffect(() => {
-    const loaded = loadAgencies();
-    setAgencies(loaded);
-    if (loaded.length > 0) setAgency(loaded[0].name);
+    setAgencies(CHECKOUT_AGENCIES);
+    setAgency(CHECKOUT_AGENCIES[0]?.name || '');
   }, []);
 
   useEffect(() => {
@@ -307,23 +292,11 @@ function CheckoutInner() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!agency) { setError('Selecciona una agencia de envío'); return; }
     if (!form.region || !form.comuna) { setError('Selecciona región y comuna'); return; }
     if (!form.name || !form.rut || !form.phone) { setError('Completa todos los campos obligatorios'); return; }
-    // Minimum purchase validation
-    try {
-      const stored = localStorage.getItem('store_bank_details');
-      if (stored) {
-        const p = JSON.parse(stored);
-        const min = Number(p.minimumPurchase) || 0;
-        if (min > 0 && total < min) {
-          setError(`El monto mínimo de compra es $${min.toLocaleString('es-CL')}. Tu carrito suma ${formatPrice(total)}.`);
-          return;
-        }
-      }
-    } catch {}
-    // Validate minimum when coupon is applied (20% discount means subtotal must be >= $62,500 to have $50,000 after discount)
-    if (couponApplied && subtotal < 62500) {
-      setError('Para usar el cupón, el monto mínimo de compra es $62.500 (aplicando 20% de descuento queda en $50.000)');
+    if (belowMinimum) {
+      setError(minimumOrderMessage(total));
       return;
     }
     setSubmitting(true); setError('');
@@ -538,15 +511,9 @@ function CheckoutInner() {
                         {sel && <span style={{ position: 'absolute', top: 8, right: 10, width: 18, height: 18, borderRadius: '50%', background: `linear-gradient(135deg, ${PINK}, #db2777)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
                         </span>}
-                        {ag.logo ? (
-                          <div style={{ width: 48, height: 28, position: 'relative', marginBottom: 8 }}>
-                            <Image src={ag.logo} alt={ag.name} fill style={{ objectFit: 'contain', objectPosition: 'left' }} unoptimized />
-                          </div>
-                        ) : (
-                          <div style={{ width: 48, height: 28, marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: ag.bg, borderRadius: 4 }}>
-                            <Package size={16} color={ag.color} />
-                          </div>
-                        )}
+                        <div style={{ width: 40, height: 40, marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: ag.bg, borderRadius: 10 }}>
+                          <Truck size={18} color={ag.color} />
+                        </div>
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: sel ? ag.color : '#333' }}>{ag.name}</p>
                     <p style={{ margin: '2px 0 0', fontSize: 11, color: '#888' }}>{ag.desc}</p>
                       </button>
@@ -764,10 +731,15 @@ function CheckoutInner() {
                 </div>
 
                 {/* Total highlight */}
-                <div style={{ margin: '0 22px 16px', padding: '12px 16px', borderRadius: 14, background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)', border: '1px solid #fbcfe8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ margin: '0 22px 16px', padding: '12px 16px', borderRadius: 14, background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)', border: `1px solid ${belowMinimum ? '#fca5a5' : '#fbcfe8'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 15, fontWeight: 700, color: '#111', fontFamily: FF }}>Total a pagar</span>
-                  <span style={{ fontSize: 24, fontWeight: 900, color: PINK, fontFamily: FF, letterSpacing: '-0.03em' }}>{formatPrice(total)}</span>
+                  <span style={{ fontSize: 24, fontWeight: 900, color: belowMinimum ? '#dc2626' : PINK, fontFamily: FF, letterSpacing: '-0.03em' }}>{formatPrice(total)}</span>
                 </div>
+                {belowMinimum && (
+                  <p style={{ margin: '0 22px 12px', fontSize: 12, color: '#b91c1c', background: '#fef2f2', padding: '10px 12px', borderRadius: 10, border: '1px solid #fecaca', fontFamily: FF, lineHeight: 1.45 }}>
+                    ⚠ {minimumOrderMessage(total)}
+                  </p>
+                )}
 
                 {/* Coupon */}
                 {!couponApplied && (
@@ -822,7 +794,7 @@ function CheckoutInner() {
 
                 {/* Submit button */}
                 <div style={{ padding: '0 22px 20px' }}>
-                  <button type="submit" disabled={submitting} className="ck-confirm-btn"
+                  <button type="submit" disabled={submitting || belowMinimum || !agency} className="ck-confirm-btn"
                     style={{ display: 'block', width: '100%', padding: '16px 0', backgroundImage: submitting ? 'none' : 'linear-gradient(135deg, #fbcfe8, #f9a8d4, #ec4899, #f9a8d4, #fbcfe8)', backgroundColor: submitting ? '#f9a8d4' : 'transparent', color: '#fff', textAlign: 'center', borderRadius: 16, fontSize: 16, fontWeight: 800, border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', transition: 'all .3s', boxSizing: 'border-box', fontFamily: FF, position: 'relative', overflow: 'hidden', backgroundSize: '300% 300%', letterSpacing: '0.02em' }}>
                     {!submitting && <>
                       <span style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
