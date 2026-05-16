@@ -7,6 +7,7 @@ import { X, ShoppingCart, Check, Eye, ChevronLeft, ChevronRight, Star, Truck, Sh
 import { formatPrice } from '@/lib/appwrite';
 import { Product } from '@/types';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/hooks/useAuth';
 import FavoriteButton from '@/components/FavoriteButton';
 
 interface Props {
@@ -16,6 +17,7 @@ interface Props {
 
 export default function QuickView({ product, onClose }: Props) {
   const { addItem } = useCart();
+  const { user } = useAuth();
   const [added, setAdded] = useState(false);
   const [imgIdx, setImgIdx] = useState(0);
   const [qty, setQty] = useState(1);
@@ -27,7 +29,10 @@ export default function QuickView({ product, onClose }: Props) {
   const price = product.CURRENTPRICE && product.CURRENTPRICE > 0 ? product.CURRENTPRICE : product.PRICE;
   const hasDisc = !!(product.CURRENTPRICE && product.CURRENTPRICE < product.PRICE);
   const discPct = hasDisc ? Math.round(((product.PRICE - product.CURRENTPRICE!) / product.PRICE) * 100) : 0;
-  const hasWholesale = (product.WHOLESALEPRICE ?? 0) > 0;
+  const hasWholesale = (product.WHOLESALEPRICE ?? 0) > 0 && (product.WHOLESALEMINQUANTITY ?? 0) > 0;
+  const isWholesaleUser = user?.isWholesale || false;
+  const isWholesaleQty = hasWholesale && isWholesaleUser && qty >= (product.WHOLESALEMINQUANTITY || 0);
+  const effectivePrice = isWholesaleQty ? product.WHOLESALEPRICE! : price;
   const stock = product.STOCK ?? 0;
   const rating = product.RATING ?? 0;
   const numReviews = product.NUMREVIEWS ?? 0;
@@ -35,7 +40,7 @@ export default function QuickView({ product, onClose }: Props) {
   const stockColor = stock > 10 ? '#00a650' : stock > 5 ? '#f57c00' : stock > 0 ? '#e53935' : '#bbb';
 
   function handleAdd() {
-    addItem(product, qty);
+    addItem(product, qty, undefined, undefined, isWholesaleQty ? product.WHOLESALEPRICE : undefined);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   }

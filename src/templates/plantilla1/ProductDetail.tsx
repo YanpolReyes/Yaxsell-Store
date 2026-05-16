@@ -10,6 +10,7 @@ import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECT
 import { Query } from 'appwrite';
 import { Product } from '@/types';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/hooks/useAuth';
 import ReviewSection from '@/components/ReviewSection';
 import FavoriteButton from '@/components/FavoriteButton';
 import RecentlyViewed, { trackView } from '@/components/RecentlyViewed';
@@ -29,6 +30,7 @@ const TEXT_MUTED = '#6b7280';
 export default function ProductDetailPlantilla1() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
   const [related, setRelated] = useState<Product[]>([]);
   const [categoryName, setCategoryName] = useState('');
@@ -195,7 +197,8 @@ export default function ProductDetailPlantilla1() {
   const hasDisc = !!(product.CURRENTPRICE && product.CURRENTPRICE < product.PRICE);
   const discPct = hasDisc ? Math.round(((product.PRICE - product.CURRENTPRICE!) / product.PRICE) * 100) : 0;
   const hasWholesale = !!(product.WHOLESALEPRICE && product.WHOLESALEMINQUANTITY && product.WHOLESALEPRICE > 0);
-  const isWholesaleQty = hasWholesale && qty >= (product.WHOLESALEMINQUANTITY || 0);
+  const isWholesaleUser = user?.isWholesale || false;
+  const isWholesaleQty = hasWholesale && isWholesaleUser && qty >= (product.WHOLESALEMINQUANTITY || 0);
   const effectivePrice = isWholesaleQty ? product.WHOLESALEPRICE! : displayPrice;
   const lineTotal = effectivePrice * qty;
   const stock = product.STOCK ?? 0;
@@ -208,7 +211,7 @@ export default function ProductDetailPlantilla1() {
   const hasOffer = hasDisc && discPct >= 10;
 
   function handleAdd() {
-    addItem(product!, qty);
+    addItem(product!, qty, undefined, undefined, isWholesaleQty ? product?.WHOLESALEPRICE : undefined);
     setAdded(true);
     setTimeout(() => setAdded(false), 2500);
   }

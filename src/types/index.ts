@@ -189,6 +189,7 @@ export interface CartItem {
   quantity: number;
   timedOfferPrice?: number;
   timedOfferExpiresAt?: number;
+  wholesalePrice?: number;
 }
 
 export interface LiveStream {

@@ -6,7 +6,7 @@ import { useToast } from '@/components/Toast';
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (product: Product, qty?: number, timedOfferPrice?: number, timedOfferExpiresAt?: number) => void;
+  addItem: (product: Product, qty?: number, timedOfferPrice?: number, timedOfferExpiresAt?: number, wholesalePrice?: number) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, qty: number) => void;
   clearCart: () => void;
@@ -39,20 +39,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (item.timedOfferPrice && item.timedOfferExpiresAt && now < item.timedOfferExpiresAt) {
       return item.timedOfferPrice;
     }
+    if (item.wholesalePrice) {
+      return item.wholesalePrice;
+    }
     return item.product.CURRENTPRICE && item.product.CURRENTPRICE > 0
       ? item.product.CURRENTPRICE
       : item.product.PRICE;
   };
 
-  const addItem = (product: Product, qty = 1, timedOfferPrice?: number, timedOfferExpiresAt?: number) => {
+  const addItem = (product: Product, qty = 1, timedOfferPrice?: number, timedOfferExpiresAt?: number, wholesalePrice?: number) => {
     const existing = items.find(i => i.product.$id === product.$id);
     
     if (existing) {
       const newQty = Math.min(existing.quantity + qty, product.STOCK);
-      setItems(prev => prev.map(i => i.product.$id === product.$id ? { ...i, quantity: newQty } : i));
+      setItems(prev => prev.map(i => i.product.$id === product.$id ? { ...i, quantity: newQty, wholesalePrice } : i));
       showToast(`Cantidad actualizada: ${newQty} unidades`, 'info');
     } else {
-      setItems(prev => [...prev, { product, quantity: qty, timedOfferPrice, timedOfferExpiresAt }]);
+      setItems(prev => [...prev, { product, quantity: qty, timedOfferPrice, timedOfferExpiresAt, wholesalePrice }]);
       showToast(`✓ Agregado al carrito`, 'success');
     }
   };

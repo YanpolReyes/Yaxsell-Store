@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Query } from 'appwrite';
-import { getServices, getAppwriteConfig, WHOLESALE_REQUESTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { Query, ID } from 'appwrite';
+import { getServices, getAppwriteConfig, WHOLESALE_REQUESTS_COLLECTION_ID, USERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { RefreshCw, AlertTriangle, Search, X, ChevronDown, Building2, MessageSquare, Save, XCircle, Download } from 'lucide-react';
 
 interface WholesaleRequest {
@@ -111,7 +111,44 @@ export default function WholesalePage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
+      
+      // Actualizar estado de la solicitud
       await databases.updateDocument(databaseId, WHOLESALE_REQUESTS_COLLECTION_ID, id, { status });
+      
+      // Si se aprueba, actualizar isWholesale del usuario
+      if (status === 'approved') {
+        const request = requests.find(r => r.$id === id);
+        if (request?.userId) {
+          try {
+            // Buscar documento del usuario en la colección users
+            const userDocs = await databases.listDocuments(databaseId, USERS_COLLECTION_ID, [
+              Query.equal('userId', request.userId)
+            ]);
+            
+            if (userDocs.documents.length > 0) {
+              // Actualizar isWholesale del usuario
+              await databases.updateDocument(databaseId, USERS_COLLECTION_ID, userDocs.documents[0].$id, {
+                isWholesale: true
+              });
+            } else {
+              // Crear documento de usuario si no existe
+              await databases.createDocument(databaseId, USERS_COLLECTION_ID, ID.unique(), {
+                userId: request.userId,
+                email: request.userEmail || '',
+                name: request.userName || '',
+                phone: request.phone || '',
+                isWholesale: true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              });
+            }
+          } catch (userError) {
+            console.error('Error updating user wholesale status:', userError);
+            // No fallar la actualización de la solicitud si falla la actualización del usuario
+          }
+        }
+      }
+      
       setRequests(prev => prev.map(r => r.$id === id ? { ...r, status: status as WholesaleRequest['status'] } : r));
     } catch (e: any) { alert('Error: ' + e.message); }
     finally { setUpdatingId(null); }

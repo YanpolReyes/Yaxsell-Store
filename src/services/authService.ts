@@ -27,6 +27,7 @@ export interface User {
   name: string;
   phone?: string;
   birthDate?: string;
+  isWholesale?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -213,12 +214,29 @@ export class AuthService {
     try {
       const currentUser = await account.get();
       
+      // Obtener datos adicionales de la base de datos users
+      let isWholesale = false;
+      try {
+        const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '67f1dc940037b3d367bb';
+        const userDoc = await databases.listDocuments(
+          databaseId,
+          USERS_COLLECTION_ID,
+          [Query.equal('userId', currentUser.$id)]
+        );
+        if (userDoc.documents.length > 0) {
+          isWholesale = userDoc.documents[0].isWholesale || false;
+        }
+      } catch (dbError) {
+        console.log('Error fetching user from database:', dbError);
+      }
+      
       // Crear objeto de usuario con datos de Auth
       const user: User = {
         id: currentUser.$id,
         email: currentUser.email,
         name: currentUser.name || 'Usuario',
         phone: currentUser.phone || undefined,
+        isWholesale,
         createdAt: currentUser.$createdAt || new Date().toISOString(),
         updatedAt: currentUser.$updatedAt || new Date().toISOString()
       };
