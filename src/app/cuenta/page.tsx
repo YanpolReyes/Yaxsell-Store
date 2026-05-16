@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import LoyaltyLevel from '@/components/LoyaltyLevel';
 import InaugurationBanner from '@/components/InaugurationBanner';
 import { useCuentaBg } from './CuentaBgContext';
+import { LoyaltyService } from '@/services/loyaltyService';
 
 const FF = '"DM Sans",system-ui,sans-serif';
 const PINK = '#ec4899';
@@ -57,6 +58,14 @@ function getFilePreviewUrl(fileId: string): string {
 
 const BG_CUENTA = 'https://static.vecteezy.com/system/resources/thumbnails/031/691/675/small/white-abstract-background-in-the-style-of-light-white-and-light-gray-created-with-generative-ai-photo.jpg';
 
+const MEDAL_IMAGES: Record<string, string> = {
+  bronze: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778907249364-pegada-1778907248432.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=UZgq9eKk4EDkubPxUsLcuOyhDwGUNUxTuFNQxue45QasYIo3%2F2vMtCU31qDrMbHwnqAYHb2ZWY%2FnLR%2FkVVQlxceKXZP1IS1aN4kErtTF4xTyhhIObTi0f6asQUXiMoVCsll9S3hH1RAo%2FS2Nph84uabU0wWlFnfvtMNvZ0TzRQyjIXfIC%2FqFUv%2BJ2Wz6wBAkUllDmuLiJeYUcsK7Jwmk6mtzhDC8m7EnCUO6RzWS3r10fLtX%2BufPfH3Y%2BKrmODsXffdhAYL7lL3D8eSNSJ%2Fkz4dzRXsdOko5%2BArkNBMdzHVOGbIvrlygMyNsiSuh%2BbCiqJK3r0wj6IyddiP%2Bwvo1Vw%3D%3D',
+  silver: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778907186962-pegada-1778907185830.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=f2tSbBlbVIfe2xa9YjBkd2dAcYKCTZNW%2FoleMZYIPn9R%2Fbh8fQI2Xtu1azuD%2BBr2E2gQXYOo7bbbxl4I9GP22DqQg0aYMd5I7MxQ4Z1DPt0xSIhW%2FMKtr39Be6uo%2B2o0Fg1XoSgngoqNRsdJmTSyOPBp3gk6nVKBu4A6Pvk3kwN8UAEzmvgTtFWVuWWltOKZsv6KNtX2X3GkopYLHIkN9DRpQAIh%2Foz3Ghjif%2FSQLsA7Be%2FUVL0TEMKyBu5xhDcJbNd3BFll8KTynlwI%2B5s%2Fi8uI9Iyg0q9DSU86JWYSZW89WDjKO4YukGuc%2BciL%2FchXuck9rzgoUqOR5gGGEMSSQQ%3D%3D',
+  gold: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778907447447-pegada-1778907446361.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=SVPkcC3LBY2KhtE8vmzKcW2q0HoKNLDT5gSLAB6UjGGkRaoD6IZuOuV7XpTsEG4oI5BhjmOmEyKxdcFA4pHMc8XxwX4D4S%2BnuSs%2FADrfQsHuRSxY0%2BVnbrUZ%2BtJK8%2Fo5lizEIxPcyHlgbLjKsAJMcWppgD5O%2FWpQ5DzVGTCtoCX1hWXwPrwlzwjv8%2BmsKBPk0U9g%2B53MeilokwG%2BCyDZsJfHK4fE9P3bMFcs04B%2BYoEY3zhLLDLiGjwvp5uYCJ9sckBg7ki1EWYXAu13sX%2Fp5S3GXwtNh4QqJrv9FuP2EN2iUoWJXjz7hk7efafpvhS1GbORq%2FpwZJbPi1HIfWNoZA%3D%3D',
+  diamond: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778907790908-pegada-1778907790043.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=A%2FL9Y0VDAOZojqnk%2B2T%2Bz9QL7IH%2FaPi7YtOA4lAo3hsrrR29s91RDdWzwl9ZDCsXiW18zqqdYm7cS44ucw0sOD%2Fs7lE6JF%2B%2BtNKSLCxnuC18Xx7N0R%2FO5AvRVO4QwayS1hlwzfOgkGS9hSnXFIgC%2Filo9WnsHlAQBK1qJTxSKCaawiXUVVloTSHSqJGLLhAoiiiY1WpFLilBLnguj8l%2FqGF%2B9WTqyO%2Fq7YMr%2FJyVUU4t5llG0zVzh6HUmYGHC3HHMRqYBHVL6IAv%2FUge21gGoxg1wokBp9ph7Qf5ZEGLwdASua9Y67XqDQY6pu7%2BAu06A6eVyDFakG845%2FpSkAYjjA%3D%3D',
+  ruby: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778908226958-pegada-1778908225905.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=BqPLV4aHi9DTpG6dmp8HQD%2FPK%2BiL2gnkClQ3ZaSF1oyhQHyyTgBBu8l%2B43gHdJqACfsNv7SO0JJKxhRUNXbrUyu0hAZkGwlwLHgRfIOq%2BEEbE%2Brfrnz%2BJ5vBydNAFo3jdian%2Fd5Qx0G6pQ3cs45r%2BvI9ttjuz%2Fm%2FDhXoOWJqFk6APK43kC69by2GiW%2FVJ7SL%2BQ0Dj07MelRAdhiVWBT%2BIQhuhJ6w4TstSrUqHvkgBi4SqVN2gNQVQD1MHWQ4T0AJ8O8qXVvm96poxdusTPkzusKMZRGn7yglXGqNAn7ImNKKQ2CUNB6NEeoNSRquYckAVngc5ug8Xzza7JG6uhCDHQ%3D%3D',
+};
+
 export default function CuentaPage() {
   const { user, isLoggedIn, isLoading, logout } = useAuth();
   useCuentaBg(BG_CUENTA);
@@ -64,6 +73,7 @@ export default function CuentaPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [hasGifts, setHasGifts] = useState(false);
+  const [currentLevel, setCurrentLevel] = useState<string>('bronze');
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -76,9 +86,15 @@ export default function CuentaPage() {
         if (prefs.coverFileId) setCoverUrl(getFilePreviewUrl(prefs.coverFileId));
         // Check if user has available gifts (only if not claimed yet)
         setHasGifts(!prefs.welcomeGiftClaimed);
+        
+        // Load loyalty data
+        if (user?.id) {
+          const loyaltyData = await LoyaltyService.getLoyaltyData(user.id);
+          setCurrentLevel(loyaltyData.currentLevel);
+        }
       } catch {}
     })();
-  }, [isLoggedIn]);
+  }, [isLoggedIn, user?.id]);
 
   async function handleLogout() {
     await logout();
@@ -255,28 +271,31 @@ export default function CuentaPage() {
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(to bottom,transparent,#fff)' }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 20, padding: '0 28px 32px', marginTop: -55, position: 'relative', zIndex: 2 }}>
-            <div style={{ width: 130, height: 130, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, fontWeight: 800, color: PINK, flexShrink: 0, overflow: 'hidden', border: '4px solid #fff', boxShadow: '0 0 0 3px rgba(236,72,153,0.15), 0 4px 6px -1px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.15)' }}>
-              {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
+            <div style={{ position: 'relative' }}>
+              <div style={{ width: 130, height: 130, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, fontWeight: 800, color: PINK, flexShrink: 0, overflow: 'hidden', border: '4px solid #fff', boxShadow: '0 0 0 3px rgba(236,72,153,0.15), 0 4px 6px -1px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.15)' }}>
+                {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
+              </div>
+              <img 
+                src={MEDAL_IMAGES[currentLevel] || MEDAL_IMAGES.bronze}
+                alt="Insignia"
+                style={{ 
+                  position: 'absolute', 
+                  bottom: -2, 
+                  right: -2, 
+                  width: 40, 
+                  height: 40, 
+                  objectFit: 'contain',
+                  zIndex: 10,
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                }}
+              />
             </div>
             <div style={{ paddingBottom: 6, flex: 1 }}>
               <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.02em' }}>¡Hola, {firstName}!</h1>
               <p style={{ margin: '4px 0 0', fontSize: 14, color: '#6b7280' }}>{user.email}</p>
             </div>
-            <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 12, textDecoration: 'none', marginBottom: 6, position: 'relative', overflow: 'hidden', letterSpacing: '-0.01em' }}>
-              <span style={{ position: 'relative', zIndex: 1, display: 'inline-flex', alignItems: 'center', gap: 8 }}><Trophy size={15} /> Tienda de puntos</span>
-              {/* shimmer */}
-              <div style={{ position: 'absolute', inset: 0, opacity: 0.4, backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0) 100%)', backgroundSize: '200% 100%', animation: 'td_shimmer 2.5s ease-in-out infinite' }} />
-              {/* float dots */}
-              {[{l:8,t:20,s:1.5,d:0},{l:20,t:50,s:2.3,d:.15},{l:32,t:75,s:3.1,d:.3},{l:44,t:15,s:3.9,d:.45},{l:56,t:40,s:1.5,d:.6},{l:68,t:65,s:2.3,d:.75},{l:80,t:30,s:3.1,d:.9},{l:92,t:55,s:1.5,d:1.05}].map((p,i)=>(
-                <div key={`f${i}`} style={{ position:'absolute', left:`${p.l}%`, top:`${p.t}%`, width:p.s, height:p.s, borderRadius:'50%', background:'radial-gradient(circle,rgba(255,255,255,0.8),rgba(255,255,255,0.1))', boxShadow:'0 0 2px rgba(255,255,255,0.5)', animation:`td_float ${1.2+i*.4}s ease-in-out ${p.d}s infinite alternate` }} />
-              ))}
-              {/* bubbles */}
-              {[{l:5,t:10,s:3,d:0},{l:22,t:35,s:5,d:.2},{l:40,t:60,s:4,d:.4},{l:58,t:20,s:5,d:.6},{l:76,t:45,s:3,d:.8},{l:90,t:70,s:4,d:1}].map((b,i)=>(
-                <div key={`b${i}`} style={{ position:'absolute', left:`${b.l}%`, top:`${b.t}%`, width:b.s, height:b.s, borderRadius:'50%', border:'1px solid rgba(255,255,255,0.3)', animation:`td_bubble ${1.5+i*.5}s ease-in-out ${b.d}s infinite` }} />
-              ))}
-              {/* drift bars */}
-              <div style={{ position:'absolute', top:0, height:'100%', width:8, borderRadius:99, background:'rgba(255,255,255,0.12)', filter:'blur(2px)', left:'25%', animation:'td_drift 3s ease-in-out infinite' }} />
-              <div style={{ position:'absolute', top:0, height:'100%', width:6, borderRadius:99, background:'rgba(255,255,255,0.08)', filter:'blur(2px)', left:'65%', animation:'td_drift 4s ease-in-out infinite reverse' }} />
+            <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 12, textDecoration: 'none', marginBottom: 6, boxShadow: '0 4px 14px rgba(236,72,153,0.25)' }}>
+              <Trophy size={15} /> Tienda de puntos
             </Link>
           </div>
         </div>
@@ -294,20 +313,9 @@ export default function CuentaPage() {
             const Icon = sc.icon;
             const shouldAnimate = sc.label === 'Regalos' && hasGifts;
             return (
-              <motion.div
-                key={sc.label}
-                initial={{ opacity: 0, y: 30, scale: 0.5 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ type: 'spring', stiffness: 260, damping: 20, delay: idx * 0.12 }}
-              >
+              <div key={sc.label}>
                 <Link href={sc.href} style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, position: 'relative', overflow: 'visible' }}>
-                  <motion.div
-                    whileHover={{ scale: 1.2 }}
-                    whileTap={{ scale: 0.85 }}
-                    animate={shouldAnimate ? { 
-                      rotate: [0, 15, -15, 15, -15, 0],
-                    } : {}}
-                    transition={shouldAnimate ? { duration: 2.5, repeat: Infinity, ease: 'easeInOut' } : {}}
+                  <div
                     style={{
                       width: 64, height: 64, borderRadius: 18,
                       background: sc.image ? 'transparent' : sc.g,
@@ -345,10 +353,10 @@ export default function CuentaPage() {
                         1
                       </div>
                     )}
-                  </motion.div>
+                  </div>
                   <span style={{ fontSize: 12, fontWeight: 700, color: '#374151', textAlign: 'center', lineHeight: 1.2 }}>{sc.label}</span>
                 </Link>
-              </motion.div>
+              </div>
             );
           })}
         </div>
@@ -432,12 +440,27 @@ export default function CuentaPage() {
               </p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px 18px 20px', position: 'relative', zIndex: 2 }}>
-              <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 800, color: PINK, overflow: 'hidden', border: '3px solid #fff', boxShadow: '0 0 0 2px rgba(236,72,153,0.15), 0 4px 6px -1px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.12)' }}>
-                {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
+              <div style={{ position: 'relative' }}>
+                <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 800, color: PINK, overflow: 'hidden', border: '3px solid #fff', boxShadow: '0 0 0 2px rgba(236,72,153,0.15), 0 4px 6px -1px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.12)' }}>
+                  {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
+                </div>
+                <img 
+                  src={MEDAL_IMAGES[currentLevel] || MEDAL_IMAGES.bronze}
+                  alt="Insignia"
+                  style={{ 
+                    position: 'absolute', 
+                    bottom: -2, 
+                    right: -2, 
+                    width: 28, 
+                    height: 28, 
+                    objectFit: 'contain',
+                    zIndex: 10,
+                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                  }}
+                />
               </div>
-              <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 14, width: '100%', maxWidth: 280, padding: '11px 16px', background: PINK, color: '#fff', fontSize: 12, fontWeight: 700, borderRadius: 12, textDecoration: 'none', position: 'relative', overflow: 'hidden', letterSpacing: '-0.01em' }}>
-                <span style={{ position: 'relative', zIndex: 1, display: 'inline-flex', alignItems: 'center', gap: 6 }}><Trophy size={13} /> Tienda de puntos</span>
-                <div style={{ position: 'absolute', inset: 0, opacity: 0.4, backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0) 100%)', backgroundSize: '200% 100%', animation: 'td_shimmer 2.5s ease-in-out infinite' }} />
+              <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 14, width: '100%', maxWidth: 280, padding: '11px 16px', background: PINK, color: '#fff', fontSize: 12, fontWeight: 700, borderRadius: 12, textDecoration: 'none', boxShadow: '0 4px 14px rgba(236,72,153,0.2)' }}>
+                <Trophy size={13} /> Tienda de puntos
               </Link>
             </div>
           </div>
@@ -522,36 +545,6 @@ export default function CuentaPage() {
 
         <div style={{ padding: '14px 14px 0' }}>
           <InaugurationBanner compact />
-        </div>
-
-        {/* Promociones rápidas */}
-        <div style={{ padding: '14px 14px 0' }}>
-          <p style={{ margin: '0 0 8px 2px', fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.08em' }}>Para vos</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {hasGifts && (
-              <Link href="/cuenta/regalos" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderRadius: 16, background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', textDecoration: 'none', boxShadow: '0 8px 20px rgba(245,158,11,0.3)' }}>
-                <div>
-                  <span style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.9)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Nuevo</span>
-                  <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 800, color: '#fff' }}>Reclamá tu regalo de bienvenida</p>
-                </div>
-                <span style={{ color: '#fff', fontSize: 18 }}>→</span>
-              </Link>
-            )}
-            <Link href="/cuenta/cupones" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderRadius: 16, background: 'linear-gradient(135deg, #ec4899, #f43f5e)', textDecoration: 'none', boxShadow: '0 8px 20px rgba(236,72,153,0.25)' }}>
-              <div>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#fff' }}>Cupones y descuentos</p>
-                <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.88)' }}>Aplicá códigos en tu próxima compra</p>
-              </div>
-              <span style={{ color: '#fff', fontSize: 18 }}>→</span>
-            </Link>
-            <Link href="/ofertas" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderRadius: 16, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', textDecoration: 'none', boxShadow: '0 8px 20px rgba(99,102,241,0.25)' }}>
-              <div>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#fff' }}>Ofertas de inauguración</p>
-                <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.88)' }}>Precios especiales por tiempo limitado</p>
-              </div>
-              <span style={{ color: '#fff', fontSize: 18 }}>→</span>
-            </Link>
-          </div>
         </div>
 
         {/* ── LOYALTY compact card ── */}

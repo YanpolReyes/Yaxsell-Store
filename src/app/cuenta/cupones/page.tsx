@@ -7,7 +7,7 @@ import { Query, Client, Databases } from 'appwrite';
 import { ArrowLeft, Ticket, Gift, Tag, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
-import CuentaPageShell, { type PromoHint } from '@/components/cuenta/CuentaPageShell';
+import CuentaPageShell from '@/components/cuenta/CuentaPageShell';
 import { useCuentaBg } from '../CuentaBgContext';
 
 const FF = '"DM Sans",system-ui,sans-serif';
@@ -70,26 +70,6 @@ export default function CuponesPage() {
     })();
   }, [isLoggedIn, user]);
 
-  const promos: PromoHint[] = [
-    ...(welcomeCode
-      ? [{
-          id: 'welcome',
-          title: `Tu cupón ${welcomeCode} está listo`,
-          desc: 'Se aplica automáticamente en el checkout',
-          href: '/carrito',
-          gradient: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
-          badge: 'Bienvenida',
-        }]
-      : []),
-    {
-      id: 'offers',
-      title: 'Ofertas de inauguración',
-      desc: 'Descuentos extra en productos seleccionados',
-      href: '/ofertas',
-      gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    },
-  ];
-
   if (authLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fafafa' }}>
@@ -129,7 +109,6 @@ export default function CuponesPage() {
     <CuentaPageShell
       title="Mis Cupones"
       subtitle={`${coupons.length} cupón${coupons.length !== 1 ? 'es' : ''} disponible${coupons.length !== 1 ? 's' : ''}`}
-      promos={promos}
     >
       <div style={{ fontFamily: FF }}>
         {/* Hero image */}

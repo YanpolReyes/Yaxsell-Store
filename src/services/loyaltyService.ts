@@ -26,10 +26,10 @@ const LEVELS = [
 ];
 
 const COUPON_CONFIG = {
-  silver: { percent: 2, minOrder: 50000 },
-  gold: { percent: 3, minOrder: 100000 },
-  diamond: { percent: 5, minOrder: 200000 },
-  ruby: { percent: 10, minOrder: 210000 },
+  silver: { percent: 3, minOrder: 50000, stackable: true },
+  gold: { percent: 5, minOrder: 100000, stackable: false },
+  diamond: { percent: 10, minOrder: 80000, stackable: false },
+  ruby: { percent: 10, minOrder: 100000, stackable: false, monthly: true },
 };
 
 export class LoyaltyService {

@@ -119,10 +119,6 @@ export default function RegalosPage() {
     <CuentaPageShell
       title="Regalos"
       subtitle="Premios por tu registro y la gran apertura"
-      promos={[
-        { id: 'cupons', title: 'Ver todos los cupones', desc: 'Descuentos activos en tu cuenta', href: '/cuenta/cupones', gradient: 'linear-gradient(135deg, #ec4899, #f43f5e)' },
-        { id: 'offers', title: 'Ofertas de inauguración', desc: 'Promos limitadas en la tienda', href: '/ofertas', gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
-      ]}
     >
       <div style={{ fontFamily: FF }}>
       <AnimatePresence>

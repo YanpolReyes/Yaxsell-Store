@@ -119,10 +119,6 @@ export default function MisPedidosPage() {
     <CuentaPageShell
       title="Mis Pedidos"
       subtitle={`${orders.length} pedido${orders.length !== 1 ? 's' : ''} en tu historial`}
-      promos={[
-        { id: 'offers', title: 'Ofertas activas', desc: 'Aprovechá descuentos de inauguración', href: '/ofertas', gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
-        { id: 'cupons', title: 'Cupones disponibles', desc: 'Aplicá un código en tu próxima compra', href: '/cuenta/cupones', gradient: 'linear-gradient(135deg, #ec4899, #f43f5e)' },
-      ]}
     >
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       <div style={{ fontFamily: FF }}>

@@ -13,6 +13,7 @@ import SearchOverlay from '@/components/SearchOverlay';
 import NotificationsOverlay from '@/components/NotificationsOverlay';
 import { usePrimaryAddress } from '@/hooks/usePrimaryAddress';
 import { getWhatsAppUrl, openChatbot } from '@/lib/store-contact';
+import NavAvatarWithBadge from '@/components/NavAvatarWithBadge';
 
 const PINK_PRIMARY = '#ec4899';
 const PINK_LIGHT = '#f9a8d4';
@@ -37,6 +38,7 @@ export default function Navbar1() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [loyaltyLevelId, setLoyaltyLevelId] = useState<string | null>(null);
   const { primaryAddress } = usePrimaryAddress();
   const [authPopupOpen, setAuthPopupOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -59,16 +61,21 @@ export default function Navbar1() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Cargar avatar del usuario
+  // Cargar avatar y nivel VIP del usuario
   useEffect(() => {
-    if (!isLoggedIn) { setAvatarUrl(null); return; }
+    if (!isLoggedIn) { setAvatarUrl(null); setLoyaltyLevelId(null); return; }
     (async () => {
       try {
         const { account } = getServices();
         const acc = await account.get();
-        const prefs = (acc as any).prefs || {};
-        if (prefs.avatarFileId) setAvatarUrl(getFilePreviewUrl(prefs.avatarFileId));
-      } catch {}
+        const prefs = (acc as { prefs?: Record<string, unknown> }).prefs || {};
+        if (prefs.avatarFileId) setAvatarUrl(getFilePreviewUrl(String(prefs.avatarFileId)));
+        else setAvatarUrl(null);
+        setLoyaltyLevelId(prefs.loyaltyLevel ? String(prefs.loyaltyLevel) : 'bronze');
+      } catch {
+        setAvatarUrl(null);
+        setLoyaltyLevelId(null);
+      }
     })();
   }, [isLoggedIn, user?.id]);
 
@@ -223,14 +230,40 @@ export default function Navbar1() {
         .tpl1-nav-mobile-user { display: flex; align-items: center; gap: 12px; padding: 16px; background: linear-gradient(135deg, #fef2f8, #fdf2f8); border-radius: 14px; margin-bottom: 8px; }
 
         /* Bottom mobile nav */
-        .tpl1-bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 9998; background: #fff; border-top: 1px solid #f3f4f6; padding: 6px 0 env(safe-area-inset-bottom, 8px); box-shadow: 0 -2px 12px rgba(0,0,0,0.06); }
-        .tpl1-bottom-nav-inner { display: flex; justify-content: space-around; align-items: center; max-width: 500px; margin: 0 auto; }
-        .tpl1-bottom-nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; padding: 4px 8px; border-radius: 12px; transition: all 0.2s ease; position: relative; background: transparent; border: none; cursor: pointer; }
-        .tpl1-bottom-nav-item svg { width: 22px; height: 22px; color: #999; transition: color 0.2s; }
-        .tpl1-bottom-nav-item span { font-size: 10px; font-weight: 600; color: #999; font-family: 'DM Sans', system-ui, sans-serif; transition: color 0.2s; }
-        .tpl1-bottom-nav-item.active svg { color: ${PINK_PRIMARY}; }
-        .tpl1-bottom-nav-item.active span { color: ${PINK_PRIMARY}; }
-        .tpl1-bottom-nav-item .tpl1-bottom-badge { position: absolute; top: 0; right: 0; background: linear-gradient(135deg, ${PINK_PRIMARY}, #db2777); color: #fff; font-size: 8px; font-weight: 800; border-radius: 999px; min-width: 14px; height: 14px; padding: 0 3px; display: flex; align-items: center; justify-content: center; border: 1.5px solid #fff; }
+        @keyframes tpl1-nav-pop { 0% { transform: scale(0.92); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
+        .tpl1-bottom-nav {
+          display: none;
+          position: fixed; bottom: 0; left: 0; right: 0; z-index: 9998;
+          background: rgba(255,255,255,0.94);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border-top: 1px solid rgba(236,72,153,0.12);
+          padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 8px));
+          box-shadow: 0 -8px 32px rgba(236,72,153,0.1);
+        }
+        .tpl1-bottom-nav-inner { display: flex; justify-content: space-around; align-items: flex-end; max-width: 520px; margin: 0 auto; gap: 4px; }
+        .tpl1-bottom-nav-item {
+          display: flex; flex-direction: column; align-items: center; gap: 4px;
+          text-decoration: none; padding: 6px 10px 4px; border-radius: 14px;
+          transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), background 0.2s ease;
+          position: relative; background: transparent; border: none; cursor: pointer; min-width: 52px;
+        }
+        .tpl1-bottom-nav-item:active { transform: scale(0.92); }
+        .tpl1-bottom-nav-item svg { width: 22px; height: 22px; color: #9ca3af; transition: color 0.2s, transform 0.2s; }
+        .tpl1-bottom-nav-item span { font-size: 9.5px; font-weight: 700; color: #9ca3af; font-family: 'DM Sans', system-ui, sans-serif; transition: color 0.2s; letter-spacing: -0.01em; }
+        .tpl1-bottom-nav-item.active {
+          background: linear-gradient(180deg, rgba(236,72,153,0.12), rgba(236,72,153,0.04));
+        }
+        .tpl1-bottom-nav-item.active svg { color: ${PINK_PRIMARY}; transform: translateY(-2px); animation: tpl1-nav-pop 0.35s ease; }
+        .tpl1-bottom-nav-item.active span { color: ${PINK_PRIMARY}; font-weight: 800; }
+        .tpl1-bottom-nav-item .tpl1-bottom-badge {
+          position: absolute; top: 2px; right: 6px;
+          background: linear-gradient(135deg, ${PINK_PRIMARY}, #db2777);
+          color: #fff; font-size: 8px; font-weight: 800; border-radius: 999px;
+          min-width: 16px; height: 16px; padding: 0 4px;
+          display: flex; align-items: center; justify-content: center; border: 2px solid #fff;
+          box-shadow: 0 2px 6px rgba(236,72,153,0.4);
+        }
         /* Mobile search overlay */
         .tpl1-search-overlay { display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); flex-direction: column; padding: 0; animation: tpl1SearchSlideIn 0.25s ease-out; }
         .tpl1-search-overlay.open { display: flex; }
@@ -430,19 +463,23 @@ export default function Navbar1() {
             {isLoggedIn && user ? (
               <div className="tpl1-nav-account" ref={accountDropdownRef} style={{ position: 'relative' }}>
                 <button className="tpl1-nav-account-btn" onClick={() => setAccountOpen(!accountOpen)} title="Mi cuenta">
-                  {avatarUrl ? (
-                    <div className="tpl1-nav-user-avatar"><img src={avatarUrl} alt="" /></div>
-                  ) : (
-                    <div className="tpl1-nav-avatar">{user.name?.charAt(0).toUpperCase() || 'U'}</div>
-                  )}
+                  <NavAvatarWithBadge
+                    avatarUrl={avatarUrl}
+                    userName={user.name}
+                    size={36}
+                    loyaltyLevelId={loyaltyLevelId}
+                  />
                   <span className="tpl1-nav-account-name">{user.name?.split(' ')[0]}</span>
                 </button>
                 {accountOpen && (
                   <div className="tpl1-nav-dropdown">
                     <div className="tpl1-nav-dropdown-header">
-                      <div className="tpl1-nav-avatar lg">
-                        {avatarUrl ? <img src={avatarUrl} alt="" /> : (user.name?.charAt(0).toUpperCase() || 'U')}
-                      </div>
+                      <NavAvatarWithBadge
+                        avatarUrl={avatarUrl}
+                        userName={user.name}
+                        size={40}
+                        loyaltyLevelId={loyaltyLevelId}
+                      />
                       <div>
                         <p className="tpl1-nav-dropdown-name">{user.name}</p>
                         <p className="tpl1-nav-dropdown-email">{user.email}</p>
@@ -475,9 +512,12 @@ export default function Navbar1() {
         <div className={`tpl1-nav-mobile-menu ${menuOpen ? 'open' : ''}`}>
           {isLoggedIn && user && (
             <div className="tpl1-nav-mobile-user">
-              <div className="tpl1-nav-avatar lg">
-                {avatarUrl ? <img src={avatarUrl} alt="" /> : (user.name?.charAt(0).toUpperCase() || 'U')}
-              </div>
+              <NavAvatarWithBadge
+                avatarUrl={avatarUrl}
+                userName={user.name}
+                size={44}
+                loyaltyLevelId={loyaltyLevelId}
+              />
               <div>
                 <p style={{ margin: 0, fontWeight: 700, fontSize: 14 }}>{user.name}</p>
                 <p style={{ margin: 0, fontSize: 12, color: '#888' }}>{user.email}</p>
@@ -614,8 +654,12 @@ export default function Navbar1() {
             {totalItems > 0 && <span className="tpl1-bottom-badge">{totalItems > 99 ? '99+' : totalItems}</span>}
             <span>Carrito</span>
           </Link>
-          <Link href="/cuenta" className={`tpl1-bottom-nav-item ${pathname?.startsWith('/cuenta') ? 'active' : ''}`}>
-            <User />
+          <Link href="/cuenta" className={`tpl1-bottom-nav-item ${pathname?.startsWith('/cuenta') ? 'active' : ''}`} style={{ position: 'relative' }}>
+            {isLoggedIn && user ? (
+              <NavAvatarWithBadge avatarUrl={avatarUrl} userName={user.name} size={26} loyaltyLevelId={loyaltyLevelId} />
+            ) : (
+              <User />
+            )}
             <span>Mi perfil</span>
           </Link>
         </div>

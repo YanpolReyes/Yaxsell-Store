@@ -403,9 +403,6 @@ export default function DireccionesPage() {
     <CuentaPageShell
       title="Mis Ubicaciones"
       subtitle={`${addresses.length} dirección${addresses.length !== 1 ? 'es' : ''} guardada${addresses.length !== 1 ? 's' : ''}`}
-      promos={[
-        { id: 'ship', title: 'Envío más rápido', desc: 'Guardá tu dirección principal para checkout express', href: '/productos', gradient: 'linear-gradient(135deg, #10b981, #34d399)' },
-      ]}
       headerRight={
         <button onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', background: 'linear-gradient(135deg,#ec4899,#db2777)', color: '#fff', border: 'none', borderRadius: 12, cursor: 'pointer', fontWeight: 700, fontSize: 12, boxShadow: '0 4px 14px rgba(236,72,153,0.3)', flexShrink: 0 }}>
           <Plus size={14} /> Nueva

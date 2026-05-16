@@ -1,26 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const FF = '"DM Sans",system-ui,sans-serif';
 const PINK = '#ec4899';
 
-export interface PromoHint {
-  id: string;
-  title: string;
-  desc: string;
-  href: string;
-  gradient: string;
-  badge?: string;
-}
-
 interface Props {
   title: string;
   subtitle?: string;
   backHref?: string;
-  promos?: PromoHint[];
   children: React.ReactNode;
   headerRight?: React.ReactNode;
 }
@@ -29,7 +19,6 @@ export default function CuentaPageShell({
   title,
   subtitle,
   backHref = '/cuenta',
-  promos,
   children,
   headerRight,
 }: Props) {
@@ -79,66 +68,6 @@ export default function CuentaPageShell({
       </div>
 
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '16px 16px 48px' }}>
-        {promos && promos.length > 0 && (
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-              <Sparkles size={14} color={PINK} />
-              <span style={{ fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                Promociones activas
-              </span>
-            </div>
-            <motion.div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {promos.map((p, i) => (
-                <motion.div
-                  key={p.id}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.06 }}
-                >
-                  <Link
-                    href={p.href}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                      padding: '14px 16px',
-                      borderRadius: 16,
-                      background: p.gradient,
-                      textDecoration: 'none',
-                      boxShadow: '0 8px 24px rgba(236,72,153,0.15)',
-                      border: '1px solid rgba(255,255,255,0.25)',
-                    }}
-                  >
-                    <div style={{ minWidth: 0 }}>
-                      {p.badge && (
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            marginBottom: 4,
-                            padding: '2px 8px',
-                            borderRadius: 999,
-                            background: 'rgba(255,255,255,0.25)',
-                            fontSize: 9,
-                            fontWeight: 800,
-                            color: '#fff',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.08em',
-                          }}
-                        >
-                          {p.badge}
-                        </span>
-                      )}
-                      <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#fff' }}>{p.title}</p>
-                      <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.88)', fontWeight: 500 }}>{p.desc}</p>
-                    </div>
-                    <span style={{ fontSize: 18, color: '#fff', flexShrink: 0 }}>→</span>
-                  </Link>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        )}
         {children}
       </div>
     </motion.div>

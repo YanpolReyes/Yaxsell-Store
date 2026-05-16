@@ -82,6 +82,7 @@ export const STOCK_MOVEMENTS_COLLECTION_ID = 'stock_movements';
 export const FCM_TOKENS_COLLECTION_ID = 'fcm_tokens';
 export const ORDER_STATUS_HISTORY_COLLECTION_ID = 'order_status_history';
 export const COUPONS_COLLECTION_ID = 'discount_coupons';
+export const POINTS_STORE_COLLECTION_ID = 'points_store_items';
 export const WHOLESALE_REQUESTS_COLLECTION_ID = 'wholesale_requests';
 export const REVIEWS_COLLECTION_ID = 'reviews';
 export const FAVORITES_COLLECTION_ID = 'favorites';

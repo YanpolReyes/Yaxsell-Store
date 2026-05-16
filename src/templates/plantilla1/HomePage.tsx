@@ -28,6 +28,9 @@ import {
 import { formatPrice } from '@/lib/appwrite';
 import CouponBanner from '@/components/CouponBanner';
 import { getWhatsAppUrl, openChatbot } from '@/lib/store-contact';
+import HeroSkeletonMobile from '@/components/HeroSkeletonMobile';
+import { scheduleHomeHeaderAvatarSync } from '@/lib/home-header-avatar';
+import { normalizeProductImages, getProductImageUrl, resolveStorageImageUrl } from '@/lib/product-images';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import lottie from 'lottie-web';
@@ -1592,6 +1595,11 @@ export default function HomePage1() {
       document.body.style.overflow = '';
       userDropdownJustOpened = false;
     };
+    const getAvatarPreviewUrl = (fileId: string): string => {
+      const { endpoint, projectId } = getAppwriteConfig();
+      return `${endpoint}/storage/buckets/${USER_PHOTOS_BUCKET}/files/${fileId}/view?project=${projectId}`;
+    };
+
     const toggleUserDropdown = async (anchor: HTMLElement) => {
       // Remove existing
       if (userDropdownEl) { closeUserDropdown(); return; }
@@ -1607,7 +1615,7 @@ export default function HomePage1() {
         const prefs = (acc as any).prefs || {};
         const avatarFileId = prefs.avatarFileId;
         if (avatarFileId) {
-          avatarUrl = getFilePreviewUrl(avatarFileId);
+          avatarUrl = getAvatarPreviewUrl(avatarFileId);
         }
       } catch { }
 
@@ -1722,52 +1730,6 @@ export default function HomePage1() {
       };
       setTimeout(() => document.addEventListener('click', closeOnOutside), 0);
     };
-
-    // ── Replace user icon with avatar when logged in ──
-    const getFilePreviewUrl = (fileId: string): string => {
-      const { endpoint, projectId } = getAppwriteConfig();
-      return `${endpoint}/storage/buckets/${USER_PHOTOS_BUCKET}/files/${fileId}/view?project=${projectId}`;
-    };
-    const updateUserIcon = () => {
-      const userToggle = document.querySelector('.user-toggle, .account-icon') as HTMLElement | null;
-      if (!userToggle) return;
-      // Remove padding and constraints from parent
-      userToggle.style.padding = '0';
-      userToggle.style.width = 'auto';
-      userToggle.style.height = 'auto';
-      if (isLoggedIn && user) {
-        // Try to get avatar from Appwrite prefs
-        (async () => {
-          try {
-            const { account } = getServices();
-            const acc = await account.get();
-            const prefs = (acc as any).prefs || {};
-            const avatarFileId = prefs.avatarFileId;
-            if (avatarFileId) {
-              const url = getFilePreviewUrl(avatarFileId);
-              const svgEl = userToggle.querySelector('svg');
-              if (svgEl) {
-                const img = document.createElement('img');
-                img.src = url;
-                img.alt = user.name || '';
-                img.style.cssText = 'width:80px;height:80px;border-radius:50%;object-fit:cover;margin-top:-20px;display:block;';
-                svgEl.replaceWith(img);
-              }
-            } else {
-              // Show initial letter
-              const svgEl = userToggle.querySelector('svg');
-              if (svgEl) {
-                const initial = document.createElement('span');
-                initial.textContent = user.name?.charAt(0).toUpperCase() || 'U';
-                initial.style.cssText = 'display:flex;align-items:center;justify-content:center;width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#ec4899,#f9a8d4);color:#fff;font-size:24px;font-weight:700;font-family:DM Sans,system-ui,sans-serif;margin-top:-20px;';
-                svgEl.replaceWith(initial);
-              }
-            }
-          } catch { }
-        })();
-      }
-    };
-    updateUserIcon();
 
     // ── Funciones de abrir/cerrar drawer con GSAP ──
     // Create our own overlay outside the drawer (not affected by transforms)
@@ -2685,7 +2647,7 @@ export default function HomePage1() {
         const { databaseId } = getAppwriteConfig();
         const { databases } = getServices();
         const product = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, pid);
-        if (alive) setFeaturedProduct(product as unknown as Product);
+        if (alive) setFeaturedProduct(normalizeProductImages(product as unknown as Product));
       } catch {
         if (alive) setFeaturedProduct(null);
       }
@@ -2858,10 +2820,18 @@ export default function HomePage1() {
 
     const price = section.querySelector('.product-price') as HTMLElement;
     if (price) {
-      const current = featuredProduct.CURRENTPRICE ?? featuredProduct.PRICE;
-      price.innerHTML = featuredProduct.CURRENTPRICE && featuredProduct.CURRENTPRICE < featuredProduct.PRICE
-        ? `<del>$${featuredProduct.PRICE}</del><span class="current-price">$${current}</span>`
-        : `<span class="current-price">$${current}</span>`;
+      const current = featuredProduct.CURRENTPRICE && featuredProduct.CURRENTPRICE > 0 ? featuredProduct.CURRENTPRICE : featuredProduct.PRICE;
+      const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
+      const hasDisc = featuredProduct.CURRENTPRICE && featuredProduct.CURRENTPRICE < featuredProduct.PRICE;
+      price.innerHTML = hasDisc
+        ? `<del style="font-size:0.85em;opacity:0.55;margin-right:8px;">${fmt(featuredProduct.PRICE)}</del><span class="current-price" style="font-size:1.35em;font-weight:800;color:#ec4899;">${fmt(current)}</span>`
+        : `<span class="current-price" style="font-size:1.35em;font-weight:800;color:#ec4899;">${fmt(current)}</span>`;
+      price.style.display = 'flex';
+      price.style.alignItems = 'baseline';
+      price.style.justifyContent = 'center';
+      price.style.flexWrap = 'wrap';
+      price.style.gap = '4px';
+      price.style.marginTop = '8px';
     }
 
     const desc = section.querySelector('.product-detail .rte') as HTMLElement;
@@ -5424,51 +5394,15 @@ export default function HomePage1() {
       @media (max-width: 768px) {
         #${HEADER_ID} header.musk-main-header .tpl1-notif-bell-wrap { display: none !important; }
       }
-      #${HEADER_ID} header.musk-main-header .user-toggle:has(img), #${HEADER_ID} header.musk-main-header .account-icon:has(img) {
-        padding: 3px !important;
+      #${HEADER_ID} header.musk-main-header .user-toggle:has([data-yaxsel-avatar]),
+      #${HEADER_ID} header.musk-main-header .account-icon:has([data-yaxsel-avatar]) {
+        padding: 0 !important;
         width: auto !important;
         height: auto !important;
         overflow: visible !important;
-        z-index: 10003 !important;
-        position: relative !important;
-        border-radius: 50% !important;
-        background: #fce7f3 !important;
-        box-shadow: 0 0 0 0 transparent !important;
-      }
-      #${HEADER_ID} header.musk-main-header .user-toggle:has(img)::before, #${HEADER_ID} header.musk-main-header .account-icon:has(img)::before {
-        content: '' !important;
-        position: absolute !important;
-        inset: -3px !important;
-        border-radius: 50% !important;
-        background: conic-gradient(#fbcfe8, #fda4af, #f9a8d4, #fbcfe8, transparent, transparent, #fbcfe8) !important;
-        animation: yaxselAvatarSpin 2.5s linear infinite !important;
-        z-index: -1 !important;
-      }
-      #${HEADER_ID} header.musk-main-header .user-toggle:has(img)::after, #${HEADER_ID} header.musk-main-header .account-icon:has(img)::after {
-        content: '' !important;
-        position: absolute !important;
-        inset: -8px !important;
-        border-radius: 50% !important;
-        background: conic-gradient(transparent, transparent, transparent, rgba(249,168,212,0.4), transparent, transparent, transparent) !important;
-        animation: yaxselAvatarSpin 4s linear infinite reverse !important;
-        z-index: -2 !important;
-        filter: blur(4px) !important;
-      }
-      #${HEADER_ID} header.musk-main-header .user-toggle img, #${HEADER_ID} header.musk-main-header .account-icon img {
-        width: 60px !important;
-        height: 60px !important;
-        margin-top: 0 !important;
-        display: block !important;
-        border-radius: 50% !important;
+        background: transparent !important;
+        box-shadow: none !important;
         border: none !important;
-        box-sizing: border-box !important;
-        object-fit: cover !important;
-        position: relative !important;
-        z-index: 1 !important;
-      }
-      @keyframes yaxselAvatarSpin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
       }
     `;
 
@@ -5560,10 +5494,14 @@ export default function HomePage1() {
     const t1 = setTimeout(injectNotifBell, 400);
     const t2 = setTimeout(injectNotifBell, 1200);
     const section = document.getElementById(HEADER_ID);
+    let notifDebounce: ReturnType<typeof setTimeout> | null = null;
     const obs = section
-      ? new MutationObserver(() => injectNotifBell())
+      ? new MutationObserver(() => {
+          if (notifDebounce) clearTimeout(notifDebounce);
+          notifDebounce = setTimeout(injectNotifBell, 300);
+        })
       : null;
-    obs?.observe(section!, { childList: true, subtree: true });
+    obs?.observe(section!, { childList: true, subtree: false });
     window.addEventListener('resize', injectNotifBell);
     return () => {
       clearTimeout(t1);
@@ -6967,7 +6905,7 @@ export default function HomePage1() {
       particlesContainer.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:2;overflow:hidden;';
       heroBannerEl.appendChild(particlesContainer);
 
-      const particleCount = 100;
+      const particleCount = 24;
       const particles: HTMLElement[] = [];
       const speeds: number[] = [];
       const colors = ['#ec4899', '#f472b6', '#fb7185', '#f9a8d4', '#fda4af', '#fce7f3'];
@@ -7194,7 +7132,6 @@ export default function HomePage1() {
     if (window.innerWidth <= 767) return;
 
     let ctx = gsap.context(() => { });
-    let guardObserver: MutationObserver | null = null;
     let pollTimer: ReturnType<typeof setInterval> | null = null;
     let building = false;
 
@@ -7326,27 +7263,7 @@ export default function HomePage1() {
         console.log('[HEADING-GSAP] Swiper ready, building animation...');
         if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
         buildAnimation();
-        // Start guard AFTER first build
-        setTimeout(() => {
-          const activeSlide2 = document.querySelector('.musk-banner-slider .swiper-slide-active');
-          const h = activeSlide2?.querySelector('.banner-main-title.enlarge_text') as HTMLElement | null
-            || document.getElementById('enlarge_heading');
-          const s = activeSlide2?.querySelector('.banner-fancy-sub-head.enlarge_text') as HTMLElement | null
-            || document.getElementById('enlarge_subheading');
-          if (!h || !s) return;
-          guardObserver = new MutationObserver((mutations) => {
-            console.log('[HEADING-GSAP] guard MutationObserver FIRED, mutations:', mutations.map(m => m.type + '/' + m.attributeName + '/' + m.target));
-            const activeSlide3 = document.querySelector('.musk-banner-slider .swiper-slide-active');
-            const hh = activeSlide3?.querySelector('.banner-main-title.enlarge_text') as HTMLElement | null
-              || document.getElementById('enlarge_heading');
-            if (hh && !hh.querySelector('span span') && !building) {
-              console.log('[HEADING-GSAP] guard: heading lost spans, rebuilding...');
-              buildAnimation();
-            }
-          });
-          guardObserver.observe(h, { childList: true, subtree: true, characterData: true });
-          guardObserver.observe(s, { childList: true, subtree: true, characterData: true });
-        }, 300);
+        // Guard desactivado: el MutationObserver provocaba loops y freeze en desktop
       }
     }, 300);
 
@@ -7364,7 +7281,6 @@ export default function HomePage1() {
       console.log('[HEADING-GSAP] ⚠️ USEEFFECT CLEANUP CALLED — animation will be killed!');
       if (pollTimer) clearInterval(pollTimer);
       clearTimeout(fallbackTimer);
-      if (guardObserver) guardObserver.disconnect();
       ctx.revert();
     };
   }, [bodyHtml]);
@@ -7413,7 +7329,14 @@ export default function HomePage1() {
     if (containerRef.current.dataset.htmlSet) return; // already set
     containerRef.current.innerHTML = bodyHtml;
     containerRef.current.dataset.htmlSet = '1';
-  }, [bodyHtml]);
+    scheduleHomeHeaderAvatarSync(user, isLoggedIn);
+  }, [bodyHtml, user, isLoggedIn]);
+
+  /* ── Avatar en header Shopify: reintenta tras auth / settings ── */
+  useEffect(() => {
+    if (!bodyHtml || !settingsApplied) return;
+    return scheduleHomeHeaderAvatarSync(user, isLoggedIn);
+  }, [bodyHtml, settingsApplied, isLoggedIn, user]);
 
   /* ── Inject mobile countdown (simple version replacing Shopify section) ── */
   useEffect(() => {
@@ -7587,12 +7510,20 @@ export default function HomePage1() {
     );
   }
 
+  const showHeroSkeleton = !bodyHtml || !settingsApplied;
+
   if (!bodyHtml) {
-    return <div className="tpl1-loading">Cargando plantilla…</div>;
+    return (
+      <>
+        <HeroSkeletonMobile visible={showHeroSkeleton} />
+        <div className="tpl1-loading" style={{ visibility: 'hidden', height: 0, overflow: 'hidden' }} aria-hidden />
+      </>
+    );
   }
 
   return (
     <>
+      <HeroSkeletonMobile visible={showHeroSkeleton} />
       <div
         ref={containerRef}
         className="tpl1-shopify-root viewport musk-skin mi-tienda-3 index"

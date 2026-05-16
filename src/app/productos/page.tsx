@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Search, Grid3x3, List, ShoppingCart, X, Heart, SlidersHorizontal, Sparkles, ChevronDown } from 'lucide-react';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, formatPrice } from '@/lib/appwrite';
+import { normalizeProductImages, getProductImageUrl } from '@/lib/product-images';
 import { Query } from 'appwrite';
 import { Product, Category, Subcategory } from '@/types';
 import { useCart } from '@/context/CartContext';
@@ -78,7 +79,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
       else if (sortBy === 'price_desc') queries.push(Query.orderDesc('PRICE'));
 
       const prodRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, queries);
-      setProducts(prodRes.documents as unknown as Product[]);
+      setProducts((prodRes.documents as unknown as Product[]).map((p) => normalizeProductImages(p)));
 
       // 4. Cargar subcategorías para la categoría seleccionada
       if (catIdToUse || selectedCat) {
@@ -461,8 +462,8 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
                     <div key={p.$id} className="pk-card" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '0 0 22px 22px', overflow: 'hidden', border: '1px solid rgba(252,231,243,0.95)', transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(236,72,153,0.08)', backdropFilter: 'blur(10px)' }}>
                       <Link href={`/productos/${p.$id}`} className="pk-card-media-link" onClick={e => handleCardImageClick(p, e)} style={{ display: 'block', position: 'relative' }}>
                         <div className="pk-card-image" style={{ position: 'relative', aspectRatio: '1/1', background: 'linear-gradient(135deg,#fef2f8,#fff)', overflow: 'hidden' }}>
-                          {p.IMAGEURL ? (
-                            <Image src={p.IMAGEURL} alt={p.NAME} fill className="pk-card-img" style={{ objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.16,1,0.3,1)' }} sizes="(max-width: 768px) 50vw, 25vw" />
+                          {getProductImageUrl(p) ? (
+                            <Image src={getProductImageUrl(p)} alt={p.NAME} fill className="pk-card-img" style={{ objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.16,1,0.3,1)' }} sizes="(max-width: 768px) 50vw, 25vw" unoptimized />
                           ) : (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 48, color: '#fbcfe8' }}>📦</div>
                           )}

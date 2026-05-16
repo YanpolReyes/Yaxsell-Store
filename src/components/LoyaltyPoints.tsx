@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Star, Gift, TrendingUp, Sparkles, Ticket, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { Star, Gift, TrendingUp, Sparkles, Ticket, ChevronRight, CheckCircle2, ShoppingBag, DollarSign } from 'lucide-react';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,6 +9,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LoyaltyService } from '@/services/loyaltyService';
 
 const POINTS_PER_1000 = 10;
+
+// Animations for particles
+const particleStyles = `
+  @keyframes td_float {
+    0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.6; }
+    50% { transform: translateY(-10px) translateX(5px); opacity: 1; }
+  }
+  @keyframes td_drift {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(10px, -10px); }
+  }
+  .td_float { animation: td_float ease-in-out infinite alternate; }
+  .td_drift { animation: td_drift ease-in-out infinite; }
+`;
 
 interface Tier {
   name: string;
@@ -68,10 +82,10 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
         const { databases, account } = getServices();
         const { databaseId } = getAppwriteConfig();
         
-        // Fetch orders
+        // Fetch orders (solo pedidos pagados cuentan para subir de nivel)
         const res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
           Query.equal('CUSTOMEREMAIL', user.email),
-          Query.equal('STATUS', ['paid', 'shipped', 'delivered']),
+          Query.equal('STATUS', 'paid'),
           Query.limit(200),
         ]);
         
@@ -151,6 +165,7 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
         @media (prefers-reduced-motion: reduce){
           .lp-card { animation: none !important; }
         }
+        ${particleStyles}
       `}</style>
       
       {/* ── Welcome Reward (First Registration) ── */}
@@ -312,20 +327,32 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
         {/* Experience Stats Row */}
         <div className="grid grid-cols-3 bg-slate-50/50 border-t border-slate-100 p-3 gap-2">
           {[
-            { icon: TrendingUp, value: orderCount, label: 'Compras', color: 'text-pink-500', bg: 'bg-white' },
-            { icon: Gift, value: '$' + totalSpent.toLocaleString(), label: 'Total', color: 'text-rose-500', bg: 'bg-white' },
-            { icon: Sparkles, value: `${POINTS_PER_1000}x`, label: 'Pts/$1k', color: 'text-pink-400', bg: 'bg-white' },
+            { icon: ShoppingBag, value: orderCount, label: 'Pedidos realizados', color: 'text-pink-500', bg: 'bg-white', description: 'Pedidos pagados en total', particleColor: 'rgba(236, 72, 153, 0.45)' },
+            { icon: DollarSign, value: '$' + totalSpent.toLocaleString(), label: 'Total invertido', color: 'text-emerald-500', bg: 'bg-white', description: 'Acumulación de todos tus pedidos', particleColor: 'rgba(16, 185, 129, 0.45)' },
+            { icon: Sparkles, value: points.toLocaleString(), label: 'Puntos acumulados', color: 'text-pink-400', bg: 'bg-white', description: `Gana 1 punto por $1000. ${POINTS_PER_1000}x según nivel. Canjea por cupones y productos.`, particleColor: 'rgba(139, 92, 246, 0.45)' },
           ].map((stat, i) => (
             <motion.div 
               key={i} 
               whileHover={{ y: -3, boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 3px 0 rgba(0,0,0,0.03), 0 4px 12px 0 rgba(0,0,0,0.045), 0 8px 24px 0 rgba(0,0,0,0.025)' }} 
-              className={`flex flex-col items-center justify-center p-5 rounded-2xl transition-all border border-slate-100 hover:border-slate-200 ${stat.bg} shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.015),0_1px_2px_0_rgba(0,0,0,0.025),0_2px_8px_0_rgba(0,0,0,0.035),0_4px_16px_0_rgba(0,0,0,0.02)]`}
+              className={`flex flex-col items-center justify-center p-5 rounded-2xl transition-all border border-slate-100 hover:border-slate-200 ${stat.bg} shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.015),0_1px_2px_0_rgba(0,0,0,0.025),0_2px_8px_0_rgba(0,0,0,0.035),0_4px_16px_0_rgba(0,0,0,0.02)] relative overflow-hidden`}
             >
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 shadow-sm ${stat.bg} border border-slate-50`}>
-                <stat.icon size={18} className={stat.color} />
+              {/* Partículas animadas */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute rounded-full" style={{ left: '13%', top: '17%', width: '3px', height: '3px', background: `radial-gradient(circle, ${stat.particleColor}, ${stat.particleColor.replace('0.45', '0.2')})`, boxShadow: `${stat.particleColor.replace('0.45', '0.3')} 0px 0px 3px`, animation: '3s ease-in-out 0s infinite alternate td_float' }} />
+                <div className="absolute rounded-full" style={{ left: '26%', top: '36%', width: '4.5px', height: '4.5px', background: `radial-gradient(circle, ${stat.particleColor.replace('0.45', '0.57')}, ${stat.particleColor.replace('0.45', '0.28')})`, boxShadow: `${stat.particleColor.replace('0.45', '0.3')} 0px 0px 5px`, animation: '3.8s ease-in-out 0.3s infinite alternate td_float' }} />
+                <div className="absolute rounded-full" style={{ left: '39%', top: '55%', width: '6px', height: '6px', background: `radial-gradient(circle, ${stat.particleColor.replace('0.45', '0.69')}, ${stat.particleColor.replace('0.45', '0.36')})`, boxShadow: `${stat.particleColor.replace('0.45', '0.3')} 0px 0px 7px`, animation: '4.6s ease-in-out 0.6s infinite alternate td_float' }} />
+                <div className="absolute rounded-full" style={{ left: '52%', top: '74%', width: '3px', height: '3px', background: `radial-gradient(circle, ${stat.particleColor}, ${stat.particleColor.replace('0.45', '0.2')})`, boxShadow: `${stat.particleColor.replace('0.45', '0.3')} 0px 0px 3px`, animation: '5.4s ease-in-out 0.9s infinite alternate td_float' }} />
+                <div className="absolute rounded-full" style={{ left: '65%', top: '23%', width: '4.5px', height: '4.5px', background: `radial-gradient(circle, ${stat.particleColor.replace('0.45', '0.57')}, ${stat.particleColor.replace('0.45', '0.28')})`, boxShadow: `${stat.particleColor.replace('0.45', '0.3')} 0px 0px 5px`, animation: '3s ease-in-out 1.2s infinite alternate td_float' }} />
+                <div className="absolute rounded-full" style={{ left: '78%', top: '42%', width: '6px', height: '6px', background: `radial-gradient(circle, ${stat.particleColor.replace('0.45', '0.69')}, ${stat.particleColor.replace('0.45', '0.36')})`, boxShadow: `${stat.particleColor.replace('0.45', '0.3')} 0px 0px 7px`, animation: '3.8s ease-in-out 1.5s infinite alternate td_float' }} />
               </div>
-              <p className="text-base font-black text-slate-900 leading-none mb-2">{stat.value}</p>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+              <div className="relative z-10">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 shadow-sm ${stat.bg} border border-slate-50`}>
+                  <stat.icon size={18} className={stat.color} />
+                </div>
+                <p className="text-base font-black text-slate-900 leading-none mb-2">{stat.value}</p>
+                <p style={{ fontSize: '9px', fontWeight: 800, color: stat.color, textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>{stat.label}</p>
+                <p style={{ fontSize: '10px', fontWeight: 600, color: '#6b7280', lineHeight: 1.3, marginTop: i === 2 ? '4px' : '8px' }}>{stat.description}</p>
+              </div>
             </motion.div>
           ))}
         </div>

@@ -50,6 +50,7 @@ export const ORDERS_COLLECTION      = 'orders';
 export const TIMED_OFFERS_COLLECTION = 'timed_offers';
 export const SEQUENCES_COLLECTION   = 'sequences';
 export const COUPONS_COLLECTION                  = 'discount_coupons';
+export const POINTS_STORE_COLLECTION             = 'points_store_items';
 export const USERS_COLLECTION                    = 'users';
 export const LIVE_STREAMS_COLLECTION             = 'live_streams';
 export const BANNER_OVERLAY_POSITIONS_COLLECTION = 'banner_overlay_positions';

@@ -440,10 +440,49 @@
     justify-content: center !important;
   }
 
-  /* Reducir padding de la secciÃ³n */
+  /* Reducir padding de la sección */
   [data-template="1"] .fusion-featured-wrapper {
     padding-top: 40px !important;
     padding-bottom: 30px !important;
+  }
+
+  /* Precio producto destacado — más legible en móvil */
+  [data-template="1"] .fusion-featured-wrapper .product-price,
+  [data-template="1"] .right-content .product-price,
+  [data-template="1"] .product-detail .product-price {
+    font-size: 22px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    margin: 10px 0 14px !important;
+    display: flex !important;
+    align-items: baseline !important;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  [data-template="1"] .fusion-featured-wrapper .product-price .current-price,
+  [data-template="1"] .product-price .current-price {
+    font-size: 24px !important;
+    font-weight: 900 !important;
+    color: #ec4899 !important;
+  }
+  [data-template="1"] .fusion-featured-wrapper .product-price del,
+  [data-template="1"] .product-price del {
+    font-size: 15px !important;
+    opacity: 0.55 !important;
+  }
+
+  /* Precios en colección / grid */
+  [data-template="1"] .product-card .price,
+  [data-template="1"] .product-card .product-price,
+  [data-template="1"] .musk-product-card .price,
+  [data-template="1"] .tpl1-featured-cat-slide .price,
+  [data-template="1"] .product-content .price {
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    color: #ec4899 !important;
+    margin-top: 6px !important;
+    line-height: 1.2 !important;
   }
 }
 

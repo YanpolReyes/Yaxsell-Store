@@ -1,20 +1,36 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Crown, Star, Gem, Award, Gift, Truck, Headphones, Sparkles, TrendingUp, Coins, Calendar, Trophy, Zap, Lock, CheckCircle2 } from 'lucide-react';
+import { Crown, Star, Gem, Award, Gift, Truck, Headphones, Sparkles, TrendingUp, Coins, Calendar, Trophy, Zap, Lock, CheckCircle2, ShoppingBag, DollarSign, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatPrice, getServices } from '@/lib/appwrite';
 import { useAuth } from '@/hooks/useAuth';
 import { LoyaltyService } from '@/services/loyaltyService';
 import { motion, AnimatePresence } from 'framer-motion';
+import BenefitActionLink from '@/components/BenefitActionLink';
 
 const FF = '"DM Sans",system-ui,sans-serif';
 const PINK = '#ec4899';
+
+// Animations for particles
+const particleStyles = `
+  @keyframes td_float {
+    0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.6; }
+    50% { transform: translateY(-10px) translateX(5px); opacity: 1; }
+  }
+  @keyframes td_drift {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(10px, -10px); }
+  }
+  .td_float { animation: td_float ease-in-out infinite alternate; }
+  .td_drift { animation: td_drift ease-in-out infinite; }
+`;
 
 interface LevelConfig {
   id: string;
   name: string;
   icon: any;
-  image?: string;
+  image: string;
+  badge?: string;
   color: string;
   bgColor: string;
   requiredOrders: number;
@@ -29,60 +45,65 @@ const LEVELS: LevelConfig[] = [
     name: 'Bronce',
     icon: Award,
     image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778903648867-pegada-1778903643580.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=A7X1WH5mE2HVGyuOlobnOttQvUjH3HdEbhJ%2Btfav0BVipBitLHzoevrKi2AQxIuFu87YgUWZGfvtv7vJeGq9GKw0FwIC35lQ3po6ZD1EIyp27t5Ls4R8ZLoFzjsxRlL2G9ch9WYjLmGlUNE6ZDJlmMKWyca%2FvseAeysZOm1Vc3MAi7ekzfzg3o9DILWm8vta%2BNuufz9q4zc3IPVreT3Te%2Brbja%2FjOsObWWdyuu7kuiNt5trVQiIJH2prI8jZ1n7%2FeX2Hvk9iTZN9bsgDdk5I7dRyFl3KR6pPk%2F1ZIl1%2B%2FSXpnbodii8SXHEV4T1pEO%2BQjsE1E%2BXmX%2BGd3mQ9Jiij2A%3D%3D',
+    badge: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778907249364-pegada-1778907248432.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=UZgq9eKk4EDkubPxUsLcuOyhDwGUNUxTuFNQxue45QasYIo3%2F2vMtCU31qDrMbHwnqAYHb2ZWY%2FnLR%2FkVVQlxceKXZP1IS1aN4kErtTF4xTyhhIObTi0f6asQUXiMoVCsll9S3hH1RAo%2FS2Nph84uabU0wWlFnfvtMNvZ0TzRQyjIXfIC%2FqFUv%2BJ2Wz6wBAkUllDmuLiJeYUcsK7Jwmk6mtzhDC8m7EnCUO6RzWS3r10fLtX%2BufPfH3Y%2BKrmODsXffdhAYL7lL3D8eSNSJ%2Fkz4dzRXsdOko5%2BArkNBMdzHVOGbIvrlygMyNsiSuh%2BbCiqJK3r0wj6IyddiP%2Bwvo1Vw%3D%3D',
     color: '#cd7f32',
     bgColor: 'linear-gradient(135deg, #eaddcf, #d4a373)',
     requiredOrders: 0,
     couponPercent: 0,
     minOrderValue: 0,
-    benefits: ['Acceso a catálogo completo', 'Seguimiento de pedidos', 'Soporte estándar', '1 punto por cada $1000 gastado'],
+    benefits: ['Acceso a catálogo completo', 'Seguimiento de pedidos', 'Atención al cliente', '1 punto por cada $1000 gastado', 'Sorteo mensual para nuevos usuarios'],
   },
   {
     id: 'silver',
     name: 'Plata',
     icon: Star,
     image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778906641804-pegada-1778906640215.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=DG%2FTQispMFCDr1R4kLUSNpPbk%2BfwPmSPngV9YooWiJXCx9j5y5t8C7xYvgoTkb8kZbf6ZEJ2AciHbhAV6JRFgi2%2FsB2I4909GGc3SXBL35vs4%2Fx5a96DziUIlp5JbmbU3S%2F6fGMzVPTQ2ccobE6SYD0QnU8tYPDpDR%2BeIQWrh7cWlzxNWrYCGf0Ko5yBJSQQRPxNptTlZjPeNFDe5eb7CFvdDMVnfKqOqKun6lVc%2BUDZ6C7ZUM0P1dJytrz2aKcOqkUjQMr2d6PFGyh0Ycgcg9zazuewfadbwp9P%2FT6hh2X7UCcXQnQZO7ra8Ui9Ne1ueOpTTBpl4S2fFrT9DUYxrw%3D%3D',
+    badge: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778907186962-pegada-1778907185830.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=f2tSbBlbVIfe2xa9YjBkd2dAcYKCTZNW%2FoleMZYIPn9R%2Fbh8fQI2Xtu1azuD%2BBr2E2gQXYOo7bbbxl4I9GP22DqQg0aYMd5I7MxQ4Z1DPt0xSIhW%2FMKtr39Be6uo%2B2o0Fg1XoSgngoqNRsdJmTSyOPBp3gk6nVKBu4A6Pvk3kwN8UAEzmvgTtFWVuWWltOKZsv6KNtX2X3GkopYLHIkN9DRpQAIh%2Foz3Ghjif%2FSQLsA7Be%2FUVL0TEMKyBu5xhDcJbNd3BFll8KTynlwI%2B5s%2Fi8uI9Iyg0q9DSU86JWYSZW89WDjKO4YukGuc%2BciL%2FchXuck9rzgoUqOR5gGGEMSSQQ%3D%3D',
     color: '#9ca3af',
     bgColor: 'linear-gradient(135deg, #f3f4f6, #9ca3af)',
     requiredOrders: 5,
-    couponPercent: 2,
+    couponPercent: 3,
     minOrderValue: 50000,
-    benefits: ['Todo lo de Bronce', 'Cupón 2% (pedidos > $50k)', 'Envío prioritario', 'Acceso anticipado a ofertas', '1.5 puntos por cada $1000'],
+    benefits: ['Todo lo de Bronce', 'Cupón 3% acumulable (pedidos > $50k)', '1.5 puntos por cada $1000 gastado'],
   },
   {
     id: 'gold',
     name: 'Oro',
     icon: Crown,
     image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778907416680-pegada-1778907415236.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=BdjgOaVBMiXGVBJOgD1Ys%2B3DaXfI4JTHN7sgg5Br%2FNDe85HdLftuGWJF2Z6oaMstZkQ30Sg7FI6Tcc1FvZxfY0MmZWySn9umI6m%2BaUN4TJSB805MFXDicbiGMclWJVtTsIU%2BZT%2BGPkF0IXGdPhcsGYFctp9k3kbqWCKBqS8FtOpyP4%2F4jouNXilVFgbBge4UiRtPBRGWq%2BNXznoXrqPfe0q0MvlHCDV5OlubuHh4g3z8ckUF%2BhaC0V%2BMyhgKMKMPl2zdMMQdrxvlOoG99frAT0kledWKR59AmqF3jgP5%2Ftz82ep6ZRpFuFQSAlZ%2FnX4sQuOPRSIEG0rbSj1nfc0MzQ%3D%3D',
+    badge: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778907447447-pegada-1778907446361.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=SVPkcC3LBY2KhtE8vmzKcW2q0HoKNLDT5gSLAB6UjGGkRaoD6IZuOuV7XpTsEG4oI5BhjmOmEyKxdcFA4pHMc8XxwX4D4S%2BnuSs%2FADrfQsHuRSxY0%2BVnbrUZ%2BtJK8%2Fo5lizEIxPcyHlgbLjKsAJMcWppgD5O%2FWpQ5DzVGTCtoCX1hWXwPrwlzwjv8%2BmsKBPk0U9g%2B53MeilokwG%2BCyDZsJfHK4fE9P3bMFcs04B%2BYoEY3zhLLDLiGjwvp5uYCJ9sckBg7ki1EWYXAu13sX%2Fp5S3GXwtNh4QqJrv9FuP2EN2iUoWJXjz7hk7efafpvhS1GbORq%2FpwZJbPi1HIfWNoZA%3D%3D',
     color: '#fbbf24',
     bgColor: 'linear-gradient(135deg, #fef3c7, #fbbf24)',
     requiredOrders: 10,
-    couponPercent: 3,
+    couponPercent: 5,
     minOrderValue: 100000,
-    benefits: ['Todo lo de Plata', 'Cupón 3% (pedidos > $100k)', 'Soporte prioritario 24/7', '2 puntos por cada $1000', 'Envío gratis en > $80k'],
+    benefits: ['Todo lo de Plata', 'Cupón 5% no acumulable (pedidos > $100k)', 'Acceso anticipado a preventas', '2 puntos por cada $1000', 'Regalo de cumpleaños'],
   },
   {
     id: 'diamond',
     name: 'Diamante',
     icon: Gem,
     image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778908405817-pegada-1778908404129.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=OhH5%2B5FvjuHkXDypZv1eu2jxj%2BjSS5tp%2F29x6fjvKp7vGgFE0W0NXHt7DACXOFY5rO%2Fo86tLuu1oiNnfKGTlhNMDMqwgdSgBt84x65wQfUMpakpSQTcOGglp6k%2BKpgB7M%2FPvRfgzfVPO8yGeMITgUJK%2F9BPZJQRVriNJtMBvT%2Fuso%2F0us4lTj%2BOAwOXTIKQhgcC08NsgAb%2BwwRVGOW12T6N0Nv%2BfK4WjnjqcCUw8Qve6gOkmdbIm%2BSs0wRGAXvYi8VqATCYmNhYkZKhwvJ87vgu%2BMQG%2BX%2B7i3mOG6A%2FyRRjp90kHYZ%2F1FS%2FWEXsiJs00pdUqt2Sf1thMuAEf4S3HKA%3D%3D',
+    badge: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778907790908-pegada-1778907790043.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=A%2FL9Y0VDAOZojqnk%2B2T%2Bz9QL7IH%2FaPi7YtOA4lAo3hsrrR29s91RDdWzwl9ZDCsXiW18zqqdYm7cS44ucw0sOD%2Fs7lE6JF%2B%2BtNKSLCxnuC18Xx7N0R%2FO5AvRVO4QwayS1hlwzfOgkGS9hSnXFIgC%2Filo9WnsHlAQBK1qJTxSKCaawiXUVVloTSHSqJGLLhAoiiiY1WpFLilBLnguj8l%2FqGF%2B9WTqyO%2Fq7YMr%2FJyVUU4t5llG0zVzh6HUmYGHC3HHMRqYBHVL6IAv%2FUge21gGoxg1wokBp9ph7Qf5ZEGLwdASua9Y67XqDQY6pu7%2BAu06A6eVyDFakG845%2FpSkAYjjA%3D%3D',
     color: '#9ca3af',
     bgColor: 'linear-gradient(135deg, #f3f4f6, #9ca3af)',
     requiredOrders: 20,
-    couponPercent: 5,
-    minOrderValue: 200000,
-    benefits: ['Todo lo de Oro', 'Cupón 5% (pedidos > $200k)', 'Envío gratis ilimitado', '3 puntos por cada $1000', 'Gerente de cuenta'],
+    couponPercent: 10,
+    minOrderValue: 80000,
+    benefits: ['Todo lo de Oro', 'Cupón 10% (pedidos > $80k, 1 uso)', 'Envío rápido', '3 puntos por cada $1000', 'Soporte WhatsApp prioritario'],
   },
   {
     id: 'ruby',
     name: 'Ruby',
     icon: Sparkles,
     image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778908191353-pegada-1778908189045.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=VOm%2FYwbVJnRZ2U1GeYOumoE0cbiW2uNzLomLjqGs4Ld4x4Csebr6ScnheDIq01%2BcnVhpwHoi%2FMhwv06MmILHtmLH6DW3mzqTqnr90K8puhZZwU15OrNrUWEeJqa99FE05nI7BFITvJ156P98fWWnLmK164ifDc8F%2BFFSO4FFls1fIsPSJPrg72%2BdZMmQalSnwSc%2BBuBKopPHMXnMx%2BGkko19r0JOUXNUikmNp4ehY1boxSzeyO7XdAM%2FlloE%2BO227nxcsrXq%2FKnToTSrw4Ud2vXslmO7CbdphUoTSRoi0PoaUrj6L%2FnG5Bd1rO7KD6kqd4cXLqvg1VUZ4lmIHlutyg%3D%3D',
+    badge: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778908226958-pegada-1778908225905.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=BqPLV4aHi9DTpG6dmp8HQD%2FPK%2BiL2gnkClQ3ZaSF1oyhQHyyTgBBu8l%2B43gHdJqACfsNv7SO0JJKxhRUNXbrUyu0hAZkGwlwLHgRfIOq%2BEEbE%2Brfrnz%2BJ5vBydNAFo3jdian%2Fd5Qx0G6pQ3cs45r%2BvI9ttjuz%2Fm%2FDhXoOWJqFk6APK43kC69by2GiW%2FVJ7SL%2BQ0Dj07MelRAdhiVWBT%2BIQhuhJ6w4TstSrUqHvkgBi4SqVN2gNQVQD1MHWQ4T0AJ8O8qXVvm96poxdusTPkzusKMZRGn7yglXGqNAn7ImNKKQ2CUNB6NEeoNSRquYckAVngc5ug8Xzza7JG6uhCDHQ%3D%3D',
     color: '#f43f5e',
     bgColor: 'linear-gradient(135deg, #ffe4e6, #f43f5e)',
     requiredOrders: 30,
     couponPercent: 10,
-    minOrderValue: 210000,
-    benefits: ['Todo lo de Diamante', 'Cupón 10% (pedidos > $210k)', 'Envío gratis express', '5 puntos por cada $1000', 'Personal shopper'],
+    minOrderValue: 100000,
+    benefits: ['Todo lo de Diamante', 'Cupón 10% mensual (pedidos > $100k)', 'Envío mismo día', '5 puntos por cada $1000', 'Asesor personal de compras'],
   },
 ];
 
@@ -100,6 +121,12 @@ export default function LoyaltyLevel() {
   const [levelHistory, setLevelHistory] = useState<any[]>([]);
   const [showConfetti, setShowConfetti] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [showCurrentBenefits, setShowCurrentBenefits] = useState(true);
+  const [showNextBenefits, setShowNextBenefits] = useState(true);
+  const [showSilverBenefits, setShowSilverBenefits] = useState(false);
+  const [showGoldBenefits, setShowGoldBenefits] = useState(false);
+  const [showDiamondBenefits, setShowDiamondBenefits] = useState(false);
+  const [showRubyBenefits, setShowRubyBenefits] = useState(false);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
@@ -202,7 +229,7 @@ export default function LoyaltyLevel() {
            ────────────────────────────────────────────────────────────── */
         .loyalty-level-card{
         }
-
+        ${particleStyles}
         .ll-chip{
           position: relative;
           overflow: hidden;
@@ -369,14 +396,26 @@ export default function LoyaltyLevel() {
       {/* Stats resumen */}
       <motion.div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: isMobile ? 8 : 12, marginBottom: isMobile ? 14 : 20, position: 'relative', zIndex: 1 }}>
         {[
-          { icon: TrendingUp, value: String(paidOrdersCount), label: 'Compras', color: '#ec4899' },
-          { icon: Gift, value: formatPrice(totalSpent), label: 'Total', color: '#f43f5e' },
-          { icon: Sparkles, value: `${currentLevel.id === 'bronze' ? '1' : currentLevel.id === 'silver' ? '1.5' : currentLevel.id === 'gold' ? '2' : currentLevel.id === 'diamond' ? '3' : '5'}x`, label: 'Pts/$1k', color: '#8b5cf6' },
+          { icon: ShoppingBag, value: String(paidOrdersCount), label: 'Pedidos realizados', color: '#ec4899', description: 'Pedidos pagados en total', particleColor: 'rgba(236, 72, 153, 0.45)' },
+          { icon: DollarSign, value: formatPrice(totalSpent), label: 'Total invertido', color: '#10b981', description: 'Acumulación de todos tus pedidos', particleColor: 'rgba(16, 185, 129, 0.45)' },
+          { icon: Sparkles, value: points.toLocaleString(), label: 'Puntos acumulados', color: '#8b5cf6', description: `Gana 1 punto por $1000. ${currentLevel.id === 'bronze' ? '1x' : currentLevel.id === 'silver' ? '1.5x' : currentLevel.id === 'gold' ? '2x' : currentLevel.id === 'diamond' ? '3x' : '5x'} según nivel. Canjea por cupones y productos.`, particleColor: 'rgba(139, 92, 246, 0.45)' },
         ].map((stat, i) => (
-          <motion.div key={i} whileHover={{ y: -2 }} style={{ padding: isMobile ? '12px 8px' : '16px', borderRadius: isMobile ? 14 : 18, background: '#fff', border: '1px solid #e5e7eb', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-            <stat.icon size={isMobile ? 16 : 18} color={stat.color} style={{ margin: '0 auto 6px', display: 'block' }} />
-            <p style={{ margin: 0, fontSize: isMobile ? 15 : 17, fontWeight: 900, color: '#111827' }}>{stat.value}</p>
-            <p style={{ margin: '4px 0 0', fontSize: isMobile ? 8 : 9, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
+          <motion.div key={i} whileHover={{ y: -2 }} style={{ padding: isMobile ? '12px 8px' : '16px', borderRadius: isMobile ? 14 : 18, background: '#fff', border: '1px solid #e5e7eb', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', position: 'relative', overflow: 'hidden' }}>
+            {/* Partículas animadas */}
+            <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+              <div className="absolute rounded-full" style={{ left: '13%', top: '17%', width: '3px', height: '3px', background: `radial-gradient(circle, ${stat.particleColor}, ${stat.particleColor.replace('0.45', '0.2')})`, boxShadow: `${stat.particleColor.replace('0.45', '0.3')} 0px 0px 3px`, animation: '3s ease-in-out 0s infinite alternate td_float' }} />
+              <div className="absolute rounded-full" style={{ left: '26%', top: '36%', width: '4.5px', height: '4.5px', background: `radial-gradient(circle, ${stat.particleColor.replace('0.45', '0.57')}, ${stat.particleColor.replace('0.45', '0.28')})`, boxShadow: `${stat.particleColor.replace('0.45', '0.3')} 0px 0px 5px`, animation: '3.8s ease-in-out 0.3s infinite alternate td_float' }} />
+              <div className="absolute rounded-full" style={{ left: '39%', top: '55%', width: '6px', height: '6px', background: `radial-gradient(circle, ${stat.particleColor.replace('0.45', '0.69')}, ${stat.particleColor.replace('0.45', '0.36')})`, boxShadow: `${stat.particleColor.replace('0.45', '0.3')} 0px 0px 7px`, animation: '4.6s ease-in-out 0.6s infinite alternate td_float' }} />
+              <div className="absolute rounded-full" style={{ left: '52%', top: '74%', width: '3px', height: '3px', background: `radial-gradient(circle, ${stat.particleColor}, ${stat.particleColor.replace('0.45', '0.2')})`, boxShadow: `${stat.particleColor.replace('0.45', '0.3')} 0px 0px 3px`, animation: '5.4s ease-in-out 0.9s infinite alternate td_float' }} />
+              <div className="absolute rounded-full" style={{ left: '65%', top: '23%', width: '4.5px', height: '4.5px', background: `radial-gradient(circle, ${stat.particleColor.replace('0.45', '0.57')}, ${stat.particleColor.replace('0.45', '0.28')})`, boxShadow: `${stat.particleColor.replace('0.45', '0.3')} 0px 0px 5px`, animation: '3s ease-in-out 1.2s infinite alternate td_float' }} />
+              <div className="absolute rounded-full" style={{ left: '78%', top: '42%', width: '6px', height: '6px', background: `radial-gradient(circle, ${stat.particleColor.replace('0.45', '0.69')}, ${stat.particleColor.replace('0.45', '0.36')})`, boxShadow: `${stat.particleColor.replace('0.45', '0.3')} 0px 0px 7px`, animation: '3.8s ease-in-out 1.5s infinite alternate td_float' }} />
+            </div>
+            <div style={{ position: 'relative', zIndex: 10 }}>
+              <stat.icon size={isMobile ? 16 : 18} color={stat.color} style={{ margin: '0 auto 6px', display: 'block' }} />
+              <p style={{ margin: 0, fontSize: isMobile ? 15 : 17, fontWeight: 900, color: '#111827' }}>{stat.value}</p>
+              <p style={{ margin: '4px 0 0', fontSize: isMobile ? 8 : 9, fontWeight: 800, color: stat.color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
+              <p style={{ margin: i === 2 ? '4px 0 0' : '8px 0 0', fontSize: isMobile ? 9 : 10, fontWeight: 600, color: '#6b7280', lineHeight: 1.3 }}>{stat.description}</p>
+            </div>
           </motion.div>
         ))}
       </motion.div>
@@ -441,7 +480,7 @@ export default function LoyaltyLevel() {
           </div>
           {nextLevel && ordersNeeded > 0 && (
             <p style={{ margin: '8px 0 0', fontSize: isMobile ? 10 : 12, fontWeight: 700, color: '#9ca3af', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Faltan <span style={{ color: PINK }}>{Math.max(0, (nextLevel.requiredOrders * 100 - points)).toLocaleString()} pts</span> para el nivel <span style={{ color: nextLevel.color }}>{nextLevel.name}</span>
+              Faltan <span style={{ color: PINK }}>{ordersNeeded}</span> pedidos para el nivel <span style={{ color: nextLevel.color }}>{nextLevel.name}</span>
             </p>
           )}
         </div>
@@ -589,42 +628,117 @@ export default function LoyaltyLevel() {
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 16 : 32, position: 'relative', zIndex: 1 }}>
         {/* Current Benefits */}
         <div>
-          <h3 style={{ fontSize: isMobile ? 10 : 12, fontWeight: 900, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: isMobile ? 10 : 20 }}>
-            TUS PRIVILEGIOS {currentLevel.name.toUpperCase()}
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 6 : 12 }}>
-            {currentLevel.benefits.map((benefit, i) => (
-              <motion.div 
-                initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
-                key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: isMobile ? 8 : 14, background: '#fff', padding: isMobile ? '10px 12px' : '16px 20px', borderRadius: isMobile ? 12 : 16, border: '1.5px solid #d1d5db', boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 2px 0 rgba(0,0,0,0.025), 0 2px 8px 0 rgba(0,0,0,0.035), 0 4px 16px 0 rgba(0,0,0,0.02)' }}
-              >
-                <div style={{ marginTop: 2, color: currentLevel.color }}>
-                  <CheckCircle2 size={18} />
-                </div>
-                <p style={{ margin: 0, fontSize: 14, color: '#4b5563', fontWeight: 600, lineHeight: 1.5 }}>{benefit}</p>
-              </motion.div>
-            ))}
+          <div 
+            onClick={() => setShowCurrentBenefits(!showCurrentBenefits)}
+            style={{ 
+              cursor: 'pointer', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              marginBottom: isMobile ? 10 : 20 
+            }}
+          >
+            <h3 style={{ fontSize: isMobile ? 10 : 12, fontWeight: 900, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>
+              TUS PRIVILEGIOS {currentLevel.name.toUpperCase()}
+            </h3>
+            {showCurrentBenefits ? <ChevronUp size={16} color="#9ca3af" /> : <ChevronDown size={16} color="#9ca3af" />}
           </div>
+          <AnimatePresence>
+            {showCurrentBenefits && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                style={{ overflow: 'hidden' }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 6 : 12, paddingBottom: isMobile ? 10 : 0 }}>
+                  {currentLevel.benefits.map((benefit, i) => (
+                    <motion.div 
+                      initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
+                      key={i} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: isMobile ? 8 : 14, background: '#fff', padding: isMobile ? '10px 12px' : '16px 20px', borderRadius: isMobile ? 12 : 16, border: '1.5px solid #d1d5db', boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 2px 0 rgba(0,0,0,0.025), 0 2px 8px 0 rgba(0,0,0,0.035), 0 4px 16px 0 rgba(0,0,0,0.02)' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: isMobile ? 8 : 14 }}>
+                        <div style={{ marginTop: 2, color: currentLevel.color }}>
+                          <CheckCircle2 size={18} />
+                        </div>
+                        <p style={{ margin: 0, fontSize: 14, color: '#4b5563', fontWeight: 600, lineHeight: 1.5, flex: 1 }}>{benefit}</p>
+                      </div>
+                      <BenefitActionLink benefit={benefit} accentColor={currentLevel.color} compact={isMobile} />
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Next Level Teaser */}
-        {nextLevel && (
-          <div>
-            <h3 style={{ fontSize: 12, fontWeight: 900, color: nextLevel.color, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Lock size={14} /> DESBLOQUEA EN {nextLevel.name.toUpperCase()}
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {nextLevel.benefits.filter(b => !currentLevel.benefits.includes(b)).slice(0, 4).map((benefit, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, background: '#fff', border: '1.5px dashed #e2e8f0', padding: '16px 20px', borderRadius: 16, opacity: 0.6, boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.01), 0 1px 2px 0 rgba(0,0,0,0.02), 0 2px 6px 0 rgba(0,0,0,0.015)' }}>
-                  <div style={{ marginTop: 2, color: '#cbd5e1' }}>
-                    <Sparkles size={18} />
-                  </div>
-                  <p style={{ margin: 0, fontSize: 14, color: '#64748b', fontWeight: 600, lineHeight: 1.5 }}>{benefit}</p>
+        {/* Next Levels Teaser */}
+        {LEVELS.filter(l => l.requiredOrders > currentLevel.requiredOrders).map((level) => {
+          const isLocked = paidOrdersCount < level.requiredOrders;
+          return (
+            <div key={level.id}>
+              <div 
+                onClick={() => {
+                  // Close all others first
+                  setShowSilverBenefits(false);
+                  setShowGoldBenefits(false);
+                  setShowDiamondBenefits(false);
+                  setShowRubyBenefits(false);
+                  
+                  // Then toggle the clicked one (if already open, it will close because we closed all above)
+                  if (level.id === 'silver') setShowSilverBenefits(!showSilverBenefits);
+                  if (level.id === 'gold') setShowGoldBenefits(!showGoldBenefits);
+                  if (level.id === 'diamond') setShowDiamondBenefits(!showDiamondBenefits);
+                  if (level.id === 'ruby') setShowRubyBenefits(!showRubyBenefits);
+                }}
+                style={{ 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  marginBottom: 20 
+                }}
+              >
+                <h3 style={{ fontSize: 12, fontWeight: 900, color: level.color, textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Lock size={14} /> DESBLOQUEA EN {level.name.toUpperCase()} <span style={{ color: '#6b7280', fontWeight: 600 }}>({level.requiredOrders} pedidos)</span>
+                </h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <img 
+                    src={level.badge || level.image || ''} 
+                    alt={level.name}
+                    style={{ width: 24, height: 24, objectFit: 'contain' }}
+                  />
+                  {(level.id === 'silver' ? showSilverBenefits : level.id === 'gold' ? showGoldBenefits : level.id === 'diamond' ? showDiamondBenefits : showRubyBenefits) ? 
+                    <ChevronUp size={16} color={level.color} /> : 
+                    <ChevronDown size={16} color={level.color} />}
                 </div>
-              ))}
+              </div>
+              <AnimatePresence>
+                {(level.id === 'silver' ? showSilverBenefits : level.id === 'gold' ? showGoldBenefits : level.id === 'diamond' ? showDiamondBenefits : showRubyBenefits) && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 10 }}>
+                      {level.benefits.filter(b => !currentLevel.benefits.includes(b)).slice(0, 4).map((benefit, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, background: '#fff', border: '1.5px dashed #e2e8f0', padding: '16px 20px', borderRadius: 16, opacity: isLocked ? 0.6 : 1, boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.01), 0 1px 2px 0 rgba(0,0,0,0.02), 0 2px 6px 0 rgba(0,0,0,0.015)' }}>
+                          <div style={{ marginTop: 2, color: isLocked ? '#cbd5e1' : level.color }}>
+                            <Sparkles size={18} />
+                          </div>
+                          <p style={{ margin: 0, fontSize: 14, color: isLocked ? '#64748b' : '#4b5563', fontWeight: 600, lineHeight: 1.5 }}>{benefit}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          </div>
-        )}
+          );
+        })}
       </div>
 
     </div>
