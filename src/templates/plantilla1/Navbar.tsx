@@ -577,7 +577,7 @@ export default function Navbar1() {
                 <Link href="/checkout" onClick={() => setCartOpen(false)} style={{ display: 'block', textAlign: 'center', background: `linear-gradient(135deg, ${PINK_PRIMARY}, #db2777)`, color: '#fff', padding: '14px', borderRadius: 12, fontWeight: 700, fontSize: 15, textDecoration: 'none', boxShadow: '0 6px 20px rgba(236,72,153,0.3)', marginBottom: 10, fontFamily: 'DM Sans, system-ui, sans-serif', transition: 'all .25s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 28px rgba(236,72,153,0.4)'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(236,72,153,0.3)'; }}>
-                  Ir al checkout â†’
+                  Ir al checkout →
                 </Link>
                 <Link href="/carrito" onClick={() => setCartOpen(false)} style={{ display: 'block', textAlign: 'center', color: PINK_PRIMARY, fontSize: 13, fontWeight: 600, padding: '8px', textDecoration: 'none', fontFamily: 'DM Sans, system-ui, sans-serif' }}>
                   Ver carrito completo

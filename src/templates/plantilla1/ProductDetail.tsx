@@ -216,7 +216,7 @@ export default function ProductDetailPlantilla1() {
   const buyBoxContent = (className: string) => (
     <div className={className} style={{ position: 'sticky', top: 16, background: '#fff', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 16, padding: '18px 18px 22px', boxShadow: '0 4px 16px rgba(236,72,153,0.08)' }}>
       <p style={{ margin: '0 0 4px', fontSize: 14, color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <Truck size={15} /> Llega entre hoy y mañana
+        <Truck size={15} /> Sale entre hoy y mañana
       </p>
       <p style={{ margin: '0 0 12px', fontSize: 13, color: TEXT_MUTED }}>
         Envío disponible a todo Chile. <Link href="#" style={{ color: PINK_PRIMARY, textDecoration: 'none', fontWeight: 500 }}>Más detalles</Link>
@@ -234,7 +234,30 @@ export default function ProductDetailPlantilla1() {
             </p>
             <div style={{ display: 'flex', alignItems: 'center', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 8, width: 'fit-content', overflow: 'hidden' }}>
               <button type="button" onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 40, height: 40, border: 'none', background: '#fff', fontSize: 18, cursor: 'pointer', color: PINK_PRIMARY, fontWeight: 600 }}>−</button>
-              <span style={{ width: 44, textAlign: 'center', fontSize: 14, fontWeight: 600, color: TEXT_DARK, borderLeft: `1px solid ${PINK_BG_DARK}`, borderRight: `1px solid ${PINK_BG_DARK}` }}>{qty}</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={qty}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (!isNaN(val) && val >= 1 && val <= stock) {
+                    setQty(val);
+                  }
+                }}
+                style={{ 
+                  width: 60, 
+                  textAlign: 'center', 
+                  fontSize: 14, 
+                  fontWeight: 600, 
+                  color: TEXT_DARK, 
+                  border: '1px solid transparent',
+                  outline: 'none',
+                  outlineStyle: 'none',
+                  boxShadow: 'none',
+                  background: '#fff'
+                }}
+              />
               <button type="button" onClick={() => setQty(q => Math.min(stock, q + 1))} style={{ width: 40, height: 40, border: 'none', background: '#fff', fontSize: 18, cursor: 'pointer', color: PINK_PRIMARY, fontWeight: 600 }}>+</button>
             </div>
             {qty > 1 && <p style={{ margin: '8px 0 0', fontSize: 12, color: TEXT_MUTED }}>Total: <strong style={{ color: PINK_PRIMARY, fontSize: 14 }}>{formatPrice(lineTotal)}</strong></p>}

@@ -7,12 +7,11 @@ import { getServices, getAppwriteConfig, USER_PHOTOS_BUCKET } from '@/lib/appwri
 import {
   ShoppingBag, Bell, Heart, ShoppingCart, MessageCircle,
   User, MapPin, Receipt, HelpCircle, Phone,
-  Loader2, ChevronRight, LogOut, Building2, Trophy, Tag, Star, Settings, Ticket,
+  Loader2, ChevronRight, LogOut, Building2, Trophy, Tag, Star, Settings, Ticket, Gift, Pencil, Sparkles,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import { useAuth } from '@/hooks/useAuth';
-import LoyaltyPoints from '@/components/LoyaltyPoints';
 import LoyaltyLevel from '@/components/LoyaltyLevel';
 import { useCuentaBg } from './CuentaBgContext';
 
@@ -46,8 +45,8 @@ const ALL_CARDS: MenuItem[] = [...MIS_COMPRAS_ITEMS, ...CUENTA_ITEMS, ...CONFIG_
 /* Quick shortcuts — these are the most important for the customer */
 const QUICK_SHORTCUTS = [
   { icon: Receipt,      label: 'Pedidos',    href: '/cuenta/pedidos',     color: '#6366f1', bg: '#eef2ff' },
-  { icon: Heart,        label: 'Favoritos',  href: '/cuenta/favoritos',   color: '#ec4899', bg: '#fdf2f8' },
-  { icon: ShoppingCart, label: 'Carrito',     href: '/carrito',            color: '#f59e0b', bg: '#fffbeb' },
+  { icon: Ticket,       label: 'Cupones',    href: '/cuenta/cupones',     color: '#ec4899', bg: '#fdf2f8' },
+  { icon: Gift,         label: 'Regalos',    href: '/cuenta/regalos',   color: '#f59e0b', bg: '#fffbeb' },
   { icon: MapPin,       label: 'Direcciones', href: '/cuenta/direcciones', color: '#10b981', bg: '#ecfdf5' },
 ];
 
@@ -64,6 +63,7 @@ export default function CuentaPage() {
   const router = useRouter();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [hasGifts, setHasGifts] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -74,6 +74,8 @@ export default function CuentaPage() {
         const prefs = (acc as any).prefs || {};
         if (prefs.avatarFileId) setAvatarUrl(getFilePreviewUrl(prefs.avatarFileId));
         if (prefs.coverFileId) setCoverUrl(getFilePreviewUrl(prefs.coverFileId));
+        // Check if user has available gifts (only if not claimed yet)
+        setHasGifts(!prefs.welcomeGiftClaimed);
       } catch {}
     })();
   }, [isLoggedIn]);
@@ -247,6 +249,9 @@ export default function CuentaPage() {
             overflow: 'hidden'
           }}>
             {coverUrl && <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+            <Link href="/cuenta/perfil" style={{ position: 'absolute', top: 12, right: 12, width: 34, height: 34, borderRadius: 12, background: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+              <Pencil size={15} color="#374151" style={{ opacity: 0.8 }} />
+            </Link>
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(to bottom,transparent,#fff)' }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 20, padding: '0 28px 32px', marginTop: -55, position: 'relative', zIndex: 2 }}>
@@ -257,17 +262,112 @@ export default function CuentaPage() {
               <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.02em' }}>¡Hola, {firstName}!</h1>
               <p style={{ margin: '4px 0 0', fontSize: 14, color: '#6b7280' }}>{user.email}</p>
             </div>
-            <Link href="/cuenta/perfil" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 18px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 10, textDecoration: 'none', marginBottom: 6 }}>
-              Editar perfil <ChevronRight size={14} />
+            <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 12, textDecoration: 'none', marginBottom: 6, position: 'relative', overflow: 'hidden', letterSpacing: '-0.01em' }}>
+              <span style={{ position: 'relative', zIndex: 1, display: 'inline-flex', alignItems: 'center', gap: 8 }}><Trophy size={15} /> Tienda de puntos</span>
+              {/* shimmer */}
+              <div style={{ position: 'absolute', inset: 0, opacity: 0.4, backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0) 100%)', backgroundSize: '200% 100%', animation: 'td_shimmer 2.5s ease-in-out infinite' }} />
+              {/* float dots */}
+              {[{l:8,t:20,s:1.5,d:0},{l:20,t:50,s:2.3,d:.15},{l:32,t:75,s:3.1,d:.3},{l:44,t:15,s:3.9,d:.45},{l:56,t:40,s:1.5,d:.6},{l:68,t:65,s:2.3,d:.75},{l:80,t:30,s:3.1,d:.9},{l:92,t:55,s:1.5,d:1.05}].map((p,i)=>(
+                <div key={`f${i}`} style={{ position:'absolute', left:`${p.l}%`, top:`${p.t}%`, width:p.s, height:p.s, borderRadius:'50%', background:'radial-gradient(circle,rgba(255,255,255,0.8),rgba(255,255,255,0.1))', boxShadow:'0 0 2px rgba(255,255,255,0.5)', animation:`td_float ${1.2+i*.4}s ease-in-out ${p.d}s infinite alternate` }} />
+              ))}
+              {/* bubbles */}
+              {[{l:5,t:10,s:3,d:0},{l:22,t:35,s:5,d:.2},{l:40,t:60,s:4,d:.4},{l:58,t:20,s:5,d:.6},{l:76,t:45,s:3,d:.8},{l:90,t:70,s:4,d:1}].map((b,i)=>(
+                <div key={`b${i}`} style={{ position:'absolute', left:`${b.l}%`, top:`${b.t}%`, width:b.s, height:b.s, borderRadius:'50%', border:'1px solid rgba(255,255,255,0.3)', animation:`td_bubble ${1.5+i*.5}s ease-in-out ${b.d}s infinite` }} />
+              ))}
+              {/* drift bars */}
+              <div style={{ position:'absolute', top:0, height:'100%', width:8, borderRadius:99, background:'rgba(255,255,255,0.12)', filter:'blur(2px)', left:'25%', animation:'td_drift 3s ease-in-out infinite' }} />
+              <div style={{ position:'absolute', top:0, height:'100%', width:6, borderRadius:99, background:'rgba(255,255,255,0.08)', filter:'blur(2px)', left:'65%', animation:'td_drift 4s ease-in-out infinite reverse' }} />
             </Link>
           </div>
         </div>
 
+        {/* Inauguración / Apertura Banner */}
+        <div style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #ec4899, #f43f5e)', borderRadius: '22px', padding: '24px', position: 'relative', overflow: 'hidden', boxShadow: '0 10px 40px rgba(236,72,153,0.25)' }}>
+          <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '200px', height: '200px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', filter: 'blur(40px)' }} />
+          <div style={{ position: 'absolute', bottom: '-30px', left: '-30px', width: '150px', height: '150px', background: 'rgba(255,255,255,0.08)', borderRadius: '50%', filter: 'blur(30px)' }} />
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}>
+              <Sparkles size={32} color="#fff" />
+            </div>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 900, color: '#fff', letterSpacing: '-0.02em' }}>¡GRAN INAUGURACIÓN!</h2>
+              <p style={{ margin: '4px 0 0', fontSize: '14px', color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>Celebramos la apertura de nuestra tienda con ofertas exclusivas</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions Icons (PC) */}
+        <div style={{ marginBottom: 24, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
+          {[
+            { icon: Receipt,      label: 'Pedidos',    href: '/cuenta/pedidos',    g: 'linear-gradient(135deg,#6366f1,#8b5cf6)', shadow: 'rgba(99,102,241,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778902651562-pegada-1778902645915.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=OKWZOLTMN0DmNxF9i2zJvPKGsGgQbWbwKDU9L887E5hHYoSclN7CnFS8lcAEJid%2F5LgCmKwnOHozplzK7sG0iGALAcnAFpTVUFfp%2BDmN0iURUkPa%2BrFJHcxzEi8qvxfI7Kok8Ortf%2FV1SSEvPKkXcZgPGb41b3Sz6afLz2tK5JsLAUIHHCZ9V2nxi%2FO5lq7y1RDt0jT0q8RokkxREqSsAFF0IcKqwZ3Mlo2HZidVKzMr%2Br1iat82uZdAYv%2FYHCnf22%2BZYFtnyc4qG7ZiIfQ6w8p8VkEMeS6CYvYIcK%2FtZbliO9wzYCyvsATa4bdjzHLEaM6%2F3friX3cQtTkCkQz1Zg%3D%3D' },
+            { icon: Ticket,       label: 'Cupones',    href: '/cuenta/cupones',  g: 'linear-gradient(135deg,#ec4899,#f472b6)', shadow: 'rgba(236,72,153,0.35)', image: 'https://cdn3d.iconscout.com/3d/premium/thumb/cupon-3d-icon-png-download-10660366.png' },
+            { icon: Gift,         label: 'Regalos',    href: '/cuenta/regalos',   g: 'linear-gradient(135deg,#f59e0b,#fbbf24)', shadow: 'rgba(245,158,11,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778909156669-pegada-1778909150770.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=fD%2Fi%2B6jEPBTW2nenPdkRcfsEbOJa60HYpbbu4i1Aexl10q7aclo9oDq7sQ6EJek6knoKaM9sp8mnOz5%2Fvgdk2ZjBHMrovT%2Bah08BiVFYAgb5kLEpQbxcYTHgX8dxk0ZruQnyx%2FGctf4bmqxWks1hxpLl3skIUFINOqFeU%2FDQ1%2FVoOdnJAMoRQ0L3%2BNtCmzLjkQBZV5JrzJTszeUSHSFl80uB3Os1qsXvgZhvnHkfsqq4mZ8ret4548aMV1TH0EDbO96mv8DWVFNqSuK9gyF2gWcM82KKG2nXP57Fj6B8JVvkjC3jevkIMaNrm8Hn4r4Nm2bsdK3mGk7QKHS53wHZ1Q%3D%3D' },
+            { icon: MapPin,       label: 'Dirección',  href: '/cuenta/direcciones',g: 'linear-gradient(135deg,#10b981,#34d399)', shadow: 'rgba(16,185,129,0.35)', image: 'https://esmartyelevadores.com.br/assets/images/icon-endereo.webp' },
+          ].map((sc, idx) => {
+            const Icon = sc.icon;
+            const shouldAnimate = sc.label === 'Regalos' && hasGifts;
+            return (
+              <motion.div
+                key={sc.label}
+                initial={{ opacity: 0, y: 30, scale: 0.5 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 20, delay: idx * 0.12 }}
+              >
+                <Link href={sc.href} style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, position: 'relative', overflow: 'visible' }}>
+                  <motion.div
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.85 }}
+                    animate={shouldAnimate ? { 
+                      rotate: [0, 15, -15, 15, -15, 0],
+                    } : {}}
+                    transition={shouldAnimate ? { duration: 2.5, repeat: Infinity, ease: 'easeInOut' } : {}}
+                    style={{
+                      width: 64, height: 64, borderRadius: 18,
+                      background: sc.image ? 'transparent' : sc.g,
+                      boxShadow: sc.image ? 'none' : `0 6px 20px ${sc.shadow}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: sc.image ? 'none' : '1.5px solid rgba(255,255,255,0.25)',
+                    }}
+                  >
+                    {sc.image ? (
+                      <img
+                        src={sc.image}
+                        alt={sc.label}
+                        style={{ width: 140, height: 140, objectFit: 'contain' }}
+                      />
+                    ) : (
+                      <Icon size={28} color="#fff" strokeWidth={2} />
+                    )}
+                    {sc.label === 'Regalos' && hasGifts && (
+                      <div style={{
+                        position: 'absolute',
+                        top: -6,
+                        right: -6,
+                        width: 20,
+                        height: 20,
+                        background: '#ec4899',
+                        color: '#fff',
+                        borderRadius: '50%',
+                        fontSize: 12,
+                        fontWeight: 900,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '2px solid #fff',
+                      }}>
+                        1
+                      </div>
+                    )}
+                  </motion.div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#374151', textAlign: 'center', lineHeight: 1.2 }}>{sc.label}</span>
+                </Link>
+              </motion.div>
+            );
+          })}
+        </div>
+
         <div style={{ marginBottom: 24 }}>
           <LoyaltyLevel />
-        </div>
-        <div style={{ marginBottom: 24 }}>
-          <LoyaltyPoints />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
@@ -287,6 +387,10 @@ export default function CuentaPage() {
           @keyframes qa-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
           @keyframes qa-glow-pulse { 0%,100% { filter: drop-shadow(0 0 3px rgba(236,72,153,0.2)); } 50% { filter: drop-shadow(0 0 8px rgba(236,72,153,0.25)); } }
           @keyframes qa-wiggle { 0% { transform: rotate(0deg); } 15% { transform: rotate(-8deg); } 30% { transform: rotate(6deg); } 45% { transform: rotate(-4deg); } 60% { transform: rotate(2deg); } 75% { transform: rotate(-1deg); } 100% { transform: rotate(0deg); } }
+          @keyframes td_shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+          @keyframes td_float { 0%,100% { transform: translateY(0); opacity: 0.6; } 50% { transform: translateY(-2px); opacity: 1; } }
+          @keyframes td_bubble { 0%,100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.4); opacity: 0.6; } }
+          @keyframes td_drift { 0%,100% { transform: translateX(0); opacity: 0.15; } 50% { transform: translateX(6px); opacity: 0.25; } }
           .qa-icon-float { animation: qa-float 3s ease-in-out infinite; }
           .qa-icon-float:nth-child(1) { animation-delay: 0s; }
           .qa-icon-float:nth-child(2) { animation-delay: 0.4s; }
@@ -326,6 +430,9 @@ export default function CuentaPage() {
               overflow: 'hidden'
             }}>
               {coverUrl && <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+              <Link href="/cuenta/perfil" style={{ position: 'absolute', top: 10, right: 10, width: 30, height: 30, borderRadius: 10, background: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                <Pencil size={13} color="#374151" style={{ opacity: 0.8 }} />
+              </Link>
               <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 50, background: 'linear-gradient(to bottom,transparent,#fff)' }} />
             </div>
             {/* Avatar + info row */}
@@ -337,8 +444,17 @@ export default function CuentaPage() {
                 <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.02em' }}>¡Hola, {firstName}! 👋</p>
                 <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</p>
               </div>
-              <Link href="/cuenta/perfil" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '8px 14px', background: PINK, color: '#fff', fontSize: 12, fontWeight: 700, borderRadius: 10, textDecoration: 'none', marginBottom: 4, flexShrink: 0 }}>
-                Editar <ChevronRight size={13} />
+              <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 16px', background: PINK, color: '#fff', fontSize: 12, fontWeight: 700, borderRadius: 12, textDecoration: 'none', marginBottom: 4, flexShrink: 0, position: 'relative', overflow: 'hidden', letterSpacing: '-0.01em' }}>
+                <span style={{ position: 'relative', zIndex: 1, display: 'inline-flex', alignItems: 'center', gap: 6 }}><Trophy size={13} /> Tienda de puntos</span>
+                <div style={{ position: 'absolute', inset: 0, opacity: 0.4, backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0) 100%)', backgroundSize: '200% 100%', animation: 'td_shimmer 2.5s ease-in-out infinite' }} />
+                {[{l:10,t:25,s:1.5,d:0},{l:30,t:55,s:2.3,d:.2},{l:50,t:20,s:1.5,d:.4},{l:70,t:60,s:2.3,d:.6},{l:90,t:35,s:1.5,d:.8}].map((p,i)=>(
+                  <div key={`mf${i}`} style={{ position:'absolute', left:`${p.l}%`, top:`${p.t}%`, width:p.s, height:p.s, borderRadius:'50%', background:'radial-gradient(circle,rgba(255,255,255,0.8),rgba(255,255,255,0.1))', boxShadow:'0 0 2px rgba(255,255,255,0.5)', animation:`td_float ${1.2+i*.4}s ease-in-out ${p.d}s infinite alternate` }} />
+                ))}
+                {[{l:8,t:15,s:3,d:0},{l:35,t:50,s:4,d:.3},{l:62,t:25,s:3,d:.6},{l:88,t:65,s:4,d:.9}].map((b,i)=>(
+                  <div key={`mb${i}`} style={{ position:'absolute', left:`${b.l}%`, top:`${b.t}%`, width:b.s, height:b.s, borderRadius:'50%', border:'1px solid rgba(255,255,255,0.3)', animation:`td_bubble ${1.5+i*.5}s ease-in-out ${b.d}s infinite` }} />
+                ))}
+                <div style={{ position:'absolute', top:0, height:'100%', width:6, borderRadius:99, background:'rgba(255,255,255,0.12)', filter:'blur(2px)', left:'30%', animation:'td_drift 3s ease-in-out infinite' }} />
+                <div style={{ position:'absolute', top:0, height:'100%', width:4, borderRadius:99, background:'rgba(255,255,255,0.08)', filter:'blur(2px)', left:'70%', animation:'td_drift 4s ease-in-out infinite reverse' }} />
               </Link>
             </div>
           </div>
@@ -349,11 +465,12 @@ export default function CuentaPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
             {[
               { icon: Receipt,      label: 'Pedidos',    href: '/cuenta/pedidos',    g: 'linear-gradient(135deg,#6366f1,#8b5cf6)', shadow: 'rgba(99,102,241,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778902651562-pegada-1778902645915.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=OKWZOLTMN0DmNxF9i2zJvPKGsGgQbWbwKDU9L887E5hHYoSclN7CnFS8lcAEJid%2F5LgCmKwnOHozplzK7sG0iGALAcnAFpTVUFfp%2BDmN0iURUkPa%2BrFJHcxzEi8qvxfI7Kok8Ortf%2FV1SSEvPKkXcZgPGb41b3Sz6afLz2tK5JsLAUIHHCZ9V2nxi%2FO5lq7y1RDt0jT0q8RokkxREqSsAFF0IcKqwZ3Mlo2HZidVKzMr%2Br1iat82uZdAYv%2FYHCnf22%2BZYFtnyc4qG7ZiIfQ6w8p8VkEMeS6CYvYIcK%2FtZbliO9wzYCyvsATa4bdjzHLEaM6%2F3friX3cQtTkCkQz1Zg%3D%3D' },
-              { icon: Heart,        label: 'Favoritos',  href: '/cuenta/favoritos',  g: 'linear-gradient(135deg,#ec4899,#f472b6)', shadow: 'rgba(236,72,153,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778902478101-pegada-1778902467804.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=EvGR2FnJKKhIZbdkSdNJGqNoJFHBTllP%2BBOFV9XsK8UcickCvbvdOb7MH19huutIUHOQsVL9M861YRnfLguj9vzjrZbf%2FxbFO2JQS1O6l14DZwi68yKbxPw0x8XX8d5b7k9nR%2FsBKJxB4d3jKWqp%2F%2FU1ugoiGLAjwjsz2sdDE%2FVC4s%2BbfUgZAC2UxIT%2BlxmsxTZzEeqHqhfNdLNa%2FxduYPOvG03bGtua14S8bFqDFlIET5hhVO6QwviaHGcqP5%2BWq76I3J4My0bIVT458ffiuLuTE%2FoUH7HHqoMIGFyY1V2Uicyi1MFWVB8v8Bxp3u2SERQIVtJ7h6DkXmbZ%2BYDrIw%3D%3D' },
-              { icon: ShoppingCart, label: 'Carrito',    href: '/carrito',           g: 'linear-gradient(135deg,#f59e0b,#fbbf24)', shadow: 'rgba(245,158,11,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778902379478-pegada-1778902370345.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=GGHFIES%2FV94hc11MFQHV530dlVyT8jaH78MxLJR2bpsyP2B3A0HZ1GBRU7APMWfeD%2FsMBRPNUhq3qI3LFPKPFGRrVAXBljT5EGFJ5oOVj7OFycNxatFzoH6U7vy2sEXc145XWqsWyEDAimE%2Fr38dtJT2y81k%2FFhJSwvFiIcSMcI5K0Va%2BW1BYe3So1WdGRSyRfku6xFkCcSPrxAf%2FufWHBg47UtO69gLbsBit64sWqS68k9iPCNVEpusobTxDBgqtjZCNL6I45qcX1zU1vRA4VM2cVYIXbO9KR9ZzxYn8gywZw03x98ffG17ISjzs0k1iGLvYXuqpXLk78O%2BXUI4wg%3D%3D' },
+              { icon: Ticket,       label: 'Cupones',    href: '/cuenta/cupones',  g: 'linear-gradient(135deg,#ec4899,#f472b6)', shadow: 'rgba(236,72,153,0.35)', image: 'https://cdn3d.iconscout.com/3d/premium/thumb/cupon-3d-icon-png-download-10660366.png' },
+              { icon: Gift,         label: 'Regalos',    href: '/cuenta/regalos',   g: 'linear-gradient(135deg,#f59e0b,#fbbf24)', shadow: 'rgba(245,158,11,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778909156669-pegada-1778909150770.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=fD%2Fi%2B6jEPBTW2nenPdkRcfsEbOJa60HYpbbu4i1Aexl10q7aclo9oDq7sQ6EJek6knoKaM9sp8mnOz5%2Fvgdk2ZjBHMrovT%2Bah08BiVFYAgb5kLEpQbxcYTHgX8dxk0ZruQnyx%2FGctf4bmqxWks1hxpLl3skIUFINOqFeU%2FDQ1%2FVoOdnJAMoRQ0L3%2BNtCmzLjkQBZV5JrzJTszeUSHSFl80uB3Os1qsXvgZhvnHkfsqq4mZ8ret4548aMV1TH0EDbO96mv8DWVFNqSuK9gyF2gWcM82KKG2nXP57Fj6B8JVvkjC3jevkIMaNrm8Hn4r4Nm2bsdK3mGk7QKHS53wHZ1Q%3D%3D' },
               { icon: MapPin,       label: 'Dirección',  href: '/cuenta/direcciones',g: 'linear-gradient(135deg,#10b981,#34d399)', shadow: 'rgba(16,185,129,0.35)', image: 'https://esmartyelevadores.com.br/assets/images/icon-endereo.webp' },
             ].map((sc, idx) => {
               const Icon = sc.icon;
+              const shouldAnimate = sc.label === 'Regalos' && hasGifts;
               return (
                 <motion.div
                   key={sc.label}
@@ -361,12 +478,14 @@ export default function CuentaPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   transition={{ type: 'spring', stiffness: 260, damping: 20, delay: idx * 0.12 }}
                 >
-                  <Link href={sc.href} className="pm-pill" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
+                  <Link href={sc.href} className="pm-pill" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, position: 'relative', overflow: 'visible' }}>
                     <motion.div
                       whileHover={{ scale: 1.2 }}
                       whileTap={{ scale: 0.85 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-                      className="qa-icon-float qa-icon-wiggle"
+                      animate={shouldAnimate ? { 
+                        rotate: [0, 15, -15, 15, -15, 0],
+                      } : {}}
+                      transition={shouldAnimate ? { duration: 2.5, repeat: Infinity, ease: 'easeInOut' } : {}}
                       style={{
                         width: 54, height: 54, borderRadius: 17,
                         background: sc.image ? 'transparent' : sc.g,
@@ -384,6 +503,26 @@ export default function CuentaPage() {
                       ) : (
                         <Icon size={24} color="#fff" strokeWidth={2} />
                       )}
+                      {sc.label === 'Regalos' && hasGifts && (
+                        <div style={{
+                          position: 'absolute',
+                          top: -4,
+                          right: -4,
+                          width: 18,
+                          height: 18,
+                          background: '#ec4899',
+                          color: '#fff',
+                          borderRadius: '50%',
+                          fontSize: 11,
+                          fontWeight: 900,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: '2px solid #fff',
+                        }}>
+                          1
+                        </div>
+                      )}
                     </motion.div>
                     <motion.span
                       initial={{ opacity: 0 }}
@@ -398,12 +537,25 @@ export default function CuentaPage() {
           </div>
         </div>
 
+        {/* ── Inauguración Banner ── */}
+        <div style={{ padding: '14px 14px 0' }}>
+          <div style={{ background: 'linear-gradient(135deg, #ec4899, #f43f5e)', borderRadius: '16px', padding: '16px', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 25px rgba(236,72,153,0.25)' }}>
+            <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '120px', height: '120px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', filter: 'blur(30px)' }} />
+            <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}>
+                <Sparkles size={24} color="#fff" />
+              </div>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '-0.02em' }}>¡GRAN INAUGURACIÓN!</h2>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>Celebramos la apertura con ofertas exclusivas</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* ── LOYALTY compact card ── */}
         <div style={{ padding: '14px 14px 0' }}>
           <LoyaltyLevel />
-        </div>
-        <div style={{ padding: '10px 14px 0' }}>
-          <LoyaltyPoints />
         </div>
 
         {/* ── MENU GROUPS ── */}
@@ -413,8 +565,8 @@ export default function CuentaPage() {
           <p style={{ margin: '0 0 7px 2px', fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.07em' }}>Mis compras</p>
           <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', marginBottom: 16 }}>
             <PmRow icon={Receipt} label="Mis Pedidos" desc="Seguí tus compras" href="/cuenta/pedidos" g="linear-gradient(135deg,#6366f1,#8b5cf6)" />
-            <PmRow icon={Heart} label="Favoritos" desc="Tus productos guardados" href="/cuenta/favoritos" g="linear-gradient(135deg,#ec4899,#f472b6)" />
-            <PmRow icon={ShoppingCart} label="Mi Carrito" desc="Listo para comprar" href="/carrito" g="linear-gradient(135deg,#f59e0b,#fbbf24)" last />
+            <PmRow icon={Ticket} label="Cupones" desc="Tus descuentos disponibles" href="/cuenta/cupones" g="linear-gradient(135deg,#ec4899,#f472b6)" />
+            <PmRow icon={Gift} label="Regalos" desc="Tus regalos disponibles" href="/cuenta/regalos" g="linear-gradient(135deg,#f59e0b,#fbbf24)" last badge={hasGifts ? 1 : undefined} />
           </div>
 
           {/* Section: Mi cuenta */}
@@ -477,7 +629,7 @@ function DesktopCard({ item }: { item: MenuItem }) {
   );
 }
 
-function PmRow({ icon: Icon, label, desc, href, g, last }: { icon: any; label: string; desc: string; href: string; g: string; last?: boolean }) {
+function PmRow({ icon: Icon, label, desc, href, g, last, badge }: { icon: any; label: string; desc: string; href: string; g: string; last?: boolean; badge?: number }) {
   return (
     <Link href={href} className="pm-row" style={{
       display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px',
@@ -487,8 +639,29 @@ function PmRow({ icon: Icon, label, desc, href, g, last }: { icon: any; label: s
         width: 40, height: 40, borderRadius: 13, background: g, flexShrink: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+        position: 'relative',
       }}>
         <Icon size={18} color="#fff" strokeWidth={2.2} />
+        {badge && (
+          <div style={{
+            position: 'absolute',
+            top: -4,
+            right: -4,
+            width: 18,
+            height: 18,
+            background: '#ec4899',
+            color: '#fff',
+            borderRadius: '50%',
+            fontSize: 11,
+            fontWeight: 900,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '2px solid #fff',
+          }}>
+            {badge}
+          </div>
+        )}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: 0, fontSize: 14.5, color: '#111827', fontWeight: 700, lineHeight: 1.2 }}>{label}</p>

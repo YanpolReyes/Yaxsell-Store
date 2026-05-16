@@ -16,13 +16,16 @@ interface Tier {
   color: string;
   icon: string;
   bg: string;
+  id: string;
+  image?: string;
 }
 
 const TIERS: Tier[] = [
-  { name: 'Bronce', min: 0, color: '#cd7f32', bg: '#fdf2f8', icon: '🥉' },
-  { name: 'Plata', min: 500, color: '#94a3b8', bg: '#f8fafc', icon: '🥈' },
-  { name: 'Oro', min: 2000, color: '#fbbf24', bg: '#fffbeb', icon: '🥇' },
-  { name: 'Diamante', min: 5000, color: '#38bdf8', bg: '#f0f9ff', icon: '💎' },
+  { name: 'Bronce', min: 0, color: '#cd7f32', bg: '#fdf2f8', icon: '🥉', id: 'bronze', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778907249364-pegada-1778907248432.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=UZgq9eKk4EDkubPxUsLcuOyhDwGUNUxTuFNQxue45QasYIo3%2F2vMtCU31qDrMbHwnqAYHb2ZWY%2FnLR%2FkVVQlxceKXZP1IS1aN4kErtTF4xTyhhIObTi0f6asQUXiMoVCsll9S3hH1RAo%2FS2Nph84uabU0wWlFnfvtMNvZ0TzRQyjIXfIC%2FqFUv%2BJ2Wz6wBAkUllDmuLiJeYUcsK7Jwmk6mtzhDC8m7EnCUO6RzWS3r10fLtX%2BufPfH3Y%2BKrmODsXffdhAYL7lL3D8eSNSJ%2Fkz4dzRXsdOko5%2BArkNBMdzHVOGbIvrlygMyNsiSuh%2BbCiqJK3r0wj6IyddiP%2Bwvo1Vw%3D%3D' },
+  { name: 'Plata', min: 500, color: '#94a3b8', bg: '#f8fafc', icon: '🥈', id: 'silver', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778907186962-pegada-1778907185830.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=f2tSbBlbVIfe2xa9YjBkd2dAcYKCTZNW%2FoleMZYIPn9R%2Fbh8fQI2Xtu1azuD%2BBr2E2gQXYOo7bbbxl4I9GP22DqQg0aYMd5I7MxQ4Z1DPt0xSIhW%2FMKtr39Be6uo%2B2o0Fg1XoSgngoqNRsdJmTSyOPBp3gk6nVKBu4A6Pvk3kwN8UAEzmvgTtFWVuWWltOKZsv6KNtX2X3GkopYLHIkN9DRpQAIh%2Foz3Ghjif%2FSQLsA7Be%2FUVL0TEMKyBu5xhDcJbNd3BFll8KTynlwI%2B5s%2Fi8uI9Iyg0q9DSU86JWYSZW89WDjKO4YukGuc%2BciL%2FchXuck9rzgoUqOR5gGGEMSSQQ%3D%3D' },
+  { name: 'Oro', min: 2000, color: '#fbbf24', bg: '#fffbeb', icon: '🥇', id: 'gold', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778907447447-pegada-1778907446361.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=SVPkcC3LBY2KhtE8vmzKcW2q0HoKNLDT5gSLAB6UjGGkRaoD6IZuOuV7XpTsEG4oI5BhjmOmEyKxdcFA4pHMc8XxwX4D4S%2BnuSs%2FADrfQsHuRSxY0%2BVnbrUZ%2BtJK8%2Fo5lizEIxPcyHlgbLjKsAJMcWppgD5O%2FWpQ5DzVGTCtoCX1hWXwPrwlzwjv8%2BmsKBPk0U9g%2B53MeilokwG%2BCyDZsJfHK4fE9P3bMFcs04B%2BYoEY3zhLLDLiGjwvp5uYCJ9sckBg7ki1EWYXAu13sX%2Fp5S3GXwtNh4QqJrv9FuP2EN2iUoWJXjz7hk7efafpvhS1GbORq%2FpwZJbPi1HIfWNoZA%3D%3D' },
+  { name: 'Diamante', min: 5000, color: '#9ca3af', bg: '#f3f4f6', icon: '💎', id: 'diamond', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778907790908-pegada-1778907790043.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=A%2FL9Y0VDAOZojqnk%2B2T%2Bz9QL7IH%2FaPi7YtOA4lAo3hsrrR29s91RDdWzwl9ZDCsXiW18zqqdYm7cS44ucw0sOD%2Fs7lE6JF%2B%2BtNKSLCxnuC18Xx7N0R%2FO5AvRVO4QwayS1hlwzfOgkGS9hSnXFIgC%2Filo9WnsHlAQBK1qJTxSKCaawiXUVVloTSHSqJGLLhAoiiiY1WpFLilBLnguj8l%2FqGF%2B9WTqyO%2Fq7YMr%2FJyVUU4t5llG0zVzh6HUmYGHC3HHMRqYBHVL6IAv%2FUge21gGoxg1wokBp9ph7Qf5ZEGLwdASua9Y67XqDQY6pu7%2BAu06A6eVyDFakG845%2FpSkAYjjA%3D%3D' },
+  { name: 'Ruby', min: 10000, color: '#f43f5e', bg: '#ffe4e6', icon: '❤️', id: 'ruby', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778908226958-pegada-1778908225905.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=BqPLV4aHi9DTpG6dmp8HQD%2FPK%2BiL2gnkClQ3ZaSF1oyhQHyyTgBBu8l%2B43gHdJqACfsNv7SO0JJKxhRUNXbrUyu0hAZkGwlwLHgRfIOq%2BEEbE%2Brfrnz%2BJ5vBydNAFo3jdian%2Fd5Qx0G6pQ3cs45r%2BvI9ttjuz%2Fm%2FDhXoOWJqFk6APK43kC69by2GiW%2FVJ7SL%2BQ0Dj07MelRAdhiVWBT%2BIQhuhJ6w4TstSrUqHvkgBi4SqVN2gNQVQD1MHWQ4T0AJ8O8qXVvm96poxdusTPkzusKMZRGn7yglXGqNAn7ImNKKQ2CUNB6NEeoNSRquYckAVngc5ug8Xzza7JG6uhCDHQ%3D%3D' },
 ];
 const PINK = '#ec4899';
 
@@ -41,6 +44,7 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
   const [totalSpent, setTotalSpent] = useState(0);
   const [orderCount, setOrderCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loyaltyLevelId, setLoyaltyLevelId] = useState('bronze');
 
   // Welcome coupon states
   const [showWelcomeReward, setShowWelcomeReward] = useState(false);
@@ -84,6 +88,10 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
         if (!prefs.welcomeGiftClaimed) {
           setShowWelcomeReward(true);
         }
+        // Read loyalty level from prefs
+        if (prefs.loyaltyLevel) {
+          setLoyaltyLevelId(prefs.loyaltyLevel);
+        }
 
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
@@ -108,7 +116,9 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
 
   if (!isLoggedIn || loading) return null;
 
-  const tier = getTier(points);
+  const tierByPoints = getTier(points);
+  const tierById = TIERS.find(t => t.id === loyaltyLevelId);
+  const tier = tierById && TIERS.indexOf(tierById) >= TIERS.indexOf(tierByPoints) ? tierById : tierByPoints;
   const next = getNextTier(points);
   const progress = next ? ((points - tier.min) / (next.min - tier.min)) * 100 : 100;
 
@@ -137,22 +147,9 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
         }
         .lp-tierIcon{
           position: relative;
-          overflow: hidden;
         }
-        .lp-tierIcon::before{
-          content:'';
-          position:absolute;
-          inset:-16px;
-          border-radius: 999px;
-          background: conic-gradient(from 0deg, transparent, rgba(236,72,153,0.28), rgba(56,189,248,0.22), transparent);
-          filter: blur(10px);
-          opacity: 0.8;
-          animation: lpOrbit 7s linear infinite;
-          pointer-events:none;
-        }
-        @keyframes lpOrbit{ to { transform: rotate(360deg); } }
         @media (prefers-reduced-motion: reduce){
-          .lp-card, .lp-tierIcon::before { animation: none !important; }
+          .lp-card { animation: none !important; }
         }
       `}</style>
       
@@ -260,10 +257,14 @@ export default function LoyaltyPoints({ compact = false }: { compact?: boolean }
             <motion.div 
               whileHover={{ scale: 1.05, rotate: 5 }}
               whileTap={{ scale: 0.98, rotate: -3 }}
-              className={`lp-tierIcon ${isMobile ? 'w-14 h-14 rounded-2xl text-2xl' : 'w-20 h-20 rounded-[28px] text-4xl'} flex items-center justify-center shadow-lg z-10 transition-shadow hover:shadow-xl`}
-              style={{ backgroundColor: tier.bg, border: `2px solid ${tier.color}20` }}
+              className={`lp-tierIcon ${isMobile ? 'w-14 h-14 rounded-2xl text-2xl' : 'w-20 h-20 rounded-[28px] text-4xl'} flex items-center justify-center z-10`}
+              style={{}}
             >
-              {tier.icon}
+              <img 
+                src={tier.image || ''}
+                alt="Medalla"
+                style={{ width: isMobile ? 56 : 80, height: isMobile ? 56 : 80, objectFit: 'contain' }}
+              />
             </motion.div>
             <div>
               <div className="inline-flex items-center gap-1.5 mb-2 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider" style={{ backgroundColor: `${tier.color}15`, color: tier.color }}>

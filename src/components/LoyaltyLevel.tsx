@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Crown, Star, Gem, Award, Gift, Truck, Headphones, Sparkles, TrendingUp, Coins, Calendar, Trophy, Zap, ChevronRight, Lock, CheckCircle2 } from 'lucide-react';
-import { formatPrice } from '@/lib/appwrite';
+import { Crown, Star, Gem, Award, Gift, Truck, Headphones, Sparkles, TrendingUp, Coins, Calendar, Trophy, Zap, Lock, CheckCircle2 } from 'lucide-react';
+import { formatPrice, getServices } from '@/lib/appwrite';
 import { useAuth } from '@/hooks/useAuth';
 import { LoyaltyService } from '@/services/loyaltyService';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,6 +14,7 @@ interface LevelConfig {
   id: string;
   name: string;
   icon: any;
+  image?: string;
   color: string;
   bgColor: string;
   requiredOrders: number;
@@ -27,6 +28,7 @@ const LEVELS: LevelConfig[] = [
     id: 'bronze',
     name: 'Bronce',
     icon: Award,
+    image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778903648867-pegada-1778903643580.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=A7X1WH5mE2HVGyuOlobnOttQvUjH3HdEbhJ%2Btfav0BVipBitLHzoevrKi2AQxIuFu87YgUWZGfvtv7vJeGq9GKw0FwIC35lQ3po6ZD1EIyp27t5Ls4R8ZLoFzjsxRlL2G9ch9WYjLmGlUNE6ZDJlmMKWyca%2FvseAeysZOm1Vc3MAi7ekzfzg3o9DILWm8vta%2BNuufz9q4zc3IPVreT3Te%2Brbja%2FjOsObWWdyuu7kuiNt5trVQiIJH2prI8jZ1n7%2FeX2Hvk9iTZN9bsgDdk5I7dRyFl3KR6pPk%2F1ZIl1%2B%2FSXpnbodii8SXHEV4T1pEO%2BQjsE1E%2BXmX%2BGd3mQ9Jiij2A%3D%3D',
     color: '#cd7f32',
     bgColor: 'linear-gradient(135deg, #eaddcf, #d4a373)',
     requiredOrders: 0,
@@ -38,6 +40,7 @@ const LEVELS: LevelConfig[] = [
     id: 'silver',
     name: 'Plata',
     icon: Star,
+    image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778906641804-pegada-1778906640215.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=DG%2FTQispMFCDr1R4kLUSNpPbk%2BfwPmSPngV9YooWiJXCx9j5y5t8C7xYvgoTkb8kZbf6ZEJ2AciHbhAV6JRFgi2%2FsB2I4909GGc3SXBL35vs4%2Fx5a96DziUIlp5JbmbU3S%2F6fGMzVPTQ2ccobE6SYD0QnU8tYPDpDR%2BeIQWrh7cWlzxNWrYCGf0Ko5yBJSQQRPxNptTlZjPeNFDe5eb7CFvdDMVnfKqOqKun6lVc%2BUDZ6C7ZUM0P1dJytrz2aKcOqkUjQMr2d6PFGyh0Ycgcg9zazuewfadbwp9P%2FT6hh2X7UCcXQnQZO7ra8Ui9Ne1ueOpTTBpl4S2fFrT9DUYxrw%3D%3D',
     color: '#9ca3af',
     bgColor: 'linear-gradient(135deg, #f3f4f6, #9ca3af)',
     requiredOrders: 5,
@@ -49,6 +52,7 @@ const LEVELS: LevelConfig[] = [
     id: 'gold',
     name: 'Oro',
     icon: Crown,
+    image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778907416680-pegada-1778907415236.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=BdjgOaVBMiXGVBJOgD1Ys%2B3DaXfI4JTHN7sgg5Br%2FNDe85HdLftuGWJF2Z6oaMstZkQ30Sg7FI6Tcc1FvZxfY0MmZWySn9umI6m%2BaUN4TJSB805MFXDicbiGMclWJVtTsIU%2BZT%2BGPkF0IXGdPhcsGYFctp9k3kbqWCKBqS8FtOpyP4%2F4jouNXilVFgbBge4UiRtPBRGWq%2BNXznoXrqPfe0q0MvlHCDV5OlubuHh4g3z8ckUF%2BhaC0V%2BMyhgKMKMPl2zdMMQdrxvlOoG99frAT0kledWKR59AmqF3jgP5%2Ftz82ep6ZRpFuFQSAlZ%2FnX4sQuOPRSIEG0rbSj1nfc0MzQ%3D%3D',
     color: '#fbbf24',
     bgColor: 'linear-gradient(135deg, #fef3c7, #fbbf24)',
     requiredOrders: 10,
@@ -60,8 +64,9 @@ const LEVELS: LevelConfig[] = [
     id: 'diamond',
     name: 'Diamante',
     icon: Gem,
-    color: '#38bdf8',
-    bgColor: 'linear-gradient(135deg, #e0f2fe, #38bdf8)',
+    image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778908405817-pegada-1778908404129.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=OhH5%2B5FvjuHkXDypZv1eu2jxj%2BjSS5tp%2F29x6fjvKp7vGgFE0W0NXHt7DACXOFY5rO%2Fo86tLuu1oiNnfKGTlhNMDMqwgdSgBt84x65wQfUMpakpSQTcOGglp6k%2BKpgB7M%2FPvRfgzfVPO8yGeMITgUJK%2F9BPZJQRVriNJtMBvT%2Fuso%2F0us4lTj%2BOAwOXTIKQhgcC08NsgAb%2BwwRVGOW12T6N0Nv%2BfK4WjnjqcCUw8Qve6gOkmdbIm%2BSs0wRGAXvYi8VqATCYmNhYkZKhwvJ87vgu%2BMQG%2BX%2B7i3mOG6A%2FyRRjp90kHYZ%2F1FS%2FWEXsiJs00pdUqt2Sf1thMuAEf4S3HKA%3D%3D',
+    color: '#9ca3af',
+    bgColor: 'linear-gradient(135deg, #f3f4f6, #9ca3af)',
     requiredOrders: 20,
     couponPercent: 5,
     minOrderValue: 200000,
@@ -71,6 +76,7 @@ const LEVELS: LevelConfig[] = [
     id: 'ruby',
     name: 'Ruby',
     icon: Sparkles,
+    image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778908191353-pegada-1778908189045.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=VOm%2FYwbVJnRZ2U1GeYOumoE0cbiW2uNzLomLjqGs4Ld4x4Csebr6ScnheDIq01%2BcnVhpwHoi%2FMhwv06MmILHtmLH6DW3mzqTqnr90K8puhZZwU15OrNrUWEeJqa99FE05nI7BFITvJ156P98fWWnLmK164ifDc8F%2BFFSO4FFls1fIsPSJPrg72%2BdZMmQalSnwSc%2BBuBKopPHMXnMx%2BGkko19r0JOUXNUikmNp4ehY1boxSzeyO7XdAM%2FlloE%2BO227nxcsrXq%2FKnToTSrw4Ud2vXslmO7CbdphUoTSRoi0PoaUrj6L%2FnG5Bd1rO7KD6kqd4cXLqvg1VUZ4lmIHlutyg%3D%3D',
     color: '#f43f5e',
     bgColor: 'linear-gradient(135deg, #ffe4e6, #f43f5e)',
     requiredOrders: 30,
@@ -205,7 +211,7 @@ export default function LoyaltyLevel() {
           content:'';
           position:absolute;
           inset:-2px;
-          background: linear-gradient(120deg, transparent 0%, rgba(236,72,153,0.25) 45%, transparent 60%);
+          background: linear-gradient(120deg, transparent 0%, var(--chip-glow, rgba(236,72,153,0.25)) 45%, transparent 60%);
           transform: translateX(-120%);
           animation: llShine 3.2s ease-in-out infinite;
           pointer-events:none;
@@ -225,13 +231,18 @@ export default function LoyaltyLevel() {
           position:absolute;
           inset:-16px;
           border-radius: 999px;
-          background: conic-gradient(from 0deg, rgba(236,72,153,0.0), rgba(236,72,153,0.35), rgba(56,189,248,0.35), rgba(236,72,153,0.0));
+          background: conic-gradient(from 0deg, var(--orbit-c1, rgba(236,72,153,0.0)), var(--orbit-c2, rgba(236,72,153,0.35)), var(--orbit-c3, rgba(56,189,248,0.35)), var(--orbit-c1, rgba(236,72,153,0.0)));
           filter: blur(8px);
           opacity: 0.7;
           animation: llOrbit 6s linear infinite;
           pointer-events:none;
         }
         @keyframes llOrbit{ to { transform: rotate(360deg); } }
+
+        @keyframes ll_shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        @keyframes ll_float { 0%,100% { transform: translateY(0); opacity: 0.6; } 50% { transform: translateY(-2px); opacity: 1; } }
+        @keyframes ll_bubble { 0%,100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.4); opacity: 0.6; } }
+        @keyframes ll_drift { 0%,100% { transform: translateX(0); opacity: 0.15; } 50% { transform: translateX(6px); opacity: 0.25; } }
 
         @media (prefers-reduced-motion: reduce){
           .loyalty-level-card, .ll-chip::after, .ll-orbit { animation: none !important; }
@@ -258,107 +269,255 @@ export default function LoyaltyLevel() {
       )}
 
       {/* Header Profile Section */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 16 : 40, position: 'relative', zIndex: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 12 : 24, position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 24 }}>
           <motion.div 
             whileHover={{ scale: 1.05, rotate: 4 }}
             whileTap={{ scale: 0.98, rotate: -2 }}
-            className="ll-iconWrap"
             style={{ 
-              width: isMobile ? 44 : 90, height: isMobile ? 44 : 90, borderRadius: isMobile ? 14 : 28, 
-              background: `linear-gradient(135deg, #fff, ${PINK}05)`, 
-              border: `2px solid ${PINK}10`,
+              width: isMobile ? 52 : 90, height: isMobile ? 52 : 90, 
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: `0 12px 30px ${PINK}15, inset 0 2px 4px rgba(255,255,255,1)`,
               position: 'relative'
             }}
           >
-            <div className="ll-orbit" aria-hidden="true" />
-            <CurrentIcon size={isMobile ? 22 : 44} color={currentLevel.color} strokeWidth={2.5} />
+            <img 
+              src={currentLevel.image || ''}
+              alt="Medalla"
+              style={{ width: isMobile ? 52 : 90, height: isMobile ? 52 : 90, objectFit: 'contain' }}
+            />
             <motion.div 
               animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 2 }}
-              style={{ position: 'absolute', bottom: isMobile ? -5 : -8, right: isMobile ? -5 : -8, background: '#fff', borderRadius: '50%', padding: isMobile ? 3 : 6, boxShadow: '0 4px 15px rgba(236,72,153,0.2)' }}
+              style={{ position: 'absolute', bottom: isMobile ? -5 : -8, right: isMobile ? -5 : -8, background: '#fff', borderRadius: '50%', padding: isMobile ? 3 : 6, boxShadow: `0 4px 15px ${currentLevel.color}40` }}
             >
-              <Zap size={isMobile ? 10 : 16} color={PINK} fill={PINK} />
+              <Zap size={isMobile ? 10 : 16} color={currentLevel.color} fill={currentLevel.color} />
             </motion.div>
           </motion.div>
           <div>
-            <motion.span 
-              initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-              className="ll-chip"
-              style={{ display: 'inline-block', padding: isMobile ? '3px 8px' : '6px 14px', background: '#f3f4f6', color: '#374151', borderRadius: 999, fontSize: isMobile ? 9 : 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: isMobile ? 3 : 6, border: '1px solid #d1d5db' }}
-            >
-              MI STATUS ACTUAL
-            </motion.span>
-            <h2 style={{ margin: 0, fontSize: isMobile ? 20 : 42, fontWeight: 900, color: '#111827', letterSpacing: '-0.04em', lineHeight: 1 }}>{currentLevel.name}</h2>
+            <p style={{ margin: 0, fontSize: isMobile ? 10 : 12, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Medalla</p>
+            <h2 style={{ margin: '2px 0 0', fontSize: isMobile ? 20 : 36, fontWeight: 900, color: '#111827', letterSpacing: '-0.04em', lineHeight: 1 }}>Nivel {currentLevel.name}</h2>
+            <p style={{ margin: '4px 0 0', fontSize: isMobile ? 12 : 14, fontWeight: 700, color: currentLevel.color }}>{points} pts</p>
           </div>
         </div>
       </div>
 
-      {/* Main Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(3, 1fr)', gap: isMobile ? 8 : 16, marginBottom: isMobile ? 16 : 40, position: 'relative', zIndex: 1 }}>
-        {[
-          { icon: Trophy, label: 'Pedidos', value: paidOrdersCount, color: '#3b82f6', bg: '#eff6ff' },
-          { icon: Coins, label: 'Puntos', value: points.toLocaleString(), color: PINK, bg: `${PINK}08` },
-          { icon: TrendingUp, label: 'Invertido', value: formatPrice(totalSpent), color: '#10b981', bg: '#ecfdf5' }
-        ].map((stat, i) => (
-          <motion.div 
-            key={i}
-            whileHover={{ y: -6, boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 3px 0 rgba(0,0,0,0.03), 0 4px 12px 0 rgba(0,0,0,0.045), 0 8px 24px 0 rgba(0,0,0,0.025)', borderColor: '#9ca3af' }}
-            whileTap={{ scale: 0.98 }}
-            style={{ padding: isMobile ? '12px 8px' : 24, background: '#fff', borderRadius: isMobile ? 14 : 24, border: '1.5px solid #d1d5db', boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 2px 0 rgba(0,0,0,0.025), 0 2px 8px 0 rgba(0,0,0,0.035), 0 4px 16px 0 rgba(0,0,0,0.02)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)', textAlign: isMobile ? 'center' : 'left' }}
-          >
-            <div style={{ width: isMobile ? 32 : 44, height: isMobile ? 32 : 44, borderRadius: isMobile ? 10 : 14, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: isMobile ? 6 : 16, border: '1px solid #d1d5db', ...(isMobile ? { margin: '0 auto 6px' } : {}) }}>
-              <stat.icon size={isMobile ? 16 : 22} color={stat.color} />
+      {/* MI STATUS ACTUAL chip + Debug badges */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: isMobile ? 12 : 20, position: 'relative', zIndex: 1 }}>
+        <motion.span 
+          initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+          className="ll-chip"
+          style={{ display: 'inline-block', padding: isMobile ? '3px 8px' : '6px 14px', background: '#f3f4f6', color: '#374151', borderRadius: 999, fontSize: isMobile ? 9 : 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', border: '1px solid #d1d5db', '--chip-glow': `${currentLevel.color}40`, '--orbit-c1': `${currentLevel.color}00`, '--orbit-c2': `${currentLevel.color}59`, '--orbit-c3': `${currentLevel.color}59` } as React.CSSProperties}
+        >
+          MI STATUS ACTUAL
+        </motion.span>
+        {/* Debug: 5 insignias clickables */}
+        <div style={{ display: 'flex', gap: 4 }}>
+          {LEVELS.slice(0, 5).map((level) => (
+            <div 
+              key={level.id} 
+              onClick={async () => {
+                if (user?.email !== 'dezkonet@gmail.com') return;
+                try {
+                  const { account } = getServices();
+                  const acc = await account.get();
+                  const prefs = (acc as any).prefs || {};
+                  await account.updatePrefs({ ...prefs, loyaltyLevel: level.id });
+                  loadUserData();
+                } catch(e) { console.error(e); }
+              }}
+              style={{ 
+                width: isMobile ? 22 : 28, height: isMobile ? 22 : 28, 
+                display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                background: currentLevel.id === level.id ? level.color + '20' : 'transparent', 
+                borderRadius: 6, border: currentLevel.id === level.id ? `2px solid ${level.color}` : '1px solid #d1d5db',
+                cursor: user?.email === 'dezkonet@gmail.com' ? 'pointer' : 'default', transition: 'all 0.15s', overflow: 'hidden'
+              }}
+            >
+              {level.image ? (
+                <img src={level.image} alt={level.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              ) : (
+                <level.icon size={isMobile ? 12 : 14} color={level.color} strokeWidth={2} />
+              )}
             </div>
-            <p style={{ margin: 0, fontSize: isMobile ? 15 : 26, fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>{stat.value}</p>
-            <p style={{ margin: '2px 0 0', fontSize: isMobile ? 9 : 11, color: '#9ca3af', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
-          </motion.div>
-        ))}
+          ))}
+        </div>
+        {/* Debug: Reset cupón button (solo admin) */}
+        {user?.email === 'dezkonet@gmail.com' && (
+          <motion.button
+            onClick={async () => {
+              try {
+                const { account } = getServices();
+                const acc = await account.get();
+                const prefs = (acc as any).prefs || {};
+                await account.updatePrefs({
+                  ...prefs,
+                  welcomeGiftClaimed: false,
+                  welcomeCouponCode: '',
+                  autoApplyCoupon: '',
+                });
+                window.location.reload();
+              } catch(e) { console.error(e); }
+            }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            style={{ padding: isMobile ? '3px 8px' : '6px 12px', background: '#ec4899', color: '#fff', border: 'none', borderRadius: 6, fontSize: isMobile ? 9 : 11, fontWeight: 900, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+          >
+            Reset Cupón
+          </motion.button>
+        )}
       </div>
 
       {/* Progress & Motivation Section */}
-      {nextLevel && (
+      {nextLevel ? (
         <div style={{ marginBottom: isMobile ? 16 : 40, position: 'relative', zIndex: 1, padding: isMobile ? '14px 16px' : 32, background: 'linear-gradient(135deg, #f9fafb, #fff)', borderRadius: isMobile ? 16 : 28, border: '1.5px solid #d1d5db', boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 2px 0 rgba(0,0,0,0.025), 0 2px 8px 0 rgba(0,0,0,0.035), 0 4px 16px 0 rgba(0,0,0,0.02)' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 }}>
-            <div>
-              <p style={{ margin: 0, fontSize: isMobile ? 14 : 18, fontWeight: 900, color: '#111827', letterSpacing: '-0.01em' }}>
-                {ordersNeeded > 0 ? (
-                  <>Estás a <span style={{ color: PINK }}>{ordersNeeded} pedidos</span> de <span style={{ color: nextLevel.color }}>{nextLevel.name}</span></>
-                ) : (
-                  <span style={{ color: '#10b981' }}>🎉 ¡Ya puedes reclamar tu nuevo nivel!</span>
-                )}
-              </p>
-              <p style={{ margin: '4px 0 0', fontSize: isMobile ? 11 : 14, color: '#6b7280', fontWeight: 500 }}>
-                {ordersNeeded > 0 ? 'Desbloquea beneficios exclusivos con tu próxima compra.' : 'Haz clic abajo para generar tu cupón de recompensa.'}
-              </p>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <span style={{ fontSize: 16, fontWeight: 900, color: '#111827' }}>{paidOrdersCount}</span>
-              <span style={{ fontSize: 14, color: '#9ca3af', fontWeight: 700 }}> / {nextLevel.requiredOrders}</span>
-            </div>
+          {/* Progress Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 4 : 6 }}>
+            <span style={{ fontSize: isMobile ? 10 : 12, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Progreso Actual</span>
+            <span style={{ fontSize: isMobile ? 10 : 12, fontWeight: 800, color: '#9ca3af' }}>Siguiente Nivel</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 8 : 12 }}>
+            <span style={{ fontSize: isMobile ? 14 : 18, fontWeight: 900, color: currentLevel.color }}>{currentLevel.name}</span>
+            <span style={{ fontSize: isMobile ? 14 : 18, fontWeight: 900, color: nextLevel.color }}>{nextLevel.name}</span>
           </div>
 
-          <div style={{ height: isMobile ? 10 : 16, background: '#f1f5f9', borderRadius: 999, overflow: 'hidden', position: 'relative', border: '1px solid #e2e8f0' }}>
+          {/* Animated Progress Bar */}
+          <div style={{ height: isMobile ? 24 : 32, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden', position: 'relative' }}>
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: `${progressPercent}%` }}
               transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
               style={{ 
                 position: 'absolute', top: 0, left: 0, bottom: 0, 
-                background: `linear-gradient(90deg, ${PINK}, #f472b6)`,
+                background: `linear-gradient(90deg, ${currentLevel.color}, ${nextLevel.color})`,
                 borderRadius: 999,
-                boxShadow: `0 0 20px ${PINK}33`
               }} 
-            />
-            {/* Shimmer effect */}
-            <motion.div 
-              animate={{ x: ['-100%', '200%'] }}
-              transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
-              style={{ position: 'absolute', top: 0, bottom: 0, width: '40%', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)', zIndex: 1 }}
-            />
+            >
+              {/* Shimmer */}
+              <div style={{ position: 'absolute', inset: 0, opacity: 0.4, backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0) 100%)', backgroundSize: '200% 100%', animation: 'll_shimmer 2.5s ease-in-out infinite' }} />
+              {/* Float dots */}
+              {[{l:3,t:15,s:1.5,d:0},{l:9.5,t:38,s:2.3,d:.15},{l:16,t:61,s:3.1,d:.3},{l:22.5,t:9,s:3.9,d:.45},{l:29,t:32,s:1.5,d:.6},{l:35.5,t:55,s:2.3,d:.75},{l:42,t:78,s:3.1,d:.9},{l:48.5,t:26,s:3.9,d:1.05},{l:55,t:49,s:1.5,d:1.2},{l:61.5,t:72,s:2.3,d:1.35},{l:68,t:20,s:3.1,d:1.5},{l:74.5,t:43,s:3.9,d:1.65},{l:81,t:66,s:1.5,d:1.8},{l:87.5,t:14,s:2.3,d:1.95},{l:94,t:37,s:3.1,d:.1}].map((p,i)=>(
+                <div key={`pf${i}`} style={{ position:'absolute', left:`${p.l}%`, top:`${p.t}%`, width:p.s, height:p.s, borderRadius:'50%', background:`radial-gradient(circle,rgba(255,255,255,${0.6+((i%3)*0.15)}),rgba(255,255,255,0.1))`, boxShadow:`0 0 ${2+i%3}px rgba(255,255,255,0.5)`, animation:`ll_float ${1.2+(i%5)*.4}s ease-in-out ${p.d}s infinite alternate` }} />
+              ))}
+              {/* Bubbles */}
+              {[{l:5,t:5,s:3},{l:18,t:24,s:5},{l:31,t:43,s:7},{l:44,t:62,s:3},{l:57,t:11,s:5},{l:70,t:30,s:7},{l:83,t:49,s:3}].map((b,i)=>(
+                <div key={`pb${i}`} style={{ position:'absolute', left:`${b.l}%`, top:`${b.t}%`, width:b.s, height:b.s, borderRadius:'50%', border:'1px solid rgba(255,255,255,0.3)', animation:`ll_bubble ${1.5+i*.5}s ease-in-out ${i*.2}s infinite` }} />
+              ))}
+              {/* Drift bars */}
+              <div style={{ position:'absolute', top:0, height:'100%', width:8, borderRadius:999, background:'rgba(255,255,255,0.15)', filter:'blur(1px)', left:'20%', animation:'ll_drift 3s ease-in-out infinite' }} />
+              <div style={{ position:'absolute', top:0, height:'100%', width:6, borderRadius:999, background:'rgba(255,255,255,0.1)', filter:'blur(1px)', left:'60%', animation:'ll_drift 4s ease-in-out infinite reverse' }} />
+            </motion.div>
           </div>
+
+          {/* Motivation text */}
+          <div style={{ marginTop: isMobile ? 10 : 14 }}>
+            <p style={{ margin: 0, fontSize: isMobile ? 13 : 16, fontWeight: 800, color: '#111827', letterSpacing: '-0.01em' }}>
+              {ordersNeeded > 0 ? (
+                <>Estás a <span style={{ color: PINK }}>{ordersNeeded} pedidos</span> de <span style={{ color: nextLevel.color }}>{nextLevel.name}</span></>
+              ) : (
+                <span style={{ color: '#10b981' }}>🎉 ¡Ya puedes reclamar tu nuevo nivel!</span>
+              )}
+            </p>
+            <p style={{ margin: '4px 0 0', fontSize: isMobile ? 11 : 13, color: '#6b7280', fontWeight: 500 }}>
+              {ordersNeeded > 0 ? 'Desbloquea beneficios exclusivos con tu próxima compra.' : 'Haz clic abajo para generar tu cupón de recompensa.'}
+            </p>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+            <span style={{ fontSize: isMobile ? 13 : 16, fontWeight: 900, color: '#111827' }}>{paidOrdersCount}</span>
+            <span style={{ fontSize: isMobile ? 12 : 14, color: '#9ca3af', fontWeight: 700 }}> / {nextLevel.requiredOrders}</span>
+          </div>
+          {nextLevel && ordersNeeded > 0 && (
+            <p style={{ margin: '8px 0 0', fontSize: isMobile ? 10 : 12, fontWeight: 700, color: '#9ca3af', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Faltan <span style={{ color: PINK }}>{Math.max(0, (nextLevel.requiredOrders * 100 - points)).toLocaleString()} pts</span> para el nivel <span style={{ color: nextLevel.color }}>{nextLevel.name}</span>
+            </p>
+          )}
         </div>
+      ) : (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          style={{ marginBottom: isMobile ? 16 : 40, position: 'relative', zIndex: 1, padding: isMobile ? '20px 24px' : '28px 32px', background: '#fff', borderRadius: isMobile ? 20 : 28, border: '1px solid rgba(0,0,0,0.07)', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)' }}
+        >
+          <div style={{ textAlign: 'center' }}>
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
+              style={{ width: isMobile ? 120 : 160, height: isMobile ? 120 : 160, borderRadius: '50%', background: '#fef2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '1px solid rgba(236,72,153,0.15)', position: 'relative' }}
+            >
+              <img 
+                src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778908676990-pegada-1778908675560.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=XTruju4f9iSTg6NKqqLaNvhH9sAfmLilJfIit%2B53j3p9KTQzlM%2FRtZfUAvA9WK8NgqCv8dj0tN0vUWVJvtTsvNN%2BXEsZbwofb%2BOmSO6sksZHfA4rxeGeqxAtO2DpPG0jJljedbKrdDKAxxhk%2FTwNkODeLLHm17%2BePMmMjhHfYoMH69jejOZK2Cu5MdRqwsVPANwuyNFvldcDSIkBdkHip36pwPZ4ir2vmGS2eExJQ826tUXcoM%2BtVp2S5uWyFcXv0DyFVwvRstLMiDAl4JLZqHInSOYtSpw06uhBDoXnoMgoD%2F1fY25idknEAiBmHV%2FpkfiO%2FpcqzVURY2lo85ffXQ%3D%3D"
+                alt="Trofeo"
+                style={{ width: isMobile ? 100 : 136, height: isMobile ? 100 : 136, objectFit: 'contain' }}
+              />
+              {/* Confeti mejorado */}
+              {[...Array(20)].map((_, i) => {
+                const colors = ['#f472b6', '#fbbf24', '#34d399', '#60a5fa', '#a78bfa', '#fb7185', '#fcd34d', '#4ade80', '#f87171', '#818cf8'];
+                const angle = (i / 20) * Math.PI * 2;
+                const dist = 60 + Math.random() * 40;
+                const isStrip = i % 3 === 0;
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: 0, y: 0, rotate: 0, scale: 0 }}
+                    animate={{ 
+                      opacity: [0, 1, 1, 0], 
+                      x: [0, Math.cos(angle) * dist, Math.cos(angle) * (dist + 20)],
+                      y: [0, Math.sin(angle) * dist - 30, Math.sin(angle) * (dist + 20) + 60],
+                      rotate: [0, 180 + Math.random() * 360, 360 + Math.random() * 720],
+                      scale: [0, 1, 0.8, 0]
+                    }}
+                    transition={{ 
+                      delay: i * 0.05, 
+                      duration: 2.5 + Math.random(), 
+                      repeat: Infinity,
+                      repeatDelay: 1.5 + Math.random()
+                    }}
+                    style={{
+                      position: 'absolute',
+                      width: isStrip ? 4 : 6,
+                      height: isStrip ? 12 : 6,
+                      borderRadius: isStrip ? 2 : '50%',
+                      background: colors[i % colors.length],
+                      left: '50%',
+                      top: '50%',
+                      marginLeft: -3,
+                      marginTop: -3,
+                      transformOrigin: 'center',
+                      boxShadow: `0 0 4px ${colors[i % colors.length]}40`
+                    }}
+                  />
+                );
+              })}
+            </motion.div>
+            
+            <motion.h2 
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              style={{ margin: 0, fontSize: isMobile ? 20 : 26, fontWeight: 800, color: '#111827', letterSpacing: '-0.02em' }}
+            >
+              ¡Felicidades!
+            </motion.h2>
+            
+            <motion.p 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              style={{ margin: '6px 0 0', fontSize: isMobile ? 14 : 16, fontWeight: 700, color: PINK, letterSpacing: '-0.01em' }}
+            >
+              Eres lo más premium
+            </motion.p>
+            
+            <motion.p 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              style={{ margin: '8px 0 0', fontSize: isMobile ? 12 : 14, color: '#6b7280', fontWeight: 500, lineHeight: 1.5 }}
+            >
+              Has alcanzado el nivel más alto.<br />
+              Disfruta de todos los beneficios exclusivos.
+            </motion.p>
+          </div>
+        </motion.div>
       )}
 
       {/* Coupon Action */}
@@ -451,6 +610,27 @@ export default function LoyaltyLevel() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Experience Stats Row (at bottom) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: isMobile ? 16 : 24, position: 'relative', zIndex: 1 }}>
+        {[
+          { icon: TrendingUp, value: String(paidOrdersCount), label: 'Compras', color: '#ec4899', bg: '#fff' },
+          { icon: Gift, value: formatPrice(totalSpent), label: 'Total', color: '#f43f5e', bg: '#fff' },
+          { icon: Sparkles, value: `${currentLevel.id === 'bronze' ? '1' : currentLevel.id === 'silver' ? '1.5' : currentLevel.id === 'gold' ? '2' : currentLevel.id === 'diamond' ? '3' : '5'}x`, label: 'Pts/$1k', color: '#ec4899', bg: '#fff' },
+        ].map((stat, i) => (
+          <motion.div 
+            key={i} 
+            whileHover={{ y: -3, boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 3px 0 rgba(0,0,0,0.03), 0 4px 12px 0 rgba(0,0,0,0.045), 0 8px 24px 0 rgba(0,0,0,0.025)' }} 
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: isMobile ? 12 : 20, borderRadius: isMobile ? 12 : 16, transition: 'all 0.2s', border: '1px solid #e5e7eb', background: '#f9fafb', boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 2px 0 rgba(0,0,0,0.025), 0 2px 8px 0 rgba(0,0,0,0.035), 0 4px 16px 0 rgba(0,0,0,0.02)' }}
+          >
+            <div style={{ width: 36, height: 36, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: isMobile ? 8 : 12, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', background: '#fff', border: '1px solid #e5e7eb' }}>
+              <stat.icon size={18} color={stat.color} />
+            </div>
+            <p style={{ margin: 0, fontSize: isMobile ? 16 : 18, fontWeight: 900, color: '#111827', lineHeight: 1, marginBottom: isMobile ? 6 : 8 }}>{stat.value}</p>
+            <p style={{ margin: 0, fontSize: isMobile ? 9 : 10, fontWeight: 900, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
+          </motion.div>
+        ))}
       </div>
 
     </div>

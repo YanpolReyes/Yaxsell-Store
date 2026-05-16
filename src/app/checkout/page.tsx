@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User, MapPin, Package, ChevronDown, ChevronRight, Shield, Truck, RefreshCw, Plus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
@@ -178,6 +178,9 @@ function CheckoutInner() {
             email: f.email || user.email || '',
             phone: f.phone || prefs.phone || user.phone || '',
             rut: f.rut || prefs.rut || '',
+            region: f.region || prefs.region || '',
+            comuna: f.comuna || prefs.comuna || '',
+            address: f.address || prefs.address || '',
           }));
         } catch {}
       })();
@@ -278,6 +281,29 @@ function CheckoutInner() {
     }
   }
 
+  const applyCouponCallback = useCallback(applyCoupon, [couponCode, subtotal]);
+
+  // Auto-apply coupon from user preferences
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const { account } = getServices();
+        const acc = await account.get();
+        const prefs = (acc as any).prefs || {};
+        
+        // Auto-apply coupon if user has autoApplyCoupon in prefs and coupon is not already applied
+        if (prefs.autoApplyCoupon && !couponApplied) {
+          setCouponCode(prefs.autoApplyCoupon);
+          // Small delay to ensure couponCode state is updated
+          setTimeout(() => {
+            applyCouponCallback();
+          }, 100);
+        }
+      } catch {}
+    })();
+  }, [user, couponApplied, applyCouponCallback]);
+
   function removeCoupon() {
     setCouponDiscount(0);
     setCouponApplied('');
@@ -314,6 +340,11 @@ function CheckoutInner() {
         }
       }
     } catch {}
+    // Validate minimum $50,000 when coupon is applied
+    if (couponApplied && total < 50000) {
+      setError('Para usar un cupón, el monto mínimo de compra es $50.000');
+      return;
+    }
     setSubmitting(true); setError('');
     try {
       const { databases } = getServices();
@@ -681,7 +712,7 @@ function CheckoutInner() {
                       const price = item.product.CURRENTPRICE && item.product.CURRENTPRICE > 0 ? item.product.CURRENTPRICE : item.product.PRICE;
                       return (
                         <div key={item.product.$id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 10px', borderRadius: 12, background: '#fefcfe', border: '1px solid #fdf2f8', transition: 'all .15s' }}>
-                          <div style={{ position: 'relative', width: 48, height: 48, background: 'linear-gradient(135deg, #fef2f8, #fff)', borderRadius: 12, overflow: 'hidden', flexShrink: 0, border: '1px solid #fce7f3' }}>
+                          <div style={{ position: 'relative', width: 48, height: 48, background: 'linear-gradient(135deg, #fef2f8, #fff)', borderRadius: 12, overflow: 'visible', flexShrink: 0, border: '1px solid #fce7f3' }}>
                             {item.product.IMAGEURL
                               ? <Image src={item.product.IMAGEURL} alt={item.product.NAME} fill style={{ objectFit: 'cover', padding: 2 }} />
                               : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📦</span>}

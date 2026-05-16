@@ -363,7 +363,29 @@ export default function ProductDetailPlantilla2() {
                   </p>
                   <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #ddd', borderRadius: 4, width: 'fit-content' }}>
                     <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 42, height: 42, border: 'none', background: 'none', fontSize: 20, cursor: 'pointer', color: '#3483fa', fontWeight: 300 }}>−</button>
-                    <span style={{ width: 44, textAlign: 'center', fontSize: 16, fontWeight: 500, borderLeft: '1px solid #ddd', borderRight: '1px solid #ddd' }}>{qty}</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={qty}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        if (!isNaN(val) && val >= 1 && val <= stock) {
+                          setQty(val);
+                        }
+                      }}
+                      style={{ 
+                        width: 60, 
+                        textAlign: 'center', 
+                        fontSize: 16, 
+                        fontWeight: 500, 
+                        border: '1px solid transparent',
+                        outline: 'none',
+                        outlineStyle: 'none',
+                        boxShadow: 'none',
+                        background: '#fff'
+                      }}
+                    />
                     <button onClick={() => setQty(q => Math.min(stock, q + 1))} style={{ width: 42, height: 42, border: 'none', background: 'none', fontSize: 20, cursor: 'pointer', color: '#3483fa', fontWeight: 300 }}>+</button>
                   </div>
                   {qty > 1 && <p style={{ margin: '8px 0 0', fontSize: 13, color: '#666' }}>Total: <strong style={{ color: '#333' }}>{formatPrice(lineTotal)}</strong></p>}

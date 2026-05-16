@@ -1,0 +1,246 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { getServices, getAppwriteConfig } from '@/lib/appwrite';
+import { Query, Client, Databases } from 'appwrite';
+import { ArrowLeft, Ticket, Gift, Tag, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useAuth } from '@/hooks/useAuth';
+
+const FF = '"DM Sans",system-ui,sans-serif';
+const PINK = '#ec4899';
+const DB_ID = '67f1dc940037b3d367bb';
+const COUPONS_COL = 'coupons';
+
+const COUPON_IMG = 'https://cdn3d.iconscout.com/3d/premium/thumb/cupon-3d-icon-png-download-10660366.png';
+
+interface Coupon {
+  $id: string;
+  CODE: string;
+  DISCOUNTTYPE: string;
+  DISCOUNTVALUE: number;
+  MINORDERVALUE?: number;
+  MAXUSES?: number;
+  USEDCOUNT?: number;
+  EXPIRYDATE?: string;
+  ISACTIVE: boolean;
+  DESCRIPTION?: string;
+}
+
+export default function CuponesPage() {
+  const { user, isLoggedIn, isLoading: authLoading } = useAuth();
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 900);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn || !user) return;
+    (async () => {
+      try {
+        const { client } = getServices();
+        const db = new Databases(client);
+        const res = await db.listDocuments(DB_ID, COUPONS_COL, [
+          Query.equal('ISACTIVE', true),
+          Query.orderDesc('$createdAt'),
+          Query.limit(50),
+        ]);
+        setCoupons(res.documents as unknown as Coupon[]);
+      } catch (err) {
+        console.error('Error loading coupons:', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [isLoggedIn, user]);
+
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fafafa' }}>
+        <Loader2 size={32} color={PINK} style={{ animation: 'spin 1s linear infinite' }} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div style={{ textAlign: 'center' }}>
+          <Ticket size={48} color={PINK} style={{ margin: '0 auto 16px' }} />
+          <p style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>Iniciá sesión para ver tus cupones</p>
+          <Link href="/login" style={{ display: 'inline-block', marginTop: 12, padding: '12px 28px', background: PINK, color: '#fff', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 14 }}>
+            Iniciar sesión
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  function getCouponStatus(c: Coupon): 'active' | 'expired' | 'used' {
+    if (c.EXPIRYDATE && new Date(c.EXPIRYDATE) < new Date()) return 'expired';
+    if (c.MAXUSES && c.USEDCOUNT && c.USEDCOUNT >= c.MAXUSES) return 'used';
+    return 'active';
+  }
+
+  function formatExpiry(date?: string) {
+    if (!date) return null;
+    const d = new Date(date);
+    return d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#fafafa', fontFamily: FF }}>
+      {/* Header */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: '#fff', borderBottom: '1px solid rgba(0,0,0,0.07)', padding: isMobile ? '14px 16px' : '18px 32px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <Link href="/cuenta" style={{ display: 'flex', alignItems: 'center', color: '#111827', textDecoration: 'none' }}>
+          <ArrowLeft size={22} strokeWidth={2.5} />
+        </Link>
+        <h1 style={{ margin: 0, fontSize: isMobile ? 18 : 22, fontWeight: 800, color: '#111827', letterSpacing: '-0.02em' }}>Mis Cupones</h1>
+      </div>
+
+      <div style={{ maxWidth: 680, margin: '0 auto', padding: isMobile ? '20px 16px' : '32px 24px' }}>
+        {/* Hero image */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{ textAlign: 'center', marginBottom: 28 }}
+        >
+          <img 
+            src={COUPON_IMG}
+            alt="Cupones"
+            style={{ width: isMobile ? 200 : 280, height: 'auto', objectFit: 'contain', margin: '0 auto' }}
+          />
+        </motion.div>
+
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 40 }}>
+            <Loader2 size={28} color={PINK} style={{ animation: 'spin 1s linear infinite' }} />
+            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+          </div>
+        ) : coupons.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            style={{ textAlign: 'center', padding: '40px 20px', background: '#fff', borderRadius: 20, border: '1px solid rgba(0,0,0,0.07)', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07)' }}
+          >
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#fef2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid rgba(236,72,153,0.15)' }}>
+              <Ticket size={28} color={PINK} />
+            </div>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#111827' }}>No tenés cupones disponibles</p>
+            <p style={{ margin: '8px 0 0', fontSize: 13, color: '#6b7280' }}>Los cupones que recibas aparecerán aquí</p>
+          </motion.div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {coupons.map((coupon, i) => {
+              const status = getCouponStatus(coupon);
+              const discountLabel = coupon.DISCOUNTTYPE === 'percentage' ? `${coupon.DISCOUNTVALUE}%` : `$${coupon.DISCOUNTVALUE.toLocaleString()}`;
+              return (
+                <motion.div
+                  key={coupon.$id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  style={{
+                    background: '#fff',
+                    borderRadius: 16,
+                    border: '1px solid rgba(0,0,0,0.07)',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07)',
+                    overflow: 'hidden',
+                    opacity: status !== 'active' ? 0.6 : 1,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    {/* Discount badge */}
+                    <div style={{
+                      minWidth: isMobile ? 80 : 100,
+                      padding: isMobile ? '16px 12px' : '20px 16px',
+                      background: status === 'active' ? 'linear-gradient(135deg, #fef2f8, #fce7f3)' : '#f3f4f6',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRight: '2px dashed rgba(0,0,0,0.07)',
+                      position: 'relative',
+                    }}>
+                      <span style={{ fontSize: isMobile ? 20 : 26, fontWeight: 900, color: status === 'active' ? PINK : '#9ca3af', letterSpacing: '-0.02em' }}>
+                        {discountLabel}
+                      </span>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: status === 'active' ? PINK : '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 2 }}>
+                        Descuento
+                      </span>
+                    </div>
+
+                    {/* Coupon details */}
+                    <div style={{ flex: 1, padding: isMobile ? '12px 14px' : '16px 20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <code style={{
+                          fontSize: isMobile ? 12 : 14,
+                          fontWeight: 800,
+                          color: '#111827',
+                          background: '#f3f4f6',
+                          padding: '3px 10px',
+                          borderRadius: 6,
+                          letterSpacing: '0.05em',
+                          border: '1px solid #e5e7eb',
+                        }}>
+                          {coupon.CODE}
+                        </code>
+                        {status === 'active' && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: '#10b981', background: '#ecfdf5', padding: '2px 8px', borderRadius: 99, border: '1px solid #a7f3d0' }}>
+                            <CheckCircle2 size={10} /> Activo
+                          </span>
+                        )}
+                        {status === 'expired' && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: '#ef4444', background: '#fef2f2', padding: '2px 8px', borderRadius: 99, border: '1px solid #fecaca' }}>
+                            <XCircle size={10} /> Expirado
+                          </span>
+                        )}
+                        {status === 'used' && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: '#6b7280', background: '#f3f4f6', padding: '2px 8px', borderRadius: 99, border: '1px solid #d1d5db' }}>
+                            <XCircle size={10} /> Agotado
+                          </span>
+                        )}
+                      </div>
+                      
+                      {coupon.DESCRIPTION && (
+                        <p style={{ margin: '4px 0 0', fontSize: isMobile ? 11 : 13, color: '#6b7280', fontWeight: 500, lineHeight: 1.4 }}>
+                          {coupon.DESCRIPTION}
+                        </p>
+                      )}
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 6, flexWrap: 'wrap' }}>
+                        {coupon.MINORDERVALUE && coupon.MINORDERVALUE > 0 && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, color: '#6b7280', fontWeight: 600 }}>
+                            <Tag size={10} /> Mín. ${coupon.MINORDERVALUE.toLocaleString()}
+                          </span>
+                        )}
+                        {coupon.EXPIRYDATE && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, color: '#6b7280', fontWeight: 600 }}>
+                            <Clock size={10} /> {formatExpiry(coupon.EXPIRYDATE)}
+                          </span>
+                        )}
+                        {coupon.MAXUSES && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, color: '#6b7280', fontWeight: 600 }}>
+                            <Gift size={10} /> {coupon.USEDCOUNT || 0}/{coupon.MAXUSES} usados
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

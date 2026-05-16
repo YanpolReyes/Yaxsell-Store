@@ -124,18 +124,20 @@ export class LoyaltyService {
   }
 
   // Generar cupón de bienvenida (primer registro)
-  static async generateWelcomeCoupon(userId: string, type: 'order_2' | 'product_5'): Promise<{ success: boolean; couponCode?: string; error?: string }> {
+  static async generateWelcomeCoupon(userId: string, type: 'order_2' | 'product_5' | 'welcome_20'): Promise<{ success: boolean; couponCode?: string; error?: string }> {
     try {
       const { databases, account } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      const percent = type === 'order_2' ? 2 : 5;
-      const description = type === 'order_2' 
+      const percent = type === 'welcome_20' ? 20 : type === 'order_2' ? 2 : 5;
+      const description = type === 'welcome_20' 
+        ? 'Cupón de bienvenida: 20% de descuento por tiempo limitado'
+        : type === 'order_2' 
         ? 'Cupón de bienvenida: 2% de descuento en tu primer pedido' 
         : 'Cupón de bienvenida: 5% de descuento en tu producto favorito';
 
       // Generar código único
-      const couponCode = `WELCOME-${type.toUpperCase()}-${userId.slice(0, 4)}-${Date.now().toString(36).toUpperCase()}`;
+      const couponCode = `WELCOME-${type === 'welcome_20' ? '20' : type.toUpperCase()}-${userId.slice(0, 4)}-${Date.now().toString(36).toUpperCase()}`;
 
       // Crear cupón
       await databases.createDocument(databaseId, COUPONS_COLLECTION, ID.unique(), {

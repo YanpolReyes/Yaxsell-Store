@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  User, ShoppingBag, Bell, Heart, MapPin, HelpCircle,
+  User, ShoppingBag, Bell, Heart, MapPin, HelpCircle, Gift,
   LogOut, ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,10 +16,8 @@ const PINK = '#ec4899';
 
 const SIDEBAR_NAV = [
   { icon: User,        label: 'Mi cuenta',      href: '/cuenta'               },
-  { icon: ShoppingBag, label: 'Pedidos',         href: '/cuenta/pedidos'        },
   { icon: Heart,       label: 'Favoritos',        href: '/cuenta/favoritos'      },
   { icon: Bell,        label: 'Notificaciones',   href: '/cuenta/notificaciones' },
-  { icon: MapPin,      label: 'Direcciones',      href: '/cuenta/direcciones'    },
   { icon: HelpCircle,  label: 'Soporte',          href: '/cuenta/tickets'        },
 ];
 
@@ -40,6 +38,7 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
   const { user, isLoggedIn, logout } = useAuth();
   const pathname = usePathname();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [hasGifts, setHasGifts] = useState(false);
   const bgUrl = useCuentaBgUrl();
 
   useEffect(() => {
@@ -50,6 +49,8 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
         const acc = await account.get();
         const prefs = (acc as any).prefs || {};
         if (prefs.avatarFileId) setAvatarUrl(getFilePreviewUrl(prefs.avatarFileId));
+        // Check if user has available gifts (only if not claimed yet)
+        setHasGifts(!prefs.welcomeGiftClaimed);
       } catch {}
     })();
   }, [isLoggedIn]);
@@ -121,11 +122,32 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {SIDEBAR_NAV.map(({ icon: Icon, label, href }) => {
                   const isActive = pathname === href || (href !== '/cuenta' && pathname.startsWith(href));
+                  const isRegalos = label === 'Regalos';
                   return (
                     <Link key={label} href={href} className={`sb-link ${isActive ? 'active' : ''}`}>
-                      <div className="sb-link-content">
+                      <div className="sb-link-content" style={{ position: 'relative' }}>
                         <Icon size={20} strokeWidth={2} />
                         <span>{label}</span>
+                        {isRegalos && hasGifts && (
+                          <div className="gift-badge" style={{ 
+                            position: 'absolute', 
+                            top: '-4px', 
+                            right: '-8px', 
+                            width: 18, 
+                            height: 18, 
+                            background: '#ec4899', 
+                            color: '#fff', 
+                            borderRadius: '50%', 
+                            fontSize: 11, 
+                            fontWeight: 900, 
+                            display: 'flex',
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            border: '2px solid #fff'
+                          }}>
+                            1
+                          </div>
+                        )}
                       </div>
                       <ChevronRight size={14} style={{ opacity: 0.3 }} />
                     </Link>

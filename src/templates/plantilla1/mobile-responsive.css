@@ -104,15 +104,15 @@
   [data-template="1"] .tpl1-hero-mobile-locked .musk-banner-slider,
   [data-template="1"] .tpl1-hero-mobile-locked .musk-main-banner,
   [data-template="1"] .tpl1-hero-mobile-locked fuzion-hero-banner-slider {
-    touch-action: none !important;
+    touch-action: pan-y pinch-zoom !important;
     -webkit-user-select: none !important;
     user-select: none !important;
     overflow: hidden !important;
   }
   [data-template="1"] .tpl1-hero-mobile-locked .musk-banner-slider .swiper,
   [data-template="1"] .tpl1-hero-mobile-locked fuzion-hero-banner-slider .swiper {
-    touch-action: none !important;
-    pointer-events: none !important;
+    touch-action: pan-y pinch-zoom !important;
+    pointer-events: auto !important;
   }
   [data-template="1"] .tpl1-hero-mobile-locked .musk-banner-slider .swiper-wrapper {
     transform: translate3d(0, 0, 0) !important;
