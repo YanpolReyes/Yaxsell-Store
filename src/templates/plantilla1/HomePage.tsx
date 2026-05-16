@@ -30,6 +30,7 @@ import CouponBanner from '@/components/CouponBanner';
 import { getWhatsAppUrl, openChatbot } from '@/lib/store-contact';
 import HeroSkeletonMobile from '@/components/HeroSkeletonMobile';
 import { scheduleHomeHeaderAvatarSync } from '@/lib/home-header-avatar';
+import { applyTpl1SectionColors, paintTpl1Text } from '@/lib/tpl1-section-text';
 import { normalizeProductImages, getProductImageUrl, resolveStorageImageUrl } from '@/lib/product-images';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -512,6 +513,22 @@ export default function HomePage1() {
       if (/musk/i.test(t)) el.textContent = brand;
     });
   }, [bodyHtml]);
+
+  /* Colores del editor (headingColor, textColor, accentColor) en secciones Shopify */
+  useEffect(() => {
+    if (!bodyHtml || sectionCfg.length === 0) return;
+    const id = requestAnimationFrame(() => {
+      for (const cfg of sectionCfg) {
+        if (!cfg.enabled) continue;
+        const htmlId = TPL1_SECTION_HTML_MAP[cfg.id];
+        if (!htmlId || !htmlId.startsWith('shopify-section-')) continue;
+        const root = document.getElementById(htmlId);
+        if (!root) continue;
+        applyTpl1SectionColors(root, cfg.settings || {});
+      }
+    });
+    return () => cancelAnimationFrame(id);
+  }, [bodyHtml, sectionCfg]);
 
   /* ── Once body HTML is rendered, load JS scripts to enable carousels/etc.
         IMPORTANT: idempotente — los scripts del tema declaran clases globales
@@ -2573,6 +2590,7 @@ export default function HomePage1() {
     if (subHead && settings.collectionSubtitle) subHead.textContent = settings.collectionSubtitle;
     if (mainTitle && settings.collectionTitle) mainTitle.textContent = settings.collectionTitle;
     if (mainPara && settings.collectionDescription) mainPara.textContent = settings.collectionDescription;
+    applyTpl1SectionColors(section as HTMLElement, settings);
 
     // Collection items → update slides
     const bindCollectionLayout = () => {
@@ -2806,7 +2824,7 @@ export default function HomePage1() {
     if (!cfg) return;
     const settings = cfg.settings || {};
     const sectionId = 'template--22405132419320__featured_product_mtqd9n';
-    const section = document.querySelector(`[data-section-id="${sectionId}"]`) || document.getElementById(`shopify-section-${sectionId}`);
+    const section = (document.querySelector(`[data-section-id="${sectionId}"]`) || document.getElementById(`shopify-section-${sectionId}`)) as HTMLElement | null;
     if (!section) return;
 
     const subHead = section.querySelector('.musk-fancy-sub-head') as HTMLElement;
@@ -2826,8 +2844,9 @@ export default function HomePage1() {
       if (fontFamily) el.style.fontFamily = fontFamily;
       if (fontSize) el.style.fontSize = `${fontSize}px`;
       if (fontWeight) el.style.fontWeight = String(fontWeight);
-      if (color) el.style.color = color;
+      if (color) paintTpl1Text(el, color);
     });
+    applyTpl1SectionColors(section, settings);
 
     if (!featuredProduct) return;
     const images = [
@@ -4515,7 +4534,7 @@ export default function HomePage1() {
     if (!cfg) return;
     const settings = cfg.settings || {};
     const sectionId = 'template--22405132419320__collection_tab_NGBXPp';
-    const section = document.getElementById(`shopify-section-${sectionId}`);
+    const section = document.getElementById(`shopify-section-${sectionId}`) as HTMLElement | null;
     if (!section) return;
 
     // Aplicar textos
@@ -4525,6 +4544,7 @@ export default function HomePage1() {
     if (subEl && settings.productsFilterSubtitle) subEl.textContent = settings.productsFilterSubtitle;
     if (titleEl && settings.productsFilterTitle) titleEl.textContent = settings.productsFilterTitle;
     if (paraEl && settings.productsFilterDescription) paraEl.textContent = settings.productsFilterDescription;
+    applyTpl1SectionColors(section, settings);
 
     const catIds = settings.productsFilterCategoryIds || [];
     if (catIds.length === 0) return;
@@ -5040,7 +5060,7 @@ export default function HomePage1() {
     if (!cfg) return;
     const settings = cfg.settings || {};
     const sectionId = 'template--22405132419320__featured_collection_UNXLgP';
-    const section = document.querySelector(`[data-section-id="${sectionId}"]`) || document.getElementById(`shopify-section-${sectionId}`);
+    const section = (document.querySelector(`[data-section-id="${sectionId}"]`) || document.getElementById(`shopify-section-${sectionId}`)) as HTMLElement | null;
     if (!section) return;
 
     // Ocultar sección si no hay items configurados
@@ -5059,31 +5079,28 @@ export default function HomePage1() {
     if (mainTitle && settings.featuredCollectionTitle) mainTitle.textContent = settings.featuredCollectionTitle;
     if (mainPara && settings.featuredCollectionDescription) mainPara.textContent = settings.featuredCollectionDescription;
 
-    if (!document.getElementById('tpl1-featured-collection-premium-style')) {
-      const style = document.createElement('style');
-      style.id = 'tpl1-featured-collection-premium-style';
-      style.textContent = `
+    let fcStyle = document.getElementById('tpl1-featured-collection-premium-style') as HTMLStyleElement | null;
+    if (!fcStyle) {
+      fcStyle = document.createElement('style');
+      fcStyle.id = 'tpl1-featured-collection-premium-style';
+      document.head.appendChild(fcStyle);
+    }
+    const sectionBg = settings.bgColor
+      ? `background: ${settings.bgColor} !important;`
+      : `background: radial-gradient(circle at top left, rgba(255, 228, 240, .85), transparent 34%),
+            linear-gradient(180deg, #fff7fb 0%, #ffffff 58%, #fff1f7 100%) !important;`;
+    fcStyle.textContent = `
         [data-section-id="${sectionId}"] {
-          background: radial-gradient(circle at top left, rgba(255, 228, 240, .85), transparent 34%),
-            linear-gradient(180deg, #fff7fb 0%, #ffffff 58%, #fff1f7 100%) !important;
+          ${sectionBg}
           position: relative !important;
           overflow: hidden !important;
         }
         [data-section-id="${sectionId}"] .musk-fancy-sub-head {
-          color: #db2777 !important;
           letter-spacing: .26em !important;
           font-weight: 800 !important;
           text-transform: uppercase !important;
         }
-        [data-section-id="${sectionId}"] .musk-h2-head {
-          background: linear-gradient(90deg, #831843, #ec4899, #f9a8d4) !important;
-          -webkit-background-clip: text !important;
-          background-clip: text !important;
-          -webkit-text-fill-color: transparent !important;
-          text-shadow: 0 18px 45px rgba(236, 72, 153, .18) !important;
-        }
         [data-section-id="${sectionId}"] .musk-main-para {
-          color: #7f1d5f !important;
           max-width: 780px !important;
           margin-left: auto !important;
           margin-right: auto !important;
@@ -5170,8 +5187,8 @@ export default function HomePage1() {
           padding: 0 !important;
         }
       `;
-      document.head.appendChild(style);
-    }
+
+    applyTpl1SectionColors(section, settings);
 
     const items = (settings.featuredCollectionItems || []) as CollectionItem[];
     if (items.length === 0) return;
@@ -5318,7 +5335,7 @@ export default function HomePage1() {
     if (!cfg) return;
     const settings = cfg.settings || {};
     const sectionId = 'template--22405132419320__marquee_mdGXX9';
-    const section = document.querySelector(`[data-section-id="${sectionId}"]`) || document.getElementById(`shopify-section-${sectionId}`);
+    const section = (document.querySelector(`[data-section-id="${sectionId}"]`) || document.getElementById(`shopify-section-${sectionId}`)) as HTMLElement | null;
     if (!section) return;
 
     const text1 = settings.marqueeText1 || 'Transforma tu belleza';
@@ -5349,8 +5366,9 @@ export default function HomePage1() {
       if (fontFamily) h.style.fontFamily = fontFamily;
       if (fontSize) h.style.fontSize = `${fontSize}px`;
       if (fontWeight) h.style.fontWeight = String(fontWeight);
-      if (color) h.style.color = color;
+      if (color) paintTpl1Text(h, color);
     });
+    applyTpl1SectionColors(section, settings);
 
     // Update image height
     const imgHeight = settings.marqueeImageHeight ?? 50;
@@ -5393,7 +5411,7 @@ export default function HomePage1() {
     if (!cfg) return;
     const settings = cfg.settings || {};
     const sectionId = 'template--22405132419320__marquee_nP83AA';
-    const section = document.querySelector(`[data-section-id="${sectionId}"]`) || document.getElementById(`shopify-section-${sectionId}`);
+    const section = (document.querySelector(`[data-section-id="${sectionId}"]`) || document.getElementById(`shopify-section-${sectionId}`)) as HTMLElement | null;
     if (!section) return;
 
     const text1 = settings.marquee2Text1 || 'Transforma tu belleza';
@@ -5424,8 +5442,9 @@ export default function HomePage1() {
       if (fontFamily) h.style.fontFamily = fontFamily;
       if (fontSize) h.style.fontSize = `${fontSize}px`;
       if (fontWeight) h.style.fontWeight = String(fontWeight);
-      if (color) h.style.color = color;
+      if (color) paintTpl1Text(h, color);
     });
+    applyTpl1SectionColors(section, settings);
 
     // Update image height
     const imgHeight = settings.marquee2ImageHeight ?? 32;
@@ -6778,8 +6797,8 @@ export default function HomePage1() {
         const darkLogoSpans = document.querySelectorAll('.dark-logo span') as NodeListOf<HTMLElement>;
 
         if (logoMode === 'text') {
-          lightLogoSpans.forEach(span => { span.textContent = storeName; span.style.display = ''; });
-          darkLogoSpans.forEach(span => { span.textContent = storeName; span.style.display = ''; });
+          lightLogoSpans.forEach(span => { span.textContent = storeName; span.style.display = ''; span.style.setProperty('color', '#ffffff', 'important'); });
+          darkLogoSpans.forEach(span => { span.textContent = storeName; span.style.display = ''; span.style.setProperty('color', '#ffffff', 'important'); });
           [...lightLogos, ...darkLogos].forEach(logo => {
             const img = logo.querySelector('img');
             if (img) img.style.display = 'none';
