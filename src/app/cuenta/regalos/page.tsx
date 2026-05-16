@@ -329,7 +329,7 @@ export default function RegalosPage() {
                     </motion.div>
 
                     <h3 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 900, color: '#111827' }}>
-                      {justClaimed ? '¡Premio desbloqueado!' : 'Tu regalo está activo'}
+                      GENIAL, AHORA TIENES UN VEINTE PORCIENTO EN CUALQUIER PRODUCTO
                     </h3>
                     <p style={{ margin: '0 0 20px', fontSize: 13, color: '#6b7280' }}>
                       Usa este código en el checkout o déjalo aplicarse automáticamente.
