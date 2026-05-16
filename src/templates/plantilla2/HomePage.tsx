@@ -1345,6 +1345,7 @@ export default function HomePage2() {
         if (s.bgColor) rules.push(`${sel}{background-color:${s.bgColor} !important}`);
         if (s.textColor) rules.push(`${sel}{color:${s.textColor} !important}`);
         if (s.headingColor) rules.push(`${sel} h2,${sel} h3,${sel} .section-heading{color:${s.headingColor} !important}`);
+        else if (s.textColor) rules.push(`${sel} h2,${sel} h3,${sel} .section-heading{color:${s.textColor} !important}`);
         if (s.accentColor) rules.push(`${sel} a{color:${s.accentColor} !important}`);
         if (s.padding) rules.push(`${sel}{padding:${s.padding}px !important}`);
         if (s.borderRadius) rules.push(`${sel}{border-radius:${s.borderRadius}px !important}`);
