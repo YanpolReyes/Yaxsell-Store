@@ -486,6 +486,8 @@ export default function HomePage1() {
           'class="musk-main-banner color-scheme-bcca51f6-8cb1-46f3-8f26-94394c542484 "',
           'class="musk-main-banner color-scheme-bcca51f6-8cb1-46f3-8f26-94394c542484 " style="--primary-background:254,242,248;--secondary-background:252,231,243;--gradient-background:linear-gradient(101.19deg,rgba(254,242,248,1),rgba(252,231,243,1) 50%,rgba(251,207,232,1) 100%)"'
         );
+        processed = processed.replace(/MUSK COSMO/gi, 'Yaxsell');
+        processed = processed.replace(/alt="MUSK[^"]*"/gi, 'alt="Yaxsell"');
         setBodyHtml(processed);
       })
       .catch(err => {
@@ -495,6 +497,21 @@ export default function HomePage1() {
       });
     return () => { aborted = true; };
   }, []);
+
+  /* Marca por defecto en hero/nav antes de que cargue sectionCfg (evita flash "MUSK") */
+  useEffect(() => {
+    if (!bodyHtml) return;
+    const brand = 'Yaxsell';
+    document.querySelectorAll('.light-logo span, .dark-logo span').forEach(el => {
+      const t = (el.textContent || '').trim();
+      if (/musk/i.test(t) || t === 'Mi Tienda 3') el.textContent = brand;
+    });
+    const hero = document.getElementById('shopify-section-template--22405132419320__hero_banner_R6iEJ4');
+    hero?.querySelectorAll('.banner-main-title').forEach(el => {
+      const t = (el.textContent || '').trim();
+      if (/musk/i.test(t)) el.textContent = brand;
+    });
+  }, [bodyHtml]);
 
   /* ── Once body HTML is rendered, load JS scripts to enable carousels/etc.
         IMPORTANT: idempotente — los scripts del tema declaran clases globales
@@ -5295,9 +5312,9 @@ export default function HomePage1() {
     const section = document.querySelector(`[data-section-id="${sectionId}"]`) || document.getElementById(`shopify-section-${sectionId}`);
     if (!section) return;
 
-    const text1 = settings.marqueeText1 || 'Beauty Redefined';
-    const text2 = settings.marqueeText2 || 'Gracefully Ageless';
-    const text3 = settings.marqueeText3 || 'Timeless Elegance';
+    const text1 = settings.marqueeText1 || 'Transforma tu belleza';
+    const text2 = settings.marqueeText2 || 'Elegancia atemporal';
+    const text3 = settings.marqueeText3 || 'Yaxsell';
     const img1 = settings.marqueeImage1 || '/shopify/assets/img/9jo523yvuya95av2-82653806840.shopifypreview.com/cdn/shop/t/3/assets/marquee-shape-m77pjx.png';
     const img2 = settings.marqueeImage2 || img1;
     const img3 = settings.marqueeImage3 || '';
@@ -5370,9 +5387,9 @@ export default function HomePage1() {
     const section = document.querySelector(`[data-section-id="${sectionId}"]`) || document.getElementById(`shopify-section-${sectionId}`);
     if (!section) return;
 
-    const text1 = settings.marquee2Text1 || 'Beauty Redefined';
-    const text2 = settings.marquee2Text2 || 'Gracefully Ageless';
-    const text3 = settings.marquee2Text3 || 'Timeless Elegance';
+    const text1 = settings.marquee2Text1 || 'Transforma tu belleza';
+    const text2 = settings.marquee2Text2 || 'Elegancia atemporal';
+    const text3 = settings.marquee2Text3 || 'Yaxsell';
     const img1 = settings.marquee2Image1 || '/shopify/assets/img/9jo523yvuya95av2-82653806840.shopifypreview.com/cdn/shop/t/3/assets/marquee-shape-m77pjx.png';
     const img2 = settings.marquee2Image2 || img1;
     const img3 = settings.marquee2Image3 || '';
@@ -6675,7 +6692,7 @@ export default function HomePage1() {
         const overlayEnabled = hs.heroOverlayEnabled ?? true;
         const titleOpacity = hs.heroTitleOpacity ?? 0.92;
         const subtitleOpacity = hs.heroSubtitleOpacity ?? titleOpacity;
-        const storeName = hs.heroStoreName ?? 'Mi Tienda 3';
+        const storeName = hs.heroStoreName ?? 'Yaxsell';
         console.log('[TPL1 Hero] storeName:', storeName, 'logoMode:', hs.heroStoreLogoMode);
 
         // Apply store name to document title

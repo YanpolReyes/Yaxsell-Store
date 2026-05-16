@@ -1,5 +1,5 @@
 import { getServices, getAppwriteConfig, USER_PHOTOS_BUCKET } from '@/lib/appwrite';
-import { getLevelMeta } from '@/lib/loyalty-levels';
+import { getAvatarRingStyle, getLevelMeta } from '@/lib/loyalty-levels';
 
 const STYLE_ID = 'yaxsel-header-avatar-styles';
 
@@ -41,11 +41,36 @@ function injectStyles() {
       width: 36px;
       height: 36px;
     }
+    @keyframes yaxsel-avatar-ring-spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes yaxsel-avatar-ring-pulse {
+      0%, 100% { opacity: 0.85; filter: blur(0); }
+      50% { opacity: 1; filter: blur(0.5px); }
+    }
     .yaxsel-header-avatar-ring {
       position: absolute;
-      inset: -2px;
+      inset: -3px;
       border-radius: 50%;
-      border: 2px solid rgba(249, 168, 212, 0.65);
+      pointer-events: none;
+      z-index: 0;
+      background: conic-gradient(
+        from 0deg,
+        var(--yaxsel-ring-color, #f9a8d4),
+        var(--yaxsel-ring-glow, rgba(249,168,212,0.6)),
+        #fff,
+        var(--yaxsel-ring-color, #f9a8d4)
+      );
+      animation: yaxsel-avatar-ring-spin 3.2s linear infinite, yaxsel-avatar-ring-pulse 2.4s ease-in-out infinite;
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+    }
+    .yaxsel-header-avatar-ring::after {
+      content: '';
+      position: absolute;
+      inset: 2px;
+      border-radius: 50%;
+      box-shadow: 0 0 12px var(--yaxsel-ring-glow, rgba(236,72,153,0.45));
       pointer-events: none;
     }
     .yaxsel-header-avatar-img,
@@ -108,6 +133,7 @@ function buildAvatarWrap(
   const ring = document.createElement('span');
   ring.className = 'yaxsel-header-avatar-ring';
   ring.setAttribute('aria-hidden', 'true');
+  Object.assign(ring.style, getAvatarRingStyle(levelId) as Record<string, string>);
   wrap.appendChild(ring);
 
   if (avatarUrl) {

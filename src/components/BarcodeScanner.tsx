@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Camera, X } from 'lucide-react';
+import { Camera, X, RotateCcw, Zap } from 'lucide-react';
 
 interface BarcodeScannerProps {
   onScan: (code: string) => void;
@@ -9,55 +9,112 @@ interface BarcodeScannerProps {
 }
 
 export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
-  const scannerRef = useRef<any>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [error, setError] = useState('');
+  const [ready, setReady] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [detected, setDetected] = useState(false);
   const [lastCode, setLastCode] = useState('');
-  const [ready, setReady] = useState(false);
   const onScanRef = useRef(onScan);
   onScanRef.current = onScan;
 
-  // Auto-start on mount — create fresh instance every time to avoid lag
+  // Start camera preview on mount — NO auto-scanning
   useEffect(() => {
     let cancelled = false;
-    let sc: any = null;
 
     (async () => {
       try {
-        const { Html5Qrcode } = await import('html5-qrcode');
-        if (cancelled) return;
-
-        sc = new Html5Qrcode('barcode-reader-box');
-        scannerRef.current = sc;
-
-        if (cancelled) { sc.stop().catch(() => {}); return; }
-
-        await sc.start(
-          { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 280, height: 120 }, aspectRatio: 1.0 },
-          (decodedText: string) => {
-            const code = String(decodedText ?? '').trim();
-            if (!code) return;
-            sc.stop().then(() => { sc.clear(); }).catch(() => {});
-            setDetected(true);
-            setLastCode(code);
-          },
-          () => {}
-        );
-        if (!cancelled) setReady(true);
-      } catch (e: any) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+          setReady(true);
+        }
+      } catch {
         if (!cancelled) setError('No se pudo acceder a la cámara. Verifica los permisos.');
       }
     })();
 
     return () => {
       cancelled = true;
-      if (sc) {
-        sc.stop().then(() => { sc.clear(); sc = null; }).catch(() => { sc = null; });
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+        streamRef.current = null;
       }
     };
   }, []);
+
+  // Capture current frame and scan for barcode
+  const captureAndScan = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    setScanning(true);
+    setError('');
+
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas failed');
+      ctx.drawImage(video, 0, 0);
+
+      let decodedText = '';
+
+      // Try native BarcodeDetector first (Chrome/Edge — faster, no DOM manipulation)
+      if ('BarcodeDetector' in window) {
+        try {
+          const detector = new (window as any).BarcodeDetector({
+            formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'qr_code', 'upc_a', 'upc_e']
+          });
+          const results = await detector.detect(canvas);
+          if (results.length > 0) decodedText = results[0].rawValue;
+        } catch { /* fallback */ }
+      }
+
+      // Fallback: html5-qrcode scanFileV2 (off-screen, no React DOM conflict)
+      if (!decodedText) {
+        const blob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png');
+        });
+        const file = new File([blob], 'capture.png', { type: 'image/png' });
+
+        const helperId = 'bch-' + Date.now();
+        const helperDiv = document.createElement('div');
+        helperDiv.id = helperId;
+        helperDiv.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;';
+        document.body.appendChild(helperDiv);
+
+        try {
+          const { Html5Qrcode } = await import('html5-qrcode');
+          const scanner = new Html5Qrcode(helperId);
+          const result = await scanner.scanFileV2(file, false);
+          decodedText = result.decodedText;
+          scanner.clear();
+        } finally {
+          if (document.body.contains(helperDiv)) document.body.removeChild(helperDiv);
+        }
+      }
+
+      if (decodedText) {
+        setDetected(true);
+        setLastCode(decodedText);
+      } else {
+        setError('No se detectó código. Apunta mejor e intenta de nuevo.');
+        setTimeout(() => setError(''), 3000);
+      }
+    } catch {
+      setError('No se detectó código. Apunta mejor e intenta de nuevo.');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setScanning(false);
+    }
+  };
 
   const confirmScan = () => {
     const code = String(lastCode ?? '').trim();
@@ -69,42 +126,10 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
     }
   };
 
-  const rescan = async () => {
+  const rescan = () => {
     setDetected(false);
     setLastCode('');
-    setReady(false);
     setError('');
-
-    // Destroy and recreate fresh instance to prevent lag
-    if (scannerRef.current) {
-      try { await scannerRef.current.stop(); } catch {}
-      try { await scannerRef.current.clear(); } catch {}
-      scannerRef.current = null;
-    }
-
-    // Small delay then restart
-    setTimeout(async () => {
-      try {
-        const { Html5Qrcode } = await import('html5-qrcode');
-        const sc = new Html5Qrcode('barcode-reader-box');
-        scannerRef.current = sc;
-        await sc.start(
-          { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 280, height: 120 }, aspectRatio: 1.0 },
-          (decodedText: string) => {
-            const code = String(decodedText ?? '').trim();
-            if (!code) return;
-            sc.stop().then(() => { sc.clear(); }).catch(() => {});
-            setDetected(true);
-            setLastCode(code);
-          },
-          () => {}
-        );
-        setReady(true);
-      } catch {
-        setError('Error al reiniciar cámara. Cierra y vuelve a intentar.');
-      }
-    }, 300);
   };
 
   return (
@@ -120,15 +145,21 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
           </button>
         </div>
 
-        {/* Camera container — always rendered so Html5Qrcode can attach */}
-        <div
-          id="barcode-reader-box"
-          ref={containerRef}
-          className={`w-full rounded-xl overflow-hidden bg-gray-900 border-2 transition-colors ${detected ? 'border-green-500' : 'border-white/20'}`}
-          style={{ minHeight: '240px' }}
-        />
+        <div className="relative w-full rounded-xl overflow-hidden bg-gray-900 border-2 border-white/20" style={{ minHeight: '240px' }}>
+          <video ref={videoRef} playsInline muted className="w-full h-full object-cover" />
+          {ready && !detected && (
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+              <div className="w-[280px] h-[120px] border-2 border-white/40 rounded-lg" />
+            </div>
+          )}
+          {scanning && (
+            <div className="absolute inset-0 bg-white/20 flex items-center justify-center">
+              <div className="w-8 h-8 border-[3px] border-white border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+        </div>
 
-        {!ready && !error && !detected && (
+        {!ready && !error && (
           <div className="flex items-center justify-center py-4 text-white/50 text-sm">
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
             Iniciando cámara...
@@ -136,13 +167,34 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         )}
 
         {ready && !detected && (
-          <div className="text-white/60 text-sm text-center mt-3">
-            Apunta la cámara al código de barras...
+          <div className="mt-4 space-y-2">
+            <button
+              onClick={captureAndScan}
+              disabled={scanning}
+              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-800/70 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition text-lg shadow-lg active:scale-95"
+            >
+              {scanning ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Escaneando...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-6 h-6" />
+                  Tomar foto y escanear
+                </>
+              )}
+            </button>
+            <p className="text-white/50 text-xs text-center">
+              Apunta la cámara al código y presiona el botón
+            </p>
           </div>
         )}
 
         {error && (
-          <div className="text-red-400 text-sm text-center py-6">{error}</div>
+          <div className="text-amber-400 text-sm text-center py-3 bg-amber-500/10 rounded-lg mt-3 border border-amber-500/30">
+            {error}
+          </div>
         )}
 
         {detected && (
@@ -160,8 +212,9 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
             </button>
             <button
               onClick={rescan}
-              className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition"
+              className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg flex items-center justify-center gap-2 transition"
             >
+              <RotateCcw className="w-4 h-4" />
               Reescanear
             </button>
           </div>

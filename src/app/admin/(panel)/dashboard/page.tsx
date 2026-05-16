@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Query } from 'appwrite';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, ORDERS_COLLECTION_ID, WHOLESALE_REQUESTS_COLLECTION_ID, SUPPORT_TICKETS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, USERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, ORDERS_COLLECTION_ID, WHOLESALE_REQUESTS_COLLECTION_ID, SUPPORT_TICKETS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { dedupeUserDocuments, isRegisteredUserProfile, listAllUserProfiles, type UserProfileDoc } from '@/lib/users-db';
 import { Order, Product, DashboardStats } from '@/types/admin';
 import { Package, ShoppingCart, Clock, DollarSign, TrendingUp, TrendingDown, AlertTriangle, RefreshCw, ArrowRight, Plus, ChevronRight, Users, Megaphone, BarChart3, Zap, Globe, Search, MapPin, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
@@ -947,18 +948,20 @@ export default function DashboardPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       const cutoff30d = new Date(Date.now() - 30 * 86400000).toISOString();
-      const [productsResp, ordersResp, wholesaleResp, supportResp, notifsResp, newUsersResp] = await Promise.all([
+      const [productsResp, ordersResp, wholesaleResp, supportResp, notifsResp, allUsersRaw] = await Promise.all([
         databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(500)]),
         databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [Query.orderDesc('CREATEDAT'), Query.limit(500)]),
         databases.listDocuments(databaseId, WHOLESALE_REQUESTS_COLLECTION_ID, [Query.equal('status', 'pending'), Query.limit(50)]),
         databases.listDocuments(databaseId, SUPPORT_TICKETS_COLLECTION_ID, [Query.notEqual('STATUS', 'closed'), Query.limit(50)]),
         databases.listDocuments(databaseId, NOTIFICATIONS_COLLECTION_ID, [Query.equal('isRead', false), Query.limit(1)]),
-        databases.listDocuments(databaseId, USERS_COLLECTION_ID, [Query.greaterThanEqual('$createdAt', cutoff30d), Query.limit(1)]),
+        listAllUserProfiles(500),
       ]);
       setPendingWholesale(wholesaleResp.total);
       setOpenSupport(supportResp.total);
       setUnreadNotifs(notifsResp.total);
-      setNewUsers(newUsersResp.total);
+      const registeredUsers = dedupeUserDocuments(allUsersRaw as UserProfileDoc[]).filter(isRegisteredUserProfile);
+      const cutoffDate = new Date(cutoff30d);
+      setNewUsers(registeredUsers.filter(u => new Date(u.$createdAt) >= cutoffDate).length);
       const products = productsResp.documents as unknown as Product[];
       const orders   = ordersResp.documents as unknown as Order[];
       setAllOrders(orders);

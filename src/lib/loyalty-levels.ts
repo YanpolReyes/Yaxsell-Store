@@ -60,6 +60,15 @@ export function getLevelMeta(levelId: string): LoyaltyLevelMeta {
   return LOYALTY_LEVELS.find((l) => l.id === levelId) || LOYALTY_LEVELS[0];
 }
 
+/** Variables CSS para anillo animado del avatar según medalla. */
+export function getAvatarRingStyle(levelId: string): Record<string, string> {
+  const { color } = getLevelMeta(levelId);
+  return {
+    '--yaxsel-ring-color': color,
+    '--yaxsel-ring-glow': `${color}99`,
+  };
+}
+
 export type BenefitLink = { href: string; label: string };
 
 /** Enlaces por beneficio (texto exacto o parcial). */

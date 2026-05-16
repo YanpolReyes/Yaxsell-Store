@@ -1707,3 +1707,107 @@ cart-drawer.cart-sidebar::after {
     left: 0 !important;
   }
 }
+
+/* ─── Anillo animado avatar navbar (Next.js) ─── */
+@keyframes yaxsel-nav-ring-spin {
+  to { transform: rotate(360deg); }
+}
+.yaxsel-nav-avatar-ring {
+  animation: yaxsel-nav-ring-spin 3.2s linear infinite;
+}
+
+/* ─── Colores de texto en secciones (evitar negro invisible / gradiente roto) ─── */
+[data-template="1"] .musk-h2-head.heading_color,
+[data-template="1"] .musk-sec-title .musk-h2-head {
+  color: #831843 !important;
+  -webkit-text-fill-color: #831843 !important;
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
+}
+[data-template="1"] .musk-fancy-sub-head.heading_color,
+[data-template="1"] .musk-sec-title .musk-fancy-sub-head {
+  color: #db2777 !important;
+  -webkit-text-fill-color: #db2777 !important;
+}
+[data-template="1"] .musk-main-para,
+[data-template="1"] .body_color,
+[data-template="1"] .banner-slide-para {
+  color: #4b5563 !important;
+  -webkit-text-fill-color: unset !important;
+}
+[data-template="1"] .marquee-text-box h3.heading_color {
+  color: #9d174d !important;
+  -webkit-text-fill-color: #9d174d !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__marquee_mdGXX9 .marquee-text-fancy h3,
+[data-template="1"] #shopify-section-template--22405132419320__marquee_nP83AA .marquee-text-fancy h3 {
+  font-style: italic;
+  color: #be185d !important;
+  -webkit-text-fill-color: #be185d !important;
+}
+[data-template="1"] .marquee-text-wrapper {
+  overflow: hidden !important;
+}
+[data-template="1"] .marquee-text-container {
+  scrollbar-width: none;
+}
+[data-template="1"] .marquee-text-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── Colección / pestañas: sin barra gris al scroll en móvil ─── */
+@media screen and (max-width: 768px) {
+  [data-template="1"] #shopify-section-template--22405132419320__collection_tab_NGBXPp #filterOptions {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 8px;
+    padding-bottom: 4px;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__collection_tab_NGBXPp #filterOptions::-webkit-scrollbar {
+    display: none;
+    height: 0;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__collection_tab_NGBXPp #filterOptions li a {
+    white-space: nowrap;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    padding: 8px 14px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__collection_tab_NGBXPp .swiper-scrollbar {
+    display: none !important;
+    height: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__featured_product_mtqd9n .product-detail,
+  [data-template="1"] #shopify-section-template--22405132419320__featured_product_mtqd9n .right-content {
+    text-align: center !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__featured_product_mtqd9n .product-price,
+  [data-template="1"] #shopify-section-template--22405132419320__featured_product_mtqd9n .product-detail .product-price {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: baseline !important;
+    text-align: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__featured_product_mtqd9n .product-name {
+    text-align: center !important;
+  }
+}
+
+/* ─── Hero: título por defecto legible antes de cargar settings ─── */
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .banner-main-title {
+  color: #831843 !important;
+  -webkit-text-fill-color: #831843 !important;
+}

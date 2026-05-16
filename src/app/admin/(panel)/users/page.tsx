@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Query } from 'appwrite';
 import { getServices, getAppwriteConfig, USERS_COLLECTION_ID, ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { dedupeUserDocuments, isRegisteredUserProfile, listAllUserProfiles, type UserProfileDoc } from '@/lib/users-db';
 import { RefreshCw, AlertTriangle, Search, X, Users, Phone, Mail, Calendar, Download, ShoppingCart, MessageSquare, Save, Ban, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -67,11 +68,13 @@ function UsersPageInner() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const [resp, ordersResp] = await Promise.all([
-        databases.listDocuments(databaseId, USERS_COLLECTION_ID, [Query.orderDesc('$createdAt'), Query.limit(200)]),
+      const [rawUsers, ordersResp] = await Promise.all([
+        listAllUserProfiles(500),
         databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [Query.limit(500)]),
       ]);
-      setUsers(resp.documents as unknown as AppUser[]);
+      const registered = dedupeUserDocuments(rawUsers as UserProfileDoc[])
+        .filter(isRegisteredUserProfile) as AppUser[];
+      setUsers(registered);
       const counts: Record<string, number> = {};
       for (const o of ordersResp.documents as any[]) {
         if (o.USERID) counts[o.USERID] = (counts[o.USERID] || 0) + 1;

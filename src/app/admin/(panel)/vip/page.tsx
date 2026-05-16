@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Query } from 'appwrite';
 import { RefreshCw, AlertTriangle, Search, X, Crown, Download, ShoppingCart, Mail, Phone } from 'lucide-react';
-import { getServices, getAppwriteConfig, USERS_COLLECTION_ID, ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { dedupeUserDocuments, isRegisteredUserProfile, listAllUserProfiles, type UserProfileDoc } from '@/lib/users-db';
 import { LOYALTY_LEVELS, getLevelMeta, type LoyaltyLevelId } from '@/lib/loyalty-levels';
 
 interface AppUser {
@@ -41,17 +42,16 @@ export default function VipAdminPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const [usersResp, ordersResp] = await Promise.all([
-        databases.listDocuments(databaseId, USERS_COLLECTION_ID, [
-          Query.orderDesc('$createdAt'),
-          Query.limit(300),
-        ]),
+      const [rawUsers, ordersResp] = await Promise.all([
+        listAllUserProfiles(500),
         databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [
           Query.equal('STATUS', 'paid'),
           Query.limit(500),
         ]),
       ]);
-      setUsers(usersResp.documents as unknown as AppUser[]);
+      const registered = dedupeUserDocuments(rawUsers as UserProfileDoc[])
+        .filter(isRegisteredUserProfile) as AppUser[];
+      setUsers(registered);
       const counts: Record<string, number> = {};
       for (const o of ordersResp.documents as { USERID?: string }[]) {
         if (o.USERID) counts[o.USERID] = (counts[o.USERID] || 0) + 1;

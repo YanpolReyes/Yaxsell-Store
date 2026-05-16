@@ -1,6 +1,7 @@
 import { getServices } from '@/lib/appwrite-admin';
 import { ID, Query, OAuthProvider } from 'appwrite';
 import { USERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { upsertUserProfile } from '@/lib/users-db';
 
 function getAccount() { return getServices().account; }
 function getDatabases() { return getServices().databases; }
@@ -67,23 +68,15 @@ export class AuthService {
         updatedAt: currentUser.$updatedAt || new Date().toISOString()
       };
 
-      // Intentar guardar en base de datos si la colección existe (opcional)
       try {
-        const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '67f1dc940037b3d367bb';
-        await databases.createDocument(
-          databaseId,
-          USERS_COLLECTION_ID,
-          ID.unique(),
-          {
-            userId: currentUser.$id,
-            email: currentUser.email,
-            name: currentUser.name || 'Usuario',
-            phone: currentUser.phone || '',
-          }
-        );
+        await upsertUserProfile({
+          userId: currentUser.$id,
+          email: currentUser.email,
+          name: currentUser.name || 'Usuario',
+          phone: currentUser.phone || '',
+        });
       } catch (dbError) {
-        // La colección no existe o no hay permisos, continuar sin base de datos
-        console.log('Base de datos users no disponible, usando solo Auth:', dbError);
+        console.log('No se pudo sincronizar perfil en users:', dbError);
       }
 
       return { success: true, user };
@@ -136,24 +129,15 @@ export class AuthService {
         updatedAt: user.$updatedAt || new Date().toISOString()
       };
 
-      // Intentar guardar en base de datos si la colección existe (opcional)
       try {
-        const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '67f1dc940037b3d367bb';
-        await databases.createDocument(
-          databaseId,
-          USERS_COLLECTION_ID,
-          ID.unique(),
-          {
-            userId: user.$id,
-            email: user.email,
-            name: user.name || name,
-            phone: phone || '',
-            rut: rut || '',
-          }
-        );
+        await upsertUserProfile({
+          userId: user.$id,
+          email: user.email,
+          name: user.name || name,
+          phone: phone || '',
+        });
       } catch (dbError) {
-        // La colección no existe o no hay permisos, continuar sin base de datos
-        console.log('Base de datos users no disponible, usando solo Auth:', dbError);
+        console.log('No se pudo sincronizar perfil en users:', dbError);
       }
 
       return { success: true, user: userObj };
