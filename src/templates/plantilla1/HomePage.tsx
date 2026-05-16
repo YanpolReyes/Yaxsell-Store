@@ -6750,7 +6750,8 @@ export default function HomePage1() {
           if (titleEl) {
             titleEl.style.opacity = String(titleOpacity);
             if (titleColor) {
-              titleEl.style.color = titleColor;
+              titleEl.style.setProperty('color', titleColor, 'important');
+              titleEl.style.setProperty('-webkit-text-fill-color', titleColor, 'important');
             }
           }
           const subEl = slide.querySelector('.banner-fancy-sub-head') as HTMLElement | null;
