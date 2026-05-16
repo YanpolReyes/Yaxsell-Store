@@ -2870,6 +2870,10 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         <RangeField label="Altura del logo" value={s.heroStoreLogoHeight ?? 40} onChange={v => onUpdate({ heroStoreLogoHeight: v })} min={20} max={360} unit="px" />
         <RangeField label="Posición X" value={s.heroStoreLogoPosX ?? 0} onChange={v => onUpdate({ heroStoreLogoPosX: v })} min={-200} max={200} unit="px" />
         <RangeField label="Posición Y" value={s.heroStoreLogoPosY ?? 0} onChange={v => onUpdate({ heroStoreLogoPosY: v })} min={-200} max={200} unit="px" />
+        <SH>Colores</SH>
+        <ColorField label="Color título" value={s.heroTitleColor || ''} onChange={v => onUpdate({ heroTitleColor: v })} />
+        <ColorField label="Color subtítulo" value={s.heroSubtitleColor || ''} onChange={v => onUpdate({ heroSubtitleColor: v })} />
+        <SH>Opacidad</SH>
         <RangeField label="Opacidad del título" value={(s.heroTitleOpacity ?? 0.92) * 100} onChange={v => onUpdate({ heroTitleOpacity: v / 100 })} min={20} max={100} unit="%" />
         <RangeField label="Opacidad del subtítulo" value={(s.heroSubtitleOpacity ?? 0.92) * 100} onChange={v => onUpdate({ heroSubtitleOpacity: v / 100 })} min={20} max={100} unit="%" />
         <SH>Slides ({slides.length})</SH>

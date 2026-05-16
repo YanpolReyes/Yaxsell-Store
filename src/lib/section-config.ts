@@ -26,6 +26,8 @@ export interface SectionSettings {
   buttonTextColor?: string;
   linkColor?: string;
   borderColor?: string;
+  heroTitleColor?: string;
+  heroSubtitleColor?: string;
   // Design — Flags
   _useOriginal?: boolean;
   // Design — Typography
@@ -767,6 +769,8 @@ export const SECTION_DEFAULTS: SectionConfig[] = [
       heroStoreLogoPosY: 0,
       heroTitleOpacity: 0.92,
       heroSubtitleOpacity: 0.92,
+      heroTitleColor: '',
+      heroSubtitleColor: '',
       heroSlides: [
         {
           imageUrl: '/shopify/assets/img/9jo523yvuya95av2-82653806840.shopifypreview.com/cdn/shop/t/3/assets/hero-apparel-2-m6chhr.svg',

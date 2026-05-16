@@ -6701,6 +6701,8 @@ export default function HomePage1() {
         const overlayEnabled = hs.heroOverlayEnabled ?? true;
         const titleOpacity = hs.heroTitleOpacity ?? 0.92;
         const subtitleOpacity = hs.heroSubtitleOpacity ?? titleOpacity;
+        const titleColor = hs.heroTitleColor ?? '';
+        const subtitleColor = hs.heroSubtitleColor ?? '';
         const storeName = hs.heroStoreName ?? 'Yaxsell';
         console.log('[TPL1 Hero] storeName:', storeName, 'logoMode:', hs.heroStoreLogoMode);
 
@@ -6743,15 +6745,21 @@ export default function HomePage1() {
         }
 
         swiperSlides.forEach(slide => {
-          // Apply title/subtitle opacity
-          const titleEl = slide.querySelector('.banner-main-title') as HTMLElement;
+          // Apply title/subtitle opacity and color
+          const titleEl = slide.querySelector('.banner-main-title') as HTMLElement | null;
           if (titleEl) {
             titleEl.style.opacity = String(titleOpacity);
+            if (titleColor) {
+              titleEl.style.color = titleColor;
+            }
           }
-          const subEl = slide.querySelector('.banner-fancy-sub-head') as HTMLElement;
+          const subEl = slide.querySelector('.banner-fancy-sub-head') as HTMLElement | null;
           if (subEl) {
             subEl.style.opacity = String(subtitleOpacity);
             subEl.style.fontWeight = '800';
+            if (subtitleColor) {
+              subEl.style.color = subtitleColor;
+            }
           }
         });
 
