@@ -319,7 +319,7 @@ export default function ProductDetailPlantilla1() {
     <div className="pd-page" style={{ background: '#f5f5f5', minHeight: '100vh', fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, sans-serif' }}>
       <style>{`
         @media (max-width: 768px) {
-          .pd-page { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+          .pd-page { padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px)); }
           .pd-breadcrumb { top: 0 !important; padding: 10px 12px !important; overflow-x: auto; -webkit-overflow-scrolling: touch; }
           .pd-breadcrumb > div { font-size: 12px !important; flex-wrap: nowrap; min-width: min-content; }
           .pd-breadcrumb span { max-width: 110px !important; }
@@ -355,8 +355,8 @@ export default function ProductDetailPlantilla1() {
         }
         .pd-mobile-bar {
           display: none; position: fixed; left: 0; right: 0;
-          bottom: calc(56px + env(safe-area-inset-bottom, 0px));
-          z-index: 9990; background: rgba(255,255,255,0.98);
+          bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+          z-index: 10020; background: rgba(255,255,255,0.98);
           backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
           border-top: 1px solid #fce7f3; padding: 10px 12px; gap: 10px;
           align-items: center; box-shadow: 0 -6px 24px rgba(236,72,153,0.1);

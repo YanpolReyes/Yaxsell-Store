@@ -1,8 +1,10 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useMemo } from 'react';
 import { CartItem, Product } from '@/types';
 import { useToast } from '@/components/Toast';
+import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 
 interface CartContextType {
   items: CartItem[];
@@ -12,6 +14,8 @@ interface CartContextType {
   clearCart: () => void;
   totalItems: number;
   subtotal: number;
+  catalogSubtotal: number;
+  aperturaSavings: number;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -19,6 +23,7 @@ const CartContext = createContext<CartContextType | null>(null);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const { showToast } = useToast();
+  const { settings: apertura } = useAperturaPromotion();
 
   useEffect(() => {
     try {
@@ -42,9 +47,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (item.wholesalePrice) {
       return item.wholesalePrice;
     }
-    return item.product.CURRENTPRICE && item.product.CURRENTPRICE > 0
-      ? item.product.CURRENTPRICE
-      : item.product.PRICE;
+    return resolveProductDisplayPrice(item.product, apertura).displayPrice;
   };
 
   const addItem = (product: Product, qty = 1, timedOfferPrice?: number, timedOfferExpiresAt?: number, wholesalePrice?: number) => {
@@ -75,10 +78,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearCart = () => setItems([]);
 
   const totalItems = items.reduce((s, i) => s + i.quantity, 0);
-  const subtotal = items.reduce((s, i) => s + getEffectivePrice(i) * i.quantity, 0);
+  const subtotal = useMemo(
+    () => items.reduce((s, i) => s + getEffectivePrice(i) * i.quantity, 0),
+    [items, apertura],
+  );
+  const catalogSubtotal = useMemo(
+    () => items.reduce((s, i) => s + i.product.PRICE * i.quantity, 0),
+    [items],
+  );
+  const aperturaSavings = useMemo(
+    () => (apertura?.isActive ? Math.max(0, catalogSubtotal - subtotal) : 0),
+    [apertura, catalogSubtotal, subtotal],
+  );
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, totalItems, subtotal }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, totalItems, subtotal, catalogSubtotal, aperturaSavings }}>
       {children}
     </CartContext.Provider>
   );

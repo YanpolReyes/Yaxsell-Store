@@ -97,7 +97,7 @@ export default function RegalosPage() {
         ...prefs,
         welcomeGiftClaimed: true,
         welcomeCouponCode: 'KEVINCOCOCL',
-        autoApplyCoupon: 'KEVINCOCOCL',
+        autoApplyCoupon: null,
       });
       setJustClaimed(true);
       fireCelebration();

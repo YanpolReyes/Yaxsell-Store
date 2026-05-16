@@ -9,6 +9,8 @@ import { ADDRESSES_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { CHILE_REGIONES } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPrice } from '@/lib/appwrite';
+import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { Query, ID } from 'appwrite';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -62,8 +64,9 @@ function CheckoutInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const discountParam = parseFloat(searchParams.get('discount') || '0');
-  const { items, subtotal, clearCart } = useCart();
+  const { items, subtotal, clearCart, catalogSubtotal, aperturaSavings } = useCart();
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
+  const { settings: apertura, isActive: aperturaActive, discountPercent: aperturaPct } = useAperturaPromotion();
 
   const [form, setForm] = useState({
     name: '', rut: '', phone: '', email: '',
@@ -282,41 +285,6 @@ function CheckoutInner() {
     }
   }
 
-  const applyCouponCallback = useCallback(applyCoupon, [couponCode, subtotal]);
-
-  // Auto-apply coupon from user preferences
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      try {
-        const { account, databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        const acc = await account.get();
-        const prefs = (acc as any).prefs || {};
-        
-        // Check if apertura promotion is active from Appwrite
-        let aperturaEnabled = false;
-        try {
-          const aperturaRes = await databases.listDocuments(databaseId, APERTURA_SETTINGS_COLLECTION_ID, [Query.limit(1)]);
-          aperturaEnabled = aperturaRes.documents.length > 0 ? (aperturaRes.documents[0] as any).isActive : false;
-        } catch (e) {
-          // Collection doesn't exist yet, assume disabled
-          console.error('Apertura collection not found, assuming disabled');
-          aperturaEnabled = false;
-        }
-        
-        // Auto-apply coupon if user has autoApplyCoupon in prefs and coupon is not already applied and apertura is enabled
-        if (aperturaEnabled && prefs.autoApplyCoupon && !couponApplied) {
-          setCouponCode(prefs.autoApplyCoupon);
-          // Small delay to ensure couponCode state is updated
-          setTimeout(() => {
-            applyCouponCallback();
-          }, 100);
-        }
-      } catch {}
-    })();
-  }, [user, couponApplied, applyCouponCallback]);
-
   function removeCoupon() {
     setCouponDiscount(0);
     setCouponApplied('');
@@ -367,7 +335,7 @@ function CheckoutInner() {
       const now = Date.now();
       const expiresAt = now + 3 * 60 * 60 * 1000;
       const itemsData = items.map(i => {
-        const price = i.product.CURRENTPRICE && i.product.CURRENTPRICE > 0 ? i.product.CURRENTPRICE : i.product.PRICE;
+        const price = resolveProductDisplayPrice(i.product, apertura).displayPrice;
         return { id: i.product.$id, name: i.product.NAME, price, originalPrice: i.product.PRICE !== price ? i.product.PRICE : null, qty: i.quantity, img: i.product.IMAGEURL, total: price * i.quantity };
       });
       const docId = await databases.createDocument(databaseId, ORDERS_COLLECTION_ID, ID.unique(), {
@@ -517,12 +485,22 @@ function CheckoutInner() {
           pointer-events: none;
         }
         @media (max-width: 800px) {
-          .ck-sidebar { width: 100% !important; position: static !important; }
+          .ck-page { padding: 12px 12px calc(76px + env(safe-area-inset-bottom, 0px)) !important; }
+          .ck-layout { flex-direction: column !important; gap: 12px !important; }
+          .ck-main { min-width: 0 !important; width: 100% !important; }
+          .ck-sidebar { width: 100% !important; position: static !important; order: -1; }
+          .ck-card { padding: 16px 14px !important; border-radius: 16px !important; }
+          .ck-card h2 { font-size: 15px !important; }
+          .ck-agency-grid { grid-template-columns: 1fr !important; }
+          .ck-form-grid { grid-template-columns: 1fr !important; }
+          .ck-form-grid > div { grid-column: 1 / -1 !important; }
+          .ck-summary-items { max-height: 180px !important; padding: 12px 14px !important; }
+          .ck-breadcrumb { font-size: 12px !important; margin-bottom: 12px !important; flex-wrap: wrap; }
         }
         .ck-input-placeholder::placeholder { color: #6b7280; opacity: 1; }
         .ck-textarea-placeholder::placeholder { color: #6b7280; opacity: 1; }
       `}</style>
-    <div style={{ minHeight: '100vh', padding: '24px 4%', fontFamily: FF, position: 'relative' }}>
+    <div className="ck-page" style={{ minHeight: '100vh', padding: '24px 4%', fontFamily: FF, position: 'relative' }}>
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden' }}>
         <img src="https://img.magnific.com/free-vector/monochrome-realistic-liquid-effect-background_474888-7306.jpg?semt=ais_hybrid&w=740&q=80" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(3px) brightness(1.1) saturate(0.4)', transform: 'scale(1.1)' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 15% 10%,rgba(236,72,153,0.12),transparent 32%), linear-gradient(180deg,rgba(255,245,248,0.82) 0%,rgba(255,255,255,0.92) 100%)' }} />
@@ -531,7 +509,7 @@ function CheckoutInner() {
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
         {/* Breadcrumb */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, marginBottom: 16 }}>
+        <div className="ck-breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, marginBottom: 16 }}>
           <Link href="/" style={{ color: PINK, textDecoration: 'none', fontWeight: 600 }}>Inicio</Link>
           <ChevronRight size={12} color={PINK_LIGHT} />
           <Link href="/carrito" style={{ color: PINK, textDecoration: 'none', fontWeight: 600 }}>Carrito</Link>
@@ -722,7 +700,8 @@ function CheckoutInner() {
                 <div style={{ padding: '14px 22px', maxHeight: 240, overflowY: 'auto' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {items.map(item => {
-                      const price = item.product.CURRENTPRICE && item.product.CURRENTPRICE > 0 ? item.product.CURRENTPRICE : item.product.PRICE;
+                      const pricing = resolveProductDisplayPrice(item.product, apertura);
+                      const price = pricing.displayPrice;
                       return (
                         <div key={item.product.$id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 10px', borderRadius: 12, background: '#fefcfe', border: '1px solid #fdf2f8', transition: 'all .15s' }}>
                           <div style={{ position: 'relative', width: 48, height: 48, background: 'linear-gradient(135deg, #fef2f8, #fff)', borderRadius: 12, overflow: 'visible', flexShrink: 0, border: '1px solid #fce7f3' }}>
@@ -733,8 +712,16 @@ function CheckoutInner() {
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ margin: 0, fontSize: 12, color: '#374151', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontFamily: FF, fontWeight: 500 }}>{item.product.NAME}</p>
+                            {pricing.fromApertura && (
+                              <span style={{ fontSize: 9, fontWeight: 700, color: '#be185d', background: '#fdf2f8', padding: '2px 6px', borderRadius: 6, marginTop: 4, display: 'inline-block' }}>Promo apertura</span>
+                            )}
                           </div>
-                          <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#111', flexShrink: 0, fontFamily: FF }}>{formatPrice(price * item.quantity)}</p>
+                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                            {pricing.hasDiscount && pricing.originalPrice != null && (
+                              <p style={{ margin: '0 0 2px', fontSize: 10, color: '#9ca3af', textDecoration: 'line-through', fontFamily: FF }}>{formatPrice(pricing.originalPrice * item.quantity)}</p>
+                            )}
+                            <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: pricing.fromApertura ? '#ec4899' : '#111', fontFamily: FF }}>{formatPrice(price * item.quantity)}</p>
+                          </div>
                         </div>
                       );
                     })}
@@ -748,6 +735,12 @@ function CheckoutInner() {
                       <span style={{ color: '#6b7280', fontFamily: FF }}>Subtotal</span>
                       <span style={{ color: '#374151', fontWeight: 600, fontFamily: FF }}>{formatPrice(subtotal)}</span>
                     </div>
+                    {aperturaSavings > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                        <span style={{ color: '#be185d', fontFamily: FF }}>Promoción de apertura (-{aperturaPct}%)</span>
+                        <span style={{ color: '#be185d', fontWeight: 700, fontFamily: FF }}>-{formatPrice(aperturaSavings)}</span>
+                      </div>
+                    )}
                     {discountParam > 0 && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                         <span style={{ color: '#00a650', fontFamily: FF }}>Descuento</span>

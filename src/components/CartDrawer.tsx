@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { X, ShoppingCart, Trash2, Plus, Minus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { formatPrice } from '@/lib/appwrite';
+import { useCartItemPrice } from '@/hooks/useCartItemPrice';
+import type { CartItem } from '@/types';
 
 interface Props {
   open: boolean;
@@ -19,10 +20,8 @@ export default function CartDrawer({ open, onClose }: Props) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }}>
-      {/* Backdrop */}
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', transition: 'opacity .2s' }} />
 
-      {/* Drawer */}
       <div style={{
         position: 'absolute', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: 380,
         background: '#fff', boxShadow: '-4px 0 20px rgba(0,0,0,0.15)',
@@ -30,18 +29,16 @@ export default function CartDrawer({ open, onClose }: Props) {
         animation: 'slideInRight .25s ease',
         fontFamily: '"Proxima Nova",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif',
       }}>
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f0f0f0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <ShoppingCart size={18} color="#333" />
             <span style={{ fontSize: 16, fontWeight: 700, color: '#333' }}>Mi carrito ({totalItems})</span>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 4 }}>
+          <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 4 }}>
             <X size={20} />
           </button>
         </div>
 
-        {/* Items */}
         <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px', minHeight: 0 }}>
           {items.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 20px' }}>
@@ -50,47 +47,17 @@ export default function CartDrawer({ open, onClose }: Props) {
               <p style={{ margin: 0, fontSize: 13, color: '#999' }}>Agrega productos para continuar</p>
             </div>
           ) : (
-            items.map(item => {
-              const price = item.product.CURRENTPRICE && item.product.CURRENTPRICE > 0 ? item.product.CURRENTPRICE : item.product.PRICE;
-              return (
-                <div key={item.product.$id} style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid #f5f5f5' }}>
-                  <div style={{ width: 64, height: 64, borderRadius: 6, background: '#f9f9f9', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
-                    {item.product.IMAGEURL ? (
-                      <Image src={item.product.IMAGEURL} alt={item.product.NAME} fill style={{ objectFit: 'contain', padding: 4 }} sizes="64px" />
-                    ) : (
-                      <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>📦</span>
-                    )}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: '0 0 4px', fontSize: 13, color: '#333', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                      {item.product.NAME}
-                    </p>
-                    <p style={{ margin: '0 0 6px', fontSize: 15, fontWeight: 700, color: '#333' }}>{formatPrice(price)}</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: 4 }}>
-                        <button onClick={() => updateQuantity(item.product.$id, Math.max(1, item.quantity - 1))}
-                          style={{ width: 28, height: 28, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3483fa' }}>
-                          <Minus size={12} />
-                        </button>
-                        <span style={{ width: 28, textAlign: 'center', fontSize: 13, fontWeight: 600 }}>{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.product.$id, item.quantity + 1)}
-                          style={{ width: 28, height: 28, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3483fa' }}>
-                          <Plus size={12} />
-                        </button>
-                      </div>
-                      <button onClick={() => removeItem(item.product.$id)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 4 }}>
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
+            items.map(item => (
+              <CartDrawerRow
+                key={item.product.$id}
+                item={item}
+                updateQuantity={updateQuantity}
+                removeItem={removeItem}
+              />
+            ))
           )}
         </div>
 
-        {/* Footer — sticky at bottom */}
         {items.length > 0 && (
           <div style={{ flexShrink: 0, borderTop: '1px solid #f0f0f0', padding: '16px 20px', background: '#fff', position: 'sticky', bottom: 0, zIndex: 2 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -109,6 +76,55 @@ export default function CartDrawer({ open, onClose }: Props) {
         )}
       </div>
       <style>{`@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
+    </div>
+  );
+}
+
+function CartDrawerRow({
+  item,
+  updateQuantity,
+  removeItem,
+}: {
+  item: CartItem;
+  updateQuantity: (id: string, qty: number) => void;
+  removeItem: (id: string) => void;
+}) {
+  const { unitPrice, pricing } = useCartItemPrice(item);
+  return (
+    <div style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid #f5f5f5' }}>
+      <div style={{ width: 64, height: 64, borderRadius: 6, background: '#f9f9f9', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
+        {item.product.IMAGEURL ? (
+          <Image src={item.product.IMAGEURL} alt={item.product.NAME} fill style={{ objectFit: 'contain', padding: 4 }} sizes="64px" />
+        ) : (
+          <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>📦</span>
+        )}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: '0 0 4px', fontSize: 13, color: '#333', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+          {item.product.NAME}
+        </p>
+        {pricing.hasDiscount && pricing.originalPrice != null && (
+          <p style={{ margin: '0 0 2px', fontSize: 11, color: '#999', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</p>
+        )}
+        <p style={{ margin: '0 0 6px', fontSize: 15, fontWeight: 700, color: pricing.fromApertura ? '#ec4899' : '#333' }}>{formatPrice(unitPrice)}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: 4 }}>
+            <button type="button" onClick={() => updateQuantity(item.product.$id, Math.max(1, item.quantity - 1))}
+              style={{ width: 28, height: 28, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3483fa' }}>
+              <Minus size={12} />
+            </button>
+            <span style={{ width: 28, textAlign: 'center', fontSize: 13, fontWeight: 600 }}>{item.quantity}</span>
+            <button type="button" onClick={() => updateQuantity(item.product.$id, item.quantity + 1)}
+              style={{ width: 28, height: 28, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3483fa' }}>
+              <Plus size={12} />
+            </button>
+          </div>
+          <button type="button" onClick={() => removeItem(item.product.$id)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 4 }}>
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

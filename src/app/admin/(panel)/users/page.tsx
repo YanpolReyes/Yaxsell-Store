@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Query } from 'appwrite';
 import { getServices, getAppwriteConfig, USERS_COLLECTION_ID, ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { dedupeUserDocuments, isRegisteredUserProfile, listAllUserProfiles, mergeAuthUsersWithProfiles, type UserProfileDoc } from '@/lib/users-db';
 import { RefreshCw, AlertTriangle, Search, X, Users, Phone, Mail, Calendar, Download, ShoppingCart, MessageSquare, Save, Ban, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -68,15 +67,14 @@ function UsersPageInner() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const [rawUsers, ordersResp, authResp] = await Promise.all([
-        listAllUserProfiles(2000),
-        databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [Query.limit(500)]),
-        fetch('/api/admin/auth-users').then(r => r.json()).catch(() => ({ users: [] })),
+      const [customersResp, ordersResp] = await Promise.all([
+        fetch('/api/admin/customers', { cache: 'no-store' }).then(r => r.json()),
+        databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [Query.limit(500)]).catch(() => ({ documents: [] })),
       ]);
-      const authUsers = Array.isArray(authResp?.users) ? authResp.users : [];
-      const merged = mergeAuthUsersWithProfiles(rawUsers as UserProfileDoc[], authUsers);
-      const registered = dedupeUserDocuments(merged)
-        .filter(isRegisteredUserProfile) as AppUser[];
+      if (customersResp?.error) {
+        setError(String(customersResp.error));
+      }
+      const registered = Array.isArray(customersResp?.users) ? customersResp.users as AppUser[] : [];
       setUsers(registered);
       const counts: Record<string, number> = {};
       for (const o of ordersResp.documents as any[]) {

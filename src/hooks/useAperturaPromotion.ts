@@ -26,11 +26,7 @@ export function useAperturaPromotion() {
             const { account } = getServices();
             const acc = await account.get();
             const prefs = (acc as { prefs?: Record<string, unknown> }).prefs || {};
-            claimed = Boolean(
-              prefs.welcomeGiftClaimed ||
-              prefs.welcomeCouponCode ||
-              prefs.autoApplyCoupon,
-            );
+            claimed = Boolean(prefs.welcomeGiftClaimed);
           } catch {
             claimed = false;
           }
@@ -52,9 +48,7 @@ export function useAperturaPromotion() {
           const { account } = getServices();
           const acc = await account.get();
           const prefs = (acc as { prefs?: Record<string, unknown> }).prefs || {};
-          setHasClaimedGift(Boolean(
-            prefs.welcomeGiftClaimed || prefs.welcomeCouponCode || prefs.autoApplyCoupon,
-          ));
+          setHasClaimedGift(Boolean(prefs.welcomeGiftClaimed));
         } catch { /* ignore */ }
       })();
     };
