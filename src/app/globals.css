@@ -224,3 +224,47 @@ select option { background: #fff; color: #111; }
     padding-right: 4% !important;
   }
 }
+
+/* ── Promoción apertura: badges y banners ── */
+@keyframes aperturaBadgePulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 16px rgba(236, 72, 153, 0.4); }
+  50% { transform: scale(1.08); box-shadow: 0 8px 24px rgba(236, 72, 153, 0.55); }
+}
+@keyframes aperturaSpark {
+  0%, 100% { opacity: 0.5; transform: rotate(0deg) scale(0.85); }
+  50% { opacity: 1; transform: rotate(180deg) scale(1.2); }
+}
+@keyframes aperturaPromoShine {
+  0% { transform: translateX(-130%); }
+  100% { transform: translateX(130%); }
+}
+.apertura-disc-badge {
+  animation: aperturaBadgePulse 2.2s ease-in-out infinite;
+}
+.apertura-disc-spark {
+  display: inline-block;
+  animation: aperturaSpark 1.5s ease-in-out infinite;
+}
+.apertura-promo-shine {
+  animation: aperturaPromoShine 3.8s ease-in-out infinite;
+}
+
+/* Cuenta: iconos rápidos animados también en desktop */
+@keyframes qa-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@keyframes qa-glow-pulse {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(236, 72, 153, 0.15)); }
+  50% { filter: drop-shadow(0 0 10px rgba(236, 72, 153, 0.35)); }
+}
+.qa-icon-float {
+  animation: qa-float 3s ease-in-out infinite;
+}
+.qa-icon-float:nth-child(1) { animation-delay: 0s; }
+.qa-icon-float:nth-child(2) { animation-delay: 0.35s; }
+.qa-icon-float:nth-child(3) { animation-delay: 0.7s; }
+.qa-icon-float:nth-child(4) { animation-delay: 1.05s; }
+.qa-icon-glow {
+  animation: qa-glow-pulse 2.5s ease-in-out infinite;
+}

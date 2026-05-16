@@ -7,6 +7,8 @@ import { X, ShoppingCart } from 'lucide-react';
 import { Product } from '@/types';
 import { formatPrice } from '@/lib/appwrite';
 import { useCart } from '@/context/CartContext';
+import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
+import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 
 interface Props {
   product: Product;
@@ -17,6 +19,7 @@ type Phase = 'entering' | 'open' | 'closing';
 
 export default function ProductCardPreview({ product, onClose }: Props) {
   const { addItem } = useCart();
+  const { settings: apertura } = useAperturaPromotion();
   const [phase, setPhase] = useState<Phase>('entering');
 
   useEffect(() => {
@@ -29,7 +32,8 @@ export default function ProductCardPreview({ product, onClose }: Props) {
     };
   }, []);
 
-  const price = product.CURRENTPRICE && product.CURRENTPRICE > 0 ? product.CURRENTPRICE : product.PRICE;
+  const pricing = resolveProductDisplayPrice(product, apertura);
+  const price = pricing.displayPrice;
   const outOfStock = product.STOCK === 0;
   const isOpen = phase === 'open';
   const isClosing = phase === 'closing';
@@ -124,7 +128,12 @@ export default function ProductCardPreview({ product, onClose }: Props) {
           }}
         >
           <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: '#111827', lineHeight: 1.35 }}>{product.NAME}</p>
-          <p style={{ margin: '0 0 14px', fontSize: 22, fontWeight: 800, color: '#ec4899' }}>{formatPrice(price)}</p>
+          <div style={{ margin: '0 0 14px', display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+            <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#ec4899' }}>{formatPrice(price)}</p>
+            {pricing.hasDiscount && pricing.originalPrice != null && (
+              <p style={{ margin: 0, fontSize: 14, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</p>
+            )}
+          </div>
           <button
             type="button"
             onClick={handleBuy}

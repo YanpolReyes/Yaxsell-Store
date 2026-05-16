@@ -12,6 +12,9 @@ import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import ProductCardPreview from '@/components/ProductCardPreview';
 import ProductBadges from '@/components/ProductBadges';
+import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
+import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 
@@ -36,6 +39,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const { addItem } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { settings: apertura } = useAperturaPromotion();
 
   const lockedCategory = lockCategoryId ? categories.find(c => c.$id === lockCategoryId) : null;
   const categoryProductCount = lockCategoryId
@@ -109,13 +113,13 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
   // Compute price range
   useEffect(() => {
     if (products.length === 0) return;
-    const prices = products.map(p => (p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE)).filter(p => p > 0);
+    const prices = products.map(p => resolveProductDisplayPrice(p, apertura).displayPrice).filter(p => p > 0);
     if (prices.length === 0) return;
     const min = Math.floor(Math.min(...prices));
     const max = Math.ceil(Math.max(...prices));
     setPriceRange([min, max]);
     if (!activePriceRange) setActivePriceRange([min, max]);
-  }, [products]);
+  }, [products, apertura]);
 
   const filtered = products.filter(p => {
     // Category filter (client-side)
@@ -129,7 +133,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     }
     // Price filter
     if (activePriceRange) {
-      const price = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
+      const price = resolveProductDisplayPrice(p, apertura).displayPrice;
       if (price < activePriceRange[0] || price > activePriceRange[1]) return false;
     }
     if (!search) return true;
@@ -453,9 +457,10 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             ) : view === 'grid' ? (
               <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
                 {filtered.map(p => {
-                  const price = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
-                  const hasDisc = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
-                  const disc = hasDisc ? Math.round(((p.PRICE - price) / p.PRICE) * 100) : 0;
+                  const pricing = resolveProductDisplayPrice(p, apertura);
+                  const price = pricing.displayPrice;
+                  const hasDisc = pricing.hasDiscount;
+                  const disc = pricing.discountPercent;
                   const fav = isFavorite(p.$id);
                   return (
                     <div key={p.$id} className="pk-card" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '0 0 22px 22px', overflow: 'hidden', border: '1px solid rgba(252,231,243,0.95)', transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(236,72,153,0.08)', backdropFilter: 'blur(10px)' }}>
@@ -483,8 +488,8 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                             <Heart size={16} fill={fav ? '#fff' : 'none'} />
                           </button>
                           {hasDisc && (
-                            <div className="pk-disc-badge" style={{ position: 'absolute', top: 10, right: 10, padding: '4px 10px', background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 800, zIndex: 2, boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}>
-                              -{disc}%
+                            <div className="pk-disc-badge" style={{ position: 'absolute', top: 8, right: 8, zIndex: 3 }}>
+                              <AperturaDiscountBadge percent={disc} size="md" />
                             </div>
                           )}
                           {p.STOCK === 0 && (
@@ -520,8 +525,8 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                           </p>
                         </Link>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 'auto' }}>
-                          <span className="pk-price" style={{ fontSize: 19, fontWeight: 800, color: '#111', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
-                          {hasDisc && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500 }}>{formatPrice(p.PRICE)}</span>}
+                          <span className="pk-price" style={{ fontSize: 19, fontWeight: 800, color: hasDisc ? '#db2777' : '#111', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
+                          {hasDisc && pricing.originalPrice != null && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500 }}>{formatPrice(pricing.originalPrice)}</span>}
                         </div>
                         <button onClick={() => p.STOCK !== 0 && addItem(p)} disabled={p.STOCK === 0} className="pk-add-btn"
                           style={{ marginTop: 10, padding: '9px 12px', borderRadius: 12, border: 'none', background: p.STOCK === 0 ? '#f3f4f6' : 'linear-gradient(135deg,#ec4899,#f9a8d4)', color: p.STOCK === 0 ? '#9ca3af' : '#fff', fontSize: 12, fontWeight: 700, cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.2s', boxShadow: p.STOCK === 0 ? 'none' : '0 4px 14px rgba(236,72,153,0.25)', fontFamily: 'inherit' }}>
@@ -535,15 +540,16 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {filtered.map(p => {
-                  const price = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
-                  const hasDisc = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
-                  const disc = hasDisc ? Math.round(((p.PRICE - price) / p.PRICE) * 100) : 0;
+                  const pricing = resolveProductDisplayPrice(p, apertura);
+                  const price = pricing.displayPrice;
+                  const hasDisc = pricing.hasDiscount;
+                  const disc = pricing.discountPercent;
                   const fav = isFavorite(p.$id);
                   return (
                     <div key={p.$id} className="pk-card-list" style={{ background: '#fff', borderRadius: 18, border: '1px solid #fce7f3', display: 'flex', gap: 16, padding: 12, transition: 'all 0.2s', alignItems: 'center' }}>
                       <Link href={`/productos/${p.$id}`} className="pk-card-list-media" onClick={e => handleCardImageClick(p, e)} style={{ position: 'relative', width: 110, height: 110, borderRadius: 14, overflow: 'hidden', background: '#fef2f8', flexShrink: 0 }}>
                         {p.IMAGEURL ? <Image src={p.IMAGEURL} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="110px" /> : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 36 }}>📦</div>}
-                        {hasDisc && <div style={{ position: 'absolute', top: 6, left: 6, padding: '2px 7px', background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 800 }}>-{disc}%</div>}
+                        {hasDisc && <div style={{ position: 'absolute', top: 6, left: 6, zIndex: 3 }}><AperturaDiscountBadge percent={disc} size="sm" /></div>}
                         <button type="button" className="pk-card-fav pk-card-list-fav" aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'} onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorite(p.$id); }} style={{ position: 'absolute', top: 6, right: 6, zIndex: 5, width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer', alignItems: 'center', justifyContent: 'center', background: fav ? 'linear-gradient(135deg,#ec4899,#f9a8d4)' : 'rgba(255,255,255,0.95)', color: fav ? '#fff' : '#ec4899', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}><Heart size={14} fill={fav ? '#fff' : 'none'} /></button>
                       </Link>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -553,7 +559,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                         <p style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>{p.DESCRIPTION}</p>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                           <span style={{ fontSize: 18, fontWeight: 800, color: '#111' }}>{formatPrice(price)}</span>
-                          {hasDisc && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(p.PRICE)}</span>}
+                          {hasDisc && pricing.originalPrice != null && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</span>}
                         </div>
                       </div>
                       <div className="pk-card-list-actions" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

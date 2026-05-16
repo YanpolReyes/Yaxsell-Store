@@ -18,6 +18,10 @@ import ImageZoom from '@/components/ImageZoom';
 import ProductQuestions from '@/components/ProductQuestions';
 import ProductTabs from '@/components/ProductTabs';
 import StockIndicator from '@/components/StockIndicator';
+import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
+import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import AperturaPromoBanner from '@/components/AperturaPromoBanner';
+import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 
 export default function ProductDetailPlantilla2() {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +39,7 @@ export default function ProductDetailPlantilla2() {
   const [selectedImg, setSelectedImg] = useState(0);
   const [added, setAdded] = useState(false);
   const { addItem } = useCart();
+  const { settings: apertura, isActive: aperturaActive, discountPercent: aperturaPct } = useAperturaPromotion();
 
   // Keyboard navigation for image gallery
   useEffect(() => {
@@ -84,7 +89,7 @@ export default function ProductDetailPlantilla2() {
   // Dynamic SEO metadata (must be before early return to respect hooks order)
   useEffect(() => {
     if (!product) return;
-    const price = product.CURRENTPRICE && product.CURRENTPRICE > 0 ? product.CURRENTPRICE : product.PRICE;
+    const price = resolveProductDisplayPrice(product, apertura).displayPrice;
     document.title = `${product.NAME} - ${formatPrice(price)} | Tienda`;
     const setMeta = (name: string, content: string) => {
       let el = document.querySelector(`meta[name="${name}"]`) || document.querySelector(`meta[property="${name}"]`);
@@ -134,7 +139,7 @@ export default function ProductDetailPlantilla2() {
     if (!scriptEl) { scriptEl = document.createElement('script'); scriptEl.id = 'product-jsonld'; scriptEl.setAttribute('type', 'application/ld+json'); document.head.appendChild(scriptEl); }
     scriptEl.textContent = JSON.stringify(jsonLd);
     return () => { document.title = 'Tienda'; const el = document.getElementById('product-jsonld'); if (el) el.remove(); };
-  }, [product, categoryName]);
+  }, [product, categoryName, apertura]);
 
   if (isLoading) return (
     <div style={{ background: '#ebebeb', minHeight: '100vh', padding: '32px 5%' }}>
@@ -150,9 +155,11 @@ export default function ProductDetailPlantilla2() {
   if (!product) return null;
 
   const images = [product.IMAGEURL, product.IMAGEURL2, product.IMAGEURL3, product.IMAGEURL4, product.IMAGEURL5].filter(Boolean) as string[];
-  const displayPrice = product.CURRENTPRICE && product.CURRENTPRICE > 0 ? product.CURRENTPRICE : product.PRICE;
-  const hasDisc = !!(product.CURRENTPRICE && product.CURRENTPRICE < product.PRICE);
-  const discPct = hasDisc ? Math.round(((product.PRICE - product.CURRENTPRICE!) / product.PRICE) * 100) : 0;
+  const priceResolved = resolveProductDisplayPrice(product, apertura);
+  const displayPrice = priceResolved.displayPrice;
+  const hasDisc = priceResolved.hasDiscount;
+  const discPct = priceResolved.discountPercent;
+  const priceOriginal = priceResolved.originalPrice;
   const hasWholesale = !!(product.WHOLESALEPRICE && product.WHOLESALEMINQUANTITY && product.WHOLESALEPRICE > 0);
   const isWholesaleUser = user?.isWholesale || false;
   const isWholesaleQty = hasWholesale && qty >= (product.WHOLESALEMINQUANTITY || 0);
@@ -313,6 +320,9 @@ export default function ProductDetailPlantilla2() {
             )}
 
             {/* Price section */}
+            {aperturaActive && priceResolved.fromApertura && (
+              <AperturaPromoBanner percent={aperturaPct} />
+            )}
             {hasOffer && (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#ddeeff', border: '1px solid #3483fa', borderRadius: 6, padding: '5px 12px', marginBottom: 12 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="#3483fa"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -321,15 +331,19 @@ export default function ProductDetailPlantilla2() {
             )}
             <div style={{ marginBottom: 24 }}>
               {hasWholesale && <p style={{ margin: '0 0 4px', fontSize: 12, fontWeight: 700, color: '#f57c00' }}>PRECIO MAYORISTA</p>}
-              {(hasDisc && !isWholesaleQty) && (
-                <p style={{ margin: '0 0 2px', fontSize: 15, color: '#999', textDecoration: 'line-through' }}>{formatPrice(product.PRICE)}</p>
+              {(hasDisc && !isWholesaleQty && priceOriginal != null) && (
+                <p style={{ margin: '0 0 2px', fontSize: 15, color: '#999', textDecoration: 'line-through' }}>{formatPrice(priceOriginal)}</p>
               )}
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 38, fontWeight: 300, color: '#333', letterSpacing: -1 }}>
                   {formatPrice(isWholesaleQty ? product.WHOLESALEPRICE! : effectivePrice)}
                 </span>
                 {(hasDisc && !isWholesaleQty) && (
-                  <span style={{ fontSize: 18, fontWeight: 600, color: '#00a650' }}>{discPct}% OFF</span>
+                  priceResolved.fromApertura ? (
+                    <AperturaDiscountBadge percent={discPct} size="lg" />
+                  ) : (
+                    <span style={{ fontSize: 18, fontWeight: 600, color: '#00a650' }}>{discPct}% OFF</span>
+                  )
                 )}
               </div>
               {isWholesaleQty && <p style={{ margin: '4px 0 0', fontSize: 13, color: '#00a650', fontWeight: 500 }}>✓ Precio mayorista aplicado</p>}
@@ -492,10 +506,10 @@ export default function ProductDetailPlantilla2() {
             </div>
             <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 4 }}>
               {related.map(p => {
-                const rcp = p.CURRENTPRICE ?? 0;
-                const rprice = rcp > 0 ? rcp : p.PRICE;
-                const rhasDisc = rcp > 0 && rcp < p.PRICE;
-                const rdisc = rhasDisc ? Math.round(((p.PRICE - rcp) / p.PRICE) * 100) : 0;
+                const rPricing = resolveProductDisplayPrice(p, apertura);
+                const rprice = rPricing.displayPrice;
+                const rhasDisc = rPricing.hasDiscount;
+                const rdisc = rPricing.discountPercent;
                 return (
                   <Link key={p.$id} href={`/productos/${p.$id}`} style={{ flexShrink: 0, width: 168, textDecoration: 'none', border: '1px solid #e5e5e5', borderRadius: 4, overflow: 'hidden', background: '#fff', display: 'block', transition: 'box-shadow .15s' }}
                     onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = '0 4px 14px rgba(0,0,0,.12)')}
@@ -503,11 +517,16 @@ export default function ProductDetailPlantilla2() {
                   >
                     <div style={{ position: 'relative', height: 148, background: '#f9f9f9' }}>
                       {p.IMAGEURL ? <Image src={p.IMAGEURL} alt={p.NAME} fill className="object-contain p-2" /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44 }}>📦</span>}
-                      {rhasDisc && <span style={{ position: 'absolute', top: 6, left: 6, background: '#e53935', color: '#fff', fontSize: 9, fontWeight: 800, padding: '2px 5px', borderRadius: 3 }}>-{rdisc}%</span>}
+                      {rhasDisc && rPricing.fromApertura && (
+                        <span style={{ position: 'absolute', top: 6, left: 6, zIndex: 2 }}>
+                          <AperturaDiscountBadge percent={rdisc} size="sm" />
+                        </span>
+                      )}
+                      {rhasDisc && !rPricing.fromApertura && <span style={{ position: 'absolute', top: 6, left: 6, background: '#e53935', color: '#fff', fontSize: 9, fontWeight: 800, padding: '2px 5px', borderRadius: 3 }}>-{rdisc}%</span>}
                     </div>
                     <div style={{ padding: '10px 12px 14px' }}>
                       <p style={{ margin: '0 0 6px', fontSize: 12, color: '#333', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.NAME}</p>
-                      {rhasDisc && <p style={{ margin: '0 0 1px', fontSize: 11, color: '#aaa', textDecoration: 'line-through' }}>{formatPrice(p.PRICE)}</p>}
+                      {rhasDisc && rPricing.originalPrice != null && <p style={{ margin: '0 0 1px', fontSize: 11, color: '#aaa', textDecoration: 'line-through' }}>{formatPrice(rPricing.originalPrice)}</p>}
                       <p style={{ margin: 0, fontSize: 17, fontWeight: 600, color: '#333' }}>{formatPrice(rprice)}</p>
                       {rhasDisc && <p style={{ margin: '1px 0 0', fontSize: 11, color: '#00a650', fontWeight: 600 }}>{rdisc}% OFF</p>}
                     </div>

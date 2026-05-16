@@ -66,6 +66,7 @@ export const RAFFLE_PARTICIPANTS_COLLECTION      = 'raffle_participants';
 export const STOCK_ALERTS_COLLECTION             = 'stock_alerts';
 export const NOTIFICATIONS_COLLECTION            = 'notifications';
 export const THEME_CONFIG_COLLECTION             = 'theme_config';
+export const APERTURA_SETTINGS_COLLECTION        = 'apertura_settings';
 export const COMPROBANTES_BUCKET                 = 'comprobantes';
 export const USER_PHOTOS_BUCKET     = '67f41e05000d0adb6f12';  // live-thumbnails bucket (reutilizado para fotos de perfil)
 

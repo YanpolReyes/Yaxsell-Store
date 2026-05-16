@@ -646,7 +646,7 @@ export default function Navbar1() {
             <Search />
             <span>Catálogo</span>
           </Link>
-          <Link href="/favoritos" className={`tpl1-bottom-nav-item ${pathname === '/favoritos' ? 'active' : ''}`}>
+          <Link href="/favoritos" className={`tpl1-bottom-nav-item ${pathname === '/favoritos' || pathname?.startsWith('/cuenta/favoritos') ? 'active' : ''}`}>
             <Heart />
             <span>Favoritos</span>
           </Link>

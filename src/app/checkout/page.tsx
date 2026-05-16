@@ -4,11 +4,12 @@ import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User, MapPin, Package, ChevronDown, ChevronRight, Shield, Truck, RefreshCw, Plus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { getServices, getAppwriteConfig, ORDERS_COLLECTION, SEQUENCES_COLLECTION, COUPONS_COLLECTION, PRODUCTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, WHOLESALE_REQUESTS_COLLECTION_ID, APERTURA_SETTINGS_COLLECTION_ID, COUPONS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { ADDRESSES_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { CHILE_REGIONES } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
-import { Query } from 'appwrite';
+import { formatPrice } from '@/lib/appwrite';
+import { Query, ID } from 'appwrite';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -221,7 +222,7 @@ function CheckoutInner() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const res = await databases.listDocuments(databaseId, COUPONS_COLLECTION, [
+      const res = await databases.listDocuments(databaseId, COUPONS_COLLECTION_ID, [
         Query.equal('CODE', code),
         Query.limit(1),
       ]);
@@ -288,12 +289,24 @@ function CheckoutInner() {
     if (!user) return;
     (async () => {
       try {
-        const { account } = getServices();
+        const { account, databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
         const acc = await account.get();
         const prefs = (acc as any).prefs || {};
         
-        // Auto-apply coupon if user has autoApplyCoupon in prefs and coupon is not already applied
-        if (prefs.autoApplyCoupon && !couponApplied) {
+        // Check if apertura promotion is active from Appwrite
+        let aperturaEnabled = false;
+        try {
+          const aperturaRes = await databases.listDocuments(databaseId, APERTURA_SETTINGS_COLLECTION_ID, [Query.limit(1)]);
+          aperturaEnabled = aperturaRes.documents.length > 0 ? (aperturaRes.documents[0] as any).isActive : false;
+        } catch (e) {
+          // Collection doesn't exist yet, assume disabled
+          console.error('Apertura collection not found, assuming disabled');
+          aperturaEnabled = false;
+        }
+        
+        // Auto-apply coupon if user has autoApplyCoupon in prefs and coupon is not already applied and apertura is enabled
+        if (aperturaEnabled && prefs.autoApplyCoupon && !couponApplied) {
           setCouponCode(prefs.autoApplyCoupon);
           // Small delay to ensure couponCode state is updated
           setTimeout(() => {
@@ -317,7 +330,7 @@ function CheckoutInner() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       const { Query } = await import('appwrite');
-      const res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [Query.limit(1)]);
+      const res = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [Query.limit(1)]);
       return (res.total || 0) + 1;
     } catch {
       return Math.floor(Date.now() / 1000) % 100000;
@@ -357,7 +370,7 @@ function CheckoutInner() {
         const price = i.product.CURRENTPRICE && i.product.CURRENTPRICE > 0 ? i.product.CURRENTPRICE : i.product.PRICE;
         return { id: i.product.$id, name: i.product.NAME, price, originalPrice: i.product.PRICE !== price ? i.product.PRICE : null, qty: i.quantity, img: i.product.IMAGEURL, total: price * i.quantity };
       });
-      const docId = await databases.createDocument(databaseId, ORDERS_COLLECTION, ID.unique(), {
+      const docId = await databases.createDocument(databaseId, ORDERS_COLLECTION_ID, ID.unique(), {
         USERID: user?.id || 'guest', ITEMS: JSON.stringify(itemsData),
         CUSTOMERNAME: form.name, CUSTOMERRUT: form.rut, CUSTOMERPHONE: form.phone, CUSTOMEREMAIL: form.email,
         REGION: form.region, COMUNA: form.comuna, ADDRESS: form.address, ADDITIONALINFO: form.additionalInfo,
@@ -374,10 +387,10 @@ function CheckoutInner() {
       // Decrement stock for each product in the order
       for (const item of items) {
         try {
-          const productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, item.product.$id);
+          const productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.product.$id);
           const currentStock = (productDoc as any).STOCK ?? 0;
           const newStock = Math.max(0, currentStock - item.quantity);
-          await databases.updateDocument(databaseId, PRODUCTS_COLLECTION, item.product.$id, { STOCK: newStock });
+          await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, item.product.$id, { STOCK: newStock });
         } catch (stockErr) {
           console.error('Error updating stock for product', item.product.$id, stockErr);
         }
@@ -386,8 +399,8 @@ function CheckoutInner() {
       // Mark coupon as used (increment counter and deactivate)
       if (couponDocId) {
         try {
-          const couponDoc = await databases.getDocument(databaseId, COUPONS_COLLECTION, couponDocId);
-          await databases.updateDocument(databaseId, COUPONS_COLLECTION, couponDocId, {
+          const couponDoc = await databases.getDocument(databaseId, COUPONS_COLLECTION_ID, couponDocId);
+          await databases.updateDocument(databaseId, COUPONS_COLLECTION_ID, couponDocId, {
             ACTIVE: false,
             USEDCOUNT: ((couponDoc as any).USEDCOUNT || 0) + 1,
           });

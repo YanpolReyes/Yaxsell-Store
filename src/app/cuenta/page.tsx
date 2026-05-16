@@ -303,7 +303,17 @@ export default function CuentaPage() {
         <InaugurationBanner />
 
         {/* Quick Actions Icons (PC) */}
-        <div style={{ marginBottom: 24, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
+        <style>{`
+          @keyframes qa-float-desk { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+          @keyframes qa-glow-desk { 0%,100% { filter: drop-shadow(0 0 3px rgba(236,72,153,0.2)); } 50% { filter: drop-shadow(0 0 10px rgba(236,72,153,0.35)); } }
+          .cuenta-desktop-qa .qa-desk-float { animation: qa-float-desk 3s ease-in-out infinite; }
+          .cuenta-desktop-qa .qa-desk-float:nth-child(1) { animation-delay: 0s; }
+          .cuenta-desktop-qa .qa-desk-float:nth-child(2) { animation-delay: 0.4s; }
+          .cuenta-desktop-qa .qa-desk-float:nth-child(3) { animation-delay: 0.8s; }
+          .cuenta-desktop-qa .qa-desk-float:nth-child(4) { animation-delay: 1.2s; }
+          .cuenta-desktop-qa .qa-desk-glow { animation: qa-glow-desk 2.5s ease-in-out infinite; }
+        `}</style>
+        <div className="cuenta-desktop-qa" style={{ marginBottom: 24, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
           {[
             { icon: Receipt,      label: 'Pedidos',    href: '/cuenta/pedidos',    g: 'linear-gradient(135deg,#6366f1,#8b5cf6)', shadow: 'rgba(99,102,241,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778902651562-pegada-1778902645915.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=OKWZOLTMN0DmNxF9i2zJvPKGsGgQbWbwKDU9L887E5hHYoSclN7CnFS8lcAEJid%2F5LgCmKwnOHozplzK7sG0iGALAcnAFpTVUFfp%2BDmN0iURUkPa%2BrFJHcxzEi8qvxfI7Kok8Ortf%2FV1SSEvPKkXcZgPGb41b3Sz6afLz2tK5JsLAUIHHCZ9V2nxi%2FO5lq7y1RDt0jT0q8RokkxREqSsAFF0IcKqwZ3Mlo2HZidVKzMr%2Br1iat82uZdAYv%2FYHCnf22%2BZYFtnyc4qG7ZiIfQ6w8p8VkEMeS6CYvYIcK%2FtZbliO9wzYCyvsATa4bdjzHLEaM6%2F3friX3cQtTkCkQz1Zg%3D%3D' },
             { icon: Ticket,       label: 'Cupones',    href: '/cuenta/cupones',  g: 'linear-gradient(135deg,#ec4899,#f472b6)', shadow: 'rgba(236,72,153,0.35)', image: 'https://cdn3d.iconscout.com/3d/premium/thumb/cupon-3d-icon-png-download-10660366.png' },
@@ -313,11 +323,22 @@ export default function CuentaPage() {
             const Icon = sc.icon;
             const shouldAnimate = sc.label === 'Regalos' && hasGifts;
             return (
-              <div key={sc.label}>
+              <motion.div
+                key={sc.label}
+                className="qa-desk-float"
+                initial={{ opacity: 0, y: 24, scale: 0.85 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 20, delay: idx * 0.1 }}
+              >
                 <Link href={sc.href} style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, position: 'relative', overflow: 'visible' }}>
-                  <div
+                  <motion.div
+                    whileHover={{ scale: 1.12 }}
+                    whileTap={{ scale: 0.9 }}
+                    animate={shouldAnimate ? { rotate: [0, 12, -12, 12, -12, 0] } : {}}
+                    transition={shouldAnimate ? { duration: 2.5, repeat: Infinity, ease: 'easeInOut' } : {}}
+                    className={sc.image ? 'qa-desk-glow' : ''}
                     style={{
-                      width: 64, height: 64, borderRadius: 18,
+                      width: 64, height: 64, borderRadius: 18, position: 'relative',
                       background: sc.image ? 'transparent' : sc.g,
                       boxShadow: sc.image ? 'none' : `0 6px 20px ${sc.shadow}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -328,35 +349,45 @@ export default function CuentaPage() {
                       <img
                         src={sc.image}
                         alt={sc.label}
+                        className="qa-desk-glow"
                         style={{ width: 140, height: 140, objectFit: 'contain' }}
                       />
                     ) : (
                       <Icon size={28} color="#fff" strokeWidth={2} />
                     )}
                     {sc.label === 'Regalos' && hasGifts && (
-                      <div style={{
-                        position: 'absolute',
-                        top: -6,
-                        right: -6,
-                        width: 20,
-                        height: 20,
-                        background: '#ec4899',
-                        color: '#fff',
-                        borderRadius: '50%',
-                        fontSize: 12,
-                        fontWeight: 900,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        border: '2px solid #fff',
-                      }}>
+                      <motion.div
+                        animate={{ scale: [1, 1.15, 1] }}
+                        transition={{ duration: 1.2, repeat: Infinity }}
+                        style={{
+                          position: 'absolute',
+                          top: -6,
+                          right: -6,
+                          width: 20,
+                          height: 20,
+                          background: '#ec4899',
+                          color: '#fff',
+                          borderRadius: '50%',
+                          fontSize: 12,
+                          fontWeight: 900,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: '2px solid #fff',
+                        }}
+                      >
                         1
-                      </div>
+                      </motion.div>
                     )}
-                  </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#374151', textAlign: 'center', lineHeight: 1.2 }}>{sc.label}</span>
+                  </motion.div>
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 + idx * 0.1 }}
+                    style={{ fontSize: 12, fontWeight: 700, color: '#374151', textAlign: 'center', lineHeight: 1.2 }}
+                  >{sc.label}</motion.span>
                 </Link>
-              </div>
+              </motion.div>
             );
           })}
         </div>

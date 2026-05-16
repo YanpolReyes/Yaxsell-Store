@@ -18,6 +18,10 @@ import ImageZoom from '@/components/ImageZoom';
 import ProductQuestions from '@/components/ProductQuestions';
 import ProductTabs from '@/components/ProductTabs';
 import StockIndicator from '@/components/StockIndicator';
+import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
+import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import AperturaPromoBanner from '@/components/AperturaPromoBanner';
+import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 
 // Paleta Kevin & Coco — rosa pastel
 const PINK_PRIMARY = '#ec4899';
@@ -44,6 +48,7 @@ export default function ProductDetailPlantilla1() {
   const [added, setAdded] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const { addItem } = useCart();
+  const { settings: apertura, isActive: aperturaActive, discountPercent: aperturaPct } = useAperturaPromotion();
 
   // Keyboard navigation for image gallery
   useEffect(() => {
@@ -93,7 +98,7 @@ export default function ProductDetailPlantilla1() {
   // Dynamic SEO metadata
   useEffect(() => {
     if (!product) return;
-    const price = product.CURRENTPRICE && product.CURRENTPRICE > 0 ? product.CURRENTPRICE : product.PRICE;
+    const price = resolveProductDisplayPrice(product, apertura).displayPrice;
     document.title = `${product.NAME} - ${formatPrice(price)} | Kevin & Coco Chile`;
     const setMeta = (name: string, content: string) => {
       let el = document.querySelector(`meta[name="${name}"]`) || document.querySelector(`meta[property="${name}"]`);
@@ -140,7 +145,7 @@ export default function ProductDetailPlantilla1() {
     if (!scriptEl) { scriptEl = document.createElement('script'); scriptEl.id = 'product-jsonld'; scriptEl.setAttribute('type', 'application/ld+json'); document.head.appendChild(scriptEl); }
     scriptEl.textContent = JSON.stringify(jsonLd);
     return () => { document.title = 'Kevin & Coco Chile'; const el = document.getElementById('product-jsonld'); if (el) el.remove(); };
-  }, [product, categoryName]);
+  }, [product, categoryName, apertura]);
 
   if (isLoading) return (
     <div className="pd-page pd-skeleton">
@@ -193,9 +198,11 @@ export default function ProductDetailPlantilla1() {
   const images = [product.IMAGEURL, product.IMAGEURL2, product.IMAGEURL3, product.IMAGEURL4, product.IMAGEURL5].filter(Boolean) as string[];
   const features = product.FEATURES ? (Array.isArray(product.FEATURES) ? product.FEATURES : (product.FEATURES as string).split(',').map((s: string) => s.trim()).filter(Boolean)) : [];
   const tags = product.TAGS ? (Array.isArray(product.TAGS) ? product.TAGS : (product.TAGS as string).split(',').map((s: string) => s.trim()).filter(Boolean)) : [];
-  const displayPrice = product.CURRENTPRICE && product.CURRENTPRICE > 0 ? product.CURRENTPRICE : product.PRICE;
-  const hasDisc = !!(product.CURRENTPRICE && product.CURRENTPRICE < product.PRICE);
-  const discPct = hasDisc ? Math.round(((product.PRICE - product.CURRENTPRICE!) / product.PRICE) * 100) : 0;
+  const priceResolved = resolveProductDisplayPrice(product, apertura);
+  const displayPrice = priceResolved.displayPrice;
+  const hasDisc = priceResolved.hasDiscount;
+  const discPct = priceResolved.discountPercent;
+  const priceOriginal = priceResolved.originalPrice;
   const hasWholesale = !!(product.WHOLESALEPRICE && product.WHOLESALEMINQUANTITY && product.WHOLESALEPRICE > 0);
   const isWholesaleUser = user?.isWholesale || false;
   const isWholesaleQty = hasWholesale && qty >= (product.WHOLESALEMINQUANTITY || 0);
@@ -493,6 +500,9 @@ export default function ProductDetailPlantilla1() {
             </div>
 
             {/* Price */}
+            {aperturaActive && priceResolved.fromApertura && (
+              <AperturaPromoBanner percent={aperturaPct} />
+            )}
             {hasOffer && (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: `linear-gradient(135deg, ${PINK_BG_DARK}, ${PINK_BG})`, border: `1px solid ${PINK_PRIMARY}`, borderRadius: 8, padding: '4px 10px', marginBottom: 10 }}>
                 <Sparkles size={12} color={PINK_PRIMARY} />
@@ -501,15 +511,19 @@ export default function ProductDetailPlantilla1() {
             )}
             <div style={{ marginBottom: 18 }}>
               {hasWholesale && <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 800, color: '#f59e0b', letterSpacing: 0.5 }}>PRECIO MAYORISTA</p>}
-              {(hasDisc && !isWholesaleQty) && (
-                <p style={{ margin: '0 0 2px', fontSize: 14, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(product.PRICE)}</p>
+              {(hasDisc && !isWholesaleQty && priceOriginal != null) && (
+                <p style={{ margin: '0 0 2px', fontSize: 14, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(priceOriginal)}</p>
               )}
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
                 <span className="pd-price-main" style={{ fontSize: 36, fontWeight: 400, color: TEXT_DARK, letterSpacing: -1, lineHeight: 1 }}>
                   {formatPrice(isWholesaleQty ? product.WHOLESALEPRICE! : effectivePrice)}
                 </span>
                 {(hasDisc && !isWholesaleQty) && (
-                  <span style={{ fontSize: 16, fontWeight: 600, color: '#10b981' }}>{discPct}% OFF</span>
+                  priceResolved.fromApertura ? (
+                    <AperturaDiscountBadge percent={discPct} size="lg" />
+                  ) : (
+                    <span style={{ fontSize: 16, fontWeight: 600, color: '#10b981' }}>{discPct}% OFF</span>
+                  )
                 )}
               </div>
               <button onClick={() => setPaymentModalOpen(true)} style={{ margin: '6px 0 0', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: PINK_PRIMARY, fontWeight: 600, textDecoration: 'underline', textDecorationStyle: 'dotted', display: 'block', textAlign: 'left' }}>Ver los medios de pago</button>
@@ -601,10 +615,10 @@ export default function ProductDetailPlantilla1() {
             </div>
             <div className="pd-related-scroll pd-h-scroll" style={{ display: 'flex', gap: 18 }}>
               {related.map(p => {
-                const rcp = p.CURRENTPRICE ?? 0;
-                const rprice = rcp > 0 ? rcp : p.PRICE;
-                const rhasDisc = rcp > 0 && rcp < p.PRICE;
-                const rdisc = rhasDisc ? Math.round(((p.PRICE - rcp) / p.PRICE) * 100) : 0;
+                const rPricing = resolveProductDisplayPrice(p, apertura);
+                const rprice = rPricing.displayPrice;
+                const rhasDisc = rPricing.hasDiscount;
+                const rdisc = rPricing.discountPercent;
                 return (
                   <Link key={p.$id} href={`/productos/${p.$id}`} className="pd-related-card" style={{ flexShrink: 0, width: 180, textDecoration: 'none', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 16, overflow: 'hidden', background: '#fff', display: 'block', transition: 'all .25s' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 28px rgba(236,72,153,0.18)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLElement).style.borderColor = PINK_LIGHT; }}
@@ -616,7 +630,7 @@ export default function ProductDetailPlantilla1() {
                     </div>
                     <div style={{ padding: '12px 14px 16px' }}>
                       <p style={{ margin: '0 0 8px', fontSize: 13, color: TEXT_DARK, lineHeight: 1.4, fontWeight: 500, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.NAME}</p>
-                      {rhasDisc && <p style={{ margin: '0 0 2px', fontSize: 11, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(p.PRICE)}</p>}
+                      {rhasDisc && rPricing.originalPrice != null && <p style={{ margin: '0 0 2px', fontSize: 11, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(rPricing.originalPrice)}</p>}
                       <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: PINK_PRIMARY }}>{formatPrice(rprice)}</p>
                       {rhasDisc && <p style={{ margin: '2px 0 0', fontSize: 11, color: '#10b981', fontWeight: 700 }}>{rdisc}% OFF</p>}
                     </div>

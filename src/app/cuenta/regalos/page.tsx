@@ -6,11 +6,12 @@ import {
   Star, Zap, Crown, PartyPopper,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { getServices, getAppwriteConfig, COUPONS_COLLECTION } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, COUPONS_COLLECTION_ID, APERTURA_SETTINGS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Query } from 'appwrite';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import CuentaPageShell from '@/components/cuenta/CuentaPageShell';
+import WelcomeGiftSuccess from '@/components/WelcomeGiftSuccess';
 import { useCuentaBg } from '../CuentaBgContext';
 
 const FF = '"DM Sans",system-ui,sans-serif';
@@ -33,6 +34,7 @@ export default function RegalosPage() {
   const [justClaimed, setJustClaimed] = useState(false);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [discountPercent, setDiscountPercent] = useState(20);
 
   useEffect(() => {
     if (!isLoggedIn || !user) return;
@@ -47,20 +49,34 @@ export default function RegalosPage() {
       const acc = await account.get();
       const prefs = (acc as { prefs?: Record<string, unknown> }).prefs || {};
 
+      // Check if apertura promotion is active from Appwrite
+      let aperturaEnabled = false;
+      try {
+        const aperturaRes = await databases.listDocuments(databaseId, APERTURA_SETTINGS_COLLECTION_ID, [Query.limit(1)]);
+        const doc = aperturaRes.documents[0] as { isActive?: boolean; discountPercent?: number };
+        aperturaEnabled = aperturaRes.documents.length > 0 ? !!doc.isActive : false;
+        if (doc?.discountPercent) setDiscountPercent(doc.discountPercent);
+      } catch (e) {
+        // Collection doesn't exist yet, assume disabled
+        console.error('Apertura collection not found, assuming disabled');
+        aperturaEnabled = false;
+      }
+
+      if (!aperturaEnabled) {
+        setShowWelcomeReward(false);
+        setLoading(false);
+        return;
+      }
+
+      // Show reward to ALL users when promotion is active
+      setShowWelcomeReward(true);
+      
+      // Check if user already claimed it
       if (prefs.welcomeCouponCode) {
         setClaimedCode(String(prefs.welcomeCouponCode));
-        setShowWelcomeReward(true);
-      } else if (!prefs.welcomeGiftClaimed) {
-        try {
-          const couponRes = await databases.listDocuments(databaseId, COUPONS_COLLECTION, [
-            Query.equal('CODE', 'KEVINCOCOCL'),
-            Query.limit(1),
-          ]);
-          const coupon = couponRes.documents[0];
-          if (coupon?.ISACTIVE) setShowWelcomeReward(true);
-        } catch (e) {
-          console.error('Error checking coupon status:', e);
-        }
+        setJustClaimed(false);
+      } else {
+        setJustClaimed(false);
       }
     } catch (e) {
       console.error(e);
@@ -85,6 +101,9 @@ export default function RegalosPage() {
       });
       setJustClaimed(true);
       fireCelebration();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('apertura-gift-claimed'));
+      }
     } catch (err) {
       console.error('Error claiming reward', err);
     } finally {
@@ -136,8 +155,8 @@ export default function RegalosPage() {
                 overflow: 'hidden',
                 borderRadius: 28,
                 padding: '32px 28px 28px',
-                background: 'linear-gradient(145deg, #831843 0%, #be185d 35%, #ec4899 70%, #f43f5e 100%)',
-                boxShadow: '0 24px 60px rgba(236,72,153,0.45)',
+                background: 'linear-gradient(145deg, #fdf2f8 0%, #fce7f3 35%, #f9a8d4 70%, #f472b6 100%)',
+                boxShadow: '0 20px 50px rgba(236,72,153,0.28)',
                 marginBottom: 16,
               }}
             >
@@ -237,7 +256,7 @@ export default function RegalosPage() {
                       }}
                     >
                       <motion.div
-                        animate={{ background: ['#ec4899', '#f43f5e', '#ec4899'] }}
+                        animate={{ background: ['#f9a8d4', '#ec4899', '#f9a8d4'] }}
                         transition={{ duration: 4, repeat: Infinity }}
                         style={{
                           width: 100, flexShrink: 0,
@@ -283,7 +302,7 @@ export default function RegalosPage() {
                       disabled={claiming}
                       style={{
                         width: '100%', padding: 18,
-                        background: claiming ? '#9ca3af' : 'linear-gradient(135deg, #ec4899, #f43f5e)',
+                        background: claiming ? '#9ca3af' : 'linear-gradient(135deg, #f9a8d4, #ec4899)',
                         color: '#fff', border: 'none', borderRadius: 18,
                         fontSize: 14, fontWeight: 900, cursor: claiming ? 'wait' : 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
@@ -308,56 +327,13 @@ export default function RegalosPage() {
                     </motion.button>
                   </motion.div>
                 ) : (
-                  <motion.div
+                  <WelcomeGiftSuccess
                     key="claimed"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    style={{ textAlign: 'center', padding: '8px 0' }}
-                  >
-                    <motion.div
-                      initial={justClaimed ? { scale: 0 } : false}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 260, damping: 18 }}
-                      style={{
-                        width: 72, height: 72, margin: '0 auto 16px',
-                        borderRadius: '50%', background: 'linear-gradient(135deg, #d1fae5, #a7f3d0)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 8px 24px rgba(16,185,129,0.3)',
-                      }}
-                    >
-                      <CheckCircle2 size={36} color="#059669" />
-                    </motion.div>
-
-                    <h3 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 900, color: '#111827' }}>
-                      GENIAL, AHORA TIENES UN VEINTE PORCIENTO EN CUALQUIER PRODUCTO
-                    </h3>
-                    <p style={{ margin: '0 0 20px', fontSize: 13, color: '#6b7280' }}>
-                      El descuento se aplicará automáticamente en tu próximo pedido.
-                    </p>
-
-                    <motion.div
-                      initial={justClaimed ? { scale: 0 } : false}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 260, damping: 18 }}
-                      style={{
-                        width: 72, height: 72, margin: '0 auto 16px',
-                        borderRadius: '50%', background: 'linear-gradient(135deg, #d1fae5, #a7f3d0)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 8px 24px rgba(16,185,129,0.3)',
-                      }}
-                    >
-                      <CheckCircle2 size={36} color="#059669" />
-                    </motion.div>
-
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.3 }}
-                      style={{ margin: '16px 0 0', fontSize: 12, color: '#9ca3af', fontWeight: 600 }}
-                    >
-                      Kevin & Coco Chile — gracias por unirte a nuestra comunidad
-                    </motion.p>
-                  </motion.div>
+                    percent={discountPercent}
+                    couponCode={claimedCode}
+                    onCopy={copyCouponCode}
+                    copied={copied}
+                  />
                 )}
               </AnimatePresence>
             </motion.div>
