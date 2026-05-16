@@ -103,6 +103,10 @@ export default function TimedOffersPage() {
       delete payload.updatedAt;
       if (modal.mode === 'add') {
         const doc = await databases.createDocument(databaseId, TIMED_OFFERS_COLLECTION_ID, ID.unique(), payload);
+        if (payload.isActive) {
+          const { notifyTimedOfferActivated } = await import('@/services/notificationService');
+          await notifyTimedOfferActivated(doc as unknown as TimedOffer).catch(() => {});
+        }
         setOffers(prev => [doc as unknown as TimedOffer, ...prev]);
       } else {
         const docId = (d as TimedOffer).$id;
@@ -158,6 +162,10 @@ export default function TimedOffersPage() {
       // workaround: delete + recreate with same $id (create always works)
       await databases.deleteDocument(databaseId, TIMED_OFFERS_COLLECTION_ID, offer.$id);
       const newDoc = await databases.createDocument(databaseId, TIMED_OFFERS_COLLECTION_ID, offer.$id, payload);
+      if (!offer.isActive) {
+        const { notifyTimedOfferActivated } = await import('@/services/notificationService');
+        await notifyTimedOfferActivated(newDoc as unknown as TimedOffer).catch(() => {});
+      }
       // Update state with the full new document (includes activatedAt)
       setOffers(prev => prev.map(o => o.$id === offer.$id ? newDoc as unknown as TimedOffer : o));
     } catch (e: any) { 

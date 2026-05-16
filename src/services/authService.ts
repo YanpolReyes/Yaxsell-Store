@@ -25,6 +25,7 @@ export interface User {
   email: string;
   name: string;
   phone?: string;
+  birthDate?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -96,7 +97,7 @@ export class AuthService {
   }
 
   // Registro de nuevo usuario
-  static async register(email: string, password: string, name: string, phone?: string, rut?: string) {
+  static async register(email: string, password: string, name: string, phone?: string, rut?: string, birthDate?: string) {
     try {
       // Limpiar todas las sesiones existentes
       await this.clearAllSessions();
@@ -112,12 +113,13 @@ export class AuthService {
       // Crear sesión automáticamente
       await account.createEmailPasswordSession(email, password);
 
-      // Guardar phone y rut en preferencias del usuario
-      if (phone || rut) {
+      // Guardar phone, rut y fecha de nacimiento en preferencias del usuario
+      if (phone || rut || birthDate) {
         try {
-          const prefs: any = {};
+          const prefs: Record<string, string> = {};
           if (phone) prefs.phone = phone;
           if (rut) prefs.rut = rut;
+          if (birthDate) prefs.birthDate = birthDate;
           await getAccount().updatePrefs(prefs);
         } catch (prefError) {
           console.log('Error saving prefs:', prefError);

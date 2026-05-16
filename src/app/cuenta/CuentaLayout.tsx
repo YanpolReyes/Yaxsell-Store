@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  User, ShoppingBag, Bell, Heart, MapPin, HelpCircle, Gift,
+  User, ShoppingBag, Heart, MapPin, HelpCircle, Gift,
   LogOut, ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,7 +17,6 @@ const PINK = '#ec4899';
 const SIDEBAR_NAV = [
   { icon: User,        label: 'Mi cuenta',      href: '/cuenta'               },
   { icon: Heart,       label: 'Favoritos',        href: '/cuenta/favoritos'      },
-  { icon: Bell,        label: 'Notificaciones',   href: '/cuenta/notificaciones' },
   { icon: HelpCircle,  label: 'Soporte',          href: '/cuenta/tickets'        },
 ];
 

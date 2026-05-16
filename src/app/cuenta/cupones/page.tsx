@@ -7,6 +7,8 @@ import { Query, Client, Databases } from 'appwrite';
 import { ArrowLeft, Ticket, Gift, Tag, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
+import CuentaPageShell, { type PromoHint } from '@/components/cuenta/CuentaPageShell';
+import { useCuentaBg } from '../CuentaBgContext';
 
 const FF = '"DM Sans",system-ui,sans-serif';
 const PINK = '#ec4899';
@@ -30,9 +32,11 @@ interface Coupon {
 
 export default function CuponesPage() {
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
+  useCuentaBg('https://cdn3d.iconscout.com/3d/premium/thumb/cupon-3d-icon-png-download-10660366.png');
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [welcomeCode, setWelcomeCode] = useState<string | null>(null);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 900);
@@ -45,7 +49,7 @@ export default function CuponesPage() {
     if (!isLoggedIn || !user) return;
     (async () => {
       try {
-        const { client } = getServices();
+        const { client, account } = getServices();
         const db = new Databases(client);
         const res = await db.listDocuments(DB_ID, COUPONS_COL, [
           Query.equal('ISACTIVE', true),
@@ -53,6 +57,11 @@ export default function CuponesPage() {
           Query.limit(50),
         ]);
         setCoupons(res.documents as unknown as Coupon[]);
+        try {
+          const acc = await account.get();
+          const prefs = (acc as { prefs?: Record<string, unknown> }).prefs || {};
+          if (prefs.welcomeCouponCode) setWelcomeCode(String(prefs.welcomeCouponCode));
+        } catch { /* prefs opcionales */ }
       } catch (err) {
         console.error('Error loading coupons:', err);
       } finally {
@@ -60,6 +69,26 @@ export default function CuponesPage() {
       }
     })();
   }, [isLoggedIn, user]);
+
+  const promos: PromoHint[] = [
+    ...(welcomeCode
+      ? [{
+          id: 'welcome',
+          title: `Tu cupón ${welcomeCode} está listo`,
+          desc: 'Se aplica automáticamente en el checkout',
+          href: '/carrito',
+          gradient: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
+          badge: 'Bienvenida',
+        }]
+      : []),
+    {
+      id: 'offers',
+      title: 'Ofertas de inauguración',
+      desc: 'Descuentos extra en productos seleccionados',
+      href: '/ofertas',
+      gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+    },
+  ];
 
   if (authLoading) {
     return (
@@ -97,16 +126,12 @@ export default function CuponesPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fafafa', fontFamily: FF }}>
-      {/* Header */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: '#fff', borderBottom: '1px solid rgba(0,0,0,0.07)', padding: isMobile ? '14px 16px' : '18px 32px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Link href="/cuenta" style={{ display: 'flex', alignItems: 'center', color: '#111827', textDecoration: 'none' }}>
-          <ArrowLeft size={22} strokeWidth={2.5} />
-        </Link>
-        <h1 style={{ margin: 0, fontSize: isMobile ? 18 : 22, fontWeight: 800, color: '#111827', letterSpacing: '-0.02em' }}>Mis Cupones</h1>
-      </div>
-
-      <div style={{ maxWidth: 680, margin: '0 auto', padding: isMobile ? '20px 16px' : '32px 24px' }}>
+    <CuentaPageShell
+      title="Mis Cupones"
+      subtitle={`${coupons.length} cupón${coupons.length !== 1 ? 'es' : ''} disponible${coupons.length !== 1 ? 's' : ''}`}
+      promos={promos}
+    >
+      <div style={{ fontFamily: FF }}>
         {/* Hero image */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -241,6 +266,6 @@ export default function CuponesPage() {
           </div>
         )}
       </div>
-    </div>
+    </CuentaPageShell>
   );
 }

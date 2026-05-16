@@ -307,7 +307,7 @@ export default function LoyaltyLevel() {
           className="ll-chip"
           style={{ display: 'inline-block', padding: isMobile ? '3px 8px' : '6px 14px', background: '#f3f4f6', color: '#374151', borderRadius: 999, fontSize: isMobile ? 9 : 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', border: '1px solid #d1d5db', '--chip-glow': `${currentLevel.color}40`, '--orbit-c1': `${currentLevel.color}00`, '--orbit-c2': `${currentLevel.color}59`, '--orbit-c3': `${currentLevel.color}59` } as React.CSSProperties}
         >
-          MI STATUS ACTUAL
+          Programa de lealtad
         </motion.span>
         {/* Debug: 5 insignias clickables */}
         <div style={{ display: 'flex', gap: 4 }}>
@@ -366,17 +366,36 @@ export default function LoyaltyLevel() {
         )}
       </div>
 
+      {/* Stats resumen */}
+      <motion.div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: isMobile ? 8 : 12, marginBottom: isMobile ? 14 : 20, position: 'relative', zIndex: 1 }}>
+        {[
+          { icon: TrendingUp, value: String(paidOrdersCount), label: 'Compras', color: '#ec4899' },
+          { icon: Gift, value: formatPrice(totalSpent), label: 'Total', color: '#f43f5e' },
+          { icon: Sparkles, value: `${currentLevel.id === 'bronze' ? '1' : currentLevel.id === 'silver' ? '1.5' : currentLevel.id === 'gold' ? '2' : currentLevel.id === 'diamond' ? '3' : '5'}x`, label: 'Pts/$1k', color: '#8b5cf6' },
+        ].map((stat, i) => (
+          <motion.div key={i} whileHover={{ y: -2 }} style={{ padding: isMobile ? '12px 8px' : '16px', borderRadius: isMobile ? 14 : 18, background: '#fff', border: '1px solid #e5e7eb', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            <stat.icon size={isMobile ? 16 : 18} color={stat.color} style={{ margin: '0 auto 6px', display: 'block' }} />
+            <p style={{ margin: 0, fontSize: isMobile ? 15 : 17, fontWeight: 900, color: '#111827' }}>{stat.value}</p>
+            <p style={{ margin: '4px 0 0', fontSize: isMobile ? 8 : 9, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
+          </motion.div>
+        ))}
+      </motion.div>
+
       {/* Progress & Motivation Section */}
       {nextLevel ? (
-        <div style={{ marginBottom: isMobile ? 16 : 40, position: 'relative', zIndex: 1, padding: isMobile ? '14px 16px' : 32, background: 'linear-gradient(135deg, #f9fafb, #fff)', borderRadius: isMobile ? 16 : 28, border: '1.5px solid #d1d5db', boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 2px 0 rgba(0,0,0,0.025), 0 2px 8px 0 rgba(0,0,0,0.035), 0 4px 16px 0 rgba(0,0,0,0.02)' }}>
-          {/* Progress Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 4 : 6 }}>
-            <span style={{ fontSize: isMobile ? 10 : 12, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Progreso Actual</span>
-            <span style={{ fontSize: isMobile ? 10 : 12, fontWeight: 800, color: '#9ca3af' }}>Siguiente Nivel</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 8 : 12 }}>
-            <span style={{ fontSize: isMobile ? 14 : 18, fontWeight: 900, color: currentLevel.color }}>{currentLevel.name}</span>
-            <span style={{ fontSize: isMobile ? 14 : 18, fontWeight: 900, color: nextLevel.color }}>{nextLevel.name}</span>
+        <div style={{ marginBottom: isMobile ? 16 : 40, position: 'relative', zIndex: 1, padding: isMobile ? '16px' : '24px 28px', background: 'linear-gradient(160deg, #ffffff 0%, #fdf2f8 100%)', borderRadius: isMobile ? 18 : 24, border: '1px solid #fce7f3', boxShadow: '0 8px 32px rgba(236,72,153,0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: isMobile ? 10 : 14, gap: 12 }}>
+            <div>
+              <p style={{ margin: 0, fontSize: isMobile ? 10 : 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Tu camino VIP</p>
+              <p style={{ margin: '4px 0 0', fontSize: isMobile ? 14 : 16, fontWeight: 900, color: '#111827' }}>
+                <span style={{ color: currentLevel.color }}>{currentLevel.name}</span>
+                <span style={{ color: '#d1d5db', margin: '0 8px' }}>→</span>
+                <span style={{ color: nextLevel.color }}>{nextLevel.name}</span>
+              </p>
+            </div>
+            <p style={{ margin: 0, fontSize: isMobile ? 20 : 24, fontWeight: 900, color: PINK, flexShrink: 0 }}>
+              {paidOrdersCount}<span style={{ fontSize: isMobile ? 12 : 14, color: '#9ca3af', fontWeight: 700 }}>/{nextLevel.requiredOrders}</span>
+            </p>
           </div>
 
           {/* Animated Progress Bar */}
@@ -419,10 +438,6 @@ export default function LoyaltyLevel() {
             <p style={{ margin: '4px 0 0', fontSize: isMobile ? 11 : 13, color: '#6b7280', fontWeight: 500 }}>
               {ordersNeeded > 0 ? 'Desbloquea beneficios exclusivos con tu próxima compra.' : 'Haz clic abajo para generar tu cupón de recompensa.'}
             </p>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-            <span style={{ fontSize: isMobile ? 13 : 16, fontWeight: 900, color: '#111827' }}>{paidOrdersCount}</span>
-            <span style={{ fontSize: isMobile ? 12 : 14, color: '#9ca3af', fontWeight: 700 }}> / {nextLevel.requiredOrders}</span>
           </div>
           {nextLevel && ordersNeeded > 0 && (
             <p style={{ margin: '8px 0 0', fontSize: isMobile ? 10 : 12, fontWeight: 700, color: '#9ca3af', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -610,27 +625,6 @@ export default function LoyaltyLevel() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Experience Stats Row (at bottom) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: isMobile ? 16 : 24, position: 'relative', zIndex: 1 }}>
-        {[
-          { icon: TrendingUp, value: String(paidOrdersCount), label: 'Compras', color: '#ec4899', bg: '#fff' },
-          { icon: Gift, value: formatPrice(totalSpent), label: 'Total', color: '#f43f5e', bg: '#fff' },
-          { icon: Sparkles, value: `${currentLevel.id === 'bronze' ? '1' : currentLevel.id === 'silver' ? '1.5' : currentLevel.id === 'gold' ? '2' : currentLevel.id === 'diamond' ? '3' : '5'}x`, label: 'Pts/$1k', color: '#ec4899', bg: '#fff' },
-        ].map((stat, i) => (
-          <motion.div 
-            key={i} 
-            whileHover={{ y: -3, boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 3px 0 rgba(0,0,0,0.03), 0 4px 12px 0 rgba(0,0,0,0.045), 0 8px 24px 0 rgba(0,0,0,0.025)' }} 
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: isMobile ? 12 : 20, borderRadius: isMobile ? 12 : 16, transition: 'all 0.2s', border: '1px solid #e5e7eb', background: '#f9fafb', boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.015), 0 1px 2px 0 rgba(0,0,0,0.025), 0 2px 8px 0 rgba(0,0,0,0.035), 0 4px 16px 0 rgba(0,0,0,0.02)' }}
-          >
-            <div style={{ width: 36, height: 36, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: isMobile ? 8 : 12, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', background: '#fff', border: '1px solid #e5e7eb' }}>
-              <stat.icon size={18} color={stat.color} />
-            </div>
-            <p style={{ margin: 0, fontSize: isMobile ? 16 : 18, fontWeight: 900, color: '#111827', lineHeight: 1, marginBottom: isMobile ? 6 : 8 }}>{stat.value}</p>
-            <p style={{ margin: 0, fontSize: isMobile ? 9 : 10, fontWeight: 900, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
-          </motion.div>
-        ))}
       </div>
 
     </div>

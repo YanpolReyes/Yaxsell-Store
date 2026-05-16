@@ -37,6 +37,13 @@ export async function POST(req: NextRequest) {
       productData
     );
 
+    try {
+      const { notifyNewProduct } = await import('@/services/notificationService');
+      await notifyNewProduct({ $id: result.$id, NAME: name });
+    } catch {
+      /* notificación opcional */
+    }
+
     return NextResponse.json({
       success: true,
       product: result,

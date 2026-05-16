@@ -17,6 +17,14 @@ import { Query } from 'appwrite';
 import type { Product, TimedOffer, Category } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useNotifications } from '@/context/NotificationContext';
+import NotificationsOverlay from '@/components/NotificationsOverlay';
+import {
+  syncAddressesForUser,
+  getPrimaryAddressLabel,
+  TPL1_OPEN_NOTIFICATIONS,
+  TPL1_ADDRESS_UPDATED,
+} from '@/lib/addresses';
 import { formatPrice } from '@/lib/appwrite';
 import CouponBanner from '@/components/CouponBanner';
 import { getWhatsAppUrl, openChatbot } from '@/lib/store-contact';
@@ -577,6 +585,14 @@ export default function HomePage1() {
   /* ── Hacer funcionales los botones del navbar Shopify (search, user, cart) ── */
   const { totalItems, items, subtotal, removeItem, updateQuantity, addItem } = useCart();
   const { user, isLoggedIn } = useAuth();
+  const { unreadCount } = useNotifications();
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  useEffect(() => {
+    const openNotif = () => setNotifOpen(true);
+    window.addEventListener(TPL1_OPEN_NOTIFICATIONS, openNotif);
+    return () => window.removeEventListener(TPL1_OPEN_NOTIFICATIONS, openNotif);
+  }, []);
 
   useEffect(() => {
     if (!bodyHtml) return;
@@ -642,6 +658,9 @@ export default function HomePage1() {
     const searchPopup = document.querySelector('.fusion-search-popup') as HTMLElement | null;
     const searchCloseBtn = searchPopup?.querySelector('.close-popup-btn') as HTMLElement | null;
     if (searchToggle && searchPopup) {
+      searchToggle.removeAttribute('data-bs-toggle');
+      searchToggle.removeAttribute('data-bs-target');
+      searchToggle.removeAttribute('data-toggle');
       // Move popup to body to escape any ancestor transform/filter stacking context
       // (header has transforms when scrolling, which break position:fixed)
       if (searchPopup.parentElement !== document.body) {
@@ -691,6 +710,9 @@ export default function HomePage1() {
         banner.innerHTML = `<img src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2FGemini_Generated_Image_v5vfu6v5vfu6v5vf.png?alt=media&token=a049b070-6653-435b-a978-9cb06a92f865" alt="Banner" style="width:100%;height:auto;object-fit:cover;display:block;" />`;
         popupForm.parentElement?.insertBefore(banner, popupForm);
       }
+
+      let searchCacheReady = false;
+      let runSearchLoad: () => void = () => {};
 
       // Fix popup search form: navigate to /productos?q=... on submit
       if (popupForm) {
@@ -1193,7 +1215,13 @@ export default function HomePage1() {
             renderProducts(filtered);
           };
 
-          loadCache().then(() => applyFilters());
+          runSearchLoad = () => {
+            loadCache().then(() => {
+              searchCacheReady = true;
+              applyFilters();
+            });
+          };
+          runSearchLoad();
 
           newInput.addEventListener('input', () => {
             if (searchTimeout) clearTimeout(searchTimeout);
@@ -1291,26 +1319,31 @@ export default function HomePage1() {
       }
 
       const openSearch = () => {
+        if (!searchPopup?.classList || !searchToggle) return;
         searchPopup.classList.remove('tpl1-closing');
         searchPopup.classList.add('show');
         searchToggle.setAttribute('aria-expanded', 'true');
         const overlay = document.querySelector('.fusion-overlay-custom');
-        if (overlay) { overlay.classList.remove('overlay-active'); (overlay as HTMLElement).style.display = 'none'; }
-        const qInput = searchPopup.querySelector('input[name="q"]') as HTMLInputElement | null;
+        if (overlay?.classList) {
+          overlay.classList.remove('overlay-active');
+          (overlay as HTMLElement).style.display = 'none';
+        }
+        if (!searchCacheReady) runSearchLoad();
+        const qInput = searchPopup.querySelector('input[name="q"], #tpl1-search-input') as HTMLInputElement | null;
         if (qInput) setTimeout(() => qInput.focus(), 100);
       };
       const closeSearch = () => {
+        if (!searchPopup?.classList || !searchToggle) return;
         searchToggle.setAttribute('aria-expanded', 'false');
-        // Use GSAP for exit animation - reliable, no CSS restart issues
         gsap.to(searchPopup, {
           clipPath: 'circle(0% at calc(100% - 50px) 30px)',
           opacity: 0,
           duration: 0.5,
           ease: 'power3.in',
           onComplete: () => {
-            searchPopup.classList.remove('show', 'tpl1-closing');
+            searchPopup?.classList?.remove('show', 'tpl1-closing');
             gsap.set(searchPopup, { clearProps: 'all' });
-          }
+          },
         });
         searchPopup.classList.add('tpl1-closing');
       };
@@ -1318,14 +1351,17 @@ export default function HomePage1() {
       searchToggle.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        searchPopup.classList.contains('show') ? closeSearch() : openSearch();
+        e.stopImmediatePropagation();
+        if (searchPopup?.classList?.contains('show')) closeSearch();
+        else openSearch();
       });
       if (searchCloseBtn) {
-        searchCloseBtn.addEventListener('click', (e) => { e.preventDefault(); closeSearch(); });
+        searchCloseBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); closeSearch(); });
       }
       document.addEventListener('click', (e) => {
+        if (!searchPopup || !searchToggle) return;
         if (!searchPopup.contains(e.target as Node) && !searchToggle.contains(e.target as Node)) {
-          if (searchPopup.classList.contains('show')) closeSearch();
+          if (searchPopup.classList?.contains('show')) closeSearch();
         }
       });
 
@@ -5366,10 +5402,28 @@ export default function HomePage1() {
 
     // Reorder navbar icons: search, cart, user
     css += `
-      #${HEADER_ID} header.musk-main-header .musk-header-info-col { display: flex !important; gap: 20px !important; }
+      #${HEADER_ID} header.musk-main-header .musk-header-info-col { display: flex !important; gap: 20px !important; align-items: center !important; }
+      #${HEADER_ID} header.musk-main-header .search-bar-main,
       #${HEADER_ID} header.musk-main-header .search-icon { order: 1 !important; }
-      #${HEADER_ID} header.musk-main-header .cart-icon, #${HEADER_ID} header.musk-main-header .cart-link-icon { order: 2 !important; }
-      #${HEADER_ID} header.musk-main-header .account-icon, #${HEADER_ID} header.musk-main-header .user-toggle { order: 3 !important; }
+      #${HEADER_ID} header.musk-main-header .tpl1-notif-bell-wrap { order: 2 !important; position: relative !important; display: flex !important; align-items: center !important; }
+      #${HEADER_ID} header.musk-main-header .tpl1-notif-bell-link { display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important; border: none !important; background: transparent !important; cursor: pointer !important; text-decoration: none !important; position: relative !important; }
+      #${HEADER_ID} header.musk-main-header .tpl1-notif-badge {
+        position: absolute !important; top: -4px !important; right: -6px !important;
+        min-width: 16px !important; height: 16px !important; padding: 0 4px !important;
+        background: linear-gradient(135deg, #ec4899, #db2777) !important;
+        color: #fff !important; font-size: 9px !important; font-weight: 800 !important;
+        border-radius: 999px !important; display: none !important; align-items: center !important;
+        justify-content: center !important; border: 2px solid #fff !important;
+        box-shadow: 0 2px 6px rgba(236,72,153,0.4) !important; line-height: 1 !important;
+        font-family: 'DM Sans', system-ui, sans-serif !important;
+      }
+      #${HEADER_ID} header.musk-main-header .cart-icon,
+      #${HEADER_ID} header.musk-main-header .cart-link-icon { order: 3 !important; }
+      #${HEADER_ID} header.musk-main-header .account-icon,
+      #${HEADER_ID} header.musk-main-header .user-toggle { order: 4 !important; }
+      @media (max-width: 768px) {
+        #${HEADER_ID} header.musk-main-header .tpl1-notif-bell-wrap { display: none !important; }
+      }
       #${HEADER_ID} header.musk-main-header .user-toggle:has(img), #${HEADER_ID} header.musk-main-header .account-icon:has(img) {
         padding: 3px !important;
         width: auto !important;
@@ -5439,6 +5493,85 @@ export default function HomePage1() {
 
     styleEl.textContent = css;
   }, [bodyHtml, sectionCfg]);
+
+  /* ── Campana de notificaciones en header Shopify (desktop homepage) ── */
+  useEffect(() => {
+    if (!bodyHtml) return;
+
+    const HEADER_ID = 'shopify-section-sections--22405132747000__header_fYEwWD';
+
+    const injectNotifBell = () => {
+      if (typeof window === 'undefined' || window.innerWidth <= 768) {
+        document.getElementById('tpl1-notif-bell-wrap')?.remove();
+        return;
+      }
+
+      const infoCol = document.querySelector(
+        `#${HEADER_ID} .musk-header-info-col`
+      ) as HTMLElement | null;
+      if (!infoCol) return;
+
+      if (!isLoggedIn) {
+        document.getElementById('tpl1-notif-bell-wrap')?.remove();
+        return;
+      }
+
+      let wrap = document.getElementById('tpl1-notif-bell-wrap') as HTMLElement | null;
+      if (!wrap) {
+        wrap = document.createElement('div');
+        wrap.id = 'tpl1-notif-bell-wrap';
+        wrap.className = 'tpl1-notif-bell-wrap';
+        wrap.innerHTML = `
+          <button type="button" class="header-resource-link tpl1-notif-bell-link" aria-label="Notificaciones" title="Notificaciones" style="background:none;border:none;padding:0;cursor:pointer;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="tpl1-notif-badge"></span>
+          </button>
+        `;
+        const bellBtn = wrap.querySelector('.tpl1-notif-bell-link');
+        bellBtn?.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          window.dispatchEvent(new CustomEvent(TPL1_OPEN_NOTIFICATIONS));
+        });
+        const cartEl = infoCol.querySelector('.cart-link-icon');
+        const searchEl = infoCol.querySelector('.search-bar-main');
+        if (cartEl) infoCol.insertBefore(wrap, cartEl);
+        else if (searchEl?.nextSibling) infoCol.insertBefore(wrap, searchEl.nextSibling);
+        else infoCol.appendChild(wrap);
+      }
+
+      const badge = wrap.querySelector('.tpl1-notif-badge') as HTMLElement | null;
+      const link = wrap.querySelector('.tpl1-notif-bell-link') as HTMLElement | null;
+      if (link) link.style.color = '#fff';
+      if (badge) {
+        if (unreadCount > 0) {
+          badge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
+          badge.style.display = 'flex';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+    };
+
+    injectNotifBell();
+    const t1 = setTimeout(injectNotifBell, 400);
+    const t2 = setTimeout(injectNotifBell, 1200);
+    const section = document.getElementById(HEADER_ID);
+    const obs = section
+      ? new MutationObserver(() => injectNotifBell())
+      : null;
+    obs?.observe(section!, { childList: true, subtree: true });
+    window.addEventListener('resize', injectNotifBell);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      obs?.disconnect();
+      window.removeEventListener('resize', injectNotifBell);
+    };
+  }, [bodyHtml, isLoggedIn, unreadCount]);
 
   /* ── Aplicar settings de service icons (tpl1) ── */
   useEffect(() => {
@@ -6042,19 +6175,17 @@ export default function HomePage1() {
               const li = link.closest('.nav_li') as HTMLElement | null;
               if (li) li.style.order = '1';
             }
-            // Change "Contacto" to address or "Agregar ubicación" based on saved address
-            if (link.getAttribute('aria-label') === 'Contacto' || link.getAttribute('aria-label') === 'Agregar ubicación' || link.textContent.trim() === 'Contacto') {
-              // Check if user has a saved address
+            // Change "Contacto" to address (label loaded from Appwrite below)
+            if (link.getAttribute('aria-label') === 'Contacto' || link.getAttribute('aria-label') === 'Agregar ubicación' || link.textContent.trim() === 'Contacto' || link.dataset.tpl1AddrNav === '1') {
+              link.dataset.tpl1AddrNav = '1';
               let savedAddress = '';
               if (isLoggedIn && user?.id) {
                 try {
                   const addrList = JSON.parse(localStorage.getItem(`addr_${user.id}`) || '[]');
-                  if (addrList.length > 0 && addrList[0].fullAddress) {
-                    savedAddress = addrList[0].fullAddress;
-                    // Truncate if too long for navbar
-                    if (savedAddress.length > 30) savedAddress = savedAddress.substring(0, 28) + '…';
-                  }
-                } catch { }
+                  const primary = addrList[0];
+                  const label = primary?.commune || primary?.fullAddress || '';
+                  if (label) savedAddress = label.length > 30 ? label.substring(0, 28) + '…' : label;
+                } catch { /* ignore */ }
               }
 
               if (savedAddress) {
@@ -6104,6 +6235,28 @@ export default function HomePage1() {
               if (li) li.style.order = '3';
             }
           });
+
+          const repaintNavAddress = async () => {
+            const addrLinks = navbarEl.querySelectorAll('[data-tpl1-addr-nav="1"]') as NodeListOf<HTMLAnchorElement>;
+            if (!addrLinks.length) return;
+            let savedAddress = '';
+            if (isLoggedIn && user?.id) {
+              const list = await syncAddressesForUser(user.id);
+              const full = getPrimaryAddressLabel(list);
+              if (full) savedAddress = full.length > 30 ? full.substring(0, 28) + '…' : full;
+            }
+            addrLinks.forEach((link) => {
+              if (savedAddress) {
+                link.innerHTML = `
+                <span style="display:inline-flex;align-items:center;gap:7px;padding:7px 14px;background:#fff;color:#ec4899 !important;border-radius:999px;font-weight:600;font-size:13px;box-shadow:0 1px 4px rgba(236,72,153,0.12);border:1.5px solid rgba(236,72,153,0.15);transition:transform .2s ease, box-shadow .2s ease;white-space:nowrap;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  ${savedAddress}
+                </span>`;
+                link.setAttribute('aria-label', savedAddress);
+              }
+            });
+          };
+          repaintNavAddress();
 
           if (ns.navModel) {
             const headerEl = navbarEl.querySelector('.musk-main-header') as HTMLElement;
@@ -7439,10 +7592,13 @@ export default function HomePage1() {
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="tpl1-shopify-root viewport musk-skin mi-tienda-3 index"
-      style={!settingsApplied ? { visibility: 'hidden' } : undefined}
-    />
+    <>
+      <div
+        ref={containerRef}
+        className="tpl1-shopify-root viewport musk-skin mi-tienda-3 index"
+        style={!settingsApplied ? { visibility: 'hidden' } : undefined}
+      />
+      {notifOpen && <NotificationsOverlay onClose={() => setNotifOpen(false)} />}
+    </>
   );
 }

@@ -9,7 +9,7 @@ interface AuthContextType {
   isLoading: boolean;
   isLoggedIn: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (email: string, password: string, name: string, phone?: string, rut?: string) => Promise<{ success: boolean; error?: string }>;
+  register: (email: string, password: string, name: string, phone?: string, rut?: string, birthDate?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<{ success: boolean; error?: string }>;
   updateProfile: (updates: Partial<User>) => Promise<{ success: boolean; error?: string }>;
   refreshUser: () => Promise<void>;
@@ -57,9 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (email: string, password: string, name: string, phone?: string, rut?: string) => {
+  const register = async (email: string, password: string, name: string, phone?: string, rut?: string, birthDate?: string) => {
     try {
-      const result = await AuthService.register(email, password, name, phone, rut);
+      const result = await AuthService.register(email, password, name, phone, rut, birthDate);
       if (result.success && result.user) {
         setUser(result.user);
       }

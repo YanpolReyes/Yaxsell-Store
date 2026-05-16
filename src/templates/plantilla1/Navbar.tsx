@@ -10,6 +10,8 @@ import { useCart } from '@/context/CartContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { getServices, getAppwriteConfig, USER_PHOTOS_BUCKET, formatPrice } from '@/lib/appwrite';
 import SearchOverlay from '@/components/SearchOverlay';
+import NotificationsOverlay from '@/components/NotificationsOverlay';
+import { usePrimaryAddress } from '@/hooks/usePrimaryAddress';
 import { getWhatsAppUrl, openChatbot } from '@/lib/store-contact';
 
 const PINK_PRIMARY = '#ec4899';
@@ -35,8 +37,9 @@ export default function Navbar1() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [primaryAddress, setPrimaryAddress] = useState<string | null>(null);
+  const { primaryAddress } = usePrimaryAddress();
   const [authPopupOpen, setAuthPopupOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const accountDropdownRef = useRef<HTMLDivElement>(null);
   const authPopupRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -68,21 +71,6 @@ export default function Navbar1() {
       } catch {}
     })();
   }, [isLoggedIn, user?.id]);
-
-  // Cargar dirección primaria desde localStorage
-  useEffect(() => {
-    if (!user?.id) { setPrimaryAddress(null); return; }
-    try {
-      const stored = localStorage.getItem(`addr_${user.id}`);
-      if (stored) {
-        const addresses = JSON.parse(stored);
-        if (addresses.length > 0) {
-          const primary = addresses[0];
-          setPrimaryAddress(primary.commune || primary.fullAddress || null);
-        }
-      }
-    } catch {}
-  }, [user]);
 
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {
@@ -167,6 +155,7 @@ export default function Navbar1() {
         .tpl1-nav-links a:hover { background: linear-gradient(135deg, rgba(236,72,153,0.08), rgba(249,168,212,0.12)); color: ${PINK_PRIMARY}; transform: translateY(-1px); }
         .tpl1-nav-links a.active { background: linear-gradient(135deg, rgba(236,72,153,0.12), rgba(249,168,212,0.18)); color: ${PINK_PRIMARY}; font-weight: 700; }
         .tpl1-nav-actions { display: flex; align-items: center; gap: 6px; }
+        .tpl1-nav-mobile-tools { display: flex; align-items: center; gap: 4px; }
         .tpl1-nav-btn { width: 44px; height: 44px; border-radius: 50%; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.25s ease; color: #666; position: relative; }
         .tpl1-nav-btn:hover { background: linear-gradient(135deg, rgba(236,72,153,0.1), rgba(249,168,212,0.15)); color: ${PINK_PRIMARY}; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(236,72,153,0.15); }
         .tpl1-nav-search-wrap { display: flex; align-items: center; overflow: hidden; transition: all 0.35s cubic-bezier(0.4,0,0.2,1); max-width: 0; opacity: 0; }
@@ -184,6 +173,8 @@ export default function Navbar1() {
 
         /* Badge para cart/notif */
         .tpl1-nav-badge { position: absolute; top: 2px; right: 2px; background: linear-gradient(135deg, ${PINK_PRIMARY}, #db2777); color: #fff; font-size: 9px; font-weight: 800; border-radius: 999px; min-width: 16px; height: 16px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(236,72,153,0.4); }
+        .tpl1-nav-notif-link { display: flex; align-items: center; text-decoration: none; background: none; border: none; padding: 0; cursor: pointer; font: inherit; }
+        .tpl1-bottom-nav-item { cursor: pointer; }
 
         /* Dirección pill */
         .tpl1-nav-addr { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: linear-gradient(135deg, #fef2f8, #fdf2f8); border: 1px solid rgba(236,72,153,0.15); border-radius: 999px; font-size: 12px; font-weight: 600; color: #555; text-decoration: none; max-width: 180px; transition: all 0.2s ease; }
@@ -324,7 +315,18 @@ export default function Navbar1() {
           .tpl1-nav-account-btn { gap: 2px !important; }
           .tpl1-nav-actions { gap: 1px !important; }
 
-          /* Hide favorites and cart buttons on mobile */
+          /* Herramientas móvil: lupa + notificaciones juntas a la derecha */
+          .tpl1-nav-mobile-tools {
+            display: flex !important;
+            align-items: center !important;
+            gap: 2px !important;
+            margin-left: auto !important;
+          }
+          .tpl1-nav-notif-link {
+            display: flex !important;
+          }
+
+          /* Hide favorites and cart on mobile (están en bottom nav) */
           .tpl1-nav-actions a[href="/favoritos"],
           .tpl1-nav-actions button[title="Carrito"] {
             display: none !important;
@@ -391,7 +393,22 @@ export default function Navbar1() {
                 <input placeholder="Buscar productos..." autoFocus={searchOpen} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
               </form>
             </div>
-            <button className="tpl1-nav-btn" onClick={() => setSearchOpen(!searchOpen)} title="Buscar"><Search size={20} /></button>
+            <div className="tpl1-nav-mobile-tools">
+              <button className="tpl1-nav-btn" onClick={() => setSearchOpen(!searchOpen)} title="Buscar"><Search size={20} /></button>
+              {isLoggedIn && (
+                <button
+                  type="button"
+                  className="tpl1-nav-btn tpl1-nav-notif-link"
+                  title="Notificaciones"
+                  onClick={() => setNotifOpen(true)}
+                >
+                  <Bell size={20} />
+                  {unreadCount > 0 && (
+                    <span className="tpl1-nav-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                  )}
+                </button>
+              )}
+            </div>
 
             {/* Dirección primaria */}
             <Link href="/cuenta/direcciones" className="tpl1-nav-addr" title="Mis direcciones">
@@ -402,16 +419,6 @@ export default function Navbar1() {
             <Link href="/favoritos" title="Favoritos">
               <button className="tpl1-nav-btn"><Heart size={20} /></button>
             </Link>
-
-            {/* Notificaciones (solo si logueado) */}
-            {isLoggedIn && (
-              <Link href="/cuenta/notificaciones" title="Notificaciones">
-                <button className="tpl1-nav-btn">
-                  <Bell size={20} />
-                  {unreadCount > 0 && <span className="tpl1-nav-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
-                </button>
-              </Link>
-            )}
 
             {/* Carrito con badge */}
             <button className="tpl1-nav-btn" onClick={() => setCartOpen(true)} title="Carrito">
@@ -444,7 +451,6 @@ export default function Navbar1() {
                     <Link href="/cuenta" onClick={() => setAccountOpen(false)}><User size={16} /> Mi cuenta</Link>
                     <Link href="/cuenta/pedidos" onClick={() => setAccountOpen(false)}><Receipt size={16} /> Mis pedidos</Link>
                     <Link href="/cuenta/direcciones" onClick={() => setAccountOpen(false)}><MapPin size={16} /> Direcciones</Link>
-                    <Link href="/cuenta/notificaciones" onClick={() => setAccountOpen(false)}><Bell size={16} /> Notificaciones</Link>
                     <Link href="/favoritos" onClick={() => setAccountOpen(false)}><Heart size={16} /> Favoritos</Link>
                     <div className="tpl1-nav-divider" />
                     <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesión</button>
@@ -619,6 +625,7 @@ export default function Navbar1() {
       {authPopupMobileLayer && createPortal(authPopupMobileLayer, document.body)}
 
       {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
+      {notifOpen && <NotificationsOverlay onClose={() => setNotifOpen(false)} />}
     </>
   );
 }

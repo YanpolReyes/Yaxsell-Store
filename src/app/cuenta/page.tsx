@@ -13,6 +13,7 @@ import { motion } from 'framer-motion';
 
 import { useAuth } from '@/hooks/useAuth';
 import LoyaltyLevel from '@/components/LoyaltyLevel';
+import InaugurationBanner from '@/components/InaugurationBanner';
 import { useCuentaBg } from './CuentaBgContext';
 
 const FF = '"DM Sans",system-ui,sans-serif';
@@ -35,7 +36,6 @@ const CUENTA_ITEMS: MenuItem[] = [
 const CONFIG_ITEMS: MenuItem[] = [
   { icon: Trophy,        label: 'Mis Niveles',       href: '/cuenta/niveles',         desc: 'Programa de lealtad y cupones' },
   { icon: Building2,     label: 'Cuenta Mayorista',  href: '/mayorista',             desc: 'Solicita precios especiales por volumen' },
-  { icon: Bell,          label: 'Notificaciones',    href: '/cuenta/notificaciones', desc: 'Alertas y avisos de tu cuenta' },
   { icon: HelpCircle,    label: 'Soporte / Tickets', href: '/cuenta/tickets',        desc: 'Solicitudes de ayuda' },
   { icon: MessageCircle, label: 'Conversaciones',    href: '/cuenta/conversaciones', desc: 'Historial de chats' },
 ];
@@ -281,20 +281,7 @@ export default function CuentaPage() {
           </div>
         </div>
 
-        {/* Inauguración / Apertura Banner */}
-        <div style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #ec4899, #f43f5e)', borderRadius: '22px', padding: '24px', position: 'relative', overflow: 'hidden', boxShadow: '0 10px 40px rgba(236,72,153,0.25)' }}>
-          <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '200px', height: '200px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', filter: 'blur(40px)' }} />
-          <div style={{ position: 'absolute', bottom: '-30px', left: '-30px', width: '150px', height: '150px', background: 'rgba(255,255,255,0.08)', borderRadius: '50%', filter: 'blur(30px)' }} />
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}>
-              <Sparkles size={32} color="#fff" />
-            </div>
-            <div>
-              <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 900, color: '#fff', letterSpacing: '-0.02em' }}>¡GRAN INAUGURACIÓN!</h2>
-              <p style={{ margin: '4px 0 0', fontSize: '14px', color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>Celebramos la apertura de nuestra tienda con ofertas exclusivas</p>
-            </div>
-          </div>
-        </div>
+        <InaugurationBanner />
 
         {/* Quick Actions Icons (PC) */}
         <div style={{ marginBottom: 24, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
@@ -435,26 +422,22 @@ export default function CuentaPage() {
               </Link>
               <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 50, background: 'linear-gradient(to bottom,transparent,#fff)' }} />
             </div>
-            {/* Avatar + info row */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14, padding: '0 18px 20px', marginTop: -40, position: 'relative', zIndex: 2 }}>
-              <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 800, color: PINK, flexShrink: 0, overflow: 'hidden', border: '3px solid #fff', boxShadow: '0 0 0 2px rgba(236,72,153,0.15), 0 4px 6px -1px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.12)' }}>
+            {/* Saludo arriba, avatar abajo */}
+            <div style={{ padding: '0 18px', marginTop: -36, position: 'relative', zIndex: 2, textAlign: 'center' }}>
+              <p style={{ margin: 0, fontSize: 20, fontWeight: 900, color: '#1a1a1a', letterSpacing: '-0.03em', lineHeight: 1.2 }}>
+                ¡Hola, {firstName}! 👋
+              </p>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#6b7280', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user.email}
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px 18px 20px', position: 'relative', zIndex: 2 }}>
+              <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 800, color: PINK, overflow: 'hidden', border: '3px solid #fff', boxShadow: '0 0 0 2px rgba(236,72,153,0.15), 0 4px 6px -1px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.12)' }}>
                 {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
               </div>
-              <div style={{ paddingBottom: 4, flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.02em' }}>¡Hola, {firstName}! 👋</p>
-                <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</p>
-              </div>
-              <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 16px', background: PINK, color: '#fff', fontSize: 12, fontWeight: 700, borderRadius: 12, textDecoration: 'none', marginBottom: 4, flexShrink: 0, position: 'relative', overflow: 'hidden', letterSpacing: '-0.01em' }}>
+              <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 14, width: '100%', maxWidth: 280, padding: '11px 16px', background: PINK, color: '#fff', fontSize: 12, fontWeight: 700, borderRadius: 12, textDecoration: 'none', position: 'relative', overflow: 'hidden', letterSpacing: '-0.01em' }}>
                 <span style={{ position: 'relative', zIndex: 1, display: 'inline-flex', alignItems: 'center', gap: 6 }}><Trophy size={13} /> Tienda de puntos</span>
                 <div style={{ position: 'absolute', inset: 0, opacity: 0.4, backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0) 100%)', backgroundSize: '200% 100%', animation: 'td_shimmer 2.5s ease-in-out infinite' }} />
-                {[{l:10,t:25,s:1.5,d:0},{l:30,t:55,s:2.3,d:.2},{l:50,t:20,s:1.5,d:.4},{l:70,t:60,s:2.3,d:.6},{l:90,t:35,s:1.5,d:.8}].map((p,i)=>(
-                  <div key={`mf${i}`} style={{ position:'absolute', left:`${p.l}%`, top:`${p.t}%`, width:p.s, height:p.s, borderRadius:'50%', background:'radial-gradient(circle,rgba(255,255,255,0.8),rgba(255,255,255,0.1))', boxShadow:'0 0 2px rgba(255,255,255,0.5)', animation:`td_float ${1.2+i*.4}s ease-in-out ${p.d}s infinite alternate` }} />
-                ))}
-                {[{l:8,t:15,s:3,d:0},{l:35,t:50,s:4,d:.3},{l:62,t:25,s:3,d:.6},{l:88,t:65,s:4,d:.9}].map((b,i)=>(
-                  <div key={`mb${i}`} style={{ position:'absolute', left:`${b.l}%`, top:`${b.t}%`, width:b.s, height:b.s, borderRadius:'50%', border:'1px solid rgba(255,255,255,0.3)', animation:`td_bubble ${1.5+i*.5}s ease-in-out ${b.d}s infinite` }} />
-                ))}
-                <div style={{ position:'absolute', top:0, height:'100%', width:6, borderRadius:99, background:'rgba(255,255,255,0.12)', filter:'blur(2px)', left:'30%', animation:'td_drift 3s ease-in-out infinite' }} />
-                <div style={{ position:'absolute', top:0, height:'100%', width:4, borderRadius:99, background:'rgba(255,255,255,0.08)', filter:'blur(2px)', left:'70%', animation:'td_drift 4s ease-in-out infinite reverse' }} />
               </Link>
             </div>
           </div>
@@ -537,19 +520,37 @@ export default function CuentaPage() {
           </div>
         </div>
 
-        {/* ── Inauguración Banner ── */}
         <div style={{ padding: '14px 14px 0' }}>
-          <div style={{ background: 'linear-gradient(135deg, #ec4899, #f43f5e)', borderRadius: '16px', padding: '16px', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 25px rgba(236,72,153,0.25)' }}>
-            <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '120px', height: '120px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', filter: 'blur(30px)' }} />
-            <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}>
-                <Sparkles size={24} color="#fff" />
-              </div>
+          <InaugurationBanner compact />
+        </div>
+
+        {/* Promociones rápidas */}
+        <div style={{ padding: '14px 14px 0' }}>
+          <p style={{ margin: '0 0 8px 2px', fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.08em' }}>Para vos</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {hasGifts && (
+              <Link href="/cuenta/regalos" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderRadius: 16, background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', textDecoration: 'none', boxShadow: '0 8px 20px rgba(245,158,11,0.3)' }}>
+                <div>
+                  <span style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.9)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Nuevo</span>
+                  <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 800, color: '#fff' }}>Reclamá tu regalo de bienvenida</p>
+                </div>
+                <span style={{ color: '#fff', fontSize: 18 }}>→</span>
+              </Link>
+            )}
+            <Link href="/cuenta/cupones" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderRadius: 16, background: 'linear-gradient(135deg, #ec4899, #f43f5e)', textDecoration: 'none', boxShadow: '0 8px 20px rgba(236,72,153,0.25)' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '-0.02em' }}>¡GRAN INAUGURACIÓN!</h2>
-                <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>Celebramos la apertura con ofertas exclusivas</p>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#fff' }}>Cupones y descuentos</p>
+                <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.88)' }}>Aplicá códigos en tu próxima compra</p>
               </div>
-            </div>
+              <span style={{ color: '#fff', fontSize: 18 }}>→</span>
+            </Link>
+            <Link href="/ofertas" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderRadius: 16, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', textDecoration: 'none', boxShadow: '0 8px 20px rgba(99,102,241,0.25)' }}>
+              <div>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#fff' }}>Ofertas de inauguración</p>
+                <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.88)' }}>Precios especiales por tiempo limitado</p>
+              </div>
+              <span style={{ color: '#fff', fontSize: 18 }}>→</span>
+            </Link>
           </div>
         </div>
 
@@ -582,7 +583,6 @@ export default function CuentaPage() {
           <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', marginBottom: 20 }}>
             <PmRow icon={Trophy} label="Mis Niveles" desc="Programa de lealtad" href="/cuenta/niveles" g="linear-gradient(135deg,#f59e0b,#fbbf24)" />
             <PmRow icon={Building2} label="Cuenta Mayorista" desc="Precios por volumen" href="/mayorista" g="linear-gradient(135deg,#8b5cf6,#a78bfa)" />
-            <PmRow icon={Bell} label="Notificaciones" desc="Alertas de tu cuenta" href="/cuenta/notificaciones" g="linear-gradient(135deg,#ec4899,#f472b6)" />
             <PmRow icon={HelpCircle} label="Soporte" desc="Ayuda y tickets" href="/cuenta/tickets" g="linear-gradient(135deg,#64748b,#94a3b8)" />
             <PmRow icon={MessageCircle} label="Conversaciones" desc="Historial de chats" href="/cuenta/conversaciones" g="linear-gradient(135deg,#0ea5e9,#38bdf8)" last />
           </div>

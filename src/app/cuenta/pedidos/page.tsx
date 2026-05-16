@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCuentaBg } from '../CuentaBgContext';
 import { useCart } from '@/context/CartContext';
 import { Query } from 'appwrite';
+import CuentaPageShell from '@/components/cuenta/CuentaPageShell';
 
 const FF = '"DM Sans",system-ui,sans-serif';
 const PINK = '#ec4899';
@@ -115,32 +116,16 @@ export default function MisPedidosPage() {
   ];
 
   return (
-    <>
-      <style>{`
-        .ped-back-btn { display: none }
-        @media (max-width: 899px) {
-          .ped-back-btn { display: flex !important }
-        }
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @media (max-width: 768px) {
-          ::-webkit-scrollbar { height: 4px; }
-          ::-webkit-scrollbar-track { background: transparent; }
-          ::-webkit-scrollbar-thumb { background: #fce7f3; border-radius: 2px; }
-        }
-      `}</style>
-
-      {/* Header */}
-      <div style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', borderBottom: '1px solid #fce7f3', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12, position: 'sticky', top: 0, zIndex: 10 }}>
-        <Link href="/cuenta" className="ped-back-btn" style={{ display: 'none', alignItems: 'center', textDecoration: 'none' }}>
-          <ArrowLeft size={22} color={PINK} />
-        </Link>
-        <div>
-          <span style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>Mis Pedidos</span>
-          <p style={{ margin: 0, fontSize: 12, color: '#9ca3af' }}>{orders.length} pedido{orders.length !== 1 ? 's' : ''}</p>
-        </div>
-      </div>
-
-      <div style={{ padding: '16px 0 40px' }}>
+    <CuentaPageShell
+      title="Mis Pedidos"
+      subtitle={`${orders.length} pedido${orders.length !== 1 ? 's' : ''} en tu historial`}
+      promos={[
+        { id: 'offers', title: 'Ofertas activas', desc: 'Aprovechá descuentos de inauguración', href: '/ofertas', gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
+        { id: 'cupons', title: 'Cupones disponibles', desc: 'Aplicá un código en tu próxima compra', href: '/cuenta/cupones', gradient: 'linear-gradient(135deg, #ec4899, #f43f5e)' },
+      ]}
+    >
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <div style={{ fontFamily: FF }}>
         {/* Search */}
         <div style={{ position: 'relative', marginBottom: 14 }}>
           <Search size={16} color="#9ca3af" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
@@ -227,6 +212,6 @@ export default function MisPedidosPage() {
           </div>
         )}
       </div>
-    </>
+    </CuentaPageShell>
   );
 }

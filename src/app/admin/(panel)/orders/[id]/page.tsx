@@ -96,6 +96,7 @@ export default function OrderDetailPage() {
 
   const updateStatus = async (newStatus: string) => {
     if (!order) return;
+    const prevStatus = order.STATUS;
     setUpdating(true);
     try {
       const { databases } = getServices();
@@ -123,6 +124,8 @@ export default function OrderDetailPage() {
         UPDATEDAT: Date.now(),
       });
       setOrder(prev => prev ? { ...prev, STATUS: newStatus as OrderStatus } : prev);
+      const { notifyOrderStatusChange } = await import('@/services/notificationService');
+      await notifyOrderStatusChange(order, prevStatus, newStatus).catch(() => {});
     } catch (e: any) {
       alert('Error: ' + e.message);
     } finally {

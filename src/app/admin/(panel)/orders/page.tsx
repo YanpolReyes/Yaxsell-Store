@@ -92,9 +92,16 @@ function OrdersContent() {
         }
       }
 
-      await Promise.all([...selected].map(id =>
-        databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, id, { STATUS: newStatus, UPDATEDAT: Date.now() })
+      const selectedOrders = orders.filter(o => selected.has(o.$id));
+      await Promise.all(selectedOrders.map(o =>
+        databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, o.$id, { STATUS: newStatus, UPDATEDAT: Date.now() })
       ));
+      const { notifyOrderStatusChange } = await import('@/services/notificationService');
+      await Promise.all(
+        selectedOrders.map(o =>
+          notifyOrderStatusChange(o, o.STATUS, newStatus).catch(() => {})
+        )
+      );
       setOrders(prev => prev.map(o => selected.has(o.$id) ? { ...o, STATUS: newStatus as OrderStatus } : o));
       setSelected(new Set());
     } catch (e: any) { alert('Error: ' + e.message); }
@@ -103,13 +110,15 @@ function OrdersContent() {
 
   const updateStatus = async (orderId: string, newStatus: string) => {
     setUpdatingId(orderId);
+    const orderBefore = orders.find(o => o.$id === orderId);
+    const prevStatus = orderBefore?.STATUS;
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
       // If cancelling, restore stock
       if (newStatus === 'cancelled') {
-        const order = orders.find(o => o.$id === orderId);
+        const order = orderBefore;
         if (order) {
           let items: { id?: string; qty?: number }[] = [];
           try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
@@ -132,6 +141,10 @@ function OrdersContent() {
         UPDATEDAT: Date.now(),
       });
       setOrders(prev => prev.map(o => o.$id === orderId ? { ...o, STATUS: newStatus as OrderStatus } : o));
+      if (orderBefore) {
+        const { notifyOrderStatusChange } = await import('@/services/notificationService');
+        await notifyOrderStatusChange(orderBefore, prevStatus, newStatus).catch(() => {});
+      }
     } catch (e: any) { alert('Error: ' + e.message); }
     finally { setUpdatingId(null); }
   };

@@ -7,7 +7,9 @@ import { ArrowLeft, MapPin, Plus, Trash2, Pencil, X, Loader2, Navigation, Search
 import { useAuth } from '@/hooks/useAuth';
 import { useCuentaBg } from '../CuentaBgContext';
 import { getServices, getAppwriteConfig, ADDRESSES_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { TPL1_ADDRESS_UPDATED } from '@/lib/addresses';
 import { ID, Query } from 'appwrite';
+import CuentaPageShell from '@/components/cuenta/CuentaPageShell';
 
 const FF = '"Proxima Nova",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif';
 const GMAPS_KEY = 'AIzaSyD7Kxz2ATHmOIlLlxIts5ONCZKg1N71QTk';
@@ -363,6 +365,7 @@ export default function DireccionesPage() {
     setAddresses(updated);
     saveAddressesLocal(user!.id, updated);
     saveAddressesDB(user!.id, updated);
+    window.dispatchEvent(new CustomEvent(TPL1_ADDRESS_UPDATED));
     setShowMap(false);
     setEditing(null);
   }
@@ -372,6 +375,7 @@ export default function DireccionesPage() {
     setAddresses(updated);
     saveAddressesLocal(user!.id, updated);
     saveAddressesDB(user!.id, updated);
+    window.dispatchEvent(new CustomEvent(TPL1_ADDRESS_UPDATED));
   }
 
   function openNew() { setEditing(null); setForm({ ...EMPTY_FORM }); setShowMap(true); }
@@ -396,24 +400,19 @@ export default function DireccionesPage() {
 
   return (
     <>
-      {/* ─ Header ─ */}
-      <div style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', borderBottom: '1px solid #fce7f3', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Link href="/cuenta" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-            <ArrowLeft size={22} color="#ec4899" />
-          </Link>
-          <div>
-            <span style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>Mis Ubicaciones</span>
-            <p style={{ margin: 0, fontSize: 12, color: '#9ca3af' }}>{addresses.length} dirección{addresses.length !== 1 ? 'es' : ''} guardada{addresses.length !== 1 ? 's' : ''}</p>
-          </div>
-        </div>
-        <button onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 20px', background: 'linear-gradient(135deg,#ec4899,#db2777)', color: '#fff', border: 'none', borderRadius: 999, cursor: 'pointer', fontWeight: 700, fontSize: 13, boxShadow: '0 4px 14px rgba(236,72,153,0.3)', transition: 'transform .2s' }}>
-          <Plus size={16} /> Nueva
+    <CuentaPageShell
+      title="Mis Ubicaciones"
+      subtitle={`${addresses.length} dirección${addresses.length !== 1 ? 'es' : ''} guardada${addresses.length !== 1 ? 's' : ''}`}
+      promos={[
+        { id: 'ship', title: 'Envío más rápido', desc: 'Guardá tu dirección principal para checkout express', href: '/productos', gradient: 'linear-gradient(135deg, #10b981, #34d399)' },
+      ]}
+      headerRight={
+        <button onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', background: 'linear-gradient(135deg,#ec4899,#db2777)', color: '#fff', border: 'none', borderRadius: 12, cursor: 'pointer', fontWeight: 700, fontSize: 12, boxShadow: '0 4px 14px rgba(236,72,153,0.3)', flexShrink: 0 }}>
+          <Plus size={14} /> Nueva
         </button>
-      </div>
-
-      {/* ─ Address list ─ */}
-      <div style={{ maxWidth: 700, margin: '0 auto', padding: '24px 16px 60px' }}>
+      }
+    >
+      <div style={{ fontFamily: FF }}>
         {addresses.length === 0 ? (
           <div style={{ textAlign: 'center', paddingTop: 80, background: '#fff', borderRadius: 20, border: '1px solid #fce7f3', padding: '60px 20px' }}>
             <div style={{ width: 72, height: 72, borderRadius: '50%', background: PINK_LIGHT, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
@@ -466,6 +465,7 @@ export default function DireccionesPage() {
           </div>
         )}
       </div>
+    </CuentaPageShell>
 
       {/* ─ Map Modal — RESPONSIVE (mobile full-screen / desktop centered) ─ */}
       {showMap && (

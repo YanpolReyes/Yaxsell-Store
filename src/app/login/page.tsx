@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Eye, EyeOff, AlertCircle, Loader2, ArrowLeft, Mail, Lock, User, Phone, CreditCard, ArrowRight, Gift, Sparkles, CheckCircle2, Zap } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Loader2, ArrowLeft, Mail, Lock, User, Phone, CreditCard, ArrowRight, Gift, Sparkles, CheckCircle2, Zap, Calendar } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { LoyaltyService } from '@/services/loyaltyService';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -30,7 +30,7 @@ function LoginInner() {
 
   const emailParam = params.get('email') || '';
   const [loginForm, setLoginForm] = useState({ email: emailParam, password: '' });
-  const [regForm, setRegForm] = useState({ firstName: '', lastName: '', email: '', phone: '', rut: '', password: '', confirm: '' });
+  const [regForm, setRegForm] = useState({ firstName: '', lastName: '', email: '', phone: '', rut: '', birthDate: '', password: '', confirm: '' });
 
   const redirectTo = (() => {
     const r = params.get('redirect');
@@ -53,12 +53,17 @@ function LoginInner() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
-    if (!regForm.firstName || !regForm.lastName || !regForm.email || !regForm.password) { setError('Completá todos los campos obligatorios'); return; }
+    if (!regForm.firstName || !regForm.lastName || !regForm.email || !regForm.birthDate || !regForm.password) { setError('Completá todos los campos obligatorios'); return; }
+    const birth = new Date(regForm.birthDate);
+    const today = new Date();
+    if (Number.isNaN(birth.getTime()) || birth > today) { setError('Ingresá una fecha de nacimiento válida'); return; }
+    const age = today.getFullYear() - birth.getFullYear() - (today < new Date(today.getFullYear(), birth.getMonth(), birth.getDate()) ? 1 : 0);
+    if (age < 13) { setError('Debes tener al menos 13 años para registrarte'); return; }
     if (regForm.password !== regForm.confirm) { setError('Las contraseñas no coinciden'); return; }
     if (regForm.password.length < 8) { setError('La contraseña debe tener al menos 8 caracteres'); return; }
     setSubmitting(true); setError('');
     const fullName = `${regForm.firstName.trim()} ${regForm.lastName.trim()}`;
-    const res = await register(regForm.email, regForm.password, fullName, regForm.phone || undefined, regForm.rut || undefined);
+    const res = await register(regForm.email, regForm.password, fullName, regForm.phone || undefined, regForm.rut || undefined, regForm.birthDate);
     setSubmitting(false);
     if (res.success) {
       confetti({
@@ -258,6 +263,15 @@ function LoginInner() {
                           <InputField label="Apellidos *" icon={<User size={18} />} value={regForm.lastName} onChange={(e: any) => setRegForm(f => ({ ...f, lastName: e.target.value }))} placeholder="Pérez" />
                         </div>
                         <InputField label="Correo electrónico *" icon={<Mail size={18} />} type="email" value={regForm.email} onChange={(e: any) => setRegForm(f => ({ ...f, email: e.target.value }))} placeholder="tu@correo.com" />
+
+                        <InputField
+                          label="Fecha de nacimiento *"
+                          icon={<Calendar size={18} />}
+                          type="date"
+                          value={regForm.birthDate}
+                          onChange={(e: any) => setRegForm(f => ({ ...f, birthDate: e.target.value }))}
+                          max={new Date().toISOString().split('T')[0]}
+                        />
                         
                         <div className="grid grid-cols-2 gap-4">
                           <InputField label="Teléfono (opc)" icon={<Phone size={18} />} type="tel" value={regForm.phone} onChange={(e: any) => setRegForm(f => ({ ...f, phone: e.target.value }))} placeholder="+569..." />

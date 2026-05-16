@@ -358,7 +358,7 @@ function CheckoutInner() {
         return { id: i.product.$id, name: i.product.NAME, price, originalPrice: i.product.PRICE !== price ? i.product.PRICE : null, qty: i.quantity, img: i.product.IMAGEURL, total: price * i.quantity };
       });
       const docId = await databases.createDocument(databaseId, ORDERS_COLLECTION, ID.unique(), {
-        USERID: 'guest', ITEMS: JSON.stringify(itemsData),
+        USERID: user?.id || 'guest', ITEMS: JSON.stringify(itemsData),
         CUSTOMERNAME: form.name, CUSTOMERRUT: form.rut, CUSTOMERPHONE: form.phone, CUSTOMEREMAIL: form.email,
         REGION: form.region, COMUNA: form.comuna, ADDRESS: form.address, ADDITIONALINFO: form.additionalInfo,
         PAYMENTMETHOD: 'Transferencia Bancaria', SHIPPINGAGENCY: agency,
