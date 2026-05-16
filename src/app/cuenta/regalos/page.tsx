@@ -332,41 +332,21 @@ export default function RegalosPage() {
                       GENIAL, AHORA TIENES UN VEINTE PORCIENTO EN CUALQUIER PRODUCTO
                     </h3>
                     <p style={{ margin: '0 0 20px', fontSize: 13, color: '#6b7280' }}>
-                      Usa este código en el checkout o déjalo aplicarse automáticamente.
+                      El descuento se aplicará automáticamente en tu próximo pedido.
                     </p>
 
                     <motion.div
-                      animate={justClaimed ? { boxShadow: ['0 0 0 0 rgba(236,72,153,0.4)', '0 0 0 12px rgba(236,72,153,0)', '0 0 0 0 rgba(236,72,153,0)'] } : {}}
-                      transition={{ duration: 1.5, repeat: justClaimed ? 2 : 0 }}
+                      initial={justClaimed ? { scale: 0 } : false}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 260, damping: 18 }}
                       style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 10,
-                        padding: '14px 20px', borderRadius: 18,
-                        background: 'linear-gradient(135deg, #fdf2f8, #fff)',
-                        border: '2px dashed #ec4899',
+                        width: 72, height: 72, margin: '0 auto 16px',
+                        borderRadius: '50%', background: 'linear-gradient(135deg, #d1fae5, #a7f3d0)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 8px 24px rgba(16,185,129,0.3)',
                       }}
                     >
-                      <Sparkles size={18} color={PINK} />
-                      <span
-                        style={{
-                          fontSize: 22, fontWeight: 900, color: '#be185d',
-                          fontFamily: 'ui-monospace, monospace', letterSpacing: '0.12em',
-                        }}
-                      >
-                        {claimedCode}
-                      </span>
-                      <motion.button
-                        whileHover={{ scale: 1.08 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={copyCouponCode}
-                        style={{
-                          padding: 10, background: copied ? '#059669' : PINK,
-                          border: 'none', borderRadius: 12, cursor: 'pointer', color: '#fff',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          transition: 'background 0.2s',
-                        }}
-                      >
-                        {copied ? <CheckCircle2 size={20} /> : <Copy size={20} />}
-                      </motion.button>
+                      <CheckCircle2 size={36} color="#059669" />
                     </motion.div>
 
                     <motion.p
