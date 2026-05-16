@@ -336,61 +336,6 @@ export default function LoyaltyLevel() {
         >
           Programa de lealtad
         </motion.span>
-        {/* Debug: 5 insignias clickables */}
-        <div style={{ display: 'flex', gap: 4 }}>
-          {LEVELS.slice(0, 5).map((level) => (
-            <div 
-              key={level.id} 
-              onClick={async () => {
-                if (user?.email !== 'dezkonet@gmail.com') return;
-                try {
-                  const { account } = getServices();
-                  const acc = await account.get();
-                  const prefs = (acc as any).prefs || {};
-                  await account.updatePrefs({ ...prefs, loyaltyLevel: level.id });
-                  loadUserData();
-                } catch(e) { console.error(e); }
-              }}
-              style={{ 
-                width: isMobile ? 22 : 28, height: isMobile ? 22 : 28, 
-                display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                background: currentLevel.id === level.id ? level.color + '20' : 'transparent', 
-                borderRadius: 6, border: currentLevel.id === level.id ? `2px solid ${level.color}` : '1px solid #d1d5db',
-                cursor: user?.email === 'dezkonet@gmail.com' ? 'pointer' : 'default', transition: 'all 0.15s', overflow: 'hidden'
-              }}
-            >
-              {level.image ? (
-                <img src={level.image} alt={level.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-              ) : (
-                <level.icon size={isMobile ? 12 : 14} color={level.color} strokeWidth={2} />
-              )}
-            </div>
-          ))}
-        </div>
-        {/* Debug: Reset cupón button (solo admin) */}
-        {user?.email === 'dezkonet@gmail.com' && (
-          <motion.button
-            onClick={async () => {
-              try {
-                const { account } = getServices();
-                const acc = await account.get();
-                const prefs = (acc as any).prefs || {};
-                await account.updatePrefs({
-                  ...prefs,
-                  welcomeGiftClaimed: false,
-                  welcomeCouponCode: '',
-                  autoApplyCoupon: '',
-                });
-                window.location.reload();
-              } catch(e) { console.error(e); }
-            }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            style={{ padding: isMobile ? '3px 8px' : '6px 12px', background: '#ec4899', color: '#fff', border: 'none', borderRadius: 6, fontSize: isMobile ? 9 : 11, fontWeight: 900, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.05em' }}
-          >
-            Reset Cupón
-          </motion.button>
-        )}
       </div>
 
       {/* Stats resumen */}

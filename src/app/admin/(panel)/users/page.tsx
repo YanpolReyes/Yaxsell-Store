@@ -2,51 +2,77 @@
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Query } from 'appwrite';
-import { getServices, getAppwriteConfig, USERS_COLLECTION_ID, ORDERS_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { RefreshCw, AlertTriangle, Search, X, Users, Phone, Mail, Calendar, Download, ShoppingCart, MessageSquare, Save, Ban, CheckCircle } from 'lucide-react';
+import { Query, ID } from 'appwrite';
+import { getServices, getAppwriteConfig, USERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { formatPrice } from '@/lib/appwrite';
+import type { AdminCustomerRow } from '@/lib/admin-customers';
+import { getLevelMeta } from '@/lib/loyalty-levels';
+import {
+  RefreshCw, AlertTriangle, Search, X, Users, Phone, Mail, Calendar,
+  Download, ShoppingCart, MessageSquare, Save, Ban, CheckCircle, Eye,
+  Trophy, DollarSign, Shield, Gift, KeyRound, MapPin, Clock, Hash,
+} from 'lucide-react';
 import Link from 'next/link';
 
-interface AppUser {
-  $id: string;
-  userId?: string;
-  name?: string;
-  email?: string;
-  phone?: string;
-  region?: string;
-  comuna?: string;
-  address?: string;
-  isWholesale?: boolean;
-  isBanned?: boolean;
-  totalOrders?: number;
-  adminNotes?: string;
-  $createdAt: string;
+function fmtDate(iso?: string | null) {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
+  } catch {
+    return '—';
+  }
 }
 
 function UsersPageInner() {
   const searchParams = useSearchParams();
-  const [users, setUsers] = useState<AppUser[]>([]);
+  const [users, setUsers] = useState<AdminCustomerRow[]>([]);
+  const [passwordNote, setPasswordNote] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState(() => searchParams.get('rut') || searchParams.get('search') || '');
   const [showWholesaleOnly, setShowWholesaleOnly] = useState(false);
   const [showBannedOnly, setShowBannedOnly] = useState(false);
-  const [sortBy, setSortBy] = useState<'name' | 'date' | 'type' | 'orders'>('date');
-  const [noteModal, setNoteModal] = useState<AppUser | null>(null);
+  const [sortBy, setSortBy] = useState<'date' | 'name' | 'orders' | 'spent'>('date');
+  const [noteModal, setNoteModal] = useState<AdminCustomerRow | null>(null);
+  const [detailModal, setDetailModal] = useState<AdminCustomerRow | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [togglingBanId, setTogglingBanId] = useState<string | null>(null);
-  const [orderCounts, setOrderCounts] = useState<Record<string, number>>({});
 
-  const toggleBan = async (u: AppUser) => {
+  const resolveProfileDocId = async (u: AdminCustomerRow): Promise<string> => {
+    if (u.hasProfileDoc && !u.$id.startsWith('auth:')) return u.$id;
+    const { databases } = getServices();
+    const { databaseId } = getAppwriteConfig();
+    const byUid = await databases.listDocuments(databaseId, USERS_COLLECTION_ID, [
+      Query.equal('userId', u.userId),
+      Query.limit(1),
+    ]);
+    if (byUid.documents[0]) return byUid.documents[0].$id;
+    const created = await databases.createDocument(databaseId, USERS_COLLECTION_ID, ID.unique(), {
+      userId: u.userId,
+      email: u.email,
+      name: u.name,
+      phone: u.phone || '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    return created.$id;
+  };
+
+  const toggleBan = async (u: AdminCustomerRow) => {
     setTogglingBanId(u.$id);
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      await databases.updateDocument(databaseId, USERS_COLLECTION_ID, u.$id, { isBanned: !u.isBanned });
-      setUsers(prev => prev.map(x => x.$id === u.$id ? { ...x, isBanned: !x.isBanned } : x));
-    } catch (e: any) { alert('Error: ' + e.message); }
-    finally { setTogglingBanId(null); }
+      const docId = await resolveProfileDocId(u);
+      await databases.updateDocument(databaseId, USERS_COLLECTION_ID, docId, { isBanned: !u.isBanned });
+      setUsers(prev => prev.map(x => x.$id === u.$id ? { ...x, isBanned: !x.isBanned, hasProfileDoc: true, $id: docId } : x));
+      if (detailModal?.$id === u.$id) setDetailModal({ ...u, isBanned: !u.isBanned, hasProfileDoc: true, $id: docId });
+    } catch (e: unknown) {
+      alert('Error: ' + (e instanceof Error ? e.message : 'No se pudo actualizar'));
+    } finally {
+      setTogglingBanId(null);
+    }
   };
 
   const saveNote = async () => {
@@ -55,34 +81,30 @@ function UsersPageInner() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      await databases.updateDocument(databaseId, USERS_COLLECTION_ID, noteModal.$id, { adminNotes: noteDraft });
-      setUsers(prev => prev.map(u => u.$id === noteModal.$id ? { ...u, adminNotes: noteDraft } : u));
+      const docId = await resolveProfileDocId(noteModal);
+      await databases.updateDocument(databaseId, USERS_COLLECTION_ID, docId, { adminNotes: noteDraft });
+      setUsers(prev => prev.map(u => u.$id === noteModal.$id ? { ...u, adminNotes: noteDraft, hasProfileDoc: true, $id: docId } : u));
       setNoteModal(null);
-    } catch (e: any) { alert('Error: ' + e.message); }
-    finally { setSavingNote(false); }
+    } catch (e: unknown) {
+      alert('Error: ' + (e instanceof Error ? e.message : 'No se pudo guardar'));
+    } finally {
+      setSavingNote(false);
+    }
   };
 
   const load = useCallback(async () => {
-    setIsLoading(true); setError('');
+    setIsLoading(true);
+    setError('');
     try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-      const [customersResp, ordersResp] = await Promise.all([
-        fetch('/api/admin/customers', { cache: 'no-store' }).then(r => r.json()),
-        databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [Query.limit(500)]).catch(() => ({ documents: [] })),
-      ]);
-      if (customersResp?.error) {
-        setError(String(customersResp.error));
-      }
-      const registered = Array.isArray(customersResp?.users) ? customersResp.users as AppUser[] : [];
-      setUsers(registered);
-      const counts: Record<string, number> = {};
-      for (const o of ordersResp.documents as any[]) {
-        if (o.USERID) counts[o.USERID] = (counts[o.USERID] || 0) + 1;
-      }
-      setOrderCounts(counts);
-    } catch (e: any) { setError(e.message); }
-    finally { setIsLoading(false); }
+      const customersResp = await fetch('/api/admin/customers', { cache: 'no-store' }).then(r => r.json());
+      if (customersResp?.error) setError(String(customersResp.error));
+      if (customersResp?.passwordNote) setPasswordNote(String(customersResp.passwordNote));
+      setUsers(Array.isArray(customersResp?.users) ? customersResp.users : []);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al cargar');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -96,89 +118,97 @@ function UsersPageInner() {
       u.name?.toLowerCase().includes(q) ||
       u.email?.toLowerCase().includes(q) ||
       u.phone?.includes(q) ||
-      u.region?.toLowerCase().includes(q)
+      u.region?.toLowerCase().includes(q) ||
+      u.userId?.includes(q) ||
+      String(u.prefs?.rut || '').toLowerCase().includes(q)
     );
   })].sort((a, b) => {
     if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
-    if (sortBy === 'type') return (b.isWholesale ? 1 : 0) - (a.isWholesale ? 1 : 0);
-    if (sortBy === 'orders') return (orderCounts[b.userId || b.$id] || 0) - (orderCounts[a.userId || a.$id] || 0);
-    return new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime();
+    if (sortBy === 'orders') return b.orders.total - a.orders.total;
+    if (sortBy === 'spent') return b.orders.revenuePaid - a.orders.revenuePaid;
+    return new Date(b.profileCreatedAt).getTime() - new Date(a.profileCreatedAt).getTime();
   });
 
   const exportCSV = () => {
-    const headers = ['Nombre', 'Email', 'Teléfono', 'Región', 'Comuna', 'Tipo', 'Bloqueado', 'Pedidos', 'Notas admin', 'Registro'];
+    const headers = [
+      'Nombre', 'Email', 'Teléfono', 'RUT', 'User ID', 'Región', 'Comuna', 'Dirección',
+      'Medalla', 'Puntos est.', 'Pedidos total', 'Pendientes', 'Pagados', 'Entregados', 'Cancelados',
+      'Monto pagado', 'Regalo reclamado', 'Email verificado', 'Último acceso', 'Último pedido', 'Bloqueado', 'Notas',
+    ];
     const rows = filtered.map(u => [
-      u.name || '', u.email || '', u.phone || '',
-      u.region || '', u.comuna || '',
-      u.isWholesale ? 'Mayorista' : 'Regular',
+      u.name, u.email, u.phone || '', String(u.prefs.rut || ''), u.userId,
+      u.region || '', u.comuna || '', u.address || '',
+      u.loyaltyName, u.pointsEstimate,
+      u.orders.total, u.orders.pending, u.orders.paid, u.orders.delivered, u.orders.cancelled,
+      u.orders.revenuePaid,
+      u.prefs.welcomeGiftClaimed ? 'Sí' : 'No',
+      u.emailVerified ? 'Sí' : 'No',
+      fmtDate(u.lastAccessAt),
+      fmtDate(u.orders.lastOrderAt),
       u.isBanned ? 'Sí' : 'No',
-      orderCounts[u.userId || u.$id] || 0,
       u.adminNotes || '',
-      new Date(u.$createdAt).toLocaleDateString('es-CL'),
     ]);
     const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url;
-    a.download = `usuarios_${new Date().toISOString().slice(0,10)}.csv`;
-    a.click(); URL.revokeObjectURL(url);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `clientes_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const stats = {
     total: users.length,
     wholesale: users.filter(u => u.isWholesale).length,
     banned: users.filter(u => u.isBanned).length,
-    withPhone: users.filter(u => u.phone).length,
-    withNotes: users.filter(u => u.adminNotes).length,
+    withOrders: users.filter(u => u.orders.total > 0).length,
+    revenue: users.reduce((s, u) => s + u.orders.revenuePaid, 0),
   };
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Usuarios</h1>
-          <p className="text-sm text-gray-500">{filtered.length} de {users.length} usuarios{stats.banned > 0 ? ` · ${stats.banned} bloqueado${stats.banned !== 1 ? 's' : ''}` : ''}</p>
+          <h1 className="text-xl font-bold text-gray-900">Clientes</h1>
+          <p className="text-sm text-gray-500">
+            {filtered.length} de {users.length} · ingresos pagados {formatPrice(stats.revenue)}
+          </p>
+          {passwordNote && (
+            <p className="text-xs text-amber-700 mt-1 flex items-center gap-1">
+              <KeyRound className="w-3 h-3" />{passwordNote}
+            </p>
+          )}
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => setShowWholesaleOnly(v => !v)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition border ${
-              showWholesaleOnly ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-            }`}>
+        <div className="flex gap-2 flex-wrap">
+          <button type="button" onClick={() => setShowWholesaleOnly(v => !v)}
+            className={`px-3 py-2 rounded-xl text-sm font-medium border ${showWholesaleOnly ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-700 border-gray-200'}`}>
             Mayoristas
           </button>
-          <button onClick={() => setShowBannedOnly(v => !v)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition border ${
-              showBannedOnly ? 'bg-red-500 text-white border-red-500' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-            }`}>
+          <button type="button" onClick={() => setShowBannedOnly(v => !v)}
+            className={`px-3 py-2 rounded-xl text-sm font-medium border ${showBannedOnly ? 'bg-red-500 text-white border-red-500' : 'bg-white text-gray-700 border-gray-200'}`}>
             Bloqueados
-            {users.filter(u => u.isBanned).length > 0 && (
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${showBannedOnly ? 'bg-white/20 text-white' : 'bg-red-100 text-red-600'}`}>
-                {users.filter(u => u.isBanned).length}
-              </span>
-            )}
           </button>
-          <button onClick={exportCSV} disabled={filtered.length === 0}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50">
+          <button type="button" onClick={exportCSV} disabled={!filtered.length}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm disabled:opacity-50">
             <Download className="w-4 h-4" />CSV
           </button>
-          <button onClick={load} disabled={isLoading} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-60">
+          <button type="button" onClick={load} disabled={isLoading}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium disabled:opacity-60">
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />Actualizar
           </button>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Total',           value: stats.total,     color: 'bg-indigo-500' },
-          { label: 'Mayoristas',      value: stats.wholesale, color: 'bg-amber-500' },
-          { label: 'Con teléfono',    value: stats.withPhone, color: 'bg-emerald-500' },
-          { label: 'Bloqueados',      value: stats.banned,    color: 'bg-red-500' },
-          { label: 'Con notas',       value: stats.withNotes, color: 'bg-violet-500' },
-          { label: 'Esta semana',     value: users.filter(u => Date.now() - new Date(u.$createdAt).getTime() < 7 * 86400000).length, color: 'bg-teal-500' },
-        ].filter(s => s.value > 0 || s.label === 'Total').map(s => (
-          <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-            <div className={`w-7 h-7 rounded-xl ${s.color} flex items-center justify-center mb-3`}>
+          { label: 'Clientes', value: stats.total, color: 'bg-indigo-500' },
+          { label: 'Con pedidos', value: stats.withOrders, color: 'bg-emerald-500' },
+          { label: 'Mayoristas', value: stats.wholesale, color: 'bg-amber-500' },
+          { label: 'Bloqueados', value: stats.banned, color: 'bg-red-500' },
+        ].map(s => (
+          <div key={s.label} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+            <div className={`w-7 h-7 rounded-xl ${s.color} flex items-center justify-center mb-2`}>
               <Users className="w-3.5 h-3.5 text-white" />
             </div>
             <p className="text-xl font-bold text-gray-900">{s.value}</p>
@@ -187,172 +217,255 @@ function UsersPageInner() {
         ))}
       </div>
 
-      {/* Region distribution */}
-      {!isLoading && users.length > 0 && (() => {
-        const regionMap: Record<string, number> = {};
-        for (const u of users) { if (u.region) regionMap[u.region] = (regionMap[u.region] || 0) + 1; }
-        const topRegions = Object.entries(regionMap).sort((a, b) => b[1] - a[1]).slice(0, 4);
-        if (topRegions.length < 2) return null;
-        return (
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-gray-500 shrink-0">Regiones:</span>
-            {topRegions.map(([r, c]) => (
-              <span key={r} className="text-xs font-medium px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">
-                {r} <span className="text-gray-400">{c}</span>
-              </span>
-            ))}
-          </div>
-        );
-      })()}
-
-      {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nombre, email, teléfono..."
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nombre, email, teléfono, RUT, user ID..."
           className="w-full pl-9 pr-9 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-        {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><X className="w-4 h-4" /></button>}
+        {search && (
+          <button type="button" onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-gray-500">Ordenar:</span>
-        {([['date', 'Recientes'], ['name', 'Nombre'], ['type', 'Tipo'], ['orders', 'Por pedidos']] as const).map(([v, l]) => (
-          <button key={v} onClick={() => setSortBy(v)}
-            className={`px-3 py-1 rounded-xl text-xs font-medium transition ${sortBy === v ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+        {([['date', 'Recientes'], ['name', 'Nombre'], ['orders', 'Pedidos'], ['spent', 'Gasto']] as const).map(([v, l]) => (
+          <button key={v} type="button" onClick={() => setSortBy(v)}
+            className={`px-3 py-1 rounded-xl text-xs font-medium ${sortBy === v ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
             {l}
           </button>
         ))}
-        <span className="ml-auto text-xs text-gray-400">{filtered.length} usuario{filtered.length !== 1 ? 's' : ''}</span>
       </div>
 
-      {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex gap-2"><AlertTriangle className="w-4 h-4 shrink-0" />{error}</div>}
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />{error}
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[900px]">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Usuario</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Teléfono</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Región</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Tipo</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden lg:table-cell">Registro</th>
-                <th className="px-4 py-3" />
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Cliente</th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-gray-500 uppercase">Medalla</th>
+                <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase">Pedidos</th>
+                <th className="text-right px-3 py-3 text-xs font-semibold text-gray-500 uppercase">Pagado</th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-gray-500 uppercase hidden lg:table-cell">Actividad</th>
+                <th className="px-3 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {isLoading ? (
-                Array.from({ length: 8 }).map((_, i) => (
-                  <tr key={i}>{[1,2,3,4,5].map(j => <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-100 rounded animate-pulse" /></td>)}</tr>
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i}>{Array.from({ length: 6 }).map((_, j) => (
+                    <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-100 rounded animate-pulse" /></td>
+                  ))}</tr>
                 ))
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-12 text-center">
-                  <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-400 text-sm">No se encontraron usuarios</p>
-                </td></tr>
-              ) : filtered.map(u => (
-                <tr key={u.$id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                        {(u.name || u.email || '?').charAt(0).toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-900 truncate">{u.name || 'Sin nombre'}</p>
-                        <p className="text-xs text-gray-400 flex items-center gap-1 truncate">
-                          <Mail className="w-3 h-3 shrink-0" />{u.email || '—'}
-                        </p>
-                        {(() => { const cnt = orderCounts[u.userId || u.$id] || 0; return cnt > 0 ? (
-                          <span className="text-xs text-indigo-600 font-medium flex items-center gap-1 mt-0.5">
-                            <ShoppingCart className="w-3 h-3" />{cnt} pedido{cnt !== 1 ? 's' : ''}
-                          </span>
-                        ) : null; })()}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-sm hidden sm:table-cell">
-                    {u.phone ? (
-                      <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{u.phone}</span>
-                    ) : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-sm hidden md:table-cell">
-                    {u.region ? `${u.region}${u.comuna ? ` · ${u.comuna}` : ''}` : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <div className="flex flex-col items-center gap-1">
-                      {u.isBanned && (
-                        <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-red-100 text-red-700">Bloqueado</span>
-                      )}
-                      {u.isWholesale ? (
-                        <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700">Mayorista</span>
-                      ) : (
-                        <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-500">Regular</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-400 text-xs hidden lg:table-cell">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {new Date(u.$createdAt).toLocaleDateString('es-CL')}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      {(u.userId || u.$id) && (
-                        <Link href={`/orders?userId=${u.userId || u.$id}`}
-                          className="p-1.5 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition inline-flex" title="Ver pedidos">
+                <tr><td colSpan={6} className="px-4 py-12 text-center text-gray-400">No se encontraron clientes</td></tr>
+              ) : filtered.map(u => {
+                const level = getLevelMeta(u.loyaltyCalculated);
+                return (
+                  <tr key={u.$id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-gray-900 truncate max-w-[200px]">{u.name}</p>
+                      <p className="text-xs text-gray-400 truncate max-w-[200px]">{u.email}</p>
+                      {u.isBanned && <span className="text-[10px] font-bold text-red-600">Bloqueado</span>}
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: level.color }}>
+                        <Trophy className="w-3 h-3" />{u.loyaltyName}
+                      </span>
+                      <p className="text-[10px] text-gray-400">{u.pointsEstimate} pts</p>
+                    </td>
+                    <td className="px-3 py-3 text-center text-xs">
+                      <span className="font-bold text-gray-900">{u.orders.total}</span>
+                      <span className="text-gray-400 block">
+                        {u.orders.paid} pag · {u.orders.pending} pend · {u.orders.cancelled} canc
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-right font-semibold text-emerald-700 text-xs">
+                      {formatPrice(u.orders.revenuePaid)}
+                    </td>
+                    <td className="px-3 py-3 text-xs text-gray-500 hidden lg:table-cell">
+                      <span className="block">Acceso: {fmtDate(u.lastAccessAt)}</span>
+                      <span className="block">Pedido: {fmtDate(u.orders.lastOrderAt)}</span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-1 justify-end">
+                        <button type="button" onClick={() => setDetailModal(u)} className="p-1.5 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600" title="Ver ficha">
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                        <Link href={`/admin/orders?userId=${u.userId}`} className="p-1.5 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600" title="Pedidos">
                           <ShoppingCart className="w-3.5 h-3.5" />
                         </Link>
-                      )}
-                      <button onClick={() => { setNoteModal(u); setNoteDraft(u.adminNotes || ''); }}
-                        className={`p-1.5 rounded-lg hover:bg-violet-50 transition inline-flex ${u.adminNotes ? 'text-violet-500' : 'text-gray-400 hover:text-violet-500'}`} title="Notas internas">
-                        <MessageSquare className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => toggleBan(u)} disabled={togglingBanId === u.$id}
-                        className={`p-1.5 rounded-lg transition inline-flex disabled:opacity-50 ${u.isBanned ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'hover:bg-red-50 text-gray-400 hover:text-red-500'}`}
-                        title={u.isBanned ? 'Desbloquear usuario' : 'Bloquear usuario'}>
-                        {u.isBanned ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        <button type="button" onClick={() => { setNoteModal(u); setNoteDraft(u.adminNotes || ''); }} className="p-1.5 rounded-lg hover:bg-violet-50 text-gray-400 hover:text-violet-500">
+                          <MessageSquare className="w-3.5 h-3.5" />
+                        </button>
+                        <button type="button" onClick={() => toggleBan(u)} disabled={togglingBanId === u.$id}
+                          className={`p-1.5 rounded-lg ${u.isBanned ? 'text-red-500 bg-red-50' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}>
+                          {u.isBanned ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
-      {/* Note edit modal */}
+
       {noteModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <div>
-                <p className="font-bold text-gray-900">Nota interna</p>
-                <p className="text-xs text-gray-500 mt-0.5">{noteModal.name || noteModal.email || 'Usuario'}</p>
-              </div>
-              <button onClick={() => setNoteModal(null)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X className="w-4 h-4" /></button>
-            </div>
-            <div className="p-5">
-              <textarea rows={5} value={noteDraft} onChange={e => setNoteDraft(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                placeholder="Nota interna sobre este usuario..." />
-            </div>
-            <div className="flex justify-end gap-3 p-5 border-t border-gray-100">
-              <button onClick={() => setNoteModal(null)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
-              <button onClick={saveNote} disabled={savingNote}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-60">
-                <Save className="w-4 h-4" />{savingNote ? 'Guardando...' : 'Guardar'}
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5">
+            <p className="font-bold text-gray-900">Nota interna</p>
+            <p className="text-xs text-gray-500 mb-3">{noteModal.name}</p>
+            <textarea rows={5} value={noteDraft} onChange={e => setNoteDraft(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none" />
+            <div className="flex justify-end gap-2 mt-4">
+              <button type="button" onClick={() => setNoteModal(null)} className="px-4 py-2 rounded-xl border text-sm">Cancelar</button>
+              <button type="button" onClick={saveNote} disabled={savingNote}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold disabled:opacity-60">
+                <Save className="w-4 h-4" />{savingNote ? 'Guardando…' : 'Guardar'}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {detailModal && (
+        <CustomerDetailModal user={detailModal} onClose={() => setDetailModal(null)} passwordNote={passwordNote} />
+      )}
+    </div>
+  );
+}
+
+function InfoRow({ icon: Icon, label, value }: { icon: typeof Mail; label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex gap-3 py-2 border-b border-gray-50 last:border-0">
+      <Icon className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">{label}</p>
+        <p className="text-sm text-gray-800 break-all">{value ?? '—'}</p>
+      </div>
+    </div>
+  );
+}
+
+function CustomerDetailModal({
+  user: u,
+  onClose,
+  passwordNote,
+}: {
+  user: AdminCustomerRow;
+  onClose: () => void;
+  passwordNote: string;
+}) {
+  const level = getLevelMeta(u.loyaltyCalculated);
+  const levelStored = getLevelMeta(u.loyaltyStored);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-hidden flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 shrink-0">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">{u.name}</h2>
+            <p className="text-sm text-gray-500">{u.email}</p>
+          </div>
+          <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="overflow-y-auto p-5 space-y-6">
+          <section>
+            <h3 className="text-xs font-bold uppercase text-indigo-600 mb-2">Cuenta y contacto</h3>
+            <InfoRow icon={Hash} label="User ID (Appwrite)" value={u.userId} />
+            <InfoRow icon={Mail} label="Email" value={u.email} />
+            <InfoRow icon={Phone} label="Teléfono" value={u.phone || u.prefs.phone as string} />
+            <InfoRow icon={Shield} label="RUT" value={String(u.prefs.rut || '—')} />
+            <InfoRow icon={MapPin} label="Dirección" value={[u.address, u.comuna, u.region].filter(Boolean).join(', ') || '—'} />
+            <InfoRow icon={Shield} label="Email verificado" value={u.emailVerified ? 'Sí' : 'No'} />
+            <InfoRow icon={Shield} label="Teléfono verificado" value={u.phoneVerified ? 'Sí' : 'No'} />
+            <InfoRow icon={KeyRound} label="Contraseña" value={passwordNote || 'Hash en Appwrite (no visible)'} />
+            <InfoRow icon={Clock} label="Último cambio contraseña" value={fmtDate(u.passwordUpdatedAt)} />
+            <InfoRow icon={Calendar} label="Registro Auth" value={fmtDate(u.authCreatedAt || u.registrationAt)} />
+            <InfoRow icon={Clock} label="Último acceso" value={fmtDate(u.lastAccessAt)} />
+            <InfoRow icon={Shield} label="Estado Auth" value={u.authStatus} />
+            {u.authLabels?.length ? <InfoRow icon={Hash} label="Labels" value={u.authLabels.join(', ')} /> : null}
+          </section>
+
+          <section>
+            <h3 className="text-xs font-bold uppercase text-pink-600 mb-2">Lealtad y regalos</h3>
+            <InfoRow icon={Trophy} label="Medalla (calculada por pedidos)" value={
+              <span style={{ color: level.color }}>{level.name} ({u.loyaltyCalculated})</span>
+            } />
+            {u.loyaltyStored !== u.loyaltyCalculated && (
+              <InfoRow icon={Trophy} label="Medalla en prefs (antigua)" value={
+                <span className="text-amber-600">{levelStored.name} — se corrige al iniciar sesión</span>
+              } />
+            )}
+            <InfoRow icon={Gift} label="Puntos estimados" value={u.pointsEstimate} />
+            <InfoRow icon={Gift} label="Regalo apertura reclamado" value={u.prefs.welcomeGiftClaimed ? 'Sí' : 'No'} />
+            <InfoRow icon={Gift} label="Cupón bienvenida" value={String(u.prefs.welcomeCouponCode || '—')} />
+          </section>
+
+          <section>
+            <h3 className="text-xs font-bold uppercase text-emerald-600 mb-2">Pedidos</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+              {[
+                ['Total', u.orders.total],
+                ['Pendientes', u.orders.pending],
+                ['Pagados', u.orders.paid],
+                ['Procesando', u.orders.processing],
+                ['Enviados', u.orders.shipped],
+                ['Entregados', u.orders.delivered],
+                ['Cancelados', u.orders.cancelled],
+              ].map(([label, val]) => (
+                <div key={String(label)} className="bg-gray-50 rounded-xl p-3 text-center">
+                  <p className="text-lg font-bold text-gray-900">{val}</p>
+                  <p className="text-[10px] text-gray-500 uppercase">{label}</p>
+                </div>
+              ))}
+            </div>
+            <InfoRow icon={DollarSign} label="Monto pedidos pagados/entregados" value={formatPrice(u.orders.revenuePaid)} />
+            <InfoRow icon={DollarSign} label="Monto todos los pedidos" value={formatPrice(u.orders.revenueAll)} />
+            <InfoRow icon={Calendar} label="Primer pedido" value={fmtDate(u.orders.firstOrderAt)} />
+            <InfoRow icon={Calendar} label="Último pedido" value={fmtDate(u.orders.lastOrderAt)} />
+            <Link href={`/admin/orders?userId=${u.userId}`}
+              className="inline-flex items-center gap-2 mt-2 text-sm font-semibold text-indigo-600 hover:underline">
+              <ShoppingCart className="w-4 h-4" />Ver todos los pedidos
+            </Link>
+          </section>
+
+          <section>
+            <h3 className="text-xs font-bold uppercase text-gray-500 mb-2">Tienda</h3>
+            <InfoRow icon={Users} label="Tipo" value={u.isWholesale ? 'Mayorista' : 'Regular'} />
+            <InfoRow icon={Ban} label="Bloqueado en tienda" value={u.isBanned ? 'Sí' : 'No'} />
+            <InfoRow icon={MessageSquare} label="Notas admin" value={u.adminNotes || '—'} />
+            <InfoRow icon={Calendar} label="Perfil creado" value={fmtDate(u.profileCreatedAt)} />
+            <InfoRow icon={Hash} label="Solo Auth (sin doc users)" value={u.isAuthOnly ? 'Sí' : 'No'} />
+          </section>
+        </div>
+
+        <div className="p-4 border-t border-gray-100 shrink-0">
+          <button type="button" onClick={onClose} className="w-full py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold">
+            Cerrar
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
 export default function UsersPage() {
   return (
-    <Suspense fallback={<div className="animate-pulse space-y-4"><div className="h-10 bg-gray-100 rounded-xl" /><div className="h-64 bg-gray-100 rounded-2xl" /></div>}>
+    <Suspense fallback={<div className="animate-pulse h-64 bg-gray-100 rounded-2xl" />}>
       <UsersPageInner />
     </Suspense>
   );

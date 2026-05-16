@@ -39,6 +39,7 @@ function OrdersContent() {
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
   const [regionFilter, setRegionFilter] = useState<string>('all');
   const [liveOnly, setLiveOnly] = useState(false);
+  const filterUserId = searchParams.get('userId') || '';
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [productLocations, setProductLocations] = useState<Record<string, { section: number | null; gondola: string | null }>>({}); // product id -> location
 
@@ -192,6 +193,7 @@ function OrdersContent() {
   const regions = ['all', ...Array.from(new Set(orders.map(o => (o as any).REGION || '').filter(Boolean))).sort()];
 
   const filtered = sortedFiltered.filter(o => {
+    if (filterUserId && o.USERID !== filterUserId) return false;
     if (search) {
       const q = search.toLowerCase();
       if (!(

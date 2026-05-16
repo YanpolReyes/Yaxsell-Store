@@ -52,9 +52,7 @@ export class LoyaltyService {
       const { account } = getServices();
       const acc = await account.get();
       const prefs = (acc as any).prefs || {};
-      const storedLevel = prefs.loyaltyLevel || 'bronze';
-
-      // Calcular nivel basado en pedidos
+      // Nivel solo por pedidos pagados (no se puede “elegir” medalla manualmente)
       let calculatedLevel = 'bronze';
       for (let i = LEVELS.length - 1; i >= 0; i--) {
         if (paidOrdersCount >= LEVELS[i].requiredOrders) {
@@ -63,16 +61,19 @@ export class LoyaltyService {
         }
       }
 
-      // Usar el máximo entre stored y calculated
-      const levelIndex = Math.max(
-        LEVELS.findIndex(l => l.id === storedLevel),
-        LEVELS.findIndex(l => l.id === calculatedLevel)
-      );
+      const currentLevel = calculatedLevel;
 
-      const currentLevel = LEVELS[levelIndex].id;
+      if (prefs.loyaltyLevel && prefs.loyaltyLevel !== calculatedLevel) {
+        try {
+          await account.updatePrefs({ ...prefs, loyaltyLevel: calculatedLevel });
+        } catch {
+          /* prefs sync opcional */
+        }
+      }
 
       // Calcular puntos
-      const pointsMultiplier = LEVELS[levelIndex].pointsMultiplier;
+      const levelIndex = LEVELS.findIndex(l => l.id === currentLevel);
+      const pointsMultiplier = LEVELS[levelIndex >= 0 ? levelIndex : 0].pointsMultiplier;
       const points = Math.floor((totalSpent / 1000) * pointsMultiplier);
 
       // Obtener historial de niveles

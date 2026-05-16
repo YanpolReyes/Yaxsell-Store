@@ -6,6 +6,15 @@ import {
   mergeAuthUsersWithProfiles,
   type UserProfileDoc,
 } from '@/lib/users-db';
+import {
+  aggregateOrdersForUser,
+  calculateLoyaltyFromPaidOrders,
+  estimatePoints,
+  pickPrefs,
+  type AdminCustomerRow,
+} from '@/lib/admin-customers';
+import type { LoyaltyLevelId } from '@/lib/loyalty-levels';
+import { getLevelMeta } from '@/lib/loyalty-levels';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,8 +30,24 @@ function getServerDb() {
   };
 }
 
-async function listAuthUsers(usersApi: Users): Promise<{ $id: string; email?: string; name?: string; $createdAt?: string }[]> {
-  const all: { $id: string; email?: string; name?: string; $createdAt?: string }[] = [];
+type AuthUserFull = {
+  $id: string;
+  email?: string;
+  name?: string;
+  phone?: string;
+  status?: boolean;
+  labels?: string[];
+  emailVerification?: boolean;
+  phoneVerification?: boolean;
+  registration?: string;
+  accessedAt?: string;
+  passwordUpdate?: string;
+  $createdAt?: string;
+  prefs?: Record<string, unknown>;
+};
+
+async function listAuthUsers(usersApi: Users): Promise<AuthUserFull[]> {
+  const all: AuthUserFull[] = [];
   let offset = 0;
   const limit = 100;
   while (true) {
@@ -34,6 +59,14 @@ async function listAuthUsers(usersApi: Users): Promise<{ $id: string; email?: st
       $id: u.$id,
       email: u.email,
       name: u.name,
+      phone: u.phone,
+      status: u.status,
+      labels: u.labels,
+      emailVerification: u.emailVerification,
+      phoneVerification: u.phoneVerification,
+      registration: u.registration,
+      accessedAt: u.accessedAt,
+      passwordUpdate: u.passwordUpdate,
       $createdAt: u.$createdAt,
     })));
     if (batch.length < limit) break;
@@ -41,6 +74,24 @@ async function listAuthUsers(usersApi: Users): Promise<{ $id: string; email?: st
     if (offset > 5000) break;
   }
   return all;
+}
+
+async function fetchAuthPrefsBatch(usersApi: Users, ids: string[], concurrency = 8): Promise<Map<string, Record<string, unknown>>> {
+  const map = new Map<string, Record<string, unknown>>();
+  for (let i = 0; i < ids.length; i += concurrency) {
+    const chunk = ids.slice(i, i + concurrency);
+    await Promise.all(
+      chunk.map(async id => {
+        try {
+          const u = await usersApi.get(id);
+          if (u.prefs && typeof u.prefs === 'object') map.set(id, u.prefs as Record<string, unknown>);
+        } catch {
+          /* sin prefs */
+        }
+      }),
+    );
+  }
+  return map;
 }
 
 async function listProfiles(databases: Databases, databaseId: string): Promise<UserProfileDoc[]> {
@@ -59,7 +110,82 @@ async function listProfiles(databases: Databases, databaseId: string): Promise<U
   return all;
 }
 
-/** Lista clientes: colección users + Auth (requiere APPWRITE_API_KEY en servidor). */
+type OrderDoc = {
+  $id: string;
+  USERID?: string;
+  STATUS?: string;
+  TOTAL?: number;
+  CREATEDAT?: number;
+  $createdAt?: string;
+};
+
+async function listAllOrders(databases: Databases, databaseId: string) {
+  const all: OrderDoc[] = [];
+  let cursor: string | undefined;
+  while (all.length < 5000) {
+    const queries = [Query.orderDesc('$createdAt'), Query.limit(100)];
+    if (cursor) queries.push(Query.cursorAfter(cursor));
+    const resp = await databases.listDocuments(databaseId, 'orders', queries);
+    const docs = resp.documents as unknown as OrderDoc[];
+    if (!docs.length) break;
+    all.push(...docs);
+    if (docs.length < 100) break;
+    cursor = docs[docs.length - 1].$id;
+  }
+  return all;
+}
+
+function buildCustomerRow(
+  profile: UserProfileDoc,
+  authById: Map<string, AuthUserFull>,
+  prefsByAuthId: Map<string, Record<string, unknown>>,
+  orders: OrderDoc[],
+): AdminCustomerRow {
+  const uid = profile.userId?.trim() || (profile.$id.startsWith('auth:') ? profile.$id.slice(5) : profile.$id);
+  const auth = authById.get(uid);
+  const prefsRaw = prefsByAuthId.get(uid) || {};
+  const prefs = pickPrefs(prefsRaw);
+
+  const orderStats = aggregateOrdersForUser(orders, uid);
+  const paidCount = orderStats.paid + orderStats.delivered;
+  const loyaltyCalculated = calculateLoyaltyFromPaidOrders(paidCount);
+  const loyaltyStored = (String(prefs.loyaltyLevel || 'bronze') as LoyaltyLevelId);
+  const loyaltyEffective = loyaltyCalculated;
+  const meta = getLevelMeta(loyaltyEffective);
+
+  return {
+    $id: profile.$id,
+    userId: uid,
+    email: (profile.email || auth?.email || '').trim(),
+    name: profile.name || auth?.name || profile.email?.split('@')[0] || 'Sin nombre',
+    phone: profile.phone || auth?.phone || prefs.phone as string | undefined,
+    region: profile.region,
+    comuna: profile.comuna,
+    address: profile.address,
+    isWholesale: Boolean(profile.isWholesale),
+    isBanned: Boolean(profile.isBanned),
+    adminNotes: profile.adminNotes,
+    profileCreatedAt: profile.$createdAt,
+    authCreatedAt: auth?.$createdAt,
+    lastAccessAt: auth?.accessedAt,
+    registrationAt: auth?.registration,
+    passwordUpdatedAt: auth?.passwordUpdate,
+    emailVerified: Boolean(auth?.emailVerification),
+    phoneVerified: Boolean(auth?.phoneVerification),
+    authStatus: auth?.status === false ? 'bloqueado_auth' : auth ? 'activo' : 'sin_auth',
+    authLabels: auth?.labels || [],
+    prefs,
+    loyaltyStored,
+    loyaltyCalculated,
+    loyaltyName: meta.name,
+    pointsEstimate: estimatePoints(orderStats.revenuePaid, loyaltyEffective),
+    orders: orderStats,
+    hasProfileDoc: !profile.$id.startsWith('auth:'),
+    isAuthOnly: profile.$id.startsWith('auth:'),
+  };
+}
+
+/** Lista clientes con Auth, prefs, pedidos y nivel VIP calculado. */
 export async function GET() {
   if (!process.env.APPWRITE_API_KEY) {
     return NextResponse.json({
@@ -74,15 +200,32 @@ export async function GET() {
       return NextResponse.json({ users: [], error: 'Falta NEXT_PUBLIC_APPWRITE_DATABASE_ID' });
     }
 
-    const [profiles, authUsers] = await Promise.all([
+    const [profiles, authUsers, orders] = await Promise.all([
       listProfiles(databases, databaseId),
       listAuthUsers(users),
+      listAllOrders(databases, databaseId),
     ]);
 
     const merged = mergeAuthUsersWithProfiles(profiles, authUsers);
     const registered = dedupeUserDocuments(merged).filter(isRegisteredUserProfile);
 
-    return NextResponse.json({ users: registered, total: registered.length });
+    const authById = new Map(authUsers.map(a => [a.$id, a]));
+    const authIds = registered
+      .map(p => p.userId?.trim() || (p.$id.startsWith('auth:') ? p.$id.slice(5) : ''))
+      .filter(Boolean) as string[];
+    const prefsByAuthId = await fetchAuthPrefsBatch(users, [...new Set(authIds)]);
+
+    const rows: AdminCustomerRow[] = registered.map(p =>
+      buildCustomerRow(p, authById, prefsByAuthId, orders),
+    );
+
+    rows.sort((a, b) => new Date(b.profileCreatedAt).getTime() - new Date(a.profileCreatedAt).getTime());
+
+    return NextResponse.json({
+      users: rows,
+      total: rows.length,
+      passwordNote: 'Las contraseñas están hasheadas en Appwrite Auth; no es posible verlas en texto plano.',
+    });
   } catch (e) {
     return NextResponse.json(
       { users: [], error: e instanceof Error ? e.message : 'Error al cargar clientes' },
