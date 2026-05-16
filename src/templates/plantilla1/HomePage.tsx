@@ -5044,8 +5044,8 @@ export default function HomePage1() {
     if (!section) return;
 
     // Ocultar sección si no hay items configurados
-    const items = (settings.featuredCollectionItems || []) as CollectionItem[];
-    if (items.length === 0) {
+    const featuredItems = (settings.featuredCollectionItems || []) as CollectionItem[];
+    if (featuredItems.length === 0) {
       section.style.display = 'none';
       return;
     } else {
