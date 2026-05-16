@@ -685,7 +685,7 @@ export default function HomePage2() {
     return [];
   });
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
-  const [fontCfg, setFontCfg] = useState<FontConfig>({ globalFont: '', globalHeadingFont: '' });
+  const [fontCfg, setFontCfg] = useState<FontConfig>({ globalFont: '', globalHeadingFont: '', globalHeadingColor: '', globalTextColor: '' });
   const heroTimer = useRef<NodeJS.Timeout | null>(null);
   const { addItem } = useCart();
 
@@ -1155,10 +1155,32 @@ export default function HomePage2() {
   const gFontsUrl = buildGoogleFontsUrl(fontCfg, sectionCfg);
   const globalFontStack = fontCfg.globalFont ? `"${fontCfg.globalFont}",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif` : '"Proxima Nova",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif';
 
+  // Aplicar colores globales dinámicamente
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    if (fontCfg.globalHeadingColor) {
+      root.style.setProperty('--global-heading-color', fontCfg.globalHeadingColor);
+    }
+    if (fontCfg.globalTextColor) {
+      root.style.setProperty('--global-text-color', fontCfg.globalTextColor);
+    }
+  }, [fontCfg.globalHeadingColor, fontCfg.globalTextColor]);
+
   return (
     <div style={{ background: '#fff', minHeight: '100vh', fontFamily: globalFontStack }}>
       {gFontsUrl && <link href={gFontsUrl} rel="stylesheet" />}
       <style>{`
+        :root {
+          --global-heading-color: ${fontCfg.globalHeadingColor || 'inherit'};
+          --global-text-color: ${fontCfg.globalTextColor || 'inherit'};
+        }
+        h1, h2, h3, h4, h5, h6 {
+          color: var(--global-heading-color, inherit);
+        }
+        body, p, span, div {
+          color: var(--global-text-color, inherit);
+        }
         @keyframes hp-skeleton-wave { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         @keyframes gradFlow { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
         .grad-animated { background-size: 300% 300% !important; animation: gradFlow 6s ease infinite; }
