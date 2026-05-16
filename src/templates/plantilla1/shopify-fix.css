@@ -549,23 +549,34 @@ cart-drawer.cart-sidebar::after {
   box-shadow: 0 6px 20px rgba(236,72,153,0.08) !important;
   cursor: pointer !important;
 }
-[data-template="1"] .musk_collection1 .musk-collection-slide .img-content {
-  position: relative !important;
-  overflow: hidden !important;
-  display: block !important;
-  width: 100% !important;
+@media screen and (min-width: 769px) {
+  /* Tema original: height:648px — provoca franja blanca bajo la imagen en PC */
+  [data-template="1"] .musk_collection1 .musk-collection-slide {
+    height: auto !important;
+    aspect-ratio: 4 / 5 !important;
+  }
+  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content {
+    position: absolute !important;
+    inset: 0 !important;
+    overflow: hidden !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content img,
+  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content svg.placeholder-svg {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    aspect-ratio: auto !important;
+    object-fit: cover !important;
+    display: block !important;
+    transition: transform 0.4s ease, filter 0.4s ease !important;
+  }
 }
-[data-template="1"] .musk_collection1 .musk-collection-slide .img-content img,
-[data-template="1"] .musk_collection1 .musk-collection-slide .img-content svg.placeholder-svg {
-  position: relative !important;
-  width: 100% !important;
-  height: auto !important;
-  aspect-ratio: 1 / 1 !important;
-  object-fit: cover !important;
-  top: auto !important;
-  left: auto !important;
-  display: block !important;
-  transition: transform 0.4s ease, filter 0.4s ease !important;
+[data-template="1"] .musk_collection1 .collectiony_main_card {
+  margin-bottom: 0 !important;
 }
 /* Zoom image on hover */
 [data-template="1"] .musk_collection1 .swiper-slide:hover .img-content img {
@@ -845,7 +856,37 @@ cart-drawer.cart-sidebar::after {
 /* Product name */
 [data-template="1"] .tpl1-featured-cat-slide .product-details {
   text-align: center !important;
-  padding-top: 0 !important;
+  padding-top: 8px !important;
+  margin: 0 !important;
+}
+[data-template="1"] .tpl1-featured-cat-slide .product-details .product-price {
+  display: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+[data-template="1"] .tpl1-featured-cat-slide .tpl1-cat-count-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-top: 8px !important;
+  padding: 4px 12px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  color: #fff !important;
+  background: linear-gradient(135deg, #ec4899, #db2777) !important;
+  border-radius: 999px !important;
+  line-height: 1.3 !important;
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.25) !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__featured_collection_UNXLgP .swiper-wrapper.mb-5 {
+  margin-bottom: 0.75rem !important;
+}
+[data-template="1"] .tpl1-featured-cat-slide .product-content {
+  min-height: 0 !important;
+  height: auto !important;
 }
 [data-template="1"] .tpl1-featured-cat-slide .product-name a {
   font-weight: 700 !important;
@@ -1274,6 +1315,22 @@ cart-drawer.cart-sidebar::after {
   right: 0;
 }
 
+/* ─── Hero banner: pink background via CSS variable override (PC + mobile) ─── */
+/* The inline style on .musk-main-banner overrides --primary-background and --secondary-background
+   from gray (220,220,220) to pink (254,242,248 / 252,231,243). This is the root cause fix. */
+#shopify-section-template--22405132419320__hero_banner_R6iEJ4 {
+  min-height: 220px;
+  background: linear-gradient(180deg, #fff5f8 0%, #fce7f3 100%) !important;
+}
+
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .musk-main-banner,
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .musk-banner-slider,
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-slide,
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .slide-image {
+  background-color: #fff5f8 !important;
+  background-image: linear-gradient(180deg, #fff5f8 0%, #fce7f3 55%, #fbcfe8 100%) !important;
+}
+
 [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-wrapper,
 [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-slide,
 [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .slide-image {
@@ -1617,4 +1674,36 @@ cart-drawer.cart-sidebar::after {
 [data-template="1"] {
   scrollbar-width: thin;
   scrollbar-color: #888 #f1f1f1;
+}
+
+/* ─── Collection cards: shorter on mobile ─── */
+@media screen and (max-width: 768px) {
+  [data-template="1"] .musk_collection1 .swiper-slide,
+  [data-template="1"] .musk_collection1 .musk-collection-slide,
+  [data-template="1"] .musk_collection1 .collectiony_main_card_inner {
+    height: 190px !important;
+    min-height: 190px !important;
+    max-height: 190px !important;
+    overflow: hidden !important;
+  }
+  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+  }
+  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content img,
+  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content svg.placeholder-svg {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    aspect-ratio: auto !important;
+    object-fit: cover !important;
+    top: 0 !important;
+    left: 0 !important;
+  }
 }

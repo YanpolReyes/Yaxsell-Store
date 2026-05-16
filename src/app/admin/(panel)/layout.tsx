@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
+import { isAdminEmail } from '@/lib/admin-access';
 import { LogOut, Menu, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, WHOLESALE_REQUESTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import GlobalSearch from '@/components/admin/GlobalSearch';
@@ -74,6 +75,7 @@ const NAV_GROUPS: NavGroup[] = [
     { href: '', label: 'Marketing', icon: Ico.OfertasDia, children: [
       { href: '/admin/coupons',       label: 'Cupones',        icon: Ico.Cupones },
       { href: '/admin/timed-offers',  label: 'Ofertas',        icon: Ico.Ofertas },
+      { href: '/admin/vip',           label: 'VIP',            icon: Ico.Usuarios },
       { href: '/admin/points-store',  label: 'Tienda de puntos', icon: Ico.Sorteos },
       { href: '/admin/notifications', label: 'Notificaciones', icon: Ico.Notifs, badge: 'notifs' },
     ]},
@@ -257,13 +259,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   useEffect(() => {
-    if (!isLoading && !isLoggedIn) router.replace('/admin/login');
-    if (!isLoading && isLoggedIn) {
-      fetchBadges();
-      const id = setInterval(fetchBadges, 60_000);
-      return () => clearInterval(id);
+    if (isLoading) return;
+    if (!isLoggedIn) {
+      router.replace('/admin/login');
+      return;
     }
-  }, [isLoading, isLoggedIn, router, fetchBadges]);
+    if (!isAdminEmail(user?.email)) {
+      logout().finally(() => router.replace('/admin/login'));
+      return;
+    }
+    fetchBadges();
+    const id = setInterval(fetchBadges, 60_000);
+    return () => clearInterval(id);
+  }, [isLoading, isLoggedIn, user?.email, router, fetchBadges, logout]);
 
   /* ── GSAP page transition on route change ── */
   const contentRef = useRef<HTMLDivElement>(null);
@@ -286,7 +294,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
-  if (!isLoggedIn) return null;
+  if (!isLoggedIn || !isAdminEmail(user?.email)) return null;
 
   const handleLogout = async () => { await logout(); router.replace('/admin/login'); };
 

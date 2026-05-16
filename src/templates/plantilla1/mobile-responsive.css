@@ -1356,33 +1356,74 @@
     margin: 0 0 14px !important;
   }
 
-  /* â”€â”€â”€ FEATURED COLLECTION: Reduce padding on mobile (no need for hover space) â”€â”€â”€ */
+  /* ─── Colecciones destacadas: grid móvil compacto ─── */
   [data-template="1"] #shopify-section-template--22405132419320__featured_collection_UNXLgP {
-    padding-top: 12px !important;
-    padding-bottom: 12px !important;
+    padding-top: 8px !important;
+    padding-bottom: 16px !important;
   }
-  [data-template="1"] #shopify-section-template--22405132419320__featured_collection_UNXLgP .swiper,
+  [data-template="1"] #shopify-section-template--22405132419320__featured_collection_UNXLgP fuzion-swiper-slider,
+  [data-template="1"] #shopify-section-template--22405132419320__featured_collection_UNXLgP .swiper {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__featured_collection_UNXLgP.tpl1-featured-cat-mobile-grid .swiper-wrapper,
   [data-template="1"] #shopify-section-template--22405132419320__featured_collection_UNXLgP .swiper-wrapper {
-    padding: 6px 0 !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+    padding: 8px 14px 4px !important;
+    transform: none !important;
+    width: 100% !important;
+    margin-bottom: 0 !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__featured_collection_UNXLgP .swiper-slide {
+    width: 100% !important;
+    margin-right: 0 !important;
+    height: auto !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__featured_collection_UNXLgP .swiper-scrollbar {
+    display: none !important;
   }
   [data-template="1"] .tpl1-featured-cat-slide {
-    padding: 4px !important;
+    padding: 0 !important;
+  }
+  [data-template="1"] .tpl1-featured-cat-slide .fusion-product-item {
+    height: 100% !important;
   }
   [data-template="1"] .tpl1-featured-cat-slide .product-content {
-    min-height: 160px !important;
-    padding: 18px 12px 14px !important;
+    min-height: 0 !important;
+    padding: 14px 10px 10px !important;
+    border-radius: 16px !important;
+    transform: none !important;
   }
   [data-template="1"] .tpl1-featured-cat-slide .tpl1-featured-cat-icon-wrap {
-    width: 70px !important;
-    height: 70px !important;
-    margin-bottom: 10px !important;
+    width: 56px !important;
+    height: 56px !important;
+    margin-bottom: 8px !important;
+    border-radius: 14px !important;
   }
   [data-template="1"] .tpl1-featured-cat-slide .tpl1-featured-cat-icon {
-    width: 48px !important;
-    height: 48px !important;
+    width: 40px !important;
+    height: 40px !important;
+  }
+  [data-template="1"] .tpl1-featured-cat-slide .product-details {
+    padding-top: 4px !important;
+  }
+  [data-template="1"] .tpl1-featured-cat-slide .product-name {
+    margin: 0 !important;
+    line-height: 1.25 !important;
   }
   [data-template="1"] .tpl1-featured-cat-slide .product-name a {
-    font-size: 12px !important;
+    font-size: 11px !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+  [data-template="1"] .tpl1-featured-cat-slide .tpl1-cat-count-badge {
+    margin-top: 6px !important;
+    padding: 3px 10px !important;
+    font-size: 10px !important;
   }
 
   /* ─── Colecciones: estilos delegados a shopify-fix.css (overlay glass) ─── */
@@ -1429,8 +1470,41 @@
   }
 }
 
-/* Fix collection title visibility on mobile */
+/* Fix collection title visibility on mobile + smaller cards */
 @media screen and (max-width: 768px) {
+  /* Collection cards: shorter on mobile */
+  [data-template="1"] .musk_collection1 .musk-collection-slide {
+    border-radius: 12px !important;
+  }
+  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content {
+    height: 110px !important;
+    overflow: hidden !important;
+  }
+  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content img,
+  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content svg.placeholder-svg {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    aspect-ratio: auto !important;
+    object-fit: cover !important;
+  }
+  [data-template="1"] .musk_collection1 .musk-collection-slide .img-content {
+    position: relative !important;
+  }
+  /* Collection footer overlay: active state on mobile (shown via JS) */
+  [data-template="1"] .musk_collection1 .swiper-slide.tpl1-collection-overlay-active .tpl1-collection-footer {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  [data-template="1"] .musk_collection1 .swiper-slide.tpl1-collection-overlay-active .tpl1-collection-footer .slide-title,
+  [data-template="1"] .musk_collection1 .swiper-slide.tpl1-collection-overlay-active .tpl1-collection-footer .collection_list_title_main {
+    transform: translateY(0) !important;
+  }
+  [data-template="1"] .musk_collection1 .swiper-slide.tpl1-collection-overlay-active .tpl1-collection-footer::after {
+    transform: translateY(0) !important;
+  }
+  /* Title text sizing */
   [data-template="1"] .collection-card-title,
   [data-template="1"] .collection-title,
   [data-template="1"] .musk-collection-item h3,
@@ -1441,8 +1515,6 @@
   [data-template="1"] .tpl1-collection-footer,
   [data-template="1"] .slide-title {
     display: block !important;
-    opacity: 1 !important;
-    visibility: visible !important;
     font-size: 14px !important;
     text-align: center !important;
     margin-top: 8px !important;

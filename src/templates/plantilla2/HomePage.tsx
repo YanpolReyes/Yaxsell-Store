@@ -122,8 +122,8 @@ function CountdownBlocks({ offer }: { offer: TimedOffer; dark?: boolean }) {
 
 function HeroSkeleton() {
   return (
-    <div data-section-id="hero_carousel" style={{ position: 'relative', width: '100%', overflow: 'hidden', background: '#f3f4f6' }}>
-      <div style={{ width: '100%', aspectRatio: '1920 / 340', minHeight: 220, maxHeight: 420, backgroundImage: 'linear-gradient(90deg, #eef1f4 0%, #f6f7f9 45%, #eef1f4 100%)', backgroundSize: '220% 100%', animation: 'hp-skeleton-wave 1.2s linear infinite' }} />
+    <div data-section-id="hero_carousel" style={{ position: 'relative', width: '100%', overflow: 'hidden', background: '#fef2f8' }}>
+      <div style={{ width: '100%', aspectRatio: '1920 / 540', minHeight: 220, backgroundImage: 'linear-gradient(90deg, #fef2f8 0%, #fce7f3 45%, #fef2f8 100%)', backgroundSize: '220% 100%', animation: 'hp-skeleton-wave 1.2s linear infinite' }} />
     </div>
   );
 }
@@ -1136,7 +1136,7 @@ export default function HomePage2() {
     </div>
   );
 
-  if (isInitialLoading) return <HomePageSkeleton />;
+  // No early skeleton return — hero handles its own skeleton overlay with fade transition
 
   /* ── Shared styles ── */
   const S = {
@@ -1449,7 +1449,8 @@ export default function HomePage2() {
           }
           
           // HERO CAROUSEL
-          if (section.id === 'hero_carousel' && banners.length > 0) {
+          if (section.id === 'hero_carousel') {
+            const heroLoading = banners.length === 0 || !heroImageReady;
             return (
               <div key={section.id} data-section-id="hero_carousel" className="hero-carousel-ml" style={{ position: 'relative', width: '100%', lineHeight: 0 }}>
                 <style>{`
@@ -1529,10 +1530,8 @@ export default function HomePage2() {
                     background: rgba(255,255,255,.85);
                   }
                 `}</style>
-                {!heroImageReady && (
-                  <div style={{ position: 'absolute', inset: 0, zIndex: 2, backgroundImage: 'linear-gradient(90deg, #eef1f4 0%, #f6f7f9 45%, #eef1f4 100%)', backgroundSize: '220% 100%', animation: 'hp-skeleton-wave 1.2s linear infinite' }} />
-                )}
-                <div style={{ position: 'relative', overflow: 'hidden', width: '100%', aspectRatio: '1920 / 540' }}>
+                <div style={{ position: 'relative', overflow: 'hidden', width: '100%', aspectRatio: '1920 / 540', background: '#fef2f8' }}>
+                <div style={{ position: 'absolute', inset: 0, zIndex: 2, background: '#fef2f8', backgroundImage: 'linear-gradient(90deg, #fef2f8 0%, #fce7f3 45%, #fef2f8 100%)', backgroundSize: '220% 100%', animation: heroLoading ? 'hp-skeleton-wave 1.2s linear infinite' : 'none', opacity: heroLoading ? 1 : 0, transition: 'opacity .5s ease', pointerEvents: 'none' }} />
                   {banners.map((banner, i) => (
                     <div key={banner.$id} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: i === heroIdx ? (heroImageReady ? 1 : 0) : 0, transition: 'opacity .4s ease', zIndex: i === heroIdx ? 1 : 0 }}>
                       {banner.LINKURL ? (

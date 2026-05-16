@@ -75,7 +75,7 @@ export default function CategoriesPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const payload = { name: d.name, iconUrl: d.iconUrl || '', order: Number(d.order) || 0 };
+      const payload: any = { name: d.name, iconUrl: d.iconUrl || '', order: Number(d.order) || 0, BACKGROUND_IMAGE_URL: (d as any).BACKGROUND_IMAGE_URL || '' };
       if (modal.mode === 'add') {
         const doc = await databases.createDocument(databaseId, CATEGORIES_COLLECTION_ID, ID.unique(), payload);
         setCategories(prev => [...prev, doc as unknown as Category]);
@@ -263,6 +263,9 @@ export default function CategoriesPage() {
               <ImageUploadField label="Ícono de categoría" bucketId={CATEGORIES_BUCKET_ID}
                 value={modal.data.iconUrl || ''}
                 onChange={v => setModal(m => m ? { ...m, data: { ...m.data, iconUrl: v } } : m)} />
+              <ImageUploadField label="Imagen de fondo / portada" bucketId={CATEGORIES_BUCKET_ID}
+                value={(modal.data as any).BACKGROUND_IMAGE_URL || ''}
+                onChange={v => setModal(m => m ? { ...m, data: { ...m.data, BACKGROUND_IMAGE_URL: v } as any } : m)} />
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Color (hex)</label>
                 <div className="flex gap-2 items-center">

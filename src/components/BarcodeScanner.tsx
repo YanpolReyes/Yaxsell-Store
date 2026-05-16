@@ -37,10 +37,11 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
           { facingMode: 'environment' },
           { fps: 10, qrbox: { width: 280, height: 120 }, aspectRatio: 1.0 },
           (decodedText: string) => {
-            // Stop immediately to prevent lag accumulation
+            const code = String(decodedText ?? '').trim();
+            if (!code) return;
             sc.stop().then(() => { sc.clear(); }).catch(() => {});
             setDetected(true);
-            setLastCode(decodedText);
+            setLastCode(code);
           },
           () => {}
         );
@@ -59,7 +60,13 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
   }, []);
 
   const confirmScan = () => {
-    if (lastCode) onScanRef.current(lastCode);
+    const code = String(lastCode ?? '').trim();
+    if (!code) return;
+    try {
+      onScanRef.current(code);
+    } catch (err) {
+      console.error('[BarcodeScanner] onScan error:', err);
+    }
   };
 
   const rescan = async () => {
@@ -85,9 +92,11 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
           { facingMode: 'environment' },
           { fps: 10, qrbox: { width: 280, height: 120 }, aspectRatio: 1.0 },
           (decodedText: string) => {
+            const code = String(decodedText ?? '').trim();
+            if (!code) return;
             sc.stop().then(() => { sc.clear(); }).catch(() => {});
             setDetected(true);
-            setLastCode(decodedText);
+            setLastCode(code);
           },
           () => {}
         );

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { isAppwriteConfigured } from '@/lib/appwrite-admin';
+import { isAdminEmail } from '@/lib/admin-access';
 import { ShieldCheck, Eye, EyeOff, Settings, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
@@ -14,17 +15,21 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [configured, setConfigured] = useState(true);
   const router = useRouter();
-  const { login, isLoggedIn, isLoading } = useAuth();
+  const { login, logout, isLoggedIn, isLoading, user } = useAuth();
 
   useEffect(() => {
     setConfigured(isAppwriteConfigured());
   }, []);
 
   useEffect(() => {
-    if (!isLoading && isLoggedIn) {
+    if (!isLoading && isLoggedIn && isAdminEmail(user?.email)) {
       router.replace('/admin/dashboard');
     }
-  }, [isLoggedIn, isLoading, router]);
+    if (!isLoading && isLoggedIn && !isAdminEmail(user?.email)) {
+      logout();
+      setError('Esta cuenta no tiene acceso al panel de administración.');
+    }
+  }, [isLoggedIn, isLoading, user?.email, router, logout]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +38,12 @@ export default function LoginPage() {
     setError('');
     const result = await login(email, password);
     if (result.success) {
+      if (!isAdminEmail(email)) {
+        await logout();
+        setError('Solo el administrador autorizado puede acceder al panel.');
+        setIsSubmitting(false);
+        return;
+      }
       router.replace('/admin/dashboard');
     } else {
       setError(result.error || 'Credenciales inválidas.');

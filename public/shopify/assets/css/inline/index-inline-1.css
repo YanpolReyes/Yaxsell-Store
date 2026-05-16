@@ -145,11 +145,11 @@
         }
         
           .color-scheme-bcca51f6-8cb1-46f3-8f26-94394c542484 {
-            --primary-background: 255,255,255;
-            --secondary-background: 220,220,220;
+            --primary-background: 254,242,248;
+            --secondary-background: 252,231,243;
             --gradient-background: linear-gradient(101.19deg, rgba(122, 181, 247, 1), rgba(210, 237, 222, 1) 29.42%, rgba(251, 244, 202, 1) 50.05%, rgba(252, 218, 188, 1) 72.01%, rgba(254, 169, 162, 1) 100%);
 
-            --sidebars-background: 255,255,255;
+            --sidebars-background: 254,242,248;
             --primary-color: 0,0,0;
             --secondary-color: 255,255,255;
             --tertiary-color: 58,58,58;

@@ -306,10 +306,11 @@ export default function Navbar1() {
           .tpl1-auth-overlay { position: fixed; inset: 0; z-index: 10049; background: rgba(0,0,0,0.28); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: dropdownIn 0.2s ease; }
           .tpl1-nav-auth-wrap { position: relative !important; }
           .tpl1-auth-popup {
-            position: absolute !important;
-            top: calc(100% + 10px) !important;
-            right: -10px !important;
-            width: 280px !important;
+            position: fixed !important;
+            top: 60px !important;
+            right: 12px !important;
+            left: 12px !important;
+            width: auto !important;
             border-radius: 16px !important;
             z-index: 10050 !important;
             animation: dropdownIn 0.2s ease !important;

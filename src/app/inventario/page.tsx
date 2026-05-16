@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import * as XLSX from 'xlsx';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { isAdminEmail } from '@/lib/admin-access';
 import { Product, Category, Subcategory } from '@/types/admin';
 import {
   Upload, Search, Package, CheckCircle2, RefreshCw,
@@ -94,9 +95,36 @@ ${lines}`;
   return result;
 }
 
+function productFeaturesText(p: Product): string {
+  const raw = p.FEATURES;
+  if (raw == null) return '';
+  if (typeof raw === 'string') return raw;
+  try {
+    return typeof raw === 'object' ? JSON.stringify(raw) : String(raw);
+  } catch {
+    return '';
+  }
+}
+
+function getSkuFromProduct(p: Product): string {
+  const features = productFeaturesText(p);
+  const featMatch = features.match(/SKU:\s*(.+)/i);
+  if (featMatch) return featMatch[1].trim().split('\n')[0];
+  const tagParts = (p.TAGS || '').split(',').map(t => t.trim());
+  const skuTag = tagParts.find(t => /^[A-Z0-9]{4,}$/i.test(t));
+  return p.jumpseller_id || skuTag || '';
+}
+
+function getBarcodeFromProduct(p: Product): string {
+  const features = productFeaturesText(p);
+  const featMatch = features.match(/Barcode:\s*(.+)/i);
+  if (featMatch) return featMatch[1].trim().split('\n')[0];
+  return '';
+}
+
 export default function InventarioPage() {
   const router = useRouter();
-  const { isLoggedIn, isLoading: authLoading } = useAuth();
+  const { user, isLoggedIn, isLoading: authLoading, logout } = useAuth();
   const [rows, setRows] = useState<InventoryRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -182,48 +210,50 @@ export default function InventarioPage() {
     }
   };
 
-  const handleBarcodeScan = (code: string) => {
-    if (scanTarget === 'search') {
-      const codeLower = code.toLowerCase().trim();
-      const directMatch = products.find(p => {
-        const bc = getBarcode(p).toLowerCase();
-        const sku = getSku(p).toLowerCase();
-        return bc === codeLower || sku === codeLower;
-      });
+  const handleBarcodeScan = (rawCode: string) => {
+    const code = String(rawCode ?? '').trim();
+    if (!code) return;
 
-      if (directMatch) {
-        // Found — check if has stock
-        if ((directMatch.STOCK || 0) > 0) {
-          // Show modal: "already has stock, add more or edit?"
-          setStockModal({ product: directMatch, scannedCode: code });
-        } else {
-          // No stock — jump to Sin Stock and highlight
-          setCatalogSearch(code);
-          setView('catalog');
-        }
-      } else {
-        // Not found at all — try last4 suggestion
-        if (code.length >= 4) {
+    try {
+      if (scanTarget === 'search') {
+        const codeLower = code.toLowerCase();
+        const directMatch = products.find(p => {
+          const bc = getBarcodeFromProduct(p).toLowerCase();
+          const sku = getSkuFromProduct(p).toLowerCase();
+          return (bc && bc === codeLower) || (sku && sku === codeLower);
+        });
+
+        if (directMatch) {
+          if ((directMatch.STOCK || 0) > 0) {
+            setStockModal({ product: directMatch, scannedCode: code });
+          } else {
+            setCatalogSearch(code);
+            setView('catalog');
+          }
+        } else if (code.length >= 4) {
           const last4 = code.slice(-4).toLowerCase();
           const suggested = products.find(p => {
-            const sku = getSku(p).toLowerCase();
-            return sku && sku.endsWith(last4) && !getBarcode(p);
+            const sku = getSkuFromProduct(p).toLowerCase();
+            return sku && sku.endsWith(last4) && !getBarcodeFromProduct(p);
           });
           if (suggested) {
             setBarcodeSuggestion({ product: suggested, scannedBarcode: code, step: 'confirm-product' });
           } else {
-            // Totally unknown
             setUnregisteredModal({ code });
           }
         } else {
           setUnregisteredModal({ code });
         }
+      } else {
+        setBarcodeEdits(prev => ({ ...prev, [scanTarget]: code }));
       }
-    } else {
-      setBarcodeEdits(prev => ({ ...prev, [scanTarget]: code }));
+    } catch (err) {
+      console.error('[inventario] handleBarcodeScan:', err);
+      alert('Error al procesar el código escaneado. Intenta de nuevo.');
+    } finally {
+      setShowScanner(false);
+      setScanTarget('search');
     }
-    setShowScanner(false);
-    setScanTarget('search');
   };
 
   const confirmBarcodeSuggestion = async () => {
@@ -243,7 +273,7 @@ export default function InventarioPage() {
       const newFeatures = features ? `${features}\nBarcode: ${scannedBarcode}` : `Barcode: ${scannedBarcode}`;
       await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, product.$id, { FEATURES: newFeatures });
       setProducts(prev => prev.map(p => p.$id === product.$id ? { ...p, FEATURES: newFeatures } : p));
-      setCatalogSearch(getSku(product)); // switch search to SKU so user sees the product
+      setCatalogSearch(getSkuFromProduct(product));
       setBarcodeSuggestion(null);
     } catch (e: any) {
       alert('Error al guardar código: ' + e.message);
@@ -255,13 +285,20 @@ export default function InventarioPage() {
   // Skip barcode-add step but still show the product in catalog
   const skipBarcodeStep = () => {
     if (!barcodeSuggestion) return;
-    setCatalogSearch(getSku(barcodeSuggestion.product));
+    setCatalogSearch(getSkuFromProduct(barcodeSuggestion.product));
     setBarcodeSuggestion(null);
   };
 
   useEffect(() => {
-    if (!authLoading && !isLoggedIn) router.replace('/admin/login');
-  }, [authLoading, isLoggedIn, router]);
+    if (authLoading) return;
+    if (!isLoggedIn) {
+      router.replace('/admin/login');
+      return;
+    }
+    if (!isAdminEmail(user?.email)) {
+      logout().finally(() => router.replace('/admin/login'));
+    }
+  }, [authLoading, isLoggedIn, user?.email, router, logout]);
 
   const loadProducts = useCallback(async () => {
     setLoadingProducts(true);
@@ -284,19 +321,8 @@ export default function InventarioPage() {
 
   useEffect(() => { loadProducts(); }, [loadProducts]);
 
-  const getSku = (p: Product): string => {
-    const featMatch = p.FEATURES?.match(/SKU:\s*(.+)/i);
-    if (featMatch) return featMatch[1].trim();
-    const tagParts = (p.TAGS || '').split(',').map(t => t.trim());
-    const skuTag = tagParts.find(t => /^[A-Z0-9]{4,}$/i.test(t));
-    return p.jumpseller_id || skuTag || '';
-  };
-
-  const getBarcode = (p: Product): string => {
-    const featMatch = p.FEATURES?.match(/Barcode:\s*(.+)/i);
-    if (featMatch) return featMatch[1].trim();
-    return '';
-  };
+  const getSku = getSkuFromProduct;
+  const getBarcode = getBarcodeFromProduct;
 
   const findProduct = (sku: string): Product | undefined => {
     if (!sku) return undefined;
@@ -756,7 +782,7 @@ export default function InventarioPage() {
   const selectedCount = rows.filter(r => r.selected).length;
   const translatedCount = rows.filter(r => r.translated).length;
 
-  if (authLoading || !isLoggedIn) return null;
+  if (authLoading || !isLoggedIn || !isAdminEmail(user?.email)) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 pb-safe" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0)' }}>

@@ -480,10 +480,11 @@ export default function HomePage1() {
         processed = processed.replace(/(<img[^>]*src=")[^"]*hero-apparel[^"]*("[^>]*>)/gi, '$1data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7$2');
         processed = processed.replace(/(<img[^>]*src=")[^"]*hero-fashion[^"]*("[^>]*>)/gi, '$1data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7$2');
         processed = processed.replace(/(<img[^>]*src=")[^"]*hero-shoe[^"]*("[^>]*>)/gi, '$1data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7$2');
-        // Hide hero section inline until JS reveals it
+        // Override Shopify color-scheme CSS variables on hero to change gray to pink
+        // Root cause: --secondary-background: 220,220,220 (gray) used as fallback bg
         processed = processed.replace(
-          'id="shopify-section-template--22405132419320__hero_banner_R6iEJ4"',
-          'id="shopify-section-template--22405132419320__hero_banner_R6iEJ4" style="opacity:0;transition:opacity 0.5s ease"'
+          'class="musk-main-banner color-scheme-bcca51f6-8cb1-46f3-8f26-94394c542484 "',
+          'class="musk-main-banner color-scheme-bcca51f6-8cb1-46f3-8f26-94394c542484 " style="--primary-background:254,242,248;--secondary-background:252,231,243;--gradient-background:linear-gradient(101.19deg,rgba(254,242,248,1),rgba(252,231,243,1) 50%,rgba(251,207,232,1) 100%)"'
         );
         setBodyHtml(processed);
       })
@@ -2631,7 +2632,133 @@ export default function HomePage1() {
       slides[i].style.display = '';
     }
 
-    return bindCollectionLayout();
+    // ── Mobile touch: first tap shows overlay, only "Ingresar" navigates ──
+    const isMobile = () => window.innerWidth <= 768;
+    const activeOverlayClass = 'tpl1-collection-overlay-active';
+
+    const handleSlideTouch = (e: Event) => {
+      if (!isMobile()) return;
+      const slide = (e.currentTarget as HTMLElement).closest('.swiper-slide') as HTMLElement;
+      if (!slide) return;
+      const footer = slide.querySelector('.tpl1-collection-footer') as HTMLElement;
+      if (!footer) return;
+
+      // If overlay is already visible, check if tap is on the "Ingresar" area (footer::after)
+      if (slide.classList.contains(activeOverlayClass)) {
+        // If tapping outside the footer overlay, hide it and block navigation
+        const rect = footer.getBoundingClientRect();
+        const tapX = (e as TouchEvent).touches?.[0]?.clientX ?? (e as MouseEvent).clientX;
+        const tapY = (e as TouchEvent).touches?.[0]?.clientY ?? (e as MouseEvent).clientY;
+        if (tapX < rect.left || tapX > rect.right || tapY < rect.top || tapY > rect.bottom) {
+          e.preventDefault();
+          e.stopPropagation();
+          slide.classList.remove(activeOverlayClass);
+          footer.style.opacity = '0';
+          footer.style.visibility = 'hidden';
+        }
+        // If tapping inside footer, let it navigate (title link click)
+        return;
+      }
+
+      // First tap: show overlay, block navigation
+      e.preventDefault();
+      e.stopPropagation();
+      slide.classList.add(activeOverlayClass);
+      footer.style.opacity = '1';
+      footer.style.visibility = 'visible';
+    };
+
+    const handleSlideClick = (e: Event) => {
+      if (!isMobile()) return;
+      const slide = (e.currentTarget as HTMLElement).closest('.swiper-slide') as HTMLElement;
+      if (!slide) return;
+      const footer = slide.querySelector('.tpl1-collection-footer') as HTMLElement;
+      if (!footer) return;
+
+      // If overlay not active yet, block the click and show overlay
+      if (!slide.classList.contains(activeOverlayClass)) {
+        e.preventDefault();
+        e.stopPropagation();
+        slide.classList.add(activeOverlayClass);
+        footer.style.opacity = '1';
+        footer.style.visibility = 'visible';
+        return;
+      }
+      // Overlay is active — allow click only on the footer (title link / Ingresar)
+      const target = e.target as HTMLElement;
+      if (!footer.contains(target)) {
+        e.preventDefault();
+        e.stopPropagation();
+        slide.classList.remove(activeOverlayClass);
+        footer.style.opacity = '0';
+        footer.style.visibility = 'hidden';
+      }
+    };
+
+    // Dismiss overlay when tapping outside any collection slide
+    const handleDocClick = (e: Event) => {
+      if (!isMobile()) return;
+      const target = e.target as HTMLElement;
+      const anySlide = target.closest('.musk_collection1 .swiper-slide');
+      if (!anySlide) {
+        document.querySelectorAll(`.${activeOverlayClass}`).forEach(s => {
+          s.classList.remove(activeOverlayClass);
+          const f = s.querySelector('.tpl1-collection-footer') as HTMLElement;
+          if (f) { f.style.opacity = '0'; f.style.visibility = 'hidden'; }
+        });
+      }
+    };
+
+    slides.forEach(slide => {
+      const cardInner = slide.querySelector('.collectiony_main_card_inner') as HTMLElement;
+      const target = cardInner || slide;
+      target.addEventListener('click', handleSlideClick, true);
+      target.addEventListener('touchend', handleSlideTouch, true);
+    });
+    document.addEventListener('click', handleDocClick, true);
+
+    // Inject mobile collection card styles (guaranteed to override everything)
+    if (!document.getElementById('tpl1-collection-mobile-style')) {
+      const style = document.createElement('style');
+      style.id = 'tpl1-collection-mobile-style';
+      style.textContent = `
+        @media screen and (max-width: 768px) {
+          [data-template="1"] .musk_collection1 .musk-collection-slide .img-content {
+            position: absolute !important;
+            inset: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            min-height: 100% !important;
+            max-height: 100% !important;
+            overflow: hidden !important;
+          }
+          [data-template="1"] .musk_collection1 .musk-collection-slide .img-content img,
+          [data-template="1"] .musk_collection1 .musk-collection-slide .img-content svg.placeholder-svg {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            aspect-ratio: auto !important;
+            min-height: 0 !important;
+            object-fit: cover !important;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    const cleanup = bindCollectionLayout();
+    return () => {
+      cleanup();
+      slides.forEach(slide => {
+        const cardInner = slide.querySelector('.collectiony_main_card_inner') as HTMLElement;
+        const target = cardInner || slide;
+        target.removeEventListener('click', handleSlideClick, true);
+        target.removeEventListener('touchend', handleSlideTouch, true);
+      });
+      document.removeEventListener('click', handleDocClick, true);
+    };
   }, [bodyHtml, sectionCfg]);
 
   useEffect(() => {
@@ -4995,6 +5122,27 @@ export default function HomePage1() {
         [data-section-id="${sectionId}"] .product-content:hover .tpl1-cat-accent-bar {
           opacity: 1 !important;
         }
+        [data-section-id="${sectionId}"] .tpl1-cat-count-badge {
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          margin-top: 8px !important;
+          padding: 4px 12px !important;
+          font-size: 11px !important;
+          font-weight: 700 !important;
+          letter-spacing: 0.02em !important;
+          color: #fff !important;
+          background: linear-gradient(135deg, #ec4899, #db2777) !important;
+          border-radius: 999px !important;
+          line-height: 1.3 !important;
+          box-shadow: 0 2px 8px rgba(236, 72, 153, 0.25) !important;
+        }
+        [data-section-id="${sectionId}"] .tpl1-featured-cat-slide .product-details .product-price {
+          display: none !important;
+          height: 0 !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
       `;
       document.head.appendChild(style);
     }
@@ -5021,21 +5169,23 @@ export default function HomePage1() {
           productContent.appendChild(bar);
         }
 
-        // Add 3D tilt effect like plantilla2
-        productContent.addEventListener('mousemove', (e: Event) => {
-          const me = e as MouseEvent;
-          const el = me.currentTarget as HTMLElement;
-          el.style.transition = 'box-shadow .3s, border-color .3s';
-          const r = el.getBoundingClientRect();
-          const rx = ((me.clientY - r.top) / r.height - 0.5) * 12;
-          const ry = ((me.clientX - r.left) / r.width - 0.5) * -12;
-          el.style.transform = `perspective(600px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-4px) scale(1.03)`;
-        });
-        productContent.addEventListener('mouseleave', (e: Event) => {
-          const el = (e.currentTarget as HTMLElement);
-          el.style.transition = '';
-          el.style.transform = '';
-        });
+        // 3D tilt solo en desktop
+        if (window.matchMedia('(min-width: 769px)').matches) {
+          productContent.addEventListener('mousemove', (e: Event) => {
+            const me = e as MouseEvent;
+            const el = me.currentTarget as HTMLElement;
+            el.style.transition = 'box-shadow .3s, border-color .3s';
+            const r = el.getBoundingClientRect();
+            const rx = ((me.clientY - r.top) / r.height - 0.5) * 12;
+            const ry = ((me.clientX - r.left) / r.width - 0.5) * -12;
+            el.style.transform = `perspective(600px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-4px) scale(1.03)`;
+          });
+          productContent.addEventListener('mouseleave', (e: Event) => {
+            const el = (e.currentTarget as HTMLElement);
+            el.style.transition = '';
+            el.style.transform = '';
+          });
+        }
       }
 
       const productImg = slide.querySelector('.product-img') as HTMLElement;
@@ -5057,6 +5207,26 @@ export default function HomePage1() {
         nameLink.href = collectionItemHref(item);
       }
 
+      // Badge con cantidad de productos (debajo del nombre)
+      const productDetails = slide.querySelector('.product-details') as HTMLElement;
+      const upsertCountBadge = (container: HTMLElement | null, count: number | undefined) => {
+        if (!container) return;
+        let badge = container.querySelector('.tpl1-cat-count-badge') as HTMLElement;
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.className = 'tpl1-cat-count-badge';
+          container.appendChild(badge);
+        }
+        if (count === undefined) {
+          badge.style.display = 'none';
+          badge.textContent = '';
+          return;
+        }
+        badge.textContent = `${count} producto${count !== 1 ? 's' : ''}`;
+        badge.style.display = 'inline-flex';
+      };
+      upsertCountBadge(productDetails, item.productCount);
+
       const price = slide.querySelector('.product-price') as HTMLElement;
       if (price) price.style.display = 'none';
     });
@@ -5067,6 +5237,52 @@ export default function HomePage1() {
     for (let i = 0; i < Math.min(items.length, slides.length); i++) {
       slides[i].style.display = '';
     }
+
+    // Móvil: grid estático en lugar del carrusel apretado
+    const applyFeaturedMobileLayout = () => {
+      const isMobile = window.matchMedia('(max-width: 768px)').matches;
+      section.classList.toggle('tpl1-featured-cat-mobile-grid', isMobile);
+      const slider = section.querySelector('fuzion-swiper-slider') as HTMLElement & { swiper?: { destroy: (a: boolean, b: boolean) => void } };
+      if (isMobile && slider?.swiper) {
+        try { slider.swiper.destroy(false, true); } catch { /* ignore */ }
+      }
+    };
+    applyFeaturedMobileLayout();
+    window.addEventListener('resize', applyFeaturedMobileLayout);
+
+    // Auto-fetch product counts from Appwrite for categories missing productCount
+    (async () => {
+      const { databaseId } = getAppwriteConfig();
+      const { databases } = getServices();
+      for (let idx = 0; idx < items.length; idx++) {
+        const item = items[idx];
+        if (item.productCount !== undefined || !item.categoryId) continue;
+        try {
+          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+            Query.equal('CATEGORYID', item.categoryId),
+            Query.limit(1),
+          ]);
+          const count = res.total;
+          if (idx < slides.length) {
+            const details = slides[idx].querySelector('.product-details') as HTMLElement;
+            if (details) {
+              let badge = details.querySelector('.tpl1-cat-count-badge') as HTMLElement;
+              if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'tpl1-cat-count-badge';
+                details.appendChild(badge);
+              }
+              badge.textContent = `${count} producto${count !== 1 ? 's' : ''}`;
+              badge.style.display = 'inline-flex';
+            }
+          }
+        } catch { /* ignore */ }
+      }
+    })();
+
+    return () => {
+      window.removeEventListener('resize', applyFeaturedMobileLayout);
+    };
   }, [bodyHtml, sectionCfg]);
 
   /* ── Aplicar settings de marquee (tpl1) ── */
@@ -6418,11 +6634,9 @@ export default function HomePage1() {
 
     console.log('[TPL1] Finished announcement bar, about to search for tpl1_hero section...');
     // 0a2. Apply hero banner settings
-    // Hide hero immediately before any settings are applied (prevents flash of default Shopify content)
+    // Ensure pink bg on hero wrapper while content loads (CSS variables override handles the gray)
     const heroElEarly = document.getElementById('shopify-section-template--22405132419320__hero_banner_R6iEJ4');
     if (heroElEarly) {
-      heroElEarly.style.opacity = '0';
-      heroElEarly.style.transition = 'opacity 0.5s ease';
       heroElEarly.classList.remove('tpl1-hero-ready');
     }
     const heroSec = sectionCfg.find(s => s.id === 'tpl1_hero');
@@ -7062,6 +7276,14 @@ export default function HomePage1() {
     if (heroBannerEl) {
       heroBannerEl.style.opacity = '1';
       heroBannerEl.style.transition = 'opacity 0.5s ease';
+      // Mantener fallback rosa (evita flash gris al quitar vars del tema Shopify)
+      const heroInner = heroBannerEl.querySelector('.musk-main-banner') as HTMLElement;
+      if (heroInner) {
+        heroInner.style.setProperty('--primary-background', '254,242,248');
+        heroInner.style.setProperty('--secondary-background', '252,231,243');
+        heroInner.style.setProperty('--gradient-background', 'linear-gradient(101.19deg,rgba(254,242,248,1),rgba(252,231,243,1) 50%,rgba(251,207,232,1) 100%)');
+      }
+      heroBannerEl.classList.add('tpl1-hero-ready');
     }
 
     // 0c. Inject subscribe popup content if empty

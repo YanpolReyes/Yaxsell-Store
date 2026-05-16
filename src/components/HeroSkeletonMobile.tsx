@@ -12,7 +12,7 @@ export default function HeroSkeletonMobile({ visible = true }: { visible?: boole
           inset: 0;
           z-index: 9990;
           pointer-events: none;
-          background: linear-gradient(180deg, #fff5f8 0%, #ffffff 35%, #ffffff 100%);
+          background: linear-gradient(180deg, #fff5f8 0%, #fce7f3 40%, #fdf2f8 100%);
           display: flex;
           flex-direction: column;
         }
@@ -27,11 +27,11 @@ export default function HeroSkeletonMobile({ visible = true }: { visible?: boole
         .tpl1-hero-skeleton .sk {
           background: linear-gradient(
             105deg,
-            #f3f4f6 0%,
-            #fce7f3 35%,
+            #fce7f3 0%,
+            #fbcfe8 35%,
             #fdf2f8 50%,
             #fce7f3 65%,
-            #f3f4f6 100%
+            #fff5f8 100%
           );
           background-size: 200% 100%;
           animation: tpl1-sk-shimmer 1.6s ease-in-out infinite;
