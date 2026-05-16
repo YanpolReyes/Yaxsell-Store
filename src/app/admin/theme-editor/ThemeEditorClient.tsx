@@ -182,7 +182,7 @@ function ThemeEditorPage() {
   const [expandedGroups, setExpandedGroups] = useState({ header: true, body: true, footer: true });
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [fontConfig, setFontConfig] = useState<FontConfig>({ globalFont: 'Inter', globalHeadingFont: '', globalHeadingColor: '', globalTextColor: '' });
+  const [fontConfig, setFontConfig] = useState<FontConfig>({ globalFont: 'Inter', globalHeadingFont: '' });
   const [generalOpen, setGeneralOpen] = useState(true);
   const [showFontPanel, setShowFontPanel] = useState(false);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
@@ -4084,14 +4084,6 @@ function FontPanel({ fontConfig, onUpdate, onClose }: {
         <SH>Fuente global (toda la pÃ¡gina)</SH>
         <FontSelect label="Cuerpo / Texto general" value={fontConfig.globalFont} onChange={v => onUpdate({ globalFont: v })} previewText="Tu tienda online" />
         <FontSelect label="TÃ­tulos / Encabezados" value={fontConfig.globalHeadingFont} onChange={v => onUpdate({ globalHeadingFont: v })} previewText="Ofertas del dÃ­a" />
-
-        <div style={{ height: 1, background: '#e5e7eb', margin: '16px 0' }} />
-
-        <SH>Colores globales</SH>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <ColorField label="Color tÃ­tulos" value={fontConfig.globalHeadingColor || ''} onChange={v => onUpdate({ globalHeadingColor: v })} />
-          <ColorField label="Color texto general" value={fontConfig.globalTextColor || ''} onChange={v => onUpdate({ globalTextColor: v })} />
-        </div>
 
         <div style={{ height: 1, background: '#e5e7eb', margin: '16px 0' }} />
 

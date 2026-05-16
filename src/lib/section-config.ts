@@ -1227,8 +1227,6 @@ export const SECTION_DEFAULTS: SectionConfig[] = [
 export interface FontConfig {
   globalFont: string;
   globalHeadingFont: string;
-  globalHeadingColor: string;
-  globalTextColor: string;
 }
 
 export const FONT_OPTIONS = [
@@ -1298,8 +1296,6 @@ const FONT_STORAGE_KEY = 'theme_fonts';
 export const FONT_DEFAULTS: FontConfig = {
   globalFont: 'Inter',
   globalHeadingFont: '',
-  globalHeadingColor: '',
-  globalTextColor: '',
 };
 
 export function getFontConfig(): FontConfig {
