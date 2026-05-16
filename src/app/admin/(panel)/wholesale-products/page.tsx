@@ -17,9 +17,6 @@ export default function WholesaleProductsPage() {
   const [editWholesalePrice, setEditWholesalePrice] = useState('');
   const [editMinQuantity, setEditMinQuantity] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalProducts, setTotalProducts] = useState(0);
-  const pageSize = 50;
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -32,20 +29,12 @@ export default function WholesaleProductsPage() {
       const catResp = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]);
       setCategories(catResp.documents as unknown as Category[]);
       
-      // Primero obtener el total de productos con precio mayorista
-      const countResp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-        Query.limit(1),
-        Query.greaterThan('WHOLESALEPRICE', 0)
-      ]);
-      setTotalProducts(countResp.total);
-      
-      // Cargar productos paginados ordenados por stock (descendente)
-      const offset = (currentPage - 1) * pageSize;
+      // Cargar todos los productos con precio mayorista y stock, ordenados por stock (descendente)
       const prodResp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
         Query.orderDesc('STOCK'),
         Query.greaterThan('WHOLESALEPRICE', 0),
-        Query.limit(pageSize),
-        Query.offset(offset)
+        Query.greaterThan('STOCK', 0),
+        Query.limit(1000)
       ]);
       setProducts(prodResp.documents as unknown as Product[]);
     } catch (e: any) {
@@ -53,7 +42,7 @@ export default function WholesaleProductsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage]);
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 
@@ -136,8 +125,7 @@ export default function WholesaleProductsPage() {
             Productos Mayoristas
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            {totalProducts} producto{totalProducts !== 1 ? 's' : ''} con precio mayorista configurado
-            {totalProducts > 50 && ` (página ${currentPage} de ${Math.ceil(totalProducts / pageSize)})`}
+            {products.length} producto{products.length !== 1 ? 's' : ''} con precio mayorista y stock disponible
           </p>
         </div>
         <button onClick={load} disabled={isLoading} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-60">
@@ -148,20 +136,20 @@ export default function WholesaleProductsPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl border p-4">
-          <p className="text-2xl font-bold text-gray-900">{totalProducts}</p>
-          <span className="text-xs text-gray-500">Total productos mayoristas</span>
+          <p className="text-2xl font-bold text-gray-900">{products.length}</p>
+          <span className="text-xs text-gray-500">Total productos mayoristas con stock</span>
         </div>
         <div className="bg-white rounded-2xl border p-4">
           <p className="text-2xl font-bold text-green-600">
-            {products.filter(p => p.STOCK > 0).length}
+            {products.length}
           </p>
-          <span className="text-xs text-gray-500">Con stock disponible (página actual)</span>
+          <span className="text-xs text-gray-500">Con stock disponible</span>
         </div>
         <div className="bg-white rounded-2xl border p-4">
           <p className="text-2xl font-bold text-red-600">
-            {products.filter(p => (p.STOCK || 0) <= 0).length}
+            0
           </p>
-          <span className="text-xs text-gray-500">Sin stock (página actual)</span>
+          <span className="text-xs text-gray-500">Sin stock (filtrados)</span>
         </div>
       </div>
 
@@ -271,34 +259,6 @@ export default function WholesaleProductsPage() {
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
-
-        {/* Paginación */}
-        {totalProducts > pageSize && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
-            <div className="text-sm text-gray-600">
-              Mostrando {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, totalProducts)} de {totalProducts} productos
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Anterior
-              </button>
-              <span className="text-sm text-gray-600">
-                Página {currentPage} de {Math.ceil(totalProducts / pageSize)}
-              </span>
-              <button
-                onClick={() => setCurrentPage(p => Math.min(Math.ceil(totalProducts / pageSize), p + 1))}
-                disabled={currentPage >= Math.ceil(totalProducts / pageSize)}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Siguiente
-              </button>
-            </div>
           </div>
         )}
       </div>
