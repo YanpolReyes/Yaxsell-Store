@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { getServices, getAppwriteConfig } from '@/lib/appwrite-admin';
 import { Query, ID, Permission, Role } from 'appwrite';
+import { useAuth } from '@/hooks/useAuth';
 
 const PAGE_VIEWS_COLLECTION = 'page_views';
 
@@ -47,6 +48,7 @@ function simpleHash(str: string): string {
  * Solo trackea páginas del frontend (ignora /admin, /api, etc.)
  */
 export function usePageViewTracker() {
+  const { user } = useAuth();
   useEffect(() => {
     const track = async () => {
       const page = window.location.pathname || '/';
@@ -61,6 +63,9 @@ export function usePageViewTracker() {
         const geo = await getGeoInfo();
         const ipHash = simpleHash(geo.ip + date);
 
+        // Nombre del usuario si está logueado
+        const userName = user?.name || '';
+
         // Verificar si esta IP ya visitó esta página hoy
         const existing = await databases.listDocuments(databaseId, PAGE_VIEWS_COLLECTION, [
           Query.equal('PAGE', page),
@@ -70,7 +75,15 @@ export function usePageViewTracker() {
         ]);
 
         if (existing.documents.length > 0) {
-          // Ya visitó hoy → no contar doble
+          // Ya visitó hoy → actualizar nombre si se logueó después
+          if (userName) {
+            const doc = existing.documents[0];
+            if (!(doc as any).USER_NAME) {
+              await databases.updateDocument(databaseId, PAGE_VIEWS_COLLECTION, doc.$id, {
+                USER_NAME: userName,
+              });
+            }
+          }
           return;
         }
 
@@ -84,6 +97,7 @@ export function usePageViewTracker() {
           REGION: geo.region,
           LAT: geo.lat,
           LNG: geo.lng,
+          USER_NAME: userName,
         }, [
           Permission.read(Role.any()),
           Permission.write(Role.any()),
@@ -94,7 +108,7 @@ export function usePageViewTracker() {
     };
 
     track();
-  }, []);
+  }, [user?.id]);
 }
 
 /**
@@ -109,7 +123,7 @@ export async function getPageViewStats(days = 30) {
   since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString().slice(0, 10);
 
-  const all: { PAGE: string; DATE: string; VIEWS: number; COMUNA: string; REGION: string; LAT: number; LNG: number }[] = [];
+  const all: { PAGE: string; DATE: string; VIEWS: number; COMUNA: string; REGION: string; LAT: number; LNG: number; USER_NAME: string }[] = [];
   let cursor: string | undefined;
 
   do {
@@ -124,6 +138,7 @@ export async function getPageViewStats(days = 30) {
       REGION: (d as any).REGION || '',
       LAT: (d as any).LAT || 0,
       LNG: (d as any).LNG || 0,
+      USER_NAME: (d as any).USER_NAME || '',
     }));
     all.push(...docs);
     cursor = res.documents.length > 0 ? res.documents[res.documents.length - 1].$id : undefined;
@@ -175,10 +190,11 @@ export async function getPageViewStats(days = 30) {
     .filter(d => d.DATE >= last24h && d.LAT && d.LNG)
     .reduce((acc, d) => {
       const key = d.COMUNA || `${d.LAT},${d.LNG}`;
-      if (!acc[key]) acc[key] = { comuna: d.COMUNA, region: d.REGION, lat: d.LAT, lng: d.LNG, count: 0 };
+      if (!acc[key]) acc[key] = { comuna: d.COMUNA, region: d.REGION, lat: d.LAT, lng: d.LNG, count: 0, users: [] };
       acc[key].count++;
+      if (d.USER_NAME && !acc[key].users.includes(d.USER_NAME)) acc[key].users.push(d.USER_NAME);
       return acc;
-    }, {} as Record<string, { comuna: string; region: string; lat: number; lng: number; count: number }>);
+    }, {} as Record<string, { comuna: string; region: string; lat: number; lng: number; count: number; users: string[] }>);
   const visitorMarkers = Object.values(mapMarkers);
 
   return { totalViews, uniquePages, viewsByDay, topPages, todayViews, topComunas, visitorMarkers, days: filtered.length };

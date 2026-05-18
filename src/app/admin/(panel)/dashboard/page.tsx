@@ -942,7 +942,7 @@ export default function DashboardPage() {
   const [newUsers, setNewUsers]               = useState(0);
   const [prevRevenue, setPrevRevenue]         = useState(0);
   const [prevOrders, setPrevOrders]           = useState(0);
-  const [pageViews, setPageViews]             = useState<{ totalViews: number; todayViews: number; topPages: { page: string; views: number }[]; topComunas: { comuna: string; count: number; lat: number; lng: number }[]; visitorMarkers: { comuna: string; region: string; lat: number; lng: number; count: number }[] }>({ totalViews: 0, todayViews: 0, topPages: [], topComunas: [], visitorMarkers: [] });
+  const [pageViews, setPageViews]             = useState<{ totalViews: number; todayViews: number; topPages: { page: string; views: number }[]; topComunas: { comuna: string; count: number; lat: number; lng: number }[]; visitorMarkers: { comuna: string; region: string; lat: number; lng: number; count: number; users: string[] }[] }>({ totalViews: 0, todayViews: 0, topPages: [], topComunas: [], visitorMarkers: [] });
 
   const loadData = useCallback(async () => {
     setIsLoading(true); setError('');
@@ -1516,16 +1516,28 @@ export default function DashboardPage() {
           {pageViews.topComunas.length > 0 && (
             <div style={{ marginBottom: 20 }}>
               <h4 style={{ fontSize: 11, fontWeight: 700, color: '#374151', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📍 Comunas de visitantes (30 días)</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {pageViews.topComunas.slice(0, 8).map((tc, i) => {
                   const maxC = pageViews.topComunas[0]?.count || 1;
+                  // Buscar usuarios registrados en esta comuna
+                  const marker = pageViews.visitorMarkers.find(m => m.comuna === tc.comuna);
+                  const users = marker?.users || [];
                   return (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 11, color: '#6b7280', width: 100, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tc.comuna}</span>
-                      <div style={{ flex: 1, height: 8, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${(tc.count / maxC) * 100}%`, background: 'linear-gradient(90deg, #ec4899, #f43f5e)', borderRadius: 4, transition: 'width 0.5s' }} />
+                    <div key={i}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 11, color: '#6b7280', width: 100, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tc.comuna}</span>
+                        <div style={{ flex: 1, height: 8, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${(tc.count / maxC) * 100}%`, background: 'linear-gradient(90deg, #ec4899, #f43f5e)', borderRadius: 4, transition: 'width 0.5s' }} />
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#ec4899', minWidth: 20, textAlign: 'right' }}>{tc.count}</span>
                       </div>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#ec4899', minWidth: 20, textAlign: 'right' }}>{tc.count}</span>
+                      {users.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 3, paddingLeft: 108 }}>
+                          {users.map((u, j) => (
+                            <span key={j} style={{ fontSize: 10, fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.08)', padding: '1px 6px', borderRadius: 4 }}>👤 {u}</span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

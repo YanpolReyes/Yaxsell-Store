@@ -6085,7 +6085,7 @@ export default function HomePage1() {
           <div style="display:flex;flex-wrap:wrap;gap:6px;">
             ${markers.map(m => `
               <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;background:${iconBg};font-size:11px;font-weight:600;color:${accentColor};">
-                📍 ${m.comuna}${m.count > 1 ? ` (${m.count})` : ''}
+                📍 ${m.comuna}${m.count > 1 ? ` (${m.count})` : ''}${m.users && m.users.length > 0 ? ` — 👤 ${m.users[0]}${m.users.length > 1 ? ` +${m.users.length - 1}` : ''}` : ''}
               </span>
             `).join('')}
           </div>
