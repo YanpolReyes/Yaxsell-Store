@@ -6332,6 +6332,42 @@ export default function HomePage1() {
           applyLogoImg(darkLogos, scrollLogoUrl);
         }
 
+        // ── Mobile hero logo (centered, visible only on mobile) ──
+        if (!document.getElementById('tpl1-hero-mobile-logo')) {
+          const mStyle = document.createElement('style');
+          mStyle.id = 'tpl1-hero-mobile-logo-style';
+          mStyle.textContent = `
+            .tpl1-hero-mobile-logo { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; pointer-events: none; }
+            .tpl1-hero-mobile-logo img { max-width: 140px; max-height: 60px; width: auto; height: auto; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3)); }
+            @media (max-width: 768px) { .tpl1-hero-mobile-logo { display: block; } }
+          `;
+          document.head.appendChild(mStyle);
+
+          const heroEl = document.getElementById('shopify-section-template--22405132419320__hero_banner_R6iEJ4');
+          if (heroEl) {
+            const logoDiv = document.createElement('div');
+            logoDiv.className = 'tpl1-hero-mobile-logo';
+            logoDiv.id = 'tpl1-hero-mobile-logo';
+            if (logoUrl) {
+              logoDiv.innerHTML = `<img src="${logoUrl}" alt="${storeName}" />`;
+            } else {
+              logoDiv.innerHTML = `<span style="font-size:22px;font-weight:800;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.4);letter-spacing:-0.02em;font-family:Syne,sans-serif">${storeName}</span>`;
+            }
+            heroEl.style.position = 'relative';
+            heroEl.appendChild(logoDiv);
+          }
+        } else {
+          // Update existing mobile logo
+          const existingLogo = document.getElementById('tpl1-hero-mobile-logo');
+          if (existingLogo) {
+            if (logoUrl) {
+              existingLogo.innerHTML = `<img src="${logoUrl}" alt="${storeName}" />`;
+            } else {
+              existingLogo.innerHTML = `<span style="font-size:22px;font-weight:800;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.4);letter-spacing:-0.02em;font-family:Syne,sans-serif">${storeName}</span>`;
+            }
+          }
+        }
+
         // Apply slide content if slides exist
         if (slides && slides.length > 0) {
 
