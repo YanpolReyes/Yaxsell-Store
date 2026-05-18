@@ -12,6 +12,7 @@ export interface ScanWizardState {
   packages: string;
   packQtyInput?: string;
   section: number | null;
+  isAddStock?: boolean;
 }
 
 interface ScanWizardModalProps {
@@ -146,7 +147,7 @@ export default function ScanWizardModal({
               <input
                 type="number"
                 min={0}
-                autoFocus
+                inputMode="numeric"
                 value={wizard.packages}
                 onChange={e => onUpdate(w => ({ ...w, packages: e.target.value }))}
                 className="w-full max-w-[200px] px-4 py-4 text-4xl font-bold text-center border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-amber-500"

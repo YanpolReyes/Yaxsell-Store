@@ -247,7 +247,7 @@ export default function InventarioPage() {
     setScanTarget('search');
   };
 
-  const startScanWizard = (product: Product, scannedCode: string) => {
+  const startScanWizard = (product: Product, scannedCode: string, isAddStock = false) => {
     setShowScanner(false);
     const features = productFeaturesText(product);
     const sectionMatch = features.match(/Section:\s*(\d+)/i);
@@ -257,6 +257,7 @@ export default function InventarioPage() {
       step: 'confirm',
       packages: '1',
       section: sectionMatch ? parseInt(sectionMatch[1], 10) : lastPlacedSection,
+      isAddStock,
     });
   };
 
@@ -309,7 +310,7 @@ export default function InventarioPage() {
 
   const finishScanWizard = async () => {
     if (!scanWizard) return;
-    const { product, packages, section, scannedCode, packQtyInput } = scanWizard;
+    const { product, packages, section, scannedCode, packQtyInput, isAddStock } = scanWizard;
     const packQty = packQtyInput ? parseInt(packQtyInput, 10) : (product.PACKQTY || 0);
     const pkgs = parseInt(packages, 10);
     setSavingStockId(product.$id);
@@ -319,7 +320,12 @@ export default function InventarioPage() {
       const payload: Record<string, unknown> = { ISACTIVE: true };
       if (packQty > 0 && !isNaN(pkgs) && pkgs >= 0) {
         payload.PACKQTY = packQty;
-        payload.STOCK = pkgs * packQty;
+        const newUnits = pkgs * packQty;
+        if (isAddStock && (product.STOCK || 0) > 0) {
+          payload.STOCK = (product.STOCK || 0) + newUnits;
+        } else {
+          payload.STOCK = newUnits;
+        }
         payload.ISACTIVE = (payload.STOCK as number) > 0;
       }
       let finalFeatures = productFeaturesText(product);
@@ -1262,8 +1268,8 @@ export default function InventarioPage() {
         <div className="fixed inset-0 z-[65] bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden">
             <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-4">
-              <h3 className="text-lg font-bold">⚠ Código duplicado</h3>
-              <p className="text-xs text-white/80 mt-0.5">Escaneaste este código hace menos de 10 segundos</p>
+              <h3 className="text-lg font-bold">Código repetido</h3>
+              <p className="text-xs text-white/80 mt-0.5">Ya escaneaste este producto recientemente</p>
             </div>
             <div className="p-5 flex items-center gap-4">
               {duplicateScanWarning.product.IMAGEURL && (
@@ -1273,22 +1279,28 @@ export default function InventarioPage() {
                 <div className="font-semibold text-gray-900 line-clamp-1">{duplicateScanWarning.product.NAME}</div>
                 <div className="text-xs font-mono text-gray-500">SKU: {getSku(duplicateScanWarning.product)}</div>
                 <div className="text-xs text-amber-600 font-semibold mt-1">Código: {duplicateScanWarning.code}</div>
+                {(duplicateScanWarning.product.STOCK || 0) > 0 && (
+                  <div className="text-sm text-emerald-600 font-semibold mt-1">Stock actual: {duplicateScanWarning.product.STOCK} uds</div>
+                )}
               </div>
+            </div>
+            <div className="px-5 pb-2">
+              <p className="text-sm text-gray-600 text-center">¿Deseas añadir más stock a este producto?</p>
             </div>
             <div className="grid grid-cols-2 gap-3 px-5 pb-5">
               <button
                 onClick={() => { setDuplicateScanWarning(null); openScanner('search'); }}
                 className="py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition">
-                Cancelar
+                No, siguiente
               </button>
               <button
                 onClick={() => {
-                  setLastScannedCode(null); // Reset para permitir continuar
+                  setLastScannedCode(null);
                   setDuplicateScanWarning(null);
-                  startScanWizard(duplicateScanWarning.product, duplicateScanWarning.code);
+                  startScanWizard(duplicateScanWarning.product, duplicateScanWarning.code, true);
                 }}
                 className="py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm transition">
-                Continuar
+                Sí, añadir stock
               </button>
             </div>
           </div>
