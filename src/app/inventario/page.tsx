@@ -17,6 +17,7 @@ import {
 import dynamic from 'next/dynamic';
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false });
 const ProductLocator = dynamic(() => import('@/components/ProductLocator'), { ssr: false });
+import ScanWizardModal, { type ScanWizardState } from '@/components/inventario/ScanWizardModal';
 
 interface InventoryRow {
   sku: string;
@@ -121,7 +122,37 @@ function getBarcodeFromProduct(p: Product): string {
   const features = productFeaturesText(p);
   const featMatch = features.match(/Barcode:\s*(.+)/i);
   if (featMatch) return featMatch[1].trim().split('\n')[0];
+  const topLevel = (p as { barcode?: string }).barcode;
+  if (topLevel && String(topLevel).trim()) return String(topLevel).trim();
   return '';
+}
+
+function buildCatalogPublishPayload(p: Product): Record<string, unknown> {
+  const features = productFeaturesText(p);
+  const barcode = getBarcodeFromProduct(p);
+  const sku = getSkuFromProduct(p);
+  const payload: Record<string, unknown> = {
+    NAME: p.NAME,
+    DESCRIPTION: (p as { DESCRIPTION?: string }).DESCRIPTION || p.NAME,
+    PRICE: p.PRICE || 0,
+    STOCK: p.STOCK || 0,
+    COST: (p as { COST?: number }).COST || 0,
+    WHOLESALEPRICE: (p as { WHOLESALEPRICE?: number }).WHOLESALEPRICE || 0,
+    WHOLESALEMINQUANTITY: (p as { WHOLESALEMINQUANTITY?: number }).WHOLESALEMINQUANTITY || 0,
+    IMAGEURL: p.IMAGEURL || '',
+    IMAGEURL2: (p as { IMAGEURL2?: string }).IMAGEURL2 || '',
+    IMAGEURL3: (p as { IMAGEURL3?: string }).IMAGEURL3 || '',
+    CATEGORYID: p.CATEGORYID || '',
+    SUBCATEGORYID: (p as { SUBCATEGORYID?: string }).SUBCATEGORYID || '',
+    ISACTIVE: true,
+    PACKQTY: p.PACKQTY || 0,
+  };
+  if (features) payload.FEATURES = features;
+  const tags = p.TAGS || sku;
+  if (tags) payload.TAGS = tags;
+  if (barcode) payload.barcode = barcode;
+  if (p.jumpseller_id) payload.jumpseller_id = p.jumpseller_id;
+  return payload;
 }
 
 export default function InventarioPage() {
@@ -157,11 +188,9 @@ export default function InventarioPage() {
   const [barcodeEdits, setBarcodeEdits] = useState<Record<string, string>>({});
   const [savingStockId, setSavingStockId] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(false);
-  const [scannerBulkMode, setScannerBulkMode] = useState(false);
   const [scanTarget, setScanTarget] = useState<'search' | string>('search');
-  const [barcodeSuggestion, setBarcodeSuggestion] = useState<{ product: Product; scannedBarcode: string; step: 'confirm-product' | 'confirm-add-barcode' } | null>(null);
-  // Modal instead of toast for scan-found-with-stock
-  const [stockModal, setStockModal] = useState<{ product: Product; scannedCode: string } | null>(null);
+  const [scanWizard, setScanWizard] = useState<ScanWizardState | null>(null);
+  const [scanSaved, setScanSaved] = useState<{ name: string } | null>(null);
   // Unregistered product modal
   const [unregisteredModal, setUnregisteredModal] = useState<{ code: string } | null>(null);
   const [editStockModal, setEditStockModal] = useState<Product | null>(null);
@@ -204,24 +233,111 @@ export default function InventarioPage() {
     setEditPackagesValue('');
     setEditSectionValue(null);
     setEditBarcodeValue('');
-    reopenScannerIfBulk();
   };
 
-  const openScanner = (target: 'search' | string, bulk = false) => {
+  const openScanner = (target: 'search' | string = 'search') => {
     setScanTarget(target);
-    setScannerBulkMode(bulk);
     setShowScanner(true);
   };
 
   const closeScanner = () => {
     setShowScanner(false);
     setScanTarget('search');
-    setScannerBulkMode(false);
   };
 
-  const reopenScannerIfBulk = () => {
-    if (!scannerBulkMode) return;
-    window.setTimeout(() => openScanner('search', true), 450);
+  const startScanWizard = (product: Product, scannedCode: string) => {
+    setShowScanner(false);
+    const features = productFeaturesText(product);
+    const sectionMatch = features.match(/Section:\s*(\d+)/i);
+    setScanWizard({
+      product,
+      scannedCode,
+      step: 'confirm',
+      packages: String(Math.max(0, Math.round((product.STOCK || 0) / (product.PACKQTY || 1)))),
+      section: sectionMatch ? parseInt(sectionMatch[1], 10) : lastPlacedSection,
+    });
+  };
+
+  const advanceScanWizardAfterConfirm = (updatedProduct?: Product) => {
+    setScanWizard(w => {
+      if (!w) return null;
+      const product = updatedProduct || w.product;
+      if (product.PACKQTY && product.PACKQTY > 0) {
+        return { ...w, product, step: 'packages' };
+      }
+      return { ...w, product, step: 'gondola' };
+    });
+  };
+
+  const confirmScanProduct = async () => {
+    if (!scanWizard) return;
+    const { product, scannedCode } = scanWizard;
+    const existingBc = getBarcodeFromProduct(product);
+    if (!existingBc && scannedCode) {
+      setSavingStockId(product.$id);
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        const newFeatures = setBarcodeInFeatures(productFeaturesText(product), scannedCode);
+        await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, product.$id, {
+          FEATURES: newFeatures,
+          barcode: scannedCode,
+        });
+        const updated = { ...product, FEATURES: newFeatures, barcode: scannedCode };
+        setProducts(prev => prev.map(p => p.$id === product.$id ? updated : p));
+        advanceScanWizardAfterConfirm(updated);
+      } catch (e: unknown) {
+        alert('Error al guardar código: ' + (e instanceof Error ? e.message : 'Error'));
+        return;
+      } finally {
+        setSavingStockId(null);
+      }
+    } else {
+      advanceScanWizardAfterConfirm();
+    }
+  };
+
+  const confirmScanPackages = () => {
+    if (!scanWizard) return;
+    const pkgs = parseInt(scanWizard.packages, 10);
+    if (isNaN(pkgs) || pkgs < 0) {
+      alert('Ingresa una cantidad válida de paquetes.');
+      return;
+    }
+    setScanWizard(w => (w ? { ...w, step: 'gondola' } : null));
+  };
+
+  const finishScanWizard = async () => {
+    if (!scanWizard) return;
+    const { product, packages, section, scannedCode } = scanWizard;
+    const packQty = product.PACKQTY || 0;
+    const pkgs = parseInt(packages, 10);
+    setSavingStockId(product.$id);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const payload: Record<string, unknown> = { ISACTIVE: true };
+      if (packQty > 0 && !isNaN(pkgs) && pkgs >= 0) {
+        payload.PACKQTY = packQty;
+        payload.STOCK = pkgs * packQty;
+        payload.ISACTIVE = (payload.STOCK as number) > 0;
+      }
+      let finalFeatures = productFeaturesText(product);
+      finalFeatures = setSectionInFeatures(finalFeatures, section);
+      finalFeatures = setBarcodeInFeatures(finalFeatures, getBarcodeFromProduct(product) || scannedCode);
+      payload.FEATURES = finalFeatures;
+      await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, product.$id, payload);
+      setProducts(prev =>
+        prev.map(p => (p.$id === product.$id ? { ...p, ...payload, FEATURES: finalFeatures as string } : p)),
+      );
+      if (section) setLastPlacedSection(section);
+      setScanSaved({ name: product.NAME || 'Producto' });
+      setScanWizard(null);
+    } catch (e: unknown) {
+      alert('Error: ' + (e instanceof Error ? e.message : 'Error al guardar'));
+    } finally {
+      setSavingStockId(null);
+    }
   };
 
   const handleImportPackQty = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -331,12 +447,7 @@ export default function InventarioPage() {
         });
 
         if (directMatch) {
-          setShowScanner(false);
-          if ((directMatch.STOCK || 0) > 0) {
-            setStockModal({ product: directMatch, scannedCode: code });
-          } else {
-            openEditStockModal(directMatch);
-          }
+          startScanWizard(directMatch, code);
         } else if (code.length >= 8) {
           const last4 = code.slice(-4).toLowerCase();
           const matches = products.filter(p => {
@@ -344,8 +455,7 @@ export default function InventarioPage() {
             return sku && sku.endsWith(last4) && !getBarcodeFromProduct(p);
           });
           if (matches.length === 1) {
-            setShowScanner(false);
-            setBarcodeSuggestion({ product: matches[0], scannedBarcode: code, step: 'confirm-product' });
+            startScanWizard(matches[0], code);
           } else {
             setShowScanner(false);
             setUnregisteredModal({ code });
@@ -363,43 +473,10 @@ export default function InventarioPage() {
       console.error('[inventario] handleBarcodeScan:', err);
       alert('Error al procesar el código escaneado. Intenta de nuevo.');
     } finally {
-      if (!scannerBulkMode) {
+      if (scanTarget !== 'search') {
         closeScanner();
       }
     }
-  };
-
-  const confirmBarcodeSuggestion = async () => {
-    if (!barcodeSuggestion) return;
-    // Step 1 → advance to step 2 (asks to add barcode)
-    if (barcodeSuggestion.step === 'confirm-product') {
-      setBarcodeSuggestion({ ...barcodeSuggestion, step: 'confirm-add-barcode' });
-      return;
-    }
-    // Step 2 → save barcode and close
-    const { product, scannedBarcode } = barcodeSuggestion;
-    setSavingStockId(product.$id);
-    try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-      const newFeatures = setBarcodeInFeatures(product.FEATURES || '', scannedBarcode);
-      await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, product.$id, { FEATURES: newFeatures });
-      setProducts(prev => prev.map(p => p.$id === product.$id ? { ...p, FEATURES: newFeatures } : p));
-      setCatalogSearch(getSkuFromProduct(product));
-      setBarcodeSuggestion(null);
-      reopenScannerIfBulk();
-    } catch (e: any) {
-      alert('Error al guardar código: ' + e.message);
-    } finally {
-      setSavingStockId(null);
-    }
-  };
-
-  // Skip barcode-add step but still show the product in catalog
-  const skipBarcodeStep = () => {
-    if (!barcodeSuggestion) return;
-    setCatalogSearch(getSkuFromProduct(barcodeSuggestion.product));
-    setBarcodeSuggestion(null);
   };
 
   useEffect(() => {
@@ -964,23 +1041,7 @@ export default function InventarioPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      // Construir payload para products (solo atributos que existen en la colección)
-      const payload: any = {
-        NAME: p.NAME,
-        DESCRIPTION: (p as any).DESCRIPTION || p.NAME,
-        PRICE: p.PRICE || 0,
-        STOCK: p.STOCK || 0,
-        COST: (p as any).COST || 0,
-        WHOLESALEPRICE: (p as any).WHOLESALEPRICE || 0,
-        WHOLESALEMINQUANTITY: (p as any).WHOLESALEMINQUANTITY || 0,
-        IMAGEURL: p.IMAGEURL || '',
-        IMAGEURL2: (p as any).IMAGEURL2 || '',
-        IMAGEURL3: (p as any).IMAGEURL3 || '',
-        CATEGORYID: p.CATEGORYID || '',
-        SUBCATEGORYID: (p as any).SUBCATEGORYID || '',
-        ISACTIVE: true,
-        PACKQTY: p.PACKQTY || 0,
-      };
+      const payload = buildCatalogPublishPayload(p);
 
       // 1. Crear en catálogo
       await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
@@ -1041,22 +1102,7 @@ export default function InventarioPage() {
             continue;
           }
 
-          const payload: any = {
-            NAME: p.NAME,
-            DESCRIPTION: (p as any).DESCRIPTION || p.NAME,
-            PRICE: p.PRICE || 0,
-            STOCK: p.STOCK || 0,
-            COST: (p as any).COST || 0,
-            WHOLESALEPRICE: (p as any).WHOLESALEPRICE || 0,
-            WHOLESALEMINQUANTITY: (p as any).WHOLESALEMINQUANTITY || 0,
-            IMAGEURL: p.IMAGEURL || '',
-            IMAGEURL2: (p as any).IMAGEURL2 || '',
-            IMAGEURL3: (p as any).IMAGEURL3 || '',
-            CATEGORYID: p.CATEGORYID || '',
-            SUBCATEGORYID: (p as any).SUBCATEGORYID || '',
-            ISACTIVE: true,
-            PACKQTY: p.PACKQTY || 0,
-          };
+          const payload = buildCatalogPublishPayload(p);
 
           await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
           await databases.deleteDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, p.$id);
@@ -1127,11 +1173,7 @@ export default function InventarioPage() {
       {/* Hide bottom navbar on /inventario */}
       <style>{`[data-bottom-nav], .tpl1-mobile-bottom-nav, nav[class*='bottom'], .bottom-nav { display: none !important; }`}</style>
       {showScanner && (
-        <BarcodeScanner
-          onScan={handleBarcodeScan}
-          onClose={closeScanner}
-          continuous={scannerBulkMode && scanTarget === 'search'}
-        />
+        <BarcodeScanner onScan={handleBarcodeScan} onClose={closeScanner} />
       )}
       {previewImg && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center cursor-pointer" onClick={() => setPreviewImg(null)}>
@@ -1140,120 +1182,39 @@ export default function InventarioPage() {
         </div>
       )}
 
-      {/* Barcode suggestion modal — 2-step confirmation */}
-      {barcodeSuggestion && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
-            {barcodeSuggestion.step === 'confirm-product' ? (
-              <>
-                <div className="bg-gradient-to-r from-pink-400 to-pink-500 text-white px-6 py-4">
-                  <h3 className="text-lg font-bold">¿Es este el producto?</h3>
-                  <p className="text-xs text-white/80 mt-0.5">Coincide con los últimos 4 dígitos del código escaneado</p>
-                </div>
-                <div className="p-6 flex flex-col items-center gap-4">
-                  {barcodeSuggestion.product.IMAGEURL ? (
-                    <img src={barcodeSuggestion.product.IMAGEURL} alt="" className="w-48 h-48 object-cover rounded-2xl shadow-lg" />
-                  ) : (
-                    <div className="w-48 h-48 rounded-2xl bg-gray-100 flex items-center justify-center">
-                      <Package className="w-16 h-16 text-gray-300" />
-                    </div>
-                  )}
-                  <div className="text-center">
-                    <div className="font-semibold text-gray-900 text-lg">{barcodeSuggestion.product.NAME}</div>
-                    <div className="text-xs font-mono text-gray-500 mt-1">SKU: {getSku(barcodeSuggestion.product)}</div>
-                    <div className="text-xs font-mono text-rose-600 mt-2 bg-rose-50 px-3 py-1 rounded-full inline-block">
-                      Código escaneado: {barcodeSuggestion.scannedBarcode}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex border-t border-gray-100">
-                  <button onClick={() => setBarcodeSuggestion(null)}
-                    className="flex-1 px-4 py-3 text-gray-600 hover:bg-gray-50 font-semibold transition">
-                    No
-                  </button>
-                  <button onClick={confirmBarcodeSuggestion}
-                    className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition">
-                    Sí, es este
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-6 py-4">
-                  <h3 className="text-lg font-bold">¿Añadir el código al producto?</h3>
-                  <p className="text-xs text-white/80 mt-0.5">Se guardará en el producto y podrás añadir las cantidades</p>
-                </div>
-                <div className="p-6 flex flex-col items-center gap-3">
-                  {barcodeSuggestion.product.IMAGEURL && (
-                    <img src={barcodeSuggestion.product.IMAGEURL} alt="" className="w-24 h-24 object-cover rounded-xl" />
-                  )}
-                  <div className="text-center">
-                    <div className="font-semibold text-gray-900 text-sm line-clamp-1">{barcodeSuggestion.product.NAME}</div>
-                    <div className="text-base font-mono text-gray-900 mt-2 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-200">
-                      {barcodeSuggestion.scannedBarcode}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex border-t border-gray-100">
-                  <button onClick={skipBarcodeStep}
-                    className="flex-1 px-4 py-3 text-gray-600 hover:bg-gray-50 font-semibold transition">
-                    No, solo mostrar
-                  </button>
-                  <button onClick={confirmBarcodeSuggestion}
-                    disabled={savingStockId === barcodeSuggestion.product.$id}
-                    className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white font-semibold transition flex items-center justify-center gap-2">
-                    {savingStockId === barcodeSuggestion.product.$id ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : null}
-                    Sí, guardar
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+      {scanWizard && (
+        <ScanWizardModal
+          wizard={scanWizard}
+          sectionProductCounts={sectionProductCounts}
+          lastPlacedSection={lastPlacedSection}
+          saving={savingStockId === scanWizard.product.$id}
+          onClose={() => setScanWizard(null)}
+          onConfirmProduct={confirmScanProduct}
+          onConfirmPackages={confirmScanPackages}
+          onFinish={finishScanWizard}
+          onPreviewImage={url => setPreviewImg(url)}
+          onUpdate={fn => setScanWizard(w => (w ? fn(w) : null))}
+          getSku={getSku}
+        />
       )}
 
-      {/* Stock modal — product already has stock */}
-      {stockModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden">
-            <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-4">
-              <h3 className="text-lg font-bold">⚠ Este producto ya tiene stock</h3>
-              <p className="text-xs text-white/80 mt-0.5">¿Qué deseas hacer?</p>
-            </div>
-            <div className="p-5 flex items-center gap-4">
-              {stockModal.product.IMAGEURL && (
-                <img src={stockModal.product.IMAGEURL} alt="" className="w-16 h-16 object-cover rounded-xl shrink-0 cursor-pointer hover:scale-125 hover:z-50 hover:shadow-2xl transition-transform duration-200" onClick={() => setPreviewImg(stockModal.product.IMAGEURL!)} />
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-gray-900 line-clamp-1">{stockModal.product.NAME}</div>
-                <div className="text-xs font-mono text-gray-500">SKU: {getSku(stockModal.product)}</div>
-                <div className="text-sm font-bold text-emerald-600 mt-1">{stockModal.product.STOCK} unidades actuales</div>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 px-5 pb-5">
-              <button
-                onClick={() => {
-                  setView('catalog');
-                  setCatalogSearch(getSku(stockModal.product));
-                  setStockModal(null);
-                }}
-                className="py-3 px-4 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-xl text-sm transition">
-                + Agregar más
+      {scanSaved && (
+        <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
+            <CheckCircle2 className="w-14 h-14 text-emerald-500 mx-auto mb-3" />
+            <h3 className="text-lg font-bold text-gray-900">Guardado</h3>
+            <p className="text-sm text-gray-600 mt-1 line-clamp-2">{scanSaved.name}</p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button type="button"
+                onClick={() => { setScanSaved(null); openScanner('search'); }}
+                className="w-full py-3.5 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-xl flex items-center justify-center gap-2">
+                <Camera size={18} /> Escanear otro producto
               </button>
-              <button
-                onClick={() => {
-                  openEditStockModal(stockModal.product);
-                  setStockModal(null);
-                }}
-                className="py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition">
-                Editar
+              <button type="button" onClick={() => setScanSaved(null)}
+                className="w-full py-2.5 text-gray-600 hover:bg-gray-50 font-medium rounded-xl transition">
+                Cerrar
               </button>
             </div>
-            <button onClick={() => { setStockModal(null); reopenScannerIfBulk(); }} className="w-full pb-5 text-xs text-gray-400 hover:text-gray-600 transition">
-              Cancelar
-            </button>
           </div>
         </div>
       )}
@@ -1527,9 +1488,9 @@ export default function InventarioPage() {
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
-                <button onClick={() => openScanner('search', true)}
+                <button onClick={() => openScanner('search')}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-pink-600 transition"
-                  title="Escanear código de barras (modo ráfaga)">
+                  title="Escanear código de barras">
                   <Camera className="w-4 h-4" />
                 </button>
               </div>
@@ -1612,7 +1573,7 @@ export default function InventarioPage() {
                                     title="Añadir código de barras"
                                     className="flex-1 px-2 py-1.5 text-sm border border-rose-300 bg-rose-50 rounded focus:outline-none focus:border-rose-500 font-mono"
                                   />
-                                  <button onClick={() => openScanner(p.$id, false)}
+                                  <button onClick={() => openScanner(p.$id)}
                                     className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded transition"
                                     title="Escanear código de barras">
                                     <Camera className="w-4 h-4" />
@@ -1763,7 +1724,7 @@ export default function InventarioPage() {
                                   title="Añadir código de barras"
                                   className="flex-1 px-3 py-2 text-sm border border-rose-300 bg-rose-50 rounded-lg focus:outline-none focus:border-rose-500 font-mono"
                                 />
-                                <button onClick={() => openScanner(p.$id, false)}
+                                <button onClick={() => openScanner(p.$id)}
                                   className="p-2.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition border border-rose-200"
                                   title="Escanear código de barras">
                                   <Camera className="w-5 h-5" />
@@ -1905,7 +1866,7 @@ export default function InventarioPage() {
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
-                <button onClick={() => openScanner('search', true)}
+                <button onClick={() => openScanner('search')}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-pink-600 transition"
                   title="Escanear código de barras (modo ráfaga)">
                   <Camera className="w-4 h-4" />
@@ -2020,7 +1981,7 @@ export default function InventarioPage() {
                                     title="Añadir código de barras"
                                     className="flex-1 px-2 py-1.5 text-sm border border-rose-300 bg-rose-50 rounded focus:outline-none focus:border-rose-500 font-mono"
                                   />
-                                  <button onClick={() => openScanner(p.$id, false)}
+                                  <button onClick={() => openScanner(p.$id)}
                                     className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded transition"
                                     title="Escanear código de barras">
                                     <Camera className="w-4 h-4" />
@@ -2134,7 +2095,7 @@ export default function InventarioPage() {
                                     title="Añadir código de barras"
                                     className="flex-1 px-3 py-2 text-sm border border-rose-300 bg-rose-50 rounded-lg focus:outline-none focus:border-rose-500 font-mono"
                                   />
-                                  <button onClick={() => openScanner(p.$id, false)}
+                                  <button onClick={() => openScanner(p.$id)}
                                     className="p-2.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition border border-rose-200"
                                     title="Escanear código de barras">
                                     <Camera className="w-5 h-5" />
@@ -2607,15 +2568,21 @@ export default function InventarioPage() {
 
       {/* Floating camera widget */}
       <button
-        onClick={() => openScanner('search', true)}
+        onClick={() => openScanner('search')}
         className="fixed right-5 z-40 w-14 h-14 bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform active:scale-95"
         style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
-        title="Escanear producto (modo ráfaga)"
+        title="Escanear producto"
       >
         <Camera className="w-6 h-6" />
       </button>
 
-      <ProductLocator isOpen={showLocator} onClose={() => setShowLocator(false)} products={products as any} onProductsUpdate={setProducts as any} />
+      <ProductLocator
+        isOpen={showLocator}
+        onClose={() => setShowLocator(false)}
+        products={products as any}
+        onProductsUpdate={setProducts as any}
+        collectionId={INVENTORY_PRODUCTS_COLLECTION_ID}
+      />
     </div>
   );
 }

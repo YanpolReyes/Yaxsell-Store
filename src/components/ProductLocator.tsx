@@ -47,11 +47,13 @@ interface Props {
   onClose: () => void;
   products: Product[];
   onProductsUpdate: (updater: (prev: Product[]) => Product[]) => void;
+  /** Colección donde guardar sección (por defecto catálogo publicado). */
+  collectionId?: string;
 }
 
 type Screen = 'menu' | 'search' | 'register' | 'select-section';
 
-export default function ProductLocator({ isOpen, onClose, products, onProductsUpdate }: Props) {
+export default function ProductLocator({ isOpen, onClose, products, onProductsUpdate, collectionId = PRODUCTS_COLLECTION_ID }: Props) {
   const [screen, setScreen] = useState<Screen>('menu');
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ product: Product; section: number }[]>([]);
@@ -184,7 +186,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
       const features = selectedProduct.FEATURES || '';
       const existing = features.replace(/\nSection:\s*\d+/gi, '').replace(/^Section:\s*\d+\n?/gi, '');
       const newFeatures = existing ? `${existing}\nSection: ${sectionNum}` : `Section: ${sectionNum}`;
-      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, selectedProduct.$id, { FEATURES: newFeatures });
+      await databases.updateDocument(databaseId, collectionId, selectedProduct.$id, { FEATURES: newFeatures });
       onProductsUpdate(prev => prev.map(p => p.$id === selectedProduct.$id ? { ...p, FEATURES: newFeatures } : p));
       setSavedSection(sectionNum);
       setLastPlacedSection(sectionNum);
