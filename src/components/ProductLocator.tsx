@@ -34,12 +34,18 @@ function getSku(p: Product): string {
 
 function getBarcode(p: Product): string {
   const m = p.FEATURES?.match(/Barcode:\s*(.+)/i);
-  return m ? m[1].trim() : '';
+  if (m) return m[1].trim();
+  const direct = (p as any).barcode;
+  if (direct && String(direct).trim()) return String(direct).trim();
+  return '';
 }
 
 function getSection(p: Product): number | null {
   const m = p.FEATURES?.match(/Section:\s*(\d+)/i);
-  return m ? parseInt(m[1], 10) : null;
+  if (m) return parseInt(m[1], 10);
+  const direct = (p as any).section;
+  if (direct && Number(direct) > 0) return Number(direct);
+  return null;
 }
 
 interface Props {
@@ -49,11 +55,22 @@ interface Props {
   onProductsUpdate: (updater: (prev: Product[]) => Product[]) => void;
   /** Colección donde guardar sección (por defecto catálogo publicado). */
   collectionId?: string;
+  /** Productos publicados al catálogo (para buscar/ubicar también ahí). */
+  publishedProducts?: Product[];
+  /** Colección del catálogo publicado. */
+  publishedCollectionId?: string;
+  /** Callback para actualizar publishedProducts. */
+  onPublishedProductsUpdate?: (updater: (prev: Product[]) => Product[]) => void;
 }
 
 type Screen = 'menu' | 'search' | 'register' | 'select-section';
 
-export default function ProductLocator({ isOpen, onClose, products, onProductsUpdate, collectionId = PRODUCTS_COLLECTION_ID }: Props) {
+export default function ProductLocator({ isOpen, onClose, products, onProductsUpdate, collectionId = PRODUCTS_COLLECTION_ID, publishedProducts = [], publishedCollectionId = PRODUCTS_COLLECTION_ID, onPublishedProductsUpdate }: Props) {
+  // Combinar inventario + publicados (sin duplicados por $id)
+  const allProducts = useMemo(() => {
+    const ids = new Set(products.map(p => p.$id));
+    return [...products, ...publishedProducts.filter(p => !ids.has(p.$id))];
+  }, [products, publishedProducts]);
   const [screen, setScreen] = useState<Screen>('menu');
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ product: Product; section: number }[]>([]);
@@ -69,12 +86,12 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
 
   const sectionProductCounts = useMemo(() => {
     const counts: Record<number, number> = {};
-    products.forEach(p => {
+    allProducts.forEach(p => {
       const sec = getSection(p);
       if (sec != null && sec >= 1 && sec <= 36) counts[sec] = (counts[sec] || 0) + 1;
     });
     return counts;
-  }, [products]);
+  }, [allProducts]);
 
   const openRegisterScanner = useCallback(() => {
     setScreen('register');
@@ -106,7 +123,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
     if (!q.trim()) { setSearchResults([]); return; }
     const lower = q.toLowerCase().trim();
     const results: { product: Product; section: number }[] = [];
-    products.forEach(p => {
+    allProducts.forEach(p => {
       const sec = getSection(p);
       if (sec === null) return;
       const sku = getSku(p).toLowerCase();
@@ -117,7 +134,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
       }
     });
     setSearchResults(results);
-  }, [products]);
+  }, [allProducts]);
 
   const doRegisterSearch = useCallback((q: string) => {
     const trimmed = q.trim();
@@ -128,7 +145,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
     }
     const lower = trimmed.toLowerCase();
 
-    const exact = products.find(p => {
+    const exact = allProducts.find(p => {
       const sku = getSku(p).toLowerCase();
       const barcode = getBarcode(p).toLowerCase();
       return sku === lower || barcode === lower;
@@ -147,7 +164,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
       return;
     }
 
-    const candidates = products
+    const candidates = allProducts
       .filter(p => {
         const sku = getSku(p).toLowerCase();
         const barcode = getBarcode(p).toLowerCase();
@@ -157,7 +174,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
 
     setSelectedProduct(null);
     setRegisterCandidates(candidates);
-  }, [products]);
+  }, [allProducts]);
 
   const pickRegisterCandidate = (product: Product) => {
     setSelectedProduct(product);
@@ -183,11 +200,27 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const features = selectedProduct.FEATURES || '';
-      const existing = features.replace(/\nSection:\s*\d+/gi, '').replace(/^Section:\s*\d+\n?/gi, '');
-      const newFeatures = existing ? `${existing}\nSection: ${sectionNum}` : `Section: ${sectionNum}`;
-      await databases.updateDocument(databaseId, collectionId, selectedProduct.$id, { FEATURES: newFeatures });
-      onProductsUpdate(prev => prev.map(p => p.$id === selectedProduct.$id ? { ...p, FEATURES: newFeatures } : p));
+      
+      // Determinar en qué colección está el producto
+      const isInventory = products.some(p => p.$id === selectedProduct.$id);
+      const targetCollectionId = isInventory ? collectionId : publishedCollectionId;
+      
+      if (isInventory && selectedProduct.FEATURES !== undefined) {
+        // Producto de inventario con FEATURES: guardar en FEATURES
+        const features = selectedProduct.FEATURES || '';
+        const existing = features.replace(/\nSection:\s*\d+/gi, '').replace(/^Section:\s*\d+\n?/gi, '');
+        const newFeatures = existing ? `${existing}\nSection: ${sectionNum}` : `Section: ${sectionNum}`;
+        await databases.updateDocument(databaseId, targetCollectionId, selectedProduct.$id, { FEATURES: newFeatures });
+        onProductsUpdate(prev => prev.map(p => p.$id === selectedProduct.$id ? { ...p, FEATURES: newFeatures } : p));
+      } else {
+        // Producto del catálogo o sin FEATURES: guardar en atributo section directo
+        await databases.updateDocument(databaseId, targetCollectionId, selectedProduct.$id, { section: sectionNum });
+        if (isInventory) {
+          onProductsUpdate(prev => prev.map(p => p.$id === selectedProduct.$id ? { ...p, section: sectionNum } : p));
+        } else if (onPublishedProductsUpdate) {
+          onPublishedProductsUpdate(prev => prev.map(p => p.$id === selectedProduct.$id ? { ...p, section: sectionNum } : p));
+        }
+      }
       setSavedSection(sectionNum);
       setLastPlacedSection(sectionNum);
       setTimeout(() => {
@@ -299,7 +332,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col gap-2">
                       {GONDOLAS.filter(g => g.id === 'A').map(g => {
-                        const prodCount = products.filter(p => { const s = getSection(p); return s !== null && g.sections.includes(s); }).length;
+                        const prodCount = allProducts.filter(p => { const s = getSection(p); return s !== null && g.sections.includes(s); }).length;
                         const expanded = expandedGondola === g.id;
                         return (
                           <div key={g.id} className={`${g.light} border rounded-xl overflow-hidden`}>
@@ -314,7 +347,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                             {expanded && (
                               <div className="grid grid-cols-3 gap-1 px-3 pb-3">
                                 {g.sections.map(s => {
-                                  const has = products.some(p => getSection(p) === s);
+                                  const has = allProducts.some(p => getSection(p) === s);
                                   return (
                                     <div key={s} className={`text-center py-1.5 rounded text-[11px] font-bold ${has ? `${g.dot} text-white` : 'bg-white/70 text-gray-400'}`}>{s}</div>
                                   );
@@ -327,7 +360,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                     </div>
                     <div className="flex flex-col gap-2">
                       {GONDOLAS.filter(g => g.id !== 'A').map(g => {
-                        const prodCount = products.filter(p => { const s = getSection(p); return s !== null && g.sections.includes(s); }).length;
+                        const prodCount = allProducts.filter(p => { const s = getSection(p); return s !== null && g.sections.includes(s); }).length;
                         const expanded = expandedGondola === g.id;
                         return (
                           <div key={g.id} className={`${g.light} border rounded-xl overflow-hidden`}>
@@ -342,7 +375,7 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
                             {expanded && (
                               <div className="grid grid-cols-3 gap-1 px-3 pb-3">
                                 {g.sections.map(s => {
-                                  const has = products.some(p => getSection(p) === s);
+                                  const has = allProducts.some(p => getSection(p) === s);
                                   return (
                                     <div key={s} className={`text-center py-1.5 rounded text-[11px] font-bold ${has ? `${g.dot} text-white` : 'bg-white/70 text-gray-400'}`}>{s}</div>
                                   );

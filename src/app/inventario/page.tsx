@@ -2786,6 +2786,9 @@ export default function InventarioPage() {
         products={products as any}
         onProductsUpdate={setProducts as any}
         collectionId={INVENTORY_PRODUCTS_COLLECTION_ID}
+        publishedProducts={publishedProducts as any}
+        publishedCollectionId={PRODUCTS_COLLECTION_ID}
+        onPublishedProductsUpdate={setPublishedProducts as any}
       />
     </div>
   );
