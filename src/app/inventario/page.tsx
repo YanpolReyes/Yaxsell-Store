@@ -194,7 +194,7 @@ export default function InventarioPage() {
     setEditPackagesValue(
       opts?.packages ?? String(Math.round((p.STOCK || 0) / (p.PACKQTY || 1)) || '0'),
     );
-    setEditSectionValue(sectionMatch ? parseInt(sectionMatch[1], 10) : null);
+    setEditSectionValue(sectionMatch ? parseInt(sectionMatch[1], 10) : (lastPlacedSection || null));
     setEditBarcodeValue(existingBarcode);
   };
 
@@ -1224,7 +1224,7 @@ export default function InventarioPage() {
             </div>
             <div className="p-5 flex items-center gap-4">
               {stockModal.product.IMAGEURL && (
-                <img src={stockModal.product.IMAGEURL} alt="" className="w-16 h-16 object-cover rounded-xl shrink-0" />
+                <img src={stockModal.product.IMAGEURL} alt="" className="w-16 h-16 object-cover rounded-xl shrink-0 cursor-pointer hover:scale-125 hover:z-50 hover:shadow-2xl transition-transform duration-200" onClick={() => setPreviewImg(stockModal.product.IMAGEURL!)} />
               )}
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-gray-900 line-clamp-1">{stockModal.product.NAME}</div>
@@ -1289,7 +1289,7 @@ export default function InventarioPage() {
           >
             <div className="sticky top-0 z-10 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-5 py-3 flex items-center gap-3 shrink-0">
               {editStockModal.IMAGEURL && (
-                <img src={editStockModal.IMAGEURL} alt="" className="w-10 h-10 object-cover rounded-lg border border-white/30" />
+                <img src={editStockModal.IMAGEURL} alt="" className="w-10 h-10 object-cover rounded-lg border border-white/30 cursor-pointer hover:scale-150 hover:z-50 hover:shadow-2xl transition-transform duration-200" onClick={() => setPreviewImg(editStockModal.IMAGEURL!)} />
               )}
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-sm line-clamp-1">{editStockModal.NAME}</div>

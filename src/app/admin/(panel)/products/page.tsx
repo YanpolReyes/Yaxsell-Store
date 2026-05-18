@@ -179,6 +179,9 @@ export default function ProductsPage() {
         IMAGEURL: d.IMAGEURL || '', IMAGEURL2: d.IMAGEURL2 || '',
         IMAGEURL3: d.IMAGEURL3 || '',
         CATEGORYID: d.CATEGORYID || '',
+      };
+      // Campos opcionales que pueden no existir en el schema
+      const optionalFields: Record<string, any> = {
         TAGS: d.TAGS || '',
         FEATURES: (() => {
           let features = d.FEATURES || '';
@@ -195,16 +198,32 @@ export default function ProductsPage() {
       if (previousProduct && (previousProduct.STOCK ?? 0) === 0 && payload.STOCK > 0) {
         stockRestocked = true;
       }
-      
-      if (modal.mode === 'add') {
-        const nameLower = (payload.NAME || '').toLowerCase().trim();
-        const duplicate = products.find(p => p.NAME?.toLowerCase().trim() === nameLower);
-        if (duplicate && !window.confirm(`Ya existe un producto con el nombre "${duplicate.NAME}". ¿Continuar de todas formas?`)) { setIsSaving(false); return; }
-        const doc = await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
-        setProducts(prev => [doc as unknown as Product, ...prev]);
-      } else {
-        const doc = await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, (d as Product).$id, payload);
-        setProducts(prev => prev.map(p => p.$id === (d as Product).$id ? doc as unknown as Product : p));
+
+      // Intentar con campos opcionales; si falla por atributo desconocido, reintentar sin ellos
+      const fullPayload = { ...payload, ...optionalFields };
+      const doSave = async (data: Record<string, any>) => {
+        if (modal.mode === 'add') {
+          const nameLower = (data.NAME || '').toLowerCase().trim();
+          const duplicate = products.find(p => p.NAME?.toLowerCase().trim() === nameLower);
+          if (duplicate && !window.confirm(`Ya existe un producto con el nombre "${duplicate.NAME}". ¿Continuar de todas formas?`)) { setIsSaving(false); throw new Error('cancelled'); }
+          const doc = await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), data);
+          setProducts(prev => [doc as unknown as Product, ...prev]);
+        } else {
+          const doc = await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, (d as Product).$id, data);
+          setProducts(prev => prev.map(p => p.$id === (d as Product).$id ? doc as unknown as Product : p));
+        }
+      };
+
+      try {
+        await doSave(fullPayload);
+      } catch (err: any) {
+        if (err?.message === 'cancelled') throw err;
+        // Si falla por atributo desconocido, reintentar sin campos opcionales
+        if (err?.message?.includes('Unknown attribute')) {
+          await doSave(payload);
+        } else {
+          throw err;
+        }
       }
       
       // Send stock alerts if product was restocked
