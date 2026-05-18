@@ -4510,6 +4510,37 @@ export default function HomePage1() {
       if (oldStyle) oldStyle.remove();
     }
 
+    // Actualizar preguntas y respuestas del acordeón
+    const faqs = settings.faqs || [];
+    if (faqs.length > 0) {
+      const accordionItems = section.querySelectorAll('.accordion-item') as NodeListOf<HTMLElement>;
+      faqs.forEach((faq: { question: string; answer: string }, idx: number) => {
+        if (idx < accordionItems.length) {
+          const item = accordionItems[idx];
+          // Actualizar título (texto del botón, antes del SVG)
+          const btn = item.querySelector('.accordion-button') as HTMLElement;
+          if (btn) {
+            const svg = btn.querySelector('svg');
+            const svgHtml = svg ? svg.outerHTML : '';
+            btn.innerHTML = faq.question + ' ' + svgHtml;
+          }
+          // Actualizar respuesta (texto del body)
+          const body = item.querySelector('.accordion-body p') as HTMLElement;
+          if (body) {
+            body.textContent = faq.answer;
+          }
+        }
+      });
+      // Ocultar items sobrantes
+      for (let i = faqs.length; i < accordionItems.length; i++) {
+        (accordionItems[i] as HTMLElement).style.display = 'none';
+      }
+      // Mostrar items que estaban ocultos
+      for (let i = 0; i < Math.min(faqs.length, accordionItems.length); i++) {
+        (accordionItems[i] as HTMLElement).style.display = '';
+      }
+    }
+
     // Actualizar correo de contacto
     const contactEmail = settings.faqContactEmail || 'info@yaxsell.com';
     const emailLink = section.querySelector('.faq-mail-typo') as HTMLAnchorElement;

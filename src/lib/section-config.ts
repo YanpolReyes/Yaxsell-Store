@@ -705,16 +705,16 @@ export const SECTION_DEFAULTS: SectionConfig[] = [
     enabled: false,
     order: 30,
     settings: { bgColor: '#ffffff', textColor: '#374151', headingColor: '#111827', accentColor: '#3483fa', padding: 48, borderRadius: 0, title: 'Preguntas frecuentes', faqs: [
+      { question: '¿Cómo realizo una compra en Yaxsel?', answer: 'Navega por nuestro catálogo, agrega productos al carrito y procede al checkout. Aceptamos transferencia bancaria como método de pago.' },
       { question: '¿Cuánto tarda el envío?', answer: 'Santiago: 2-5 días hábiles. Regiones: 3-7 días hábiles. Zonas extremas: 5-10 días hábiles.' },
       { question: '¿Realizan envíos a todo Chile?', answer: 'Sí, realizamos envíos a todo Chile continental. Algunas zonas extremas pueden tener restricciones.' },
       { question: '¿Quién paga el costo de envío?', answer: 'El costo de envío es pagado por el destinatario. El costo varía según destino, peso y volumen.' },
       { question: '¿Qué formas de pago aceptan?', answer: 'Actualmente aceptamos transferencia bancaria como método principal. Los pedidos se procesan una vez confirmado el pago.' },
       { question: '¿Cuál es el tiempo de validación del pago?', answer: 'El tiempo de validación es de 24-48 horas hábiles. Debe enviar comprobante de transferencia para validación.' },
       { question: '¿Puedo devolver un producto?', answer: 'Sí, conforme a la Ley del Consumidor chilena, tiene derecho a retractarse dentro de 10 días corridos desde la recepción del producto.' },
-      { question: '¿Qué garantía tienen los productos?', answer: 'Todos nuestros productos cuentan con garantía legal de 6 meses según la Ley del Consumidor chilena.' },
-      { question: '¿Cómo contacto a soporte?', answer: 'Email: dexkonet@gmail.com. Teléfono: +56 9 9213 9185. Horario: L-V 9:00-18:00, Sábados 9:00-14:00.' },
-      { question: '¿Qué productos venden?', answer: 'Artículos para el hogar, productos de decoración, electrónicos y electrodomésticos, accesorios y complementos.' },
-      { question: '¿Los precios incluyen IVA?', answer: 'Sí, todos los precios están expresados en pesos chilenos (CLP) e incluyen IVA cuando corresponda.' }
+      { question: '¿Cómo puedo rastrear mi pedido?', answer: 'Una vez despachado, recibirá un correo con el código de seguimiento y el enlace para rastrear su envío en tiempo real.' },
+      { question: '¿Los precios incluyen IVA?', answer: 'Sí, todos los precios están expresados en pesos chilenos (CLP) e incluyen IVA cuando corresponda.' },
+      { question: '¿Cómo contacto a soporte?', answer: 'Puede escribirnos a través del formulario de contacto en la web o por WhatsApp. Respondemos en un plazo de 24 horas hábiles.' }
     ] },
   },
   {
