@@ -743,7 +743,7 @@ export default function InventarioPage() {
             WHOLESALEPRICE: row.priceWholesale || 0,
             WHOLESALEMINQUANTITY: 0,
             IMAGEURL: row.imageUrl || '',
-            IMAGEURL2: '', IMAGEURL3: '', IMAGEURL4: '', IMAGEURL5: '',
+            IMAGEURL2: '', IMAGEURL3: '',
             CATEGORYID: catId || '',
             SUBCATEGORYID: subId || '',
             TAGS: row.sku,

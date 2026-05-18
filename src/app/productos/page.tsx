@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Search, Grid3x3, List, ShoppingCart, X, Heart, SlidersHorizontal, Sparkles, ChevronDown } from 'lucide-react';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, formatPrice } from '@/lib/appwrite';
+import { getSectionConfigAsync, getSectionConfig, type SectionConfig } from '@/lib/section-config';
 import { normalizeProductImages, getProductImageUrl } from '@/lib/product-images';
 import { cached, TTL } from '@/lib/cache';
 import { Query } from 'appwrite';
@@ -33,6 +34,27 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
   const [sortBy, setSortBy] = useState('newest');
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [isLoading, setIsLoading] = useState(true);
+  const [catalogCover, setCatalogCover] = useState<{ image: string; title: string; subtitle: string; overlayEnabled: boolean; overlayOpacity: number; overlayColor: string }>({
+    image: '', title: '', subtitle: '', overlayEnabled: true, overlayOpacity: 40, overlayColor: '#000000'
+  });
+
+  // Cargar configuración de portada del catálogo desde theme config
+  useEffect(() => {
+    getSectionConfigAsync().then(cfg => {
+      const heroSec = cfg.find((s: SectionConfig) => s.id === 'tpl1_hero');
+      if (heroSec?.settings) {
+        const hs = heroSec.settings as Record<string, any>;
+        setCatalogCover({
+          image: hs.catalogCoverImage || '',
+          title: hs.catalogCoverTitle || '',
+          subtitle: hs.catalogCoverSubtitle || '',
+          overlayEnabled: hs.catalogCoverOverlayEnabled !== false,
+          overlayOpacity: hs.catalogCoverOverlayOpacity ?? 40,
+          overlayColor: hs.catalogCoverOverlayColor || '#000000',
+        });
+      }
+    }).catch(() => {});
+  }, []);
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [selectedTag, setSelectedTag] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
@@ -277,7 +299,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
   return (
     <div className="pk-page" style={{ fontFamily: FF, minHeight: '100vh', position: 'relative' }}>
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden' }}>
-        <img src="https://img.freepik.com/free-psd/3d-rendering-beauty-banner_23-2150159867.jpg?semt=ais_hybrid&w=740&q=80" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(4px) brightness(1.08) saturate(1.08)', transform: 'scale(1.15)', animation: 'pkBgFloat 20s ease-in-out infinite' }} />
+        {catalogCover.image && <img src={catalogCover.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(4px) brightness(1.08) saturate(1.08)', transform: 'scale(1.15)', animation: 'pkBgFloat 20s ease-in-out infinite, pkCoverFadeIn 0.6s ease forwards' }} />}
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 15% 10%,rgba(236,72,153,0.16),transparent 32%), linear-gradient(180deg,rgba(255,245,248,0.72) 0%,rgba(255,255,255,0.92) 100%)' }} />
       </div>
       <div className="pk-products-container" style={{ position: 'relative', zIndex: 1, maxWidth: 1600, margin: '0 auto', padding: '32px 20px 60px' }}>
@@ -291,7 +313,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
                 {(lockedCategory?.name || 'C').charAt(0).toUpperCase()}
               </div>
             ) : (
-              <img className="pk-hero-banner-img" src="/shopify/assets/template.jpg" alt="Portada catálogo" />
+              catalogCover.image ? <img className="pk-hero-banner-img" src={catalogCover.image} alt="Portada catálogo" /> : <div className="pk-hero-banner-img" style={{ background: 'linear-gradient(135deg,#fef2f8,#fce7f3)' }} />
             )}
           </div>
           <div className="pk-hero-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, padding: 24 }}>
@@ -305,10 +327,10 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
               <Sparkles size={13} /> {lockCategoryId ? 'Categoría' : 'Nuestra tienda'}
             </div>
             <h1 className="pk-products-title" style={{ fontSize: 42, fontWeight: 950, color: '#111827', margin: 0, letterSpacing: '-0.04em', lineHeight: 1.05 }}>
-              {lockedCategory?.name || 'Productos'}
+              {catalogCover.title || lockedCategory?.name || 'Productos'}
             </h1>
             <p className="pk-hero-subtitle" style={{ fontSize: 15, color: '#6b7280', margin: '8px 0 18px', maxWidth: 520, lineHeight: 1.55 }}>
-              {lockCategoryId ? `Productos de la categoría ${lockedCategory?.name || ''}. Filtrá, ordená y comprá en un solo lugar.` : 'Descubrí nuestra selección de productos exclusivos'}
+              {catalogCover.subtitle || (lockCategoryId ? `Productos de la categoría ${lockedCategory?.name || ''}. Filtrá, ordená y comprá en un solo lugar.` : 'Descubrí nuestra selección de productos exclusivos')}
             </p>
             <div className="pk-hero-stats" style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               <div style={{ padding: '9px 14px', borderRadius: 16, background: 'rgba(255,255,255,0.92)', border: '1px solid #fce7f3', boxShadow: '0 4px 14px rgba(236,72,153,0.15)' }}>
@@ -603,6 +625,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
       <style>{`
         @keyframes pkShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         @keyframes pkBgFloat { 0%,100% { transform: scale(1.15) translateY(0); } 50% { transform: scale(1.18) translateY(-10px); } }
+        @keyframes pkCoverFadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes pkDrawerUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
         .pk-desktop-only { display: block; }

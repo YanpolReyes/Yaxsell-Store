@@ -17,16 +17,32 @@ interface FavoritesContextType {
 
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
 
+// ── Caché singleton para favoritos ──
+let favCacheIds: string[] = [];
+let favCacheProducts: Product[] = [];
+let favCacheDocMap: Record<string, string> = {};
+let favCacheTimestamp = 0;
+let favCacheUserId: string | null = null;
+const FAV_CACHE_TTL = 2 * 60 * 1000; // 2 minutos
+
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const { user, isLoggedIn } = useAuth();
   const { showToast } = useToast();
-  const [favorites, setFavorites] = useState<string[]>([]);
-  const [favoriteProducts, setFavoriteProducts] = useState<Product[]>([]);
-  const [docMap, setDocMap] = useState<Record<string, string>>({});
+  const [favorites, setFavorites] = useState<string[]>(favCacheUserId === user?.id ? favCacheIds : []);
+  const [favoriteProducts, setFavoriteProducts] = useState<Product[]>(favCacheUserId === user?.id ? favCacheProducts : []);
+  const [docMap, setDocMap] = useState<Record<string, string>>(favCacheUserId === user?.id ? favCacheDocMap : {});
   const [loading, setLoading] = useState(false);
 
   const loadFavorites = useCallback(async () => {
     if (!isLoggedIn || !user) { setFavorites([]); setFavoriteProducts([]); return; }
+    // Usar caché si es reciente y es el mismo usuario
+    const now = Date.now();
+    if (favCacheUserId === user.id && (now - favCacheTimestamp) < FAV_CACHE_TTL) {
+      setFavorites(favCacheIds);
+      setFavoriteProducts(favCacheProducts);
+      setDocMap(favCacheDocMap);
+      return;
+    }
     setLoading(true);
     try {
       const { databases } = getServices();
@@ -45,15 +61,24 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       setDocMap(map);
 
       // Load product details
+      let prods: Product[] = [];
       if (ids.length > 0) {
         const prodRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
           Query.equal('$id', ids),
           Query.limit(100),
         ]);
-        setFavoriteProducts(prodRes.documents as unknown as Product[]);
+        prods = prodRes.documents as unknown as Product[];
+        setFavoriteProducts(prods);
       } else {
         setFavoriteProducts([]);
       }
+
+      // Actualizar caché
+      favCacheIds = ids;
+      favCacheProducts = prods;
+      favCacheDocMap = map;
+      favCacheTimestamp = Date.now();
+      favCacheUserId = user.id;
     } catch (e) {
       console.error('Error loading favorites:', e);
     } finally {
@@ -82,6 +107,8 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       setFavorites(prev => prev.filter(id => id !== productId));
       setFavoriteProducts(prev => prev.filter(p => p.$id !== productId));
       setDocMap(prev => { const n = { ...prev }; delete n[productId]; return n; });
+      // Invalidar caché
+      favCacheTimestamp = 0;
     } else {
       // Add
       try {
@@ -98,6 +125,8 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
           const p = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, productId);
           setFavoriteProducts(prev => [...prev, p as unknown as Product]);
         } catch {}
+        // Invalidar caché
+        favCacheTimestamp = 0;
       } catch (e) {
         console.error('Error adding favorite:', e);
       }

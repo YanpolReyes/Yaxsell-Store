@@ -486,10 +486,10 @@ export default function HomePage1() {
           'class="musk-main-banner color-scheme-bcca51f6-8cb1-46f3-8f26-94394c542484 "',
           'class="musk-main-banner color-scheme-bcca51f6-8cb1-46f3-8f26-94394c542484 " style="--primary-background:254,242,248;--secondary-background:252,231,243;--gradient-background:linear-gradient(101.19deg,rgba(254,242,248,1),rgba(252,231,243,1) 50%,rgba(251,207,232,1) 100%)"'
         );
-        processed = processed.replace(/MUSK COSMO/gi, 'Yaxsell');
-        processed = processed.replace(/alt="MUSK[^"]*"/gi, 'alt="Yaxsell"');
-        processed = processed.replace(/Mi tienda 3/gi, 'Yaxsell');
-        processed = processed.replace(/>MUSK</gi, '>Yaxsell<');
+        processed = processed.replace(/MUSK COSMO/gi, '');
+        processed = processed.replace(/alt="MUSK[^"]*"/gi, 'alt=""');
+        processed = processed.replace(/Mi tienda 3/gi, '');
+        processed = processed.replace(/>MUSK</gi, '><');
         processed = processed.replace(/shop now/gi, 'Ver productos');
         setBodyHtml(processed);
       })
@@ -504,24 +504,23 @@ export default function HomePage1() {
   /* Marca por defecto en hero/nav antes de que cargue sectionCfg (evita flash "MUSK") */
   useEffect(() => {
     if (!bodyHtml) return;
-    const brand = 'Yaxsell';
-    // Logo text
+    // Logo text — limpiar referencias a MUSK, no poner marca propia
     document.querySelectorAll('.light-logo span, .dark-logo span, .logo-col span, .h4.secondary-text, .h4.primary-text').forEach(el => {
       const t = (el.textContent || '').trim();
-      if (/musk/i.test(t) || /mi tienda/i.test(t)) el.textContent = brand;
+      if (/musk/i.test(t) || /mi tienda/i.test(t)) el.textContent = '';
     });
     // Hero title
     const hero = document.getElementById('shopify-section-template--22405132419320__hero_banner_R6iEJ4');
     hero?.querySelectorAll('.banner-main-title, h2, h3').forEach(el => {
       const t = (el.textContent || '').trim();
-      if (/musk/i.test(t) && !el.closest('.musk-sec-title')) el.textContent = brand;
+      if (/musk/i.test(t) && !el.closest('.musk-sec-title')) el.textContent = '';
     });
     // Any remaining "MUSK" text nodes visible to user
     document.querySelectorAll('a, span, p, h1, h2, h3, h4, button, div').forEach(el => {
       if (el.children.length === 0 || el.children.length === 1 && el.children[0].tagName === 'BR') {
         const t = (el.textContent || '').trim();
-        if (/^MUSK$/i.test(t)) el.textContent = brand;
-        if (/^Mi tienda \d$/i.test(t)) el.textContent = brand;
+        if (/^MUSK$/i.test(t)) el.textContent = '';
+        if (/^Mi tienda \d$/i.test(t)) el.textContent = '';
       }
     });
   }, [bodyHtml]);
@@ -3852,10 +3851,11 @@ export default function HomePage1() {
     }
 
     // 3) Overlay con opacidad configurable
+    const overlayEnabled = s.overlayEnabled !== false;
     const overlayOpacity = s.overlayOpacity ?? 40;
     const overlayColor = s.overlayColor || '#000000';
     const existingOverlay = container.querySelector('.tpl1-overlay-color') as HTMLElement | null;
-    if (overlayOpacity > 0) {
+    if (overlayEnabled && overlayOpacity > 0) {
       if (!existingOverlay) {
         const overlay = document.createElement('div');
         overlay.className = 'tpl1-overlay-color';
@@ -3874,7 +3874,7 @@ export default function HomePage1() {
         updatedOverlay.style.background = hexToRgba(overlayColor, overlayOpacity / 100);
       }
     } else {
-      // Opacidad 0 — remover overlay
+      // Overlay desactivado o opacidad 0 — remover
       if (existingOverlay) existingOverlay.remove();
     }
     // Neutralizar overlay del template original
@@ -5766,51 +5766,49 @@ export default function HomePage1() {
     // Logo / Nombre de la empresa
     const logoDiv = footer.querySelector('.ftr-logo') as HTMLElement;
     if (logoDiv) {
-      logoDiv.innerHTML = '';
-      logoDiv.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;width:100%;';
-
-      // 1) Descripción de la empresa (izquierda)
-      if (s.companyDescription) {
-        const descEl = document.createElement('p');
-        descEl.className = 'company-desc';
-        descEl.textContent = s.companyDescription;
-        descEl.style.cssText = 'font-size:14px;line-height:1.6;color:#666;max-width:250px;';
-        logoDiv.appendChild(descEl);
-      }
-
-      // 2) Logo (centro)
+      const logoWidth = s.footerLogoWidth ?? 170;
       if (s.logoUrl) {
-        const img = document.createElement('img');
-        img.src = s.logoUrl;
-        img.alt = s.companyName || 'Yaxsell';
-        img.style.cssText = 'max-width:400px;height:auto;';
-        logoDiv.appendChild(img);
+        logoDiv.innerHTML = `<a href="/" aria-label="Inicio"><img src="${s.logoUrl}" alt="${s.companyName || 'Yaxsell'}" style="max-width:${logoWidth}px;height:auto;display:block;margin:0 auto;" /></a>`;
       } else if (s.companyName) {
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'h3';
-        nameSpan.textContent = s.companyName;
-        nameSpan.style.cssText = 'font-size:20px;font-weight:700;color:#111;';
-        logoDiv.appendChild(nameSpan);
+        logoDiv.innerHTML = `<a href="/" aria-label="Inicio"><span class="h3 secondary-text" style="font-size:20px;font-weight:700;">${s.companyName}</span></a>`;
       }
+    }
 
-      // 3) Mapa interactivo (derecha)
-      if (s.showMap && s.mapEmbed) {
-        const mapContainer = document.createElement('div');
-        mapContainer.className = 'footer-map-container';
-        mapContainer.style.cssText = 'border-radius:12px;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.1);flex-shrink:0;';
-        mapContainer.innerHTML = `
-          <iframe 
-            src="${s.mapEmbed}" 
-            width="350" 
-            height="200" 
-            style="border:0;display:block;" 
-            allowfullscreen="" 
-            loading="lazy" 
-            referrerpolicy="no-referrer-when-downgrade">
-          </iframe>
-        `;
-        logoDiv.appendChild(mapContainer);
-      }
+    // Títulos de columnas del footer
+    const colTitles = footer.querySelectorAll('.ftr-support-col .ftr-col-title') as NodeListOf<HTMLElement>;
+    if (colTitles.length >= 1 && s.footerCol1Title) {
+      // Mantener el icono SVG dentro del título
+      const svg1 = colTitles[0].querySelector('svg');
+      const svgHtml1 = svg1 ? svg1.outerHTML : '';
+      colTitles[0].innerHTML = s.footerCol1Title + ' <i class="fa-solid fa-plus secondary-icon-clr">' + svgHtml1;
+    }
+    if (colTitles.length >= 2 && s.footerCol2Title) {
+      const svg2 = colTitles[1].querySelector('svg');
+      const svgHtml2 = svg2 ? svg2.outerHTML : '';
+      colTitles[1].innerHTML = s.footerCol2Title + ' <i class="fa-solid fa-plus secondary-icon-clr">' + svgHtml2;
+    }
+    if (colTitles.length >= 3 && s.footerCol3Title) {
+      const svg3 = colTitles[2].querySelector('svg');
+      const svgHtml3 = svg3 ? svg3.outerHTML : '';
+      colTitles[2].innerHTML = s.footerCol3Title + ' <i class="fa-solid fa-plus secondary-icon-clr">' + svgHtml3;
+    }
+
+    // Título de la columna de newsletter
+    if (s.footerCol4Title) {
+      const nlTitle = footer.querySelector('.ftr-signup-col .ftr-col-title') as HTMLElement;
+      if (nlTitle) nlTitle.textContent = s.footerCol4Title;
+    }
+
+    // Descripción de la empresa (debajo del logo)
+    const existingDesc = footer.querySelector('.tpl1-footer-desc') as HTMLElement | null;
+    if (existingDesc) existingDesc.remove();
+    if (s.companyDescription) {
+      const descEl = document.createElement('p');
+      descEl.className = 'tpl1-footer-desc';
+      descEl.textContent = s.companyDescription;
+      descEl.style.cssText = 'font-size:13px;line-height:1.6;color:#999;margin-top:8px;max-width:300px;';
+      const logoDiv2 = footer.querySelector('.ftr-logo') as HTMLElement;
+      if (logoDiv2) logoDiv2.appendChild(descEl);
     }
 
     // Dirección, email, teléfono, WhatsApp en ftr-addr-info-col
@@ -5890,11 +5888,7 @@ export default function HomePage1() {
 
     // Links del footer (no modificar - dejar los del template)
 
-    // Newsletter
-    if (s.newsletterTitle) {
-      const nlTitle = footer.querySelector('.ftr-signup-col .ftr-col-title') as HTMLElement;
-      if (nlTitle) nlTitle.textContent = s.newsletterTitle;
-    }
+    // Newsletter texto
     if (s.newsletterText) {
       const nlText = footer.querySelector('.ftr-signup-col ul li') as HTMLElement;
       if (nlText) nlText.textContent = s.newsletterText;
@@ -6278,7 +6272,7 @@ export default function HomePage1() {
         const subtitleOpacity = hs.heroSubtitleOpacity ?? titleOpacity;
         const titleColor = hs.heroTitleColor ?? '';
         const subtitleColor = hs.heroSubtitleColor ?? '';
-        const storeName = hs.heroStoreName ?? 'Yaxsell';
+        const storeName = hs.heroStoreName ?? '';
         console.log('[TPL1 Hero] storeName:', storeName, 'logoMode:', hs.heroStoreLogoMode);
 
         // Apply store name to document title

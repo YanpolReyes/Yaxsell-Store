@@ -34,7 +34,7 @@ export class PointsStoreService {
       const { databaseId } = getAppwriteConfig();
       const res = await databases.listDocuments(databaseId, POINTS_STORE_COLLECTION, [
         Query.equal('ISACTIVE', true),
-        Query.orderAsc('SORTORDER'),
+        Query.orderAsc('$createdAt'),
         Query.limit(100),
       ]);
       return res.documents as unknown as PointsStoreItem[];

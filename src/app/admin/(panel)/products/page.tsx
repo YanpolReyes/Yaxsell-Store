@@ -17,7 +17,7 @@ import { invalidateProductCache } from '@/lib/cache';
 
 const PRODUCTS_BUCKET_ID = MEDIA_BUCKET_ID; // Backward compatibility
 
-const EMPTY: Partial<Product> = { NAME: '', DESCRIPTION: '', PRICE: 0, STOCK: 0, COST: 0, WHOLESALEPRICE: 0, WHOLESALEMINQUANTITY: 0, IMAGEURL: '', IMAGEURL2: '', IMAGEURL3: '', IMAGEURL4: '', IMAGEURL5: '', CATEGORYID: '' };
+const EMPTY: Partial<Product> = { NAME: '', DESCRIPTION: '', PRICE: 0, STOCK: 0, COST: 0, WHOLESALEPRICE: 0, WHOLESALEMINQUANTITY: 0, IMAGEURL: '', IMAGEURL2: '', IMAGEURL3: '', CATEGORYID: '' };
 
 const FieldInput = ({ label, field, type = 'text', value, onChange }: { label: string; field: string; type?: string; value: any; onChange: (val: any) => void }) => (
   <div>
@@ -145,15 +145,16 @@ export default function ProductsPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const payload = {
+      const payload: Record<string, any> = {
         NAME: `${p.NAME} (copia)`, DESCRIPTION: p.DESCRIPTION || '',
         PRICE: p.PRICE, STOCK: 0, COST: p.COST || 0,
         WHOLESALEPRICE: p.WHOLESALEPRICE || 0, WHOLESALEMINQUANTITY: p.WHOLESALEMINQUANTITY || 0,
         IMAGEURL: p.IMAGEURL || '', IMAGEURL2: p.IMAGEURL2 || '',
-        IMAGEURL3: p.IMAGEURL3 || '', IMAGEURL4: p.IMAGEURL4 || '',
-        IMAGEURL5: p.IMAGEURL5 || '', CATEGORYID: p.CATEGORYID || '',
+        IMAGEURL3: p.IMAGEURL3 || '',
+        CATEGORYID: p.CATEGORYID || '',
         TAGS: p.TAGS || '', FEATURES: p.FEATURES || '',
       };
+      // IMAGEURL4/5 no existen en el schema (límite plan gratuito) — no enviarlos
       const doc = await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
       setProducts(prev => [doc as unknown as Product, ...prev]);
       invalidateProductCache();
@@ -176,8 +177,8 @@ export default function ProductsPage() {
         WHOLESALEPRICE: Number(d.WHOLESALEPRICE) || 0,
         WHOLESALEMINQUANTITY: Number(d.WHOLESALEMINQUANTITY) || 0,
         IMAGEURL: d.IMAGEURL || '', IMAGEURL2: d.IMAGEURL2 || '',
-        IMAGEURL3: d.IMAGEURL3 || '', IMAGEURL4: d.IMAGEURL4 || '',
-        IMAGEURL5: d.IMAGEURL5 || '', CATEGORYID: d.CATEGORYID || '',
+        IMAGEURL3: d.IMAGEURL3 || '',
+        CATEGORYID: d.CATEGORYID || '',
         TAGS: d.TAGS || '',
         FEATURES: (() => {
           let features = d.FEATURES || '';
@@ -186,6 +187,7 @@ export default function ProductsPage() {
           return features;
         })(),
       };
+      // IMAGEURL4/5 no existen en el schema — no enviarlos
       
       // Check if stock is being restocked (from 0 to >0) on edit
       let stockRestocked = false;
@@ -499,7 +501,7 @@ export default function ProductsPage() {
                         <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden">
                           {p.IMAGEURL ? <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" /> : <Package className="w-5 h-5 text-gray-400 m-auto mt-2.5" />}
                         </div>
-                        {(() => { const cnt = [p.IMAGEURL, p.IMAGEURL2, p.IMAGEURL3, (p as any).IMAGEURL4, (p as any).IMAGEURL5].filter(Boolean).length; return cnt > 1 ? <span className="absolute -bottom-1 -right-1 text-[9px] font-bold bg-indigo-600 text-white rounded-full w-4 h-4 flex items-center justify-center leading-none">{cnt}</span> : null; })()}
+                        {(() => { const cnt = [p.IMAGEURL, p.IMAGEURL2, p.IMAGEURL3].filter(Boolean).length; return cnt > 1 ? <span className="absolute -bottom-1 -right-1 text-[9px] font-bold bg-indigo-600 text-white rounded-full w-4 h-4 flex items-center justify-center leading-none">{cnt}</span> : null; })()}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1">
@@ -715,12 +717,6 @@ export default function ProductsPage() {
               <ImageUploadField label="Imagen 3" bucketId={PRODUCTS_BUCKET_ID}
                 value={modal.data.IMAGEURL3 || ''}
                 onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL3: v } } : m)} />
-              <ImageUploadField label="Imagen 4" bucketId={PRODUCTS_BUCKET_ID}
-                value={modal.data.IMAGEURL4 || ''}
-                onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL4: v } } : m)} />
-              <ImageUploadField label="Imagen 5" bucketId={PRODUCTS_BUCKET_ID}
-                value={modal.data.IMAGEURL5 || ''}
-                onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL5: v } } : m)} />
               <div className="sm:col-span-2"><FieldInput label="Tags (separados por coma)" field="TAGS" value={modal?.data.TAGS} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, TAGS: v } } : m)} /></div>
               <div className="sm:col-span-2">
                 <FieldInput label="Características (otras)" field="FEATURES" value={modal?.data.FEATURES} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, FEATURES: v } } : m)} />

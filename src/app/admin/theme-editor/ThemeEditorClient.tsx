@@ -803,6 +803,13 @@ function ThemeEditorPage() {
                     <span style={{ width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 5, background: showFontPanel ? '#e0e7ff' : '#f3f4f6', color: showFontPanel ? '#4338ca' : '#6b7280', flexShrink: 0 }}><Type size={13} /></span>
                     <span style={{ flex: 1, fontSize: 12, fontWeight: showFontPanel ? 600 : 500, color: showFontPanel ? '#4338ca' : '#374151' }}>Fuentes</span>
                   </div>
+                  <div className="te-item"
+                    onClick={() => { setSelectedId('_catalog_cover'); setShowFontPanel(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8, cursor: 'pointer', background: selectedId === '_catalog_cover' ? '#eef2ff' : 'transparent', border: selectedId === '_catalog_cover' ? '1.5px solid #c7d2fe' : '1.5px solid transparent', marginBottom: 2, position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: -5, top: '50%', width: 8, height: 1.5, background: selectedId === '_catalog_cover' ? '#c7d2fe' : '#e5e7eb' }} />
+                    <span style={{ width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 5, background: selectedId === '_catalog_cover' ? '#e0e7ff' : '#f3f4f6', color: selectedId === '_catalog_cover' ? '#4338ca' : '#6b7280', flexShrink: 0 }}><Image size={13} /></span>
+                    <span style={{ flex: 1, fontSize: 12, fontWeight: selectedId === '_catalog_cover' ? 600 : 500, color: selectedId === '_catalog_cover' ? '#4338ca' : '#374151' }}>Portada Catálogo</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -852,7 +859,7 @@ function ThemeEditorPage() {
           </div>
         </aside>
 
-        {/* â”€â”€ SETTINGS PANEL (when section selected) â”€â”€ */}
+        {/* ── SETTINGS PANEL (when section selected) ── */}
         {selectedSection && !showFontPanel && (
           <div style={{ width: 320, background: '#fff', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'auto', animation: 'te-slideIn 0.2s cubic-bezier(0.2,1,0.3,1) both' }}>
             <SettingsPanel
@@ -864,13 +871,49 @@ function ThemeEditorPage() {
             />
           </div>
         )}
-        {/* â”€â”€ FONT PANEL â”€â”€ */}
+        {/* ── FONT PANEL ── */}
         {showFontPanel && (
           <div style={{ width: 320, background: '#fff', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'auto', animation: 'te-slideIn 0.2s cubic-bezier(0.2,1,0.3,1) both' }}>
             <FontPanel fontConfig={fontConfig} onUpdate={updateFontConfig} onClose={() => setShowFontPanel(false)} />
           </div>
         )}
-        {/* â”€â”€ HISTORY PANEL â”€â”€ */}
+        {/* ── CATALOG COVER PANEL ── */}
+        {selectedId === '_catalog_cover' && !showFontPanel && (() => {
+          const heroSec = sections.find(s => s.id === 'tpl1_hero');
+          const cs = heroSec?.settings || {};
+          const onUpdateCatalog = (patch: Record<string, unknown>) => {
+            if (heroSec) updateSettings('tpl1_hero', patch);
+          };
+          return (
+            <div style={{ width: 320, background: '#fff', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'auto', animation: 'te-slideIn 0.2s cubic-bezier(0.2,1,0.3,1) both' }}>
+              <div style={{ padding: 16, borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: '#e0e7ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4338ca' }}><Image size={14} /></div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Portada del Catálogo</div>
+                  <div style={{ fontSize: 11, color: '#9ca3af' }}>Imagen de fondo en página /productos</div>
+                </div>
+                <button onClick={() => setSelectedId(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}><X size={16} /></button>
+              </div>
+              <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <SH>Imagen de portada</SH>
+                <ImageUploadField label="Imagen del catálogo" value={cs.catalogCoverImage || ''} onChange={v => onUpdateCatalog({ catalogCoverImage: v })} />
+                <SH>Texto</SH>
+                <Field icon={<Type size={13} />} label="Título" value={cs.catalogCoverTitle || ''} onChange={v => onUpdateCatalog({ catalogCoverTitle: v })} placeholder="Productos" />
+                <Field icon={<Type size={13} />} label="Subtítulo" value={cs.catalogCoverSubtitle || ''} onChange={v => onUpdateCatalog({ catalogCoverSubtitle: v })} placeholder="Descubrí nuestra selección de productos exclusivos" />
+                <SH>Overlay</SH>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: '#374151' }}>
+                  <input type="checkbox" checked={cs.catalogCoverOverlayEnabled !== false} onChange={e => onUpdateCatalog({ catalogCoverOverlayEnabled: e.target.checked })} style={{ width: 14, height: 14, accentColor: '#5850ec' }} />
+                  Capa oscura (overlay)
+                </label>
+                {cs.catalogCoverOverlayEnabled !== false && (<>
+                  <RangeField label="Opacidad" value={cs.catalogCoverOverlayOpacity ?? 40} onChange={v => onUpdateCatalog({ catalogCoverOverlayOpacity: v })} min={0} max={100} unit="%" />
+                  <ColorField label="Color overlay" value={cs.catalogCoverOverlayColor || '#000000'} onChange={v => onUpdateCatalog({ catalogCoverOverlayColor: v })} />
+                </>)}
+              </div>
+            </div>
+          );
+        })()}
+        {/* ── HISTORY PANEL ── */}
         {showHistoryPanel && (
           <div style={{ width: 340, background: '#fff', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'hidden', animation: 'te-slideIn 0.2s cubic-bezier(0.2,1,0.3,1) both' }}>
             <HistoryPanel
@@ -1858,6 +1901,14 @@ function DesignFields({ baseId, section, onUpdate }: {
         <ColorField label="Fondo botón" value={s.cmHeroBtnBg || '#ef4444'} onChange={v => onUpdate({ cmHeroBtnBg: v })} />
         <ColorField label="Texto botón" value={s.cmHeroBtnText || '#ffffff'} onChange={v => onUpdate({ cmHeroBtnText: v })} />
         <RangeField label="Redondez botón" value={s.cmHeroBtnRadius ?? 12} onChange={v => onUpdate({ cmHeroBtnRadius: v })} min={0} max={50} unit="px" />
+      </div>);
+    }
+
+    case 'footer': {
+      return (<div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <ColorsBlock />
+        <TypographyBlock />
+        <SpacingBlock />
       </div>);
     }
 
@@ -3075,6 +3126,34 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         <Field icon={<Link size={13} />} label="URL del botón" value={s.buttonLink || ''} onChange={v => onUpdate({ buttonLink: v })} placeholder="https://..." />
       </div>);
 
+    case 'footer':
+      return (<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <SH>Logo</SH>
+        <ImageUploadField label="Logo del footer" value={s.logoUrl || ''} onChange={v => onUpdate({ logoUrl: v })} />
+        <Field icon={<Monitor size={13} />} label="Ancho logo (px)" value={String(s.footerLogoWidth ?? 170)} onChange={v => onUpdate({ footerLogoWidth: Number(v) || 170 })} placeholder="170" />
+        <SH>Empresa</SH>
+        <Field icon={<Type size={13} />} label="Nombre" value={s.companyName || ''} onChange={v => onUpdate({ companyName: v })} placeholder="Mi tienda" />
+        <Field icon={<Type size={13} />} label="Descripción" value={s.companyDescription || ''} onChange={v => onUpdate({ companyDescription: v })} placeholder="Descripción de la empresa..." />
+        <SH>Columnas</SH>
+        <Field icon={<Type size={13} />} label="Título columna 1" value={s.footerCol1Title || ''} onChange={v => onUpdate({ footerCol1Title: v })} placeholder="Comprar" />
+        <Field icon={<Type size={13} />} label="Título columna 2" value={s.footerCol2Title || ''} onChange={v => onUpdate({ footerCol2Title: v })} placeholder="Info" />
+        <Field icon={<Type size={13} />} label="Título columna 3" value={s.footerCol3Title || ''} onChange={v => onUpdate({ footerCol3Title: v })} placeholder="Contacto" />
+        <Field icon={<Type size={13} />} label="Título columna 4 / Newsletter" value={s.footerCol4Title || ''} onChange={v => onUpdate({ footerCol4Title: v })} placeholder="Newsletter" />
+        <SH>Contacto</SH>
+        <Field icon={<Type size={13} />} label="Dirección" value={s.address || ''} onChange={v => onUpdate({ address: v })} placeholder="Calle, Ciudad, País" />
+        <Field icon={<Type size={13} />} label="Teléfono" value={s.phone || ''} onChange={v => onUpdate({ phone: v })} placeholder="+56 9 1234 5678" />
+        <Field icon={<Type size={13} />} label="Email" value={s.email || ''} onChange={v => onUpdate({ email: v })} placeholder="info@mitienda.com" />
+        <SH>Redes sociales</SH>
+        <Field icon={<Type size={13} />} label="Instagram" value={s.instagram || ''} onChange={v => onUpdate({ instagram: v })} placeholder="@usuario" />
+        <Field icon={<Type size={13} />} label="Facebook" value={s.facebook || ''} onChange={v => onUpdate({ facebook: v })} placeholder="pagina" />
+        <Field icon={<Type size={13} />} label="TikTok" value={s.tiktok || ''} onChange={v => onUpdate({ tiktok: v })} placeholder="@usuario" />
+        <Field icon={<Type size={13} />} label="WhatsApp" value={s.whatsapp || ''} onChange={v => onUpdate({ whatsapp: v })} placeholder="+56912345678" />
+        <SH>Newsletter</SH>
+        <Field icon={<Type size={13} />} label="Texto newsletter" value={s.newsletterText || ''} onChange={v => onUpdate({ newsletterText: v })} placeholder="Recibe ofertas exclusivas" />
+        <SH>Copyright</SH>
+        <Field icon={<Type size={13} />} label="Texto copyright" value={s.copyrightText || ''} onChange={v => onUpdate({ copyrightText: v })} placeholder="© 2025 Mi tienda" />
+      </div>);
+
     case 'cm_footer':
       return (<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <SH>Logo</SH>
@@ -3118,7 +3197,8 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
           <Field icon={<Type size={13} />} label="Nombre" value={s.heroStoreName || ''} onChange={v => onUpdate({ heroStoreName: v })} placeholder="Yaxsell" />
         ) : (
           <>
-            <ImageUploadField label="Logo" value={s.heroStoreLogoUrl || ''} onChange={v => onUpdate({ heroStoreLogoUrl: v })} />
+            <ImageUploadField label="Logo principal" value={s.heroStoreLogoUrl || ''} onChange={v => onUpdate({ heroStoreLogoUrl: v })} />
+            <ImageUploadField label="Logo navbar (al scrollear)" value={s.heroStoreLogoScrollUrl || ''} onChange={v => onUpdate({ heroStoreLogoScrollUrl: v })} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 4 }}>
               <Field icon={<Monitor size={13} />} label="Altura Desktop (px)" value={String(s.heroStoreLogoHeight ?? 40)} onChange={v => onUpdate({ heroStoreLogoHeight: Number(v) || 40 })} placeholder="40" />
               <Field icon={<Smartphone size={13} />} label="Altura Móvil (px)" value={String(s.heroStoreLogoMobileHeight ?? 30)} onChange={v => onUpdate({ heroStoreLogoMobileHeight: Number(v) || 30 })} placeholder="30" />
@@ -3606,7 +3686,9 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
 
     case 'tpl1_footer':
       return (<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <SH>Footer - Información de la empresa</SH>
+        <SH>Logo de la empresa</SH>
+        <ImageUploadField label="Logo del footer" value={s.logoUrl || ''} onChange={v => onUpdate({ logoUrl: v })} />
+        <RangeField label="Ancho del logo" value={s.footerLogoWidth ?? 170} onChange={v => onUpdate({ footerLogoWidth: v })} min={60} max={400} unit="px" />
         <Field icon={<Type size={13} />} label="Nombre empresa" value={s.companyName || ''} onChange={v => onUpdate({ companyName: v })} placeholder="Yaxsell" />
         <div>
           <label style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', marginBottom: 5, display: 'block' }}>Descripción</label>
@@ -3614,6 +3696,12 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
             placeholder="Descripción de la empresa..." rows={3} 
             style={{ width: '100%', padding: '8px 10px', fontSize: 12, border: '1px solid #e5e7eb', borderRadius: 6, outline: 'none', resize: 'vertical' }} />
         </div>
+        
+        <SH>Títulos de columnas</SH>
+        <Field icon={<Type size={13} />} label="Columna 1 (Soporte)" value={s.footerCol1Title || ''} onChange={v => onUpdate({ footerCol1Title: v })} placeholder="Soporte" />
+        <Field icon={<Type size={13} />} label="Columna 2 (Enlaces)" value={s.footerCol2Title || ''} onChange={v => onUpdate({ footerCol2Title: v })} placeholder="Enlaces útiles" />
+        <Field icon={<Type size={13} />} label="Columna 3 (Enlaces 2)" value={s.footerCol3Title || ''} onChange={v => onUpdate({ footerCol3Title: v })} placeholder="Enlaces útiles" />
+        <Field icon={<Type size={13} />} label="Columna 4 (Newsletter)" value={s.footerCol4Title || ''} onChange={v => onUpdate({ footerCol4Title: v })} placeholder="Suscríbete para recibir correos" />
         
         <SH>Contacto</SH>
         <Field icon={<span>📍</span>} label="Dirección" value={s.address || ''} onChange={v => onUpdate({ address: v })} placeholder="Dirección de la empresa" />
@@ -3627,7 +3715,6 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         <Field icon={<span>🎵</span>} label="TikTok" value={s.tiktok || ''} onChange={v => onUpdate({ tiktok: v })} placeholder="@yaxsell" />
         
         <SH>Newsletter</SH>
-        <Field icon={<Type size={13} />} label="Título newsletter" value={s.newsletterTitle || ''} onChange={v => onUpdate({ newsletterTitle: v })} placeholder="¡Suscríbete!" />
         <Field icon={<Type size={13} />} label="Texto newsletter" value={s.newsletterText || ''} onChange={v => onUpdate({ newsletterText: v })} placeholder="Recibe ofertas exclusivas" />
         
         <SH>Copyright</SH>
@@ -3950,8 +4037,14 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         <RangeField label="Blur de imagen" value={s.overlayBlurAmount ?? 0} onChange={v => onUpdate({ overlayBlurAmount: v })} min={0} max={20} unit="px" />
         <Field icon={<Video size={13} />} label="Video de fondo (URL)" value={s.overlayVideoUrl || ''} onChange={v => onUpdate({ overlayVideoUrl: v })} placeholder="https://...mp4" />
         <SH>Overlay</SH>
-        <RangeField label="Opacidad del overlay" value={s.overlayOpacity ?? 40} onChange={v => onUpdate({ overlayOpacity: v })} min={0} max={100} unit="%" />
-        <ColorField label="Color del overlay" value={s.overlayColor || '#000000'} onChange={v => onUpdate({ overlayColor: v })} />
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: '#374151' }}>
+          <input type="checkbox" checked={s.overlayEnabled !== false} onChange={e => onUpdate({ overlayEnabled: e.target.checked })} style={{ width: 14, height: 14, accentColor: '#5850ec' }} />
+          Capa oscura (overlay)
+        </label>
+        {s.overlayEnabled !== false && (<>
+          <RangeField label="Opacidad del overlay" value={s.overlayOpacity ?? 40} onChange={v => onUpdate({ overlayOpacity: v })} min={0} max={100} unit="%" />
+          <ColorField label="Color del overlay" value={s.overlayColor || '#000000'} onChange={v => onUpdate({ overlayColor: v })} />
+        </>)}
         <RangeField label="Border radius" value={s.overlayBorderRadius ?? 50} onChange={v => onUpdate({ overlayBorderRadius: v })} min={0} max={100} unit="px" />
         <SH>Texto</SH>
         <Field icon={<Type size={13} />} label="Subtítulo" value={s.overlaySubheading || ''} onChange={v => onUpdate({ overlaySubheading: v })} placeholder="BRILLA CON ESTILO" />

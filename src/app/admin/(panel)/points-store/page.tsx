@@ -57,7 +57,7 @@ export default function PointsStoreAdminPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       const res = await databases.listDocuments(databaseId, POINTS_STORE_COLLECTION_ID, [
-        Query.orderAsc('SORTORDER'),
+        Query.orderAsc('$createdAt'),
         Query.limit(100),
       ]);
       setItems(res.documents as unknown as Item[]);
@@ -84,7 +84,7 @@ export default function PointsStoreAdminPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       const d = modal.data;
-      const payload = {
+      const payload: Record<string, any> = {
         TITLE: d.TITLE!.trim(),
         DESCRIPTION: d.DESCRIPTION || '',
         TYPE: d.TYPE || 'coupon',
@@ -94,9 +94,10 @@ export default function PointsStoreAdminPage() {
         COUPONCODE: d.COUPONCODE || '',
         PRODUCTID: d.PRODUCTID || '',
         ISACTIVE: d.ISACTIVE !== false,
-        SORTORDER: Number(d.SORTORDER) || 0,
-        STOCK: Number(d.STOCK) ?? -1,
       };
+      // Solo agregar si existen en el schema
+      if (d.SORTORDER != null) payload.SORTORDER = Number(d.SORTORDER) || 0;
+      if (d.STOCK != null) payload.STOCK = Number(d.STOCK) ?? -1;
       if (modal.mode === 'add') {
         await databases.createDocument(databaseId, POINTS_STORE_COLLECTION_ID, ID.unique(), payload);
       } else if (d.$id) {

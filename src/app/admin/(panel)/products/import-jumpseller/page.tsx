@@ -18,8 +18,6 @@ type PreviewProduct = {
   IMAGEURL: string;
   IMAGEURL2: string;
   IMAGEURL3: string;
-  IMAGEURL4: string;
-  IMAGEURL5: string;
   CATEGORYID: string;
   TAGS: string;
   FEATURES: string;
@@ -148,8 +146,6 @@ function mapRow(row: CsvRow, index: number, categories: Category[]): PreviewProd
     IMAGEURL: images[0] || '',
     IMAGEURL2: images[1] || '',
     IMAGEURL3: images[2] || '',
-    IMAGEURL4: images[3] || '',
-    IMAGEURL5: images[4] || '',
     CATEGORYID: matchedCategory?.$id || '',
     TAGS: [row.Brand, leaf, row.SKU].filter(Boolean).join(', '),
     FEATURES: [row.Brand ? `Marca: ${row.Brand}` : '', row.Barcode ? `Código de barras: ${row.Barcode}` : '', row.SKU ? `SKU: ${row.SKU}` : ''].filter(Boolean).join('\n'),
@@ -291,8 +287,6 @@ export default function ImportJumpsellerPage() {
             IMAGEURL: product.IMAGEURL,
             IMAGEURL2: product.IMAGEURL2,
             IMAGEURL3: product.IMAGEURL3,
-            IMAGEURL4: product.IMAGEURL4,
-            IMAGEURL5: product.IMAGEURL5,
             CATEGORYID: categoryId || '',
             SUBCATEGORYID: subcategoryId || '',
             TAGS: product.TAGS,

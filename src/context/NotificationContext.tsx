@@ -18,13 +18,24 @@ const NotificationContext = createContext<NotificationContextType>({
   refreshCount: () => {},
 });
 
+// ── Caché simple para evitar llamadas repetidas ──
+let notifCacheCount = 0;
+let notifCacheTimestamp = 0;
+const NOTIF_CACHE_TTL = 60 * 1000; // 1 minuto
+
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const { user, isLoggedIn } = useAuth();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(notifCacheCount);
 
   const refreshCount = useCallback(async () => {
     if (!isLoggedIn || !user) {
       setUnreadCount(0);
+      return;
+    }
+    // Usar caché si es reciente
+    const now = Date.now();
+    if (now - notifCacheTimestamp < NOTIF_CACHE_TTL) {
+      setUnreadCount(notifCacheCount);
       return;
     }
     try {
@@ -40,6 +51,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       const count = res.documents.filter((d) =>
         isNotificationUnread(d as unknown as Record<string, unknown>)
       ).length;
+      notifCacheCount = count;
+      notifCacheTimestamp = Date.now();
       setUnreadCount(count);
     } catch {
       setUnreadCount(0);
@@ -62,6 +75,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           welcomeCouponCode: prefs.welcomeCouponCode || null,
         }),
       });
+      // Invalidar caché para forzar refresh
+      notifCacheTimestamp = 0;
       await refreshCount();
     } catch {
       /* ignore */
@@ -69,26 +84,30 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [isLoggedIn, user, refreshCount]);
 
   // Carga inicial cuando cambia el estado de login
-  // Usa user?.id como dep para evitar re-ejecuciones por cambios irrelevantes en user
   useEffect(() => {
+    notifCacheTimestamp = 0; // Invalidar caché al cambiar de usuario
     refreshCount();
     checkRewards();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn, user?.id]);
 
-  // 🔥 Polling cada 5 minutos (antes 30s = 2,880 reads/día/usuario)
-  // Ahora: 288 reads/día/usuario (10x menos)
+  // 🔥 Polling cada 10 minutos (antes 5 min = 288 reads/día)
+  // Ahora: 144 reads/día/usuario (2x menos)
   useEffect(() => {
     if (!isLoggedIn) return;
-    const id = setInterval(() => { refreshCount(); }, 5 * 60 * 1000); // 5 min
+    const id = setInterval(() => { notifCacheTimestamp = 0; refreshCount(); }, 10 * 60 * 1000);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn]);
 
-  // Refresh al volver el foco a la pestaña (UX instantánea sin polling agresivo)
+  // Refresh al volver el foco — con throttle de 30s
   useEffect(() => {
     if (!isLoggedIn) return;
-    const onFocus = () => { refreshCount(); };
+    const onFocus = () => {
+      if (Date.now() - notifCacheTimestamp > 30 * 1000) {
+        refreshCount();
+      }
+    };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
     // eslint-disable-next-line react-hooks/exhaustive-deps

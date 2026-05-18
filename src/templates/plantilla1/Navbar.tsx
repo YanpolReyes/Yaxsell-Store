@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/context/CartContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES, formatPrice } from '@/lib/appwrite';
+import { getSectionConfigAsync, getSectionConfig, type SectionConfig } from '@/lib/section-config';
 import SearchOverlay from '@/components/SearchOverlay';
 import NotificationsOverlay from '@/components/NotificationsOverlay';
 import { usePrimaryAddress } from '@/hooks/usePrimaryAddress';
@@ -47,6 +48,31 @@ export default function Navbar1() {
   const authPopupRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [navLogoUrl, setNavLogoUrl] = useState<string>('');
+  const [navStoreName, setNavStoreName] = useState<string>('');
+
+  // Cargar logo del theme config (usar logo de scroll si existe)
+  useEffect(() => {
+    getSectionConfigAsync().then(cfg => {
+      const heroSec = cfg.find((s: SectionConfig) => s.id === 'tpl1_hero');
+      if (heroSec?.settings) {
+        const hs = heroSec.settings as Record<string, any>;
+        if (hs.heroStoreLogoMode === 'image') {
+          // Priorizar logo de scroll (navbar), luego logo principal
+          setNavLogoUrl(hs.heroStoreLogoScrollUrl || hs.heroStoreLogoUrl || '');
+        }
+      }
+    }).catch(() => {
+      const cfg = getSectionConfig();
+      const heroSec = cfg.find((s: SectionConfig) => s.id === 'tpl1_hero');
+      if (heroSec?.settings) {
+        const hs = heroSec.settings as Record<string, any>;
+        if (hs.heroStoreLogoMode === 'image') {
+          setNavLogoUrl(hs.heroStoreLogoScrollUrl || hs.heroStoreLogoUrl || '');
+        }
+      }
+    });
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -156,7 +182,8 @@ export default function Navbar1() {
         .tpl1-nav.scrolled { box-shadow: 0 2px 12px rgba(236,72,153,0.04); backdrop-filter: blur(12px); }
         .tpl1-nav-inner { max-width: 1600px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; height: 76px; }
         .tpl1-nav-logo { display: flex; align-items: center; text-decoration: none; gap: 10px; }
-        .tpl1-nav-logo img { height: 48px; max-width: 160px; width: auto; object-fit: contain; transition: transform 0.3s ease; flex-shrink: 0; }
+        .tpl1-nav-logo img { height: 48px; max-width: 160px; width: auto; object-fit: contain; transition: transform 0.3s ease, opacity 0.4s ease; flex-shrink: 0; }
+        @keyframes tpl1LogoFadeIn { from { opacity: 0; } to { opacity: 1; } }
         .tpl1-nav-logo:hover img { transform: scale(1.05); }
         .tpl1-nav-links { display: flex; gap: 4px; align-items: center; }
         .tpl1-nav-links a { font-family: 'DM Sans', system-ui, sans-serif; font-size: 14px; font-weight: 600; color: #444; text-decoration: none; padding: 10px 20px; border-radius: 999px; transition: all 0.25s ease; position: relative; }
@@ -400,7 +427,7 @@ export default function Navbar1() {
             </div>
           )}
           <Link href="/" className="tpl1-nav-logo">
-            {LOGO_URL ? <img src={LOGO_URL} alt="Yaxsell" /> : <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', color: 'inherit' }}>Yaxsell</span>}
+            {navLogoUrl ? <img src={navLogoUrl} alt="Inicio" style={{ opacity: 0, transition: 'opacity 0.4s ease', animation: 'tpl1LogoFadeIn 0.4s ease forwards' }} /> : null}
           </Link>
 
           {/* Mobile fabs - WhatsApp + ChatBot (replaces logo on mobile) */}

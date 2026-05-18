@@ -1113,15 +1113,15 @@ export const SECTION_DEFAULTS: SectionConfig[] = [
     locked: true,
     settings: {
       logoUrl: '',
-      companyName: 'Yaxsell',
-      companyDescription: 'Plataforma de e-commerce profesional. Crea tu tienda online, gestiona productos, pedidos e inventario desde un solo panel potente e intuitivo.',
+      companyName: '',
+      companyDescription: '',
       address: '',
       phone: '',
-      email: 'info@yaxsell.com',
+      email: '',
       whatsapp: '',
-      instagram: '@yaxsell',
-      facebook: 'yaxsell',
-      tiktok: '@yaxsell',
+      instagram: '',
+      facebook: '',
+      tiktok: '',
       footerLinks: [
         { title: 'Inicio', url: '/' },
         { title: 'Productos', url: '/productos' },
@@ -1341,11 +1341,13 @@ const API_ENDPOINT = '/api/theme-config';
 let cachedConfig: SectionConfig[] | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 5000; // 5 segundos
+let pendingConfigPromise: Promise<SectionConfig[]> | null = null;
 
 /** Invalidate in-memory cache so next read fetches fresh data */
 export function invalidateSectionCache(): void {
   cachedConfig = null;
   cacheTimestamp = 0;
+  pendingConfigPromise = null;
 }
 
 export async function getSectionConfigAsync(): Promise<SectionConfig[]> {
@@ -1354,30 +1356,39 @@ export async function getSectionConfigAsync(): Promise<SectionConfig[]> {
     return cachedConfig;
   }
   
-  // Intentar leer del API server-side (que usa API key)
-  try {
-    const res = await fetch(API_ENDPOINT);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && data.sections) {
-        const parsed: SectionConfig[] = typeof data.sections === 'string' ? JSON.parse(data.sections) : data.sections;
-        // Accept any array, even empty, to avoid forced reset to defaults if user intentionally has few sections
-        if (Array.isArray(parsed)) {
-          const merged = mergeWithDefaults(parsed);
-          cachedConfig = merged;
-          cacheTimestamp = now;
-          // Sincronizar localStorage como backup
-          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(merged)); } catch {}
-          return merged;
+  // Si ya hay una petición en vuelo, reusar la misma Promise (dedup)
+  if (pendingConfigPromise) return pendingConfigPromise;
+  
+  pendingConfigPromise = (async () => {
+    // Intentar leer del API server-side (que usa API key)
+    try {
+      const res = await fetch(API_ENDPOINT);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.sections) {
+          const parsed: SectionConfig[] = typeof data.sections === 'string' ? JSON.parse(data.sections) : data.sections;
+          // Accept any array, even empty, to avoid forced reset to defaults if user intentionally has few sections
+          if (Array.isArray(parsed)) {
+            const merged = mergeWithDefaults(parsed);
+            cachedConfig = merged;
+            cacheTimestamp = Date.now();
+            // Sincronizar localStorage como backup
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(merged)); } catch {}
+            return merged;
+          }
         }
       }
+    } catch (err) {
+      console.log('[section-config] API no disponible, usando localStorage:', err);
+    } finally {
+      pendingConfigPromise = null;
     }
-  } catch (err) {
-    console.log('[section-config] API no disponible, usando localStorage:', err);
-  }
+    
+    // Fallback a localStorage
+    return getSectionConfigSync();
+  })();
   
-  // Fallback a localStorage
-  return getSectionConfigSync();
+  return pendingConfigPromise;
 }
 
 function mergeWithDefaults(parsed: SectionConfig[]): SectionConfig[] {
