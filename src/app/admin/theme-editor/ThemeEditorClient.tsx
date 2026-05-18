@@ -3173,6 +3173,13 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         <Field icon={<Type size={13} />} label="Texto newsletter" value={s.newsletterText || ''} onChange={v => onUpdate({ newsletterText: v })} placeholder="Recibe ofertas exclusivas" />
         <SH>Copyright</SH>
         <Field icon={<Type size={13} />} label="Texto copyright" value={s.copyrightText || ''} onChange={v => onUpdate({ copyrightText: v })} placeholder="© 2025 Mi tienda" />
+        <SH>Mapa</SH>
+        <Field icon={<MapPin size={13} />} label="Dirección de la tienda" value={s.address || ''} onChange={v => onUpdate({ address: v })} placeholder="Av. Apoquindo 3000, Las Condes, Chile" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <input type="checkbox" checked={s.showMap !== false} onChange={e => onUpdate({ showMap: e.target.checked })} />
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280' }}>Mostrar mapa interactivo</span>
+        </div>
+        <Field icon={<MapPin size={13} />} label="Embed HTML del mapa (opcional, sobreescribe dirección)" value={s.mapEmbed || ''} onChange={v => onUpdate({ mapEmbed: v })} placeholder='<iframe src="https://www.google.com/maps/embed?..." />' />
       </div>);
 
     case 'cm_footer':

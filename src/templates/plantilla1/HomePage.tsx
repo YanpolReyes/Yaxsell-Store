@@ -5987,6 +5987,58 @@ export default function HomePage1() {
         }
       }
     }
+
+    // Mapa interactivo debajo del footer
+    const showMap = s.showMap !== false;
+    const existingMap = footer.querySelector('.tpl1-footer-map') as HTMLElement | null;
+    if (existingMap) existingMap.remove();
+
+    if (showMap) {
+      const mapContainer = document.createElement('div');
+      mapContainer.className = 'tpl1-footer-map';
+      mapContainer.style.cssText = 'width:100%;margin-top:0;';
+
+      let address = s.address || '';
+
+      // Si no hay dirección en footer settings, intentar leer de store_settings
+      if (!address) {
+        try {
+          const { databases } = getServices();
+          const { databaseId } = getAppwriteConfig();
+          databases.listDocuments(databaseId, 'store_settings', [Query.limit(1)]).then(res => {
+            if (res.documents.length > 0) {
+              const storeAddr = (res.documents[0] as any).ADDRESS || '';
+              if (storeAddr && !mapContainer.querySelector('iframe')) {
+                mapContainer.innerHTML = `
+                  <div style="padding:16px 20px 8px;background:#1a1a1a;">
+                    <h4 style="color:#fff;font-size:14px;font-weight:700;margin:0 0 4px;">📍 Encuéntranos</h4>
+                    <p style="color:#999;font-size:12px;margin:0;">${storeAddr}</p>
+                  </div>
+                  <iframe src="https://www.google.com/maps?q=${encodeURIComponent(storeAddr)}&output=embed" width="100%" height="250" style="border:0;display:block;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                `;
+              }
+            }
+          }).catch(() => {});
+        } catch {}
+      }
+
+      if (s.mapEmbed) {
+        // Embed personalizado
+        mapContainer.innerHTML = s.mapEmbed;
+      } else if (address) {
+        mapContainer.innerHTML = `
+          <div style="padding:16px 20px 8px;background:#1a1a1a;">
+            <h4 style="color:#fff;font-size:14px;font-weight:700;margin:0 0 4px;">📍 Encuéntranos</h4>
+            <p style="color:#999;font-size:12px;margin:0;">${address}</p>
+          </div>
+          <iframe src="https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed" width="100%" height="250" style="border:0;display:block;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        `;
+      }
+
+      if (mapContainer.innerHTML) {
+        footer.appendChild(mapContainer);
+      }
+    }
   }, [bodyHtml, sectionCfg]);
 
   /* ── Aplicar settings de brand logos (tpl1) ── */
