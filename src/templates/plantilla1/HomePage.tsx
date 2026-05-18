@@ -3919,7 +3919,8 @@ export default function HomePage1() {
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 2px;
-          color: ${s.overlaySubheadingColor || '#ec4899'};
+          color: ${s.overlaySubheadingColor || '#ec4899'} !important;
+          -webkit-text-fill-color: ${s.overlaySubheadingColor || '#ec4899'} !important;
           margin-bottom: 12px;
           text-shadow: 0 2px 10px rgba(236,72,153,0.5);
         `;
@@ -3929,7 +3930,8 @@ export default function HomePage1() {
         headEl.style.cssText = `
           font-size: 56px;
           font-weight: 900;
-          color: ${s.overlayTextColor || '#ffffff'};
+          color: ${s.overlayTextColor || '#ffffff'} !important;
+          -webkit-text-fill-color: ${s.overlayTextColor || '#ffffff'} !important;
           margin-bottom: 20px;
           line-height: 1.1;
           text-shadow: 0 4px 20px rgba(0,0,0,0.5);
@@ -3940,7 +3942,8 @@ export default function HomePage1() {
         paraEl.style.cssText = `
           font-size: ${s.overlayFontSize || 18}px;
           font-weight: ${s.overlayFontWeight || 400};
-          color: ${s.overlayTextColor || '#ffffff'};
+          color: ${s.overlayTextColor || '#ffffff'} !important;
+          -webkit-text-fill-color: ${s.overlayTextColor || '#ffffff'} !important;
           max-width: 700px;
           margin: 0 auto 30px;
           line-height: 1.7;

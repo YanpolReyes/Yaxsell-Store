@@ -1516,3 +1516,97 @@
   }
 }
 
+/* ─── BANNER CON TEXTO / IMAGE OVERLAY — Mobile color fix ─── */
+@media screen and (max-width: 768px) {
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd .musk-h2-head,
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd h1,
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd h2 {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd .musk-fancy-sub-head {
+    -webkit-text-fill-color: inherit !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd .musk-main-para,
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd p {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__image_with_text_overlay_4tEGkd .fusion-bg-fixed-container {
+    min-height: 350px !important;
+    max-height: none !important;
+  }
+}
+
+/* ─── SERVICE ICONS — Mobile responsive ─── */
+@media screen and (max-width: 768px) {
+  [data-template="1"] #shopify-section-template--22405132419320__icon_with_text_7MGWAj {
+    padding: 24px 0 !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__icon_with_text_7MGWAj .row {
+    margin: 0 !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__icon_with_text_7MGWAj .swiper-wrapper {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__icon_with_text_7MGWAj .swiper-slide {
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__icon_with_text_7MGWAj .service-item {
+    padding: 20px 12px !important;
+    min-height: auto !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__icon_with_text_7MGWAj .service-title {
+    font-size: 13px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__icon_with_text_7MGWAj .servive-dtl {
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__icon_with_text_7MGWAj .service-section-title {
+    font-size: 20px !important;
+    margin-bottom: 16px !important;
+  }
+}
+@media screen and (max-width: 480px) {
+  [data-template="1"] #shopify-section-template--22405132419320__icon_with_text_7MGWAj .swiper-wrapper {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ─── FOOTER — Mobile text visibility ─── */
+@media screen and (max-width: 768px) {
+  [data-template="1"] .musk-main-footer .ftr-addr-info-col,
+  [data-template="1"] .musk-main-footer .ftr-support-col {
+    text-align: center !important;
+  }
+  [data-template="1"] .musk-main-footer .ftr-addr-info-col li,
+  [data-template="1"] .musk-main-footer .ftr-addr-info-col a {
+    color: #ccc !important;
+    font-size: 12px !important;
+  }
+  [data-template="1"] .musk-main-footer .ftr-support-col .ftr-col-title {
+    color: #fff !important;
+    font-size: 14px !important;
+    margin-bottom: 8px !important;
+  }
+  [data-template="1"] .musk-main-footer .ftr-support-col a {
+    color: #bbb !important;
+    font-size: 12px !important;
+  }
+  [data-template="1"] .musk-main-footer .ftr-signup-col {
+    grid-column: 1 / -1 !important;
+  }
+  [data-template="1"] .musk-main-footer .tpl1-footer-desc {
+    color: #999 !important;
+    max-width: 100% !important;
+    text-align: center !important;
+  }
+  [data-template="1"] .musk-main-footer .ftr-social-icons a {
+    color: #ccc !important;
+  }
+}
