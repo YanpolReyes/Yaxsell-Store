@@ -205,13 +205,7 @@ function ThemeEditorPage() {
         : isCustomTemplate
           ? mapped.filter(s => s.id.startsWith('cm_'))
           : mapped.filter(s => !s.id.startsWith('cm_') && !s.id.startsWith('tpl1_'));
-      // Safeguard: if template 1 has no tpl1_ sections, force defaults
-      if (isTemplate1 && filtered.length === 0) {
-        filtered = SECTION_DEFAULTS
-          .filter(s => s.id.startsWith('tpl1_'))
-          .map(s => assignGroup(s, false, true));
-        saveSectionConfig([...config.filter(s => !s.id.startsWith('tpl1_')), ...filtered]);
-      }
+      // No forced reset — respect whatever config is saved (even if empty)
       // Merge missing tpl1_ sections (e.g. newly added whatsapp/chatbot)
       if (isTemplate1) {
         const allTpl1Defaults = SECTION_DEFAULTS.filter(s => s.id.startsWith('tpl1_')).map(s => assignGroup(s, false, true));
@@ -256,11 +250,7 @@ function ThemeEditorPage() {
         : isCustomTemplate
           ? mapped.filter(s => s.id.startsWith('cm_'))
           : mapped.filter(s => !s.id.startsWith('cm_') && !s.id.startsWith('tpl1_'));
-      if (isTemplate1 && filtered.length === 0) {
-        filtered = SECTION_DEFAULTS
-          .filter(s => s.id.startsWith('tpl1_'))
-          .map(s => assignGroup(s, false, true));
-      }
+      // No forced reset — respect whatever config is saved (even if empty)
       // Merge missing tpl1_ sections in catch path too
       if (isTemplate1) {
         const allTpl1Defaults = SECTION_DEFAULTS.filter(s => s.id.startsWith('tpl1_')).map(s => assignGroup(s, false, true));

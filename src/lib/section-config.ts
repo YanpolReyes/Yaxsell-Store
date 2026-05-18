@@ -1451,16 +1451,21 @@ export async function getSectionConfigAsync(): Promise<SectionConfig[]> {
 }
 
 function mergeWithDefaults(parsed: SectionConfig[]): SectionConfig[] {
-  const merged = SECTION_DEFAULTS.map(def => {
-    const saved = parsed.find(s => s.id === def.id);
-    if (saved) {
+  // Start from saved config as primary source — only fill missing sections from defaults
+  const defaultIds = new Set(SECTION_DEFAULTS.map(d => d.id));
+  const result = parsed.map(saved => {
+    const def = SECTION_DEFAULTS.find(d => d.id === saved.id);
+    if (def) {
+      // Merge: saved settings override defaults, but defaults provide fallback for missing fields
       return { ...def, enabled: saved.enabled, order: saved.order, locked: saved.locked ?? def.locked, settings: { ...def.settings, ...saved.settings } };
     }
-    return { ...def, order: def.order + 100 };
+    // Saved section not in defaults — keep as-is
+    return saved;
   });
-  // Also include any saved sections not in defaults (e.g. dynamically added)
-  const extra = parsed.filter(s => !SECTION_DEFAULTS.find(d => d.id === s.id));
-  return [...merged, ...extra].sort((a, b) => a.order - b.order);
+  // Add any default sections not present in saved config (e.g. newly added sections)
+  const savedIds = new Set(parsed.map(s => s.id));
+  const missing = SECTION_DEFAULTS.filter(d => !savedIds.has(d.id)).map(d => ({ ...d, order: d.order + 100 }));
+  return [...result, ...missing].sort((a, b) => a.order - b.order);
 }
 
 function getSectionConfigSync(): SectionConfig[] {
