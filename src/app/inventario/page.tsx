@@ -226,14 +226,16 @@ export default function InventarioPage() {
 
   const sectionProductCounts = useMemo(() => {
     const counts: Record<number, number> = {};
-    products.forEach(p => {
-      const m = productFeaturesText(p).match(/Section:\s*(\d+)/i);
-      if (!m) return;
-      const sec = parseInt(m[1], 10);
-      if (sec >= 1 && sec <= 36) counts[sec] = (counts[sec] || 0) + 1;
+    const allSrc = [...products, ...publishedProducts];
+    const seen = new Set<string>();
+    allSrc.forEach(p => {
+      if (seen.has(p.$id)) return;
+      seen.add(p.$id);
+      const sec = getSectionFromProduct(p);
+      if (sec !== null && sec >= 1 && sec <= 36) counts[sec] = (counts[sec] || 0) + 1;
     });
     return counts;
-  }, [products]);
+  }, [products, publishedProducts]);
 
   const openEditStockModal = (p: Product, opts?: { packages?: string; packQty?: string }) => {
     const features = productFeaturesText(p);
