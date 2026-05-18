@@ -3950,6 +3950,8 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         <RangeField label="Blur de imagen" value={s.overlayBlurAmount ?? 0} onChange={v => onUpdate({ overlayBlurAmount: v })} min={0} max={20} unit="px" />
         <Field icon={<Video size={13} />} label="Video de fondo (URL)" value={s.overlayVideoUrl || ''} onChange={v => onUpdate({ overlayVideoUrl: v })} placeholder="https://...mp4" />
         <SH>Overlay</SH>
+        <RangeField label="Opacidad del overlay" value={s.overlayOpacity ?? 40} onChange={v => onUpdate({ overlayOpacity: v })} min={0} max={100} unit="%" />
+        <ColorField label="Color del overlay" value={s.overlayColor || '#000000'} onChange={v => onUpdate({ overlayColor: v })} />
         <RangeField label="Border radius" value={s.overlayBorderRadius ?? 50} onChange={v => onUpdate({ overlayBorderRadius: v })} min={0} max={100} unit="px" />
         <SH>Texto</SH>
         <Field icon={<Type size={13} />} label="Subtítulo" value={s.overlaySubheading || ''} onChange={v => onUpdate({ overlaySubheading: v })} placeholder="BRILLA CON ESTILO" />

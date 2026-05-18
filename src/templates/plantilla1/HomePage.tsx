@@ -3851,9 +3851,32 @@ export default function HomePage1() {
       existingVideo.remove();
     }
 
-    // 3) Eliminar overlay residual si existe
+    // 3) Overlay con opacidad configurable
+    const overlayOpacity = s.overlayOpacity ?? 40;
+    const overlayColor = s.overlayColor || '#000000';
     const existingOverlay = container.querySelector('.tpl1-overlay-color') as HTMLElement | null;
-    if (existingOverlay) existingOverlay.remove();
+    if (overlayOpacity > 0) {
+      if (!existingOverlay) {
+        const overlay = document.createElement('div');
+        overlay.className = 'tpl1-overlay-color';
+        overlay.style.cssText = 'position:absolute;inset:0;z-index:1;pointer-events:none;';
+        container.appendChild(overlay);
+      }
+      // Convert hex to rgba
+      const hexToRgba = (hex: string, alpha: number) => {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r},${g},${b},${alpha})`;
+      };
+      const updatedOverlay = container.querySelector('.tpl1-overlay-color') as HTMLElement;
+      if (updatedOverlay) {
+        updatedOverlay.style.background = hexToRgba(overlayColor, overlayOpacity / 100);
+      }
+    } else {
+      // Opacidad 0 — remover overlay
+      if (existingOverlay) existingOverlay.remove();
+    }
     // Neutralizar overlay del template original
     container.style.setProperty('background-color', 'transparent', 'important');
     // El ::before pseudo-element del container es el overlay — inyectar CSS para matarlo
