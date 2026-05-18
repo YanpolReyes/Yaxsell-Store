@@ -127,6 +127,15 @@ function getBarcodeFromProduct(p: Product): string {
   return '';
 }
 
+function getSectionFromProduct(p: Product): number | null {
+  const features = productFeaturesText(p);
+  const m = features.match(/Section:\s*(\d+)/i);
+  if (m) return parseInt(m[1], 10);
+  const direct = (p as any).section;
+  if (direct && Number(direct) > 0) return Number(direct);
+  return null;
+}
+
 function buildCatalogPublishPayload(p: Product): Record<string, unknown> {
   const barcode = getBarcodeFromProduct(p);
   const sku = getSkuFromProduct(p);
@@ -147,6 +156,9 @@ function buildCatalogPublishPayload(p: Product): Record<string, unknown> {
     PACKQTY: p.PACKQTY || 0,
   };
   // FEATURES y TAGS no existen en la colección products (catálogo) — no enviarlos
+  // Guardar sección como atributo directo para que se mantenga al publicar
+  const section = getSectionFromProduct(p);
+  if (section) payload.section = section;
   if (barcode) payload.barcode = barcode;
   if (p.jumpseller_id) payload.jumpseller_id = p.jumpseller_id;
   return payload;
@@ -401,23 +413,30 @@ export default function InventarioPage() {
   const handleExportInventory = async () => {
     setIsExporting(true);
     try {
-      const rows = products.map(p => {
-        const features = productFeaturesText(p);
-        const sectionMatch = features.match(/Section:\s*(\d+)/i);
+      // Combinar inventario + catálogo publicado (sin duplicados)
+      const allProducts = [...products];
+      const inventoryIds = new Set(products.map(p => p.$id));
+      for (const pp of publishedProducts) {
+        if (!inventoryIds.has(pp.$id)) allProducts.push(pp);
+      }
+
+      const rows = allProducts.map(p => {
         const sku = getSkuFromProduct(p);
         const barcode = getBarcodeFromProduct(p);
+        const section = getSectionFromProduct(p);
+        const isPublished = !inventoryIds.has(p.$id);
         return {
-          'SKU': sku || '',
-          'Código de barras': barcode || '',
+          'SKU': sku || (p as any).jumpseller_id || '',
+          'Código de barras': barcode || (p as any).barcode || '',
           'Nombre': p.NAME || '',
           'Stock': p.STOCK || 0,
           'Cantidad por paquete': p.PACKQTY || '',
           'Paquetes': p.PACKQTY ? Math.max(0, Math.round((p.STOCK || 0) / p.PACKQTY)) : '',
-          'Sección/Bodega': sectionMatch ? parseInt(sectionMatch[1], 10) : '',
+          'Sección/Bodega': section || '',
           'Categoría': p.CATEGORYID || '',
           'Subcategoría': p.SUBCATEGORYID || '',
           'Precio': p.PRICE || '',
-          'Activo': p.ISACTIVE ? 'Sí' : 'No',
+          'Estado': isPublished ? 'Publicado' : (p.ISACTIVE ? 'En inventario' : 'Inactivo'),
         };
       });
 
@@ -1084,10 +1103,7 @@ export default function InventarioPage() {
     }
   };
 
-  const getSection = (p: Product): number | null => {
-    const m = p.FEATURES?.match(/Section:\s*(\d+)/i);
-    return m ? parseInt(m[1], 10) : null;
-  };
+  const getSection = getSectionFromProduct;
 
   /**
    * 📤 Publica un producto del inventario al catálogo principal.
@@ -1133,6 +1149,7 @@ export default function InventarioPage() {
           delete (safePayload as any).jumpseller_id;
           delete (safePayload as any).PACKQTY;
           delete (safePayload as any).SUBCATEGORYID;
+          delete (safePayload as any).section;
           await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), safePayload);
         } else {
           throw createErr;
@@ -1207,6 +1224,7 @@ export default function InventarioPage() {
               delete (safePayload as any).jumpseller_id;
               delete (safePayload as any).PACKQTY;
               delete (safePayload as any).SUBCATEGORYID;
+              delete (safePayload as any).section;
               await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), safePayload);
             } else {
               throw createErr;
