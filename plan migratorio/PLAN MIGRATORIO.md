@@ -803,6 +803,203 @@ Las colecciones usan **dos convenciones distintas** para los nombres de atributo
 
 ---
 
+## 10. Atributos Faltantes Detectados (Mayo 18, 2026)
+
+### ⚠️ Colecciones que alcanzaron el límite de atributos (`attribute_limit_exceeded`)
+Estas colecciones **NO** pueden recibir más atributos en el plan gratuito:
+
+| Colección | Atributos actuales | Faltan en código | Solución |
+|-----------|-------------------|------------------|----------|
+| `products` | 24 | `IMAGEURL4`, `IMAGEURL5`, `TAGS`, `FEATURES` | Mover TAGS/FEATURES a DESCRIPTION; imágenes 4-5 al campo DESCRIPTION o usar storage |
+| `orders` | 25 | `adminNotes` | Usar `order_status_history.notes` como workaround |
+
+### Atributos creados en esta sesión (processing → available)
+| Colección | Atributo | Tipo | Default |
+|-----------|----------|------|---------|
+| `inventory_products` | `PACKQTY` | integer | 0 |
+| `users` | `adminNotes` | string(4096) | — |
+| `users` | `isWholesale` | boolean | false |
+| `users` | `isBanned` | boolean | false |
+| `users` | `lastAccessAt` | string(100) | — |
+| `users` | `profileCreatedAt` | string(100) | — |
+| `users` | `region` | string(100) | — |
+
+### Atributos que YA EXISTÍAN pero no estaban en el plan original
+| Colección | Atributo | Tipo |
+|-----------|----------|------|
+| `orders` | `ISGIFT` | boolean |
+| `orders` | `CUSTOMERNOTE` | string |
+| `orders` | `PURCHASEDFROMLIVE` | boolean |
+| `orders` | `COUPONCODE` | string |
+| `theme_config` | `NAME` | string |
+| `theme_config` | `SECTIONS` | string |
+| `products` | `jumpseller_id` | string |
+
+### 3.1 `products` — esquema REAL actualizado (24 atributos)
+| Atributo | Tipo | Size | Requerido | Default |
+|----------|------|------|-----------|---------|
+| NAME | string | 256 | ✓ | — |
+| DESCRIPTION | string | 8192 | ✗ | — |
+| PRICE | integer | — | ✓ | — |
+| CURRENTPRICE | integer | — | ✗ | — |
+| COST | integer | — | ✗ | — |
+| STOCK | integer | — | ✓ | — |
+| SOLDQUANTITY | integer | — | ✗ | — |
+| CATEGORYID | string | 256 | ✗ | — |
+| SUBCATEGORYID | string | 256 | ✗ | — |
+| SELLERID | string | 256 | ✗ | — |
+| IMAGEURL | string | 2048 | ✗ | — |
+| IMAGEURL2 | string | 2048 | ✗ | — |
+| IMAGEURL3 | string | 2048 | ✗ | — |
+| RATING | double | — | ✗ | — |
+| NUMREVIEWS | integer | — | ✗ | — |
+| WHOLESALEPRICE | integer | — | ✗ | — |
+| WHOLESALEMINQUANTITY | integer | — | ✗ | — |
+| ISFEATURED | boolean | — | ✗ | — |
+| ISACTIVE | boolean | — | ✗ | — |
+| PACKQTY | integer | — | ✗ | — |
+| RESTOCKTHRESHOLD | integer | — | ✗ | — |
+| CUSTOM_PRIMARY_COLOR | string | 50 | ✗ | — |
+| CUSTOM_SECONDARY_COLOR | string | 50 | ✗ | — |
+| CUSTOM_USE_GRADIENT | boolean | — | ✗ | — |
+| jumpseller_id | string | 256 | ✗ | — |
+
+### 3.2 `inventory_products` — esquema REAL actualizado (22 atributos)
+| Atributo | Tipo | Size | Requerido | Default |
+|----------|------|------|-----------|---------|
+| sku | string | 256 | ✗ | — |
+| barcode | string | 256 | ✗ | — |
+| NAME | string | 256 | ✓ | — |
+| PRICE | integer | — | ✗ | 0 |
+| STOCK | integer | — | ✗ | 0 |
+| CATEGORYID | string | 256 | ✗ | — |
+| SUBCATEGORYID | string | 256 | ✗ | — |
+| IMAGEURL | string | 2048 | ✗ | — |
+| IMAGEURL2 | string | 2048 | ✗ | — |
+| IMAGEURL3 | string | 2048 | ✗ | — |
+| WHOLESALEPRICE | integer | — | ✗ | — |
+| WHOLESALEMINQUANTITY | integer | — | ✗ | — |
+| ISACTIVE | boolean | — | ✗ | false |
+| published_product_id | string | 256 | ✗ | — |
+| published_at | string | 64 | ✗ | — |
+| imported_at | string | 64 | ✗ | — |
+| FEATURES | string | 2048 | ✗ | — |
+| TAGS | string | 512 | ✗ | — |
+| name_cn | string | 256 | ✗ | — |
+| IMAGEURL4 | string | 1024 | ✗ | — |
+| IMAGEURL5 | string | 1024 | ✗ | — |
+| PACKQTY | integer | — | ✗ | 0 |
+
+### 3.11 `users` — esquema REAL actualizado (11 atributos)
+| Atributo | Tipo | Size | Requerido | Default |
+|----------|------|------|-----------|---------|
+| userId | string | 256 | ✓ | — |
+| email | string | 256 | ✓ | — |
+| name | string | 256 | ✗ | — |
+| phone | string | 100 | ✗ | — |
+| createdAt | string | 100 | ✓ | — |
+| adminNotes | string | 4096 | ✗ | — |
+| isWholesale | boolean | — | ✗ | false |
+| isBanned | boolean | — | ✗ | false |
+| lastAccessAt | string | 100 | ✗ | — |
+| profileCreatedAt | string | 100 | ✗ | — |
+| region | string | 100 | ✗ | — |
+
+### 3.6 `orders` — esquema REAL actualizado (29 atributos)
+| Atributo | Tipo | Size | Requerido | Default |
+|----------|------|------|-----------|---------|
+| USERID | string | 256 | ✗ | — |
+| ORDERCODE | string | 50 | ✓ | — |
+| ORDERINDEX | integer | — | ✓ | — |
+| CUSTOMERNAME | string | 256 | ✓ | — |
+| CUSTOMEREMAIL | string | 256 | ✗ | — |
+| CUSTOMERRUT | string | 50 | ✗ | — |
+| CUSTOMERPHONE | string | 50 | ✗ | — |
+| REGION | string | 100 | ✗ | — |
+| COMUNA | string | 100 | ✗ | — |
+| ADDRESS | string | 512 | ✗ | — |
+| ADDITIONALINFO | string | 512 | ✗ | — |
+| ADDRESSPHOTOURL | string | 2048 | ✗ | — |
+| PAYMENTMETHOD | string | 50 | ✗ | — |
+| SHIPPINGAGENCY | string | 100 | ✗ | — |
+| SHIPPINGADDRESS | string | 2048 | ✗ | — |
+| SUBTOTAL | integer | — | ✓ | — |
+| SHIPPINGCOST | integer | — | ✗ | — |
+| TOTAL | integer | — | ✓ | — |
+| STATUS | string | 50 | ✓ | — |
+| ITEMS | string | 50000 | ✗ | — |
+| CREATEDAT | integer | — | ✓ | — |
+| UPDATEDAT | integer | — | ✗ | — |
+| EXPIRESAT | integer | — | ✗ | — |
+| AUTOCANCELENABLED | boolean | — | ✗ | — |
+| PAYMENTPROOFURL | string | 2048 | ✗ | — |
+| ISGIFT | boolean | — | ✗ | — |
+| CUSTOMERNOTE | string | 2048 | ✗ | — |
+| PURCHASEDFROMLIVE | boolean | — | ✗ | — |
+| COUPONCODE | string | 100 | ✗ | — |
+
+---
+
+## 11. Recomendaciones para la IA que ejecute la migración
+
+### 📋 Antes de empezar
+1. **Verificar cuota Appwrite** — La cuenta antigua (`698f6de50012f9df7ebd`) puede tener cuota agotada. Si no se puede leer, usar los esquemas de este documento.
+2. **Hacer backup del código actual** — `git checkout -b backup-pre-migration`
+3. **Leer TODO este documento** antes de escribir una sola línea de código.
+4. **No intentar crear atributos en `products` ni `orders`** — Ambas colecciones están en el límite (`attribute_limit_exceeded`). Cualquier intento fallará con error 400.
+
+### 🏗️ Orden de migración recomendado
+1. **Primero colecciones sin dependencias**: `sequences`, `categories`, `subcategories`, `theme_config`, `apertura_settings`
+2. **Luego colecciones con referencias simples**: `products` (ref a categories), `banners`, `discount_coupons`, `users`
+3. **Después colecciones que dependen de products/users**: `orders`, `reviews`, `favorites`, `inventory_products`, `timed_offers`
+4. **Al final colecciones derivadas**: `order_status_history`, `stock_movements`, `support_tickets`, `wholesale_requests`, etc.
+
+### ⚠️ Problemas críticos conocidos
+1. **`products` y `orders` están en el límite de atributos** — No se pueden agregar más campos. Si necesitas más atributos, debes:
+   - Eliminar atributos poco usados (ej: `CUSTOM_PRIMARY_COLOR`, `CUSTOM_SECONDARY_COLOR`, `CUSTOM_USE_GRADIENT`)
+   - O hacer upgrade a plan Pro
+2. **Nomenclatura inconsistente** — `products` usa UPPERCASE, `users` usa camelCase. Recomendación: **NO cambiar** en esta migración, solo documentar. Unificar requeriría tocar 40-60 archivos.
+3. **`inventory_products` → `products` publish** — El payload de publicación fue ajustado para NO enviar `IMAGEURL4`, `IMAGEURL5`, `TAGS`, `FEATURES` porque no existen en `products`. Ver `src/app/inventario/page.tsx` líneas 918-934.
+4. **IDs cambian al migrar** — Los `$id` de documentos cambian. Cualquier campo que referencie otro documento (CATEGORYID, PRODUCTID, USERID, etc.) debe ser mapeado con una tabla de old_id → new_id.
+
+### 🔧 Script de migración sugerido
+```typescript
+// Estructura base para script de migración
+const OLD = { endpoint: '...', project: '698f6de50012f9df7ebd', db: '67f1dc940037b3d367bb' };
+const NEW = { endpoint: 'https://nyc.cloud.appwrite.io/v1', project: '6a0a4e8d0032177f3f90', db: '6a0a58ca001798410d86' };
+
+// Tabla de mapeo de IDs
+const idMap = new Map<string, string>(); // oldId → newId
+
+async function migrateCollection(collId: string, transform?: (doc: any) => any) {
+  // 1. Leer todos los documentos de OLD (si la cuota lo permite)
+  // 2. Para cada documento:
+  //    a. Transformar datos si es necesario (renombrar atributos)
+  //    b. Reemplazar referencias $id usando idMap
+  //    c. Crear documento en NEW
+  //    d. Guardar mapeo oldId → newId en idMap
+  // 3. Rate limiting: 1 request cada 200ms para no exceder cuota
+}
+```
+
+### 📦 Storage buckets pendientes
+El plan gratuito solo permite 2 buckets. Actualmente existen:
+- `products` ✓
+- `comprobantes` ✓
+
+Faltan (requieren upgrade a plan Pro o eliminar uno existente):
+- `banners`
+- `categories-icons`
+- `live-thumbnails`
+
+### 🚨 No tocar estas cosas
+- **No cambiar nombres de colecciones** — El código usa constantes en `src/lib/appwrite.ts`
+- **No eliminar atributos existentes** — Aunque parezca que no se usan, pueden estar referenciados
+- **No cambiar UPPERCASE a camelCase** — Requiere cambios en 40-60 archivos, mejor hacerlo en una fase separada
+- **No modificar `inventory_products`** — Tiene 267 documentos con datos de inventario reales
+
+---
+
 ## 10. Checklist de Migración
 
 - [ ] Decidir opción (A, B o C)
