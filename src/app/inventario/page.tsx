@@ -12,7 +12,7 @@ import { setBarcodeInFeatures, setSectionInFeatures } from '@/lib/product-featur
 import { Product, Category, Subcategory } from '@/types/admin';
 import {
   Upload, Search, Package, CheckCircle2, RefreshCw,
-  X, FileSpreadsheet, ArrowUpCircle, Plus, Eye, EyeOff, Sparkles, Languages, FolderTree, Camera, MapPin, ChevronDown
+  X, FileSpreadsheet, ArrowUpCircle, Plus, Eye, EyeOff, Sparkles, Languages, FolderTree, Camera, MapPin, ChevronDown, Download
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false });
@@ -204,6 +204,7 @@ export default function InventarioPage() {
   const [importPackQtyResults, setImportPackQtyResults] = useState<{ updated: number; notFound: number; errors: number } | null>(null);
   const [lastScannedCode, setLastScannedCode] = useState<{ code: string; timestamp: number } | null>(null);
   const [duplicateScanWarning, setDuplicateScanWarning] = useState<{ code: string; product: Product } | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const sectionProductCounts = useMemo(() => {
     const counts: Record<number, number> = {};
@@ -391,6 +392,48 @@ export default function InventarioPage() {
       alert('Error al leer archivo: ' + (err.message || err));
     } finally {
       setIsImportingPackQty(false);
+    }
+  };
+
+  const handleExportInventory = async () => {
+    setIsExporting(true);
+    try {
+      const rows = products.map(p => {
+        const features = productFeaturesText(p);
+        const sectionMatch = features.match(/Section:\s*(\d+)/i);
+        const sku = getSkuFromProduct(p);
+        const barcode = getBarcodeFromProduct(p);
+        return {
+          'SKU': sku || '',
+          'Código de barras': barcode || '',
+          'Nombre': p.NAME || '',
+          'Stock': p.STOCK || 0,
+          'Cantidad por paquete': p.PACKQTY || '',
+          'Paquetes': p.PACKQTY ? Math.max(0, Math.round((p.STOCK || 0) / p.PACKQTY)) : '',
+          'Sección/Bodega': sectionMatch ? parseInt(sectionMatch[1], 10) : '',
+          'Categoría': p.CATEGORYID || '',
+          'Subcategoría': p.SUBCATEGORYID || '',
+          'Precio': p.PRICE || '',
+          'Activo': p.ISACTIVE ? 'Sí' : 'No',
+        };
+      });
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      // Auto-ajustar ancho de columnas
+      const colWidths = Object.keys(rows[0] || {}).map(key => ({
+        wch: Math.max(key.length, ...rows.map(r => String((r as any)[key] || '').length)).toString().length + 2,
+      }));
+      ws['!cols'] = colWidths;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
+      const date = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(wb, `inventario_${date}.xlsx`);
+    } catch (err) {
+      console.error('[inventario] export error:', err);
+      alert('Error al exportar inventario.');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -1507,6 +1550,11 @@ export default function InventarioPage() {
                   {isImportingPackQty ? <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" /> : <Package className="w-4 h-4" />}
                 </div>
               </label>
+              {/* Export inventory to Excel */}
+              <button onClick={handleExportInventory} disabled={isExporting || products.length === 0} title="Exportar inventario a Excel"
+                className="p-1.5 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition disabled:opacity-50">
+                {isExporting ? <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
+              </button>
               <button onClick={loadProducts} disabled={loadingProducts}
                 className="p-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition disabled:opacity-50">
                 <RefreshCw className={`w-4 h-4 ${loadingProducts ? 'animate-spin' : ''}`} />
