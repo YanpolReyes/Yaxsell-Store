@@ -156,9 +156,10 @@ function buildCatalogPublishPayload(p: Product): Record<string, unknown> {
     PACKQTY: p.PACKQTY || 0,
   };
   // FEATURES y TAGS no existen en la colección products (catálogo) — no enviarlos
-  // Guardar sección como atributo directo para que se mantenga al publicar
+  // Guardar sección y SKU como atributos directos para que se mantengan al publicar
   const section = getSectionFromProduct(p);
   if (section) payload.section = section;
+  if (sku) payload.sku = sku;
   if (barcode) payload.barcode = barcode;
   if (p.jumpseller_id) payload.jumpseller_id = p.jumpseller_id;
   return payload;
@@ -1140,7 +1141,7 @@ export default function InventarioPage() {
       const payload = buildCatalogPublishPayload(p);
 
       // 1. Crear en catálogo (defensivo: ir eliminando campos opcionales uno por uno si fallan)
-      const optionalFields = ['barcode', 'jumpseller_id', 'PACKQTY', 'SUBCATEGORYID'];
+      const optionalFields = ['barcode', 'sku', 'jumpseller_id', 'PACKQTY', 'SUBCATEGORYID'];
       let createSuccess = false;
       try {
         await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
@@ -1232,7 +1233,7 @@ export default function InventarioPage() {
             await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
           } catch (createErr: any) {
             if (!createErr?.message?.includes('Unknown attribute')) throw createErr;
-            const optionalFields = ['barcode', 'jumpseller_id', 'PACKQTY', 'SUBCATEGORYID'];
+            const optionalFields = ['barcode', 'sku', 'jumpseller_id', 'PACKQTY', 'SUBCATEGORYID'];
             let retryPayload = { ...payload };
             let retryOk = false;
             for (const field of optionalFields) {

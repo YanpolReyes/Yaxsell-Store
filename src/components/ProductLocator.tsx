@@ -29,6 +29,8 @@ function getSku(p: Product): string {
   if (m) return m[1].trim();
   const tags = (p.TAGS || '').split(',').map(t => t.trim());
   const skuTag = tags.find(t => /^[A-Z0-9]{4,}$/i.test(t));
+  const direct = (p as any).sku;
+  if (direct && String(direct).trim()) return String(direct).trim();
   return p.jumpseller_id || skuTag || '';
 }
 
