@@ -1516,6 +1516,13 @@ cart-drawer.cart-sidebar::after {
   display: none !important;
 }
 
+/* ─── Hide Shopify technology/powered text in footer ─── */
+[data-template="1"] .musk-main-footer .footer-bottom,
+[data-template="1"] .musk-main-footer .footer-copyright,
+[data-template="1"] .musk-main-footer .ftr-copy-row {
+  display: none !important;
+}
+
 /* ─── Make sure the migrated content takes full width without site shell padding ─── */
 [data-template="1"] main.min-h-screen,
 [data-template="1"] .musk-main-site-content,
