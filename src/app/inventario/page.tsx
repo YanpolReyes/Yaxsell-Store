@@ -512,6 +512,12 @@ export default function InventarioPage() {
 
         if (directMatch) {
           scannedCodesRef.current.add(codeLower);
+          // Si ya tiene stock, avisar que ya está registrado
+          if ((directMatch.STOCK || 0) > 0) {
+            setDuplicateScanWarning({ code, product: directMatch });
+            setShowScanner(false);
+            return;
+          }
           startScanWizard(directMatch, code);
         } else if (code.length >= 8) {
           const last4 = code.slice(-4).toLowerCase();
@@ -529,6 +535,10 @@ export default function InventarioPage() {
           setShowScanner(false);
           setUnregisteredModal({ code });
         }
+      } else if (scanTarget === 'searchOnly') {
+        // Solo poner el código en la barra de búsqueda
+        setCatalogSearch(code);
+        closeScanner();
       } else if (scanTarget === 'editBarcode') {
         setEditBarcodeValue(code);
       } else {
@@ -538,7 +548,7 @@ export default function InventarioPage() {
       console.error('[inventario] handleBarcodeScan:', err);
       alert('Error al procesar el código escaneado. Intenta de nuevo.');
     } finally {
-      if (scanTarget !== 'search') {
+      if (scanTarget !== 'search' && scanTarget !== 'searchOnly') {
         closeScanner();
       }
     }
@@ -1310,8 +1320,8 @@ export default function InventarioPage() {
         <div className="fixed inset-0 z-[65] bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden">
             <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-4">
-              <h3 className="text-lg font-bold">Código repetido</h3>
-              <p className="text-xs text-white/80 mt-0.5">Ya escaneaste este producto recientemente</p>
+              <h3 className="text-lg font-bold">Producto ya registrado</h3>
+              <p className="text-xs text-white/80 mt-0.5">Este producto ya tiene stock en el inventario</p>
             </div>
             <div className="p-5 flex items-center gap-4">
               {duplicateScanWarning.product.IMAGEURL && (
@@ -1321,9 +1331,7 @@ export default function InventarioPage() {
                 <div className="font-semibold text-gray-900 line-clamp-1">{duplicateScanWarning.product.NAME}</div>
                 <div className="text-xs font-mono text-gray-500">SKU: {getSku(duplicateScanWarning.product)}</div>
                 <div className="text-xs text-amber-600 font-semibold mt-1">Código: {duplicateScanWarning.code}</div>
-                {(duplicateScanWarning.product.STOCK || 0) > 0 && (
-                  <div className="text-sm text-emerald-600 font-semibold mt-1">Stock actual: {duplicateScanWarning.product.STOCK} uds</div>
-                )}
+                <div className="text-sm text-emerald-600 font-bold mt-1">Stock actual: {duplicateScanWarning.product.STOCK || 0} uds</div>
               </div>
             </div>
             <div className="px-5 pb-2">
@@ -1601,9 +1609,9 @@ export default function InventarioPage() {
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
-                <button onClick={() => openScanner('search')}
+                <button onClick={() => openScanner('searchOnly')}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-pink-600 transition"
-                  title="Escanear código de barras">
+                  title="Escanear para buscar">
                   <Camera className="w-4 h-4" />
                 </button>
               </div>
@@ -1979,9 +1987,9 @@ export default function InventarioPage() {
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
-                <button onClick={() => openScanner('search')}
+                <button onClick={() => openScanner('searchOnly')}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-pink-600 transition"
-                  title="Escanear código de barras (modo ráfaga)">
+                  title="Escanear para buscar">
                   <Camera className="w-4 h-4" />
                 </button>
               </div>
