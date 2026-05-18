@@ -387,6 +387,7 @@ export interface SectionSettings {
   heroStoreLogoScrollUrl?: string; // URL de imagen del logo al hacer scroll
   heroStoreLogoMode?: 'text' | 'image'; // Mostrar texto o imagen
   heroStoreLogoHeight?: number; // Altura del logo en px
+  heroStoreLogoMobileHeight?: number; // Altura del logo en móvil (px)
   heroStoreLogoPosX?: number; // Posición X del logo en px
   heroStoreLogoPosY?: number; // Posición Y del logo en px
   heroTitleOpacity?: number; // 0-1, opacidad del título

@@ -4773,7 +4773,19 @@ export default function HomePage1() {
         title.style.transform = `translateY(${settings.mediaGalleryTitleHeight}%)`;
       }
       if (settings.mediaGalleryTitleAnimation && settings.mediaGalleryTitleAnimation !== 'none') {
-        title.style.animation = `${settings.mediaGalleryTitleAnimation} 2s ease-in-out infinite`;
+        title.style.animation = `${settings.mediaGalleryTitleAnimation} 1.2s ease-out forwards`;
+        title.style.opacity = '0';
+        // Only animate once when first scrolled into view
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              title.style.opacity = '';
+              title.style.animation = `${settings.mediaGalleryTitleAnimation} 1.2s ease-out forwards`;
+              observer.disconnect();
+            }
+          });
+        }, { threshold: 0.2 });
+        observer.observe(title);
       }
     }
 
@@ -6333,12 +6345,14 @@ export default function HomePage1() {
         }
 
         // ── Mobile hero logo (centered, visible only on mobile) ──
+        const mobileLogoH = hs.heroStoreLogoMobileHeight ?? 30;
+        const desktopLogoH = hs.heroStoreLogoHeight ?? 40;
         if (!document.getElementById('tpl1-hero-mobile-logo')) {
           const mStyle = document.createElement('style');
           mStyle.id = 'tpl1-hero-mobile-logo-style';
           mStyle.textContent = `
             .tpl1-hero-mobile-logo { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; pointer-events: none; }
-            .tpl1-hero-mobile-logo img { max-width: 140px; max-height: 60px; width: auto; height: auto; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3)); }
+            .tpl1-hero-mobile-logo img { max-width: ${mobileLogoH * 3.5}px; max-height: ${mobileLogoH}px; width: auto; height: auto; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3)); }
             @media (max-width: 768px) { .tpl1-hero-mobile-logo { display: block; } }
           `;
           document.head.appendChild(mStyle);
@@ -6357,13 +6371,19 @@ export default function HomePage1() {
             heroEl.appendChild(logoDiv);
           }
         } else {
-          // Update existing mobile logo
+          // Update existing mobile logo + style
+          const mStyle = document.getElementById('tpl1-hero-mobile-logo-style');
+          if (mStyle) mStyle.textContent = `
+            .tpl1-hero-mobile-logo { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; pointer-events: none; }
+            .tpl1-hero-mobile-logo img { max-width: ${mobileLogoH * 3.5}px; max-height: ${mobileLogoH}px; width: auto; height: auto; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3)); }
+            @media (max-width: 768px) { .tpl1-hero-mobile-logo { display: block; } }
+          `;
           const existingLogo = document.getElementById('tpl1-hero-mobile-logo');
           if (existingLogo) {
             if (logoUrl) {
               existingLogo.innerHTML = `<img src="${logoUrl}" alt="${storeName}" />`;
             } else {
-              existingLogo.innerHTML = `<span style="font-size:22px;font-weight:800;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.4);letter-spacing:-0.02em;font-family:Syne,sans-serif">${storeName}</span>`;
+              existingLogo.innerHTML = `<span style="font-size:${Math.max(mobileLogoH * 0.55, 14)}px;font-weight:800;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.4);letter-spacing:-0.02em;font-family:Syne,sans-serif">${storeName}</span>`;
             }
           }
         }

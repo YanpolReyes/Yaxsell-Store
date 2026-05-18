@@ -1410,10 +1410,7 @@ cart-drawer.cart-sidebar::after {
   overflow: hidden;
   max-width: 100vw;
 }
-/* Hide broken marquee shape PNGs — they don't load properly */
-[data-template="1"] .marquee-text-wrapper .marquee-img-box img[src*="marquee-shape"] {
-  display: none !important;
-}
+/* Marquee images visible by default — only hide truly broken ones via JS */
 
 /* ─── Footer / nav fixes ─── */
 [data-template="1"] .musk-main-footer {

@@ -3117,7 +3117,13 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         {s.heroStoreLogoMode === 'text' ? (
           <Field icon={<Type size={13} />} label="Nombre" value={s.heroStoreName || ''} onChange={v => onUpdate({ heroStoreName: v })} placeholder="Yaxsell" />
         ) : (
-          <ImageUploadField label="Logo" value={s.heroStoreLogoUrl || ''} onChange={v => onUpdate({ heroStoreLogoUrl: v })} />
+          <>
+            <ImageUploadField label="Logo" value={s.heroStoreLogoUrl || ''} onChange={v => onUpdate({ heroStoreLogoUrl: v })} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 4 }}>
+              <Field icon={<Monitor size={13} />} label="Altura Desktop (px)" value={String(s.heroStoreLogoHeight ?? 40)} onChange={v => onUpdate({ heroStoreLogoHeight: Number(v) || 40 })} placeholder="40" />
+              <Field icon={<Smartphone size={13} />} label="Altura Móvil (px)" value={String(s.heroStoreLogoMobileHeight ?? 30)} onChange={v => onUpdate({ heroStoreLogoMobileHeight: Number(v) || 30 })} placeholder="30" />
+            </div>
+          </>
         )}
 
         <SH>Colores del texto</SH>
