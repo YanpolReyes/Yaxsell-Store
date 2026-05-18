@@ -202,6 +202,8 @@ export default function InventarioPage() {
   const [showLocator, setShowLocator] = useState(false);
   const [isImportingPackQty, setIsImportingPackQty] = useState(false);
   const [importPackQtyResults, setImportPackQtyResults] = useState<{ updated: number; notFound: number; errors: number } | null>(null);
+  const [lastScannedCode, setLastScannedCode] = useState<{ code: string; timestamp: number } | null>(null);
+  const [duplicateScanWarning, setDuplicateScanWarning] = useState<{ code: string; product: Product } | null>(null);
 
   const sectionProductCounts = useMemo(() => {
     const counts: Record<number, number> = {};
@@ -438,6 +440,21 @@ export default function InventarioPage() {
 
     try {
       if (scanTarget === 'search') {
+        // Detectar si es el mismo código escaneado recientemente (últimos 10 segundos)
+        const now = Date.now();
+        if (lastScannedCode && lastScannedCode.code === code && (now - lastScannedCode.timestamp) < 10000) {
+          const product = products.find(p => {
+            const bc = getBarcodeFromProduct(p).toLowerCase();
+            const sku = getSkuFromProduct(p).toLowerCase();
+            return (bc && bc === code.toLowerCase()) || (sku && sku === code.toLowerCase());
+          });
+          if (product) {
+            setDuplicateScanWarning({ code, product });
+            setShowScanner(false);
+            return;
+          }
+        }
+
         const codeLower = code.toLowerCase();
         const directMatch = products.find(p => {
           const bc = getBarcodeFromProduct(p).toLowerCase();
@@ -446,6 +463,7 @@ export default function InventarioPage() {
         });
 
         if (directMatch) {
+          setLastScannedCode({ code, timestamp: now });
           startScanWizard(directMatch, code);
         } else if (code.length >= 8) {
           const last4 = code.slice(-4).toLowerCase();
@@ -1235,6 +1253,43 @@ export default function InventarioPage() {
                 className="flex-1 px-4 py-3 text-gray-600 hover:bg-gray-50 font-semibold transition">No</button>
               <button onClick={() => { setView('excel'); setUnregisteredModal(null); }}
                 className="flex-1 px-4 py-3 bg-pink-500 hover:bg-pink-600 text-white font-semibold transition">Sí, agregar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {duplicateScanWarning && (
+        <div className="fixed inset-0 z-[65] bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-4">
+              <h3 className="text-lg font-bold">⚠ Código duplicado</h3>
+              <p className="text-xs text-white/80 mt-0.5">Escaneaste este código hace menos de 10 segundos</p>
+            </div>
+            <div className="p-5 flex items-center gap-4">
+              {duplicateScanWarning.product.IMAGEURL && (
+                <img src={duplicateScanWarning.product.IMAGEURL} alt="" className="w-16 h-16 object-cover rounded-xl shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-gray-900 line-clamp-1">{duplicateScanWarning.product.NAME}</div>
+                <div className="text-xs font-mono text-gray-500">SKU: {getSku(duplicateScanWarning.product)}</div>
+                <div className="text-xs text-amber-600 font-semibold mt-1">Código: {duplicateScanWarning.code}</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 px-5 pb-5">
+              <button
+                onClick={() => { setDuplicateScanWarning(null); openScanner('search'); }}
+                className="py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition">
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  setLastScannedCode(null); // Reset para permitir continuar
+                  setDuplicateScanWarning(null);
+                  startScanWizard(duplicateScanWarning.product, duplicateScanWarning.code);
+                }}
+                className="py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm transition">
+                Continuar
+              </button>
             </div>
           </div>
         </div>
