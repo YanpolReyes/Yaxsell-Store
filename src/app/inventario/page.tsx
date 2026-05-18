@@ -165,6 +165,7 @@ export default function InventarioPage() {
   const [products, setProducts] = useState<Product[]>([]); // inventory_products
   const [publishedSkus, setPublishedSkus] = useState<Set<string>>(new Set()); // SKUs ya en products (catálogo)
   const [publishedBarcodes, setPublishedBarcodes] = useState<Set<string>>(new Set()); // Barcodes ya en products
+  const [publishedProducts, setPublishedProducts] = useState<Product[]>([]); // Productos ya en catálogo (para vista Ubicados)
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -588,14 +589,14 @@ export default function InventarioPage() {
         cursor = docs[docs.length - 1].$id;
       }
 
-      // 2. Cargar SKUs y Barcodes de PRODUCTS (catálogo publicado) — solo para detección de duplicados
-      //    No necesitamos los productos completos, solo identificadores
+      // 2. Cargar productos de PRODUCTS (catálogo publicado) — para detección de duplicados y vista Ubicados
       const skus = new Set<string>();
       const barcodes = new Set<string>();
+      const allPublished: Product[] = [];
       try {
         let pCursor: string | undefined;
         while (true) {
-          const queries: any[] = [Query.limit(500), Query.select(['$id', 'jumpseller_id', 'barcode'])];
+          const queries: any[] = [Query.limit(500)];
           if (pCursor) queries.push(Query.cursorAfter(pCursor));
           const resp: any = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
           const docs = resp.documents as any[];
@@ -606,11 +607,12 @@ export default function InventarioPage() {
             if (sku) skus.add(sku);
             if (bc) barcodes.add(bc);
           }
+          allPublished.push(...docs);
           if (docs.length < 500) break;
           pCursor = docs[docs.length - 1].$id;
         }
       } catch (e) {
-        console.warn('No se pudieron cargar identificadores del catálogo:', e);
+        console.warn('No se pudieron cargar productos del catálogo:', e);
       }
 
       // 3. Cargar categorías y subcategorías
@@ -622,6 +624,7 @@ export default function InventarioPage() {
       setProducts(allInventory);
       setPublishedSkus(skus);
       setPublishedBarcodes(barcodes);
+      setPublishedProducts(allPublished);
       setCategories(cr.documents as unknown as Category[]);
       setSubcategories(sr.documents as unknown as Subcategory[]);
     } catch (e: any) { console.error(e); }
@@ -1236,8 +1239,10 @@ export default function InventarioPage() {
 
   const zeroStockProducts = products.filter(p => (p.STOCK || 0) === 0);
   const withStockProducts = products.filter(p => (p.STOCK || 0) > 0);
-  const locatedProducts = products.filter(p => getSection(p) !== null && (p.STOCK || 0) > 0);
-  const unlocatedProducts = products.filter(p => getSection(p) === null && (p.STOCK || 0) > 0);
+  // Ubicados: incluye productos del inventario Y del catálogo publicado
+  const allLocatedSource = [...products, ...publishedProducts];
+  const locatedProducts = allLocatedSource.filter(p => getSection(p) !== null && (p.STOCK || 0) > 0);
+  const unlocatedProducts = allLocatedSource.filter(p => getSection(p) === null && (p.STOCK || 0) > 0);
   const catalogFiltered = zeroStockProducts.filter(p => {
     if (!catalogSearch) return true;
     const q = catalogSearch.toLowerCase();
@@ -2634,7 +2639,7 @@ export default function InventarioPage() {
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="p-4 border-b border-gray-100">
               <h2 className="text-sm font-semibold text-gray-900">Productos Ubicados</h2>
-              <p className="text-xs text-gray-500 mt-0.5">{locatedProducts.length} con sección asignada · {unlocatedProducts.length} sin sección</p>
+              <p className="text-xs text-gray-500 mt-0.5">{locatedProducts.length} con sección · {unlocatedProducts.length} sin sección · <span className="text-blue-600">{publishedProducts.length} publicados</span></p>
             </div>
 
             {/* Located group */}
@@ -2654,6 +2659,7 @@ export default function InventarioPage() {
                     const ranges: Record<string, number[]> = { A: [1,9], B: [10,18], C: [19,27], D: [28,36] };
                     return sec !== null && sec >= ranges[g][0] && sec <= ranges[g][1];
                   });
+                  const isPublished = !products.some(ip => ip.$id === p.$id);
                   return (
                     <div key={p.$id} className="flex items-center gap-3 px-4 py-2.5">
                       {p.IMAGEURL ? (
@@ -2667,7 +2673,10 @@ export default function InventarioPage() {
                         <div className="text-sm font-medium text-gray-900 line-clamp-1">{p.NAME}</div>
                         <div className="text-xs text-gray-500">{getSku(p)} · {p.STOCK} uds</div>
                       </div>
-                      <div className="shrink-0">
+                      <div className="shrink-0 flex items-center gap-1.5">
+                        {isPublished && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 text-[10px] font-bold">Publicado</span>
+                        )}
                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-pink-100 text-pink-600 text-xs font-bold">
                           <MapPin className="w-3 h-3" /> G{gondola} S{sec}
                         </span>
