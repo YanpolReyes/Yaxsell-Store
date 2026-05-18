@@ -279,7 +279,35 @@ export default function InventarioPage() {
         const stock = parseInt(editLocatedStock, 10);
         if (!isNaN(stock) && stock >= 0) payload.STOCK = stock;
       }
-      await databases.updateDocument(databaseId, collId, editLocatedProduct.$id, payload);
+      // También guardar barcode y section en FEATURES como fallback
+      let features = productFeaturesText(editLocatedProduct);
+      if (editLocatedBarcode.trim()) features = setBarcodeInFeatures(features, editLocatedBarcode.trim());
+      if (editLocatedSection != null && editLocatedSection > 0) features = setSectionInFeatures(features, editLocatedSection);
+      if (features !== productFeaturesText(editLocatedProduct)) payload.FEATURES = features;
+
+      try {
+        await databases.updateDocument(databaseId, collId, editLocatedProduct.$id, payload);
+      } catch (err: any) {
+        if (err?.message?.includes('Unknown attribute') || err?.message?.includes('unknown attribute')) {
+          // Atributos directos no existen en schema, guardar solo FEATURES + STOCK
+          const fallback: Record<string, any> = {};
+          if (payload.FEATURES) fallback.FEATURES = payload.FEATURES;
+          if (payload.STOCK !== undefined) fallback.STOCK = payload.STOCK;
+          await databases.updateDocument(databaseId, collId, editLocatedProduct.$id, fallback);
+          // Actualizar estado local con lo que sí se guardó
+          const localUpdate = { ...payload };
+          delete localUpdate.barcode;
+          delete localUpdate.section;
+          if (isInventory) {
+            setProducts(prev => prev.map(p => p.$id === editLocatedProduct.$id ? { ...p, ...localUpdate } : p));
+          } else {
+            setPublishedProducts(prev => prev.map(p => p.$id === editLocatedProduct.$id ? { ...p, ...localUpdate } : p));
+          }
+          setEditLocatedProduct(null);
+          return;
+        }
+        throw err;
+      }
       // Actualizar estado local
       if (isInventory) {
         setProducts(prev => prev.map(p => p.$id === editLocatedProduct.$id ? { ...p, ...payload } : p));
@@ -398,7 +426,17 @@ export default function InventarioPage() {
       const barcodeToSave = getBarcodeFromProduct(product) || scannedCode;
       if (barcodeToSave) (payload as Record<string, any>).barcode = barcodeToSave;
       if (section) (payload as Record<string, any>).section = section;
-      await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, product.$id, payload);
+      try {
+        await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, product.$id, payload);
+      } catch (err: any) {
+        if (err?.message?.includes('Unknown attribute') || err?.message?.includes('unknown attribute')) {
+          delete (payload as Record<string, any>).barcode;
+          delete (payload as Record<string, any>).section;
+          await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, product.$id, payload);
+        } else {
+          throw err;
+        }
+      }
       setProducts(prev =>
         prev.map(p => (p.$id === product.$id ? { ...p, ...payload, FEATURES: finalFeatures as string } : p)),
       );

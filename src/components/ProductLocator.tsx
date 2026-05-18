@@ -207,21 +207,29 @@ export default function ProductLocator({ isOpen, onClose, products, onProductsUp
       const isInventory = products.some(p => p.$id === selectedProduct.$id);
       const targetCollectionId = isInventory ? collectionId : publishedCollectionId;
       
-      if (isInventory && selectedProduct.FEATURES !== undefined) {
-        // Producto de inventario con FEATURES: guardar en FEATURES
-        const features = selectedProduct.FEATURES || '';
-        const existing = features.replace(/\nSection:\s*\d+/gi, '').replace(/^Section:\s*\d+\n?/gi, '');
-        const newFeatures = existing ? `${existing}\nSection: ${sectionNum}` : `Section: ${sectionNum}`;
-        await databases.updateDocument(databaseId, targetCollectionId, selectedProduct.$id, { FEATURES: newFeatures });
-        onProductsUpdate(prev => prev.map(p => p.$id === selectedProduct.$id ? { ...p, FEATURES: newFeatures } : p));
-      } else {
-        // Producto del catálogo o sin FEATURES: guardar en atributo section directo
-        await databases.updateDocument(databaseId, targetCollectionId, selectedProduct.$id, { section: sectionNum });
-        if (isInventory) {
-          onProductsUpdate(prev => prev.map(p => p.$id === selectedProduct.$id ? { ...p, section: sectionNum } : p));
-        } else if (onPublishedProductsUpdate) {
-          onPublishedProductsUpdate(prev => prev.map(p => p.$id === selectedProduct.$id ? { ...p, section: sectionNum } : p));
+      // Siempre guardar section en FEATURES como fallback
+      const features = selectedProduct.FEATURES || '';
+      const existing = features.replace(/\nSection:\s*\d+/gi, '').replace(/^Section:\s*\d+\n?/gi, '');
+      const newFeatures = existing ? `${existing}\nSection: ${sectionNum}` : `Section: ${sectionNum}`;
+      
+      const payload: Record<string, any> = { FEATURES: newFeatures, section: sectionNum };
+      
+      try {
+        await databases.updateDocument(databaseId, targetCollectionId, selectedProduct.$id, payload);
+      } catch (err: any) {
+        if (err?.message?.includes('Unknown attribute') || err?.message?.includes('unknown attribute')) {
+          // El atributo section no existe en el schema, guardar solo en FEATURES
+          await databases.updateDocument(databaseId, targetCollectionId, selectedProduct.$id, { FEATURES: newFeatures });
+        } else {
+          throw err;
         }
+      }
+      
+      const updated = { ...selectedProduct, FEATURES: newFeatures, section: sectionNum };
+      if (isInventory) {
+        onProductsUpdate(prev => prev.map(p => p.$id === selectedProduct.$id ? updated : p));
+      } else if (onPublishedProductsUpdate) {
+        onPublishedProductsUpdate(prev => prev.map(p => p.$id === selectedProduct.$id ? updated : p));
       }
       setSavedSection(sectionNum);
       setLastPlacedSection(sectionNum);
