@@ -5,9 +5,10 @@ import { Query } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, ORDERS_COLLECTION_ID, WHOLESALE_REQUESTS_COLLECTION_ID, SUPPORT_TICKETS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { dedupeUserDocuments, isRegisteredUserProfile, listAllUserProfiles, type UserProfileDoc } from '@/lib/users-db';
 import { Order, Product, DashboardStats } from '@/types/admin';
-import { Package, ShoppingCart, Clock, DollarSign, TrendingUp, TrendingDown, AlertTriangle, RefreshCw, ArrowRight, Plus, ChevronRight, Users, Megaphone, BarChart3, Zap, Globe, Search, MapPin, ShoppingBag } from 'lucide-react';
+import { Package, ShoppingCart, Clock, DollarSign, TrendingUp, TrendingDown, AlertTriangle, RefreshCw, ArrowRight, Plus, ChevronRight, Users, Megaphone, BarChart3, Zap, Globe, Search, MapPin, ShoppingBag, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
+import { getPageViewStats } from '@/hooks/usePageViewTracker';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -941,6 +942,7 @@ export default function DashboardPage() {
   const [newUsers, setNewUsers]               = useState(0);
   const [prevRevenue, setPrevRevenue]         = useState(0);
   const [prevOrders, setPrevOrders]           = useState(0);
+  const [pageViews, setPageViews]             = useState<{ totalViews: number; todayViews: number; topPages: { page: string; views: number }[] }>({ totalViews: 0, todayViews: 0, topPages: [] });
 
   const loadData = useCallback(async () => {
     setIsLoading(true); setError('');
@@ -974,6 +976,8 @@ export default function DashboardPage() {
       setLowStockProducts(lowStock.slice(0, 5));
       setTopProducts(top);
       setLastRefresh(new Date());
+      // Page views
+      getPageViewStats(30).then(pv => setPageViews({ totalViews: pv.totalViews, todayViews: pv.todayViews, topPages: pv.topPages })).catch(() => {});
     } catch (e: any) { setError(e.message || 'Error cargando datos'); }
     finally { setIsLoading(false); }
   }, []);
@@ -1313,13 +1317,15 @@ export default function DashboardPage() {
       {/* ═══ Panel Estadístico Empresarial ═══ */}
       <div className="db-card db-stats-panel" style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', padding: '24px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', marginBottom: 24 }}>
         {/* KPIs compactos en fila */}
-        <div className="db-kpi-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${newUsers > 0 ? 6 : 5}, 1fr)`, gap: 0, marginBottom: 20, borderBottom: '1px solid #f1f5f9', paddingBottom: 20 }}>
+        <div className="db-kpi-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${newUsers > 0 ? 8 : 7}, 1fr)`, gap: 0, marginBottom: 20, borderBottom: '1px solid #f1f5f9', paddingBottom: 20 }}>
           {[
             { label: 'Ingresos totales', value: fmt(stats.totalRevenue), icon: <DollarSign size={14} color="#6366f1" />, color: '#6366f1', bg: '#eef2ff', trend: dateRange !== 'all' && prevRevenue > 0 ? ((stats.totalRevenue - prevRevenue) / prevRevenue) * 100 : undefined },
             { label: 'Pedidos', value: String(stats.totalOrders), icon: <ShoppingCart size={14} color="#0891b2" />, color: '#0891b2', bg: '#ecfeff', trend: dateRange !== 'all' && prevOrders > 0 ? ((stats.totalOrders - prevOrders) / prevOrders) * 100 : undefined },
             { label: 'Hoy', value: String(stats.todayOrders), icon: <Zap size={14} color="#059669" />, color: '#059669', bg: '#ecfdf5' },
             { label: 'Ticket promedio', value: fmt(stats.avgTicket), icon: <TrendingUp size={14} color="#d97706" />, color: '#d97706', bg: '#fffbeb' },
             { label: 'Productos', value: String(stats.totalProducts), icon: <Package size={14} color="#7c3aed" />, color: '#7c3aed', bg: '#f5f3ff' },
+            { label: 'Visitas hoy', value: String(pageViews.todayViews), icon: <Eye size={14} color="#0d9488" />, color: '#0d9488', bg: '#f0fdfa' },
+            { label: 'Visitas 30d', value: String(pageViews.totalViews), icon: <Globe size={14} color="#8b5cf6" />, color: '#8b5cf6', bg: '#f5f3ff' },
             ...(newUsers > 0 ? [{ label: 'Nuevos usuarios', value: String(newUsers), icon: <Users size={14} color="#ec4899" />, color: '#ec4899', bg: '#fdf2f8' }] : []),
           ].map((kpi, i, arr) => (
             <div key={i} className="db-kpi-item" style={{ textAlign: 'center', borderRight: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none', padding: '0 12px' }}>
@@ -1484,6 +1490,27 @@ export default function DashboardPage() {
               <p style={{ fontSize: 10, color: '#f87171', margin: '2px 0 0' }}>productos críticos</p>
             </div>
           </div>
+
+          {/* Top páginas visitadas */}
+          {pageViews.topPages.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <h4 style={{ fontSize: 11, fontWeight: 700, color: '#374151', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Páginas más visitadas (30 días)</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {pageViews.topPages.slice(0, 5).map((tp, i) => {
+                  const maxV = pageViews.topPages[0]?.views || 1;
+                  return (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 11, color: '#6b7280', width: 120, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tp.page}</span>
+                      <div style={{ flex: 1, height: 8, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${(tp.views / maxV) * 100}%`, background: 'linear-gradient(90deg, #0d9488, #14b8a6)', borderRadius: 4, transition: 'width 0.5s' }} />
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#0d9488', minWidth: 30, textAlign: 'right' }}>{tp.views}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Top regiones */}
           {topRegions.length > 0 && (
