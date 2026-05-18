@@ -5766,49 +5766,56 @@ export default function HomePage1() {
     const footer = document.querySelector(`[data-section-id="${sectionId}"]`) || document.getElementById(`shopify-section-${sectionId}`);
     if (!footer) return;
 
+    // Defaults para Kevin & Coco Chile
+    const companyName = s.companyName || 'Kevin & Coco Chile';
+    const companyDescription = s.companyDescription || 'Tu tienda de maquillaje y artículos de beauty favoritos. Productos de calidad para realzar tu belleza natural.';
+    const email = s.email || 'kevincocochile2026@gmail.com';
+    const col1Title = s.footerCol1Title || 'Comprar';
+    const col2Title = s.footerCol2Title || 'Ayuda';
+    const col3Title = s.footerCol3Title || 'Contacto';
+    const col4Title = s.footerCol4Title || 'Suscríbete';
+    const nlText = s.newsletterText || 'Recibe ofertas exclusivas y novedades';
+
     // Logo / Nombre de la empresa
     const logoDiv = footer.querySelector('.ftr-logo') as HTMLElement;
     if (logoDiv) {
       const logoWidth = s.footerLogoWidth ?? 170;
       if (s.logoUrl) {
-        logoDiv.innerHTML = `<a href="/" aria-label="Inicio"><img src="${s.logoUrl}" alt="${s.companyName || 'Yaxsell'}" style="max-width:${logoWidth}px;height:auto;display:block;margin:0 auto;" /></a>`;
-      } else if (s.companyName) {
-        logoDiv.innerHTML = `<a href="/" aria-label="Inicio"><span class="h3 secondary-text" style="font-size:20px;font-weight:700;">${s.companyName}</span></a>`;
+        logoDiv.innerHTML = `<a href="/" aria-label="Inicio"><img src="${s.logoUrl}" alt="${companyName}" style="max-width:${logoWidth}px;height:auto;display:block;margin:0 auto;" /></a>`;
+      } else {
+        logoDiv.innerHTML = `<a href="/" aria-label="Inicio"><span class="h3 secondary-text" style="font-size:20px;font-weight:700;">${companyName}</span></a>`;
       }
     }
 
     // Títulos de columnas del footer
     const colTitles = footer.querySelectorAll('.ftr-support-col .ftr-col-title') as NodeListOf<HTMLElement>;
-    if (colTitles.length >= 1 && s.footerCol1Title) {
-      // Mantener el icono SVG dentro del título
+    if (colTitles.length >= 1) {
       const svg1 = colTitles[0].querySelector('svg');
       const svgHtml1 = svg1 ? svg1.outerHTML : '';
-      colTitles[0].innerHTML = s.footerCol1Title + ' <i class="fa-solid fa-plus secondary-icon-clr">' + svgHtml1;
+      colTitles[0].innerHTML = col1Title + ' <i class="fa-solid fa-plus secondary-icon-clr">' + svgHtml1;
     }
-    if (colTitles.length >= 2 && s.footerCol2Title) {
+    if (colTitles.length >= 2) {
       const svg2 = colTitles[1].querySelector('svg');
       const svgHtml2 = svg2 ? svg2.outerHTML : '';
-      colTitles[1].innerHTML = s.footerCol2Title + ' <i class="fa-solid fa-plus secondary-icon-clr">' + svgHtml2;
+      colTitles[1].innerHTML = col2Title + ' <i class="fa-solid fa-plus secondary-icon-clr">' + svgHtml2;
     }
-    if (colTitles.length >= 3 && s.footerCol3Title) {
+    if (colTitles.length >= 3) {
       const svg3 = colTitles[2].querySelector('svg');
       const svgHtml3 = svg3 ? svg3.outerHTML : '';
-      colTitles[2].innerHTML = s.footerCol3Title + ' <i class="fa-solid fa-plus secondary-icon-clr">' + svgHtml3;
+      colTitles[2].innerHTML = col3Title + ' <i class="fa-solid fa-plus secondary-icon-clr">' + svgHtml3;
     }
 
     // Título de la columna de newsletter
-    if (s.footerCol4Title) {
-      const nlTitle = footer.querySelector('.ftr-signup-col .ftr-col-title') as HTMLElement;
-      if (nlTitle) nlTitle.textContent = s.footerCol4Title;
-    }
+    const nlTitle = footer.querySelector('.ftr-signup-col .ftr-col-title') as HTMLElement;
+    if (nlTitle) nlTitle.textContent = col4Title;
 
     // Descripción de la empresa (debajo del logo)
     const existingDesc = footer.querySelector('.tpl1-footer-desc') as HTMLElement | null;
     if (existingDesc) existingDesc.remove();
-    if (s.companyDescription) {
+    if (companyDescription) {
       const descEl = document.createElement('p');
       descEl.className = 'tpl1-footer-desc';
-      descEl.textContent = s.companyDescription;
+      descEl.textContent = companyDescription;
       descEl.style.cssText = 'font-size:13px;line-height:1.6;color:#999;margin-top:8px;max-width:300px;';
       const logoDiv2 = footer.querySelector('.ftr-logo') as HTMLElement;
       if (logoDiv2) logoDiv2.appendChild(descEl);
@@ -5825,9 +5832,9 @@ export default function HomePage1() {
         addrCol.appendChild(li);
       }
 
-      if (s.email) {
+      if (email) {
         const li = document.createElement('li');
-        li.innerHTML = `<strong>Email:</strong> <a href="mailto:${s.email}" style="color:inherit;text-decoration:underline;">${s.email}</a>`;
+        li.innerHTML = `<strong>Email:</strong> <a href="mailto:${email}" style="color:inherit;text-decoration:underline;">${email}</a>`;
         addrCol.appendChild(li);
       }
 
