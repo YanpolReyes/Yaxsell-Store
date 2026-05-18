@@ -80,10 +80,11 @@ export default function OfertasPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Auto-refresh cada 30s
+  // 🔥 Refresco solo al volver el foco a la pestaña (antes: cada 30s = 2,880 reads/día/usuario)
   useEffect(() => {
-    const id = setInterval(load, 30000);
-    return () => clearInterval(id);
+    const onFocus = () => { load(); };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, [load]);
 
   return (

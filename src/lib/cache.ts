@@ -1,0 +1,164 @@
+/**
+ * 💾 Caché simple en localStorage con TTL (Time To Live).
+ * Diseñado para reducir lecturas a Appwrite en navegación entre páginas.
+ *
+ * Uso:
+ *   const products = await cached('products:all', 15 * 60_000, async () => {
+ *     const res = await databases.listDocuments(...);
+ *     return res.documents;
+ *   });
+ */
+
+interface CacheEntry<T> {
+  value: T;
+  expiresAt: number;
+}
+
+const PREFIX = 'yaxsel_cache:';
+
+// TTL por defecto (10 minutos)
+export const DEFAULT_TTL = 10 * 60 * 1000;
+
+// TTLs sugeridos por tipo de dato
+export const TTL = {
+  products: 15 * 60 * 1000,      // 15 min
+  categories: 30 * 60 * 1000,    // 30 min (cambian poco)
+  banners: 10 * 60 * 1000,       // 10 min
+  offers: 5 * 60 * 1000,         // 5 min (más volátiles)
+  short: 60 * 1000,              // 1 min
+} as const;
+
+function isBrowser(): boolean {
+  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+}
+
+/**
+ * Lee del caché. Devuelve null si no existe o expiró.
+ */
+export function cacheGet<T>(key: string): T | null {
+  if (!isBrowser()) return null;
+  try {
+    const raw = localStorage.getItem(PREFIX + key);
+    if (!raw) return null;
+    const entry = JSON.parse(raw) as CacheEntry<T>;
+    if (Date.now() > entry.expiresAt) {
+      localStorage.removeItem(PREFIX + key);
+      return null;
+    }
+    return entry.value;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Guarda en caché con TTL en milisegundos.
+ */
+export function cacheSet<T>(key: string, value: T, ttlMs: number = DEFAULT_TTL): void {
+  if (!isBrowser()) return;
+  try {
+    const entry: CacheEntry<T> = {
+      value,
+      expiresAt: Date.now() + ttlMs,
+    };
+    localStorage.setItem(PREFIX + key, JSON.stringify(entry));
+  } catch {
+    // localStorage lleno o quota exceeded → limpia caché viejo
+    cacheCleanup();
+  }
+}
+
+/**
+ * Borra una entrada específica del caché.
+ */
+export function cacheDelete(key: string): void {
+  if (!isBrowser()) return;
+  try {
+    localStorage.removeItem(PREFIX + key);
+  } catch {}
+}
+
+/**
+ * Borra todas las entradas que coinciden con un prefijo.
+ * Útil para invalidar caché tras crear/editar/eliminar.
+ *
+ * Ej: cacheInvalidate('products:') borra products:all, products:featured, etc.
+ */
+export function cacheInvalidate(keyPrefix: string): void {
+  if (!isBrowser()) return;
+  try {
+    const fullPrefix = PREFIX + keyPrefix;
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(fullPrefix)) keysToRemove.push(k);
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+  } catch {}
+}
+
+/**
+ * Limpia todas las entradas expiradas del caché.
+ */
+export function cacheCleanup(): void {
+  if (!isBrowser()) return;
+  try {
+    const now = Date.now();
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith(PREFIX)) continue;
+      try {
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        const entry = JSON.parse(raw) as CacheEntry<unknown>;
+        if (now > entry.expiresAt) keysToRemove.push(k);
+      } catch {
+        keysToRemove.push(k);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+  } catch {}
+}
+
+/**
+ * Helper: devuelve del caché si existe; si no, ejecuta el fetcher y cachea el resultado.
+ *
+ * @example
+ *   const products = await cached('products:all', TTL.products, async () => {
+ *     const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [...]);
+ *     return res.documents;
+ *   });
+ */
+export async function cached<T>(
+  key: string,
+  ttlMs: number,
+  fetcher: () => Promise<T>
+): Promise<T> {
+  const hit = cacheGet<T>(key);
+  if (hit !== null) return hit;
+  const fresh = await fetcher();
+  cacheSet(key, fresh, ttlMs);
+  return fresh;
+}
+
+/**
+ * Hook de invalidación: borra todos los cachés relacionados con productos.
+ * Llamar tras crear/editar/eliminar productos en el admin.
+ */
+export function invalidateProductCache(): void {
+  cacheInvalidate('products:');
+}
+
+export function invalidateCategoryCache(): void {
+  cacheInvalidate('categories:');
+  cacheInvalidate('subcategories:');
+}
+
+export function invalidateBannerCache(): void {
+  cacheInvalidate('banners:');
+}
+
+export function invalidateOfferCache(): void {
+  cacheInvalidate('offers:');
+}

@@ -8,7 +8,7 @@ import {
   Truck, Shield, FileText, Sparkles, Building2, User, CreditCard, Mail,
   Hash, ChevronRight, PartyPopper,
 } from 'lucide-react';
-import { getServices, getAppwriteConfig, ORDERS_COLLECTION, COMPROBANTES_BUCKET, formatPrice, ID } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, ORDERS_COLLECTION, MEDIA_BUCKET_ID, MEDIA_PREFIXES, formatPrice, ID } from '@/lib/appwrite';
 import { Order, OrderItem } from '@/types';
 import { generateOrderPdf } from '@/lib/generateOrderPdf';
 
@@ -42,7 +42,7 @@ function loadBankDetails(): BankField[] {
     { key: 'bank',   label: 'Banco',          value: 'BCI',            icon: <Building2 size={14} /> },
     { key: 'type',   label: 'Tipo de cuenta', value: 'Cuenta Corriente', icon: <CreditCard size={14} /> },
     { key: 'number', label: 'N° de cuenta',   value: '32590547',       icon: <Hash size={14} /> },
-    { key: 'email',  label: 'Email',          value: 'kevincoco0819@gmail.com', icon: <Mail size={14} /> },
+    { key: 'email',  label: 'Email',          value: 'info@yaxsell.com', icon: <Mail size={14} /> },
   ];
 }
 
@@ -128,8 +128,9 @@ function ConfirmadoInner() {
     try {
       const { storage, databases } = getServices();
       const { databaseId, endpoint, projectId } = getAppwriteConfig();
-      const up = await storage.createFile(COMPROBANTES_BUCKET, ID.unique(), file);
-      const url = `${endpoint}/storage/buckets/${COMPROBANTES_BUCKET}/files/${up.$id}/view?project=${projectId}`;
+      const fileId = MEDIA_PREFIXES.comprobantes + ID.unique();
+      const up = await storage.createFile(MEDIA_BUCKET_ID, fileId, file);
+      const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}`;
       await databases.updateDocument(databaseId, ORDERS_COLLECTION, orderId, { PAYMENTPROOFURL: url, STATUS: 'processing' });
       setUploaded(true);
       await load();

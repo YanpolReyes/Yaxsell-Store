@@ -39,6 +39,27 @@ export function setSkuInFeatures(features: string, sku: string): string {
   return base ? `${base}\nSKU: ${value}` : `SKU: ${value}`;
 }
 
+export interface ProductWarehouseLocation {
+  section: number | null;
+  gondola: string | null;
+  /** Ej: G-A · S5 */
+  label: string | null;
+}
+
+export function getWarehouseLocationFromFeatures(features?: string | null): ProductWarehouseLocation {
+  const m = (features || '').match(/Section:\s*(\d+)/i);
+  const section = m ? parseInt(m[1], 10) : null;
+  let gondola: string | null = null;
+  if (section !== null && !Number.isNaN(section)) {
+    if (section >= 1 && section <= 9) gondola = 'A';
+    else if (section >= 10 && section <= 18) gondola = 'B';
+    else if (section >= 19 && section <= 27) gondola = 'C';
+    else if (section >= 28 && section <= 36) gondola = 'D';
+  }
+  const label = section !== null && gondola ? `G${gondola} · S${section}` : null;
+  return { section, gondola, label };
+}
+
 export function setSectionInFeatures(features: string, section: number | null): string {
   let base = (features || '')
     .replace(/\r\n/g, '\n')

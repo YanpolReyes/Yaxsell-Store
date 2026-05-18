@@ -10,7 +10,7 @@ import { LoyaltyService } from '@/services/loyaltyService';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
-const LOGO_URL = 'https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2FGemini_Generated_Image_v5vfu6v5vfu6v5vf.png?alt=media&token=a049b070-6653-435b-a978-9cb06a92f865';
+const LOGO_URL = '';
 
 function LoginInner() {
   const router = useRouter();
@@ -107,7 +107,7 @@ function LoginInner() {
       {/* Top Navbar */}
       <nav className="relative z-10 w-full px-6 py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center group">
-          <img src={LOGO_URL} alt="Logo" className="h-8 md:h-10 w-auto transition-transform duration-300 group-hover:scale-105" />
+          {LOGO_URL ? <img src={LOGO_URL} alt="Yaxsell" className="h-8 md:h-10 w-auto transition-transform duration-300 group-hover:scale-105" /> : <span className="text-2xl font-extrabold tracking-tight text-slate-900">Yaxsell</span>}
         </Link>
         <Link href="/" className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors">
           <ArrowLeft size={16} />

@@ -13,7 +13,7 @@ import '@/templates/plantilla1/mobile-responsive.css';
 import { useEffect, useRef, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { getSectionConfig, getSectionConfigAsync, invalidateSectionCache, isSectionEnabled, applyTpl1SectionsVisibility, type SectionConfig, type CollectionItem, type MediaGalleryItem } from '@/lib/section-config';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, TIMED_OFFERS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, HOTSPOT_PANELS_COLLECTION, BANNER_OVERLAY_POSITIONS_COLLECTION, USER_PHOTOS_BUCKET } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, TIMED_OFFERS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, HOTSPOT_PANELS_COLLECTION, BANNER_OVERLAY_POSITIONS_COLLECTION, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 import type { Product, TimedOffer, Category } from '@/types';
 import { useCart } from '@/context/CartContext';
@@ -43,7 +43,6 @@ import './mobile-responsive.css';
 const TPL1_SECTION_HTML_MAP: Record<string, string> = {
   // Header group (fixed)
   tpl1_announcement_bar: 'shopify-section-sections--22405132747000__announcement_bar_B8FdRK',
-  tpl1_navbar: 'shopify-section-sections--22405132747000__header_fYEwWD',
   tpl1_hero: 'shopify-section-template--22405132419320__hero_banner_R6iEJ4',
   tpl1_coupon_banner: 'tpl1-coupon-banner-section',
   // Body sections (reorderable)
@@ -79,7 +78,6 @@ const HTML_ID_TO_CONFIG_ID = Object.fromEntries(
 // Mapeo inverso: data-section-id (Shopify) → config ID
 const SHOPIFY_DATA_SECTION_ID_TO_CONFIG_ID: Record<string, string> = {
   'sections--22405132747000__announcement_bar_B8FdRK': 'tpl1_announcement_bar',
-  'sections--22405132747000__header_fYEwWD': 'tpl1_navbar',
   'template--22405132419320__hero_banner_R6iEJ4': 'tpl1_hero',
   'tpl1-coupon-banner-section': 'tpl1_coupon_banner',
   'template--22405132419320__collection_list_WrFbPe': 'tpl1_collection_list',
@@ -371,7 +369,7 @@ export default function HomePage1() {
 
     const getLabel = (id: string) => {
       const labels: Record<string, string> = {
-        tpl1_announcement_bar: 'Barra de Anuncio', tpl1_navbar: 'Navbar', tpl1_hero: 'Hero Banner',
+        tpl1_announcement_bar: 'Barra de Anuncio', tpl1_hero: 'Hero Banner',
         tpl1_collection_list: 'Colecciones', tpl1_marquee: 'Texto Animado',
         tpl1_featured_collection: 'Colección Destacada', tpl1_media_gallery: 'Galería de Medios',
         tpl1_featured_product: 'Producto Destacado', tpl1_countdown: 'Cuenta Regresiva',
@@ -490,6 +488,9 @@ export default function HomePage1() {
         );
         processed = processed.replace(/MUSK COSMO/gi, 'Yaxsell');
         processed = processed.replace(/alt="MUSK[^"]*"/gi, 'alt="Yaxsell"');
+        processed = processed.replace(/Mi tienda 3/gi, 'Yaxsell');
+        processed = processed.replace(/>MUSK</gi, '>Yaxsell<');
+        processed = processed.replace(/shop now/gi, 'Ver productos');
         setBodyHtml(processed);
       })
       .catch(err => {
@@ -504,14 +505,24 @@ export default function HomePage1() {
   useEffect(() => {
     if (!bodyHtml) return;
     const brand = 'Yaxsell';
-    document.querySelectorAll('.light-logo span, .dark-logo span').forEach(el => {
+    // Logo text
+    document.querySelectorAll('.light-logo span, .dark-logo span, .logo-col span, .h4.secondary-text, .h4.primary-text').forEach(el => {
       const t = (el.textContent || '').trim();
-      if (/musk/i.test(t) || t === 'Mi Tienda 3') el.textContent = brand;
+      if (/musk/i.test(t) || /mi tienda/i.test(t)) el.textContent = brand;
     });
+    // Hero title
     const hero = document.getElementById('shopify-section-template--22405132419320__hero_banner_R6iEJ4');
-    hero?.querySelectorAll('.banner-main-title').forEach(el => {
+    hero?.querySelectorAll('.banner-main-title, h2, h3').forEach(el => {
       const t = (el.textContent || '').trim();
-      if (/musk/i.test(t)) el.textContent = brand;
+      if (/musk/i.test(t) && !el.closest('.musk-sec-title')) el.textContent = brand;
+    });
+    // Any remaining "MUSK" text nodes visible to user
+    document.querySelectorAll('a, span, p, h1, h2, h3, h4, button, div').forEach(el => {
+      if (el.children.length === 0 || el.children.length === 1 && el.children[0].tagName === 'BR') {
+        const t = (el.textContent || '').trim();
+        if (/^MUSK$/i.test(t)) el.textContent = brand;
+        if (/^Mi tienda \d$/i.test(t)) el.textContent = brand;
+      }
     });
   }, [bodyHtml]);
 
@@ -742,13 +753,7 @@ export default function HomePage1() {
 
       // Add banner image at top of search popup (above search bar)
       const popupForm = searchPopup.querySelector('form') as HTMLFormElement | null;
-      if (popupForm && !searchPopup.querySelector('.tpl1-search-banner')) {
-        const banner = document.createElement('div');
-        banner.className = 'tpl1-search-banner';
-        banner.style.cssText = 'position:absolute;top:24px;left:0;right:0;padding:0 46%;display:flex;align-items:center;justify-content:center;z-index:5;animation:tpl1Float 4s ease-in-out infinite;';
-        banner.innerHTML = `<img src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2FGemini_Generated_Image_v5vfu6v5vfu6v5vf.png?alt=media&token=a049b070-6653-435b-a978-9cb06a92f865" alt="Banner" style="width:100%;height:auto;object-fit:cover;display:block;" />`;
-        popupForm.parentElement?.insertBefore(banner, popupForm);
-      }
+      // Logo removed — no longer showing hardcoded brand logo in search popup
 
       let searchCacheReady = false;
       let runSearchLoad: () => void = () => {};
@@ -1633,7 +1638,8 @@ export default function HomePage1() {
     };
     const getAvatarPreviewUrl = (fileId: string): string => {
       const { endpoint, projectId } = getAppwriteConfig();
-      return `${endpoint}/storage/buckets/${USER_PHOTOS_BUCKET}/files/${fileId}/view?project=${projectId}`;
+      const path = MEDIA_PREFIXES.thumbnails + fileId;
+      return `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${path}/view?project=${projectId}`;
     };
 
     const toggleUserDropdown = async (anchor: HTMLElement) => {
@@ -2281,6 +2287,24 @@ export default function HomePage1() {
     const hideAllWidgets = () => {
       wrappers.forEach(w => { (w as HTMLElement).style.display = 'none'; });
     };
+    /** En móvil oculta el widget demo del HTML (SVG + "Título del Producto"). */
+    const hidePlaceholderOnMobile = () => {
+      if (typeof window === 'undefined' || window.innerWidth > 768) return;
+      wrappers.forEach(w => {
+        const el = w as HTMLElement;
+        if (el.style.display === 'none') return;
+        const titleText = (el.querySelector('.product-name a, .product-name')?.textContent || '').trim();
+        const hasRealImg = !!el.querySelector('.product-img img, .product-image img');
+        const svgOnly = !!el.querySelector('.product-img > svg, .product-image > svg') && !hasRealImg;
+        const isDemo =
+          !hasRealImg ||
+          svgOnly ||
+          titleText === 'Título del Producto' ||
+          titleText === 'Product Title' ||
+          /^\$[\d.,]+$/.test(titleText);
+        if (isDemo) el.style.display = 'none';
+      });
+    };
     const isInStock = (p: Product | Record<string, unknown>) => (Number((p as Product).STOCK) || 0) > 0;
     const productDisplayPrice = (p: Product) => {
       const price = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
@@ -2434,21 +2458,14 @@ export default function HomePage1() {
               applyLayoutStyles(wrapper as HTMLElement);
               applyWidgetStyles(wrapper as HTMLElement, data);
             });
+            hidePlaceholderOnMobile();
           } catch {
             hideAllWidgets();
           }
           return;
         }
 
-        wrappers.forEach(wrapper => {
-          applyWidgetStyles(wrapper as HTMLElement, {
-            title: settings.productWidgetTitle || 'Título del Producto',
-            price: settings.productWidgetPrice || '$20.00',
-            imageUrl: settings.productWidgetImageUrl || '',
-            link: settings.productWidgetLink || '/productos',
-            productId: '',
-          });
-        });
+        hideAllWidgets();
       })();
       return;
     }
@@ -2472,6 +2489,7 @@ export default function HomePage1() {
         applyLayoutStyles(el);
         if (enabled) applyWidgetStyles(el, productToWidgetData(products[0]));
       });
+      hidePlaceholderOnMobile();
 
       // Rotate every N seconds with card shuffle animation
       rotationTimer = setInterval(() => {
@@ -3622,7 +3640,7 @@ export default function HomePage1() {
         videoContent.innerHTML = '';
         const img = document.createElement('img');
         img.src = s.vtPosterImage;
-        img.alt = 'Kevin & Coco Chile';
+        img.alt = 'Yaxsell';
         img.style.cssText = `
           width: 100%;
           height: auto;
@@ -5481,215 +5499,6 @@ export default function HomePage1() {
     }
   }, [bodyHtml, sectionCfg]);
 
-  /* ── Aplicar settings de tpl1_navbar al header HTML de Shopify ── */
-  useEffect(() => {
-    if (!bodyHtml || sectionCfg.length === 0) return;
-    const cfg = sectionCfg.find(s => s.id === 'tpl1_navbar');
-    if (!cfg) return;
-    const s = cfg.settings || {};
-
-    const HEADER_ID = 'shopify-section-sections--22405132747000__header_fYEwWD';
-    const headerSection = document.getElementById(HEADER_ID);
-    if (!headerSection) return;
-    const header = headerSection.querySelector('header.musk-main-header') as HTMLElement | null;
-    if (!header) return;
-
-    // Reemplazar logo de texto con imagen del footer
-    const footerCfg = sectionCfg.find(s => s.id === 'tpl1_footer');
-    if (footerCfg?.settings?.logoUrl) {
-      const logoCol = header.querySelector('.logo-col') as HTMLElement;
-      if (logoCol) {
-        const logoLink = logoCol.querySelector('a') as HTMLAnchorElement;
-        if (logoLink) {
-          logoLink.innerHTML = '';
-          const img = document.createElement('img');
-          img.src = footerCfg.settings.logoUrl;
-          img.alt = footerCfg.settings.companyName || 'Kevin & Coco Chile';
-          img.style.cssText = 'max-width:150px;height:auto;';
-          logoLink.appendChild(img);
-        }
-      }
-    }
-
-    const styleId = 'tpl1-navbar-override-style';
-    let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
-    if (!styleEl) {
-      styleEl = document.createElement('style');
-      styleEl.id = styleId;
-      document.head.appendChild(styleEl);
-    }
-
-    // Background: gradient takes priority over flat color
-    const bg = s.bgGradient
-      ? s.bgGradient
-      : (s.bgColor || '');
-
-    // Bg and Color definitions
-    let css = `
-      #${HEADER_ID} header.musk-main-header {
-        ${bg ? `background: ${bg} !important; background-image: none !important;` : ''}
-        ${s.navHeight ? `min-height: ${s.navHeight}px !important;` : ''}
-        ${s.textColor ? `color: ${s.textColor} !important;` : ''}
-      }
-      #${HEADER_ID} header.musk-main-header .musk-navbar a,
-      #${HEADER_ID} header.musk-main-header .musk-navbar a:hover,
-      #${HEADER_ID} header.musk-main-header .musk-navbar li a,
-      #${HEADER_ID} header.musk-main-header .musk-navbar li a:hover {
-        color: #000000 !important;
-      }
-      ${s.textColor ? `
-      #${HEADER_ID} header.musk-main-header .header-resource-link,
-      #${HEADER_ID} header.musk-main-header .logo-col a span {
-        color: ${s.textColor} !important;
-      }
-      #${HEADER_ID} header.musk-main-header svg path {
-        fill: ${s.textColor} !important;
-      }
-      ` : ''}
-      ${s.borderBottom && s.borderBottomColor ? `
-      #${HEADER_ID} header.musk-main-header {
-        border-bottom: 1px solid ${s.borderBottomColor} !important;
-      }
-      ` : ''}
-      ${s.logoSize ? `
-      #${HEADER_ID} header.musk-main-header .logo-col img { max-width: ${s.logoSize}px !important; }
-      ` : ''}
-      ${s.searchBgColor ? `
-      #${HEADER_ID} header.musk-main-header .search-bar-main form { background: ${s.searchBgColor} !important; }
-      ` : ''}
-      ${s.cartBadgeColor ? `
-      #${HEADER_ID} header.musk-main-header .cart-link-icon .cart-count { background: ${s.cartBadgeColor} !important; }
-      ` : ''}
-      #${HEADER_ID} header.musk-main-header .cart-link-icon .cart-count, #${HEADER_ID} header.musk-main-header .cart-count {
-        background: linear-gradient(135deg, #ec4899, #f9a8d4) !important;
-        color: #fff !important;
-      }
-    `;
-
-    // LAYOUT RESTRUCTURING
-    const layout = s.navLayout || 'classic';
-    let layoutCss = '';
-
-    if (layout === 'centered') {
-      layoutCss = `
-        #${HEADER_ID} header.musk-main-header .musk-main-header-container { justify-content: center !important; }
-        #${HEADER_ID} header.musk-main-header .logo-col { order: 2 !important; margin: 0 auto !important; }
-        #${HEADER_ID} header.musk-main-header .musk-navbar { order: 1 !important; flex: 1 !important; justify-content: flex-start !important; }
-        #${HEADER_ID} header.musk-main-header .musk-header-info-col { order: 3 !important; flex: 1 !important; justify-content: flex-end !important; }
-      `;
-    } else if (layout === 'stacked') {
-      layoutCss = `
-        #${HEADER_ID} header.musk-main-header .musk-main-header-container { flex-wrap: wrap !important; padding-bottom: 0 !important; }
-        #${HEADER_ID} header.musk-main-header .logo-col { order: 1 !important; margin: 0 auto !important; padding-top: 10px; }
-        #${HEADER_ID} header.musk-main-header .musk-header-info-col { order: 2 !important; position: absolute; right: 20px; top: 15px; }
-        #${HEADER_ID} header.musk-main-header .musk-navbar { order: 3 !important; width: 100% !important; justify-content: center !important; margin-top: 15px !important; ${s.borderBottomColor ? `border-top: 1px solid ${s.borderBottomColor};` : ''} }
-      `;
-    } else if (layout === 'split') {
-      layoutCss = `
-        #${HEADER_ID} header.musk-main-header .musk-main-header-container { justify-content: space-between !important; }
-        #${HEADER_ID} header.musk-main-header .logo-col { order: 2 !important; margin: 0 auto !important; }
-        #${HEADER_ID} header.musk-main-header .musk-navbar { order: 1 !important; flex: 0.5 !important; }
-        #${HEADER_ID} header.musk-main-header .musk-header-info-col { order: 3 !important; flex: 0.5 !important; justify-content: flex-end !important; }
-      `;
-    } else if (layout === 'minimal-fashion') {
-      layoutCss = `
-        #${HEADER_ID} header.musk-main-header { padding: 5px 40px !important; }
-        #${HEADER_ID} header.musk-main-header .musk-main-header-container { justify-content: space-between !important; }
-        #${HEADER_ID} header.musk-main-header .logo-col { order: 1 !important; }
-        #${HEADER_ID} header.musk-main-header .musk-header-info-col { order: 3 !important; }
-        #${HEADER_ID} header.musk-main-header .musk-navbar { order: 2 !important; flex: 2 !important; justify-content: center !important; gap: 30px !important; }
-      `;
-    } else if (layout === 'glass-float') {
-      layoutCss = `
-        #${HEADER_ID} { padding: 15px !important; position: absolute; width: 100%; top: 0; z-index: 999; }
-        #${HEADER_ID} header.musk-main-header { background: transparent !important; border: none !important; }
-        #${HEADER_ID} header.musk-main-header .musk-main-header-container { 
-          background: ${bg ? bg : 'rgba(255,255,255,0.85)'} !important; 
-          backdrop-filter: blur(12px) !important; 
-          border-radius: 40px !important; 
-          padding: 0 30px !important; 
-          box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important; 
-          border: 1px solid ${s.borderBottomColor || 'rgba(0,0,0,0.05)'} !important;
-          margin-top: 15px;
-        }
-      `;
-    } else if (layout === 'nebula-premium') {
-      layoutCss = `
-        #${HEADER_ID} header.musk-main-header { background: #000 !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; }
-        #${HEADER_ID} header.musk-main-header .musk-main-header-container { 
-          background: radial-gradient(circle at center top, rgba(139,92,246,0.15) 0%, transparent 70%) !important; 
-        }
-        #${HEADER_ID} header.musk-main-header .musk-navbar a { text-transform: uppercase; letter-spacing: 2px; font-size: 11px; }
-      `;
-    } else if (layout === 'topbar') {
-      layoutCss = `
-        #${HEADER_ID} header.musk-main-header .musk-main-header-container { flex-direction: column !important; align-items: stretch !important; }
-        #${HEADER_ID} header.musk-main-header .logo-col { align-self: flex-start !important; padding: 10px 0; }
-        #${HEADER_ID} header.musk-main-header .musk-header-info-col { position: absolute; right: 20px; top: 15px; }
-        #${HEADER_ID} header.musk-main-header .musk-navbar { align-self: flex-start !important; justify-content: flex-start !important; margin-top: 5px; }
-      `;
-    }
-
-    css += layoutCss;
-
-    // Reorder navbar icons: search, cart, user
-    css += `
-      #${HEADER_ID} header.musk-main-header .musk-header-info-col { display: flex !important; gap: 20px !important; align-items: center !important; }
-      #${HEADER_ID} header.musk-main-header .search-bar-main,
-      #${HEADER_ID} header.musk-main-header .search-icon { order: 1 !important; }
-      #${HEADER_ID} header.musk-main-header .tpl1-notif-bell-wrap { order: 2 !important; position: relative !important; display: flex !important; align-items: center !important; }
-      #${HEADER_ID} header.musk-main-header .tpl1-notif-bell-link { display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important; border: none !important; background: transparent !important; cursor: pointer !important; text-decoration: none !important; position: relative !important; }
-      #${HEADER_ID} header.musk-main-header .tpl1-notif-badge {
-        position: absolute !important; top: -4px !important; right: -6px !important;
-        min-width: 16px !important; height: 16px !important; padding: 0 4px !important;
-        background: linear-gradient(135deg, #ec4899, #db2777) !important;
-        color: #fff !important; font-size: 9px !important; font-weight: 800 !important;
-        border-radius: 999px !important; display: none !important; align-items: center !important;
-        justify-content: center !important; border: 2px solid #fff !important;
-        box-shadow: 0 2px 6px rgba(236,72,153,0.4) !important; line-height: 1 !important;
-        font-family: 'DM Sans', system-ui, sans-serif !important;
-      }
-      #${HEADER_ID} header.musk-main-header .cart-icon,
-      #${HEADER_ID} header.musk-main-header .cart-link-icon { order: 3 !important; }
-      #${HEADER_ID} header.musk-main-header .account-icon,
-      #${HEADER_ID} header.musk-main-header .user-toggle { order: 4 !important; }
-      @media (max-width: 768px) {
-        #${HEADER_ID} header.musk-main-header .tpl1-notif-bell-wrap { display: none !important; }
-      }
-      #${HEADER_ID} header.musk-main-header .user-toggle:has([data-yaxsel-avatar]),
-      #${HEADER_ID} header.musk-main-header .account-icon:has([data-yaxsel-avatar]) {
-        padding: 0 !important;
-        width: auto !important;
-        height: auto !important;
-        overflow: visible !important;
-        background: transparent !important;
-        box-shadow: none !important;
-        border: none !important;
-      }
-    `;
-
-    // Animated gradient
-    if (s.bgGradient && s.gradientAnimated) {
-      css += `
-        @keyframes tpl1NavGradShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
-        ${layout === 'glass-float' || layout === 'nebula-premium' ? `
-        #${HEADER_ID} header.musk-main-header .musk-main-header-container {
-          background-image: ${bg} !important;
-          background-size: 200% 200% !important;
-          animation: tpl1NavGradShift 6s ease infinite !important;
-        }
-        ` : `
-        #${HEADER_ID} header.musk-main-header {
-          background-size: 200% 200% !important;
-          animation: tpl1NavGradShift 6s ease infinite !important;
-        }
-        `}
-      `;
-    }
-
-    styleEl.textContent = css;
-  }, [bodyHtml, sectionCfg]);
-
   /* ── Campana de notificaciones en header Shopify (desktop homepage) ── */
   useEffect(() => {
     if (!bodyHtml) return;
@@ -5907,7 +5716,7 @@ export default function HomePage1() {
       if (s.logoUrl) {
         const img = document.createElement('img');
         img.src = s.logoUrl;
-        img.alt = s.companyName || 'Kevin & Coco Chile';
+        img.alt = s.companyName || 'Yaxsell';
         img.style.cssText = 'max-width:400px;height:auto;';
         logoDiv.appendChild(img);
       } else if (s.companyName) {
@@ -6159,7 +5968,7 @@ export default function HomePage1() {
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
 
-    const LOCKED = ['tpl1_announcement_bar', 'tpl1_navbar', 'tpl1_hero', 'tpl1_product_widget', 'tpl1_subscribe_popup', 'tpl1_whatsapp_button', 'tpl1_chatbot_button', 'tpl1_footer'];
+    const LOCKED = ['tpl1_announcement_bar', 'tpl1_hero', 'tpl1_product_widget', 'tpl1_subscribe_popup', 'tpl1_whatsapp_button', 'tpl1_chatbot_button', 'tpl1_footer'];
 
     applyTpl1SectionsVisibility(sectionCfg, TPL1_SECTION_HTML_MAP);
 
@@ -6339,9 +6148,12 @@ export default function HomePage1() {
               });
             } else {
               messages.forEach(msg => {
-                msg.style.backgroundClip = '';
-                msg.style.webkitBackgroundClip = '';
-                msg.style.webkitTextFillColor = '';
+                msg.style.removeProperty('background');
+                msg.style.removeProperty('background-size');
+                msg.style.removeProperty('background-clip');
+                msg.style.removeProperty('-webkit-background-clip');
+                msg.style.removeProperty('-webkit-text-fill-color');
+                msg.style.removeProperty('animation');
                 if (s.textColor) msg.style.color = s.textColor;
               });
             }
@@ -6354,329 +6166,6 @@ export default function HomePage1() {
         }
       }
     } catch (e) { console.error('[TPL1] Error in announcement bar:', e); }
-
-    // 0a1. Apply navbar settings
-    const navbarSec = sectionCfg.find(s => s.id === 'tpl1_navbar');
-    try {
-      if (navbarSec && navbarSec.enabled) {
-        const navbarEl = document.getElementById('shopify-section-sections--22405132747000__header_fYEwWD');
-        if (navbarEl) {
-          const ns = navbarSec.settings || {};
-
-          // Intercept "Inicio" link to scroll to top (always run, regardless of navModel)
-          const navLinks = navbarEl.querySelectorAll('.musk-navbar .nav_li a') as NodeListOf<HTMLAnchorElement>;
-          navLinks.forEach(link => {
-            if (link.getAttribute('aria-label') === 'Inicio' || link.textContent.trim() === 'Inicio') {
-              link.addEventListener('click', (e) => {
-                e.preventDefault();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              });
-              // Reorder: Inicio first
-              const li = link.closest('.nav_li') as HTMLElement | null;
-              if (li) li.style.order = '1';
-            }
-            // Change "Contacto" to address (label loaded from Appwrite below)
-            if (link.getAttribute('aria-label') === 'Contacto' || link.getAttribute('aria-label') === 'Agregar ubicación' || link.textContent.trim() === 'Contacto' || link.dataset.tpl1AddrNav === '1') {
-              link.dataset.tpl1AddrNav = '1';
-              let savedAddress = '';
-              if (isLoggedIn && user?.id) {
-                try {
-                  const addrList = JSON.parse(localStorage.getItem(`addr_${user.id}`) || '[]');
-                  const primary = addrList[0];
-                  const label = primary?.commune || primary?.fullAddress || '';
-                  if (label) savedAddress = label.length > 30 ? label.substring(0, 28) + '…' : label;
-                } catch { /* ignore */ }
-              }
-
-              if (savedAddress) {
-                // Show address with white badge + pink text
-                link.innerHTML = `
-                <span style="display:inline-flex;align-items:center;gap:7px;padding:7px 14px;background:#fff;color:#ec4899 !important;border-radius:999px;font-weight:600;font-size:13px;box-shadow:0 1px 4px rgba(236,72,153,0.12);border:1.5px solid rgba(236,72,153,0.15);transition:transform .2s ease, box-shadow .2s ease;white-space:nowrap;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                  ${savedAddress}
-                </span>`;
-                link.setAttribute('aria-label', savedAddress);
-              } else {
-                // Show "Agregar ubicación" with pink badge
-                link.innerHTML = `
-                <span style="display:inline-flex;align-items:center;gap:7px;padding:7px 14px;background:linear-gradient(135deg,#ec4899,#f9a8d4);color:#fff !important;border-radius:999px;font-weight:600;font-size:13px;box-shadow:0 2px 8px rgba(236,72,153,0.2);transition:transform .2s ease, box-shadow .2s ease;white-space:nowrap;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                  Agregar ubicación
-                </span>`;
-                link.setAttribute('aria-label', 'Agregar ubicación');
-              }
-              link.href = isLoggedIn ? '/cuenta/direcciones' : '/login';
-              link.style.textDecoration = 'none';
-              // Reorder: Agregar ubicación second
-              const li = link.closest('.nav_li') as HTMLElement | null;
-              if (li) li.style.order = '2';
-              // Override click to check login status
-              link.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (isLoggedIn) {
-                  window.location.href = '/cuenta/direcciones';
-                } else {
-                  window.location.href = '/login';
-                }
-              });
-              link.addEventListener('mouseenter', () => {
-                const el = link.firstElementChild as HTMLElement | null;
-                if (el) { el.style.transform = 'translateY(-1px)'; el.style.boxShadow = '0 4px 12px rgba(236,72,153,0.3)'; }
-              });
-              link.addEventListener('mouseleave', () => {
-                const el = link.firstElementChild as HTMLElement | null;
-                if (el) { el.style.transform = 'translateY(0)'; el.style.boxShadow = '0 2px 8px rgba(236,72,153,0.2)'; }
-              });
-            }
-            // Reorder: Catálogo third
-            if (link.getAttribute('aria-label') === 'Catálogo' || link.textContent.trim() === 'Catálogo') {
-              const li = link.closest('.nav_li') as HTMLElement | null;
-              if (li) li.style.order = '3';
-            }
-          });
-
-          const repaintNavAddress = async () => {
-            const addrLinks = navbarEl.querySelectorAll('[data-tpl1-addr-nav="1"]') as NodeListOf<HTMLAnchorElement>;
-            if (!addrLinks.length) return;
-            let savedAddress = '';
-            if (isLoggedIn && user?.id) {
-              const list = await syncAddressesForUser(user.id);
-              const full = getPrimaryAddressLabel(list);
-              if (full) savedAddress = full.length > 30 ? full.substring(0, 28) + '…' : full;
-            }
-            addrLinks.forEach((link) => {
-              if (savedAddress) {
-                link.innerHTML = `
-                <span style="display:inline-flex;align-items:center;gap:7px;padding:7px 14px;background:#fff;color:#ec4899 !important;border-radius:999px;font-weight:600;font-size:13px;box-shadow:0 1px 4px rgba(236,72,153,0.12);border:1.5px solid rgba(236,72,153,0.15);transition:transform .2s ease, box-shadow .2s ease;white-space:nowrap;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                  ${savedAddress}
-                </span>`;
-                link.setAttribute('aria-label', savedAddress);
-              }
-            });
-          };
-          repaintNavAddress();
-
-          if (ns.navModel) {
-            const headerEl = navbarEl.querySelector('.musk-main-header') as HTMLElement;
-            const headerContainer = navbarEl.querySelector('.musk-main-header-container') as HTMLElement;
-            const nav = navbarEl.querySelector('.musk-navbar') as HTMLElement;
-            const navItems = navbarEl.querySelectorAll('.musk-navbar .nav_li') as NodeListOf<HTMLElement>;
-            const logoLinks = navbarEl.querySelectorAll('.logo-col a, .logo-col span') as NodeListOf<HTMLElement>;
-            const iconLinks = navbarEl.querySelectorAll('.header-resource-link, .header-resource-link svg path') as NodeListOf<HTMLElement>;
-            const bg = ns.bgGradient || ns.bgColor;
-
-            if (ns.navModel === 'original') {
-              navbarEl.style.removeProperty('background');
-              if (headerEl) {
-                headerEl.style.removeProperty('background');
-                headerEl.style.removeProperty('background-size');
-                headerEl.style.removeProperty('animation');
-                headerEl.style.removeProperty('border-bottom');
-                headerEl.style.removeProperty('padding-top');
-                headerEl.style.removeProperty('padding-bottom');
-                headerEl.style.removeProperty('margin-top');
-              }
-              if (headerContainer) {
-                headerContainer.style.removeProperty('min-height');
-                headerContainer.style.removeProperty('align-items');
-                headerContainer.style.removeProperty('display');
-                headerContainer.style.removeProperty('gap');
-              }
-              if (nav) {
-                nav.style.removeProperty('background');
-                nav.style.removeProperty('border-radius');
-                nav.style.removeProperty('padding');
-                nav.style.removeProperty('backdrop-filter');
-                nav.style.removeProperty('box-shadow');
-                nav.style.removeProperty('width');
-                nav.style.removeProperty('max-width');
-                nav.style.removeProperty('margin');
-              }
-              navItems.forEach(item => {
-                item.style.removeProperty('margin');
-                item.style.removeProperty('border-radius');
-                item.style.removeProperty('transition');
-              });
-              navLinks.forEach(link => {
-                link.style.removeProperty('color');
-                link.style.removeProperty('font-weight');
-                link.style.removeProperty('letter-spacing');
-                link.style.removeProperty('padding');
-                link.style.removeProperty('border-radius');
-                link.style.removeProperty('transition');
-                link.style.removeProperty('background');
-                link.style.removeProperty('transform');
-                link.onmouseenter = null;
-                link.onmouseleave = null;
-              });
-              logoLinks.forEach(el => {
-                el.style.removeProperty('color');
-                el.style.removeProperty('font-weight');
-              });
-              iconLinks.forEach(el => {
-                el.style.removeProperty('color');
-                el.style.removeProperty('fill');
-              });
-              const tagEl = navbarEl.querySelector('.tpl1-promo-tag') as HTMLElement;
-              if (tagEl) tagEl.remove();
-            } else {
-              if (headerEl && bg) {
-                navbarEl.style.setProperty('background', bg, 'important');
-                headerEl.style.setProperty('background', bg, 'important');
-                headerEl.style.setProperty('background-size', ns.gradientAnimated ? '300% 300%' : '100% 100%', 'important');
-                headerEl.style.setProperty('position', 'relative', 'important');
-                headerEl.style.setProperty('padding-top', '12px', 'important');
-                headerEl.style.setProperty('padding-bottom', '12px', 'important');
-                headerEl.style.setProperty('margin-top', '0', 'important');
-                headerEl.style.setProperty('transition', 'all .25s ease', 'important');
-                if (ns.gradientAnimated) headerEl.style.setProperty('animation', 'tpl1-nav-gradient 8s ease infinite', 'important');
-                else headerEl.style.removeProperty('animation');
-              }
-              if (headerContainer) {
-                headerContainer.style.setProperty('min-height', `${ns.navHeight || 72}px`, 'important');
-                headerContainer.style.setProperty('align-items', 'center', 'important');
-                headerContainer.style.setProperty('display', 'flex', 'important');
-                headerContainer.style.setProperty('gap', '24px', 'important');
-              }
-              if (nav) {
-                nav.style.setProperty('background', ns.searchBgColor || 'rgba(255,255,255,.08)', 'important');
-                nav.style.setProperty('border-radius', '999px', 'important');
-                nav.style.setProperty('padding', '10px 18px', 'important');
-                nav.style.setProperty('backdrop-filter', 'blur(10px)', 'important');
-                nav.style.setProperty('box-shadow', '0 8px 22px rgba(0,0,0,.12)', 'important');
-                nav.style.setProperty('width', 'auto', 'important');
-                nav.style.setProperty('max-width', 'fit-content', 'important');
-                nav.style.setProperty('margin', '0 auto', 'important');
-              }
-              navItems.forEach(item => {
-                item.style.setProperty('margin', '0 3px', 'important');
-                item.style.setProperty('border-radius', '999px', 'important');
-                item.style.setProperty('transition', 'all .2s ease', 'important');
-              });
-              navLinks.forEach(link => {
-                link.style.setProperty('color', ns.textColor || '', 'important');
-                link.style.setProperty('font-weight', '800', 'important');
-                link.style.setProperty('letter-spacing', '.04em', 'important');
-                link.style.setProperty('padding', '8px 18px', 'important');
-                link.style.setProperty('border-radius', '999px', 'important');
-                link.style.setProperty('transition', 'all .2s ease', 'important');
-                link.onmouseenter = () => {
-                  link.style.setProperty('background', ns.accentColor || 'rgba(255,255,255,.14)', 'important');
-                  link.style.setProperty('color', '#ffffff', 'important');
-                  link.style.setProperty('transform', 'translateY(-1px)', 'important');
-                };
-                link.onmouseleave = () => {
-                  link.style.removeProperty('background');
-                  link.style.setProperty('color', ns.textColor || '', 'important');
-                  link.style.setProperty('transform', 'translateY(0)', 'important');
-                };
-              });
-              logoLinks.forEach(el => {
-                el.style.setProperty('color', ns.textColor || '', 'important');
-                el.style.setProperty('font-weight', '900', 'important');
-              });
-              iconLinks.forEach(el => {
-                el.style.setProperty('color', ns.textColor || '', 'important');
-                el.style.setProperty('fill', ns.textColor || '', 'important');
-              });
-              if (ns.borderBottom !== undefined && headerEl) {
-                headerEl.style.setProperty('border-bottom', ns.borderBottom ? `1px solid ${ns.borderBottomColor || '#e5e7eb'}` : 'none', 'important');
-              }
-              if (!document.getElementById('tpl1-nav-gradient-kf')) {
-                const style = document.createElement('style');
-                style.id = 'tpl1-nav-gradient-kf';
-                style.textContent = '@keyframes tpl1-nav-gradient{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}';
-                document.head.appendChild(style);
-              }
-            }
-          }
-
-          // Apply promo tag
-          if (ns.navModel !== 'original' && ns.promoTagStyle && ns.promoTagText) {
-            let tagEl = navbarEl.querySelector('.tpl1-promo-tag') as HTMLElement;
-            if (!tagEl) {
-              tagEl = document.createElement('div');
-              tagEl.className = 'tpl1-promo-tag';
-              tagEl.style.cssText = 'position:absolute;top:50%;right:22px;transform:translateY(-50%);z-index:10;cursor:pointer;max-width:120px;overflow:hidden;text-overflow:ellipsis;';
-              const headerEl = navbarEl.querySelector('.musk-main-header') as HTMLElement;
-              if (headerEl) {
-                headerEl.style.position = 'relative';
-                headerEl.appendChild(tagEl);
-              }
-            }
-            const safePromoText = (ns.promoTagText || '').replace('Â¡EnvÃ­o GRATIS!', '¡Envío GRATIS!').replace('EnvÃ­o', 'Envío');
-            tagEl.textContent = safePromoText;
-            tagEl.onclick = () => { if (ns.promoTagLink) window.location.href = ns.promoTagLink; };
-
-            // Apply tag style
-            const tagStyles: Record<string, React.CSSProperties> = {
-              pill: { background: '#3483fa', color: '#fff', borderRadius: 20, padding: '4px 12px', fontSize: 9, fontWeight: 600 },
-              outline: { background: 'transparent', color: '#333', borderRadius: 20, padding: '3px 11px', fontSize: 9, fontWeight: 600, border: '1.5px solid #333' },
-              soft: { background: '#eef2ff', color: '#4338ca', borderRadius: 8, padding: '4px 12px', fontSize: 9, fontWeight: 600 },
-              dark: { background: '#18181b', color: '#fafafa', borderRadius: 8, padding: '4px 12px', fontSize: 9, fontWeight: 600 },
-              'accent-left': { background: '#fff', color: '#1e293b', borderRadius: 6, padding: '4px 12px', fontSize: 9, fontWeight: 600, borderLeft: '3px solid #3483fa' },
-              underline: { background: '#fafafa', color: '#18181b', borderRadius: 0, padding: '4px 12px', fontSize: 9, fontWeight: 700, borderBottom: '2px solid #ef4444' },
-              ribbon: { background: '#ef4444', color: '#fff', borderRadius: '0 6px 6px 0', padding: '4px 14px 4px 10px', fontSize: 9, fontWeight: 600, borderLeft: '3px solid #b91c1c' },
-              stamp: { background: '#fff', color: '#dc2626', borderRadius: 4, padding: '3px 10px', fontSize: 8, fontWeight: 800, border: '2px solid #dc2626', textTransform: 'uppercase', letterSpacing: 1.5 },
-              glass: { background: 'rgba(255,255,255,.25)', backdropFilter: 'blur(8px)', color: '#1a1a1a', borderRadius: 10, padding: '4px 12px', fontSize: 9, fontWeight: 600, border: '1px solid rgba(0,0,0,.08)' },
-              gold: { background: 'linear-gradient(135deg,#d4a03c,#f0d060)', color: '#3d2200', borderRadius: 6, padding: '4px 12px', fontSize: 9, fontWeight: 700 },
-              neon: { background: '#0a0a14', color: '#00e5c3', borderRadius: 6, padding: '4px 12px', fontSize: 9, fontWeight: 600, border: '1px solid #00e5c3' },
-              gradient: { background: 'linear-gradient(135deg,#6366f1,#a855f7)', color: '#fff', borderRadius: 10, padding: '4px 12px', fontSize: 9, fontWeight: 600 },
-            };
-            const style = tagStyles[ns.promoTagStyle];
-            if (style) {
-              Object.entries(style).forEach(([key, value]) => {
-                (tagEl.style as any)[key] = value;
-              });
-            }
-          }
-
-          // Apply search placeholder
-          if (ns.searchPlaceholder) {
-            const searchInput = navbarEl.querySelector('.search__input') as HTMLInputElement;
-            if (searchInput) searchInput.placeholder = ns.searchPlaceholder;
-          }
-
-          // Apply floating particles (PC only — skip on mobile for performance)
-          const isMobileNav = window.innerWidth <= 768;
-          if (ns.navParticlesEnabled && !isMobileNav) {
-            const particlesText = ns.navParticlesText || '✦,◆,●';
-            const particlesColor = ns.navParticlesColor || '#6366f1';
-            const particlesCount = ns.navParticlesCount || 24;
-            const particlesSize = ns.navParticlesSize || 14;
-            const particlesOpacity = ns.navParticlesOpacity || 0.35;
-
-            let particlesContainer = navbarEl.querySelector('.tpl1-nav-particles') as HTMLElement;
-            if (!particlesContainer) {
-              particlesContainer = document.createElement('div');
-              particlesContainer.className = 'tpl1-nav-particles';
-              particlesContainer.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0;';
-              const headerEl = navbarEl.querySelector('.musk-main-header') as HTMLElement;
-              if (headerEl) {
-                headerEl.style.position = 'relative';
-                headerEl.insertBefore(particlesContainer, headerEl.firstChild);
-              }
-            }
-            particlesContainer.innerHTML = '';
-            const symbols = particlesText.split(',').map(s => s.trim());
-            for (let i = 0; i < particlesCount; i++) {
-              const particle = document.createElement('span');
-              particle.textContent = symbols[i % symbols.length];
-              particle.style.cssText = `position:absolute;font-size:${particlesSize}px;color:${particlesColor};opacity:${particlesOpacity};left:${Math.random() * 100}%;top:${Math.random() * 100}%;animation:float${i % 3} ${3 + Math.random() * 4}s ease-in-out infinite;animation-delay:${Math.random() * 3}s;`;
-              particlesContainer.appendChild(particle);
-            }
-            if (!document.getElementById('tpl1-float-kf')) {
-              const style = document.createElement('style');
-              style.id = 'tpl1-float-kf';
-              style.textContent = '@keyframes float0{0%,100%{transform:translate(0,0)}50%{transform:translate(10px,-10px)}}@keyframes float1{0%,100%{transform:translate(0,0)}50%{transform:translate(-8px,8px)}}@keyframes float2{0%,100%{transform:translate(0,0)}50%{transform:translate(5px,-5px)}}';
-              document.head.appendChild(style);
-            }
-          }
-        }
-      }
-    } catch (e) { console.error('[TPL1] Error in navbar:', e); }
 
     console.log('[TPL1] Finished announcement bar, about to search for tpl1_hero section...');
     // 0a2. Apply hero banner settings
@@ -7158,8 +6647,192 @@ export default function HomePage1() {
       }
     }
 
+    // 0a3. Hero title animation (only once per page visit)
+    const heroSecForAnim = sectionCfg.find(s => s.id === 'tpl1_hero');
+    const heroAnimSettings = heroSecForAnim?.settings || {};
+    const heroAnimType = heroAnimSettings.heroTitleAnimation || 'typing';
+    if (heroAnimType !== 'none' && !(window as unknown as Record<string, unknown>).__heroAnimDone) {
+      (window as unknown as Record<string, unknown>).__heroAnimDone = true;
+      const heroElForAnim = document.getElementById('shopify-section-template--22405132419320__hero_banner_R6iEJ4');
+      if (heroElForAnim) {
+        // Remove previous animation style if exists
+        const prevAnimStyle = document.getElementById('tpl1-hero-title-anim-style');
+        if (prevAnimStyle) prevAnimStyle.remove();
+
+        const titleEls = heroElForAnim.querySelectorAll('.banner-main-title') as NodeListOf<HTMLElement>;
+        titleEls.forEach(titleEl => {
+          // Reset any previous animation state
+          gsap.killTweensOf(titleEl);
+          titleEl.style.visibility = 'visible';
+          titleEl.style.opacity = '';
+          titleEl.style.transform = '';
+          titleEl.style.filter = '';
+          // Remove any leftover cursor or span wrappers
+          titleEl.querySelectorAll('.tpl1-anim-cursor, .tpl1-anim-char').forEach(e => e.remove());
+          // Restore original text if it was split
+          const orig = titleEl.getAttribute('data-orig-text');
+          if (orig) { titleEl.textContent = orig; titleEl.removeAttribute('data-orig-text'); }
+        });
+
+        titleEls.forEach(titleEl => {
+          const text = titleEl.textContent || '';
+          if (!text) return;
+
+          switch (heroAnimType) {
+            case 'typing': {
+              titleEl.setAttribute('data-orig-text', text);
+              titleEl.textContent = '';
+              titleEl.style.visibility = 'visible';
+              // Add blinking cursor
+              const cursor = document.createElement('span');
+              cursor.className = 'tpl1-anim-cursor';
+              cursor.textContent = '|';
+              cursor.style.cssText = 'color:inherit;font-weight:100;animation:tpl1Blink 0.6s step-end infinite;';
+              titleEl.appendChild(cursor);
+              // Add cursor blink keyframes
+              if (!document.getElementById('tpl1-hero-cursor-style')) {
+                const s = document.createElement('style');
+                s.id = 'tpl1-hero-cursor-style';
+                s.textContent = '@keyframes tpl1Blink{0%,100%{opacity:1}50%{opacity:0}}';
+                document.head.appendChild(s);
+              }
+              // Animate character by character
+              const chars = text.split('');
+              chars.forEach((ch, i) => {
+                gsap.delayedCall(0.08 * (i + 1), () => {
+                  cursor.before(ch);
+                });
+              });
+              // Remove cursor after typing finishes
+              gsap.delayedCall(0.08 * chars.length + 1.5, () => { cursor.remove(); });
+              break;
+            }
+            case 'fadeIn': {
+              gsap.fromTo(titleEl, { opacity: 0 }, { opacity: 1, duration: 1.2, ease: 'power2.out', delay: 0.3 });
+              break;
+            }
+            case 'slideUp': {
+              gsap.fromTo(titleEl, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', delay: 0.3 });
+              break;
+            }
+            case 'scaleIn': {
+              gsap.fromTo(titleEl, { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.8, ease: 'back.out(1.7)', delay: 0.3 });
+              break;
+            }
+            case 'blurIn': {
+              gsap.fromTo(titleEl, { opacity: 0, filter: 'blur(12px)' }, { opacity: 1, filter: 'blur(0px)', duration: 1, ease: 'power2.out', delay: 0.3 });
+              break;
+            }
+            case 'splitChars': {
+              titleEl.setAttribute('data-orig-text', text);
+              titleEl.innerHTML = '';
+              text.split('').forEach(ch => {
+                const span = document.createElement('span');
+                span.className = 'tpl1-anim-char';
+                span.textContent = ch === ' ' ? '\u00A0' : ch;
+                span.style.cssText = 'display:inline-block;opacity:0;transform:translateY(20px) scale(0.5);';
+                titleEl.appendChild(span);
+              });
+              gsap.to(titleEl.querySelectorAll('.tpl1-anim-char'), {
+                opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.03, ease: 'back.out(1.7)', delay: 0.3,
+              });
+              break;
+            }
+            case 'glitch': {
+              titleEl.setAttribute('data-orig-text', text);
+              const glitchClip = () => {
+                const top = Math.random() * 100;
+                const height = Math.random() * 15 + 5;
+                return `inset(${top}% 0 ${100 - top - height}% 0)`;
+              };
+              // Create glitch layers
+              const wrap = document.createElement('span');
+              wrap.style.cssText = 'position:relative;display:inline-block;';
+              titleEl.textContent = '';
+              wrap.textContent = text;
+              const r = document.createElement('span');
+              r.textContent = text;
+              r.style.cssText = `position:absolute;top:0;left:2px;color:#ff0044;clip-path:${glitchClip()};pointer-events:none;`;
+              r.className = 'tpl1-anim-char';
+              const b = document.createElement('span');
+              b.textContent = text;
+              b.style.cssText = `position:absolute;top:0;left:-2px;color:#00ffff;clip-path:${glitchClip()};pointer-events:none;`;
+              b.className = 'tpl1-anim-char';
+              wrap.appendChild(r);
+              wrap.appendChild(b);
+              titleEl.appendChild(wrap);
+              // Animate glitch
+              gsap.fromTo(titleEl, { opacity: 0 }, { opacity: 1, duration: 0.1, delay: 0.3 });
+              const glitchTl = gsap.timeline({ delay: 0.3, repeat: 2 });
+              for (let i = 0; i < 6; i++) {
+                glitchTl.to([r, b], { clipPath: glitchClip(), duration: 0.05, ease: 'none' });
+              }
+              glitchTl.to([r, b], { opacity: 0, duration: 0.3 });
+              break;
+            }
+          }
+        });
+      }
+    }
+
+    // 0a4. Hero title scroll animation (expand on scroll)
+    const heroElForScroll = document.getElementById('shopify-section-template--22405132419320__hero_banner_R6iEJ4');
+    const isMobileForScroll = window.innerWidth <= 768;
+    if (heroElForScroll && !isMobileForScroll) {
+      const scrollTitleEls = heroElForScroll.querySelectorAll('.banner-main-title') as NodeListOf<HTMLElement>;
+      const scrollSubEls = heroElForScroll.querySelectorAll('.banner-subtitle, .banner-slide-subtitle') as NodeListOf<HTMLElement>;
+      const scrollContentEls = heroElForScroll.querySelectorAll('.banner-slide-content') as NodeListOf<HTMLElement>;
+      
+      // Kill previous scroll triggers for hero
+      ScrollTrigger.getAll().filter(st => {
+        const vars = st.vars as Record<string, unknown>;
+        return vars.trigger === heroElForScroll;
+      }).forEach(st => st.kill());
+
+      scrollTitleEls.forEach(titleEl => {
+        gsap.to(titleEl, {
+          letterSpacing: '0.35em',
+          ease: 'none',
+          scrollTrigger: {
+            trigger: heroElForScroll,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 0.5,
+          },
+        });
+      });
+      scrollSubEls.forEach(subEl => {
+        gsap.to(subEl, {
+          letterSpacing: '0.15em',
+          y: -30,
+          opacity: 0.8,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: heroElForScroll,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 0.5,
+          },
+        });
+      });
+      scrollContentEls.forEach(contentEl => {
+        gsap.to(contentEl, {
+          y: -30,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: heroElForScroll,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 0.3,
+          },
+        });
+      });
+    }
+
     // 0b. Subtle complex particles + hero image movement (PC only — skip on mobile for performance)
     const heroBannerEl = document.getElementById('shopify-section-template--22405132419320__hero_banner_R6iEJ4');
+    const heroSecForParticles = sectionCfg.find(s => s.id === 'tpl1_hero');
+    const hs = heroSecForParticles?.settings || {};
     const isMobile = window.innerWidth <= 768;
     if (heroBannerEl && !document.getElementById('tpl1-hero-particles') && !isMobile) {
       // Set initial hero image state
@@ -7174,14 +6847,24 @@ export default function HomePage1() {
       particlesContainer.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:2;overflow:hidden;';
       heroBannerEl.appendChild(particlesContainer);
 
-      const particleCount = 24;
+      const particleCount = hs.heroParticlesCount ?? 24;
       const particles: HTMLElement[] = [];
       const speeds: number[] = [];
-      const colors = ['#ec4899', '#f472b6', '#fb7185', '#f9a8d4', '#fda4af', '#fce7f3'];
+      const baseColor = hs.heroParticlesColor || '#ec4899';
+      // Generar variaciones del color base
+      const adjustColor = (hex: string, amount: number): string => {
+        const num = parseInt(hex.slice(1), 16);
+        const r = Math.min(255, Math.max(0, (num >> 16) + amount));
+        const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount));
+        const b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
+        return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)}`;
+      };
+      const colors = [baseColor, adjustColor(baseColor, 20), adjustColor(baseColor, -20), adjustColor(baseColor, 40), adjustColor(baseColor, -40), adjustColor(baseColor, 60)];
 
       for (let i = 0; i < particleCount; i++) {
         const particle = document.createElement('div');
-        const size = Math.random() * 2.5 + 1.5;
+        const baseSize = hs.heroParticlesSize ?? 2;
+        const size = Math.random() * baseSize + (baseSize * 0.5);
         const color = colors[Math.floor(Math.random() * colors.length)];
         const isLine = Math.random() > 0.6;
         const speed = (i % 5 + 1) * 8;
@@ -7284,43 +6967,6 @@ export default function HomePage1() {
           });
         });
       });
-
-      // Title expand on scroll
-      const heroTitle = heroBannerEl.querySelector('.banner-main-title') as HTMLElement | null;
-      const heroSub = heroBannerEl.querySelector('.banner-fancy-sub-head') as HTMLElement | null;
-      if (heroTitle) {
-        gsap.fromTo(heroTitle,
-          { letterSpacing: '0em', opacity: 1, y: 0 },
-          {
-            letterSpacing: '0.35em',
-            opacity: 0,
-            y: -60,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: heroBannerEl,
-              start: 'top top',
-              end: 'bottom 40%',
-              scrub: 1,
-            },
-          }
-        );
-      }
-      if (heroSub) {
-        gsap.fromTo(heroSub,
-          { opacity: 1, y: 0 },
-          {
-            opacity: 0,
-            y: -40,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: heroBannerEl,
-              start: 'top top',
-              end: 'bottom 50%',
-              scrub: 1,
-            },
-          }
-        );
-      }
 
       // Reveal hero after all effects applied (inline style overrides CSS opacity:0)
       heroBannerEl.style.opacity = '1';

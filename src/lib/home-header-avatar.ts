@@ -1,11 +1,12 @@
-import { getServices, getAppwriteConfig, USER_PHOTOS_BUCKET } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from '@/lib/appwrite';
 import { getAvatarRingStyle, getLevelMeta } from '@/lib/loyalty-levels';
 
 const STYLE_ID = 'yaxsel-header-avatar-styles';
 
 function getFilePreviewUrl(fileId: string): string {
   const { endpoint, projectId } = getAppwriteConfig();
-  return `${endpoint}/storage/buckets/${USER_PHOTOS_BUCKET}/files/${fileId}/view?project=${projectId}`;
+  const path = MEDIA_PREFIXES.thumbnails + fileId;
+  return `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${path}/view?project=${projectId}`;
 }
 
 function injectStyles() {

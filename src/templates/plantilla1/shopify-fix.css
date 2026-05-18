@@ -21,6 +21,20 @@
   filter: none !important;
 }
 
+/* ─── HERO BANNER SLIDE PADDING FIX ─── */
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-slide.left-content .banner-slide-content,
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-slide.right-content .banner-slide-content {
+  padding: 0 8% !important;
+  max-width: 600px !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-slide.left-content .banner-slide-content {
+  margin-left: 4% !important;
+}
+[data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-slide.right-content .banner-slide-content {
+  margin-right: 4% !important;
+  text-align: right !important;
+}
+
 /* ─── GLOBAL VISIBILITY FIX FOR TITLES (COLECCIONES, CATEGORIAS, ETC) ─── */
 [data-template="1"] .musk-sec-title,
 [data-template="1"] .musk-h2-head,

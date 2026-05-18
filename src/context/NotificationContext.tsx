@@ -68,16 +68,31 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, [isLoggedIn, user, refreshCount]);
 
+  // Carga inicial cuando cambia el estado de login
+  // Usa user?.id como dep para evitar re-ejecuciones por cambios irrelevantes en user
   useEffect(() => {
     refreshCount();
     checkRewards();
-  }, [refreshCount, checkRewards]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn, user?.id]);
 
+  // 🔥 Polling cada 5 minutos (antes 30s = 2,880 reads/día/usuario)
+  // Ahora: 288 reads/día/usuario (10x menos)
   useEffect(() => {
     if (!isLoggedIn) return;
-    const id = setInterval(refreshCount, 30000);
+    const id = setInterval(() => { refreshCount(); }, 5 * 60 * 1000); // 5 min
     return () => clearInterval(id);
-  }, [isLoggedIn, refreshCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn]);
+
+  // Refresh al volver el foco a la pestaña (UX instantánea sin polling agresivo)
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const onFocus = () => { refreshCount(); };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn]);
 
   return React.createElement(
     NotificationContext.Provider,

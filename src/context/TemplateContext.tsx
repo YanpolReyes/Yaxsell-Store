@@ -39,10 +39,10 @@ export function TemplateProvider({ children }: { children: ReactNode }) {
         const { databaseId } = getAppwriteConfig();
         if (!databaseId) { setIsLoading(false); return; }
         const res = await databases.listDocuments(databaseId, SEQUENCES_COLLECTION, [
-          Query.equal('KEY', TEMPLATE_KEY), Query.limit(1),
+          Query.equal('key', TEMPLATE_KEY), Query.limit(1),
         ]);
         if (res.documents.length > 0) {
-          setTemplate(Number(res.documents[0].NEXT) || 1);
+          setTemplate(Number(res.documents[0].value) || 1);
         }
       } catch {
         setTemplate(1);

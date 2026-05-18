@@ -8,7 +8,7 @@ import { Search, ShoppingCart, User, Heart, Menu, X, MapPin, Bell, Receipt, LogO
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/context/CartContext';
 import { useNotifications } from '@/context/NotificationContext';
-import { getServices, getAppwriteConfig, USER_PHOTOS_BUCKET, formatPrice } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES, formatPrice } from '@/lib/appwrite';
 import SearchOverlay from '@/components/SearchOverlay';
 import NotificationsOverlay from '@/components/NotificationsOverlay';
 import { usePrimaryAddress } from '@/hooks/usePrimaryAddress';
@@ -17,11 +17,12 @@ import NavAvatarWithBadge from '@/components/NavAvatarWithBadge';
 
 const PINK_PRIMARY = '#ec4899';
 const PINK_LIGHT = '#f9a8d4';
-const LOGO_URL = 'https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2FGemini_Generated_Image_v5vfu6v5vfu6v5vf.png?alt=media&token=a049b070-6653-435b-a978-9cb06a92f865';
+const LOGO_URL = '';
 
 function getFilePreviewUrl(fileId: string): string {
   const { endpoint, projectId } = getAppwriteConfig();
-  return `${endpoint}/storage/buckets/${USER_PHOTOS_BUCKET}/files/${fileId}/view?project=${projectId}`;
+  const path = MEDIA_PREFIXES.thumbnails + fileId;
+  return `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${path}/view?project=${projectId}`;
 }
 
 export default function Navbar1() {
@@ -399,7 +400,7 @@ export default function Navbar1() {
             </div>
           )}
           <Link href="/" className="tpl1-nav-logo">
-            <img src={LOGO_URL} alt="Yes Bella" />
+            {LOGO_URL ? <img src={LOGO_URL} alt="Yaxsell" /> : <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', color: 'inherit' }}>Yaxsell</span>}
           </Link>
 
           {/* Mobile fabs - WhatsApp + ChatBot (replaces logo on mobile) */}

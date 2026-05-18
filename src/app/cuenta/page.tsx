@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getServices, getAppwriteConfig, USER_PHOTOS_BUCKET } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from '@/lib/appwrite';
 import {
   ShoppingBag, Bell, Heart, ShoppingCart, MessageCircle,
   User, MapPin, Receipt, HelpCircle, Phone,
@@ -53,7 +53,8 @@ const QUICK_SHORTCUTS = [
 
 function getFilePreviewUrl(fileId: string): string {
   const { endpoint, projectId } = getAppwriteConfig();
-  return `${endpoint}/storage/buckets/${USER_PHOTOS_BUCKET}/files/${fileId}/view?project=${projectId}`;
+  const path = MEDIA_PREFIXES.thumbnails + fileId;
+  return `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${path}/view?project=${projectId}`;
 }
 
 const BG_CUENTA = 'https://static.vecteezy.com/system/resources/thumbnails/031/691/675/small/white-abstract-background-in-the-style-of-light-white-and-light-gray-created-with-generative-ai-photo.jpg';

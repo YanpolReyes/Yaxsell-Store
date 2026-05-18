@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package, Truck, Shield, FileText } from 'lucide-react';
-import { getServices, getAppwriteConfig, ORDERS_COLLECTION, COMPROBANTES_BUCKET, formatPrice } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, ORDERS_COLLECTION, MEDIA_BUCKET_ID, MEDIA_PREFIXES, formatPrice } from '@/lib/appwrite';
 import { ID } from '@/lib/appwrite';
 import { Order, OrderItem } from '@/types';
 import { generateOrderPdf } from '@/lib/generateOrderPdf';
@@ -96,8 +96,9 @@ export default function PedidoPage() {
     try {
       const { storage, databases } = getServices();
       const { databaseId, endpoint, projectId } = getAppwriteConfig();
-      const up = await storage.createFile(COMPROBANTES_BUCKET, ID.unique(), file);
-      const url = `${endpoint}/storage/buckets/${COMPROBANTES_BUCKET}/files/${up.$id}/view?project=${projectId}`;
+      const fileId = MEDIA_PREFIXES.comprobantes + ID.unique();
+      const up = await storage.createFile(MEDIA_BUCKET_ID, fileId, file);
+      const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}`;
       await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, { PAYMENTPROOFURL: url, STATUS: 'processing' });
       setUploaded(true);
       await load();

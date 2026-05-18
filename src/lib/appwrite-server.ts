@@ -4,12 +4,12 @@
 const APPWRITE_ENDPOINT =
   process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1';
 const PROJECT_ID =
-  process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '698f6de50012f9df7ebd';
+  process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '6a0a4e8d0032177f3f90';
 const DATABASE_ID =
-  process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '67f1dc940037b3d367bb';
+  process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a0a58ca001798410d86';
 const API_KEY =
   process.env.APPWRITE_API_KEY ||
-  'standard_ea10b9d7d4414fec61778bdc7f569b0de82bb3aca157f5949bbb8c7320b379f12e15649cae18dc0512f75fd8d575dd5f59058125598e0a0491fa9ea9760ff67b2f792df372b838bf5bd1a9acfef29f201ccb20105285ee2787343eebf89234a4b0a6977ae7447cc5d9c0742d0f9d364d03730c97261748a019bf592ce7cd2025';
+  'standard_dea4a8654ed430bf3626a6cd6506a562cbfcebb7caeb417a1e83c8228ed1de0a84d60b11cc4776d023d0c5ac8d1dcb0ba59e43fef5fb8831a7252aaf5b2f13896769e2a5af222f9853d7f7abcada2d034e1d92e3b73d8de53d1c29adde00cd723aa5612189b2ee702e798acb0dffeb9ff154714a5f7af060c78567391d49923d';
 
 const headers = () => ({
   'Content-Type': 'application/json',

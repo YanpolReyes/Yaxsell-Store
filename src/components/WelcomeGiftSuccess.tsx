@@ -151,7 +151,7 @@ export default function WelcomeGiftSuccess({ percent, couponCode, onCopy, copied
         transition={{ delay: 0.55 }}
         style={{ margin: '18px 0 0', fontSize: 12, color: '#c4b5fd', fontWeight: 600 }}
       >
-        Kevin & Coco Chile — gracias por unirte 💕
+        Yaxsell — gracias por unirte
       </motion.p>
     </motion.div>
   );

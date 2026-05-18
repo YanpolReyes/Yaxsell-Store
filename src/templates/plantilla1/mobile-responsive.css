@@ -157,24 +157,7 @@
   
   [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .musk-banner-slider::after,
   [data-section-id="tpl1_hero"] .musk-banner-slider::after {
-    content: '' !important;
-    position: absolute !important;
-    top: 42% !important; /* Moved logo slightly lower as requested */
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    width: 340px !important; /* Made bigger */
-    height: 150px !important;
-    background: url('https://jumpseller.s3.eu-west-1.amazonaws.com/store/yes-bella/assets//Sin%20t%C3%ADtulo-1_5d514a8074f0023fe88b0eacda93c729.png?1743456840') center/contain no-repeat !important;
-    z-index: 99 !important;
-    pointer-events: none !important;
-    filter: drop-shadow(0 4px 15px rgba(236,72,153,0.3)) !important;
-    display: block !important;
-    animation: tpl1LogoFloat 3s ease-in-out infinite alternate !important; /* Added animation */
-  }
-
-  @keyframes tpl1LogoFloat {
-    0% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 4px 10px rgba(236,72,153,0.2)); }
-    100% { transform: translate(-50%, -55%) scale(1.05); filter: drop-shadow(0 8px 20px rgba(236,72,153,0.6)); }
+    display: none !important;
   }
 
   /* Force remove ALL dark layers/overlays from hero on mobile */
@@ -1518,6 +1501,18 @@
     font-size: 14px !important;
     text-align: center !important;
     margin-top: 8px !important;
+  }
+
+  /* Widget hero: ocultar placeholder Shopify (SVG + título demo) en móvil */
+  [data-template="1"] .product_hero_banner_wrapp .fusion-product-item.image-adapt:has(.product-img > svg):not(:has(.product-img img)),
+  [data-template="1"] .product_hero_banner_wrapp .fusion-product-item:has(.product-name a[aria-label="Título del Producto"]),
+  [data-template="1"] .product_hero_banner_wrapp .fusion-product-item:has(.product-name a[aria-disabled="true"][aria-label="Título del Producto"]) {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 }
 

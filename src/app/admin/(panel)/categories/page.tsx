@@ -6,8 +6,10 @@ import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION_ID, PRODUCTS_COLL
 import { Category } from '@/types/admin';
 import { Plus, Pencil, Trash2, X, RefreshCw, AlertTriangle, Tag, ChevronUp, ChevronDown, Search, Download } from 'lucide-react';
 import ImageUploadField from '@/components/admin/ImageUploadField';
+import { invalidateCategoryCache } from '@/lib/cache';
+import { MEDIA_BUCKET_ID } from '@/lib/appwrite';
 
-const CATEGORIES_BUCKET_ID = '67f41e05000d0adb6f12';
+const CATEGORIES_BUCKET_ID = MEDIA_BUCKET_ID;
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -38,6 +40,7 @@ export default function CategoriesPage() {
       await Promise.all([...selected].map(id => databases.deleteDocument(databaseId, CATEGORIES_COLLECTION_ID, id)));
       setCategories(prev => prev.filter(c => !selected.has(c.$id)));
       setSelected(new Set());
+      invalidateCategoryCache();
     } catch (e: any) { alert('Error: ' + e.message); }
     finally { setBulkDeleting(false); }
   };
@@ -84,6 +87,7 @@ export default function CategoriesPage() {
         setCategories(prev => prev.map(c => c.$id === (d as Category).$id ? doc as unknown as Category : c));
       }
       setModal(null);
+      invalidateCategoryCache();
     } catch (e: any) { alert('Error: ' + e.message); }
     finally { setIsSaving(false); }
   };
@@ -118,6 +122,7 @@ export default function CategoriesPage() {
       const { databaseId } = getAppwriteConfig();
       await databases.deleteDocument(databaseId, CATEGORIES_COLLECTION_ID, id);
       setCategories(prev => prev.filter(c => c.$id !== id));
+      invalidateCategoryCache();
     } catch (e: any) { alert('Error: ' + e.message); }
     finally { setDeleteId(null); }
   };

@@ -9,6 +9,7 @@ import { Query } from 'appwrite';
 import { Product, Category, Banner, TimedOffer } from '@/types';
 import { useCart } from '@/context/CartContext';
 import DynamicHomePage from '@/components/DynamicHomePage';
+import { cached, TTL } from '@/lib/cache';
 
 function getOfferExpiresAt(offer: TimedOffer): number | null {
   if (offer.timeType === 'endDateTime' && offer.endDateTime) return new Date(offer.endDateTime).getTime();
@@ -65,16 +66,29 @@ export default function HomePage() {
       }
       try {
         const { databases } = getServices();
-        const [prodRes, catRes, banRes, offRes] = await Promise.all([
-          databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.orderDesc('$createdAt'), Query.limit(8)]),
-          databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [Query.orderDesc('$createdAt'), Query.limit(20)]),
-          databases.listDocuments(databaseId, BANNERS_COLLECTION, [Query.orderDesc('$createdAt'), Query.limit(5)]),
-          databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [Query.equal('isActive', true), Query.equal('status', 'active'), Query.limit(4)]),
+        // 💾 Caché con TTL para reducir lecturas en navegación entre páginas
+        const [prodDocs, catDocs, banDocs, offDocs] = await Promise.all([
+          cached('products:home', TTL.products, async () => {
+            const r = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.orderDesc('$createdAt'), Query.limit(8)]);
+            return r.documents;
+          }),
+          cached('categories:all', TTL.categories, async () => {
+            const r = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [Query.orderDesc('$createdAt'), Query.limit(20)]);
+            return r.documents;
+          }),
+          cached('banners:home', TTL.banners, async () => {
+            const r = await databases.listDocuments(databaseId, BANNERS_COLLECTION, [Query.orderDesc('$createdAt'), Query.limit(5)]);
+            return r.documents;
+          }),
+          cached('offers:home', TTL.offers, async () => {
+            const r = await databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [Query.equal('isActive', true), Query.equal('status', 'active'), Query.limit(4)]);
+            return r.documents;
+          }),
         ]);
-        setProducts((prodRes.documents as unknown as Product[]).filter(p => (p.STOCK || 0) > 0));
-        setCategories(catRes.documents as unknown as Category[]);
-        setBanners(banRes.documents as unknown as Banner[]);
-        setOffers((offRes.documents as unknown as TimedOffer[]).filter(isOfferActive));
+        setProducts((prodDocs as unknown as Product[]).filter(p => (p.STOCK || 0) > 0));
+        setCategories(catDocs as unknown as Category[]);
+        setBanners(banDocs as unknown as Banner[]);
+        setOffers((offDocs as unknown as TimedOffer[]).filter(isOfferActive));
       } catch (e) {
         console.error('Appwrite error:', e);
         setConfigError(true);

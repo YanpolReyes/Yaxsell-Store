@@ -6,6 +6,7 @@ import { Query } from 'appwrite';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Order, OrderStatus } from '@/types/admin';
 import { Search, RefreshCw, ChevronDown, Eye, AlertTriangle, X, Download, ArrowUpDown, ArrowUp, ArrowDown, MapPin } from 'lucide-react';
+import { getWarehouseLocationFromFeatures } from '@/lib/product-features';
 import Link from 'next/link';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
@@ -440,17 +441,8 @@ function OrdersContent() {
                                   if (locs[pid]) continue; // already cached
                                   try {
                                     const doc: any = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, pid);
-                                    const feat = doc.FEATURES || '';
-                                    const m = feat.match(/Section:\s*(\d+)/i);
-                                    const sec = m ? parseInt(m[1], 10) : null;
-                                    let gon: string | null = null;
-                                    if (sec !== null) {
-                                      if (sec >= 1 && sec <= 9) gon = 'A';
-                                      else if (sec >= 10 && sec <= 18) gon = 'B';
-                                      else if (sec >= 19 && sec <= 27) gon = 'C';
-                                      else if (sec >= 28 && sec <= 36) gon = 'D';
-                                    }
-                                    locs[pid] = { section: sec, gondola: gon };
+                                    const wh = getWarehouseLocationFromFeatures(doc.FEATURES);
+                                    locs[pid] = { section: wh.section, gondola: wh.gondola };
                                   } catch { locs[pid] = { section: null, gondola: null }; }
                                 }
                                 setProductLocations(locs);

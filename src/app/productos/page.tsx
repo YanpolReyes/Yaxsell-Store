@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { Search, Grid3x3, List, ShoppingCart, X, Heart, SlidersHorizontal, Sparkles, ChevronDown } from 'lucide-react';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, formatPrice } from '@/lib/appwrite';
 import { normalizeProductImages, getProductImageUrl } from '@/lib/product-images';
+import { cached, TTL } from '@/lib/cache';
 import { Query } from 'appwrite';
 import { Product, Category, Subcategory } from '@/types';
 import { useCart } from '@/context/CartContext';
@@ -60,9 +61,12 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      // 1. Cargar categorías primero
-      const catRes = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [Query.orderAsc('$createdAt'), Query.limit(30)]);
-      const cats = catRes.documents as unknown as Category[];
+      // 1. Cargar categorías primero (caché 30 min)
+      const catDocs = await cached('categories:all', TTL.categories, async () => {
+        const r = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [Query.orderAsc('$createdAt'), Query.limit(30)]);
+        return r.documents;
+      });
+      const cats = catDocs as unknown as Category[];
       setCategories(cats);
 
       // 2. Resolver nombre de categoría a ID
@@ -76,24 +80,31 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
         if (found) setSelectedCat(found.$id);
       }
 
-      // 3. Cargar TODOS los productos (filtrado client-side)
+      // 3. Cargar TODOS los productos (filtrado client-side, caché 15 min por orden)
       const queries: string[] = [Query.limit(1000), Query.greaterThan('STOCK', 0)];
       if (sortBy === 'newest') queries.push(Query.orderDesc('$createdAt'));
       else if (sortBy === 'price_asc') queries.push(Query.orderAsc('PRICE'));
       else if (sortBy === 'price_desc') queries.push(Query.orderDesc('PRICE'));
 
-      const prodRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, queries);
-      setProducts((prodRes.documents as unknown as Product[]).map((p) => normalizeProductImages(p)));
+      const prodDocs = await cached(`products:list:${sortBy}`, TTL.products, async () => {
+        const r = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, queries);
+        return r.documents;
+      });
+      setProducts((prodDocs as unknown as Product[]).map((p) => normalizeProductImages(p)));
 
-      // 4. Cargar subcategorías para la categoría seleccionada
+      // 4. Cargar subcategorías para la categoría seleccionada (caché 30 min)
       if (catIdToUse || selectedCat) {
         try {
-          const subRes = await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [
-            Query.equal('categoryId', catIdToUse || selectedCat),
-            Query.orderAsc('ORDER'),
-            Query.limit(50),
-          ]);
-          setSubcategories(subRes.documents as unknown as Subcategory[]);
+          const cid = catIdToUse || selectedCat;
+          const subDocs = await cached(`subcategories:${cid}`, TTL.categories, async () => {
+            const r = await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [
+              Query.equal('categoryId', cid),
+              Query.orderAsc('ORDER'),
+              Query.limit(50),
+            ]);
+            return r.documents;
+          });
+          setSubcategories(subDocs as unknown as Subcategory[]);
         } catch { setSubcategories([]); }
       } else {
         setSubcategories([]);
@@ -280,7 +291,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
                 {(lockedCategory?.name || 'C').charAt(0).toUpperCase()}
               </div>
             ) : (
-              <img className="pk-hero-banner-img" src="https://kevincoco-official.com/cdn/shop/files/52f32db865885fc4a91bee12d6b70ff0.jpg?v=1763188428&width=2528" alt="Portada catálogo" />
+              <img className="pk-hero-banner-img" src="/shopify/assets/template.jpg" alt="Portada catálogo" />
             )}
           </div>
           <div className="pk-hero-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, padding: 24 }}>

@@ -949,10 +949,10 @@ export default function DashboardPage() {
       const { databaseId } = getAppwriteConfig();
       const cutoff30d = new Date(Date.now() - 30 * 86400000).toISOString();
       const [productsResp, ordersResp, wholesaleResp, supportResp, notifsResp, allUsersRaw] = await Promise.all([
-        databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(500)]),
+        databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(10000)]),
         databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [Query.orderDesc('CREATEDAT'), Query.limit(500)]),
         databases.listDocuments(databaseId, WHOLESALE_REQUESTS_COLLECTION_ID, [Query.equal('status', 'pending'), Query.limit(50)]),
-        databases.listDocuments(databaseId, SUPPORT_TICKETS_COLLECTION_ID, [Query.notEqual('STATUS', 'closed'), Query.limit(50)]),
+        databases.listDocuments(databaseId, SUPPORT_TICKETS_COLLECTION_ID, [Query.notEqual('status', 'closed'), Query.limit(50)]),
         databases.listDocuments(databaseId, NOTIFICATIONS_COLLECTION_ID, [Query.equal('isRead', false), Query.limit(1)]),
         listAllUserProfiles(500),
       ]);
@@ -968,7 +968,7 @@ export default function DashboardPage() {
       const today = new Date(); today.setHours(0, 0, 0, 0);
       let todayOrders = 0;
       for (const o of orders) { if (o.CREATEDAT >= today.getTime()) todayOrders++; }
-      const lowStock = products.filter(p => (p.STOCK ?? 0) <= 5);
+      const lowStock = products.filter(p => { const s = p.STOCK ?? 0; return s > 0 && s < 3; });
       const top = [...products].sort((a, b) => (b.SOLDQUANTITY ?? 0) - (a.SOLDQUANTITY ?? 0)).slice(0, 6);
       setStats(s => ({ ...s, totalProducts: products.length, lowStockCount: lowStock.length, todayOrders }));
       setLowStockProducts(lowStock.slice(0, 5));

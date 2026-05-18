@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getServices, getAppwriteConfig, RAFFLES_COLLECTION, RAFFLE_PARTICIPANTS_COLLECTION } from '@/lib/appwrite';
-import { Query, ID } from 'appwrite';
+import { Client, Query, ID } from 'appwrite';
 import { useAuth } from '@/hooks/useAuth';
 import { Gift, Users, Trophy, Loader2 } from 'lucide-react';
 
@@ -68,31 +68,97 @@ export default function RaffleWidget({ liveStreamId }: Props) {
     }
   }, [liveStreamId]);
 
-  // Load participant count and check if user joined
-  useEffect(() => {
-    if (!raffle) return;
-    (async () => {
-      try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        const pRes = await databases.listDocuments(databaseId, RAFFLE_PARTICIPANTS_COLLECTION, [
-          Query.equal('raffleId', raffle.$id),
-          Query.limit(100),
-        ]);
-        setParticipantCount(pRes.total);
-        if (user) {
-          const userJoined = pRes.documents.some((d: any) => d.userId === user.id);
-          setJoined(userJoined);
-        }
-      } catch {}
-    })();
-  }, [raffle, user]);
+  // Load participant count and check if user joined (solo cuando cambia el raffle)
+  const loadParticipants = useCallback(async (raffleId: string) => {
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const pRes = await databases.listDocuments(databaseId, RAFFLE_PARTICIPANTS_COLLECTION, [
+        Query.equal('raffleId', raffleId),
+        Query.limit(100),
+      ]);
+      setParticipantCount(pRes.total);
+      if (user) {
+        const userJoined = pRes.documents.some((d: any) => d.userId === user.id);
+        setJoined(userJoined);
+      }
+    } catch {}
+  }, [user]);
 
   useEffect(() => {
+    if (!raffle) return;
+    loadParticipants(raffle.$id);
+  }, [raffle, loadParticipants]);
+
+  // 🚀 Carga inicial + Appwrite Realtime (WebSockets)
+  // Reemplaza el polling de 5s que generaba 17,280 reads/día por usuario.
+  // Realtime usa WebSocket - 0 lecturas adicionales mientras está conectado.
+  useEffect(() => {
     loadRaffle();
-    const interval = setInterval(loadRaffle, 5000);
-    return () => clearInterval(interval);
-  }, [loadRaffle]);
+
+    const { endpoint, projectId, databaseId } = getAppwriteConfig();
+    const realtimeClient = new Client().setEndpoint(endpoint).setProject(projectId);
+
+    // Suscripción a cambios en la colección de sorteos
+    const unsubRaffles = realtimeClient.subscribe(
+      `databases.${databaseId}.collections.${RAFFLES_COLLECTION}.documents`,
+      (response: any) => {
+        const events: string[] = response.events || [];
+        const isCreate = events.some(e => e.endsWith('.create'));
+        const isUpdate = events.some(e => e.endsWith('.update'));
+        const isDelete = events.some(e => e.endsWith('.delete'));
+        const doc = response.payload as any;
+
+        if (isCreate || isUpdate) {
+          // Filtrar por liveStreamId si aplica
+          if (liveStreamId && doc.liveId !== liveStreamId) return;
+          // Solo aceptar sorteos activos o completados (con winner)
+          if (doc.isActive || doc.winnerId) {
+            setRaffle(doc as LiveRaffle);
+            setLoading(false);
+          } else if (raffle?.$id === doc.$id) {
+            // El sorteo actual se desactivó: recargar para obtener el siguiente
+            loadRaffle();
+          }
+        } else if (isDelete && raffle?.$id === doc.$id) {
+          loadRaffle();
+        }
+      }
+    );
+
+    return () => {
+      try { unsubRaffles(); } catch {}
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveStreamId]);
+
+  // Realtime para participantes (actualiza contador sin polling)
+  useEffect(() => {
+    if (!raffle) return;
+    const { endpoint, projectId, databaseId } = getAppwriteConfig();
+    const realtimeClient = new Client().setEndpoint(endpoint).setProject(projectId);
+
+    const unsubParticipants = realtimeClient.subscribe(
+      `databases.${databaseId}.collections.${RAFFLE_PARTICIPANTS_COLLECTION}.documents`,
+      (response: any) => {
+        const events: string[] = response.events || [];
+        const doc = response.payload as any;
+        if (doc.raffleId !== raffle.$id) return;
+
+        if (events.some(e => e.endsWith('.create'))) {
+          setParticipantCount(prev => prev + 1);
+          if (user && doc.userId === user.id) setJoined(true);
+        } else if (events.some(e => e.endsWith('.delete'))) {
+          setParticipantCount(prev => Math.max(0, prev - 1));
+          if (user && doc.userId === user.id) setJoined(false);
+        }
+      }
+    );
+
+    return () => {
+      try { unsubParticipants(); } catch {}
+    };
+  }, [raffle, user]);
 
   async function handleJoin() {
     if (!raffle || !user || !isLoggedIn || joining || joined) return;

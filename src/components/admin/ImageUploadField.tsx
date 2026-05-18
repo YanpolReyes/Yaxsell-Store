@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { ID } from 'appwrite';
-import { getServices, getAppwriteConfig } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, MEDIA_PREFIXES, type MediaPrefix } from '@/lib/appwrite';
 import { Upload, Loader2, ExternalLink, X } from 'lucide-react';
 
 interface Props {
@@ -11,9 +11,10 @@ interface Props {
   onChange: (url: string) => void;
   bucketId: string;
   placeholder?: string;
+  prefix?: MediaPrefix;
 }
 
-export default function ImageUploadField({ label, value, onChange, bucketId, placeholder }: Props) {
+export default function ImageUploadField({ label, value, onChange, bucketId, placeholder, prefix = 'products' }: Props) {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -22,7 +23,7 @@ export default function ImageUploadField({ label, value, onChange, bucketId, pla
     try {
       const { storage } = getServices();
       const { endpoint, projectId } = getAppwriteConfig();
-      const fileId = ID.unique();
+      const fileId = MEDIA_PREFIXES[prefix] + ID.unique();
       await storage.createFile(bucketId, fileId, file);
       const url = `${endpoint}/storage/buckets/${bucketId}/files/${fileId}/view?project=${projectId}`;
       onChange(url);

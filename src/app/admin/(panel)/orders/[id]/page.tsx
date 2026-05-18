@@ -11,6 +11,7 @@ import {
   AlertTriangle, ExternalLink, Image as ImageIcon, MessageSquare, Calendar, DollarSign,
   Printer, Send, Ban, StickyNote, MapPinned, Receipt, Tag, XCircle,
 } from 'lucide-react';
+import { getWarehouseLocationFromFeatures, type ProductWarehouseLocation } from '@/lib/product-features';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; dot: string; icon: string }> = {
   pending:    { label: 'Pendiente de pago', bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400',   icon: '🕐' },
@@ -48,6 +49,7 @@ export default function OrderDetailPage() {
   const [notesSaved, setNotesSaved] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [productStocks, setProductStocks] = useState<Record<string, number>>({});
+  const [productLocations, setProductLocations] = useState<Record<string, ProductWarehouseLocation>>({});
   const [proofOpen, setProofOpen] = useState(false);
   const prevStatusRef = useRef<string | null>(null);
 
@@ -77,13 +79,19 @@ export default function OrderDetailPage() {
       const productIds = items.map(it => it.id).filter((id): id is string => Boolean(id));
       if (productIds.length > 0) {
         const stocks: Record<string, number> = {};
+        const locs: Record<string, ProductWarehouseLocation> = {};
         await Promise.all(productIds.map(async (pid) => {
           try {
             const product = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, pid);
-            stocks[pid] = (product as any).STOCK || 0;
+            const doc = product as { STOCK?: number; FEATURES?: string };
+            stocks[pid] = doc.STOCK || 0;
+            locs[pid] = getWarehouseLocationFromFeatures(doc.FEATURES);
           } catch {}
         }));
         setProductStocks(stocks);
+        setProductLocations(locs);
+      } else {
+        setProductLocations({});
       }
     } catch (e: any) {
       setError(e.message || 'Error al cargar el pedido');
@@ -374,6 +382,7 @@ export default function OrderDetailPage() {
               {items.map((it, i) => {
                 const currentStock = it.id ? (productStocks[it.id] ?? 0) : 0;
                 const remainingStock = order.STATUS === 'pending' ? currentStock - it.qty : currentStock;
+                const loc = it.id ? productLocations[it.id] : null;
                 return (
                   <div key={i} className="flex items-center gap-2.5 sm:gap-4 px-3 sm:px-5 py-2.5 sm:py-3.5 hover:bg-gray-50/50 transition">
                     <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
@@ -391,6 +400,12 @@ export default function OrderDetailPage() {
                           <span className="text-[9px] sm:text-[10px] line-through text-gray-300">{fmt(it.originalPrice)}</span>
                         )}
                       </div>
+                      {loc?.label && (
+                        <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 text-[10px] sm:text-xs font-bold print:bg-indigo-50 print:border print:border-indigo-200">
+                          <MapPin className="w-3 h-3 shrink-0" />
+                          {loc.label}
+                        </span>
+                      )}
                       {it.id && (
                         <div className="flex items-center gap-1 sm:gap-1.5 mt-1 flex-wrap no-print">
                           <span className={`text-[9px] sm:text-[10px] font-semibold px-1 sm:px-1.5 py-0.5 rounded ${remainingStock <= 0 ? 'bg-red-100 text-red-600' : remainingStock <= 5 ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-500'}`}>

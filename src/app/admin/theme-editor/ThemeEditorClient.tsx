@@ -16,7 +16,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { gradientTemplates } from '@/lib/gradient-templates';
 import { SectionConfig, SectionSettings, getSectionConfig, getSectionConfigAsync, invalidateSectionCache, saveSectionConfig, saveSectionConfigAsync, SECTION_DEFAULTS, FontConfig, FONT_OPTIONS, getFontConfig, saveFontConfig, buildGoogleFontsUrl, CollectionItem, MediaGalleryItem } from '@/lib/section-config';
-import { getServices, getAppwriteConfig, BANNERS_COLLECTION, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, TIMED_OFFERS_COLLECTION } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, BANNERS_COLLECTION, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, TIMED_OFFERS_COLLECTION, THEME_CONFIG_COLLECTION } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 import { Banner, Product, Category, TimedOffer } from '@/types';
 
@@ -49,7 +49,6 @@ const SECTION_ICON_MAP: Record<string, LucideIcon> = {
   faq: HelpCircle,
   map: MapPin,
   tpl1_announcement_bar: Megaphone,
-  tpl1_navbar: Navigation,
   tpl1_hero: Image,
   tpl1_coupon_banner: Ticket,
   tpl1_collection_list: FolderOpen,
@@ -130,7 +129,7 @@ const HEADER_IDS = ['announcement_bar', 'navbar', 'live_banner', 'hero_carousel'
 const FOOTER_IDS: string[] = [];
 const CM_HEADER_IDS = ['cm_navbar'];
 const CM_FOOTER_IDS = ['cm_footer'];
-const TPL1_HEADER_IDS = ['tpl1_announcement_bar', 'tpl1_navbar', 'tpl1_hero', 'tpl1_product_widget'];
+const TPL1_HEADER_IDS = ['tpl1_announcement_bar', 'tpl1_hero', 'tpl1_product_widget'];
 const TPL1_FOOTER_IDS = ['tpl1_subscribe_popup', 'tpl1_whatsapp_button', 'tpl1_chatbot_button', 'tpl1_footer'];
 
 function assignGroup(s: SectionConfig, isCustom = false, isTemplate1 = false): EditorSection {
@@ -186,7 +185,12 @@ function ThemeEditorPage() {
   const [generalOpen, setGeneralOpen] = useState(true);
   const [showFontPanel, setShowFontPanel] = useState(false);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  const [showTemplatesPanel, setShowTemplatesPanel] = useState(false);
   const [history, setHistory] = useState<Array<{ id: string; timestamp: number; sections: SectionConfig[]; label?: string }>>([]);
+  const [templates, setTemplates] = useState<Array<{ $id: string; NAME: string; SECTIONS: string; UPDATED: string }>>([]);
+  const [activeTemplateId, setActiveTemplateId] = useState<string>(() => { try { return localStorage.getItem('te-active-template') || 'original'; } catch { return 'original'; } });
+  const [newTemplateName, setNewTemplateName] = useState('');
+  const [templateLoading, setTemplateLoading] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Load sections + fonts (from Appwrite with localStorage fallback)
@@ -410,16 +414,113 @@ function ThemeEditorPage() {
     try { localStorage.removeItem(HISTORY_KEY); } catch {}
   }, []);
 
-  // â”€â”€ Save (explicit) â”€â”€
+  // ── Templates: load from Appwrite ──
+  const loadTemplates = useCallback(async () => {
+    try {
+      const { databases } = getServices();
+      const dbId = getAppwriteConfig().databaseId;
+      const res = await databases.listDocuments(dbId, THEME_CONFIG_COLLECTION, [Query.orderDesc('$updatedAt')]);
+      setTemplates(res.documents.map((d: Record<string, unknown>) => ({
+        $id: d.$id as string,
+        NAME: d.NAME as string,
+        SECTIONS: d.SECTIONS as string,
+        UPDATED: d.$updatedAt as string,
+      })));
+    } catch { /* collection may not exist yet */ }
+  }, []);
+
+  useEffect(() => { loadTemplates(); }, [loadTemplates]);
+
+  // â”€â”€ Templates: save current sections to a template doc â”€â”€
+  const saveTemplateToAppwrite = useCallback(async (docId: string, secs: EditorSection[]) => {
+    try {
+      const { databases } = getServices();
+      const dbId = getAppwriteConfig().databaseId;
+      const data = { SECTIONS: JSON.stringify(secs.map(s => ({ id: s.id, label: s.label, description: s.description, icon: s.icon, enabled: s.enabled, order: s.order, locked: s.locked, settings: s.settings, group: s.group }))) };
+      await databases.updateDocument(dbId, THEME_CONFIG_COLLECTION, docId, data);
+    } catch (e) { console.error('[Templates] save error:', e); }
+  }, []);
+
+  // â”€â”€ Templates: create new â”€â”€
+  const createTemplate = useCallback(async () => {
+    const name = newTemplateName.trim();
+    if (!name) return;
+    setTemplateLoading(true);
+    try {
+      const { databases } = getServices();
+      const dbId = getAppwriteConfig().databaseId;
+      const data = {
+        NAME: name,
+        SECTIONS: JSON.stringify(sections.map(s => ({ id: s.id, label: s.label, description: s.description, icon: s.icon, enabled: s.enabled, order: s.order, locked: s.locked, settings: s.settings, group: s.group }))),
+      };
+      const doc = await databases.createDocument(dbId, THEME_CONFIG_COLLECTION, 'unique()', data);
+      setTemplates(prev => [{ $id: doc.$id, NAME: name, SECTIONS: data.SECTIONS, UPDATED: new Date().toISOString() }, ...prev]);
+      setActiveTemplateId(doc.$id);
+      try { localStorage.setItem('te-active-template', doc.$id); } catch {}
+      setNewTemplateName('');
+      await loadTemplates();
+    } catch (e) { console.error('[Templates] create error:', e); }
+    setTemplateLoading(false);
+  }, [newTemplateName, sections, loadTemplates]);
+
+  // â”€â”€ Templates: load (switch to) â”€â”€ always fetch fresh from Appwrite
+  const loadTemplate = useCallback(async (templateId: string) => {
+    if (templateId === 'original') {
+      // Restore defaults
+      if (!confirm('¿Restaurar valores predeterminados? Se perderán los cambios actuales.')) return;
+      const defaults = isTemplate1
+        ? SECTION_DEFAULTS.filter(s => s.id.startsWith('tpl1_')).map(s => assignGroup(s, false, true))
+        : isCustomTemplate
+          ? SECTION_DEFAULTS.filter(s => s.id.startsWith('cm_')).map(s => assignGroup(s, true, false))
+          : SECTION_DEFAULTS.filter(s => !s.id.startsWith('cm_') && !s.id.startsWith('tpl1_')).map(s => assignGroup(s, false, false));
+      setSections(defaults as EditorSection[]);
+      persistAndSync(defaults as EditorSection[]);
+      setActiveTemplateId('original');
+      try { localStorage.setItem('te-active-template', 'original'); } catch {}
+      return;
+    }
+    // Fetch fresh from Appwrite (not stale in-memory)
+    try {
+      const { databases } = getServices();
+      const dbId = getAppwriteConfig().databaseId;
+      const doc = await databases.getDocument(dbId, THEME_CONFIG_COLLECTION, templateId);
+      const raw = doc.SECTIONS as string;
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      const restored = parsed.map((s: SectionConfig) => assignGroup(s, isCustomTemplate, isTemplate1));
+      setSections(restored as EditorSection[]);
+      persistAndSync(restored as EditorSection[]);
+      setActiveTemplateId(templateId);
+      try { localStorage.setItem('te-active-template', templateId); } catch {}
+    } catch (e) { console.error('[Templates] load error:', e); }
+  }, [isTemplate1, isCustomTemplate, persistAndSync]);
+
+  // â”€â”€ Templates: delete â”€â”€
+  const deleteTemplate = useCallback(async (templateId: string) => {
+    if (!confirm('¿Eliminar esta plantilla?')) return;
+    try {
+      const { databases } = getServices();
+      const dbId = getAppwriteConfig().databaseId;
+      await databases.deleteDocument(dbId, THEME_CONFIG_COLLECTION, templateId);
+      setTemplates(prev => prev.filter(t => t.$id !== templateId));
+      if (activeTemplateId === templateId) { setActiveTemplateId('original'); try { localStorage.setItem('te-active-template', 'original'); } catch {} }
+    } catch (e) { console.error('[Templates] delete error:', e); }
+  }, [activeTemplateId]);
+
+  // ── Save (explicit) ──
   const handleSave = useCallback(() => {
     setSaving(true);
     persistAndSync(sections);
     saveHistorySnapshot(sections);
+    // Also save to active template in Appwrite if not 'original'
+    if (activeTemplateId !== 'original') {
+      saveTemplateToAppwrite(activeTemplateId, sections).then(() => loadTemplates());
+    }
     setSaving(false);
     setSaved(true);
     setHasChanges(false);
     setTimeout(() => setSaved(false), 2500);
-  }, [sections, persistAndSync, saveHistorySnapshot]);
+  }, [sections, persistAndSync, saveHistorySnapshot, activeTemplateId, saveTemplateToAppwrite, loadTemplates]);
 
   // â”€â”€ Toggle section enabled â”€â”€
   function toggleEnabled(id: string) {
@@ -514,7 +615,7 @@ function ThemeEditorPage() {
   const [dragOverLocalIdx, setDragOverLocalIdx] = useState<number|null>(null);
 
   // Header sections con orden fijo inmutable
-  const FIXED_HEADER_ORDER = ['tpl1_announcement_bar', 'tpl1_navbar', 'tpl1_hero', 'tpl1_product_widget'];
+  const FIXED_HEADER_ORDER = ['tpl1_announcement_bar', 'tpl1_hero', 'tpl1_product_widget'];
   // Footer sections con orden fijo inmutable
   const FIXED_FOOTER_ORDER = ['tpl1_subscribe_popup', 'tpl1_whatsapp_button', 'tpl1_chatbot_button', 'tpl1_footer'];
 
@@ -781,6 +882,94 @@ function ThemeEditorPage() {
             />
           </div>
         )}
+        {/* â”€â”€ TEMPLATES PANEL â”€â”€ */}
+        {showTemplatesPanel && (
+          <div style={{ width: 320, background: '#fff', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'hidden', animation: 'te-slideIn 0.2s cubic-bezier(0.2,1,0.3,1) both' }}>
+            {/* Header */}
+            <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <LayoutGrid size={16} color="#6366f1" />
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Plantillas</span>
+              </div>
+              <button onClick={() => setShowTemplatesPanel(false)} style={{ width: 28, height: 28, borderRadius: 6, background: '#f3f4f6', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={14} color="#6b7280" />
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflow: 'auto', padding: '12px 14px' }}>
+              {/* Active template indicator */}
+              <div style={{ marginBottom: 14, padding: '10px 12px', borderRadius: 10, background: activeTemplateId === 'original' ? '#f0fdf4' : '#eef2ff', border: `1px solid ${activeTemplateId === 'original' ? '#bbf7d0' : '#c7d2fe'}` }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: activeTemplateId === 'original' ? '#16a34a' : '#4338ca', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Plantilla activa
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginTop: 2 }}>
+                  {activeTemplateId === 'original' ? 'Original (predeterminada)' : templates.find(t => t.$id === activeTemplateId)?.NAME || 'Desconocida'}
+                </div>
+              </div>
+
+              {/* Original template */}
+              <button onClick={() => loadTemplate('original')}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 10, border: `2px solid ${activeTemplateId === 'original' ? '#6366f1' : '#e5e7eb'}`, background: activeTemplateId === 'original' ? '#eef2ff' : '#fff', cursor: 'pointer', marginBottom: 8, transition: 'all 0.15s', textAlign: 'left' }}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: 'linear-gradient(135deg, #6366f1, #818cf8)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <RotateCcw size={16} color="#fff" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>Original</div>
+                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>Restaurar valores predeterminados</div>
+                </div>
+                {activeTemplateId === 'original' && <CheckCircle size={16} color="#6366f1" />}
+              </button>
+
+              {/* Separator */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '12px 0' }}>
+                <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Plantillas por cliente</span>
+                <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
+              </div>
+
+              {/* Create new template */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                <input value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} placeholder="Nombre del cliente..." onKeyDown={e => e.key === 'Enter' && createTemplate()}
+                  style={{ flex: 1, fontSize: 12, padding: '7px 10px', borderRadius: 8, border: '1px solid #e5e7eb', outline: 'none' }} />
+                <button onClick={createTemplate} disabled={templateLoading || !newTemplateName.trim()}
+                  style={{ padding: '7px 12px', borderRadius: 8, border: 'none', background: newTemplateName.trim() ? '#6366f1' : '#e5e7eb', color: newTemplateName.trim() ? '#fff' : '#9ca3af', fontSize: 11, fontWeight: 700, cursor: newTemplateName.trim() ? 'pointer' : 'default', whiteSpace: 'nowrap' }}>
+                  <Plus size={12} style={{ display: 'inline', verticalAlign: -2 }} /> Crear
+                </button>
+              </div>
+
+              {/* Template list */}
+              {templates.length === 0 && (
+                <div style={{ textAlign: 'center', padding: 24 }}>
+                  <FileText size={28} color="#d1d5db" style={{ margin: '0 auto 8px', display: 'block' }} />
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280' }}>Sin plantillas de cliente</div>
+                  <div style={{ fontSize: 11, marginTop: 4, color: '#9ca3af', lineHeight: 1.5 }}>
+                    Crea una plantilla para personalizar la tienda de cada cliente por separado.
+                  </div>
+                </div>
+              )}
+              {templates.map(tpl => (
+                <div key={tpl.$id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 8, border: `2px solid ${activeTemplateId === tpl.$id ? '#6366f1' : '#e5e7eb'}`, background: activeTemplateId === tpl.$id ? '#eef2ff' : '#fff', marginBottom: 6, cursor: 'pointer', transition: 'all 0.15s' }}
+                  onClick={() => loadTemplate(tpl.$id)}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: activeTemplateId === tpl.$id ? '#6366f1' : '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <FileText size={14} color={activeTemplateId === tpl.$id ? '#fff' : '#9ca3af'} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tpl.NAME}</div>
+                    <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 1 }}>
+                      {tpl.UPDATED ? new Date(tpl.UPDATED).toLocaleDateString('es', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Sin guardar'}
+                    </div>
+                  </div>
+                  <button onClick={e => { e.stopPropagation(); deleteTemplate(tpl.$id); }}
+                    style={{ width: 24, height: 24, borderRadius: 6, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d1d5db', transition: 'color 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = '#d1d5db'; }}>
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* â”€â”€ RIGHT COLUMN: Preview top bar + iframe â”€â”€ */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -850,6 +1039,14 @@ function ThemeEditorPage() {
               style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 8, background: saved ? '#10b981' : '#6366f1', color: '#fff', border: 'none', cursor: 'pointer', transition: 'background 0.15s' }}>
               {saving ? <Loader size={12} style={{ animation: 'te-spin 1s linear infinite' }} /> : saved ? <CheckCircle size={12} /> : <Save size={12} />}
               {saved ? 'Guardado' : 'Guardar'}
+            </button>
+
+            <button
+              onClick={() => setShowTemplatesPanel(v => !v)}
+              title="Plantillas"
+              style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, padding: '6px 10px', borderRadius: 8, background: showTemplatesPanel ? '#eef2ff' : '#fff', color: showTemplatesPanel ? '#4338ca' : '#374151', border: `1px solid ${showTemplatesPanel ? '#c7d2fe' : '#e5e7eb'}`, cursor: 'pointer', transition: 'all 0.15s' }}>
+              <LayoutGrid size={13} />
+              Plantillas
             </button>
           </header>
 
@@ -1103,7 +1300,7 @@ function SettingsPanel({ section, onClose, onUpdate, onToggle, onIframeReload }:
   onUpdate: (p: Partial<SectionSettings>) => void; onToggle: () => void; onIframeReload: () => void;
 }) {
   const baseId = getSectionBaseId(section.id);
-  const [tab, setTab] = useState<'design' | 'content'>(() => baseId === 'product_widget' ? 'content' : 'design');
+  const [activeTab, setActiveTab] = useState<'content' | 'style'>('content');
 
   return (
     <>
@@ -1127,26 +1324,23 @@ function SettingsPanel({ section, onClose, onUpdate, onToggle, onIframeReload }:
           </button>
         </div>
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 0, marginTop: 14 }}>
-          {(['design', 'content'] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              style={{
-                flex: 1, padding: '10px 0 9px', fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer',
-                background: 'none', color: tab === t ? '#4338ca' : '#9ca3af',
-                borderBottom: tab === t ? '2.5px solid #6366f1' : '2.5px solid transparent',
-                textTransform: 'uppercase', letterSpacing: '0.06em', transition: 'all 0.15s',
-              }}>
-              {t === 'design' ? 'Diseño' : 'Contenido'}
-            </button>
-          ))}
+        <div style={{ display: 'flex', gap: 0, marginTop: 10 }}>
+          <button onClick={() => setActiveTab('content')}
+            style={{ flex: 1, padding: '7px 0', fontSize: 11, fontWeight: 700, border: 'none', borderBottom: activeTab === 'content' ? '2px solid #6366f1' : '2px solid transparent', background: 'transparent', color: activeTab === 'content' ? '#6366f1' : '#9ca3af', cursor: 'pointer', transition: 'all 0.15s' }}>
+            Contenido
+          </button>
+          <button onClick={() => setActiveTab('style')}
+            style={{ flex: 1, padding: '7px 0', fontSize: 11, fontWeight: 700, border: 'none', borderBottom: activeTab === 'style' ? '2px solid #6366f1' : '2px solid transparent', background: 'transparent', color: activeTab === 'style' ? '#6366f1' : '#9ca3af', cursor: 'pointer', transition: 'all 0.15s' }}>
+            Estilo
+          </button>
         </div>
       </div>
 
       <div style={{ padding: '12px 16px', flex: 1, overflowY: 'auto' }}>
-        {tab === 'design' ? (
-          <DesignFields baseId={baseId} section={section} onUpdate={onUpdate} />
-        ) : (
+        {activeTab === 'content' ? (
           <ContentFields baseId={baseId} section={section} onUpdate={onUpdate} onIframeReload={onIframeReload} />
+        ) : (
+          <DesignFields baseId={baseId} section={section} onUpdate={onUpdate} />
         )}
       </div>
     </>
@@ -1720,39 +1914,46 @@ function DesignFields({ baseId, section, onUpdate }: {
 
     case 'announcement_bar': {
       const ABAR_GRADS = [
-        { id:'original',  l:'Original',    g:'',                                                                    preview:'linear-gradient(90deg,#f5f5f5,#e8e8e8,#f5f5f5)' },
-        { id:'noir',      l:'Noir',        g:'linear-gradient(90deg,#0a0a0a,#1a1a1a,#0a0a0a)',                     preview:'linear-gradient(90deg,#0a0a0a,#1a1a1a,#0a0a0a)' },
-        { id:'silver',    l:'Plata',       g:'linear-gradient(90deg,#e5e5e5,#f5f5f5,#e5e5e5)',                     preview:'linear-gradient(90deg,#e5e5e5,#f5f5f5,#e5e5e5)' },
-        { id:'charcoal',  l:'Carbón',      g:'linear-gradient(90deg,#2d2d2d,#3d3d3d,#2d2d2d)',                     preview:'linear-gradient(90deg,#2d2d2d,#3d3d3d,#2d2d2d)' },
-        { id:'ivory',     l:'Marfil',      g:'linear-gradient(90deg,#fffff0,#faf8f0,#fffff0)',                     preview:'linear-gradient(90deg,#fffff0,#faf8f0,#fffff0)' },
-        { id:'rose',      l:'Rosa',        g:'linear-gradient(90deg,#fff1f2,#ffe4e6,#fff1f2)',                     preview:'linear-gradient(90deg,#fff1f2,#ffe4e6,#fff1f2)' },
-        { id:'sage',      l:'Salvia',      g:'linear-gradient(90deg,#f0fdf4,#dcfce7,#f0fdf4)',                     preview:'linear-gradient(90deg,#f0fdf4,#dcfce7,#f0fdf4)' },
-        { id:'sand',      l:'Arena',       g:'linear-gradient(90deg,#fef3c7,#fde68a,#fef3c7)',                     preview:'linear-gradient(90deg,#fef3c7,#fde68a,#fef3c7)' },
-        { id:'slate',     l:'Pizarra',     g:'linear-gradient(90deg,#1e293b,#334155,#1e293b)',                     preview:'linear-gradient(90deg,#1e293b,#334155,#1e293b)' },
-        { id:'obsidian',  l:'Obsidiana',   g:'linear-gradient(90deg,#18181b,#27272a,#18181b)',                     preview:'linear-gradient(90deg,#18181b,#27272a,#18181b)' },
-        { id:'cream',     l:'Crema',       g:'linear-gradient(90deg,#fefce8,#fef9c3,#fefce8)',                     preview:'linear-gradient(90deg,#fefce8,#fef9c3,#fefce8)' },
-        { id:'mist',      l:'Neblina',     g:'linear-gradient(90deg,#f8fafc,#e2e8f0,#f8fafc)',                     preview:'linear-gradient(90deg,#f8fafc,#e2e8f0,#f8fafc)' },
-        { id:'white',     l:'Blanco',      g:'linear-gradient(90deg,#ffffff,#f8fafc,#ffffff)',                     preview:'linear-gradient(90deg,#ffffff,#f8fafc,#ffffff)' },
-        // ── NUEVOS: Degradados de fondo ──
-        { id:'sunset',    l:'Atardecer',   g:'linear-gradient(90deg,#ffecd2,#fcb69f,#ff9a9e)',                     preview:'linear-gradient(90deg,#ffecd2,#fcb69f,#ff9a9e)' },
-        { id:'ocean',     l:'Océano',      g:'linear-gradient(90deg,#a1c4fd,#c2e9fb,#e0c3fc)',                     preview:'linear-gradient(90deg,#a1c4fd,#c2e9fb,#e0c3fc)' },
-        { id:'forest',    l:'Bosque',      g:'linear-gradient(90deg,#d4fc79,#96e6a1,#a8e6cf)',                     preview:'linear-gradient(90deg,#d4fc79,#96e6a1,#a8e6cf)' },
-        { id:'lavender',  l:'Lavanda',     g:'linear-gradient(90deg,#e0c3fc,#c2a5f9,#b794f4)',                     preview:'linear-gradient(90deg,#e0c3fc,#c2a5f9,#b794f4)' },
-        { id:'peach',     l:'Durazno',     g:'linear-gradient(90deg,#ffd89b,#f7b733,#fc4a1a)',                     preview:'linear-gradient(90deg,#ffd89b,#f7b733,#fc4a1a)' },
-        { id:'mint',      l:'Menta',       g:'linear-gradient(90deg,#a8e6cf,#dcedc1,#c8e6c9)',                     preview:'linear-gradient(90deg,#a8e6cf,#dcedc1,#c8e6c9)' },
-        { id:'cherry',    l:'Cereza',      g:'linear-gradient(90deg,#f9d5e5,#eeac99,#e06377)',                     preview:'linear-gradient(90deg,#f9d5e5,#eeac99,#e06377)' },
-        { id:'twilight',  l:'Crepúsculo',  g:'linear-gradient(90deg,#2c3e50,#3498db,#8e44ad)',                     preview:'linear-gradient(90deg,#2c3e50,#3498db,#8e44ad)' },
-        { id:'golden',    l:'Dorado',      g:'linear-gradient(90deg,#f5af19,#f12711,#f5af19)',                     preview:'linear-gradient(90deg,#f5af19,#f12711,#f5af19)' },
-        { id:'coral',     l:'Coral',       g:'linear-gradient(90deg,#ff9a9e,#fecfef,#fdfcfb)',                     preview:'linear-gradient(90deg,#ff9a9e,#fecfef,#fdfcfb)' },
-        { id:'sky',       l:'Cielo',       g:'linear-gradient(90deg,#89f7fe,#66a6ff,#c2e9fb)',                     preview:'linear-gradient(90deg,#89f7fe,#66a6ff,#c2e9fb)' },
-        { id:'grape',     l:'Uva',         g:'linear-gradient(90deg,#e8d5b7,#c9a7eb,#a18cd1)',                     preview:'linear-gradient(90deg,#e8d5b7,#c9a7eb,#a18cd1)' },
-        { id:'neon',      l:'Neón',        g:'linear-gradient(90deg,#f093fb,#f5576c,#4facfe)',                     preview:'linear-gradient(90deg,#f093fb,#f5576c,#4facfe)' },
-        { id:'blush',     l:'Rubor',       g:'linear-gradient(90deg,#fbc2eb,#a6c1ee,#fbc2eb)',                     preview:'linear-gradient(90deg,#fbc2eb,#a6c1ee,#fbc2eb)' },
-        { id:'emerald',   l:'Esmeralda',   g:'linear-gradient(90deg,#11998e,#38ef7d,#11998e)',                     preview:'linear-gradient(90deg,#11998e,#38ef7d,#11998e)' },
-        { id:'midnight',  l:'Medianoche',  g:'linear-gradient(90deg,#0f0c29,#302b63,#24243e)',                     preview:'linear-gradient(90deg,#0f0c29,#302b63,#24243e)' },
-        { id:'flamingo',  l:'Flamenco',    g:'linear-gradient(90deg,#f9d423,#ff4e50,#f9d423)',                     preview:'linear-gradient(90deg,#f9d423,#ff4e50,#f9d423)' },
-        { id:'arctic',    l:'Ártico',      g:'linear-gradient(90deg,#e0eafc,#cfdef3,#e0eafc)',                     preview:'linear-gradient(90deg,#e0eafc,#cfdef3,#e0eafc)' },
-        { id:'rosegold',  l:'Rosa Oro',    g:'linear-gradient(90deg,#f9d5e5,#f7cac9,#f5b7b1)',                     preview:'linear-gradient(90deg,#f9d5e5,#f7cac9,#f5b7b1)' },
+        { id:'original',  l:'Original',    g:'',                                                                    tc:'',  preview:'linear-gradient(90deg,#f5f5f5,#e8e8e8,#f5f5f5)' },
+        { id:'noir',      l:'Noir',        g:'linear-gradient(90deg,#0a0a0a,#1a1a1a,#0a0a0a)',                     tc:'#ffffff',  preview:'linear-gradient(90deg,#0a0a0a,#1a1a1a,#0a0a0a)' },
+        { id:'silver',    l:'Plata',       g:'linear-gradient(90deg,#e5e5e5,#f5f5f5,#e5e5e5)',                     tc:'#374151',  preview:'linear-gradient(90deg,#e5e5e5,#f5f5f5,#e5e5e5)' },
+        { id:'charcoal',  l:'Carbón',      g:'linear-gradient(90deg,#2d2d2d,#3d3d3d,#2d2d2d)',                     tc:'#f9fafb',  preview:'linear-gradient(90deg,#2d2d2d,#3d3d3d,#2d2d2d)' },
+        { id:'ivory',     l:'Marfil',      g:'linear-gradient(90deg,#fffff0,#faf8f0,#fffff0)',                     tc:'#78350f',  preview:'linear-gradient(90deg,#fffff0,#faf8f0,#fffff0)' },
+        { id:'rose',      l:'Rosa',        g:'linear-gradient(90deg,#fff1f2,#ffe4e6,#fff1f2)',                     tc:'#9f1239',  preview:'linear-gradient(90deg,#fff1f2,#ffe4e6,#fff1f2)' },
+        { id:'sage',      l:'Salvia',      g:'linear-gradient(90deg,#f0fdf4,#dcfce7,#f0fdf4)',                     tc:'#14532d',  preview:'linear-gradient(90deg,#f0fdf4,#dcfce7,#f0fdf4)' },
+        { id:'sand',      l:'Arena',       g:'linear-gradient(90deg,#fef3c7,#fde68a,#fef3c7)',                     tc:'#78350f',  preview:'linear-gradient(90deg,#fef3c7,#fde68a,#fef3c7)' },
+        { id:'slate',     l:'Pizarra',     g:'linear-gradient(90deg,#1e293b,#334155,#1e293b)',                     tc:'#e2e8f0',  preview:'linear-gradient(90deg,#1e293b,#334155,#1e293b)' },
+        { id:'obsidian',  l:'Obsidiana',   g:'linear-gradient(90deg,#18181b,#27272a,#18181b)',                     tc:'#fafafa',  preview:'linear-gradient(90deg,#18181b,#27272a,#18181b)' },
+        { id:'cream',     l:'Crema',       g:'linear-gradient(90deg,#fefce8,#fef9c3,#fefce8)',                     tc:'#713f12',  preview:'linear-gradient(90deg,#fefce8,#fef9c3,#fefce8)' },
+        { id:'mist',      l:'Neblina',     g:'linear-gradient(90deg,#f8fafc,#e2e8f0,#f8fafc)',                     tc:'#334155',  preview:'linear-gradient(90deg,#f8fafc,#e2e8f0,#f8fafc)' },
+        { id:'white',     l:'Blanco',      g:'linear-gradient(90deg,#ffffff,#f8fafc,#ffffff)',                     tc:'#111827',  preview:'linear-gradient(90deg,#ffffff,#f8fafc,#ffffff)' },
+        // ── Degradados vibrantes ──
+        { id:'sunset',    l:'Atardecer',   g:'linear-gradient(90deg,#ffecd2,#fcb69f,#ff9a9e)',                     tc:'#7c2d12',  preview:'linear-gradient(90deg,#ffecd2,#fcb69f,#ff9a9e)' },
+        { id:'ocean',     l:'Océano',      g:'linear-gradient(90deg,#a1c4fd,#c2e9fb,#e0c3fc)',                     tc:'#1e3a5f',  preview:'linear-gradient(90deg,#a1c4fd,#c2e9fb,#e0c3fc)' },
+        { id:'forest',    l:'Bosque',      g:'linear-gradient(90deg,#d4fc79,#96e6a1,#a8e6cf)',                     tc:'#14532d',  preview:'linear-gradient(90deg,#d4fc79,#96e6a1,#a8e6cf)' },
+        { id:'lavender',  l:'Lavanda',     g:'linear-gradient(90deg,#e0c3fc,#c2a5f9,#b794f4)',                     tc:'#ffffff',  preview:'linear-gradient(90deg,#e0c3fc,#c2a5f9,#b794f4)' },
+        { id:'peach',     l:'Durazno',     g:'linear-gradient(90deg,#ffd89b,#f7b733,#fc4a1a)',                     tc:'#ffffff',  preview:'linear-gradient(90deg,#ffd89b,#f7b733,#fc4a1a)' },
+        { id:'mint',      l:'Menta',       g:'linear-gradient(90deg,#a8e6cf,#dcedc1,#c8e6c9)',                     tc:'#14532d',  preview:'linear-gradient(90deg,#a8e6cf,#dcedc1,#c8e6c9)' },
+        { id:'cherry',    l:'Cereza',      g:'linear-gradient(90deg,#f9d5e5,#eeac99,#e06377)',                     tc:'#ffffff',  preview:'linear-gradient(90deg,#f9d5e5,#eeac99,#e06377)' },
+        { id:'twilight',  l:'Crepúsculo',  g:'linear-gradient(90deg,#2c3e50,#3498db,#8e44ad)',                     tc:'#ffffff',  preview:'linear-gradient(90deg,#2c3e50,#3498db,#8e44ad)' },
+        { id:'golden',    l:'Dorado',      g:'linear-gradient(90deg,#f5af19,#f12711,#f5af19)',                     tc:'#ffffff',  preview:'linear-gradient(90deg,#f5af19,#f12711,#f5af19)' },
+        { id:'coral',     l:'Coral',       g:'linear-gradient(90deg,#ff9a9e,#fecfef,#fdfcfb)',                     tc:'#881337',  preview:'linear-gradient(90deg,#ff9a9e,#fecfef,#fdfcfb)' },
+        { id:'sky',       l:'Cielo',       g:'linear-gradient(90deg,#89f7fe,#66a6ff,#c2e9fb)',                     tc:'#1e3a5f',  preview:'linear-gradient(90deg,#89f7fe,#66a6ff,#c2e9fb)' },
+        { id:'grape',     l:'Uva',         g:'linear-gradient(90deg,#e8d5b7,#c9a7eb,#a18cd1)',                     tc:'#ffffff',  preview:'linear-gradient(90deg,#e8d5b7,#c9a7eb,#a18cd1)' },
+        { id:'neon',      l:'Neón',        g:'linear-gradient(90deg,#f093fb,#f5576c,#4facfe)',                     tc:'#ffffff',  preview:'linear-gradient(90deg,#f093fb,#f5576c,#4facfe)' },
+        { id:'blush',     l:'Rubor',       g:'linear-gradient(90deg,#fbc2eb,#a6c1ee,#fbc2eb)',                     tc:'#1e3a5f',  preview:'linear-gradient(90deg,#fbc2eb,#a6c1ee,#fbc2eb)' },
+        { id:'emerald',   l:'Esmeralda',   g:'linear-gradient(90deg,#11998e,#38ef7d,#11998e)',                     tc:'#ffffff',  preview:'linear-gradient(90deg,#11998e,#38ef7d,#11998e)' },
+        { id:'midnight',  l:'Medianoche',  g:'linear-gradient(90deg,#0f0c29,#302b63,#24243e)',                     tc:'#ffffff',  preview:'linear-gradient(90deg,#0f0c29,#302b63,#24243e)' },
+        { id:'flamingo',  l:'Flamenco',    g:'linear-gradient(90deg,#f9d423,#ff4e50,#f9d423)',                     tc:'#ffffff',  preview:'linear-gradient(90deg,#f9d423,#ff4e50,#f9d423)' },
+        { id:'arctic',    l:'Ártico',      g:'linear-gradient(90deg,#e0eafc,#cfdef3,#e0eafc)',                     tc:'#1e3a5f',  preview:'linear-gradient(90deg,#e0eafc,#cfdef3,#e0eafc)' },
+        { id:'rosegold',  l:'Rosa Oro',    g:'linear-gradient(90deg,#f9d5e5,#f7cac9,#f5b7b1)',                     tc:'#881337',  preview:'linear-gradient(90deg,#f9d5e5,#f7cac9,#f5b7b1)' },
+        // ── Bicolor ──
+        { id:'bw',        l:'Blanco/Negro', g:'linear-gradient(90deg,#ffffff,#111111)',                            tc:'#111111',  preview:'linear-gradient(90deg,#ffffff,#111111)' },
+        { id:'wb',        l:'Negro/Blanco', g:'linear-gradient(90deg,#111111,#ffffff)',                            tc:'#ffffff',  preview:'linear-gradient(90deg,#111111,#ffffff)' },
+        { id:'pinkwhite', l:'Rosa/Blanco',  g:'linear-gradient(90deg,#ec4899,#ffffff)',                           tc:'#831843',  preview:'linear-gradient(90deg,#ec4899,#ffffff)' },
+        { id:'purpleorange', l:'Morado/Naranja', g:'linear-gradient(90deg,#a855f7,#f97316)',                     tc:'#ffffff',  preview:'linear-gradient(90deg,#a855f7,#f97316)' },
+        { id:'bluepink',  l:'Azul/Rosa',   g:'linear-gradient(90deg,#3b82f6,#ec4899)',                           tc:'#ffffff',  preview:'linear-gradient(90deg,#3b82f6,#ec4899)' },
+        { id:'greenwhite', l:'Verde/Blanco', g:'linear-gradient(90deg,#22c55e,#ffffff)',                          tc:'#14532d',  preview:'linear-gradient(90deg,#22c55e,#ffffff)' },
       ];
       const hasGrad = !!s.bgGradient;
       const isOriginal = !s.bgGradient && !s.bgColor && !s.textColor && !s._useOriginal;
@@ -1767,7 +1968,7 @@ function DesignFields({ baseId, section, onUpdate }: {
         <SH>Degradados</SH>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 5 }}>
           {ABAR_GRADS.map(g => (
-            <button key={g.id} onClick={() => onUpdate({ bgGradient: g.g, gradientAnimated: true })}
+            <button key={g.id} onClick={() => onUpdate({ bgGradient: g.g, gradientAnimated: true, ...(g.tc ? { textColor: g.tc } : { textColor: undefined }) })}
               style={{ padding: 0, border: `2px solid ${s.bgGradient === g.g ? '#5850ec' : '#e5e7eb'}`, borderRadius: 6, cursor: 'pointer', overflow: 'hidden', background: 'none' }}>
               <div style={{ height: 22, background: g.preview }} />
               <div style={{ fontSize: 9, padding: '2px 4px', fontWeight: 600, background: s.bgGradient === g.g ? '#ede9fe' : '#fff', color: '#374151' }}>{g.l}</div>
@@ -1952,24 +2153,94 @@ function DesignFields({ baseId, section, onUpdate }: {
       </div>);
 
     case 'coupon_banner': {
-      const P = [
-        { id: 'aurora',    l: 'Aurora',     bg: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)', tx: '#fff', ac: '#fbbf24', r: 16, pd: 20, sh: 'lg' as const },
-        { id: 'urgent',    l: 'Urgente',    bg: 'linear-gradient(135deg, #dc2626, #f97316)', tx: '#fff', ac: '#fbbf24', r: 14, pd: 20, sh: 'lg' as const },
-        { id: 'soft',      l: 'Suave',      bg: '#ffffff', tx: '#334155', ac: '#6366f1', r: 16, pd: 24, sh: 'lg' as const },
-        { id: 'neon',      l: 'NeÃ³n',       bg: 'linear-gradient(135deg, #7c3aed, #ec4899)', tx: '#fff', ac: '#34d399', r: 20, pd: 22, sh: 'lg' as const },
-        { id: 'nature',    l: 'Natural',    bg: 'linear-gradient(135deg, #059669, #10b981)', tx: '#fff', ac: '#fef3c7', r: 14, pd: 20, sh: 'md' as const },
-        { id: 'ocean',     l: 'OceÃ¡nico',   bg: 'linear-gradient(135deg, #0369a1, #0891b2)', tx: '#fff', ac: '#fbbf24', r: 16, pd: 20, sh: 'lg' as const },
-        { id: 'warm',      l: 'CÃ¡lido',     bg: 'linear-gradient(135deg, #ea580c, #f59e0b)', tx: '#fff', ac: '#fff7ed', r: 14, pd: 20, sh: 'md' as const },
-        { id: 'lavender',  l: 'Lavanda',    bg: '#faf5ff', tx: '#581c87', ac: '#a855f7', r: 18, pd: 24, sh: 'lg' as const },
-        { id: 'minimal',   l: 'Minimal',    bg: '#ffffff', tx: '#0f172a', ac: '#6366f1', r: 12, pd: 18, sh: 'md' as const },
-        { id: 'rose',      l: 'Rosado',     bg: 'linear-gradient(135deg, #fbcfe8, #fda4af)', tx: '#831843', ac: '#db2777', r: 16, pd: 20, sh: 'lg' as const },
-        { id: 'clean',     l: 'Limpio',     bg: '#fefefe', tx: '#1a1a1a', ac: '#3b82f6', r: 20, pd: 22, sh: 'lg' as const },
-        { id: 'sky',       l: 'Cielo',      bg: '#f0f9ff', tx: '#0c4a6e', ac: '#0ea5e9', r: 16, pd: 24, sh: 'lg' as const },
+      type CouponLayoutId = NonNullable<SectionSettings['couponLayout']>;
+      const P: { id: string; l: string; layout: CouponLayoutId; bg: string; tx: string; ac: string; r: number; pd: number; sh: 'none'|'sm'|'md'|'lg'; previewHint: 'split'|'noir'|'ticket'|'magazine'|'stamp'|'classic' }[] = [
+        // ── 5 layouts B/N únicos (cada uno cambia diseño completo) ──
+        { id: 'yaxsell-split',  l: 'Yaxsell Split',  layout: 'yaxsell-split',  bg: '', tx: '#000', ac: '#000', r: 18, pd: 24, sh: 'lg', previewHint: 'split' },
+        { id: 'noir-premium',   l: 'Noir Premium',   layout: 'noir-premium',   bg: '', tx: '#fff', ac: '#d4a853', r: 16, pd: 22, sh: 'lg', previewHint: 'noir' },
+        { id: 'mono-ticket',    l: 'Mono Ticket',    layout: 'mono-ticket',    bg: '', tx: '#000', ac: '#000', r: 14, pd: 22, sh: 'lg', previewHint: 'ticket' },
+        { id: 'mono-magazine',  l: 'Editorial',      layout: 'mono-magazine',  bg: '', tx: '#000', ac: '#000', r: 12, pd: 22, sh: 'lg', previewHint: 'magazine' },
+        { id: 'mono-stamp',     l: 'Sello Postal',   layout: 'mono-stamp',     bg: '', tx: '#000', ac: '#000', r: 10, pd: 20, sh: 'md', previewHint: 'stamp' },
+        // ── Classic (layout original) con paletas de color ──
+        { id: 'classic-bn',   l: 'B/N Negro',   layout: 'classic', bg: '#0a0a0a', tx: '#ffffff', ac: '#ffffff', r: 16, pd: 22, sh: 'lg', previewHint: 'classic' },
+        { id: 'classic-nb',  l: 'B/N Blanco',   layout: 'classic', bg: '#ffffff', tx: '#111111', ac: '#111111', r: 16, pd: 22, sh: 'lg', previewHint: 'classic' },
+        { id: 'aurora',    l: 'Aurora',    layout: 'classic', bg: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)', tx: '#fff', ac: '#fbbf24', r: 16, pd: 20, sh: 'lg', previewHint: 'classic' },
+        { id: 'urgent',    l: 'Urgente',   layout: 'classic', bg: 'linear-gradient(135deg, #dc2626, #f97316)', tx: '#fff', ac: '#fbbf24', r: 14, pd: 20, sh: 'lg', previewHint: 'classic' },
+        { id: 'neon',      l: 'Neón',      layout: 'classic', bg: 'linear-gradient(135deg, #7c3aed, #ec4899)', tx: '#fff', ac: '#34d399', r: 20, pd: 22, sh: 'lg', previewHint: 'classic' },
+        { id: 'nature',    l: 'Natural',   layout: 'classic', bg: 'linear-gradient(135deg, #059669, #10b981)', tx: '#fff', ac: '#fef3c7', r: 14, pd: 20, sh: 'md', previewHint: 'classic' },
+        { id: 'ocean',     l: 'Oceánico',  layout: 'classic', bg: 'linear-gradient(135deg, #0369a1, #0891b2)', tx: '#fff', ac: '#fbbf24', r: 16, pd: 20, sh: 'lg', previewHint: 'classic' },
+        { id: 'warm',      l: 'Cálido',    layout: 'classic', bg: 'linear-gradient(135deg, #ea580c, #f59e0b)', tx: '#fff', ac: '#fff7ed', r: 14, pd: 20, sh: 'md', previewHint: 'classic' },
+        { id: 'rose',      l: 'Rosado',    layout: 'classic', bg: 'linear-gradient(135deg, #fbcfe8, #fda4af)', tx: '#831843', ac: '#db2777', r: 16, pd: 20, sh: 'lg', previewHint: 'classic' },
+        { id: 'sky',       l: 'Cielo',     layout: 'classic', bg: '#f0f9ff', tx: '#0c4a6e', ac: '#0ea5e9', r: 16, pd: 24, sh: 'lg', previewHint: 'classic' },
+        { id: 'minimal',   l: 'Minimal',   layout: 'classic', bg: '#ffffff', tx: '#0f172a', ac: '#6366f1', r: 12, pd: 18, sh: 'md', previewHint: 'classic' },
       ];
+      const renderPreview = (m: typeof P[0]) => {
+        const sel = (s.couponLayout || 'classic') === m.layout && (m.layout !== 'classic' || s.bgColor === m.bg);
+        const wrap: React.CSSProperties = { padding: 0, border: `2px solid ${sel ? '#5850ec' : '#e5e7eb'}`, borderRadius: 8, cursor: 'pointer', overflow: 'hidden', background: 'none' };
+        // Mini-previews diferenciadas por layout
+        if (m.previewHint === 'split') return (<button key={m.id} onClick={() => onUpdate({ couponLayout: m.layout, bgColor: m.bg, textColor: m.tx, accentColor: m.ac, borderRadius: m.r, padding: m.pd, shadow: m.sh })} style={wrap}>
+          <div style={{ height: 32, display: 'flex' }}>
+            <div style={{ flex: 1.1, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px dashed #000' }}><span style={{ fontSize: 11, fontWeight: 900, color: '#000', letterSpacing: -1 }}>10%</span></div>
+            <div style={{ flex: 1, background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ width: 14, height: 4, background: '#fff', borderRadius: 1 }} /></div>
+          </div>
+          <div style={{ fontSize: 9, padding: '3px 4px', fontWeight: 700, background: sel ? '#ede9fe' : '#fff', color: '#1f2937', textAlign: 'center' }}>{m.l}</div>
+        </button>);
+        if (m.previewHint === 'noir') return (<button key={m.id} onClick={() => onUpdate({ couponLayout: m.layout, bgColor: m.bg, textColor: m.tx, accentColor: m.ac, borderRadius: m.r, padding: m.pd, shadow: m.sh })} style={wrap}>
+          <div style={{ height: 32, background: 'linear-gradient(135deg, #050505, #2a2a2a, #050505)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+            <div style={{ width: 18, height: 7, background: 'linear-gradient(90deg, #fff, #d4a853)', WebkitBackgroundClip: 'text', borderRadius: 1 }} />
+            <div style={{ position: 'absolute', top: 4, right: 4, display: 'flex', gap: 1 }}>{[0,1,2,3].map(i => <div key={i} style={{ width: 1.5, height: 6, background: '#d4a853', opacity: 0.5 + i*0.15 }} />)}</div>
+          </div>
+          <div style={{ fontSize: 9, padding: '3px 4px', fontWeight: 700, background: sel ? '#ede9fe' : '#fff', color: '#1f2937', textAlign: 'center' }}>{m.l}</div>
+        </button>);
+        if (m.previewHint === 'ticket') return (<button key={m.id} onClick={() => onUpdate({ couponLayout: m.layout, bgColor: m.bg, textColor: m.tx, accentColor: m.ac, borderRadius: m.r, padding: m.pd, shadow: m.sh })} style={wrap}>
+          <div style={{ height: 32, display: 'flex', background: '#fff' }}>
+            <div style={{ width: 14, background: '#000', flexShrink: 0 }} />
+            <div style={{ width: 1, background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #000 2px, #000 4px)', flexShrink: 0 }} />
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '0 6px', gap: 4 }}>
+              <span style={{ fontSize: 11, fontWeight: 900, color: '#000' }}>10%</span>
+              <div style={{ marginLeft: 'auto', width: 18, height: 7, background: '#000', borderRadius: 1 }} />
+            </div>
+          </div>
+          <div style={{ fontSize: 9, padding: '3px 4px', fontWeight: 700, background: sel ? '#ede9fe' : '#fff', color: '#1f2937', textAlign: 'center' }}>{m.l}</div>
+        </button>);
+        if (m.previewHint === 'magazine') return (<button key={m.id} onClick={() => onUpdate({ couponLayout: m.layout, bgColor: m.bg, textColor: m.tx, accentColor: m.ac, borderRadius: m.r, padding: m.pd, shadow: m.sh })} style={wrap}>
+          <div style={{ height: 32, background: '#fff', position: 'relative' }}>
+            <div style={{ height: 6, background: '#000', display: 'flex', alignItems: 'center', padding: '0 4px', overflow: 'hidden' }}>
+              <div style={{ fontSize: 5, color: '#fff', letterSpacing: 1, fontWeight: 800 }}>★ YAXSELL ★ DESC ★ YAXSELL ★</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', height: 26, padding: '0 4px', gap: 4 }}>
+              <div style={{ borderRight: '1px solid #000', paddingRight: 4, fontSize: 8, fontWeight: 900, fontStyle: 'italic', fontFamily: 'serif' }}>10%</div>
+              <div style={{ flex: 1, fontSize: 6, color: '#666', fontFamily: 'serif' }}>« cupón »</div>
+              <div style={{ width: 14, height: 6, background: '#000' }} />
+            </div>
+          </div>
+          <div style={{ fontSize: 9, padding: '3px 4px', fontWeight: 700, background: sel ? '#ede9fe' : '#fff', color: '#1f2937', textAlign: 'center' }}>{m.l}</div>
+        </button>);
+        if (m.previewHint === 'stamp') return (<button key={m.id} onClick={() => onUpdate({ couponLayout: m.layout, bgColor: m.bg, textColor: m.tx, accentColor: m.ac, borderRadius: m.r, padding: m.pd, shadow: m.sh })} style={wrap}>
+          <div style={{ height: 32, background: '#fff', border: '1px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '0 4px', position: 'relative' }}>
+            <div style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px double #000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 7, fontWeight: 900 }}>10%</div>
+            <div style={{ width: 18, height: 8, border: '1px dashed #000', borderRadius: 2 }} />
+          </div>
+          <div style={{ fontSize: 9, padding: '3px 4px', fontWeight: 700, background: sel ? '#ede9fe' : '#fff', color: '#1f2937', textAlign: 'center' }}>{m.l}</div>
+        </button>);
+        // classic preview (gradient + dot)
+        return (<button key={m.id} onClick={() => onUpdate({ couponLayout: m.layout, bgColor: m.bg, textColor: m.tx, accentColor: m.ac, borderRadius: m.r, padding: m.pd, shadow: m.sh })} style={wrap}>
+          <div style={{ height: 32, background: m.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+            <div style={{ width: 16, height: 6, background: m.ac, borderRadius: 2, opacity: 0.95, boxShadow: `0 0 6px ${m.ac}66` }} />
+            <div style={{ position: 'absolute', left: -4, top: '50%', transform: 'translateY(-50%)', width: 8, height: 8, borderRadius: '50%', background: '#fff' }} />
+            <div style={{ position: 'absolute', right: -4, top: '50%', transform: 'translateY(-50%)', width: 8, height: 8, borderRadius: '50%', background: '#fff' }} />
+          </div>
+          <div style={{ fontSize: 9, padding: '3px 4px', fontWeight: 700, background: sel ? '#ede9fe' : '#fff', color: '#1f2937', textAlign: 'center' }}>{m.l}</div>
+        </button>);
+      };
       return (<div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <SH>Modelos</SH>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5 }}>
-          {P.map(m => <button key={m.id} onClick={() => onUpdate({ bgColor: m.bg, textColor: m.tx, accentColor: m.ac, borderRadius: m.r, padding: m.pd, shadow: m.sh })} style={{ padding: 0, border: `2px solid ${s.bgColor === m.bg ? '#5850ec' : '#e5e7eb'}`, borderRadius: 6, cursor: 'pointer', overflow: 'hidden', background: 'none' }}><div style={{ height: 26, background: m.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ width: 12, height: 8, background: m.ac, borderRadius: 2, opacity: 0.9, boxShadow: `0 0 6px ${m.ac}66` }} /></div><div style={{ fontSize: 9, padding: '2px 4px', fontWeight: 600, background: s.bgColor === m.bg ? '#ede9fe' : '#fff', color: '#374151' }}>{m.l}</div></button>)}
+        <SH>Diseños (cambian layout completo)</SH>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+          {P.filter(m => m.layout !== 'classic').map(renderPreview)}
+        </div>
+        <SH>Paletas color (diseño clásico)</SH>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+          {P.filter(m => m.layout === 'classic').map(renderPreview)}
         </div>
         <SH>Texto del cupón</SH>
         <Field icon={<Type size={13} />} label="Título (DESCUENTO)" value={s.couponTitle || 'DESCUENTO'} onChange={v => onUpdate({ couponTitle: v })} placeholder="DESCUENTO" />
@@ -2670,8 +2941,8 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         const { databaseId } = getAppwriteConfig();
         const { databases } = getServices();
         const res = await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [
-          Query.equal('CATEGORYID', catId),
-          Query.orderAsc('NAME'),
+          Query.equal('categoryId', catId),
+          Query.orderAsc('name'),
           Query.limit(100),
         ]);
         setWidgetSubcategories(res.documents as any[]);
@@ -2819,7 +3090,6 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         <SH>Contenido</SH>
         <Field icon={<Type size={13} />} label="Texto del anuncio" value={s.title || ''} onChange={v => onUpdate({ title: v })} placeholder="🔥 Envío gratis en compras sobre $30.000 — ¡Aprovecha!" />
         <Field icon={<Link size={13} />} label="Link (opcional)" value={s.buttonLink || ''} onChange={v => onUpdate({ buttonLink: v })} placeholder="/productos" />
-        <RangeField label="Tamaño de texto" value={s.textSize ?? 13} onChange={v => onUpdate({ textSize: v })} min={10} max={24} unit="px" />
       </div>);
 
     case 'hero': {
@@ -2829,53 +3099,74 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         onUpdate({ heroSlides: updated });
       };
       const addSlide = () => {
-        onUpdate({ heroSlides: [...slides, { imageUrl: '', title: 'Nuevo Slide', subtitle: '', alignment: 'left' }] });
+        onUpdate({ heroSlides: [...slides, { imageUrl: '', title: 'Yaxsell', subtitle: 'E-COMMERCE', alignment: 'center' }] });
       };
       const removeSlide = (idx: number) => {
         onUpdate({ heroSlides: slides.filter((_, i) => i !== idx) });
       };
       return (<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <SH>Carrusel</SH>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: '#374151' }}>
-          <input type="checkbox" checked={s.heroAutoplay ?? false} onChange={e => onUpdate({ heroAutoplay: e.target.checked })} style={{ width: 14, height: 14, accentColor: '#5850ec' }} />
-          Autoplay
-        </label>
-        <RangeField label="Intervalo entre slides" value={s.heroDelay ?? 5000} onChange={v => onUpdate({ heroDelay: v })} min={2000} max={10000} unit="ms" />
-        <RangeField label="Velocidad de transición" value={s.heroTransitionSpeed ?? 1000} onChange={v => onUpdate({ heroTransitionSpeed: v })} min={300} max={3000} unit="ms" />
-        <SH>Overlay</SH>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: '#374151' }}>
-          <input type="checkbox" checked={s.heroOverlayEnabled ?? true} onChange={e => onUpdate({ heroOverlayEnabled: e.target.checked })} style={{ width: 14, height: 14, accentColor: '#5850ec' }} />
-          Activar overlay
-        </label>
-        {s.heroOverlayEnabled !== false && (
-          <RangeField label="Opacidad del overlay" value={(s.heroOverlayOpacity ?? 0.3) * 100} onChange={v => onUpdate({ heroOverlayOpacity: v / 100 })} min={0} max={100} unit="%" />
-        )}
-        <SH>Texto</SH>
-        <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+        <SH>Logo de la tienda</SH>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
           {(['text', 'image'] as const).map(m => (
             <button key={m} onClick={() => onUpdate({ heroStoreLogoMode: m })}
-              style={{ padding: '4px 10px', fontSize: 11, fontWeight: 600, borderRadius: 4, border: `1.5px solid ${s.heroStoreLogoMode === m ? '#5850ec' : '#e5e7eb'}`, background: s.heroStoreLogoMode === m ? '#eef2ff' : '#fff', color: s.heroStoreLogoMode === m ? '#5850ec' : '#374151', cursor: 'pointer' }}>
+              style={{ flex: 1, padding: '6px 10px', fontSize: 11, fontWeight: 600, borderRadius: 6, border: `1.5px solid ${s.heroStoreLogoMode === m ? '#5850ec' : '#e5e7eb'}`, background: s.heroStoreLogoMode === m ? '#eef2ff' : '#fff', color: s.heroStoreLogoMode === m ? '#5850ec' : '#374151', cursor: 'pointer' }}>
               {m === 'text' ? '📝 Texto' : '🖼️ Imagen'}
             </button>
           ))}
         </div>
         {s.heroStoreLogoMode === 'text' ? (
-          <Field icon={<Type size={13} />} label="Nombre de la tienda" value={s.heroStoreName || ''} onChange={v => onUpdate({ heroStoreName: v })} placeholder="Mi Tienda 3" />
+          <Field icon={<Type size={13} />} label="Nombre" value={s.heroStoreName || ''} onChange={v => onUpdate({ heroStoreName: v })} placeholder="Yaxsell" />
         ) : (
-          <>
-            <ImageUploadField label="Imagen del logo" value={s.heroStoreLogoUrl || ''} onChange={v => onUpdate({ heroStoreLogoUrl: v })} />
-            <ImageUploadField label="Logo al hacer scroll" value={s.heroStoreLogoScrollUrl || ''} onChange={v => onUpdate({ heroStoreLogoScrollUrl: v })} />
-          </>
+          <ImageUploadField label="Logo" value={s.heroStoreLogoUrl || ''} onChange={v => onUpdate({ heroStoreLogoUrl: v })} />
         )}
-        <RangeField label="Altura del logo" value={s.heroStoreLogoHeight ?? 40} onChange={v => onUpdate({ heroStoreLogoHeight: v })} min={20} max={360} unit="px" />
-        <RangeField label="Posición X" value={s.heroStoreLogoPosX ?? 0} onChange={v => onUpdate({ heroStoreLogoPosX: v })} min={-200} max={200} unit="px" />
-        <RangeField label="Posición Y" value={s.heroStoreLogoPosY ?? 0} onChange={v => onUpdate({ heroStoreLogoPosY: v })} min={-200} max={200} unit="px" />
-        <SH>Colores</SH>
-        <ColorField label="Color título" value={s.heroTitleColor || ''} onChange={v => onUpdate({ heroTitleColor: v })} />
-        <ColorField label="Color subtítulo" value={s.heroSubtitleColor || ''} onChange={v => onUpdate({ heroSubtitleColor: v })} />
-        <SH>Opacidad</SH>
-        <RangeField label="Opacidad del título" value={(s.heroTitleOpacity ?? 0.92) * 100} onChange={v => onUpdate({ heroTitleOpacity: v / 100 })} min={20} max={100} unit="%" />
-        <RangeField label="Opacidad del subtítulo" value={(s.heroSubtitleOpacity ?? 0.92) * 100} onChange={v => onUpdate({ heroSubtitleOpacity: v / 100 })} min={20} max={100} unit="%" />
+
+        <SH>Colores del texto</SH>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <ColorField label="Título" value={s.heroTitleColor || ''} onChange={v => onUpdate({ heroTitleColor: v })} />
+          <ColorField label="Subtítulo" value={s.heroSubtitleColor || ''} onChange={v => onUpdate({ heroSubtitleColor: v })} />
+        </div>
+
+        <SH>Animación del título</SH>
+        {(() => {
+          const ANIMS = [
+            { id: 'typing',     l: '⌨️ Typing',     desc: 'Efecto máquina de escribir' },
+            { id: 'fadeIn',     l: '✨ Fade In',     desc: 'Aparece suavemente' },
+            { id: 'slideUp',    l: '⬆️ Slide Up',    desc: 'Sube desde abajo' },
+            { id: 'scaleIn',    l: '🔍 Scale In',    desc: 'Crece desde el centro' },
+            { id: 'blurIn',     l: '🌫️ Blur In',     desc: 'De borroso a nítido' },
+            { id: 'splitChars', l: '🔤 Split Chars', desc: 'Cada letra aparece sola' },
+            { id: 'glitch',     l: '⚡ Glitch',      desc: 'Efecto digital glitch' },
+            { id: 'none',       l: '— Sin animación', desc: 'Sin efecto' },
+          ];
+          const current = s.heroTitleAnimation || 'typing';
+          return (<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+            {ANIMS.map(a => (
+              <button key={a.id} onClick={() => onUpdate({ heroTitleAnimation: a.id as any })}
+                style={{ padding: '5px 8px', fontSize: 10, fontWeight: 600, borderRadius: 5, border: `1.5px solid ${current === a.id ? '#5850ec' : '#e5e7eb'}`, background: current === a.id ? '#eef2ff' : '#fff', color: current === a.id ? '#5850ec' : '#374151', cursor: 'pointer', textAlign: 'left' }}>
+                {a.l}
+              </button>
+            ))}
+          </div>);
+        })()}
+
+        <SH>Opciones</SH>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: '#374151' }}>
+          <input type="checkbox" checked={s.heroAutoplay ?? false} onChange={e => onUpdate({ heroAutoplay: e.target.checked })} style={{ width: 14, height: 14, accentColor: '#5850ec' }} />
+          Autoplay
+        </label>
+        {s.heroAutoplay && (
+          <RangeField label="Intervalo" value={s.heroDelay ?? 5000} onChange={v => onUpdate({ heroDelay: v })} min={2000} max={10000} unit="ms" />
+        )}
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: '#374151' }}>
+          <input type="checkbox" checked={s.heroOverlayEnabled !== false} onChange={e => onUpdate({ heroOverlayEnabled: e.target.checked })} style={{ width: 14, height: 14, accentColor: '#5850ec' }} />
+          Overlay oscuro
+        </label>
+
+        <SH>Partículas (solo desktop)</SH>
+        <RangeField label="Cantidad" value={s.heroParticlesCount ?? 50} onChange={v => onUpdate({ heroParticlesCount: v })} min={0} max={50} unit="" />
+        <RangeField label="Tamaño" value={s.heroParticlesSize ?? 2} onChange={v => onUpdate({ heroParticlesSize: v })} min={0.5} max={5} unit="px" step={0.1} />
+        <ColorField label="Color base" value={s.heroParticlesColor || '#ffffff'} onChange={v => onUpdate({ heroParticlesColor: v })} />
+
         <SH>Slides ({slides.length})</SH>
         {slides.map((sl, idx) => (
           <div key={idx} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -2884,16 +3175,15 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
               {slides.length > 1 && <button onClick={() => removeSlide(idx)} style={{ fontSize: 10, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}>× Eliminar</button>}
             </div>
             <ImageUploadField label="Imagen de fondo" value={sl.imageUrl || ''} onChange={v => updateSlide(idx, { imageUrl: v })} />
-            <ImageUploadField label="Imagen móvil (opcional)" value={sl.mobileImageUrl || ''} onChange={v => updateSlide(idx, { mobileImageUrl: v })} />
-            <Field icon={<Link size={13} />} label="Video URL (MP4/WebM)" value={sl.videoUrl || ''} onChange={v => updateSlide(idx, { videoUrl: v })} placeholder="https://cdn.example.com/video.mp4" />
-            <Field icon={<Link size={13} />} label="Video móvil URL (opcional)" value={sl.mobileVideoUrl || ''} onChange={v => updateSlide(idx, { mobileVideoUrl: v })} placeholder="https://cdn.example.com/mobile.mp4" />
-            <Field icon={<Type size={13} />} label="Título" value={sl.title || ''} onChange={v => updateSlide(idx, { title: v })} placeholder="MUSK COSMO" />
-            <Field icon={<Type size={13} />} label="Subtítulo" value={sl.subtitle || ''} onChange={v => updateSlide(idx, { subtitle: v })} placeholder="CONFIDENT CHARM" />
+            <Field icon={<Type size={13} />} label="Título" value={sl.title || ''} onChange={v => updateSlide(idx, { title: v })} placeholder="Yaxsell" />
+            <Field icon={<Type size={13} />} label="Subtítulo" value={sl.subtitle || ''} onChange={v => updateSlide(idx, { subtitle: v })} placeholder="E-COMMERCE" />
             <Field icon={<Type size={13} />} label="Descripción" value={sl.description || ''} onChange={v => updateSlide(idx, { description: v })} placeholder="Texto descriptivo opcional" />
-            <Field icon={<Type size={13} />} label="Botón primario" value={sl.btnPrimaryText || ''} onChange={v => updateSlide(idx, { btnPrimaryText: v })} placeholder="MÁS INFO" />
-            <Field icon={<Link size={13} />} label="Link botón primario" value={sl.btnPrimaryLink || ''} onChange={v => updateSlide(idx, { btnPrimaryLink: v })} placeholder="/productos" />
-            <Field icon={<Type size={13} />} label="Botón secundario" value={sl.btnSecondaryText || ''} onChange={v => updateSlide(idx, { btnSecondaryText: v })} placeholder="COMPRAR AHORA" />
-            <Field icon={<Link size={13} />} label="Link botón secundario" value={sl.btnSecondaryLink || ''} onChange={v => updateSlide(idx, { btnSecondaryLink: v })} placeholder="/colecciones" />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+              <Field icon={<Type size={13} />} label="Botón 1" value={sl.btnPrimaryText || ''} onChange={v => updateSlide(idx, { btnPrimaryText: v })} placeholder="MÁS INFO" />
+              <Field icon={<Link size={13} />} label="Link" value={sl.btnPrimaryLink || ''} onChange={v => updateSlide(idx, { btnPrimaryLink: v })} placeholder="/productos" />
+              <Field icon={<Type size={13} />} label="Botón 2" value={sl.btnSecondaryText || ''} onChange={v => updateSlide(idx, { btnSecondaryText: v })} placeholder="COMPRAR AHORA" />
+              <Field icon={<Link size={13} />} label="Link" value={sl.btnSecondaryLink || ''} onChange={v => updateSlide(idx, { btnSecondaryLink: v })} placeholder="/colecciones" />
+            </div>
             <div style={{ display: 'flex', gap: 4 }}>
               {(['left', 'center', 'right'] as const).map(a => (
                 <button key={a} onClick={() => updateSlide(idx, { alignment: a })}
@@ -3311,7 +3601,7 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
     case 'tpl1_footer':
       return (<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <SH>Footer - Información de la empresa</SH>
-        <Field icon={<Type size={13} />} label="Nombre empresa" value={s.companyName || ''} onChange={v => onUpdate({ companyName: v })} placeholder="Kevin & Coco Chile" />
+        <Field icon={<Type size={13} />} label="Nombre empresa" value={s.companyName || ''} onChange={v => onUpdate({ companyName: v })} placeholder="Yaxsell" />
         <div>
           <label style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', marginBottom: 5, display: 'block' }}>Descripción</label>
           <textarea value={s.companyDescription || ''} onChange={e => onUpdate({ companyDescription: e.target.value })} 
@@ -3320,22 +3610,22 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         </div>
         
         <SH>Contacto</SH>
-        <Field icon={<span>📍</span>} label="Dirección" value={s.address || ''} onChange={v => onUpdate({ address: v })} placeholder="Toesca 2537, Santiago Centro, Chile" />
-        <Field icon={<span>📞</span>} label="Teléfono" value={s.phone || ''} onChange={v => onUpdate({ phone: v })} placeholder="+56 9 8234 2539" />
-        <Field icon={<span>📧</span>} label="Email" value={s.email || ''} onChange={v => onUpdate({ email: v })} placeholder="contacto@kevincocochile.cl" />
+        <Field icon={<span>📍</span>} label="Dirección" value={s.address || ''} onChange={v => onUpdate({ address: v })} placeholder="Dirección de la empresa" />
+        <Field icon={<span>📞</span>} label="Teléfono" value={s.phone || ''} onChange={v => onUpdate({ phone: v })} placeholder="+56 9 1234 5678" />
+        <Field icon={<span>📧</span>} label="Email" value={s.email || ''} onChange={v => onUpdate({ email: v })} placeholder="info@yaxsell.com" />
         <Field icon={<span>💬</span>} label="WhatsApp" value={s.whatsapp || ''} onChange={v => onUpdate({ whatsapp: v })} placeholder="+56982342539" />
         
         <SH>Redes Sociales</SH>
-        <Field icon={<span>📸</span>} label="Instagram" value={s.instagram || ''} onChange={v => onUpdate({ instagram: v })} placeholder="@kevincoco.chile" />
-        <Field icon={<span>👍</span>} label="Facebook" value={s.facebook || ''} onChange={v => onUpdate({ facebook: v })} placeholder="kevincocochile" />
-        <Field icon={<span>🎵</span>} label="TikTok" value={s.tiktok || ''} onChange={v => onUpdate({ tiktok: v })} placeholder="@kevincoco.live" />
+        <Field icon={<span>📸</span>} label="Instagram" value={s.instagram || ''} onChange={v => onUpdate({ instagram: v })} placeholder="@yaxsell" />
+        <Field icon={<span>👍</span>} label="Facebook" value={s.facebook || ''} onChange={v => onUpdate({ facebook: v })} placeholder="yaxsell" />
+        <Field icon={<span>🎵</span>} label="TikTok" value={s.tiktok || ''} onChange={v => onUpdate({ tiktok: v })} placeholder="@yaxsell" />
         
         <SH>Newsletter</SH>
         <Field icon={<Type size={13} />} label="Título newsletter" value={s.newsletterTitle || ''} onChange={v => onUpdate({ newsletterTitle: v })} placeholder="¡Suscríbete!" />
         <Field icon={<Type size={13} />} label="Texto newsletter" value={s.newsletterText || ''} onChange={v => onUpdate({ newsletterText: v })} placeholder="Recibe ofertas exclusivas" />
         
         <SH>Copyright</SH>
-        <Field icon={<Type size={13} />} label="Texto copyright" value={s.copyrightText || ''} onChange={v => onUpdate({ copyrightText: v })} placeholder="© 2024 Kevin & Coco Chile" />
+        <Field icon={<Type size={13} />} label="Texto copyright" value={s.copyrightText || ''} onChange={v => onUpdate({ copyrightText: v })} placeholder="© 2025 Yaxsell" />
       </div>);
 
     case 'newsletter':
@@ -3534,7 +3824,7 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
       return (<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <SH>Título superior</SH>
         <Field icon={<Type size={13} />} label="Texto superior (ej. LLEGAN PRONTO A:)" value={s.mediaGalleryTopText || ''} onChange={v => onUpdate({ mediaGalleryTopText: v })} placeholder="LLEGAN PRONTO A:" />
-        <Field icon={<Type size={13} />} label="Texto grande" value={s.mediaGalleryTitle || ''} onChange={v => onUpdate({ mediaGalleryTitle: v })} placeholder="MUSK COSMO" />
+        <Field icon={<Type size={13} />} label="Texto grande" value={s.mediaGalleryTitle || ''} onChange={v => onUpdate({ mediaGalleryTitle: v })} placeholder="Yaxsell" />
         <RangeField label="Altura del título" value={s.mediaGalleryTitleHeight ?? 0} onChange={v => onUpdate({ mediaGalleryTitleHeight: v })} min={0} max={50} unit="%" />
         <ColorField label="Color del texto" value={s.mediaGalleryTitleColor || '#000000'} onChange={v => onUpdate({ mediaGalleryTitleColor: v })} />
         <ColorField label="Color degradado (opcional)" value={s.mediaGalleryTitleGradientColor || ''} onChange={v => onUpdate({ mediaGalleryTitleGradientColor: v })} />
@@ -4135,14 +4425,14 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
   );
 }
 
-function RangeField({ label, value, onChange, min, max, unit }: { label: string; value: number; onChange: (v: number) => void; min: number; max: number; unit: string }) {
+function RangeField({ label, value, onChange, min, max, unit, step }: { label: string; value: number; onChange: (v: number) => void; min: number; max: number; unit: string; step?: number }) {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
         <label style={{ fontSize: 10, fontWeight: 600, color: '#6b7280' }}>{label}</label>
         <span style={{ fontSize: 10, fontWeight: 700, color: '#374151' }}>{value}{unit}</span>
       </div>
-      <input type="range" min={min} max={max} step={min < 1 ? 0.05 : 1} value={value} onChange={e => onChange(parseFloat(e.target.value))}
+      <input type="range" min={min} max={max} step={step ?? (min < 1 ? 0.05 : 1)} value={value} onChange={e => onChange(parseFloat(e.target.value))}
         style={{ width: '100%', accentColor: '#5850ec', height: 4 }} />
     </div>
   );

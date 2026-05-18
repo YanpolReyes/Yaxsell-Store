@@ -9,9 +9,9 @@ export interface AppwriteConfig {
 }
 
 const DEFAULT_CONFIG: AppwriteConfig = {
-  endpoint: process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1',
-  projectId: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '',
-  databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '',
+  endpoint: process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1',
+  projectId: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '6a0a4e8d0032177f3f90',
+  databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a0a58ca001798410d86',
 };
 
 export function getAppwriteConfig(): AppwriteConfig {
@@ -68,6 +68,7 @@ export function getServices() {
 
 // Collection IDs (same across all clients)
 export const PRODUCTS_COLLECTION_ID = 'products';
+export const INVENTORY_PRODUCTS_COLLECTION_ID = 'inventory_products';
 export const CATEGORIES_COLLECTION_ID = 'categories';
 export const SUBCATEGORIES_COLLECTION_ID = 'subcategories';
 export const BANNERS_COLLECTION_ID = 'banners';

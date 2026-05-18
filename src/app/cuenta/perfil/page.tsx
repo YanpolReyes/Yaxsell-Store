@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Camera, Save, X, ImagePlus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { getServices, getAppwriteConfig, USER_PHOTOS_BUCKET } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from '@/lib/appwrite';
 
 const FF = '"DM Sans",system-ui,sans-serif';
 const PINK = '#ec4899';
@@ -42,7 +42,8 @@ export default function PerfilPage() {
 
   function getFilePreviewUrl(fileId: string): string {
     const { endpoint, projectId } = getAppwriteConfig();
-    return `${endpoint}/storage/buckets/${USER_PHOTOS_BUCKET}/files/${fileId}/view?project=${projectId}`;
+    const path = MEDIA_PREFIXES.thumbnails + fileId;
+    return `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${path}/view?project=${projectId}`;
   }
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -73,12 +74,14 @@ export default function PerfilPage() {
       const acc = await account.get();
       const prefs = (acc as any).prefs || {};
       if (avatarFile) {
-        const file = await storage.createFile(USER_PHOTOS_BUCKET, 'unique-avatar-' + Date.now(), avatarFile);
-        prefs.avatarFileId = file.$id;
+        const fileId = MEDIA_PREFIXES.thumbnails + 'unique-avatar-' + Date.now();
+        const file = await storage.createFile(MEDIA_BUCKET_ID, fileId, avatarFile);
+        prefs.avatarFileId = 'unique-avatar-' + Date.now();
       }
       if (coverFile) {
-        const file = await storage.createFile(USER_PHOTOS_BUCKET, 'unique-cover-' + Date.now(), coverFile);
-        prefs.coverFileId = file.$id;
+        const fileId = MEDIA_PREFIXES.thumbnails + 'unique-cover-' + Date.now();
+        const file = await storage.createFile(MEDIA_BUCKET_ID, fileId, coverFile);
+        prefs.coverFileId = 'unique-cover-' + Date.now();
       }
       if (avatarFile || coverFile) {
         await account.updatePrefs(prefs);

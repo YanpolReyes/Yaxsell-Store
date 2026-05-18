@@ -32,14 +32,14 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       const res = await databases.listDocuments(databaseId, FAVORITES_COLLECTION, [
-        Query.equal('user_id', user.id),
+        Query.equal('userId', user.id),
         Query.limit(100),
       ]);
       const ids: string[] = [];
       const map: Record<string, string> = {};
       res.documents.forEach((doc: any) => {
-        ids.push(doc.product_id);
-        map[doc.product_id] = doc.$id;
+        ids.push(doc.productId);
+        map[doc.productId] = doc.$id;
       });
       setFavorites(ids);
       setDocMap(map);
@@ -86,9 +86,9 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       // Add
       try {
         const doc = await databases.createDocument(databaseId, FAVORITES_COLLECTION, ID.unique(), {
-          user_id: user.id,
-          product_id: productId,
-          created_at: new Date().toISOString(),
+          userId: user.id,
+          productId: productId,
+          createdAt: Math.floor(Date.now() / 1000),
         });
         setFavorites(prev => [...prev, productId]);
         setDocMap(prev => ({ ...prev, [productId]: doc.$id }));

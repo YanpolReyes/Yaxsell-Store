@@ -121,17 +121,20 @@ export default function AnnouncementBar({ sectionCfg, navbarGradient }: Props) {
   // Detectar si el fondo es claro
   const isLight = isLightColor(bgColor);
   
-  // Forzar texto del anuncio siempre azul claro (sin importar el fondo)
-  const textColor = '#3b82f6';
-  const textGradient = 'linear-gradient(90deg, #3b82f6 0%, #60a5fa 25%, #3b82f6 50%, #60a5fa 75%, #3b82f6 100%)';
-  const textGradientAnimated = false; // Desactivar animación para texto azul claro puro
+  // Texto: degradado si textGradientStyle está definido, sino color sólido
+  const hasTextGradient = !!settings.textGradientStyle;
+  const textColor = settings.textColor || (isLight ? '#1a1a1a' : '#ffffff');
+  const textGradient = settings.textGradientStyle || '';
+  const textGradientAnimated = settings.textGradientAnimated ?? false;
+  const textSize = settings.textSize ?? 13;
+  const textHoverEffect = settings.textHoverEffect || 'none';
   
   // Color para el botón de cerrar
   const closeButtonColor = isLight ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)';
 
   const textContent = (
     <motion.p
-      animate={textGradientAnimated ? {
+      animate={hasTextGradient && textGradientAnimated ? {
         backgroundPosition: ['0% center', '200% center'],
       } : {}}
       transition={{
@@ -140,14 +143,19 @@ export default function AnnouncementBar({ sectionCfg, navbarGradient }: Props) {
         ease: 'linear',
       }}
       style={{
-        fontSize: 'clamp(12px, 1.3vw, 15px)',
+        fontSize: `clamp(${Math.max(textSize - 2, 10)}px, 1.3vw, ${textSize + 2}px)`,
         fontWeight: 800,
         fontFamily: 'Syne, sans-serif',
-        backgroundImage: textGradient,
-        backgroundSize: textGradientAnimated ? '200% auto' : '100% auto',
-        WebkitBackgroundClip: 'text',
-        backgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
+        ...(hasTextGradient ? {
+          backgroundImage: textGradient,
+          backgroundSize: textGradientAnimated ? '200% auto' : '100% auto',
+          WebkitBackgroundClip: 'text',
+          backgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          color: 'transparent',
+        } : {
+          color: textColor,
+        }),
         letterSpacing: '0.5px',
         margin: 0,
         display: 'inline-block',

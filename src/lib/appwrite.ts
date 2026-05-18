@@ -18,9 +18,9 @@ function getConfig() {
     }
   }
   return {
-    endpoint: process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1',
-    projectId: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '',
-    databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '',
+    endpoint: process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1',
+    projectId: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '6a0a4e8d0032177f3f90',
+    databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a0a58ca001798410d86',
   };
 }
 
@@ -67,8 +67,37 @@ export const STOCK_ALERTS_COLLECTION             = 'stock_alerts';
 export const NOTIFICATIONS_COLLECTION            = 'notifications';
 export const THEME_CONFIG_COLLECTION             = 'theme_config';
 export const APERTURA_SETTINGS_COLLECTION        = 'apertura_settings';
-export const COMPROBANTES_BUCKET                 = 'comprobantes';
-export const USER_PHOTOS_BUCKET     = '67f41e05000d0adb6f12';  // live-thumbnails bucket (reutilizado para fotos de perfil)
+// ============================================
+// STORAGE — Un solo bucket con prefijos
+// ============================================
+export const MEDIA_BUCKET_ID = 'media';
+
+// Prefijos para organizar archivos en el bucket único
+export const MEDIA_PREFIXES = {
+  products: 'products/',
+  banners: 'banners/',
+  categories: 'categories/',
+  comprobantes: 'comprobantes/',
+  thumbnails: 'thumbnails/',
+} as const;
+
+export type MediaPrefix = keyof typeof MEDIA_PREFIXES;
+
+// Función helper para agregar prefijo a nombre de archivo
+export function withPrefix(prefix: keyof typeof MEDIA_PREFIXES, fileName: string): string {
+  return MEDIA_PREFIXES[prefix] + fileName;
+}
+
+// Función helper para obtener URL de archivo con prefijo
+export function getMediaUrl(fileId: string, prefix?: keyof typeof MEDIA_PREFIXES): string {
+  const { endpoint, projectId } = getConfig();
+  const path = prefix ? MEDIA_PREFIXES[prefix] + fileId : fileId;
+  return `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${path}/view?project=${projectId}`;
+}
+
+// Backward compatibility - mantener nombres antiguos pero apuntar al bucket único
+export const COMPROBANTES_BUCKET = MEDIA_BUCKET_ID;
+export const USER_PHOTOS_BUCKET = MEDIA_BUCKET_ID;
 
 export async function getNextOrderIndex(): Promise<number> {
   const { databases } = getServices();

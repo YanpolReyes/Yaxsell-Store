@@ -5,7 +5,8 @@ import { Query, ID } from 'appwrite';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import * as XLSX from 'xlsx';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { invalidateProductCache } from '@/lib/cache';
 import { isAdminEmail } from '@/lib/admin-access';
 import { setBarcodeInFeatures, setSectionInFeatures } from '@/lib/product-features';
 import { Product, Category, Subcategory } from '@/types/admin';
@@ -133,10 +134,15 @@ export default function InventarioPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'matched' | 'new' | 'unmatched'>('all');
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>([]); // inventory_products
+  const [publishedSkus, setPublishedSkus] = useState<Set<string>>(new Set()); // SKUs ya en products (catálogo)
+  const [publishedBarcodes, setPublishedBarcodes] = useState<Set<string>>(new Set()); // Barcodes ya en products
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishProgress, setPublishProgress] = useState(0);
+  const [publishResults, setPublishResults] = useState<{ published: number; errors: number } | null>(null);
   const [isCreatingCats, setIsCreatingCats] = useState(false);
   const [catResults, setCatResults] = useState<{ cats: number; subs: number; errors: number } | null>(null);
   const [saveResults, setSaveResults] = useState<{ updated: number; created: number; errors: number } | null>(null);
@@ -242,7 +248,7 @@ export default function InventarioPage() {
         payload.FEATURES = finalFeatures;
       }
 
-      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, editStockModal.$id, payload);
+      await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, editStockModal.$id, payload);
       setProducts(prev => prev.map(p => p.$id === editStockModal.$id
         ? { ...p, PACKQTY: newPackQty, STOCK: newStock, ISACTIVE: newStock > 0, ...(payload.FEATURES ? { FEATURES: payload.FEATURES } : {}) }
         : p));
@@ -328,7 +334,7 @@ export default function InventarioPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       const newFeatures = setBarcodeInFeatures(product.FEATURES || '', scannedBarcode);
-      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, product.$id, { FEATURES: newFeatures });
+      await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, product.$id, { FEATURES: newFeatures });
       setProducts(prev => prev.map(p => p.$id === product.$id ? { ...p, FEATURES: newFeatures } : p));
       setCatalogSearch(getSkuFromProduct(product));
       setBarcodeSuggestion(null);
@@ -363,14 +369,56 @@ export default function InventarioPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      // Carga TODOS los productos en una sola consulta
-      const resp: any = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(1000)]);
-      const allProds = resp.documents as unknown as Product[];
+
+      // 1. Cargar productos de INVENTORY_PRODUCTS (los que se gestionan aquí)
+      //    Puede haber muchos (2000+) así que paginamos
+      const allInventory: Product[] = [];
+      let cursor: string | undefined;
+      while (true) {
+        const queries: any[] = [Query.limit(500)];
+        if (cursor) queries.push(Query.cursorAfter(cursor));
+        const resp: any = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, queries);
+        const docs = resp.documents as unknown as Product[];
+        if (!docs.length) break;
+        allInventory.push(...docs);
+        if (docs.length < 500) break;
+        cursor = docs[docs.length - 1].$id;
+      }
+
+      // 2. Cargar SKUs y Barcodes de PRODUCTS (catálogo publicado) — solo para detección de duplicados
+      //    No necesitamos los productos completos, solo identificadores
+      const skus = new Set<string>();
+      const barcodes = new Set<string>();
+      try {
+        let pCursor: string | undefined;
+        while (true) {
+          const queries: any[] = [Query.limit(500), Query.select(['$id', 'TAGS', 'FEATURES', 'jumpseller_id'])];
+          if (pCursor) queries.push(Query.cursorAfter(pCursor));
+          const resp: any = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
+          const docs = resp.documents as any[];
+          if (!docs.length) break;
+          for (const d of docs) {
+            const sku = getSkuFromProduct(d).toLowerCase();
+            const bc = getBarcodeFromProduct(d).toLowerCase();
+            if (sku) skus.add(sku);
+            if (bc) barcodes.add(bc);
+          }
+          if (docs.length < 500) break;
+          pCursor = docs[docs.length - 1].$id;
+        }
+      } catch (e) {
+        console.warn('No se pudieron cargar identificadores del catálogo:', e);
+      }
+
+      // 3. Cargar categorías y subcategorías
       const [cr, sr] = await Promise.all([
         databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]),
         databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.limit(500)]),
       ]);
-      setProducts(allProds);
+
+      setProducts(allInventory);
+      setPublishedSkus(skus);
+      setPublishedBarcodes(barcodes);
       setCategories(cr.documents as unknown as Category[]);
       setSubcategories(sr.documents as unknown as Subcategory[]);
     } catch (e: any) { console.error(e); }
@@ -570,7 +618,7 @@ export default function InventarioPage() {
                 await databases.createDocument(databaseId, SUBCATEGORIES_COLLECTION_ID, ID.unique(), {
                   name: subName,
                   categoryId: catId,
-                  ORDER: 0,
+                  order: 0,
                 });
                 subsCreated++;
               }
@@ -610,7 +658,7 @@ export default function InventarioPage() {
           if (shouldBeActive) activated++; else deactivated++;
         } else {
           try {
-            await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, p.$id, { ISACTIVE: shouldBeActive });
+            await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, p.$id, { ISACTIVE: shouldBeActive });
             if (shouldBeActive) activated++; else deactivated++;
           } catch { errors++; }
           await new Promise(r => setTimeout(r, 150));
@@ -640,7 +688,9 @@ export default function InventarioPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      for (const row of existing) {
+      // Productos existentes en inventory_products: actualizar campos (sin tocar stock — eso es manual)
+      for (let i = 0; i < existing.length; i++) {
+        const row = existing[i];
         try {
           const payload: any = {};
           if (row.priceRetail) payload.PRICE = row.priceRetail;
@@ -649,44 +699,73 @@ export default function InventarioPage() {
           const { catId, subId } = resolveCategoryIds(row.categoryEs, row.subcategory);
           if (catId) payload.CATEGORYID = catId;
           if (subId) payload.SUBCATEGORYID = subId;
-          // Si se está asignando stock > 0, activar el producto
-          if (row.newStock > 0) {
-            payload.STOCK = row.newStock;
-            payload.ISACTIVE = true;
-          }
-          await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, row.productId!, payload);
+          // NOTA: NUNCA actualizamos STOCK ni ISACTIVE desde el Excel.
+          // El stock se asigna manualmente desde la página de inventario.
+          await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, row.productId!, payload);
           updated++;
-          setRows(prev => prev.map(r => r.productId === row.productId ? { ...r, currentStock: row.newStock } : r));
-          await new Promise(r => setTimeout(r, 200));
-        } catch { errors++; await new Promise(r => setTimeout(r, 200)); }
+          setRows(prev => prev.map(r => r.productId === row.productId ? { ...r, currentStock: r.currentStock } : r));
+          // Rate limit: pausa entre requests, pausa larga cada 50 docs
+          await new Promise(r => setTimeout(r, 350));
+          if ((i + 1) % 50 === 0) await new Promise(r => setTimeout(r, 3000));
+        } catch (e: any) {
+          if (e?.message?.includes('Rate limit')) { await new Promise(r => setTimeout(r, 5000)); i--; continue; }
+          errors++; await new Promise(r => setTimeout(r, 500));
+        }
       }
 
-      for (const row of newOnes) {
+      // Productos nuevos: crear en inventory_products SIEMPRE con STOCK=0 e ISACTIVE=false
+      const now = new Date().toISOString();
+      for (let i = 0; i < newOnes.length; i++) {
+        const row = newOnes[i];
         try {
+          // ⚠️ Validar duplicados contra catálogo PUBLICADO antes de crear
+          const skuLower = row.sku.toLowerCase();
+          const bcLower = row.barcode.toLowerCase();
+          if (skuLower && publishedSkus.has(skuLower)) {
+            console.warn(`SKU ${row.sku} ya existe en catálogo publicado, saltando`);
+            errors++;
+            continue;
+          }
+          if (bcLower && publishedBarcodes.has(bcLower)) {
+            console.warn(`Barcode ${row.barcode} ya existe en catálogo publicado, saltando`);
+            errors++;
+            continue;
+          }
+
           const nameDisplay = row.nameEs || row.nameTranslated || row.nameCn;
           const { catId, subId } = resolveCategoryIds(row.categoryEs, row.subcategory);
           const payload: any = {
+            sku: row.sku,
+            barcode: row.barcode || '',
             NAME: nameDisplay,
-            DESCRIPTION: row.nameEs || '',
-            PRICE: row.priceRetail,
-            STOCK: row.newStock,
-            COST: row.priceWholesale,
-            WHOLESALEPRICE: row.priceWholesale,
+            PRICE: row.priceRetail || 0,
+            STOCK: 0,                          // 🔒 SIEMPRE 0 al importar
+            WHOLESALEPRICE: row.priceWholesale || 0,
             WHOLESALEMINQUANTITY: 0,
-            IMAGEURL: row.imageUrl || '', IMAGEURL2: '', IMAGEURL3: '', IMAGEURL4: '', IMAGEURL5: '',
-            CATEGORYID: catId,
-            SUBCATEGORYID: subId,
+            IMAGEURL: row.imageUrl || '',
+            IMAGEURL2: '', IMAGEURL3: '', IMAGEURL4: '', IMAGEURL5: '',
+            CATEGORYID: catId || '',
+            SUBCATEGORYID: subId || '',
             TAGS: row.sku,
             FEATURES: `SKU: ${row.sku}${row.barcode ? `\nBarcode: ${row.barcode}` : ''}${row.nameCn ? `\nZH: ${row.nameCn}` : ''}${row.nameTranslated ? `\nES: ${row.nameTranslated}` : ''}`,
-            ISACTIVE: row.newStock > 0,
+            name_cn: row.nameCn || '',
+            ISACTIVE: false,                   // 🔒 SIEMPRE inactivo al importar
+            imported_at: now,
           };
-          const doc = await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
+          const doc = await databases.createDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, ID.unique(), payload);
           created++;
           setRows(prev => prev.map(r => r.sku === row.sku ? {
-            ...r, productId: (doc as any).$id, matched: true, isNew: false, currentStock: row.newStock,
+            ...r, productId: (doc as any).$id, matched: true, isNew: false, currentStock: 0,
           } : r));
-          await new Promise(r => setTimeout(r, 200));
-        } catch { errors++; await new Promise(r => setTimeout(r, 200)); }
+          // Rate limit: pausa entre requests, pausa larga cada 50 docs
+          await new Promise(r => setTimeout(r, 350));
+          if ((i + 1) % 50 === 0) await new Promise(r => setTimeout(r, 3000));
+        } catch (e: any) {
+          if (e?.message?.includes('Rate limit')) { await new Promise(r => setTimeout(r, 5000)); i--; continue; }
+          console.error('Error creando producto en inventario:', e?.message);
+          errors++;
+          await new Promise(r => setTimeout(r, 500));
+        }
       }
 
       setSaveResults({ updated, created, errors });
@@ -735,7 +814,7 @@ export default function InventarioPage() {
         payload.FEATURES = features ? `${features}\nBarcode: ${inlineBarcode}` : `Barcode: ${inlineBarcode}`;
       }
 
-      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, productId, payload);
+      await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, productId, payload);
       setProducts(prev => prev.map(p => p.$id === productId
         ? { ...p, STOCK: finalStock, ISACTIVE: finalStock > 0, PACKQTY: packQty, FEATURES: payload.FEATURES || p.FEATURES }
         : p));
@@ -786,7 +865,7 @@ export default function InventarioPage() {
         return;
       }
 
-      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, productId, payload);
+      await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, productId, payload);
       setProducts(prev => prev.map(p => p.$id === productId
         ? { ...p, ...payload }
         : p));
@@ -803,6 +882,166 @@ export default function InventarioPage() {
     const m = p.FEATURES?.match(/Section:\s*(\d+)/i);
     return m ? parseInt(m[1], 10) : null;
   };
+
+  /**
+   * 📤 Publica un producto del inventario al catálogo principal.
+   * - Crea documento en `products`
+   * - Elimina documento de `inventory_products`
+   * - Solo permite publicar si tiene STOCK > 0
+   * - Valida que el SKU/barcode no exista ya en el catálogo
+   */
+  const publishToCatalog = async (productId: string): Promise<boolean> => {
+    const p = products.find(x => x.$id === productId);
+    if (!p) return false;
+    if ((p.STOCK || 0) <= 0) {
+      alert('No se puede publicar un producto sin stock.');
+      return false;
+    }
+
+    // Validar que no exista en catálogo (doble chequeo: estado local + Appwrite)
+    const sku = getSkuFromProduct(p).toLowerCase();
+    const barcode = getBarcodeFromProduct(p).toLowerCase();
+    if (sku && publishedSkus.has(sku)) {
+      alert(`El SKU "${sku}" ya existe en el catálogo. No se puede publicar.`);
+      return false;
+    }
+    if (barcode && publishedBarcodes.has(barcode)) {
+      alert(`El código de barras "${barcode}" ya existe en el catálogo. No se puede publicar.`);
+      return false;
+    }
+
+    setSavingStockId(productId);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      // Construir payload para products (con DESCRIPTION reconstruida si no existe en inventory)
+      const payload: any = {
+        NAME: p.NAME,
+        DESCRIPTION: (p as any).DESCRIPTION || p.NAME, // inventory no tiene DESCRIPTION, usamos NAME
+        PRICE: p.PRICE || 0,
+        STOCK: p.STOCK || 0,
+        COST: (p as any).COST || 0,
+        WHOLESALEPRICE: (p as any).WHOLESALEPRICE || 0,
+        WHOLESALEMINQUANTITY: (p as any).WHOLESALEMINQUANTITY || 0,
+        IMAGEURL: p.IMAGEURL || '',
+        IMAGEURL2: (p as any).IMAGEURL2 || '',
+        IMAGEURL3: (p as any).IMAGEURL3 || '',
+        IMAGEURL4: (p as any).IMAGEURL4 || '',
+        IMAGEURL5: (p as any).IMAGEURL5 || '',
+        CATEGORYID: p.CATEGORYID || '',
+        SUBCATEGORYID: (p as any).SUBCATEGORYID || '',
+        TAGS: p.TAGS || '',
+        FEATURES: p.FEATURES || '',
+        ISACTIVE: true,
+        PACKQTY: p.PACKQTY || 0,
+      };
+
+      // 1. Crear en catálogo
+      await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
+
+      // 2. Eliminar de inventario
+      await databases.deleteDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, productId);
+
+      // 3. Actualizar estado local
+      setProducts(prev => prev.filter(x => x.$id !== productId));
+      if (sku) setPublishedSkus(prev => new Set(prev).add(sku));
+      if (barcode) setPublishedBarcodes(prev => new Set(prev).add(barcode));
+
+      // 4. Invalidar caché del catálogo público
+      invalidateProductCache();
+
+      return true;
+    } catch (e: any) {
+      alert('Error al publicar: ' + (e?.message || 'desconocido'));
+      return false;
+    } finally {
+      setSavingStockId(null);
+    }
+  };
+
+  /**
+   * 🚀 Publica TODOS los productos con stock > 0 al catálogo.
+   * Procesa uno por uno con delay para no saturar Appwrite.
+   */
+  const publishAllWithStock = async () => {
+    const withStock = products.filter(p => (p.STOCK || 0) > 0);
+    if (withStock.length === 0) {
+      alert('No hay productos con stock para publicar.');
+      return;
+    }
+    if (!confirm(`¿Publicar ${withStock.length} producto(s) al catálogo? Se eliminarán del inventario.`)) return;
+
+    setIsPublishing(true);
+    setPublishProgress(0);
+    setPublishResults(null);
+    let published = 0;
+    let errors = 0;
+
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      for (let i = 0; i < withStock.length; i++) {
+        const p = withStock[i];
+        try {
+          const sku = getSkuFromProduct(p).toLowerCase();
+          const barcode = getBarcodeFromProduct(p).toLowerCase();
+
+          // Saltar duplicados (silenciosamente, ya están publicados)
+          if ((sku && publishedSkus.has(sku)) || (barcode && publishedBarcodes.has(barcode))) {
+            console.warn(`Saltando ${p.NAME}: SKU o barcode ya en catálogo`);
+            errors++;
+            setPublishProgress(Math.round(((i + 1) / withStock.length) * 100));
+            continue;
+          }
+
+          const payload: any = {
+            NAME: p.NAME,
+            DESCRIPTION: (p as any).DESCRIPTION || p.NAME,
+            PRICE: p.PRICE || 0,
+            STOCK: p.STOCK || 0,
+            COST: (p as any).COST || 0,
+            WHOLESALEPRICE: (p as any).WHOLESALEPRICE || 0,
+            WHOLESALEMINQUANTITY: (p as any).WHOLESALEMINQUANTITY || 0,
+            IMAGEURL: p.IMAGEURL || '',
+            IMAGEURL2: (p as any).IMAGEURL2 || '',
+            IMAGEURL3: (p as any).IMAGEURL3 || '',
+            IMAGEURL4: (p as any).IMAGEURL4 || '',
+            IMAGEURL5: (p as any).IMAGEURL5 || '',
+            CATEGORYID: p.CATEGORYID || '',
+            SUBCATEGORYID: (p as any).SUBCATEGORYID || '',
+            TAGS: p.TAGS || '',
+            FEATURES: p.FEATURES || '',
+            ISACTIVE: true,
+            PACKQTY: p.PACKQTY || 0,
+          };
+
+          await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
+          await databases.deleteDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, p.$id);
+
+          if (sku) publishedSkus.add(sku);
+          if (barcode) publishedBarcodes.add(barcode);
+          published++;
+        } catch (e: any) {
+          console.error(`Error publicando ${p.NAME}:`, e?.message);
+          errors++;
+        }
+        setPublishProgress(Math.round(((i + 1) / withStock.length) * 100));
+        // Delay para no saturar Appwrite
+        await new Promise(r => setTimeout(r, 200));
+      }
+
+      setPublishResults({ published, errors });
+      invalidateProductCache();
+      await loadProducts(); // recargar para reflejar cambios
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
 
   const zeroStockProducts = products.filter(p => (p.STOCK || 0) === 0);
   const withStockProducts = products.filter(p => (p.STOCK || 0) > 0);
@@ -1600,7 +1839,7 @@ export default function InventarioPage() {
             <div className="p-3 sm:p-5 border-b border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <div className="flex-1 min-w-0">
                 <h2 className="text-sm font-semibold text-gray-900 mb-0.5 sm:mb-1">Productos con stock</h2>
-                <p className="text-xs text-gray-500">{withStockProducts.length} productos activos</p>
+                <p className="text-xs text-gray-500">{withStockProducts.length} productos listos para publicar al catálogo</p>
               </div>
               <div className="relative flex-1 min-w-0 sm:min-w-[240px]">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -1624,7 +1863,40 @@ export default function InventarioPage() {
                   <Camera className="w-4 h-4" />
                 </button>
               </div>
+              {/* 🚀 Botón: Publicar TODOS los con stock al catálogo */}
+              <button
+                onClick={publishAllWithStock}
+                disabled={isPublishing || withStockProducts.length === 0}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm whitespace-nowrap"
+                title="Publicar todos los productos con stock al catálogo"
+              >
+                {isPublishing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Publicando {publishProgress}%
+                  </>
+                ) : (
+                  <>
+                    <ArrowUpCircle className="w-4 h-4" />
+                    Publicar todos ({withStockProducts.length})
+                  </>
+                )}
+              </button>
             </div>
+
+            {/* Banner de resultados de publicación */}
+            {publishResults && (
+              <div className="px-3 sm:px-5 py-2 bg-green-50 border-b border-green-200 flex items-center gap-2 text-xs">
+                <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                <span className="text-green-800">
+                  ✅ <strong>{publishResults.published}</strong> publicados
+                  {publishResults.errors > 0 && <> · ⚠️ <strong>{publishResults.errors}</strong> errores (duplicados o fallidos)</>}
+                </span>
+                <button onClick={() => setPublishResults(null)} className="ml-auto text-green-600 hover:text-green-800">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
             {loadingProducts ? (
               <div className="p-10 text-center text-sm text-gray-500">Cargando...</div>
             ) : withStockFiltered.length === 0 ? (
@@ -1733,6 +2005,16 @@ export default function InventarioPage() {
                                   </button>
                                 )}
                               </div>
+                              {/* 📤 Botón Publicar al catálogo (individual) */}
+                              <button
+                                onClick={() => publishToCatalog(p.$id)}
+                                disabled={saving || isPublishing}
+                                className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-semibold rounded transition shadow-sm"
+                                title="Publicar este producto al catálogo público (lo elimina del inventario)"
+                              >
+                                <ArrowUpCircle className="w-3.5 h-3.5" />
+                                Publicar
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -1841,6 +2123,18 @@ export default function InventarioPage() {
                             )}
                           </div>
                         )}
+                        {/* 📤 Botón Publicar al catálogo (mobile) */}
+                        <div className="mt-3" onClick={e => e.stopPropagation()}>
+                          <button
+                            onClick={() => publishToCatalog(p.$id)}
+                            disabled={saving || isPublishing}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold rounded-lg transition shadow-sm"
+                            title="Publicar este producto al catálogo público"
+                          >
+                            <ArrowUpCircle className="w-4 h-4" />
+                            Publicar al catálogo
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -1999,12 +2293,27 @@ export default function InventarioPage() {
                 className="w-full pl-9 pr-9 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500" />
               {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><X className="w-4 h-4" /></button>}
             </div>
-            {(['all', 'matched', 'new', 'unmatched'] as const).map(f => (
-              <button key={f} onClick={() => setFilterStatus(f)}
+            {(['all', 'matched', 'new', 'unmatched'] as const).map(f => {
+              const getGroup = (r: InventoryRow) =>
+                f === 'all' ? true
+                : f === 'matched' ? (r.matched && !r.isNew)
+                : f === 'new' ? r.isNew
+                : (!r.matched && !r.isNew);
+              const groupRows = rows.filter(getGroup);
+              const allSelected = groupRows.length > 0 && groupRows.every(r => r.selected);
+              return (
+              <button key={f} onClick={() => {
+                setFilterStatus(f);
+                const group = rows.filter(getGroup);
+                const select = !allSelected;
+                setRows(prev => prev.map(r => getGroup(r) ? { ...r, selected: select } : { ...r, selected: false }));
+              }}
                 className={`px-3 py-2 rounded-xl text-xs font-medium transition ${filterStatus === f ? 'bg-pink-500 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
                 {f === 'all' ? 'Todos' : f === 'matched' ? 'Existentes' : f === 'new' ? 'Nuevos' : 'Sin match'}
+                <span className="ml-1 opacity-60">{groupRows.length}</span>
               </button>
-            ))}
+              );
+            })}
             <span className="text-xs text-gray-400 ml-auto">{filtered.length} filas</span>
           </div>
         )}

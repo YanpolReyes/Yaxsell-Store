@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, createContext, useContext, ReactNode } from 'react';
 import { User } from '@/services/authService';
 import { AuthService } from '@/services/authService';
 
@@ -21,12 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Verificar estado de autenticación al cargar
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = useCallback(async () => {
     setIsLoading(true);
     try {
       const isLoggedIn = await AuthService.isLoggedIn();
@@ -40,9 +35,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const login = async (email: string, password: string) => {
+  // Verificar estado de autenticación al cargar
+  useEffect(() => {
+    checkAuthStatus();
+  }, [checkAuthStatus]);
+
+  const login = useCallback(async (email: string, password: string) => {
     try {
       const result = await AuthService.login(email, password);
       if (result.success && result.user) {
@@ -55,9 +55,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error: error.message || 'Error al iniciar sesión'
       };
     }
-  };
+  }, []);
 
-  const register = async (email: string, password: string, name: string, phone?: string, rut?: string, birthDate?: string) => {
+  const register = useCallback(async (email: string, password: string, name: string, phone?: string, rut?: string, birthDate?: string) => {
     try {
       const result = await AuthService.register(email, password, name, phone, rut, birthDate);
       if (result.success && result.user) {
@@ -70,9 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error: error.message || 'Error al registrarse'
       };
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       const result = await AuthService.logout();
       if (result.success) {
@@ -85,9 +85,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error: error.message || 'Error al cerrar sesión'
       };
     }
-  };
+  }, []);
 
-  const updateProfile = async (updates: Partial<User>) => {
+  const updateProfile = useCallback(async (updates: Partial<User>) => {
     try {
       const result = await AuthService.updateProfile(updates);
       if (result.success && result.user) {
@@ -100,13 +100,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error: error.message || 'Error al actualizar perfil'
       };
     }
-  };
+  }, []);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     await checkAuthStatus();
-  };
+  }, [checkAuthStatus]);
 
-  const value: AuthContextType = {
+  // 🔒 CRÍTICO: Estabilizar el objeto value con useMemo para evitar
+  // re-renders en cascada en NotificationContext, FavoritesContext, etc.
+  // Sin esto, el value se recrea en cada render y dispara loops infinitos.
+  const value = useMemo<AuthContextType>(() => ({
     user,
     isLoading,
     isLoggedIn: !!user,
@@ -114,8 +117,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     register,
     logout,
     updateProfile,
-    refreshUser
-  };
+    refreshUser,
+  }), [user, isLoading, login, register, logout, updateProfile, refreshUser]);
 
   return React.createElement(
     AuthContext.Provider,

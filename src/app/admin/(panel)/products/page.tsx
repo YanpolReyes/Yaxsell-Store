@@ -12,7 +12,10 @@ import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSk
 
 type ProductModalData = Partial<Product> & { _barcode?: string; _sku?: string };
 
-const PRODUCTS_BUCKET_ID = '67f41e05000d0adb6f12';
+import { MEDIA_BUCKET_ID, MEDIA_PREFIXES } from '@/lib/appwrite';
+import { invalidateProductCache } from '@/lib/cache';
+
+const PRODUCTS_BUCKET_ID = MEDIA_BUCKET_ID; // Backward compatibility
 
 const EMPTY: Partial<Product> = { NAME: '', DESCRIPTION: '', PRICE: 0, STOCK: 0, COST: 0, WHOLESALEPRICE: 0, WHOLESALEMINQUANTITY: 0, IMAGEURL: '', IMAGEURL2: '', IMAGEURL3: '', IMAGEURL4: '', IMAGEURL5: '', CATEGORYID: '' };
 
@@ -67,6 +70,7 @@ export default function ProductsPage() {
       }));
       setStockModal(false);
       setStockAdj({ type: 'add', value: '' });
+      invalidateProductCache();
     } catch (e: any) { alert('Error: ' + e.message); }
     finally { setApplyingStock(false); }
   };
@@ -94,6 +98,7 @@ export default function ProductsPage() {
       }));
       setPriceModal(false);
       setPriceAdj({ type: 'percent', value: '' });
+      invalidateProductCache();
     } catch (e: any) { alert('Error: ' + e.message); }
     finally { setApplyingPrice(false); }
   };
@@ -151,6 +156,7 @@ export default function ProductsPage() {
       };
       const doc = await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
       setProducts(prev => [doc as unknown as Product, ...prev]);
+      invalidateProductCache();
     } catch (e: any) { alert('Error: ' + e.message); }
   };
 
@@ -203,24 +209,21 @@ export default function ProductsPage() {
       if (stockRestocked && (d as Product).$id) {
         try {
           const alertsRes = await databases.listDocuments(databaseId, STOCK_ALERTS_COLLECTION_ID, [
-            Query.equal('PRODUCTID', (d as Product).$id),
-            Query.equal('NOTIFIED', false),
+            Query.equal('productId', (d as Product).$id),
           ]);
           
           for (const alert of alertsRes.documents) {
             // Create notification for the user
             await databases.createDocument(databaseId, NOTIFICATIONS_COLLECTION_ID, ID.unique(), {
-              USERID: alert.EMAIL,
-              TYPE: 'stock',
-              TITLE: '¡Stock disponible!',
-              MESSAGE: `El producto "${d.NAME}" ya tiene stock disponible. ¡Compra ahora!`,
-              LINK: `/productos/${(d as Product).$id}`,
-              READ: false,
-              CREATEDAT: Date.now(),
+              userId: alert.userId,
+              type: 'stock',
+              title: '¡Stock disponible!',
+              message: `El producto "${d.NAME}" ya tiene stock disponible. ¡Compra ahora!`,
+              isRead: false,
             });
             
             // Mark alert as notified
-            await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, alert.$id, { NOTIFIED: true });
+            await databases.deleteDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, alert.$id);
           }
           
           if (alertsRes.documents.length > 0) {
@@ -232,6 +235,7 @@ export default function ProductsPage() {
       }
       
       setModal(null);
+      invalidateProductCache();
     } catch (e: any) { alert('Error: ' + e.message); }
     finally { setIsSaving(false); }
   };
@@ -254,6 +258,7 @@ export default function ProductsPage() {
       }
       setProducts([]);
       alert(`✅ ${deleted} productos eliminados.`);
+      invalidateProductCache();
     } catch (e: any) { alert('Error: ' + e.message); }
     finally { setIsDeletingAll(false); }
   };
@@ -269,6 +274,7 @@ export default function ProductsPage() {
       
       await databases.deleteDocument(databaseId, PRODUCTS_COLLECTION_ID, id);
       setProducts(prev => prev.filter(p => p.$id !== id));
+      invalidateProductCache();
       
       // Opcional: mostrar un toast o alert de éxito silencioso
       console.log('Producto eliminado con éxito');

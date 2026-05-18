@@ -23,7 +23,7 @@ import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import AperturaPromoBanner from '@/components/AperturaPromoBanner';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 
-// Paleta Kevin & Coco — rosa pastel
+// Paleta Yaxsell — púrpura
 const PINK_PRIMARY = '#ec4899';
 const PINK_LIGHT = '#f9a8d4';
 const PINK_BG = '#fdf2f8';
@@ -83,7 +83,7 @@ export default function ProductDetailPlantilla1() {
             ]);
             const cat = catDoc as any;
             setCategoryName(cat.name || '');
-            setCategoryBg(cat.BACKGROUND_IMAGE_URL || 'https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2Fyoung-asian-woman-sunglasses-going-shopping-holding-bags-from-malls-stores-smiling-standi.jpg?alt=media&token=515133e5-8477-4c58-948c-e28477f1f912');
+            setCategoryBg(cat.BACKGROUND_IMAGE_URL || '/shopify/assets/template.jpg');
             setCategoryColor(cat.COLOR || PINK_PRIMARY);
             setCategoryIcon(cat.iconUrl || '');
             setRelated((relRes.documents as unknown as Product[]).filter(r => r.$id !== id).slice(0, 6));
@@ -99,7 +99,7 @@ export default function ProductDetailPlantilla1() {
   useEffect(() => {
     if (!product) return;
     const price = resolveProductDisplayPrice(product, apertura).displayPrice;
-    document.title = `${product.NAME} - ${formatPrice(price)} | Kevin & Coco Chile`;
+    document.title = `${product.NAME} - ${formatPrice(price)} | Yaxsell`;
     const setMeta = (name: string, content: string) => {
       let el = document.querySelector(`meta[name="${name}"]`) || document.querySelector(`meta[property="${name}"]`);
       if (!el) { el = document.createElement('meta'); name.startsWith('og:') ? el.setAttribute('property', name) : el.setAttribute('name', name); document.head.appendChild(el); }
@@ -144,7 +144,7 @@ export default function ProductDetailPlantilla1() {
     let scriptEl = document.getElementById('product-jsonld');
     if (!scriptEl) { scriptEl = document.createElement('script'); scriptEl.id = 'product-jsonld'; scriptEl.setAttribute('type', 'application/ld+json'); document.head.appendChild(scriptEl); }
     scriptEl.textContent = JSON.stringify(jsonLd);
-    return () => { document.title = 'Kevin & Coco Chile'; const el = document.getElementById('product-jsonld'); if (el) el.remove(); };
+    return () => { document.title = 'Yaxsell'; const el = document.getElementById('product-jsonld'); if (el) el.remove(); };
   }, [product, categoryName, apertura]);
 
   if (isLoading) return (

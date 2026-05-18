@@ -37,7 +37,7 @@ export default function SupportPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       const queries = [Query.orderDesc('$createdAt'), Query.limit(100)];
-      if (filter !== 'all') queries.push(Query.equal('STATUS', filter));
+      if (filter !== 'all') queries.push(Query.equal('status', filter));
       const resp = await databases.listDocuments(databaseId, SUPPORT_TICKETS_COLLECTION_ID, queries);
       setTickets(resp.documents as unknown as SupportTicket[]);
     } catch (e: any) { setError(e.message); }

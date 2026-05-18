@@ -7,7 +7,10 @@ import { Banner } from '@/types/admin';
 import { Plus, Pencil, Trash2, X, RefreshCw, AlertTriangle, Image, Eye, EyeOff, ChevronUp, ChevronDown, Search, Download } from 'lucide-react';
 import ImageUploadField from '@/components/admin/ImageUploadField';
 
-const BANNERS_BUCKET_ID = '67f41e05000d0adb6f12';
+import { MEDIA_BUCKET_ID, MEDIA_PREFIXES } from '@/lib/appwrite';
+import { invalidateBannerCache } from '@/lib/cache';
+
+const BANNERS_BUCKET_ID = MEDIA_BUCKET_ID; // Backward compatibility
 
 export default function BannersPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -37,6 +40,7 @@ export default function BannersPage() {
       await Promise.all([...selected].map(id => databases.deleteDocument(databaseId, BANNERS_COLLECTION_ID, id)));
       setBanners(prev => prev.filter(b => !selected.has(b.$id)));
       setSelected(new Set());
+      invalidateBannerCache();
     } catch (e: any) { alert('Error: ' + e.message); }
     finally { setBulkDeleting(false); }
   };
@@ -96,6 +100,7 @@ export default function BannersPage() {
         setBanners(prev => prev.map(b => b.$id === (d as Banner).$id ? doc as unknown as Banner : b));
       }
       setModal(null);
+      invalidateBannerCache();
     } catch (e: any) { alert('Error: ' + e.message); }
     finally { setIsSaving(false); }
   };
@@ -108,6 +113,7 @@ export default function BannersPage() {
       const { databaseId } = getAppwriteConfig();
       await databases.deleteDocument(databaseId, BANNERS_COLLECTION_ID, id);
       setBanners(prev => prev.filter(b => b.$id !== id));
+      invalidateBannerCache();
     } catch (e: any) { alert('Error: ' + e.message); }
     finally { setDeleteId(null); }
   };
@@ -118,6 +124,7 @@ export default function BannersPage() {
       const { databaseId } = getAppwriteConfig();
       await databases.updateDocument(databaseId, BANNERS_COLLECTION_ID, b.$id, { ISACTIVE: !b.ISACTIVE });
       setBanners(prev => prev.map(x => x.$id === b.$id ? { ...x, ISACTIVE: !x.ISACTIVE } : x));
+      invalidateBannerCache();
     } catch (e: any) { alert('Error: ' + e.message); }
   };
 

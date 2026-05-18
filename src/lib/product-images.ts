@@ -1,11 +1,12 @@
-import { getAppwriteConfig } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from './appwrite';
 
-export const PRODUCTS_BUCKET_ID = '67f41e05000d0adb6f12';
+export const PRODUCTS_BUCKET_ID = MEDIA_BUCKET_ID; // Backward compatibility
 
 /** Convierte fileId o rutas parciales de Appwrite en URL pública de vista. */
 export function resolveStorageImageUrl(
   value?: string | null,
-  bucketId: string = PRODUCTS_BUCKET_ID,
+  bucketId: string = MEDIA_BUCKET_ID,
+  prefix: keyof typeof MEDIA_PREFIXES = 'products',
 ): string {
   if (!value || typeof value !== 'string') return '';
   const v = value.trim();
@@ -23,7 +24,8 @@ export function resolveStorageImageUrl(
 
   // File ID de Appwrite (sin slashes ni espacios)
   if (/^[a-zA-Z0-9]{10,}$/.test(v) && !v.includes('/') && !v.includes('.')) {
-    return `${endpoint}/storage/buckets/${bucketId}/files/${v}/view?project=${projectId}`;
+    const path = MEDIA_PREFIXES[prefix] + v;
+    return `${endpoint}/storage/buckets/${bucketId}/files/${path}/view?project=${projectId}`;
   }
 
   return v;

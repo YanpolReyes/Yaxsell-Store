@@ -1,0 +1,2113 @@
+﻿{
+  "products": [
+    {
+      "key": "NAME",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "DESCRIPTION",
+      "type": "string",
+      "size": 8192,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "PRICE",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "CURRENTPRICE",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "COST",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "STOCK",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "SOLDQUANTITY",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "CATEGORYID",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "SUBCATEGORYID",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "SELLERID",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "IMAGEURL",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "IMAGEURL2",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "IMAGEURL3",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "RATING",
+      "type": "double",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "NUMREVIEWS",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "WHOLESALEPRICE",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "WHOLESALEMINQUANTITY",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "ISFEATURED",
+      "type": "boolean",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "ISACTIVE",
+      "type": "boolean",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "PACKQTY",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "RESTOCKTHRESHOLD",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "CUSTOM_PRIMARY_COLOR",
+      "type": "string",
+      "size": 50,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "CUSTOM_SECONDARY_COLOR",
+      "type": "string",
+      "size": 50,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "CUSTOM_USE_GRADIENT",
+      "type": "boolean",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "jumpseller_id",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "inventory_products": [
+    {
+      "key": "sku",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "barcode",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "NAME",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "PRICE",
+      "type": "integer",
+      "required": false,
+      "default": 0,
+      "array": false
+    },
+    {
+      "key": "STOCK",
+      "type": "integer",
+      "required": false,
+      "default": 0,
+      "array": false
+    },
+    {
+      "key": "CATEGORYID",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "SUBCATEGORYID",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "IMAGEURL",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "IMAGEURL2",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "IMAGEURL3",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "WHOLESALEPRICE",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "WHOLESALEMINQUANTITY",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "ISACTIVE",
+      "type": "boolean",
+      "required": false,
+      "default": false,
+      "array": false
+    },
+    {
+      "key": "published_product_id",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "published_at",
+      "type": "string",
+      "size": 64,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "imported_at",
+      "type": "string",
+      "size": 64,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "FEATURES",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "TAGS",
+      "type": "string",
+      "size": 512,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "name_cn",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "IMAGEURL4",
+      "type": "string",
+      "size": 1024,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "IMAGEURL5",
+      "type": "string",
+      "size": 1024,
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "categories": [
+    {
+      "key": "name",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "iconUrl",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "order",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "color",
+      "type": "string",
+      "size": 50,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "BACKGROUND_IMAGE_URL",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "subcategories": [
+    {
+      "key": "name",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "categoryId",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "order",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "ICON_URL",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "BACKGROUND_IMAGE_URL",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "ZOOM_BACKGROUND_IMAGE_URL",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "COLOR",
+      "type": "string",
+      "size": 50,
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "banners": [
+    {
+      "key": "TITLE",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "DESCRIPTION",
+      "type": "string",
+      "size": 1024,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "IMAGEURL",
+      "type": "string",
+      "size": 2048,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "LINKURL",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "DURATION",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "ISACTIVE",
+      "type": "boolean",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "DISPLAYORDER",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "CLICKS",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "VIEWS",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "orders": [
+    {
+      "key": "USERID",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "ORDERCODE",
+      "type": "string",
+      "size": 50,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "ORDERINDEX",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "CUSTOMERNAME",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "CUSTOMEREMAIL",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "CUSTOMERRUT",
+      "type": "string",
+      "size": 50,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "CUSTOMERPHONE",
+      "type": "string",
+      "size": 50,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "REGION",
+      "type": "string",
+      "size": 100,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "COMUNA",
+      "type": "string",
+      "size": 100,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "ADDRESS",
+      "type": "string",
+      "size": 512,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "ADDITIONALINFO",
+      "type": "string",
+      "size": 512,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "ADDRESSPHOTOURL",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "PAYMENTMETHOD",
+      "type": "string",
+      "size": 50,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "SHIPPINGAGENCY",
+      "type": "string",
+      "size": 100,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "SHIPPINGADDRESS",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "SUBTOTAL",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "SHIPPINGCOST",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "TOTAL",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "STATUS",
+      "type": "string",
+      "size": 50,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "ITEMS",
+      "type": "string",
+      "size": 50000,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "CREATEDAT",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "UPDATEDAT",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "EXPIRESAT",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "AUTOCANCELENABLED",
+      "type": "boolean",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "PAYMENTPROOFURL",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "timed_offers": [
+    {
+      "key": "title",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "offerType",
+      "type": "string",
+      "size": 50,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "targetId",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "productName",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "originalPrice",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "discountPrice",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "discountPercentage",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "customImagePath",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "timeType",
+      "type": "string",
+      "size": 50,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "durationHours",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "endDateTime",
+      "type": "string",
+      "size": 100,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "status",
+      "type": "string",
+      "size": 50,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "activatedAt",
+      "type": "string",
+      "size": 100,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "isActive",
+      "type": "boolean",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "createdAt",
+      "type": "string",
+      "size": 100,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "updatedAt",
+      "type": "string",
+      "size": 100,
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "sequences": [
+    {
+      "key": "key",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "value",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    }
+  ],
+  "discount_coupons": [
+    {
+      "key": "code",
+      "type": "string",
+      "size": 100,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "type",
+      "type": "string",
+      "size": 50,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "value",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "isActive",
+      "type": "boolean",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "maxUses",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "usedCount",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "minPurchase",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "expiresAt",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "points_store_items": [
+    {
+      "key": "name",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "description",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "pointsCost",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "imageUrl",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "isActive",
+      "type": "boolean",
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "users": [
+    {
+      "key": "userId",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "email",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "name",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "phone",
+      "type": "string",
+      "size": 100,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "createdAt",
+      "type": "string",
+      "size": 100,
+      "required": true,
+      "default": null,
+      "array": false
+    }
+  ],
+  "live_streams": [
+    {
+      "key": "title",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "description",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "url",
+      "type": "string",
+      "size": 2048,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "platform",
+      "type": "string",
+      "size": 50,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "status",
+      "type": "string",
+      "size": 50,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "isActive",
+      "type": "boolean",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "thumbnailUrl",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "viewerCount",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "scheduledAt",
+      "type": "string",
+      "size": 100,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "startAt",
+      "type": "string",
+      "size": 100,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "muted",
+      "type": "boolean",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "showText",
+      "type": "boolean",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "allowFullscreen",
+      "type": "boolean",
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "banner_overlay_positions": [
+    {
+      "key": "BANNERID",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "PRODUCTID",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "POSITIONX",
+      "type": "double",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "POSITIONY",
+      "type": "double",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "SCALE",
+      "type": "double",
+      "required": false,
+      "default": 1,
+      "array": false
+    },
+    {
+      "key": "CIRCLESCALE",
+      "type": "double",
+      "required": false,
+      "default": 1,
+      "array": false
+    },
+    {
+      "key": "DISPLAYTYPE",
+      "type": "string",
+      "size": 50,
+      "required": false,
+      "default": "default",
+      "array": false
+    },
+    {
+      "key": "CUSTOMIMAGEURL",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "CIRCLECOLOR",
+      "type": "string",
+      "size": 50,
+      "required": false,
+      "default": "#ffffff",
+      "array": false
+    },
+    {
+      "key": "ISACTIVE",
+      "type": "boolean",
+      "required": false,
+      "default": true,
+      "array": false
+    },
+    {
+      "key": "DISPLAYORDER",
+      "type": "integer",
+      "required": false,
+      "default": 0,
+      "array": false
+    },
+    {
+      "key": "CLICKS",
+      "type": "integer",
+      "required": false,
+      "default": 0,
+      "array": false
+    }
+  ],
+  "house_product_positions": [
+    {
+      "key": "PRODUCTID",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "CATEGORYID",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": "",
+      "array": false
+    },
+    {
+      "key": "POSITIONX",
+      "type": "double",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "POSITIONY",
+      "type": "double",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "ISACTIVE",
+      "type": "boolean",
+      "required": false,
+      "default": true,
+      "array": false
+    },
+    {
+      "key": "DISPLAYORDER",
+      "type": "integer",
+      "required": false,
+      "default": 0,
+      "array": false
+    },
+    {
+      "key": "SCALE",
+      "type": "double",
+      "required": false,
+      "default": 1,
+      "array": false
+    },
+    {
+      "key": "CIRCLESCALE",
+      "type": "double",
+      "required": false,
+      "default": 1,
+      "array": false
+    },
+    {
+      "key": "CUSTOMIMAGEURL",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "DISPLAYTYPE",
+      "type": "string",
+      "size": 50,
+      "required": false,
+      "default": "default",
+      "array": false
+    },
+    {
+      "key": "CIRCLECOLOR",
+      "type": "string",
+      "size": 50,
+      "required": false,
+      "default": "#3483fa",
+      "array": false
+    },
+    {
+      "key": "BACKGROUND",
+      "type": "string",
+      "size": 50,
+      "required": false,
+      "default": "house3",
+      "array": false
+    }
+  ],
+  "hotspot_panels": [
+    {
+      "key": "IMAGEURL",
+      "type": "string",
+      "size": 2048,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "TITLE",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "LINKURL",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "MOSAICGROUP",
+      "type": "string",
+      "size": 50,
+      "required": false,
+      "default": "main",
+      "array": false
+    },
+    {
+      "key": "CELLINDEX",
+      "type": "integer",
+      "required": false,
+      "default": 0,
+      "array": false
+    },
+    {
+      "key": "ISACTIVE",
+      "type": "boolean",
+      "required": false,
+      "default": true,
+      "array": false
+    },
+    {
+      "key": "DISPLAYORDER",
+      "type": "integer",
+      "required": false,
+      "default": 0,
+      "array": false
+    }
+  ],
+  "product_votes": [
+    {
+      "key": "PRODUCTTITLE",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "USERID",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "USERNAME",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "USEREMAIL",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "CREATEDAT",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "IPADDRESS",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "reviews": [
+    {
+      "key": "PRODUCTID",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "USERID",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "USERNAME",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "USERPROFILEIMAGEURL",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "RATING",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "COMMENT",
+      "type": "string",
+      "size": 4096,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "CREATEDAT",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "REVIEWDATE",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "ISEDITED",
+      "type": "boolean",
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "clips": [
+    {
+      "key": "TITLE",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "DESCRIPTION",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "VIDEOURL",
+      "type": "string",
+      "size": 2048,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "THUMBNAILURL",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "PRODUCTID",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "PRODUCTNAME",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "PRODUCTPRICE",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "PRODUCTIMAGEURL",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "USERID",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "USERNAME",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "LIKES",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "VIEWS",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "ISACTIVE",
+      "type": "boolean",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "CREATEDAT",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    }
+  ],
+  "favorites": [
+    {
+      "key": "userId",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "productId",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "createdAt",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    }
+  ],
+  "live_raffles": [
+    {
+      "key": "TITLE",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "DESCRIPTION",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "PRIZE",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "PRIZEIMAGEURL",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "LIVESTREAMID",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "STATUS",
+      "type": "string",
+      "size": 50,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "PARTICIPANTS",
+      "type": "string",
+      "size": 50000,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "WINNERID",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "WINNERNAME",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "MAXPARTICIPANTS",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "STARTSAT",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "ENDSAT",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "CREATEDAT",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    }
+  ],
+  "raffle_participants": [
+    {
+      "key": "raffleId",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "userId",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "participatedAt",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    }
+  ],
+  "stock_alerts": [
+    {
+      "key": "productId",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "userId",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "createdAt",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    }
+  ],
+  "notifications": [
+    {
+      "key": "title",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "message",
+      "type": "string",
+      "size": 4096,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "type",
+      "type": "string",
+      "size": 50,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "userId",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "isRead",
+      "type": "boolean",
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "theme_config": [
+    {
+      "key": "config",
+      "type": "string",
+      "size": 50000,
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "apertura_settings": [
+    {
+      "key": "isActive",
+      "type": "boolean",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "discountPercent",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "minPurchase",
+      "type": "integer",
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "createdAt",
+      "type": "string",
+      "size": 100,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "updatedAt",
+      "type": "string",
+      "size": 100,
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "support_tickets": [
+    {
+      "key": "userId",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "subject",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "message",
+      "type": "string",
+      "size": 4096,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "status",
+      "type": "string",
+      "size": 50,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "priority",
+      "type": "string",
+      "size": 50,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "adminNotes",
+      "type": "string",
+      "size": 4096,
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "stock_movements": [
+    {
+      "key": "productId",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "productName",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "type",
+      "type": "string",
+      "size": 50,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "quantity",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "reason",
+      "type": "string",
+      "size": 512,
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "fcm_tokens": [
+    {
+      "key": "userId",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "token",
+      "type": "string",
+      "size": 512,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "createdAt",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    }
+  ],
+  "order_status_history": [
+    {
+      "key": "orderId",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "status",
+      "type": "string",
+      "size": 50,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "createdAt",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "notes",
+      "type": "string",
+      "size": 2048,
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ],
+  "wholesale_requests": [
+    {
+      "key": "userId",
+      "type": "string",
+      "size": 256,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "companyName",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "rut",
+      "type": "string",
+      "size": 50,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "email",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "phone",
+      "type": "string",
+      "size": 100,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "status",
+      "type": "string",
+      "size": 50,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "adminNotes",
+      "type": "string",
+      "size": 4096,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "rejectionReason",
+      "type": "string",
+      "size": 1024,
+      "required": false,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "createdAt",
+      "type": "integer",
+      "required": true,
+      "default": null,
+      "array": false
+    }
+  ],
+  "addresses": [
+    {
+      "key": "userId",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "name",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "address",
+      "type": "string",
+      "size": 512,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "city",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "region",
+      "type": "string",
+      "size": 256,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "phone",
+      "type": "string",
+      "size": 100,
+      "required": true,
+      "default": null,
+      "array": false
+    },
+    {
+      "key": "isDefault",
+      "type": "boolean",
+      "required": false,
+      "default": null,
+      "array": false
+    }
+  ]
+}

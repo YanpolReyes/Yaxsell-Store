@@ -132,10 +132,10 @@ export default function PlantillasPage() {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
         const res = await databases.listDocuments(databaseId, SEQUENCES_COLLECTION_ID, [
-          Query.equal('KEY', TEMPLATE_KEY), Query.limit(1),
+          Query.equal('key', TEMPLATE_KEY), Query.limit(1),
         ]);
         if (res.documents.length > 0) {
-          setActiveTemplate(Number(res.documents[0].NEXT) || 1);
+          setActiveTemplate(Number(res.documents[0].value) || 1);
         }
       } catch {
         setActiveTemplate(1);
@@ -152,12 +152,12 @@ export default function PlantillasPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       const res = await databases.listDocuments(databaseId, SEQUENCES_COLLECTION_ID, [
-        Query.equal('KEY', TEMPLATE_KEY), Query.limit(1),
+        Query.equal('key', TEMPLATE_KEY), Query.limit(1),
       ]);
       if (res.documents.length > 0) {
-        await databases.updateDocument(databaseId, SEQUENCES_COLLECTION_ID, res.documents[0].$id, { NEXT: id });
+        await databases.updateDocument(databaseId, SEQUENCES_COLLECTION_ID, res.documents[0].$id, { value: id });
       } else {
-        await databases.createDocument(databaseId, SEQUENCES_COLLECTION_ID, ID.unique(), { KEY: TEMPLATE_KEY, NEXT: id });
+        await databases.createDocument(databaseId, SEQUENCES_COLLECTION_ID, ID.unique(), { key: TEMPLATE_KEY, value: id });
       }
       setActiveTemplate(id);
       setSaved(true);

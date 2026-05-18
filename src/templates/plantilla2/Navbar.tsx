@@ -6,7 +6,7 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/context/NotificationContext';
 import { useState, useEffect, useRef } from 'react';
-import { getServices, getAppwriteConfig, USER_PHOTOS_BUCKET, CATEGORIES_COLLECTION } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES, CATEGORIES_COLLECTION } from '@/lib/appwrite';
 import type { Category } from '@/types';
 import CartDrawer from '@/components/CartDrawer';
 import { getSectionSettings, getSectionConfig, SectionConfig } from '@/lib/section-config';
@@ -14,7 +14,8 @@ import { motion, AnimatePresence, useScroll, useTransform, useMotionValueEvent }
 
 function getFilePreviewUrl(fileId: string): string {
   const { endpoint, projectId } = getAppwriteConfig();
-  return `${endpoint}/storage/buckets/${USER_PHOTOS_BUCKET}/files/${fileId}/view?project=${projectId}`;
+  const path = MEDIA_PREFIXES.thumbnails + fileId;
+  return `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${path}/view?project=${projectId}`;
 }
 
 function readNavSettings(cfg?: SectionConfig[]) {

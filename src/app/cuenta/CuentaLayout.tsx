@@ -8,7 +8,7 @@ import {
   LogOut, ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { getServices, getAppwriteConfig, USER_PHOTOS_BUCKET } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from '@/lib/appwrite';
 import { CuentaBgProvider, useCuentaBgUrl } from './CuentaBgContext';
 
 const FF = '"DM Sans",system-ui,sans-serif';
@@ -22,7 +22,8 @@ const SIDEBAR_NAV = [
 
 function getFilePreviewUrl(fileId: string): string {
   const { endpoint, projectId } = getAppwriteConfig();
-  return `${endpoint}/storage/buckets/${USER_PHOTOS_BUCKET}/files/${fileId}/view?project=${projectId}`;
+  const path = MEDIA_PREFIXES.thumbnails + fileId;
+  return `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${path}/view?project=${projectId}`;
 }
 
 export default function CuentaLayout({ children }: { children: React.ReactNode }) {

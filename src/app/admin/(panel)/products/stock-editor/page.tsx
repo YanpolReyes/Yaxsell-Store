@@ -71,7 +71,7 @@ export default function StockEditorPage() {
 
   const inStockCount = products.filter(p => (p.STOCK || 0) > 0).length;
   const noStockCount = products.filter(p => (p.STOCK || 0) <= 0).length;
-  const lowStockCount = products.filter(p => { const s = p.STOCK || 0; return s > 0 && s <= 5; }).length;
+  const lowStockCount = products.filter(p => { const s = p.STOCK || 0; return s > 0 && s < 3; }).length;
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);

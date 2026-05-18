@@ -74,7 +74,7 @@ export default function ProductDetailPlantilla2() {
             ]);
             const cat = catDoc as any;
             setCategoryName(cat.name || '');
-            setCategoryBg(cat.BACKGROUND_IMAGE_URL || 'https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2Fyoung-asian-woman-sunglasses-going-shopping-holding-bags-from-malls-stores-smiling-standi.jpg?alt=media&token=515133e5-8477-4c58-948c-e28477f1f912');
+            setCategoryBg(cat.BACKGROUND_IMAGE_URL || '/shopify/assets/template.jpg');
             setCategoryColor(cat.COLOR || '#3483fa');
             setCategoryIcon(cat.iconUrl || '');
             setRelated((relRes.documents as unknown as Product[]).filter(r => r.$id !== id).slice(0, 6));
