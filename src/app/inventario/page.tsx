@@ -171,6 +171,8 @@ export default function InventarioPage() {
   const [editBarcodeValue, setEditBarcodeValue] = useState<string>('');
   const [lastPlacedSection, setLastPlacedSection] = useState<number | null>(null);
   const [showLocator, setShowLocator] = useState(false);
+  const [isImportingPackQty, setIsImportingPackQty] = useState(false);
+  const [importPackQtyResults, setImportPackQtyResults] = useState<{ updated: number; notFound: number; errors: number } | null>(null);
 
   const sectionProductCounts = useMemo(() => {
     const counts: Record<number, number> = {};
@@ -220,6 +222,53 @@ export default function InventarioPage() {
   const reopenScannerIfBulk = () => {
     if (!scannerBulkMode) return;
     window.setTimeout(() => openScanner('search', true), 450);
+  };
+
+  const handleImportPackQty = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    setIsImportingPackQty(true);
+    setImportPackQtyResults(null);
+    try {
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data);
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' });
+
+      let updated = 0, notFound = 0, errors = 0;
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      for (const row of rows) {
+        const sku = String(row['SKU'] || row['sku'] || row['Sku'] || '').trim();
+        const packQty = parseInt(String(row['Cantidad por paquete'] || row['PACKQTY'] || row['PackQty'] || row['packQty'] || row['Cantidad'] || ''), 10);
+        if (!sku || isNaN(packQty) || packQty <= 0) { errors++; continue; }
+
+        // Buscar producto por SKU (en TAGS o FEATURES)
+        const product = products.find(p => {
+          const pSku = getSkuFromProduct(p);
+          return pSku && pSku.toLowerCase() === sku.toLowerCase();
+        });
+
+        if (!product) { notFound++; continue; }
+
+        try {
+          await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, product.$id, { PACKQTY: packQty });
+          setProducts(prev => prev.map(p => p.$id === product.$id ? { ...p, PACKQTY: packQty } : p));
+          updated++;
+        } catch {
+          errors++;
+        }
+        // Rate limit
+        await new Promise(r => setTimeout(r, 100));
+      }
+      setImportPackQtyResults({ updated, notFound, errors });
+    } catch (err: any) {
+      alert('Error al leer archivo: ' + (err.message || err));
+    } finally {
+      setIsImportingPackQty(false);
+    }
   };
 
   const savePackQty = async () => {
@@ -1424,6 +1473,13 @@ export default function InventarioPage() {
                   {isLoading ? <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /> : <Upload className="w-4 h-4" />}
                 </div>
               </label>
+              {/* Import PackQty from Excel */}
+              <label title="Importar Cantidad/Paquete por SKU" className="cursor-pointer">
+                <input type="file" accept=".xlsx,.xls,.csv" onChange={handleImportPackQty} className="hidden" disabled={isImportingPackQty} />
+                <div className="p-1.5 bg-violet-100 text-violet-600 rounded-lg hover:bg-violet-200 transition">
+                  {isImportingPackQty ? <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" /> : <Package className="w-4 h-4" />}
+                </div>
+              </label>
               <button onClick={loadProducts} disabled={loadingProducts}
                 className="p-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition disabled:opacity-50">
                 <RefreshCw className={`w-4 h-4 ${loadingProducts ? 'animate-spin' : ''}`} />
@@ -2241,6 +2297,20 @@ export default function InventarioPage() {
               {saveResults.updated} actualizados · {saveResults.created} productos creados
               {saveResults.errors > 0 && ` · ${saveResults.errors} error(es)`}
             </p>
+          </div>
+        )}
+
+        {importPackQtyResults && (
+          <div className="flex items-center justify-between gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
+            <div className="flex items-center gap-3">
+              <Package className="w-5 h-5 text-violet-600" />
+              <p className="text-sm text-violet-700">
+                <b>{importPackQtyResults.updated}</b> Pack Qty actualizados
+                {importPackQtyResults.notFound > 0 && ` · ${importPackQtyResults.notFound} SKU no encontrados`}
+                {importPackQtyResults.errors > 0 && ` · ${importPackQtyResults.errors} error(es)`}
+              </p>
+            </div>
+            <button onClick={() => setImportPackQtyResults(null)} className="text-violet-400 hover:text-violet-600"><X className="w-4 h-4" /></button>
           </div>
         )}
 
