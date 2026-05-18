@@ -128,7 +128,6 @@ function getBarcodeFromProduct(p: Product): string {
 }
 
 function buildCatalogPublishPayload(p: Product): Record<string, unknown> {
-  const features = productFeaturesText(p);
   const barcode = getBarcodeFromProduct(p);
   const sku = getSkuFromProduct(p);
   const payload: Record<string, unknown> = {
@@ -147,9 +146,7 @@ function buildCatalogPublishPayload(p: Product): Record<string, unknown> {
     ISACTIVE: true,
     PACKQTY: p.PACKQTY || 0,
   };
-  if (features) payload.FEATURES = features;
-  const tags = p.TAGS || sku;
-  if (tags) payload.TAGS = tags;
+  // FEATURES y TAGS no existen en la colección products (catálogo) — no enviarlos
   if (barcode) payload.barcode = barcode;
   if (p.jumpseller_id) payload.jumpseller_id = p.jumpseller_id;
   return payload;
@@ -593,14 +590,14 @@ export default function InventarioPage() {
       try {
         let pCursor: string | undefined;
         while (true) {
-          const queries: any[] = [Query.limit(500), Query.select(['$id', 'TAGS', 'FEATURES', 'jumpseller_id'])];
+          const queries: any[] = [Query.limit(500), Query.select(['$id', 'jumpseller_id', 'barcode'])];
           if (pCursor) queries.push(Query.cursorAfter(pCursor));
           const resp: any = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
           const docs = resp.documents as any[];
           if (!docs.length) break;
           for (const d of docs) {
-            const sku = getSkuFromProduct(d).toLowerCase();
-            const bc = getBarcodeFromProduct(d).toLowerCase();
+            const sku = (d.jumpseller_id || '').toLowerCase();
+            const bc = (d.barcode || '').toLowerCase();
             if (sku) skus.add(sku);
             if (bc) barcodes.add(bc);
           }
@@ -1118,8 +1115,21 @@ export default function InventarioPage() {
 
       const payload = buildCatalogPublishPayload(p);
 
-      // 1. Crear en catálogo
-      await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
+      // 1. Crear en catálogo (defensivo: retry sin campos opcionales si falla)
+      try {
+        await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
+      } catch (createErr: any) {
+        if (createErr?.message?.includes('Unknown attribute')) {
+          const safePayload = { ...payload };
+          delete (safePayload as any).barcode;
+          delete (safePayload as any).jumpseller_id;
+          delete (safePayload as any).PACKQTY;
+          delete (safePayload as any).SUBCATEGORYID;
+          await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), safePayload);
+        } else {
+          throw createErr;
+        }
+      }
 
       // 2. Eliminar de inventario
       await databases.deleteDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, productId);
@@ -1179,7 +1189,21 @@ export default function InventarioPage() {
 
           const payload = buildCatalogPublishPayload(p);
 
-          await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
+          try {
+            await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
+          } catch (createErr: any) {
+            // Si falla por atributo desconocido, reintentar sin campos opcionales
+            if (createErr?.message?.includes('Unknown attribute')) {
+              const safePayload = { ...payload };
+              delete (safePayload as any).barcode;
+              delete (safePayload as any).jumpseller_id;
+              delete (safePayload as any).PACKQTY;
+              delete (safePayload as any).SUBCATEGORYID;
+              await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), safePayload);
+            } else {
+              throw createErr;
+            }
+          }
           await databases.deleteDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, p.$id);
 
           if (sku) publishedSkus.add(sku);
