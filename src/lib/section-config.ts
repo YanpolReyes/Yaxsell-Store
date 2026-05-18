@@ -396,6 +396,23 @@ export interface SectionSettings {
   heroParticlesColor?: string; // Color base de las partículas (se generan variaciones)
   heroParticlesSize?: number; // Tamaño base de las partículas en px
   heroTitleAnimation?: 'typing' | 'fadeIn' | 'slideUp' | 'scaleIn' | 'blurIn' | 'splitChars' | 'glitch' | 'none'; // Animación de entrada del título
+  // Catálogo Cover (productos page)
+  catalogCoverImage?: string;
+  catalogCoverTitle?: string;
+  catalogCoverSubtitle?: string;
+  catalogCoverOverlayEnabled?: boolean;
+  catalogCoverOverlayOpacity?: number;
+  catalogCoverOverlayColor?: string;
+  // Footer extras
+  footerLogoWidth?: number;
+  footerCol1Title?: string;
+  footerCol2Title?: string;
+  footerCol3Title?: string;
+  footerCol4Title?: string;
+  // Hero overlay (alias usados en tpl1 HomePage)
+  overlayEnabled?: boolean;
+  overlayOpacity?: number;
+  overlayColor?: string;
 }
 
 export interface CollectionItem {
