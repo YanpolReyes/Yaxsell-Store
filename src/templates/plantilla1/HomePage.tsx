@@ -7286,6 +7286,33 @@ export default function HomePage1() {
         heroInner.style.setProperty('--gradient-background', 'linear-gradient(101.19deg,rgba(254,242,248,1),rgba(252,231,243,1) 50%,rgba(251,207,232,1) 100%)');
       }
       heroBannerEl.classList.add('tpl1-hero-ready');
+
+      // ── Auto-height: ajustar contenedor al tamaño de la imagen ──
+      const adjustHeroHeight = () => {
+        const activeSlide = heroBannerEl.querySelector('.swiper-slide-active .slide-image img, .swiper-slide-active .slide-image__img') as HTMLImageElement
+          || heroBannerEl.querySelector('.slide-image img, .slide-image__img') as HTMLImageElement;
+        if (activeSlide && activeSlide.naturalWidth > 0) {
+          const imgAspect = activeSlide.naturalWidth / activeSlide.naturalHeight;
+          const containerWidth = heroBannerEl.offsetWidth;
+          const naturalHeight = containerWidth / imgAspect;
+          const slider = heroBannerEl.querySelector('.musk-banner-slider') as HTMLElement;
+          const mainBanner = heroBannerEl.querySelector('.musk-main-banner') as HTMLElement;
+          if (slider) slider.style.height = `${naturalHeight}px`;
+          if (mainBanner) mainBanner.style.height = `${naturalHeight}px`;
+        }
+      };
+      // Ejecutar cuando la imagen carga
+      const heroImgs = heroBannerEl.querySelectorAll('.slide-image img, .slide-image__img');
+      heroImgs.forEach((img) => {
+        if ((img as HTMLImageElement).complete) adjustHeroHeight();
+        else (img as HTMLImageElement).addEventListener('load', adjustHeroHeight);
+      });
+      // Ejecutar en resize y cuando Swiper cambia de slide
+      window.addEventListener('resize', adjustHeroHeight);
+      heroBannerEl.addEventListener('transitionend', adjustHeroHeight);
+      // Ejecutar después de un delay para cuando Swiper ya inicializó
+      setTimeout(adjustHeroHeight, 500);
+      setTimeout(adjustHeroHeight, 1500);
     }
 
     // 0c. Inject subscribe popup content if empty
