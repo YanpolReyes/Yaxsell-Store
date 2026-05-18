@@ -322,8 +322,8 @@ function LoginInner() {
                         </div>
                         
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                          <InputField label="Teléfono (opc)" icon={<Phone size={18} />} type="tel" value={regForm.phone} onChange={(e: any) => setRegForm(f => ({ ...f, phone: e.target.value }))} placeholder="+569..." />
-                          <InputField label="RUT (opc)" icon={<CreditCard size={18} />} value={regForm.rut} 
+                          <InputField label="Teléfono (opcional)" icon={<Phone size={18} />} type="tel" value={regForm.phone} onChange={(e: any) => setRegForm(f => ({ ...f, phone: e.target.value }))} placeholder="+569..." />
+                          <InputField label="RUT (opcional)" icon={<CreditCard size={18} />} value={regForm.rut} 
                             onChange={(e: any) => {
                               const clean = e.target.value.replace(/[^0-9kK]/g, '').toUpperCase();
                               if (clean.length <= 1) { setRegForm(f => ({ ...f, rut: clean })); return; }
