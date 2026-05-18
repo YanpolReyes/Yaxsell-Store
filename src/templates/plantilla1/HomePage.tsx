@@ -313,6 +313,23 @@ export default function HomePage1() {
     getSectionConfigAsync().then(setSectionCfg).catch(() => setSectionCfg(getSectionConfig()));
   }, []);
 
+  /* Recargar config cuando el usuario vuelve a la pestaña (editor → vivo) */
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        invalidateSectionCache();
+        // Invalidar caches de localStorage para forzar re-fetch de datos frescos
+        try {
+          const keys = Object.keys(localStorage);
+          keys.forEach(k => { if (k.startsWith('yaxsel_cache:')) localStorage.removeItem(k); });
+        } catch {}
+        getSectionConfigAsync().then(setSectionCfg).catch(() => setSectionCfg(getSectionConfig()));
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
+
   /* Reaplicar visibilidad de secciones (después de otros effects que tocan display) */
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0) return;
