@@ -10,6 +10,7 @@ export interface ScanWizardState {
   scannedCode: string;
   step: ScanWizardStep;
   packages: string;
+  packQtyInput?: string;
   section: number | null;
 }
 
@@ -115,13 +116,33 @@ export default function ScanWizardModal({
           <>
             <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-4 shrink-0">
               <h3 className="text-xl font-bold">Cantidad de paquetes</h3>
-              <p className="text-xs text-white/80 mt-1">{wizard.product.PACKQTY} unidades por paquete</p>
+              <p className="text-xs text-white/80 mt-1">{wizard.packQtyInput || wizard.product.PACKQTY || '—'} unidades por paquete</p>
             </div>
             <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center gap-4">
               {wizard.product.IMAGEURL && (
                 <img src={wizard.product.IMAGEURL} alt="" className="w-24 h-24 object-cover rounded-xl shadow" />
               )}
               <div className="text-center text-sm font-medium text-gray-700 line-clamp-2">{wizard.product.NAME}</div>
+              {!wizard.product.PACKQTY && (
+                <div className="w-full max-w-xs">
+                  <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1 block">Unidades por paquete</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={wizard.packQtyInput || ''}
+                    onChange={e => onUpdate(w => ({ ...w, packQtyInput: e.target.value }))}
+                    placeholder="Ej: 12"
+                    className="w-full px-4 py-3 text-xl font-bold text-center border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-amber-500"
+                  />
+                  <div className="flex gap-2 mt-2">
+                    {['6', '12', '24'].map(n => (
+                      <button key={n} type="button" onClick={() => onUpdate(w => ({ ...w, packQtyInput: n }))}
+                        className="flex-1 py-2 text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg transition">{n}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1 block">Cantidad de paquetes</label>
               <input
                 type="number"
                 min={0}
@@ -142,13 +163,13 @@ export default function ScanWizardModal({
                   </button>
                 ))}
               </div>
-              {wizard.packages && wizard.product.PACKQTY && (
+              {wizard.packages && (wizard.product.PACKQTY || wizard.packQtyInput) && (
                 <div className="text-center text-sm bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 w-full">
                   <span className="text-gray-600">
-                    {wizard.packages} paq. × {wizard.product.PACKQTY} ={' '}
+                    {wizard.packages} paq. × {wizard.packQtyInput || wizard.product.PACKQTY} ={' '}
                   </span>
                   <span className="font-bold text-emerald-600 text-lg">
-                    {parseInt(wizard.packages, 10) * wizard.product.PACKQTY!} unidades
+                    {parseInt(wizard.packages, 10) * parseInt(wizard.packQtyInput || String(wizard.product.PACKQTY || 0), 10)} unidades
                   </span>
                 </div>
               )}
@@ -222,12 +243,7 @@ export default function ScanWizardModal({
             <div className="shrink-0 flex border-t border-gray-100 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
               <button
                 type="button"
-                onClick={() =>
-                  onUpdate(w => {
-                    if (w.product.PACKQTY && w.product.PACKQTY > 0) return { ...w, step: 'packages' };
-                    return { ...w, step: 'confirm' };
-                  })
-                }
+                onClick={() => onUpdate(w => ({ ...w, step: 'packages' }))}
                 className="flex-1 px-4 py-4 text-gray-600 hover:bg-gray-50 font-semibold transition"
               >
                 Atrás

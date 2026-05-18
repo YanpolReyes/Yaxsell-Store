@@ -253,7 +253,7 @@ export default function InventarioPage() {
       product,
       scannedCode,
       step: 'confirm',
-      packages: String(Math.max(0, Math.round((product.STOCK || 0) / (product.PACKQTY || 1)))),
+      packages: '1',
       section: sectionMatch ? parseInt(sectionMatch[1], 10) : lastPlacedSection,
     });
   };
@@ -262,10 +262,8 @@ export default function InventarioPage() {
     setScanWizard(w => {
       if (!w) return null;
       const product = updatedProduct || w.product;
-      if (product.PACKQTY && product.PACKQTY > 0) {
-        return { ...w, product, step: 'packages' };
-      }
-      return { ...w, product, step: 'gondola' };
+      // Siempre ir a packages (aunque no tenga PACKQTY, puede ingresarla ahí)
+      return { ...w, product, step: 'packages' };
     });
   };
 
@@ -309,8 +307,8 @@ export default function InventarioPage() {
 
   const finishScanWizard = async () => {
     if (!scanWizard) return;
-    const { product, packages, section, scannedCode } = scanWizard;
-    const packQty = product.PACKQTY || 0;
+    const { product, packages, section, scannedCode, packQtyInput } = scanWizard;
+    const packQty = packQtyInput ? parseInt(packQtyInput, 10) : (product.PACKQTY || 0);
     const pkgs = parseInt(packages, 10);
     setSavingStockId(product.$id);
     try {
@@ -331,8 +329,9 @@ export default function InventarioPage() {
         prev.map(p => (p.$id === product.$id ? { ...p, ...payload, FEATURES: finalFeatures as string } : p)),
       );
       if (section) setLastPlacedSection(section);
-      setScanSaved({ name: product.NAME || 'Producto' });
       setScanWizard(null);
+      // Abrir escáner directamente para escaneo masivo
+      openScanner('search');
     } catch (e: unknown) {
       alert('Error: ' + (e instanceof Error ? e.message : 'Error al guardar'));
     } finally {
