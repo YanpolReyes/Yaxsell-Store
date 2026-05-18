@@ -7289,30 +7289,49 @@ export default function HomePage1() {
 
       // ── Auto-height: ajustar contenedor al tamaño de la imagen ──
       const adjustHeroHeight = () => {
-        const activeSlide = heroBannerEl.querySelector('.swiper-slide-active .slide-image img, .swiper-slide-active .slide-image__img') as HTMLImageElement
+        const activeImg = heroBannerEl.querySelector('.swiper-slide-active .slide-image img, .swiper-slide-active .slide-image__img') as HTMLImageElement
           || heroBannerEl.querySelector('.slide-image img, .slide-image__img') as HTMLImageElement;
-        if (activeSlide && activeSlide.naturalWidth > 0) {
-          const imgAspect = activeSlide.naturalWidth / activeSlide.naturalHeight;
-          const containerWidth = heroBannerEl.offsetWidth;
-          const naturalHeight = containerWidth / imgAspect;
-          const slider = heroBannerEl.querySelector('.musk-banner-slider') as HTMLElement;
-          const mainBanner = heroBannerEl.querySelector('.musk-main-banner') as HTMLElement;
-          if (slider) slider.style.height = `${naturalHeight}px`;
-          if (mainBanner) mainBanner.style.height = `${naturalHeight}px`;
-        }
+        if (!activeImg || !activeImg.naturalWidth) return;
+
+        const imgAspect = activeImg.naturalWidth / activeImg.naturalHeight;
+        const containerWidth = heroBannerEl.offsetWidth || window.innerWidth;
+        const naturalHeight = Math.round(containerWidth / imgAspect);
+
+        // Aplicar a todos los contenedores del hero
+        const targets = [
+          heroBannerEl,
+          heroBannerEl.querySelector('.musk-main-banner'),
+          heroBannerEl.querySelector('.musk-banner-slider'),
+          heroBannerEl.querySelector('.swiper'),
+          heroBannerEl.querySelector('.swiper-container'),
+          heroBannerEl.querySelector('.swiper-wrapper'),
+        ];
+        targets.forEach(el => {
+          if (el) {
+            (el as HTMLElement).style.setProperty('height', `${naturalHeight}px`, 'important');
+            (el as HTMLElement).style.setProperty('min-height', '0', 'important');
+            (el as HTMLElement).style.setProperty('max-height', 'none', 'important');
+          }
+        });
+        // El slide activo también
+        heroBannerEl.querySelectorAll('.swiper-slide').forEach(sl => {
+          (sl as HTMLElement).style.setProperty('height', `${naturalHeight}px`, 'important');
+        });
       };
       // Ejecutar cuando la imagen carga
       const heroImgs = heroBannerEl.querySelectorAll('.slide-image img, .slide-image__img');
       heroImgs.forEach((img) => {
-        if ((img as HTMLImageElement).complete) adjustHeroHeight();
-        else (img as HTMLImageElement).addEventListener('load', adjustHeroHeight);
+        if ((img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth > 0) {
+          adjustHeroHeight();
+        } else {
+          (img as HTMLImageElement).addEventListener('load', adjustHeroHeight);
+        }
       });
       // Ejecutar en resize y cuando Swiper cambia de slide
       window.addEventListener('resize', adjustHeroHeight);
       heroBannerEl.addEventListener('transitionend', adjustHeroHeight);
-      // Ejecutar después de un delay para cuando Swiper ya inicializó
-      setTimeout(adjustHeroHeight, 500);
-      setTimeout(adjustHeroHeight, 1500);
+      // Ejecutar después de delays para cuando Swiper JS sobreescriba heights
+      [300, 800, 1500, 3000].forEach(ms => setTimeout(adjustHeroHeight, ms));
     }
 
     // 0c. Inject subscribe popup content if empty

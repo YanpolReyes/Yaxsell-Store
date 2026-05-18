@@ -1333,8 +1333,10 @@ cart-drawer.cart-sidebar::after {
 /* The inline style on .musk-main-banner overrides --primary-background and --secondary-background
    from gray (220,220,220) to pink (254,242,248 / 252,231,243). This is the root cause fix. */
 #shopify-section-template--22405132419320__hero_banner_R6iEJ4 {
-  min-height: 0;
-  background: linear-gradient(180deg, #fff5f8 0%, #fce7f3 100%) !important;
+  min-height: 0 !important;
+  height: auto !important;
+  overflow: hidden !important;
+  background: transparent !important;
 }
 
 [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .musk-main-banner,
