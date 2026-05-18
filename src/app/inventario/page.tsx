@@ -1163,6 +1163,9 @@ export default function InventarioPage() {
       setProducts(prev => prev.filter(x => x.$id !== productId));
       if (sku) setPublishedSkus(prev => new Set(prev).add(sku));
       if (barcode) setPublishedBarcodes(prev => new Set(prev).add(barcode));
+      // Agregar a publishedProducts para que aparezca en Ubicados
+      const publishedProduct = { ...p, section: getSectionFromProduct(p) } as any;
+      setPublishedProducts(prev => [...prev, publishedProduct]);
 
       // 4. Invalidar caché del catálogo público
       invalidateProductCache();
