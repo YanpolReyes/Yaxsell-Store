@@ -3307,7 +3307,9 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
               <span style={{ fontSize: 11, fontWeight: 700, color: '#5850ec' }}>Slide {idx + 1}</span>
               {slides.length > 1 && <button onClick={() => removeSlide(idx)} style={{ fontSize: 10, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}>× Eliminar</button>}
             </div>
-            <ImageUploadField label="Imagen de fondo" value={sl.imageUrl || ''} onChange={v => updateSlide(idx, { imageUrl: v })} />
+            <ImageUploadField label="Imagen de fondo (Desktop)" value={sl.imageUrl || ''} onChange={v => updateSlide(idx, { imageUrl: v })} />
+            <ImageUploadField label="Imagen de fondo (Móvil)" value={sl.mobileImageUrl || ''} onChange={v => updateSlide(idx, { mobileImageUrl: v })} />
+            {!sl.mobileImageUrl && <div style={{ fontSize: 10, color: '#9ca3af', marginTop: -6 }}>Si no se define, se usa la imagen de Desktop</div>}
             <Field icon={<Type size={13} />} label="Título" value={sl.title || ''} onChange={v => updateSlide(idx, { title: v })} placeholder="Yaxsell" />
             <Field icon={<Type size={13} />} label="Subtítulo" value={sl.subtitle || ''} onChange={v => updateSlide(idx, { subtitle: v })} placeholder="E-COMMERCE" />
             <Field icon={<Type size={13} />} label="Descripción" value={sl.description || ''} onChange={v => updateSlide(idx, { description: v })} placeholder="Texto descriptivo opcional" />
