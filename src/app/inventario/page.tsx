@@ -1139,20 +1139,31 @@ export default function InventarioPage() {
 
       const payload = buildCatalogPublishPayload(p);
 
-      // 1. Crear en catálogo (defensivo: retry sin campos opcionales si falla)
+      // 1. Crear en catálogo (defensivo: ir eliminando campos opcionales uno por uno si fallan)
+      const optionalFields = ['barcode', 'jumpseller_id', 'PACKQTY', 'SUBCATEGORYID'];
+      let createSuccess = false;
       try {
         await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
+        createSuccess = true;
       } catch (createErr: any) {
-        if (createErr?.message?.includes('Unknown attribute')) {
-          const safePayload = { ...payload };
-          delete (safePayload as any).barcode;
-          delete (safePayload as any).jumpseller_id;
-          delete (safePayload as any).PACKQTY;
-          delete (safePayload as any).SUBCATEGORYID;
-          delete (safePayload as any).section;
-          await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), safePayload);
-        } else {
-          throw createErr;
+        if (!createErr?.message?.includes('Unknown attribute')) throw createErr;
+        // Intentar eliminando campos opcionales uno por uno hasta que funcione
+        let retryPayload = { ...payload };
+        for (const field of optionalFields) {
+          delete (retryPayload as any)[field];
+          try {
+            await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), retryPayload);
+            createSuccess = true;
+            break;
+          } catch (retryErr: any) {
+            if (!retryErr?.message?.includes('Unknown attribute')) throw retryErr;
+            continue;
+          }
+        }
+        if (!createSuccess) {
+          // Último intento sin section tampoco
+          delete (retryPayload as any).section;
+          await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), retryPayload);
         }
       }
 
@@ -1220,17 +1231,24 @@ export default function InventarioPage() {
           try {
             await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
           } catch (createErr: any) {
-            // Si falla por atributo desconocido, reintentar sin campos opcionales
-            if (createErr?.message?.includes('Unknown attribute')) {
-              const safePayload = { ...payload };
-              delete (safePayload as any).barcode;
-              delete (safePayload as any).jumpseller_id;
-              delete (safePayload as any).PACKQTY;
-              delete (safePayload as any).SUBCATEGORYID;
-              delete (safePayload as any).section;
-              await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), safePayload);
-            } else {
-              throw createErr;
+            if (!createErr?.message?.includes('Unknown attribute')) throw createErr;
+            const optionalFields = ['barcode', 'jumpseller_id', 'PACKQTY', 'SUBCATEGORYID'];
+            let retryPayload = { ...payload };
+            let retryOk = false;
+            for (const field of optionalFields) {
+              delete (retryPayload as any)[field];
+              try {
+                await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), retryPayload);
+                retryOk = true;
+                break;
+              } catch (retryErr: any) {
+                if (!retryErr?.message?.includes('Unknown attribute')) throw retryErr;
+                continue;
+              }
+            }
+            if (!retryOk) {
+              delete (retryPayload as any).section;
+              await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), retryPayload);
             }
           }
           await databases.deleteDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, p.$id);
