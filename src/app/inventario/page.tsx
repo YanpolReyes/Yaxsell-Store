@@ -299,8 +299,13 @@ export default function InventarioPage() {
   const confirmScanPackages = () => {
     if (!scanWizard) return;
     const pkgs = parseInt(scanWizard.packages, 10);
-    if (isNaN(pkgs) || pkgs < 0) {
-      alert('Ingresa una cantidad válida de paquetes.');
+    if (isNaN(pkgs) || pkgs <= 0) {
+      alert('Ingresa la cantidad de paquetes.');
+      return;
+    }
+    const packQty = scanWizard.packQtyInput ? parseInt(scanWizard.packQtyInput, 10) : (scanWizard.product.PACKQTY || 0);
+    if (!packQty || packQty <= 0) {
+      alert('Ingresa las unidades por paquete antes de continuar.');
       return;
     }
     setScanWizard(w => (w ? { ...w, step: 'gondola' } : null));

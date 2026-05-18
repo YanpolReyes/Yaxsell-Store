@@ -186,7 +186,8 @@ export default function ScanWizardModal({
               <button
                 type="button"
                 onClick={onConfirmPackages}
-                className="flex-1 px-4 py-4 bg-amber-500 hover:bg-amber-600 text-white font-bold transition"
+                disabled={!wizard.packages || parseInt(wizard.packages, 10) <= 0 || (!wizard.product.PACKQTY && (!wizard.packQtyInput || parseInt(wizard.packQtyInput, 10) <= 0))}
+                className="flex-1 px-4 py-4 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 disabled:text-gray-500 text-white font-bold transition"
               >
                 Siguiente
               </button>
