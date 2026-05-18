@@ -17,7 +17,7 @@ import { invalidateProductCache } from '@/lib/cache';
 
 const PRODUCTS_BUCKET_ID = MEDIA_BUCKET_ID; // Backward compatibility
 
-const EMPTY: Partial<Product> = { NAME: '', DESCRIPTION: '', PRICE: 0, STOCK: 0, COST: 0, WHOLESALEPRICE: 0, WHOLESALEMINQUANTITY: 0, IMAGEURL: '', IMAGEURL2: '', IMAGEURL3: '', CATEGORYID: '' };
+const EMPTY: Partial<Product> = { NAME: '', DESCRIPTION: '', PRICE: 0, STOCK: 0, COST: 0, WHOLESALEPRICE: 0, WHOLESALEMINQUANTITY: 0, PACKQTY: 0, IMAGEURL: '', IMAGEURL2: '', IMAGEURL3: '', CATEGORYID: '' };
 
 const FieldInput = ({ label, field, type = 'text', value, onChange }: { label: string; field: string; type?: string; value: any; onChange: (val: any) => void }) => (
   <div>
@@ -176,6 +176,7 @@ export default function ProductsPage() {
         CURRENTPRICE: d.CURRENTPRICE ? Number(d.CURRENTPRICE) : null,
         WHOLESALEPRICE: Number(d.WHOLESALEPRICE) || 0,
         WHOLESALEMINQUANTITY: Number(d.WHOLESALEMINQUANTITY) || 0,
+        PACKQTY: Number(d.PACKQTY) || 0,
         IMAGEURL: d.IMAGEURL || '', IMAGEURL2: d.IMAGEURL2 || '',
         IMAGEURL3: d.IMAGEURL3 || '',
         CATEGORYID: d.CATEGORYID || '',
@@ -563,6 +564,7 @@ export default function ProductsPage() {
                       <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${p.STOCK === 0 ? 'bg-red-100 text-red-700' : p.STOCK <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
                         {p.STOCK}
                       </span>
+                      {p.PACKQTY ? <span className="text-[9px] text-gray-400">×{p.PACKQTY}/pq</span> : null}
                       {(() => {
                         const loc = getSection(p);
                         return loc ? (
@@ -708,6 +710,7 @@ export default function ProductsPage() {
               </div>
               <FieldInput label="Precio Mayorista" field="WHOLESALEPRICE" type="number" value={modal?.data.WHOLESALEPRICE} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEPRICE: v } } : m)} />
               <FieldInput label="Cant. Mínima Mayorista" field="WHOLESALEMINQUANTITY" type="number" value={modal?.data.WHOLESALEMINQUANTITY} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEMINQUANTITY: v } } : m)} />
+              <FieldInput label="Cant. por paquete" field="PACKQTY" type="number" value={modal?.data.PACKQTY} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, PACKQTY: v } } : m)} />
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">SKU</label>
                 <input type="text" value={modal.data._sku ?? ''}
