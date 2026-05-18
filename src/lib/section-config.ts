@@ -1399,7 +1399,7 @@ const API_ENDPOINT = '/api/theme-config';
 // Cache en memoria para evitar llamadas repetidas
 let cachedConfig: SectionConfig[] | null = null;
 let cacheTimestamp = 0;
-const CACHE_TTL = 5000; // 5 segundos
+const CACHE_TTL = 1000; // 1 segundo — theme config cambia seguido
 let pendingConfigPromise: Promise<SectionConfig[]> | null = null;
 
 /** Invalidate in-memory cache so next read fetches fresh data */
@@ -1421,7 +1421,7 @@ export async function getSectionConfigAsync(): Promise<SectionConfig[]> {
   pendingConfigPromise = (async () => {
     // Intentar leer del API server-side (que usa API key)
     try {
-      const res = await fetch(API_ENDPOINT);
+      const res = await fetch(`${API_ENDPOINT}?_t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.sections) {

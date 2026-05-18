@@ -10,11 +10,22 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // HTML pages — nunca cachear en Vercel edge ni navegador
         source: '/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=0, must-revalidate',
+            value: 'public, max-age=0, s-maxage=0, must-revalidate, proxy-revalidate',
+          },
+        ],
+      },
+      {
+        // API routes — nunca cachear en Vercel edge
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate',
           },
         ],
       },

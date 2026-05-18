@@ -23,7 +23,10 @@ export async function GET() {
     
     if (res.ok) {
       const doc = await res.json();
-      return NextResponse.json({ success: true, sections: doc.sections });
+      return NextResponse.json(
+        { success: true, sections: doc.sections },
+        { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } },
+      );
     }
     
     // Documento no existe, crear vacío
@@ -37,7 +40,10 @@ export async function GET() {
     });
     
     if (createRes.ok) {
-      return NextResponse.json({ success: true, sections: '[]' });
+      return NextResponse.json(
+        { success: true, sections: '[]' },
+        { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } },
+      );
     }
     
     const err = await createRes.json();
@@ -63,7 +69,10 @@ export async function POST(req: NextRequest) {
     });
     
     if (updateRes.ok) {
-      return NextResponse.json({ success: true });
+      return NextResponse.json(
+        { success: true },
+        { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } },
+      );
     }
     
     // Si no existe, crear
@@ -77,7 +86,10 @@ export async function POST(req: NextRequest) {
     });
     
     if (createRes.ok) {
-      return NextResponse.json({ success: true });
+      return NextResponse.json(
+        { success: true },
+        { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } },
+      );
     }
     
     const err = await createRes.json();

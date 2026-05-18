@@ -16,6 +16,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { gradientTemplates } from '@/lib/gradient-templates';
 import { SectionConfig, SectionSettings, getSectionConfig, getSectionConfigAsync, invalidateSectionCache, saveSectionConfig, saveSectionConfigAsync, SECTION_DEFAULTS, FontConfig, FONT_OPTIONS, getFontConfig, saveFontConfig, buildGoogleFontsUrl, CollectionItem, MediaGalleryItem } from '@/lib/section-config';
+import { cacheInvalidate } from '@/lib/cache';
 import { getServices, getAppwriteConfig, BANNERS_COLLECTION, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, TIMED_OFFERS_COLLECTION, THEME_CONFIG_COLLECTION } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 import { Banner, Product, Category, TimedOffer } from '@/types';
@@ -352,6 +353,11 @@ function ThemeEditorPage() {
     const newConfig = [...otherSections, ...reordered];
     
     saveSectionConfig(newConfig);
+    // Invalidar todos los caches de localStorage para que la página en vivo refresque
+    cacheInvalidate('banners:');
+    cacheInvalidate('products:');
+    cacheInvalidate('categories:');
+    cacheInvalidate('offers:');
     setHasChanges(true);
     // Tell iframe to update its local state instantly
     postToPreview({ type: 'te:reloadConfig', sections: newConfig });
