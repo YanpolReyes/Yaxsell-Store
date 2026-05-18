@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Query, ID } from 'appwrite';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -202,7 +202,7 @@ export default function InventarioPage() {
   const [showLocator, setShowLocator] = useState(false);
   const [isImportingPackQty, setIsImportingPackQty] = useState(false);
   const [importPackQtyResults, setImportPackQtyResults] = useState<{ updated: number; notFound: number; errors: number } | null>(null);
-  const [lastScannedCode, setLastScannedCode] = useState<{ code: string; timestamp: number } | null>(null);
+  const scannedCodesRef = useRef<Set<string>>(new Set());
   const [duplicateScanWarning, setDuplicateScanWarning] = useState<{ code: string; product: Product } | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -489,13 +489,13 @@ export default function InventarioPage() {
 
     try {
       if (scanTarget === 'search') {
-        // Detectar si es el mismo código escaneado recientemente (últimos 10 segundos)
-        const now = Date.now();
-        if (lastScannedCode && lastScannedCode.code === code && (now - lastScannedCode.timestamp) < 10000) {
+        // Detectar si es un código ya escaneado en esta sesión
+        const codeLower = code.toLowerCase();
+        if (scannedCodesRef.current.has(codeLower)) {
           const product = products.find(p => {
             const bc = getBarcodeFromProduct(p).toLowerCase();
             const sku = getSkuFromProduct(p).toLowerCase();
-            return (bc && bc === code.toLowerCase()) || (sku && sku === code.toLowerCase());
+            return (bc && bc === codeLower) || (sku && sku === codeLower);
           });
           if (product) {
             setDuplicateScanWarning({ code, product });
@@ -504,7 +504,6 @@ export default function InventarioPage() {
           }
         }
 
-        const codeLower = code.toLowerCase();
         const directMatch = products.find(p => {
           const bc = getBarcodeFromProduct(p).toLowerCase();
           const sku = getSkuFromProduct(p).toLowerCase();
@@ -512,7 +511,7 @@ export default function InventarioPage() {
         });
 
         if (directMatch) {
-          setLastScannedCode({ code, timestamp: now });
+          scannedCodesRef.current.add(codeLower);
           startScanWizard(directMatch, code);
         } else if (code.length >= 8) {
           const last4 = code.slice(-4).toLowerCase();
@@ -1338,7 +1337,7 @@ export default function InventarioPage() {
               </button>
               <button
                 onClick={() => {
-                  setLastScannedCode(null);
+                  scannedCodesRef.current.delete(duplicateScanWarning.code.toLowerCase());
                   setDuplicateScanWarning(null);
                   startScanWizard(duplicateScanWarning.product, duplicateScanWarning.code, true);
                 }}
@@ -1962,7 +1961,7 @@ export default function InventarioPage() {
             <div className="p-3 sm:p-5 border-b border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <div className="flex-1 min-w-0">
                 <h2 className="text-sm font-semibold text-gray-900 mb-0.5 sm:mb-1">Productos con stock</h2>
-                <p className="text-xs text-gray-500">{withStockProducts.length} productos listos para publicar al catálogo</p>
+                <p className="text-xs text-gray-500">{withStockProducts.length} productos · <span className="text-emerald-600 font-semibold">{withStockProducts.reduce((s, p) => s + (p.STOCK || 0), 0)} uds</span> stock total · <span className="text-blue-600 font-semibold">{withStockProducts.reduce((s, p) => s + (p.PACKQTY ? Math.max(0, Math.round((p.STOCK || 0) / p.PACKQTY)) * p.PACKQTY : (p.STOCK || 0)), 0)} uds</span> al catálogo</p>
               </div>
               <div className="relative flex-1 min-w-0 sm:min-w-[240px]">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -2035,7 +2034,9 @@ export default function InventarioPage() {
                       <th className="px-4 py-2.5 w-16">Img</th>
                       <th className="px-4 py-2.5">Producto</th>
                       <th className="px-4 py-2.5 w-32">SKU</th>
-                      <th className="px-4 py-2.5 w-24">Stock</th>
+                      <th className="px-4 py-2.5 w-20">Stock</th>
+                      <th className="px-4 py-2.5 w-20">A añadir</th>
+                      <th className="px-4 py-2.5 w-16">Sección</th>
                       <th className="px-4 py-2.5 w-24">Precio</th>
                       <th className="px-4 py-2.5 w-48">Editar</th>
                     </tr>
@@ -2082,6 +2083,8 @@ export default function InventarioPage() {
                           </td>
                           <td className="px-4 py-2 text-xs font-mono text-gray-600">{sku || '—'}</td>
                           <td className="px-4 py-2 text-sm font-semibold text-emerald-600">{p.STOCK || 0}</td>
+                          <td className="px-4 py-2 text-sm font-semibold text-blue-600">{p.PACKQTY ? Math.max(0, Math.round((p.STOCK || 0) / p.PACKQTY)) * p.PACKQTY : (p.STOCK || 0)}</td>
+                          <td className="px-4 py-2 text-sm font-semibold text-pink-600">{(() => { const s = getSection(p); return s ? `B${s}` : '—'; })()}</td>
                           <td className="px-4 py-2 text-gray-700">${(p.PRICE || 0).toLocaleString('es-CL')}</td>
                           <td className="px-4 py-2" onClick={e => e.stopPropagation()}>
                             <div className="flex flex-col gap-1.5">
@@ -2176,6 +2179,8 @@ export default function InventarioPage() {
                             </div>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className="text-sm font-semibold text-emerald-600">{p.STOCK} uds</span>
+                              <span className="text-sm font-semibold text-blue-600">+{p.PACKQTY ? Math.max(0, Math.round((p.STOCK || 0) / p.PACKQTY)) * p.PACKQTY : (p.STOCK || 0)} al catálogo</span>
+                              {(() => { const s = getSection(p); return s ? <span className="text-xs font-semibold text-pink-600 bg-pink-50 px-1.5 py-0.5 rounded">B{s}</span> : null; })()}
                               <span className="text-sm text-gray-700">${(p.PRICE || 0).toLocaleString('es-CL')}</span>
                               {hasPack ? (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-pink-50 text-pink-600 text-[11px] font-medium rounded-full">
