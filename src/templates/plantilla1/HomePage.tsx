@@ -5775,6 +5775,9 @@ export default function HomePage1() {
     const col3Title = s.footerCol3Title || 'Contacto';
     const col4Title = s.footerCol4Title || 'Suscríbete';
     const nlText = s.newsletterText || 'Recibe ofertas exclusivas y novedades';
+    const col1Links = s.footerCol1Links || [];
+    const col2Links = s.footerCol2Links || [];
+    const col3Links = s.footerCol3Links || [];
 
     // Logo / Nombre de la empresa
     const logoDiv = footer.querySelector('.ftr-logo') as HTMLElement;
@@ -5803,6 +5806,69 @@ export default function HomePage1() {
       const svg3 = colTitles[2].querySelector('svg');
       const svgHtml3 = svg3 ? svg3.outerHTML : '';
       colTitles[2].innerHTML = col3Title + ' <i class="fa-solid fa-plus secondary-icon-clr">' + svgHtml3;
+    }
+
+    // Links de cada columna del footer
+    const supportCols = footer.querySelectorAll('.ftr-support-col') as NodeListOf<HTMLElement>;
+    if (supportCols.length >= 1 && col1Links.length > 0) {
+      const existingUl1 = supportCols[0].querySelector('ul') as HTMLElement | null;
+      if (existingUl1) existingUl1.remove();
+      const ul1 = document.createElement('ul');
+      ul1.style.cssText = 'list-style:none;padding:0;margin:8px 0 0 0;';
+      col1Links.forEach(link => {
+        const li = document.createElement('li');
+        li.style.marginBottom = '6px';
+        const a = document.createElement('a');
+        a.href = link.url;
+        a.textContent = link.title;
+        a.style.cssText = 'color:#bbb;text-decoration:none;font-size:13px;';
+        a.target = link.url.startsWith('http') ? '_blank' : '_self';
+        a.onmouseenter = () => a.style.textDecoration = 'underline';
+        a.onmouseleave = () => a.style.textDecoration = 'none';
+        li.appendChild(a);
+        ul1.appendChild(li);
+      });
+      supportCols[0].appendChild(ul1);
+    }
+    if (supportCols.length >= 2 && col2Links.length > 0) {
+      const existingUl2 = supportCols[1].querySelector('ul') as HTMLElement | null;
+      if (existingUl2) existingUl2.remove();
+      const ul2 = document.createElement('ul');
+      ul2.style.cssText = 'list-style:none;padding:0;margin:8px 0 0 0;';
+      col2Links.forEach(link => {
+        const li = document.createElement('li');
+        li.style.marginBottom = '6px';
+        const a = document.createElement('a');
+        a.href = link.url;
+        a.textContent = link.title;
+        a.style.cssText = 'color:#bbb;text-decoration:none;font-size:13px;';
+        a.target = link.url.startsWith('http') ? '_blank' : '_self';
+        a.onmouseenter = () => a.style.textDecoration = 'underline';
+        a.onmouseleave = () => a.style.textDecoration = 'none';
+        li.appendChild(a);
+        ul2.appendChild(li);
+      });
+      supportCols[1].appendChild(ul2);
+    }
+    if (supportCols.length >= 3 && col3Links.length > 0) {
+      const existingUl3 = supportCols[2].querySelector('ul') as HTMLElement | null;
+      if (existingUl3) existingUl3.remove();
+      const ul3 = document.createElement('ul');
+      ul3.style.cssText = 'list-style:none;padding:0;margin:8px 0 0 0;';
+      col3Links.forEach(link => {
+        const li = document.createElement('li');
+        li.style.marginBottom = '6px';
+        const a = document.createElement('a');
+        a.href = link.url;
+        a.textContent = link.title;
+        a.style.cssText = 'color:#bbb;text-decoration:none;font-size:13px;';
+        a.target = link.url.startsWith('http') ? '_blank' : '_self';
+        a.onmouseenter = () => a.style.textDecoration = 'underline';
+        a.onmouseleave = () => a.style.textDecoration = 'none';
+        li.appendChild(a);
+        ul3.appendChild(li);
+      });
+      supportCols[2].appendChild(ul3);
     }
 
     // Título de la columna de newsletter

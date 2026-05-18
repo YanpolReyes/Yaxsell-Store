@@ -3136,8 +3136,29 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         <Field icon={<Type size={13} />} label="Descripción" value={s.companyDescription || 'Tu tienda de maquillaje y artículos de beauty favoritos'} onChange={v => onUpdate({ companyDescription: v })} placeholder="Tu tienda de maquillaje..." />
         <SH>Columnas</SH>
         <Field icon={<Type size={13} />} label="Título columna 1" value={s.footerCol1Title || 'Comprar'} onChange={v => onUpdate({ footerCol1Title: v })} placeholder="Comprar" />
+        <Field icon={<Link size={13} />} label="Links columna 1 (uno por línea, formato: Título|URL)" value={(s.footerCol1Links || []).map(l => `${l.title}|${l.url}`).join('\n')} onChange={v => {
+          const lines = v.split('\n').filter(Boolean).map(line => {
+            const [title, url] = line.split('|');
+            return { title: title?.trim() || '', url: url?.trim() || '' };
+          });
+          onUpdate({ footerCol1Links: lines });
+        }} placeholder="Todos los productos|/productos&#10;Kits de maquillaje|/productos?categoria=kits" />
         <Field icon={<Type size={13} />} label="Título columna 2" value={s.footerCol2Title || 'Ayuda'} onChange={v => onUpdate({ footerCol2Title: v })} placeholder="Ayuda" />
+        <Field icon={<Link size={13} />} label="Links columna 2 (uno por línea, formato: Título|URL)" value={(s.footerCol2Links || []).map(l => `${l.title}|${l.url}`).join('\n')} onChange={v => {
+          const lines = v.split('\n').filter(Boolean).map(line => {
+            const [title, url] = line.split('|');
+            return { title: title?.trim() || '', url: url?.trim() || '' };
+          });
+          onUpdate({ footerCol2Links: lines });
+        }} placeholder="Envíos y entregas|/envios&#10;Devoluciones|/devoluciones" />
         <Field icon={<Type size={13} />} label="Título columna 3" value={s.footerCol3Title || 'Contacto'} onChange={v => onUpdate({ footerCol3Title: v })} placeholder="Contacto" />
+        <Field icon={<Link size={13} />} label="Links columna 3 (uno por línea, formato: Título|URL)" value={(s.footerCol3Links || []).map(l => `${l.title}|${l.url}`).join('\n')} onChange={v => {
+          const lines = v.split('\n').filter(Boolean).map(line => {
+            const [title, url] = line.split('|');
+            return { title: title?.trim() || '', url: url?.trim() || '' };
+          });
+          onUpdate({ footerCol3Links: lines });
+        }} placeholder="WhatsApp|https://wa.me/56912345678&#10;Instagram|https://instagram.com/kevincocochile" />
         <Field icon={<Type size={13} />} label="Título columna 4 / Newsletter" value={s.footerCol4Title || 'Suscríbete'} onChange={v => onUpdate({ footerCol4Title: v })} placeholder="Suscríbete" />
         <SH>Contacto</SH>
         <Field icon={<Type size={13} />} label="Dirección" value={s.address || ''} onChange={v => onUpdate({ address: v })} placeholder="Calle, Ciudad, País" />

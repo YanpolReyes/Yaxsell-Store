@@ -310,6 +310,9 @@ export interface SectionSettings {
   facebook?: string;
   tiktok?: string;
   footerLinks?: { title: string; url: string }[];
+  footerCol1Links?: { title: string; url: string }[];
+  footerCol2Links?: { title: string; url: string }[];
+  footerCol3Links?: { title: string; url: string }[];
   newsletterTitle?: string;
   newsletterText?: string;
   copyrightText?: string;
@@ -1148,6 +1151,24 @@ export const SECTION_DEFAULTS: SectionConfig[] = [
         { title: 'Productos', url: '/productos' },
         { title: 'Categorías', url: '/categorias' },
         { title: 'Contacto', url: '/contacto' },
+      ],
+      footerCol1Links: [
+        { title: 'Todos los productos', url: '/productos' },
+        { title: 'Kits de maquillaje', url: '/productos?categoria=kits' },
+        { title: 'Labios', url: '/productos?categoria=labios' },
+        { title: 'Ojos', url: '/productos?categoria=ojos' },
+      ],
+      footerCol2Links: [
+        { title: 'Envíos y entregas', url: '/envios' },
+        { title: 'Devoluciones', url: '/devoluciones' },
+        { title: 'Preguntas frecuentes', url: '/faq' },
+        { title: 'Métodos de pago', url: '/pagos' },
+      ],
+      footerCol3Links: [
+        { title: 'WhatsApp', url: 'https://wa.me/56912345678' },
+        { title: 'Instagram', url: 'https://instagram.com/kevincocochile' },
+        { title: 'Facebook', url: 'https://facebook.com/kevincocochile' },
+        { title: 'Email', url: 'mailto:kevincocochile2026@gmail.com' },
       ],
       newsletterTitle: '¡Suscríbete!',
       newsletterText: 'Recibe ofertas exclusivas y novedades',
