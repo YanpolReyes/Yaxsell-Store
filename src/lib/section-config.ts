@@ -262,6 +262,8 @@ export interface SectionSettings {
   // Map
   mapEmbed?: string;
   showMap?: boolean;
+  mapHeight?: number;
+  mapStyle?: 'dark' | 'light' | 'minimal';
   // Navbar
   navModel?: string;
   navLayout?: 'classic' | 'stacked' | 'centered' | 'minimal-fashion' | 'topbar' | 'split' | 'glass-float' | 'nebula-premium';
@@ -1196,6 +1198,21 @@ export const SECTION_DEFAULTS: SectionConfig[] = [
     order: 102,
     locked: true,
     settings: {},
+  },
+  {
+    id: 'tpl1_map',
+    label: 'Mapa Interactivo',
+    description: 'Mapa con la ubicación de la tienda, mostrado encima del footer',
+    icon: '📍',
+    enabled: true,
+    order: 103,
+    settings: {
+      showMap: true,
+      address: '',
+      mapEmbed: '',
+      mapHeight: 280,
+      mapStyle: 'dark' as const,
+    },
   },
 
   // ── CHINAMART / PLANTILLA 4 SECTIONS ──

@@ -1610,3 +1610,19 @@
     color: #ccc !important;
   }
 }
+
+/* ─── MAP SECTION — Mobile ─── */
+@media screen and (max-width: 768px) {
+  [data-template="1"] .tpl1-map-section > div:first-child {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding: 16px !important;
+  }
+  [data-template="1"] .tpl1-map-section a[href*="google.com/maps"] {
+    align-self: flex-start !important;
+  }
+  [data-template="1"] .tpl1-map-section iframe {
+    height: 200px !important;
+  }
+}

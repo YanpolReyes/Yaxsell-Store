@@ -71,6 +71,7 @@ const SECTION_ICON_MAP: Record<string, LucideIcon> = {
   tpl1_subscribe_popup: Mail,
   tpl1_whatsapp_button: MessageSquare,
   tpl1_chatbot_button: MessageSquare,
+  tpl1_map: MapPin,
   tpl1_footer: PanelBottom,
 };
 
@@ -130,7 +131,7 @@ const FOOTER_IDS: string[] = [];
 const CM_HEADER_IDS = ['cm_navbar'];
 const CM_FOOTER_IDS = ['cm_footer'];
 const TPL1_HEADER_IDS = ['tpl1_announcement_bar', 'tpl1_hero', 'tpl1_product_widget'];
-const TPL1_FOOTER_IDS = ['tpl1_subscribe_popup', 'tpl1_whatsapp_button', 'tpl1_chatbot_button', 'tpl1_footer'];
+const TPL1_FOOTER_IDS = ['tpl1_map', 'tpl1_subscribe_popup', 'tpl1_whatsapp_button', 'tpl1_chatbot_button', 'tpl1_footer'];
 
 function assignGroup(s: SectionConfig, isCustom = false, isTemplate1 = false): EditorSection {
   if (isTemplate1) {
@@ -617,7 +618,7 @@ function ThemeEditorPage() {
   // Header sections con orden fijo inmutable
   const FIXED_HEADER_ORDER = ['tpl1_announcement_bar', 'tpl1_hero', 'tpl1_product_widget'];
   // Footer sections con orden fijo inmutable
-  const FIXED_FOOTER_ORDER = ['tpl1_subscribe_popup', 'tpl1_whatsapp_button', 'tpl1_chatbot_button', 'tpl1_footer'];
+  const FIXED_FOOTER_ORDER = ['tpl1_map', 'tpl1_subscribe_popup', 'tpl1_whatsapp_button', 'tpl1_chatbot_button', 'tpl1_footer'];
 
   function handleGroupDragStart(group: 'header'|'body'|'footer', localIdx: number, sectionId: string) {
     // Bloquear drag para secciones con orden fijo en header o footer
@@ -3173,13 +3174,31 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         <Field icon={<Type size={13} />} label="Texto newsletter" value={s.newsletterText || ''} onChange={v => onUpdate({ newsletterText: v })} placeholder="Recibe ofertas exclusivas" />
         <SH>Copyright</SH>
         <Field icon={<Type size={13} />} label="Texto copyright" value={s.copyrightText || ''} onChange={v => onUpdate({ copyrightText: v })} placeholder="© 2025 Mi tienda" />
-        <SH>Mapa</SH>
-        <Field icon={<MapPin size={13} />} label="Dirección de la tienda" value={s.address || ''} onChange={v => onUpdate({ address: v })} placeholder="Av. Apoquindo 3000, Las Condes, Chile" />
+      </div>);
+
+    case 'tpl1_map':
+      return (<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <SH>Visibilidad</SH>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <input type="checkbox" checked={s.showMap !== false} onChange={e => onUpdate({ showMap: e.target.checked })} />
           <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280' }}>Mostrar mapa interactivo</span>
         </div>
-        <Field icon={<MapPin size={13} />} label="Embed HTML del mapa (opcional, sobreescribe dirección)" value={s.mapEmbed || ''} onChange={v => onUpdate({ mapEmbed: v })} placeholder='<iframe src="https://www.google.com/maps/embed?..." />' />
+        <SH>Dirección</SH>
+        <Field icon={<MapPin size={13} />} label="Dirección de la tienda" value={s.address || ''} onChange={v => onUpdate({ address: v })} placeholder="Av. Apoquindo 3000, Las Condes, Chile" />
+        <div style={{ fontSize: 11, color: '#9ca3af', lineHeight: 1.4 }}>Si no configuras dirección, se usará la de <Link href="/admin/store-settings" target="_blank" style={{ color: '#6366f1', textDecoration: 'underline' }}>Mi Tienda</Link></div>
+        <SH>Estilo</SH>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {(['dark', 'light', 'minimal'] as const).map(style => (
+            <button key={style} onClick={() => onUpdate({ mapStyle: style })} style={{
+              flex: 1, padding: '8px 0', borderRadius: 8, border: s.mapStyle === style ? '2px solid #6366f1' : '1.5px solid #e5e7eb',
+              background: s.mapStyle === style ? '#eef2ff' : '#fff', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: s.mapStyle === style ? '#4f46e5' : '#6b7280', textTransform: 'capitalize',
+            }}>{style === 'dark' ? '🌙 Oscuro' : style === 'light' ? '☀️ Claro' : '◻️ Minimal'}</button>
+          ))}
+        </div>
+        <Field icon={<Type size={13} />} label="Altura del mapa (px)" value={String(s.mapHeight || 280)} onChange={v => onUpdate({ mapHeight: parseInt(v) || 280 })} placeholder="280" />
+        <SH>Embed personalizado</SH>
+        <Field icon={<MapPin size={13} />} label="HTML del mapa (opcional, sobreescribe dirección)" value={s.mapEmbed || ''} onChange={v => onUpdate({ mapEmbed: v })} placeholder='<iframe src="https://www.google.com/maps/embed?..." />' />
+        <div style={{ fontSize: 11, color: '#9ca3af', lineHeight: 1.4 }}>Pega aquí el código de embed de Google Maps para tener control total del mapa mostrado.</div>
       </div>);
 
     case 'cm_footer':

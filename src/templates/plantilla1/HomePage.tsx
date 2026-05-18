@@ -5987,57 +5987,96 @@ export default function HomePage1() {
         }
       }
     }
+  }, [bodyHtml, sectionCfg]);
 
-    // Mapa interactivo debajo del footer
+  /* ── Aplicar settings de mapa interactivo (tpl1_map) — ARRIBA del footer ── */
+  useEffect(() => {
+    if (!bodyHtml || sectionCfg.length === 0) return;
+    const mapCfg = sectionCfg.find(s => s.id === 'tpl1_map');
+    if (!mapCfg) return;
+    const s = mapCfg.settings || {};
     const showMap = s.showMap !== false;
-    const existingMap = footer.querySelector('.tpl1-footer-map') as HTMLElement | null;
+
+    // Limpiar mapa existente
+    const existingMap = document.querySelector('.tpl1-map-section') as HTMLElement | null;
     if (existingMap) existingMap.remove();
 
-    if (showMap) {
-      const mapContainer = document.createElement('div');
-      mapContainer.className = 'tpl1-footer-map';
-      mapContainer.style.cssText = 'width:100%;margin-top:0;';
+    if (!showMap) return;
 
-      let address = s.address || '';
+    const footer = document.querySelector('.musk-main-footer') as HTMLElement | null;
+    if (!footer || !footer.parentElement) return;
 
-      // Si no hay dirección en footer settings, intentar leer de store_settings
-      if (!address) {
-        try {
-          const { databases } = getServices();
-          const { databaseId } = getAppwriteConfig();
-          databases.listDocuments(databaseId, 'store_settings', [Query.limit(1)]).then(res => {
-            if (res.documents.length > 0) {
-              const storeAddr = (res.documents[0] as any).ADDRESS || '';
-              if (storeAddr && !mapContainer.querySelector('iframe')) {
-                mapContainer.innerHTML = `
-                  <div style="padding:16px 20px 8px;background:#1a1a1a;">
-                    <h4 style="color:#fff;font-size:14px;font-weight:700;margin:0 0 4px;">📍 Encuéntranos</h4>
-                    <p style="color:#999;font-size:12px;margin:0;">${storeAddr}</p>
-                  </div>
-                  <iframe src="https://www.google.com/maps?q=${encodeURIComponent(storeAddr)}&output=embed" width="100%" height="250" style="border:0;display:block;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-                `;
-              }
-            }
-          }).catch(() => {});
-        } catch {}
-      }
+    const address = s.address || '';
+    const mapHeight = s.mapHeight || 280;
+    const mapStyle = s.mapStyle || 'dark';
+    const mapEmbed = s.mapEmbed || '';
 
-      if (s.mapEmbed) {
-        // Embed personalizado
-        mapContainer.innerHTML = s.mapEmbed;
-      } else if (address) {
-        mapContainer.innerHTML = `
-          <div style="padding:16px 20px 8px;background:#1a1a1a;">
-            <h4 style="color:#fff;font-size:14px;font-weight:700;margin:0 0 4px;">📍 Encuéntranos</h4>
-            <p style="color:#999;font-size:12px;margin:0;">${address}</p>
+    const mapSection = document.createElement('div');
+    mapSection.className = 'tpl1-map-section';
+
+    // Estilos según tema
+    const isDark = mapStyle === 'dark';
+    const isMinimal = mapStyle === 'minimal';
+    const bgColor = isDark ? '#111111' : isMinimal ? '#fafafa' : '#ffffff';
+    const textColor = isDark ? '#ffffff' : isMinimal ? '#555555' : '#1a1a1a';
+    const subColor = isDark ? '#999999' : isMinimal ? '#888888' : '#666666';
+    const accentColor = isDark ? '#ec4899' : isMinimal ? '#6366f1' : '#0d9488';
+    const borderColor = isDark ? 'rgba(255,255,255,0.06)' : isMinimal ? '#e5e7eb' : '#f0f0f0';
+    const iconBg = isDark ? 'rgba(236,72,153,0.15)' : isMinimal ? 'rgba(99,102,241,0.1)' : 'rgba(13,148,136,0.1)';
+
+    mapSection.style.cssText = `width:100%;background:${bgColor};`;
+
+    function renderMap(addr: string) {
+      if (mapEmbed) {
+        mapSection.innerHTML = mapEmbed;
+        // Estilizar iframe si es posible
+        const iframe = mapSection.querySelector('iframe');
+        if (iframe) {
+          iframe.style.width = '100%';
+          iframe.style.height = `${mapHeight}px`;
+          iframe.style.display = 'block';
+          iframe.style.border = '0';
+        }
+      } else if (addr) {
+        mapSection.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;background:${bgColor};">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:40px;height:40px;border-radius:12px;background:${iconBg};display:flex;align-items:center;justify-content:center;font-size:18px;">📍</div>
+              <div>
+                <h4 style="color:${textColor};font-size:15px;font-weight:800;margin:0 0 2px;letter-spacing:-0.02em;">Encuéntranos</h4>
+                <p style="color:${subColor};font-size:12px;margin:0;line-height:1.4;">${addr}</p>
+              </div>
+            </div>
+            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;background:${accentColor};color:#fff;font-size:12px;font-weight:700;text-decoration:none;letter-spacing:0.02em;box-shadow:0 2px 8px ${accentColor}44;transition:transform 0.2s,box-shadow 0.2s;">
+              Cómo llegar →
+            </a>
           </div>
-          <iframe src="https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed" width="100%" height="250" style="border:0;display:block;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          <div style="position:relative;border-top:1px solid ${borderColor};">
+            <iframe src="https://www.google.com/maps?q=${encodeURIComponent(addr)}&output=embed" width="100%" height="${mapHeight}" style="border:0;display:block;filter:${isDark ? 'brightness(0.85) contrast(1.1) saturate(0.8)' : isMinimal ? 'grayscale(0.3)' : 'none'};" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            ${isDark ? '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.15) 0%,transparent 30%,transparent 70%,rgba(0,0,0,0.2) 100%);pointer-events:none;"></div>' : ''}
+          </div>
         `;
       }
-
-      if (mapContainer.innerHTML) {
-        footer.appendChild(mapContainer);
+      if (mapSection.innerHTML) {
+        // Insertar ANTES del footer
+        footer.parentElement!.insertBefore(mapSection, footer);
       }
+    }
+
+    if (address || mapEmbed) {
+      renderMap(address);
+    } else {
+      // Fallback: leer de store_settings
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        databases.listDocuments(databaseId, 'store_settings', [Query.limit(1)]).then(res => {
+          if (res.documents.length > 0) {
+            const storeAddr = (res.documents[0] as any).ADDRESS || '';
+            if (storeAddr) renderMap(storeAddr);
+          }
+        }).catch(() => {});
+      } catch {}
     }
   }, [bodyHtml, sectionCfg]);
 
