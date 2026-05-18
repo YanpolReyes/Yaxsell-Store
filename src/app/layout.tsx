@@ -1,5 +1,10 @@
 import type { Metadata } from 'next';
 import './globals.css';
+
+// Force Vercel to never cache any page — theme config and product data change frequently
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { CartProvider } from '@/context/CartContext';
 import { TemplateProvider } from '@/context/TemplateContext';
 import { AuthProvider } from '@/hooks/useAuth';
