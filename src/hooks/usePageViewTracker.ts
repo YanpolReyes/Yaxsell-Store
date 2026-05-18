@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { getServices, getAppwriteConfig } from '@/lib/appwrite-admin';
-import { Query, ID } from 'appwrite';
+import { Query, ID, Permission, Role } from 'appwrite';
 
 const PAGE_VIEWS_COLLECTION = 'page_views';
 
@@ -37,11 +37,13 @@ export function usePageViewTracker() {
             PAGE: page,
             DATE: date,
             VIEWS: 1,
-          });
+          }, [
+            Permission.read(Role.any()),
+            Permission.write(Role.any()),
+          ]);
         }
-      } catch (e) {
-        // Silenciar errores — el tracking no debe romper la UI
-        console.warn('[page-view-tracker]', e);
+      } catch (e: any) {
+        console.error('[page-view-tracker] Error tracking page view:', e?.message || e);
       }
     };
 
