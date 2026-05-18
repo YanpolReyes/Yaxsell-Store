@@ -7332,6 +7332,26 @@ export default function HomePage1() {
       heroBannerEl.addEventListener('transitionend', adjustHeroHeight);
       // Ejecutar después de delays para cuando Swiper JS sobreescriba heights
       [300, 800, 1500, 3000].forEach(ms => setTimeout(adjustHeroHeight, ms));
+
+      // MutationObserver: vigilar que Swiper JS no sobreescriba los heights
+      const heroObserver = new MutationObserver(() => {
+        // Verificar si algún contenedor tiene una altura distinta a la de la imagen
+        const slider = heroBannerEl.querySelector('.musk-banner-slider') as HTMLElement;
+        if (slider) {
+          const currentH = parseInt(slider.style.height || '0');
+          const activeImg = heroBannerEl.querySelector('.swiper-slide-active .slide-image img, .swiper-slide-active .slide-image__img') as HTMLImageElement
+            || heroBannerEl.querySelector('.slide-image img, .slide-image__img') as HTMLImageElement;
+          if (activeImg && activeImg.naturalWidth > 0) {
+            const imgAspect = activeImg.naturalWidth / activeImg.naturalHeight;
+            const containerWidth = heroBannerEl.offsetWidth || window.innerWidth;
+            const naturalHeight = Math.round(containerWidth / imgAspect);
+            if (currentH !== naturalHeight) {
+              adjustHeroHeight();
+            }
+          }
+        }
+      });
+      heroObserver.observe(heroBannerEl, { attributes: true, subtree: true, attributeFilter: ['style'] });
     }
 
     // 0c. Inject subscribe popup content if empty

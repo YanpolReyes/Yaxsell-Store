@@ -96,8 +96,9 @@
 @media screen and (max-width: 768px) {
   [data-template="1"] .musk-banner-slider,
   [data-template="1"] .musk-main-banner {
-    min-height: 46vh !important;
-    max-height: 520px !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    height: auto !important;
   }
 
   /* Hero mÃ³vil: un solo slide, sin deslizar ni extras */
@@ -1129,6 +1130,29 @@
   /* The section right after hero shouldn't have a white gap */
   [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 + * {
     margin-top: 0 !important;
+  }
+
+  /* ─── Hero auto-height on mobile ─── */
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 {
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: hidden !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper,
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-container,
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-wrapper,
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-slide,
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .slide-image {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .slide-image img,
+  [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .slide-image__img {
+    width: 100% !important;
+    height: auto !important;
+    object-fit: contain !important;
+    display: block !important;
   }
 
   /* â”€â”€â”€ MEDIA GALLERY (Pronto en Kevin y Coco): Compact title on mobile â”€â”€â”€ */
