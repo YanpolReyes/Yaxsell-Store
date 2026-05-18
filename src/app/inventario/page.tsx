@@ -915,10 +915,10 @@ export default function InventarioPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      // Construir payload para products (con DESCRIPTION reconstruida si no existe en inventory)
+      // Construir payload para products (solo atributos que existen en la colección)
       const payload: any = {
         NAME: p.NAME,
-        DESCRIPTION: (p as any).DESCRIPTION || p.NAME, // inventory no tiene DESCRIPTION, usamos NAME
+        DESCRIPTION: (p as any).DESCRIPTION || p.NAME,
         PRICE: p.PRICE || 0,
         STOCK: p.STOCK || 0,
         COST: (p as any).COST || 0,
@@ -927,12 +927,8 @@ export default function InventarioPage() {
         IMAGEURL: p.IMAGEURL || '',
         IMAGEURL2: (p as any).IMAGEURL2 || '',
         IMAGEURL3: (p as any).IMAGEURL3 || '',
-        IMAGEURL4: (p as any).IMAGEURL4 || '',
-        IMAGEURL5: (p as any).IMAGEURL5 || '',
         CATEGORYID: p.CATEGORYID || '',
         SUBCATEGORYID: (p as any).SUBCATEGORYID || '',
-        TAGS: p.TAGS || '',
-        FEATURES: p.FEATURES || '',
         ISACTIVE: true,
         PACKQTY: p.PACKQTY || 0,
       };
@@ -1007,12 +1003,8 @@ export default function InventarioPage() {
             IMAGEURL: p.IMAGEURL || '',
             IMAGEURL2: (p as any).IMAGEURL2 || '',
             IMAGEURL3: (p as any).IMAGEURL3 || '',
-            IMAGEURL4: (p as any).IMAGEURL4 || '',
-            IMAGEURL5: (p as any).IMAGEURL5 || '',
             CATEGORYID: p.CATEGORYID || '',
             SUBCATEGORYID: (p as any).SUBCATEGORYID || '',
-            TAGS: p.TAGS || '',
-            FEATURES: p.FEATURES || '',
             ISACTIVE: true,
             PACKQTY: p.PACKQTY || 0,
           };
