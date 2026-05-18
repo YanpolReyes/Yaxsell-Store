@@ -942,7 +942,7 @@ export default function DashboardPage() {
   const [newUsers, setNewUsers]               = useState(0);
   const [prevRevenue, setPrevRevenue]         = useState(0);
   const [prevOrders, setPrevOrders]           = useState(0);
-  const [pageViews, setPageViews]             = useState<{ totalViews: number; todayViews: number; topPages: { page: string; views: number }[] }>({ totalViews: 0, todayViews: 0, topPages: [] });
+  const [pageViews, setPageViews]             = useState<{ totalViews: number; todayViews: number; topPages: { page: string; views: number }[]; topComunas: { comuna: string; count: number; lat: number; lng: number }[]; visitorMarkers: { comuna: string; region: string; lat: number; lng: number; count: number }[] }>({ totalViews: 0, todayViews: 0, topPages: [], topComunas: [], visitorMarkers: [] });
 
   const loadData = useCallback(async () => {
     setIsLoading(true); setError('');
@@ -977,7 +977,7 @@ export default function DashboardPage() {
       setTopProducts(top);
       setLastRefresh(new Date());
       // Page views
-      getPageViewStats(30).then(pv => setPageViews({ totalViews: pv.totalViews, todayViews: pv.todayViews, topPages: pv.topPages })).catch(() => {});
+      getPageViewStats(30).then(pv => setPageViews({ totalViews: pv.totalViews, todayViews: pv.todayViews, topPages: pv.topPages, topComunas: pv.topComunas, visitorMarkers: pv.visitorMarkers })).catch(() => {});
     } catch (e: any) { setError(e.message || 'Error cargando datos'); }
     finally { setIsLoading(false); }
   }, []);
@@ -1505,6 +1505,27 @@ export default function DashboardPage() {
                         <div style={{ height: '100%', width: `${(tp.views / maxV) * 100}%`, background: 'linear-gradient(90deg, #0d9488, #14b8a6)', borderRadius: 4, transition: 'width 0.5s' }} />
                       </div>
                       <span style={{ fontSize: 11, fontWeight: 700, color: '#0d9488', minWidth: 30, textAlign: 'right' }}>{tp.views}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Top comunas visitadas */}
+          {pageViews.topComunas.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <h4 style={{ fontSize: 11, fontWeight: 700, color: '#374151', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📍 Comunas de visitantes (30 días)</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {pageViews.topComunas.slice(0, 8).map((tc, i) => {
+                  const maxC = pageViews.topComunas[0]?.count || 1;
+                  return (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 11, color: '#6b7280', width: 100, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tc.comuna}</span>
+                      <div style={{ flex: 1, height: 8, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${(tc.count / maxC) * 100}%`, background: 'linear-gradient(90deg, #ec4899, #f43f5e)', borderRadius: 4, transition: 'width 0.5s' }} />
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#ec4899', minWidth: 20, textAlign: 'right' }}>{tc.count}</span>
                     </div>
                   );
                 })}

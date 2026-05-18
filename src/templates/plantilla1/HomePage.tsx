@@ -6029,7 +6029,6 @@ export default function HomePage1() {
     function renderMap(addr: string) {
       if (mapEmbed) {
         mapSection.innerHTML = mapEmbed;
-        // Estilizar iframe si es posible
         const iframe = mapSection.querySelector('iframe');
         if (iframe) {
           iframe.style.width = '100%';
@@ -6055,12 +6054,43 @@ export default function HomePage1() {
             <iframe src="https://www.google.com/maps?q=${encodeURIComponent(addr)}&output=embed" width="100%" height="${mapHeight}" style="border:0;display:block;filter:${isDark ? 'brightness(0.85) contrast(1.1) saturate(0.8)' : isMinimal ? 'grayscale(0.3)' : 'none'};" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
             ${isDark ? '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.15) 0%,transparent 30%,transparent 70%,rgba(0,0,0,0.2) 100%);pointer-events:none;"></div>' : ''}
           </div>
+          <div class="tpl1-map-visitors" style="padding:12px 24px 16px;background:${bgColor};border-top:1px solid ${borderColor};"></div>
         `;
       }
-      if (mapSection.innerHTML) {
-        // Insertar ANTES del footer
-        footer.parentElement!.insertBefore(mapSection, footer);
+      if (mapSection.innerHTML && footer) {
+        const parent = footer.parentElement;
+        if (parent) {
+          parent.insertBefore(mapSection, footer);
+          // Cargar visitantes recientes
+          loadVisitors();
+        }
       }
+    }
+
+    async function loadVisitors() {
+      try {
+        const { getPageViewStats } = await import('@/hooks/usePageViewTracker');
+        const stats = await getPageViewStats(1); // Últimas 24h
+        const visitorsDiv = document.querySelector('.tpl1-map-visitors') as HTMLElement;
+        if (!visitorsDiv || stats.visitorMarkers.length === 0) return;
+
+        const totalToday = stats.todayViews;
+        const markers = stats.visitorMarkers.slice(0, 6);
+
+        visitorsDiv.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <span style="font-size:13px;font-weight:800;color:${textColor};">👥 Visitantes hoy</span>
+            <span style="font-size:12px;font-weight:700;color:${accentColor};background:${iconBg};padding:2px 8px;border-radius:6px;">${totalToday}</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            ${markers.map(m => `
+              <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;background:${iconBg};font-size:11px;font-weight:600;color:${accentColor};">
+                📍 ${m.comuna}${m.count > 1 ? ` (${m.count})` : ''}
+              </span>
+            `).join('')}
+          </div>
+        `;
+      } catch {}
     }
 
     if (address || mapEmbed) {
