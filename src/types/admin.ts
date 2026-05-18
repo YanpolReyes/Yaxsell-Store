@@ -78,6 +78,9 @@ export interface Product {
   CUSTOM_USE_GRADIENT?: boolean;
   CUSTOM_COVER_URL?: string;
   jumpseller_id?: string;
+  barcode?: string;
+  sku?: string;
+  section?: number;
   $createdAt: string;
   $updatedAt: string;
 }

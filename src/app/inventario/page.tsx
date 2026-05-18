@@ -110,6 +110,8 @@ function productFeaturesText(p: Product): string {
 }
 
 function getSkuFromProduct(p: Product): string {
+  const directSku = (p as any).sku;
+  if (directSku && String(directSku).trim()) return String(directSku).trim();
   const features = productFeaturesText(p);
   const featMatch = features.match(/SKU:\s*(.+)/i);
   if (featMatch) return featMatch[1].trim().split('\n')[0];
@@ -211,6 +213,11 @@ export default function InventarioPage() {
   const [editBarcodeValue, setEditBarcodeValue] = useState<string>('');
   const [lastPlacedSection, setLastPlacedSection] = useState<number | null>(null);
   const [showLocator, setShowLocator] = useState(false);
+  const [editLocatedProduct, setEditLocatedProduct] = useState<Product | null>(null);
+  const [editLocatedBarcode, setEditLocatedBarcode] = useState('');
+  const [editLocatedSection, setEditLocatedSection] = useState<number | null>(null);
+  const [editLocatedStock, setEditLocatedStock] = useState<string>('');
+  const [editLocatedSaving, setEditLocatedSaving] = useState(false);
   const [isImportingPackQty, setIsImportingPackQty] = useState(false);
   const [importPackQtyResults, setImportPackQtyResults] = useState<{ updated: number; notFound: number; errors: number } | null>(null);
   const scannedCodesRef = useRef<Set<string>>(new Set());
@@ -247,6 +254,44 @@ export default function InventarioPage() {
     setEditPackagesValue('');
     setEditSectionValue(null);
     setEditBarcodeValue('');
+  };
+
+  const openEditLocated = (p: Product) => {
+    setEditLocatedProduct(p);
+    setEditLocatedBarcode(getBarcodeFromProduct(p));
+    setEditLocatedSection(getSectionFromProduct(p));
+    setEditLocatedStock(String(p.STOCK || 0));
+  };
+
+  const saveEditLocated = async () => {
+    if (!editLocatedProduct) return;
+    setEditLocatedSaving(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const isInventory = products.some(ip => ip.$id === editLocatedProduct.$id);
+      const collId = isInventory ? INVENTORY_PRODUCTS_COLLECTION_ID : PRODUCTS_COLLECTION_ID;
+      const payload: Record<string, any> = {};
+      if (editLocatedBarcode.trim()) payload.barcode = editLocatedBarcode.trim();
+      else payload.barcode = '';
+      if (editLocatedSection != null && editLocatedSection > 0) payload.section = editLocatedSection;
+      if (isInventory) {
+        const stock = parseInt(editLocatedStock, 10);
+        if (!isNaN(stock) && stock >= 0) payload.STOCK = stock;
+      }
+      await databases.updateDocument(databaseId, collId, editLocatedProduct.$id, payload);
+      // Actualizar estado local
+      if (isInventory) {
+        setProducts(prev => prev.map(p => p.$id === editLocatedProduct.$id ? { ...p, ...payload } : p));
+      } else {
+        setPublishedProducts(prev => prev.map(p => p.$id === editLocatedProduct.$id ? { ...p, ...payload } : p));
+      }
+      setEditLocatedProduct(null);
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    } finally {
+      setEditLocatedSaving(false);
+    }
   };
 
   const openScanner = (target: 'search' | string = 'search') => {
@@ -349,6 +394,10 @@ export default function InventarioPage() {
       finalFeatures = setSectionInFeatures(finalFeatures, section);
       finalFeatures = setBarcodeInFeatures(finalFeatures, getBarcodeFromProduct(product) || scannedCode);
       payload.FEATURES = finalFeatures;
+      // Guardar barcode y section como atributos directos también
+      const barcodeToSave = getBarcodeFromProduct(product) || scannedCode;
+      if (barcodeToSave) (payload as Record<string, any>).barcode = barcodeToSave;
+      if (section) (payload as Record<string, any>).section = section;
       await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, product.$id, payload);
       setProducts(prev =>
         prev.map(p => (p.$id === product.$id ? { ...p, ...payload, FEATURES: finalFeatures as string } : p)),
@@ -1425,6 +1474,50 @@ export default function InventarioPage() {
                 }}
                 className="py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm transition">
                 Sí, añadir stock
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit located product modal — for Ubicados view */}
+      {editLocatedProduct && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center sm:p-4" onClick={() => setEditLocatedProduct(null)}>
+          <div className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden max-h-[92dvh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-5 py-3 flex items-center gap-3 shrink-0">
+              {editLocatedProduct.IMAGEURL && <img src={editLocatedProduct.IMAGEURL} alt="" className="w-10 h-10 object-cover rounded-lg border border-white/30" />}
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-sm line-clamp-1">{editLocatedProduct.NAME}</div>
+                <div className="text-xs text-white/80">SKU: {getSku(editLocatedProduct)}</div>
+              </div>
+              <button type="button" onClick={() => setEditLocatedProduct(null)} className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-white/25 hover:bg-white/40 text-white transition"><X size={18} /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Código de barras</label>
+                <input type="text" value={editLocatedBarcode} onChange={e => setEditLocatedBarcode(e.target.value)} placeholder="EAN / UPC / código escaneado" className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Sección (ubicación)</label>
+                <input type="number" value={editLocatedSection ?? ''} onChange={e => setEditLocatedSection(e.target.value ? Number(e.target.value) : null)} placeholder="Ej: 5 (Góndola A), 15 (Góndola B)" className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                {editLocatedSection && (
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Góndola {['A','B','C','D'].find(g => { const r: Record<string,number[]>={A:[1,9],B:[10,18],C:[19,27],D:[28,36]}; return editLocatedSection >= r[g][0] && editLocatedSection <= r[g][1]; }) || '?'} · Sección {editLocatedSection}
+                  </p>
+                )}
+              </div>
+              {products.some(ip => ip.$id === editLocatedProduct.$id) && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Stock (unidades)</label>
+                  <input type="number" value={editLocatedStock} onChange={e => setEditLocatedStock(e.target.value)} min={0} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+              )}
+            </div>
+            <div className="sticky bottom-0 shrink-0 border-t border-gray-100 bg-white p-4 flex gap-3">
+              <button type="button" onClick={() => setEditLocatedProduct(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 transition">Cancelar</button>
+              <button onClick={saveEditLocated} disabled={editLocatedSaving} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold rounded-xl transition flex items-center justify-center gap-2">
+                {editLocatedSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <CheckCircle2 size={16} />}
+                Guardar
               </button>
             </div>
           </div>
@@ -2701,7 +2794,7 @@ export default function InventarioPage() {
                   });
                   const isPublished = !products.some(ip => ip.$id === p.$id);
                   return (
-                    <div key={p.$id} className="flex items-center gap-3 px-4 py-2.5">
+                    <div key={p.$id} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 transition" onClick={() => openEditLocated(p)}>
                       {p.IMAGEURL ? (
                         <img src={p.IMAGEURL} alt="" className="w-10 h-10 object-cover rounded-lg shrink-0" />
                       ) : (

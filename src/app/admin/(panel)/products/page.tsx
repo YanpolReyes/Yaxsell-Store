@@ -8,7 +8,7 @@ import { Product, Category } from '@/types/admin';
 import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin } from 'lucide-react';
 import ImageUploadField from '@/components/admin/ImageUploadField';
 import { generateProductTitle, generateProductDescription } from '@/lib/aiAdmin';
-import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures } from '@/lib/product-features';
+import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures } from '@/lib/product-features';
 
 type ProductModalData = Partial<Product> & { _barcode?: string; _sku?: string };
 
@@ -136,8 +136,8 @@ export default function ProductsPage() {
     mode: 'edit',
     data: {
       ...p,
-      _barcode: getBarcodeFromFeatures(p.FEATURES),
-      _sku: getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id),
+      _barcode: getBarcodeFromFeatures(p.FEATURES, p.barcode),
+      _sku: getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku),
     },
   });
 
@@ -189,7 +189,10 @@ export default function ProductsPage() {
           features = setBarcodeInFeatures(features, d._barcode || '');
           return features;
         })(),
+        barcode: d._barcode || '',
+        sku: d._sku || '',
       };
+      if ((d as Product).section != null) optionalFields.section = (d as Product).section;
       // IMAGEURL4/5 no existen en el schema — no enviarlos
       
       // Check if stock is being restocked (from 0 to >0) on edit
@@ -329,20 +332,14 @@ export default function ProductsPage() {
   };
 
   const getSku = (p: Product) =>
-    getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id) || p.$id;
+    getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku) || p.$id;
 
-  const getBarcode = (p: Product) => getBarcodeFromFeatures(p.FEATURES);
+  const getBarcode = (p: Product) => getBarcodeFromFeatures(p.FEATURES, p.barcode);
 
   const getSection = (p: Product): { section: number; gondola: string } | null => {
-    const m = p.FEATURES?.match(/Section:\s*(\d+)/i);
-    if (!m) return null;
-    const sec = parseInt(m[1], 10);
-    let gon = '?';
-    if (sec >= 1 && sec <= 9) gon = 'A';
-    else if (sec >= 10 && sec <= 18) gon = 'B';
-    else if (sec >= 19 && sec <= 27) gon = 'C';
-    else if (sec >= 28 && sec <= 36) gon = 'D';
-    return { section: sec, gondola: gon };
+    const loc = getWarehouseLocationFromFeatures(p.FEATURES, p.section ?? null);
+    if (loc.section === null) return null;
+    return { section: loc.section, gondola: loc.gondola || '?' };
   };
 
   const exportXLSX = () => {
@@ -724,6 +721,13 @@ export default function ProductsPage() {
                   onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _barcode: e.target.value } } : m)}
                   placeholder="EAN / UPC / código escaneado"
                   className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Sección (ubicación)</label>
+                <input type="number" value={(modal.data as Product).section ?? ''}
+                  onChange={e => setModal(m => m ? { ...m, data: { ...m.data, section: e.target.value ? Number(e.target.value) : undefined } } : m)}
+                  placeholder="Ej: 5 (Góndola A), 15 (Góndola B)"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
               <div className="sm:col-span-2">
                 <ImageUploadField label="Imagen Principal" bucketId={PRODUCTS_BUCKET_ID}

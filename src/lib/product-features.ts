@@ -1,6 +1,7 @@
 /** Helpers para SKU, código de barras y sección en FEATURES (Appwrite). */
 
-export function getBarcodeFromFeatures(features?: string | null): string {
+export function getBarcodeFromFeatures(features?: string | null, directBarcode?: string | null): string {
+  if (directBarcode && String(directBarcode).trim()) return String(directBarcode).trim();
   const m = (features || '').match(/Barcode:\s*(.+)/i);
   return m ? m[1].trim().split('\n')[0] : '';
 }
@@ -9,7 +10,9 @@ export function getSkuFromFeatures(
   features?: string | null,
   tags?: string | null,
   jumpsellerId?: string | null,
+  directSku?: string | null,
 ): string {
+  if (directSku && String(directSku).trim()) return String(directSku).trim();
   const m = (features || '').match(/SKU:\s*(.+)/i);
   if (m) return m[1].trim().split('\n')[0];
   const tagParts = (tags || '').split(',').map(t => t.trim());
@@ -46,9 +49,11 @@ export interface ProductWarehouseLocation {
   label: string | null;
 }
 
-export function getWarehouseLocationFromFeatures(features?: string | null): ProductWarehouseLocation {
-  const m = (features || '').match(/Section:\s*(\d+)/i);
-  const section = m ? parseInt(m[1], 10) : null;
+export function getWarehouseLocationFromFeatures(features?: string | null, directSection?: number | null): ProductWarehouseLocation {
+  const section = directSection != null ? directSection : (() => {
+    const m = (features || '').match(/Section:\s*(\d+)/i);
+    return m ? parseInt(m[1], 10) : null;
+  })();
   let gondola: string | null = null;
   if (section !== null && !Number.isNaN(section)) {
     if (section >= 1 && section <= 9) gondola = 'A';
