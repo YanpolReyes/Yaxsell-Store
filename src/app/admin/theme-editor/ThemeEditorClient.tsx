@@ -3132,17 +3132,17 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         <ImageUploadField label="Logo del footer" value={s.logoUrl || ''} onChange={v => onUpdate({ logoUrl: v })} />
         <Field icon={<Monitor size={13} />} label="Ancho logo (px)" value={String(s.footerLogoWidth ?? 170)} onChange={v => onUpdate({ footerLogoWidth: Number(v) || 170 })} placeholder="170" />
         <SH>Empresa</SH>
-        <Field icon={<Type size={13} />} label="Nombre" value={s.companyName || ''} onChange={v => onUpdate({ companyName: v })} placeholder="Mi tienda" />
-        <Field icon={<Type size={13} />} label="Descripción" value={s.companyDescription || ''} onChange={v => onUpdate({ companyDescription: v })} placeholder="Descripción de la empresa..." />
+        <Field icon={<Type size={13} />} label="Nombre" value={s.companyName || 'Kevin & Coco Chile'} onChange={v => onUpdate({ companyName: v })} placeholder="Kevin & Coco Chile" />
+        <Field icon={<Type size={13} />} label="Descripción" value={s.companyDescription || 'Tu tienda de maquillaje y artículos de beauty favoritos'} onChange={v => onUpdate({ companyDescription: v })} placeholder="Tu tienda de maquillaje..." />
         <SH>Columnas</SH>
-        <Field icon={<Type size={13} />} label="Título columna 1" value={s.footerCol1Title || ''} onChange={v => onUpdate({ footerCol1Title: v })} placeholder="Comprar" />
-        <Field icon={<Type size={13} />} label="Título columna 2" value={s.footerCol2Title || ''} onChange={v => onUpdate({ footerCol2Title: v })} placeholder="Info" />
-        <Field icon={<Type size={13} />} label="Título columna 3" value={s.footerCol3Title || ''} onChange={v => onUpdate({ footerCol3Title: v })} placeholder="Contacto" />
-        <Field icon={<Type size={13} />} label="Título columna 4 / Newsletter" value={s.footerCol4Title || ''} onChange={v => onUpdate({ footerCol4Title: v })} placeholder="Newsletter" />
+        <Field icon={<Type size={13} />} label="Título columna 1" value={s.footerCol1Title || 'Comprar'} onChange={v => onUpdate({ footerCol1Title: v })} placeholder="Comprar" />
+        <Field icon={<Type size={13} />} label="Título columna 2" value={s.footerCol2Title || 'Ayuda'} onChange={v => onUpdate({ footerCol2Title: v })} placeholder="Ayuda" />
+        <Field icon={<Type size={13} />} label="Título columna 3" value={s.footerCol3Title || 'Contacto'} onChange={v => onUpdate({ footerCol3Title: v })} placeholder="Contacto" />
+        <Field icon={<Type size={13} />} label="Título columna 4 / Newsletter" value={s.footerCol4Title || 'Suscríbete'} onChange={v => onUpdate({ footerCol4Title: v })} placeholder="Suscríbete" />
         <SH>Contacto</SH>
         <Field icon={<Type size={13} />} label="Dirección" value={s.address || ''} onChange={v => onUpdate({ address: v })} placeholder="Calle, Ciudad, País" />
         <Field icon={<Type size={13} />} label="Teléfono" value={s.phone || ''} onChange={v => onUpdate({ phone: v })} placeholder="+56 9 1234 5678" />
-        <Field icon={<Type size={13} />} label="Email" value={s.email || ''} onChange={v => onUpdate({ email: v })} placeholder="info@mitienda.com" />
+        <Field icon={<Type size={13} />} label="Email" value={s.email || 'kevincocochile2026@gmail.com'} onChange={v => onUpdate({ email: v })} placeholder="kevincocochile2026@gmail.com" />
         <SH>Redes sociales</SH>
         <Field icon={<Type size={13} />} label="Instagram" value={s.instagram || ''} onChange={v => onUpdate({ instagram: v })} placeholder="@usuario" />
         <Field icon={<Type size={13} />} label="Facebook" value={s.facebook || ''} onChange={v => onUpdate({ facebook: v })} placeholder="pagina" />
