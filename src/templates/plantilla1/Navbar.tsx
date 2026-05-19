@@ -267,12 +267,8 @@ export default function Navbar1() {
         @keyframes tpl1-nav-pop { 0% { transform: scale(0.92); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
         @keyframes tpl1-fab-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(135deg); } }
         @keyframes tpl1-fab-spin-back { 0% { transform: rotate(135deg); } 100% { transform: rotate(0deg); } }
-        @keyframes tpl1-bubble-in-1 { 0% { transform: translateY(0) scale(0); opacity: 0; } 50% { transform: translateY(-32px) scale(1.15); opacity: 1; } 100% { transform: translateY(-28px) scale(1); opacity: 1; } }
-        @keyframes tpl1-bubble-in-2 { 0% { transform: translateY(0) scale(0); opacity: 0; } 50% { transform: translateY(-64px) scale(1.15); opacity: 1; } 100% { transform: translateY(-56px) scale(1); opacity: 1; } }
-        @keyframes tpl1-bubble-in-3 { 0% { transform: translateY(0) scale(0); opacity: 0; } 50% { transform: translateY(-96px) scale(1.15); opacity: 1; } 100% { transform: translateY(-84px) scale(1); opacity: 1; } }
-        @keyframes tpl1-bubble-out-1 { 0% { transform: translateY(-28px) scale(1); opacity: 1; } 100% { transform: translateY(0) scale(0); opacity: 0; } }
-        @keyframes tpl1-bubble-out-2 { 0% { transform: translateY(-56px) scale(1); opacity: 1; } 100% { transform: translateY(0) scale(0); opacity: 0; } }
-        @keyframes tpl1-bubble-out-3 { 0% { transform: translateY(-84px) scale(1); opacity: 1; } 100% { transform: translateY(0) scale(0); opacity: 0; } }
+        @keyframes tpl1-bubble-pop { 0% { opacity: 0; transform: scale(0.3) translateY(12px); } 65% { opacity: 1; transform: scale(1.1) translateY(-3px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+        @keyframes tpl1-bubble-pop-out { 0% { opacity: 1; transform: scale(1) translateY(0); } 100% { opacity: 0; transform: scale(0.3) translateY(12px); } }
         @keyframes tpl1-bubble-glow { 0%, 100% { box-shadow: 0 4px 16px rgba(236,72,153,0.35); } 50% { box-shadow: 0 4px 24px rgba(236,72,153,0.55); } }
         .tpl1-bottom-nav {
           display: none;
@@ -312,7 +308,7 @@ export default function Navbar1() {
         .tpl1-fab-wrap { position: relative; display: flex; flex-direction: column; align-items: center; }
         .tpl1-fab-btn {
           width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer;
-          background: linear-gradient(135deg, ${PINK_PRIMARY}, #db2777);
+          background: linear-gradient(135deg, #ec4899, #db2777);
           color: #fff; display: flex; align-items: center; justify-content: center;
           box-shadow: 0 4px 20px rgba(236,72,153,0.45), 0 0 0 4px rgba(236,72,153,0.12);
           transition: box-shadow 0.3s ease, transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
@@ -321,39 +317,44 @@ export default function Navbar1() {
         }
         @keyframes tpl1-fab-pulse { 0%, 100% { box-shadow: 0 4px 20px rgba(236,72,153,0.45), 0 0 0 4px rgba(236,72,153,0.12); } 50% { box-shadow: 0 4px 28px rgba(236,72,153,0.6), 0 0 0 8px rgba(236,72,153,0.08); } }
         .tpl1-fab-btn:hover { box-shadow: 0 6px 28px rgba(236,72,153,0.55), 0 0 0 6px rgba(236,72,153,0.18); }
-        .tpl1-fab-btn:active { transform: scale(0.9); }
+        .tpl1-fab-btn:active { transform: scale(0.9); animation: none; }
         .tpl1-fab-btn svg { width: 24px; height: 24px; transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1); }
         .tpl1-fab-btn.open svg { transform: rotate(135deg); }
-        .tpl1-fab-label { font-size: 9px; font-weight: 800; color: ${PINK_PRIMARY}; margin-top: 2px; font-family: 'DM Sans', system-ui, sans-serif; letter-spacing: -0.02em; }
+        .tpl1-fab-label { font-size: 9px; font-weight: 800; color: #ec4899; margin-top: 2px; font-family: 'DM Sans', system-ui, sans-serif; letter-spacing: -0.02em; }
 
         /* Bubble items */
-        .tpl1-fab-bubbles { position: absolute; bottom: 44px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column-reverse; align-items: center; gap: 0; pointer-events: none; z-index: 3; }
+        .tpl1-fab-bubbles {
+          position: absolute;
+          bottom: calc(100% + 6px);
+          left: 50%; transform: translateX(-50%);
+          display: flex; flex-direction: column;
+          align-items: center; gap: 10px;
+          pointer-events: none; z-index: 10;
+          padding-bottom: 2px;
+        }
         .tpl1-fab-bubbles.open { pointer-events: auto; }
         .tpl1-fab-bubble {
-          display: flex; align-items: center; gap: 8px; text-decoration: none;
-          opacity: 0; transform: translateY(0) scale(0); pointer-events: none;
-          position: absolute; white-space: nowrap;
+          display: flex; align-items: center; gap: 10px; text-decoration: none;
+          opacity: 0; transform: scale(0.3) translateY(12px);
+          pointer-events: none; white-space: nowrap;
         }
         .tpl1-fab-bubbles.open .tpl1-fab-bubble { pointer-events: auto; }
-        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(1) { animation: tpl1-bubble-in-1 0.4s cubic-bezier(0.34,1.56,0.64,1) 0.05s forwards; }
-        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(2) { animation: tpl1-bubble-in-2 0.4s cubic-bezier(0.34,1.56,0.64,1) 0.12s forwards; }
-        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(3) { animation: tpl1-bubble-in-3 0.4s cubic-bezier(0.34,1.56,0.64,1) 0.2s forwards; }
-        .tpl1-fab-bubbles.closing .tpl1-fab-bubble:nth-child(1) { animation: tpl1-bubble-out-1 0.25s ease-in forwards; }
-        .tpl1-fab-bubbles.closing .tpl1-fab-bubble:nth-child(2) { animation: tpl1-bubble-out-2 0.25s ease-in 0.04s forwards; }
-        .tpl1-fab-bubbles.closing .tpl1-fab-bubble:nth-child(3) { animation: tpl1-bubble-out-3 0.25s ease-in 0.08s forwards; }
+        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(1) { animation: tpl1-bubble-pop 0.42s cubic-bezier(0.34,1.56,0.64,1) 0.02s forwards; }
+        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(2) { animation: tpl1-bubble-pop 0.42s cubic-bezier(0.34,1.56,0.64,1) 0.10s forwards; }
+        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(3) { animation: tpl1-bubble-pop 0.42s cubic-bezier(0.34,1.56,0.64,1) 0.18s forwards; }
         .tpl1-bubble-circle {
-          width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-          background: #fff; border: 2px solid rgba(236,72,153,0.2); box-shadow: 0 4px 16px rgba(236,72,153,0.2);
-          transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s ease, border-color 0.2s ease;
+          width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+          background: #fff; border: 2px solid rgba(236,72,153,0.25);
+          box-shadow: 0 4px 16px rgba(236,72,153,0.25);
+          flex-shrink: 0;
           animation: tpl1-bubble-glow 2.5s ease-in-out infinite;
         }
-        .tpl1-bubble-circle:hover { transform: scale(1.12); border-color: ${PINK_PRIMARY}; box-shadow: 0 6px 24px rgba(236,72,153,0.35); }
-        .tpl1-bubble-circle:active { transform: scale(0.95); }
-        .tpl1-bubble-circle svg { width: 22px; height: 22px; color: ${PINK_PRIMARY}; }
+        .tpl1-bubble-circle svg { width: 22px; height: 22px; color: #ec4899; }
         .tpl1-bubble-label {
           font-size: 12px; font-weight: 700; color: #1a1a2e; font-family: 'DM Sans', system-ui, sans-serif;
-          background: rgba(255,255,255,0.95); backdrop-filter: blur(8px); padding: 5px 12px; border-radius: 999px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid rgba(236,72,153,0.1);
+          background: rgba(255,255,255,0.96); backdrop-filter: blur(8px); padding: 5px 13px; border-radius: 999px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.10); border: 1px solid rgba(236,72,153,0.15);
+          order: -1;
         }
 
         /* FAB overlay */
@@ -754,17 +755,17 @@ export default function Navbar1() {
           {/* FAB central — Tienda / Catálogo / Llegan Pronto */}
           <div className="tpl1-fab-wrap">
             <div className={`tpl1-fab-bubbles${fabOpen ? ' open' : ''}`}>
-              <Link href="/productos" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
-                <span className="tpl1-bubble-label">Tienda</span>
-                <div className="tpl1-bubble-circle"><Store /></div>
+              <Link href="/llegan-pronto" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
+                <span className="tpl1-bubble-label">Llegan Pronto</span>
+                <div className="tpl1-bubble-circle"><Truck /></div>
               </Link>
               <Link href="/catalogo" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
                 <span className="tpl1-bubble-label">Catálogo</span>
                 <div className="tpl1-bubble-circle"><LayoutGrid /></div>
               </Link>
-              <Link href="/llegan-pronto" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
-                <span className="tpl1-bubble-label">Llegan Pronto</span>
-                <div className="tpl1-bubble-circle"><Truck /></div>
+              <Link href="/productos" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
+                <span className="tpl1-bubble-label">Tienda</span>
+                <div className="tpl1-bubble-circle"><Store /></div>
               </Link>
             </div>
             <button className={`tpl1-fab-btn${fabOpen ? ' open' : ''}`} onClick={() => setFabOpen(v => !v)} aria-label="Explorar">
