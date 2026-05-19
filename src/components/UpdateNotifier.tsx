@@ -66,14 +66,13 @@ export default function UpdateNotifier() {
 
   const handleReload = useCallback(() => {
     // Hard reload — limpiar caches y recargar
-    if ('caches' in window) {
+    const clearAndReload = () => window.location.reload();
+    if ('caches' in window && (window as any).caches) {
       (window as any).caches.keys().then((names: string[]) => {
         names.forEach((name: string) => (window as any).caches.delete(name));
-      }).then(() => {
-        window.location.reload();
-      });
+      }).then(clearAndReload);
     } else {
-      window.location.reload();
+      clearAndReload();
     }
   }, []);
 
