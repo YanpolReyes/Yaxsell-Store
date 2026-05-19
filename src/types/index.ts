@@ -17,10 +17,15 @@ export interface Product {
   NUMREVIEWS?: number;
   WHOLESALEPRICE?: number;
   WHOLESALEMINQUANTITY?: number;
+  PACKQTY?: number;
   TAGS?: string[];
   FEATURES?: string[];
   SOLDQUANTITY?: number;
   ISACTIVE?: boolean;
+  SKU?: string;
+  COMING_SOON?: boolean;
+  DATE_ADDED?: string;
+  section?: number;
 }
 
 export interface Review {
@@ -194,19 +199,34 @@ export interface CartItem {
 
 export interface LiveStream {
   $id: string;
+  $createdAt: string;
   title: string;
   description?: string;
   url: string;
-  platform: 'youtube' | 'facebook' | 'instagram' | 'tiktok' | string;
-  status: 'scheduled' | 'live' | 'ended' | 'cancelled';
+  platform: 'youtube' | 'facebook' | 'instagram' | 'tiktok' | 'twitch' | string;
+  status: 'scheduled' | 'live' | 'ended' | 'cancelled' | 'error';
   isActive: boolean;
   thumbnailUrl?: string;
+  bannerUrl?: string;
   viewerCount?: number;
+  // Scheduling
   scheduledAt?: string;
   startAt?: string;
+  endAt?: string;
+  // Player config
+  autoplay?: boolean;
   muted?: boolean;
   showText?: boolean;
   allowFullscreen?: boolean;
+  // Live Shopping
+  productIds?: string[];
+  pinnedProductId?: string;
+  isRotationEnabled?: boolean;
+  rotationInterval?: number;
+  defaultDiscount?: number;
+  // Error tracking
+  errorMessage?: string;
+  createdBy?: string;
 }
 
 export interface HotspotPanel {

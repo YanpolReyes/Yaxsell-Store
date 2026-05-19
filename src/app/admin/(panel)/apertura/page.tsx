@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Sparkles, Save, RefreshCw } from 'lucide-react';
-import { getServices, getAppwriteConfig, APERTURA_SETTINGS_COLLECTION_ID, USERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, APERTURA_SETTINGS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Query, ID } from 'appwrite';
 
 const FF = '"DM Sans",system-ui,sans-serif';
@@ -63,56 +63,21 @@ export default function AperturaPage() {
         // Update existing document
         await databases.updateDocument(databaseId, APERTURA_SETTINGS_COLLECTION_ID, existing.documents[0].$id, settings);
         
-        // If disabling promotion, remove coupon from all users' prefs
+        // If disabling promotion, remove coupon from all auth users' prefs (server API)
         if (wasActive && !isActive) {
           try {
-            const API_KEY = 'standard_ea10b9d7d4414fec61778bdc7f569b0de82bb3aca157f5949bbb8c7320b379f12e15649cae18dc0512f75fd8d575dd5f59058125598e0a0491fa9ea9760ff67b2f792df372b838bf5bd1a9acfef29f201ccb20105285ee2787343eebf89234a4b0a6977ae7447cc5d9c0742d0f9d364d03730c97261748a019bf592ce7cd2025';
-            const PROJECT_ID = '698f6de50012f9df7ebd';
-            const DATABASE_ID = '67f1dc940037b3d367bb';
-            
-            // Get all users
-            const usersRes = await fetch(`https://nyc.cloud.appwrite.io/v1/databases/${DATABASE_ID}/collections/users/documents?limit=100`, {
-              headers: {
-                'Content-Type': 'application/json',
-                'X-Appwrite-Key': API_KEY,
-                'X-Appwrite-Project': PROJECT_ID,
-              },
-            });
-            const usersData = await usersRes.json();
-            
-            let removedCount = 0;
-            
-            // Remove coupon from each user's prefs
-            for (const userDoc of usersData.documents) {
-              try {
-                const prefs = (userDoc as any).prefs || {};
-                
-                if (prefs.welcomeCouponCode || prefs.autoApplyCoupon) {
-                  await fetch(`https://nyc.cloud.appwrite.io/v1/users/${userDoc.$id}/prefs`, {
-                    method: 'PATCH',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'X-Appwrite-Key': API_KEY,
-                      'X-Appwrite-Project': PROJECT_ID,
-                    },
-                    body: JSON.stringify({
-                      ...prefs,
-                      welcomeCouponCode: null,
-                      autoApplyCoupon: null,
-                    }),
-                  });
-                  removedCount++;
-                }
-              } catch (e) {
-                console.error(`Error removing coupon from user ${userDoc.$id}:`, e);
-              }
+            const clearRes = await fetch('/api/admin/apertura/clear-coupons', { method: 'POST' });
+            const clearData = await clearRes.json().catch(() => ({}));
+            if (!clearRes.ok || !clearData.ok) {
+              throw new Error(clearData.error || clearData.message || 'No se pudieron limpiar los cupones');
             }
-            
-            alert('Configuración guardada. Cupón eliminado de ' + removedCount + ' usuarios.');
+            alert(`Configuración guardada. Cupón eliminado de ${clearData.removedCount ?? 0} usuarios.`);
           } catch (e) {
             console.error('Error removing coupons from users:', e);
-            alert('Configuración guardada. Error al eliminar cupón de usuarios: ' + (e as any).message);
+            alert('Configuración guardada. Error al eliminar cupón de usuarios: ' + (e instanceof Error ? e.message : String(e)));
           }
+        } else {
+          alert('Configuración guardada exitosamente');
         }
       } else {
         // Create new document
@@ -120,9 +85,8 @@ export default function AperturaPage() {
           ...settings,
           createdAt: new Date().toISOString()
         });
+        alert('Configuración guardada exitosamente');
       }
-      
-      alert('Configuración guardada exitosamente');
     } catch (e) {
       console.error('Error saving settings:', e);
       alert('Error al guardar configuración');

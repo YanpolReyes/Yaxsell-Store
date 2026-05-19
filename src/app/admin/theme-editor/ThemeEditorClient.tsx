@@ -2784,6 +2784,7 @@ function DesignFields({ baseId, section, onUpdate }: {
 
     case 'collection_list': {
       const P = [
+        { id: 'editorial', l: 'Cinemático', bg: '#0a0908', tx: 'rgba(250,250,249,0.7)', hd: '#fafaf9', cBg: 'rgba(255,255,255,0.04)', cTx: '#fff', ac: '#fb7185', sh: 'lg' as const, r: 24, cols: 3 },
         { id: 'cards',  l: 'Tarjetas',  bg: '#fff',    tx: '#1a1a1a', hd: '#111', cBg: '#f9fafb', cTx: '#333', ac: '#3483fa', sh: 'sm' as const, r: 12, cols: 3 },
         { id: 'dark',   l: 'Oscuro',    bg: '#0f172a', tx: '#e2e8f0', hd: '#f8fafc', cBg: '#1e293b', cTx: '#e2e8f0', ac: '#38bdf8', sh: 'lg' as const, r: 12, cols: 3 },
         { id: 'flat',   l: 'Plano',     bg: '#f1f5f9', tx: '#334155', hd: '#0f172a', cBg: '#fff', cTx: '#334155', ac: '#2563eb', sh: 'none' as const, r: 4, cols: 4 },
@@ -2794,7 +2795,7 @@ function DesignFields({ baseId, section, onUpdate }: {
       return (<div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <SH>Modelos</SH>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5 }}>
-          {P.map(m => <button key={m.id} onClick={() => onUpdate({ bgColor: m.bg, textColor: m.tx, headingColor: m.hd, cardBgColor: m.cBg, cardTextColor: m.cTx, accentColor: m.ac, shadow: m.sh, borderRadius: m.r, columns: m.cols })} style={{ padding: 0, border: `2px solid ${s.bgColor === m.bg && s.accentColor === m.ac ? '#5850ec' : '#e5e7eb'}`, borderRadius: 6, cursor: 'pointer', overflow: 'hidden', background: 'none' }}><div style={{ height: 24, background: m.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>{[0,1,2].map(i => <div key={i} style={{ width: 10, height: 10, background: m.cBg, borderRadius: m.r / 4, opacity: 0.85 }} />)}</div><div style={{ fontSize: 9, padding: '2px 4px', fontWeight: 600, background: s.bgColor === m.bg && s.accentColor === m.ac ? '#ede9fe' : '#fff', color: '#374151' }}>{m.l}</div></button>)}
+          {P.map(m => <button key={m.id} onClick={() => onUpdate({ bgColor: m.bg, textColor: m.tx, headingColor: m.hd, cardBgColor: m.cBg, cardTextColor: m.cTx, accentColor: m.ac, shadow: m.sh, borderRadius: m.r, columns: m.cols, modelId: m.id })} style={{ padding: 0, border: `2px solid ${s.bgColor === m.bg && s.accentColor === m.ac ? '#5850ec' : '#e5e7eb'}`, borderRadius: 6, cursor: 'pointer', overflow: 'hidden', background: 'none' }}><div style={{ height: 24, background: m.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>{[0,1,2].map(i => <div key={i} style={{ width: 10, height: 10, background: m.cBg, borderRadius: m.r / 4, opacity: 0.85 }} />)}</div><div style={{ fontSize: 9, padding: '2px 4px', fontWeight: 600, background: s.bgColor === m.bg && s.accentColor === m.ac ? '#ede9fe' : '#fff', color: '#374151' }}>{m.l}</div></button>)}
         </div>
         <ColorsBlock /><CardColorsBlock /><TypographyBlock /><FontBlock /><SpacingBlock /><LayoutBlock />
       </div>);

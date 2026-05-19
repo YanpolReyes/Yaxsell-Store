@@ -553,7 +553,8 @@ cart-drawer.cart-sidebar::after {
   display: none !important;
 }
 /* ─── Collection slides: Glass Overlay con "Ingresar" ─── */
-[data-template="1"] .musk_collection1 .musk-collection-slide {
+[data-template="1"] .musk_collection1:not([data-collection-model]) .musk-collection-slide,
+[data-template="1"] .musk_collection1[data-collection-model=""] .musk-collection-slide {
   display: block !important;
   position: relative !important;
   overflow: hidden !important;
@@ -643,9 +644,9 @@ cart-drawer.cart-sidebar::after {
 }
 
 /* Title text */
-[data-template="1"] .musk_collection1 .tpl1-collection-footer .slide-title,
-[data-template="1"] .musk_collection1 .tpl1-collection-footer .collection_list_title_main,
-[data-template="1"] .musk_collection1 .tpl1-collection-footer .inner_heading_color {
+[data-template="1"] .musk_collection1:not([data-collection-model]) .tpl1-collection-footer .slide-title,
+[data-template="1"] .musk_collection1:not([data-collection-model]) .tpl1-collection-footer .collection_list_title_main,
+[data-template="1"] .musk_collection1:not([data-collection-model]) .tpl1-collection-footer .inner_heading_color {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   text-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
@@ -703,6 +704,9 @@ cart-drawer.cart-sidebar::after {
 [data-template="1"] .musk_collection1 .musk-collection-slide:has(.tpl1-collection-footer) .img-content > .collection_list_title_main {
   display: none !important;
 }
+
+/* Colecciones premium → tpl1-collections-premium.css */
+
 /* ─── Secciones ocultas desde el editor ─── */
 [data-template="1"] .tpl1-countdown-mobile-source-hidden {
   display: none !important;

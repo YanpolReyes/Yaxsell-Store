@@ -22,6 +22,13 @@ const FIXES: Record<string, AttrDef[]> = {
     { key: 'SORTORDER', type: 'integer', required: false, default: 0 },
     { key: 'STOCK', type: 'integer', required: false, default: -1 },
   ],
+  stock_alerts: [
+    { key: 'USERID', type: 'string', size: 128, required: false },
+    { key: 'PRODUCTNAME', type: 'string', size: 256, required: false },
+    { key: 'STATUS', type: 'string', size: 32, required: false, default: 'pending' },
+    { key: 'PRODUCTIMAGE', type: 'string', size: 2048, required: false },
+    { key: 'USERNAME', type: 'string', size: 128, required: false },
+  ],
 };
 
 async function createAttribute(collectionId: string, attr: AttrDef): Promise<{ created: boolean; error?: string }> {

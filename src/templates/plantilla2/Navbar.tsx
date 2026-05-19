@@ -572,7 +572,9 @@ export default function Navbar2({ initialSettings }: { initialSettings?: Record<
               </div>
               {[
                 { label: 'Inicio', href: '/' },
-                { label: 'Catálogo', href: '/productos' },
+                { label: 'Tienda', href: '/productos' },
+                { label: 'Catálogo', href: '/catalogo' },
+                { label: 'Llegan Pronto', href: '/llegan-pronto' },
                 { label: 'Ofertas', href: '/productos' },
                 { label: 'Favoritos', href: '/favoritos' },
                 { label: 'Mi cuenta', href: '/cuenta' },
@@ -1571,7 +1573,9 @@ export default function Navbar2({ initialSettings }: { initialSettings?: Record<
             )}
             {[
               { label: 'Inicio', href: '/' },
-              { label: 'Productos', href: '/productos' },
+              { label: 'Tienda', href: '/productos' },
+              { label: 'Catálogo', href: '/catalogo' },
+              { label: 'Llegan Pronto', href: '/llegan-pronto' },
               { label: 'Ofertas', href: '/productos' },
               { label: 'Favoritos', href: '/favoritos' },
               { label: 'Carrito', href: '/carrito' },

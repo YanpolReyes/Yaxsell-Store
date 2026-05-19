@@ -80,6 +80,8 @@ export interface Product {
   jumpseller_id?: string;
   barcode?: string;
   sku?: string;
+  COMING_SOON?: boolean;
+  DATE_ADDED?: string;
   section?: number;
   $createdAt: string;
   $updatedAt: string;

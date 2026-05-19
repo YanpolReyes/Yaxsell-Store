@@ -7,7 +7,7 @@ import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from 
 import {
   ShoppingBag, Bell, Heart, ShoppingCart, MessageCircle,
   User, MapPin, Receipt, HelpCircle, Phone,
-  Loader2, ChevronRight, LogOut, Building2, Trophy, Tag, Star, Settings, Ticket, Gift, Pencil, Sparkles,
+  Loader2, ChevronRight, LogOut, Building2, Trophy, Tag, Star, Settings, Ticket, Gift, Pencil, Sparkles, PackageSearch,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -25,6 +25,7 @@ interface MenuItem { icon: any; label: string; href: string; desc?: string; badg
 const MIS_COMPRAS_ITEMS: MenuItem[] = [
   { icon: Receipt,      label: 'Mis Pedidos',   href: '/cuenta/pedidos',    desc: 'Seguí el estado de tus pedidos' },
   { icon: Heart,        label: 'Mis Favoritos', href: '/cuenta/favoritos',  desc: 'Productos que guardaste' },
+  { icon: PackageSearch,label: 'Mis Consultas', href: '/cuenta/consultas', desc: 'Consultas de disponibilidad' },
   { icon: ShoppingCart, label: 'Mi Carrito',    href: '/carrito',           desc: 'Productos en tu carrito' },
 ];
 
@@ -46,6 +47,7 @@ const ALL_CARDS: MenuItem[] = [...MIS_COMPRAS_ITEMS, ...CUENTA_ITEMS, ...CONFIG_
 /* Quick shortcuts — these are the most important for the customer */
 const QUICK_SHORTCUTS = [
   { icon: Receipt,      label: 'Pedidos',    href: '/cuenta/pedidos',     color: '#6366f1', bg: '#eef2ff' },
+  { icon: PackageSearch,label: 'Consultas',  href: '/cuenta/consultas',   color: '#ea580c', bg: '#fff7ed' },
   { icon: Ticket,       label: 'Cupones',    href: '/cuenta/cupones',     color: '#ec4899', bg: '#fdf2f8' },
   { icon: Gift,         label: 'Regalos',    href: '/cuenta/regalos',   color: '#f59e0b', bg: '#fffbeb' },
   { icon: MapPin,       label: 'Direcciones', href: '/cuenta/direcciones', color: '#10b981', bg: '#ecfdf5' },
@@ -591,6 +593,7 @@ export default function CuentaPage() {
           <p style={{ margin: '0 0 7px 2px', fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.07em' }}>Mis compras</p>
           <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', marginBottom: 16 }}>
             <PmRow icon={Receipt} label="Mis Pedidos" desc="Seguí tus compras" href="/cuenta/pedidos" g="linear-gradient(135deg,#6366f1,#8b5cf6)" />
+            <PmRow icon={PackageSearch} label="Consultas" desc="Disponibilidad de productos" href="/cuenta/consultas" g="linear-gradient(135deg,#ea580c,#f97316)" />
             <PmRow icon={Ticket} label="Cupones" desc="Tus descuentos disponibles" href="/cuenta/cupones" g="linear-gradient(135deg,#ec4899,#f472b6)" />
             <PmRow icon={Gift} label="Regalos" desc="Tus regalos disponibles" href="/cuenta/regalos" g="linear-gradient(135deg,#f59e0b,#fbbf24)" last badge={hasGifts ? 1 : undefined} />
           </div>

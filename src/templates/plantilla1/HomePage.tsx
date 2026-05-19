@@ -37,6 +37,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import lottie from 'lottie-web';
 import './shopify-fix.css';
+import './tpl1-collections-premium.css';
 import './mobile-responsive.css';
 
 /* ── Mapeo: ID de sección en config → ID del elemento en el HTML de Shopify ── */
@@ -508,6 +509,20 @@ export default function HomePage1() {
         processed = processed.replace(/Mi tienda 3/gi, '');
         processed = processed.replace(/>MUSK</gi, '><');
         processed = processed.replace(/shop now/gi, 'Ver productos');
+        // Fix navbar: add "En Camino" after Catálogo and replace "Contacto" with "Mis Pedidos"
+        processed = processed.replace(
+          /(<li[^>]*class="nav_li[^"]*"[^>]*>\s*<a[^>]*href="\/catalogo"[^>]*>[^<]*<\/a>\s*<\/li>)/i,
+          '$1<li class="nav_li link_menu_men heading_font"><a href="/llegan-pronto" aria-label="En Camino">En Camino</a></li>'
+        );
+        processed = processed.replace(
+          /<a[^>]*href="[^"]*contact[^"]*"[^>]*aria-label="Contacto"[^>]*>Contacto<\/a>/i,
+          '<a href="/cuenta/pedidos" aria-label="Mis Pedidos">Mis Pedidos</a>'
+        );
+        // Fallback: replace any remaining Contacto link
+        processed = processed.replace(
+          /<a[^>]*href="[^"]*contact[^"]*"[^>]*>Contacto<\/a>/i,
+          '<a href="/cuenta/pedidos" aria-label="Mis Pedidos">Mis Pedidos</a>'
+        );
         setBodyHtml(processed);
       })
       .catch(err => {
@@ -646,6 +661,59 @@ export default function HomePage1() {
     };
     window.addEventListener('scroll', sync, { passive: true });
     return () => window.removeEventListener('scroll', sync);
+  }, [bodyHtml]);
+
+  /* ── Fix Shopify navbar: ensure Catálogo link exists ── */
+  useEffect(() => {
+    if (!bodyHtml) return;
+    const fixNavbar = () => {
+      const navbar = document.querySelector('.musk-navbar');
+      if (!navbar) return;
+      // Add Catálogo link if not already present
+      if (!navbar.querySelector('a[href="/catalogo"]')) {
+        const li = document.createElement('li');
+        li.className = 'nav_li link_menu_men heading_font';
+        const a = document.createElement('a');
+        a.href = '/catalogo';
+        a.setAttribute('aria-label', 'Catálogo');
+        a.textContent = 'Catálogo';
+        li.appendChild(a);
+        // Insert after Tienda link if exists, else append
+        const tiendaLink = navbar.querySelector('.nav_li a[href="/productos"]');
+        if (tiendaLink?.parentElement) {
+          tiendaLink.parentElement.after(li);
+        } else {
+          navbar.querySelector('ul')?.appendChild(li);
+        }
+      }
+      // Add "En Camino" link after Catálogo
+      if (!navbar.querySelector('a[href="/llegan-pronto"]')) {
+        const li = document.createElement('li');
+        li.className = 'nav_li link_menu_men heading_font';
+        const a = document.createElement('a');
+        a.href = '/llegan-pronto';
+        a.setAttribute('aria-label', 'En Camino');
+        a.textContent = 'En Camino';
+        li.appendChild(a);
+        const catalogoLink = navbar.querySelector('.nav_li a[href="/catalogo"]');
+        if (catalogoLink?.parentElement) {
+          catalogoLink.parentElement.after(li);
+        } else {
+          navbar.querySelector('ul')?.appendChild(li);
+        }
+      }
+      // Replace "Contacto" with "Mis Pedidos"
+      const contactoLink = navbar.querySelector('.nav_li a[aria-label="Contacto"]') || navbar.querySelector('.nav_li a[href*="contact"]');
+      if (contactoLink) {
+        contactoLink.href = '/cuenta/pedidos';
+        contactoLink.setAttribute('aria-label', 'Mis Pedidos');
+        contactoLink.textContent = 'Mis Pedidos';
+      }
+    };
+    fixNavbar();
+    // Re-run after a delay in case Shopify renders late
+    const t = setTimeout(fixNavbar, 2000);
+    return () => clearTimeout(t);
   }, [bodyHtml]);
 
   /* ── Hacer funcionales los botones del navbar Shopify (search, user, cart) ── */
@@ -2588,9 +2656,53 @@ export default function HomePage1() {
     if (!section) return;
     if (!cfg.enabled) return;
 
+    const modelId = settings.modelId || 'editorial';
+    const isPremium = modelId === 'editorial';
+    section.setAttribute('data-collection-model', modelId);
+
+    const sectionRoot = document.getElementById('shopify-section-template--22405132419320__collection_list_WrFbPe')
+      || (section.closest('.shopify-section') as HTMLElement | null);
+
+    const setupPremiumSection = () => {
+      if (!sectionRoot || !isPremium) return;
+      sectionRoot.classList.add('tpl1-collections-premium');
+      if (!sectionRoot.querySelector('.tpl1-col-bg-orb--1')) {
+        ['tpl1-col-bg-orb--1', 'tpl1-col-bg-orb--2', 'tpl1-col-bg-orb--3'].forEach(cls => {
+          const orb = document.createElement('div');
+          orb.className = `tpl1-col-bg-orb ${cls}`;
+          sectionRoot.insertBefore(orb, sectionRoot.firstChild);
+        });
+      }
+      const secTitle = section.querySelector('.musk-sec-title') as HTMLElement | null;
+      if (secTitle && !secTitle.querySelector('.tpl1-col-header-wrap')) {
+        const wrap = document.createElement('div');
+        wrap.className = 'tpl1-col-header-wrap';
+        const eyebrow = document.createElement('div');
+        eyebrow.className = 'tpl1-col-eyebrow';
+        const dot = document.createElement('span');
+        dot.className = 'tpl1-col-eyebrow-dot';
+        eyebrow.appendChild(dot);
+        const sub = secTitle.querySelector('.musk-fancy-sub-head');
+        if (sub) eyebrow.appendChild(sub);
+        const line = document.createElement('span');
+        line.className = 'tpl1-col-title-line';
+        const h2 = secTitle.querySelector('.musk-h2-head');
+        const para = secTitle.querySelector('.musk-main-para');
+        wrap.appendChild(eyebrow);
+        if (h2) wrap.appendChild(h2);
+        wrap.appendChild(line);
+        if (para) wrap.appendChild(para);
+        secTitle.innerHTML = '';
+        secTitle.appendChild(wrap);
+      }
+      const carousel = section.querySelector('.musk_collection1') as HTMLElement | null;
+      if (carousel) carousel.classList.add('tpl1-col-carousel');
+    };
+
     const layoutCollectionTitles = () => {
+      setupPremiumSection();
       const slides = section.querySelectorAll('.swiper-slide') as NodeListOf<HTMLElement>;
-      slides.forEach(slide => {
+      slides.forEach((slide, idx) => {
         const imgContent = slide.querySelector('.img-content');
         const titleLink = slide.querySelector('.collection_list_title_main') as HTMLAnchorElement | null;
         const slideWrap = slide.querySelector('.musk-collection-slide') as HTMLElement | null;
@@ -2615,8 +2727,25 @@ export default function HomePage1() {
         titleLink.removeAttribute('style'); // Let CSS handle it
         titleLink.removeAttribute('tabindex');
         titleLink.querySelectorAll('.tpl1-collection-visible-name').forEach(el => el.remove());
+
+        if (isPremium) {
+          if (!slideWrap.querySelector('.tpl1-col-card-shine')) {
+            const shine = document.createElement('div');
+            shine.className = 'tpl1-col-card-shine';
+            slideWrap.appendChild(shine);
+          }
+          let badge = slideWrap.querySelector('.tpl1-col-index') as HTMLElement | null;
+          if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'tpl1-col-index';
+            slideWrap.appendChild(badge);
+          }
+          badge.textContent = String(idx + 1).padStart(2, '0');
+        }
       });
     };
+
+    setupPremiumSection();
 
     // Title, subtitle, description
     const subHead = section.querySelector('.musk-fancy-sub-head') as HTMLElement;
@@ -2625,18 +2754,217 @@ export default function HomePage1() {
     if (subHead && settings.collectionSubtitle) subHead.textContent = settings.collectionSubtitle;
     if (mainTitle && settings.collectionTitle) mainTitle.textContent = settings.collectionTitle;
     if (mainPara && settings.collectionDescription) mainPara.textContent = settings.collectionDescription;
-    applyTpl1SectionColors(section as HTMLElement, settings);
+    if (!isPremium) {
+      applyTpl1SectionColors(section as HTMLElement, settings);
+    } else if (sectionRoot) {
+      sectionRoot.style.setProperty('background-color', settings.bgColor || '#0a0908', 'important');
+    }
+
+    if (!document.getElementById('tpl1-fraunces-font')) {
+      const link = document.createElement('link');
+      link.id = 'tpl1-fraunces-font';
+      link.rel = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap';
+      document.head.appendChild(link);
+    }
+
+    // Apply card-level styles from theme editor presets
+    const shadowMap: Record<string, string> = {
+      none: 'none',
+      sm: '0 1px 2px 0 rgba(0,0,0,0.05)',
+      md: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)',
+      lg: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)',
+    };
+
+    // Inject/update dynamic style tag at END of body (after all external CSS)
+    // This ensures our rules win over shopify-fix.css and mobile-responsive.css
+    let dynStyle = document.getElementById('tpl1-collection-card-style') as HTMLStyleElement | null;
+    if (!dynStyle) {
+      dynStyle = document.createElement('style');
+      dynStyle.id = 'tpl1-collection-card-style';
+      document.body.appendChild(dynStyle); // body, not head — loads after all CSS
+    }
+    const cBg = settings.cardBgColor || '#ffffff';
+    const cTx = settings.cardTextColor || '#1c1917';
+    const cSh = settings.shadow ? (shadowMap[settings.shadow] || shadowMap.md) : shadowMap.md;
+    const cR = settings.borderRadius !== undefined ? settings.borderRadius : 20;
+    const cCols = settings.columns || 3;
+    const accent = settings.accentColor || settings.buttonColor || '#c2410c';
+    const btnTx = settings.buttonTextColor || '#ffffff';
+    const headingFont = settings.headingFontFamily || '"Fraunces", "Playfair Display", Georgia, serif';
+    const bodyFont = settings.fontFamily || '"DM Sans", system-ui, sans-serif';
+    // Use very high specificity: section[data-collection-model] + double class selectors
+    dynStyle.textContent = `
+      /* ── Colecciones: tipografía de sección ── */
+      [data-template="1"] #shopify-section-template--22405132419320__collection_list_WrFbPe .musk-fancy-sub-head {
+        font-family: ${bodyFont} !important;
+        letter-spacing: 0.22em !important;
+        text-transform: uppercase !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+      }
+      [data-template="1"] #shopify-section-template--22405132419320__collection_list_WrFbPe .musk-h2-head {
+        font-family: ${headingFont} !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.02em !important;
+        line-height: 1.1 !important;
+      }
+      [data-template="1"] #shopify-section-template--22405132419320__collection_list_WrFbPe .musk-main-para {
+        font-family: ${bodyFont} !important;
+        line-height: 1.65 !important;
+        max-width: 52ch !important;
+      }
+      [data-template="1"] .musk_collection1[data-collection-model="editorial"] .tpl1-collection-footer::after {
+        background: linear-gradient(135deg, ${accent} 0%, ${accent}dd 100%) !important;
+        color: ${btnTx} !important;
+      }
+      /* ── Collection card theming (theme editor) ── */
+      [data-template="1"] .musk_collection1.musk_collection1 .musk-collection-slide.musk-collection-slide {
+        ${isPremium ? '' : `background: ${cBg} !important; box-shadow: ${cSh} !important;`}
+        border-radius: ${cR}px !important;
+        overflow: hidden !important;
+      }
+      [data-template="1"] .musk_collection1.musk_collection1 .musk-collection-slide .img-content.img-content {
+        border-radius: ${cR}px !important;
+        overflow: hidden !important;
+      }
+      ${isPremium ? '' : `
+      [data-template="1"] .musk_collection1.musk_collection1 .tpl1-collection-footer.tpl1-collection-footer,
+      [data-template="1"] .musk_collection1.musk_collection1 .tpl1-collection-footer .slide-title.slide-title,
+      [data-template="1"] .musk_collection1.musk_collection1 .tpl1-collection-footer .collection_list_title_main.collection_list_title_main,
+      [data-template="1"] .musk_collection1.musk_collection1 .tpl1-collection-footer .inner_heading_color.inner_heading_color {
+        color: ${cTx} !important;
+        -webkit-text-fill-color: ${cTx} !important;
+        text-shadow: none !important;
+      }`}
+      [data-template="1"] .musk_collection1.musk_collection1 .swiper-slide.swiper-slide {
+        width: ${100 / cCols}% !important;
+        flex: 0 0 ${100 / cCols}% !important;
+        max-width: ${100 / cCols}% !important;
+      }
+      /* Override hover color reset from mobile-responsive.css */
+      ${isPremium ? '' : `
+      [data-template="1"] .musk_collection1.musk_collection1 .swiper-slide:hover .slide-title.slide-title,
+      [data-template="1"] .musk_collection1.musk_collection1 .swiper-slide:hover .collection_list_title_main.collection_list_title_main {
+        color: ${cTx} !important;
+        -webkit-text-fill-color: ${cTx} !important;
+      }`}
+    `;
+
+    // Also apply inline styles directly as backup (setProperty with 'important')
+    const allSlides = section.querySelectorAll('.swiper-slide') as NodeListOf<HTMLElement>;
+    allSlides.forEach(slide => {
+      const card = slide.querySelector('.musk-collection-slide') as HTMLElement
+        || slide.querySelector('.collectiony_main_card_inner') as HTMLElement
+        || slide;
+      if (settings.cardBgColor && !isPremium) card.style.setProperty('background', settings.cardBgColor, 'important');
+      if (settings.cardTextColor && !isPremium) {
+        const titleEl = slide.querySelector('.slide-title') as HTMLElement | null;
+        const footerEl = slide.querySelector('.tpl1-collection-footer') as HTMLElement | null;
+        const linkEl = slide.querySelector('.collection_list_title_main') as HTMLElement | null;
+        const innerHeading = slide.querySelector('.inner_heading_color') as HTMLElement | null;
+        if (titleEl) paintTpl1Text(titleEl, settings.cardTextColor);
+        if (footerEl) {
+          footerEl.style.setProperty('color', settings.cardTextColor, 'important');
+          footerEl.style.setProperty('-webkit-text-fill-color', settings.cardTextColor, 'important');
+          footerEl.style.setProperty('text-shadow', 'none', 'important');
+        }
+        if (linkEl) {
+          linkEl.style.setProperty('color', settings.cardTextColor, 'important');
+          linkEl.style.setProperty('-webkit-text-fill-color', settings.cardTextColor, 'important');
+        }
+        if (innerHeading) paintTpl1Text(innerHeading, settings.cardTextColor);
+      }
+      if (settings.shadow) card.style.setProperty('box-shadow', shadowMap[settings.shadow] || 'none', 'important');
+      if (settings.borderRadius !== undefined) {
+        card.style.setProperty('border-radius', `${settings.borderRadius}px`, 'important');
+        const imgContent = slide.querySelector('.img-content') as HTMLElement | null;
+        if (imgContent) {
+          imgContent.style.setProperty('border-radius', `${settings.borderRadius}px`, 'important');
+          imgContent.style.setProperty('overflow', 'hidden', 'important');
+        }
+      }
+      // Columns via inline
+      if (settings.columns) {
+        const cols = Math.max(2, Math.min(6, settings.columns));
+        slide.style.setProperty('width', `${100 / cols}%`, 'important');
+        slide.style.setProperty('flex', `0 0 ${100 / cols}%`, 'important');
+        slide.style.setProperty('max-width', `${100 / cols}%`, 'important');
+      }
+    });
+
+    const runCollectionEntrance = () => {
+      if (!isPremium || typeof window === 'undefined') return;
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduced) return;
+
+      const header = section.querySelector('.tpl1-col-header-wrap') as HTMLElement | null;
+      const cardSlides = Array.from(section.querySelectorAll('.musk_collection1 .swiper-slide')) as HTMLElement[];
+
+      if (header) {
+        gsap.fromTo(header.children, { opacity: 0, y: 36 }, {
+          opacity: 1, y: 0, duration: 0.9, stagger: 0.12, ease: 'power3.out',
+          scrollTrigger: { trigger: header, start: 'top 88%', once: true },
+        });
+      }
+
+      cardSlides.forEach((slide, i) => {
+        slide.classList.add('tpl1-col-animate-pending');
+        gsap.fromTo(slide, { opacity: 0, y: 44 }, {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          delay: i * 0.07,
+          ease: 'power3.out',
+          scrollTrigger: { trigger: slide, start: 'top 92%', once: true },
+          onComplete: () => slide.classList.remove('tpl1-col-animate-pending'),
+        });
+      });
+    };
+
+    const bindCardTilt = () => {
+      if (!isPremium || window.innerWidth < 769) return () => {};
+      const cleanups: (() => void)[] = [];
+
+      section.querySelectorAll('.musk-collection-slide').forEach(card => {
+        const el = card as HTMLElement;
+        const onMove = (e: MouseEvent) => {
+          const r = el.getBoundingClientRect();
+          const x = (e.clientX - r.left) / r.width - 0.5;
+          const y = (e.clientY - r.top) / r.height - 0.5;
+          el.style.transform = `perspective(900px) rotateX(${-y * 10}deg) rotateY(${x * 10}deg) translateY(-8px) scale(1.02)`;
+        };
+        const onLeave = () => { el.style.transform = ''; };
+        el.addEventListener('mousemove', onMove);
+        el.addEventListener('mouseleave', onLeave);
+        cleanups.push(() => {
+          el.removeEventListener('mousemove', onMove);
+          el.removeEventListener('mouseleave', onLeave);
+          el.style.transform = '';
+        });
+      });
+
+      return () => cleanups.forEach(fn => fn());
+    };
 
     // Collection items → update slides
     const bindCollectionLayout = () => {
       layoutCollectionTitles();
       const t1 = window.setTimeout(layoutCollectionTitles, 200);
       const t2 = window.setTimeout(layoutCollectionTitles, 800);
+      const t3 = window.setTimeout(runCollectionEntrance, 400);
+      const cleanupTilt = bindCardTilt();
       window.addEventListener('resize', layoutCollectionTitles);
       return () => {
         window.clearTimeout(t1);
         window.clearTimeout(t2);
+        window.clearTimeout(t3);
         window.removeEventListener('resize', layoutCollectionTitles);
+        cleanupTilt();
+        ScrollTrigger.getAll().filter(st => {
+          const tr = st.trigger as HTMLElement | undefined;
+          return tr?.closest?.('[data-section-id="template--22405132419320__collection_list_WrFbPe"]');
+        }).forEach(st => st.kill());
       };
     };
 
@@ -2779,13 +3107,15 @@ export default function HomePage1() {
       }
     };
 
-    slides.forEach(slide => {
-      const cardInner = slide.querySelector('.collectiony_main_card_inner') as HTMLElement;
-      const target = cardInner || slide;
-      target.addEventListener('click', handleSlideClick, true);
-      target.addEventListener('touchend', handleSlideTouch, true);
-    });
-    document.addEventListener('click', handleDocClick, true);
+    if (!isPremium) {
+      slides.forEach(slide => {
+        const cardInner = slide.querySelector('.collectiony_main_card_inner') as HTMLElement;
+        const target = cardInner || slide;
+        target.addEventListener('click', handleSlideClick, true);
+        target.addEventListener('touchend', handleSlideTouch, true);
+      });
+      document.addEventListener('click', handleDocClick, true);
+    }
 
     // Inject mobile collection card styles (guaranteed to override everything)
     if (!document.getElementById('tpl1-collection-mobile-style')) {
@@ -6100,13 +6430,13 @@ export default function HomePage1() {
 
         visitorsDiv.innerHTML = `
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-            <span style="font-size:13px;font-weight:800;color:${textColor};">👥 Visitantes hoy</span>
+            <span style="font-size:13px;font-weight:800;color:${textColor};">Visitantes hoy</span>
             <span style="font-size:12px;font-weight:700;color:${accentColor};background:${iconBg};padding:2px 8px;border-radius:6px;">${totalToday}</span>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:6px;">
             ${markers.map(m => `
               <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;background:${iconBg};font-size:11px;font-weight:600;color:${accentColor};">
-                📍 ${m.comuna}${m.count > 1 ? ` (${m.count})` : ''}${m.users && m.users.length > 0 ? ` — 👤 ${m.users[0]}${m.users.length > 1 ? ` +${m.users.length - 1}` : ''}` : ''}
+                ${m.comuna}${m.count > 1 ? ` (${m.count})` : ''}${m.users && m.users.length > 0 ? ` — ${m.users[0]}${m.users.length > 1 ? ` +${m.users.length - 1}` : ''}` : ''}
               </span>
             `).join('')}
           </div>

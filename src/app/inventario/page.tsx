@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Query, ID } from 'appwrite';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import * as XLSX from 'xlsx';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID } from '@/lib/appwrite-admin';
@@ -12,7 +13,7 @@ import { setBarcodeInFeatures, setSectionInFeatures } from '@/lib/product-featur
 import { Product, Category, Subcategory } from '@/types/admin';
 import {
   Upload, Search, Package, CheckCircle2, RefreshCw,
-  X, FileSpreadsheet, ArrowUpCircle, Plus, Eye, EyeOff, Sparkles, Languages, FolderTree, Camera, MapPin, ChevronDown, Download
+  X, FileSpreadsheet, ArrowUpCircle, Plus, Eye, EyeOff, Sparkles, Languages, FolderTree, Camera, MapPin, ChevronDown, Download, ImageIcon, CalendarClock
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false });
@@ -38,6 +39,7 @@ interface InventoryRow {
   imageUrl: string;
   isNew: boolean;
   translated: boolean;
+  dateAdded: string;
 }
 
 const parsePrice = (v: any): number => {
@@ -808,6 +810,7 @@ export default function InventarioPage() {
         const priceRetail = parsePrice(row['Precio por paquete'] || row['Precio Retail']);
         const priceWholesale = parsePrice(row['Precio por caja'] || row['Precio Caja']);
         const imageUrl = String(row['Imagen URL'] || '').trim();
+        const dateAdded = String(row['Fecha'] || row['fecha'] || row['FECHA'] || row['Fecha Ingreso'] || row['fecha_ingreso'] || '').trim();
 
         const product = findProduct(sku);
 
@@ -830,6 +833,7 @@ export default function InventarioPage() {
           imageUrl: imageUrl || product?.IMAGEURL || '',
           isNew: !product,
           translated: isTranslated || !!nameTranslated,
+          dateAdded,
         };
       });
 
@@ -1058,6 +1062,7 @@ export default function InventarioPage() {
           if (row.priceRetail) payload.PRICE = row.priceRetail;
           if (row.priceWholesale) payload.WHOLESALEPRICE = row.priceWholesale;
           if (row.imageUrl) payload.IMAGEURL = row.imageUrl;
+          if (row.dateAdded) payload.DATE_ADDED = row.dateAdded;
           const { catId, subId } = resolveCategoryIds(row.categoryEs, row.subcategory);
           if (catId) payload.CATEGORYID = catId;
           if (subId) payload.SUBCATEGORYID = subId;
@@ -1112,6 +1117,7 @@ export default function InventarioPage() {
             FEATURES: `SKU: ${row.sku}${row.barcode ? `\nBarcode: ${row.barcode}` : ''}${row.nameCn ? `\nZH: ${row.nameCn}` : ''}${row.nameTranslated ? `\nES: ${row.nameTranslated}` : ''}`,
             name_cn: row.nameCn || '',
             ISACTIVE: false,                   // 🔒 SIEMPRE inactivo al importar
+            DATE_ADDED: row.dateAdded || now,
             imported_at: now,
           };
           const doc = await databases.createDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, ID.unique(), payload);
@@ -1816,6 +1822,16 @@ export default function InventarioPage() {
                 className="p-1.5 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition disabled:opacity-50">
                 {isExporting ? <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
               </button>
+              {/* Upload images by SKU */}
+              <Link href="/inventario/imagenes" title="Subir imágenes por SKU"
+                className="p-1.5 bg-amber-100 text-amber-600 rounded-lg hover:bg-amber-200 transition">
+                <ImageIcon className="w-4 h-4" />
+              </Link>
+              {/* Upload dates by SKU */}
+              <Link href="/inventario/fecha" title="Subir fechas por SKU"
+                className="p-1.5 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200 transition">
+                <CalendarClock className="w-4 h-4" />
+              </Link>
               <button onClick={loadProducts} disabled={loadingProducts}
                 className="p-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition disabled:opacity-50">
                 <RefreshCw className={`w-4 h-4 ${loadingProducts ? 'animate-spin' : ''}`} />

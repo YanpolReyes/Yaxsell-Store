@@ -46,6 +46,8 @@ export interface SectionSettings {
   buttonRadius?: number;
   // Design — Shadows & Effects
   shadow?: 'none' | 'sm' | 'md' | 'lg';
+  // Theme editor model identifier (which preset was selected)
+  modelId?: string;
   // Category Layout Model
   catModel?: 'default' | 'carousel' | 'bubble' | 'list' | 'glass' | 'magazine' | 'neon' | 'minimal' | 'luxury';
   // Card Design System
@@ -849,9 +851,28 @@ export const SECTION_DEFAULTS: SectionConfig[] = [
     enabled: true,
     order: 10,
     settings: {
-      collectionTitle: 'NUESTRAS CATEGORÍAS',
-      collectionSubtitle: 'TIENDA ONLINE',
-      collectionDescription: 'Explora nuestras categorías de productos organizadas para que encuentres fácilmente lo que buscas.',
+      modelId: 'editorial',
+      collectionTitle: 'Explora por categoría',
+      collectionSubtitle: 'Colecciones',
+      collectionDescription: 'Encuentra lo que buscas en nuestras líneas curadas, pensadas para cada estilo y necesidad.',
+      bgColor: '#0a0908',
+      textColor: 'rgba(250,250,249,0.7)',
+      headingColor: '#fafaf9',
+      accentColor: '#fb7185',
+      cardBgColor: 'rgba(255,255,255,0.04)',
+      cardTextColor: '#ffffff',
+      buttonColor: '#fb7185',
+      buttonTextColor: '#0a0908',
+      borderRadius: 24,
+      columns: 3,
+      gap: 20,
+      padding: 56,
+      shadow: 'md',
+      headingSize: 42,
+      textSize: 16,
+      headingFontFamily: '"Fraunces", "Playfair Display", Georgia, serif',
+      fontFamily: '"DM Sans", system-ui, sans-serif',
+      fontWeight: '600',
       collectionItems: [],
     },
   },

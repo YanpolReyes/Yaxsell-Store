@@ -1069,8 +1069,8 @@
     filter: none !important;
     transform: none !important;
   }
-  [data-template="1"] .musk_collection1 .swiper-slide:hover .slide-title,
-  [data-template="1"] .musk_collection1 .swiper-slide:hover .collection_list_title_main {
+  [data-template="1"] .musk_collection1:not([data-collection-model]) .swiper-slide:hover .slide-title,
+  [data-template="1"] .musk_collection1:not([data-collection-model]) .swiper-slide:hover .collection_list_title_main {
     color: inherit !important;
   }
 
@@ -1433,7 +1433,28 @@
     font-size: 10px !important;
   }
 
-  /* ─── Colecciones: estilos delegados a shopify-fix.css (overlay glass) ─── */
+  /* ─── Colecciones premium — móvil ─── */
+  [data-template="1"] #shopify-section-template--22405132419320__collection_list_WrFbPe.tpl1-collections-premium {
+    padding-top: 40px !important;
+    padding-bottom: 36px !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__collection_list_WrFbPe.tpl1-collections-premium .musk-h2-head {
+    font-size: clamp(30px, 9vw, 40px) !important;
+  }
+  [data-template="1"] #shopify-section-template--22405132419320__collection_list_WrFbPe.tpl1-collections-premium .tpl1-col-bg-orb {
+    opacity: 0.35 !important;
+    filter: blur(60px) !important;
+  }
+  [data-template="1"] .musk_collection1[data-collection-model="editorial"].tpl1-col-carousel .swiper-wrapper {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    gap: 0 !important;
+  }
+  [data-template="1"] .musk_collection1[data-collection-model="editorial"] .swiper-slide {
+    width: 78% !important;
+    max-width: 300px !important;
+    flex: 0 0 78% !important;
+  }
   [data-template="1"] .musk_collection1 .collectiony_main_card_inner {
     z-index: 1 !important;
   }
@@ -1481,11 +1502,34 @@
 @media screen and (max-width: 768px) {
   /* Collection cards: shorter on mobile */
   [data-template="1"] .musk_collection1 .musk-collection-slide {
-    border-radius: 12px !important;
+    border-radius: 16px !important;
+  }
+  [data-template="1"] .musk_collection1[data-collection-model="editorial"] .musk-collection-slide {
+    border-radius: 22px !important;
+    min-height: 320px !important;
+    aspect-ratio: 3 / 4.2 !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5) !important;
   }
   [data-template="1"] .musk_collection1 .musk-collection-slide .img-content {
-    height: 110px !important;
+    height: 100% !important;
+    min-height: 100% !important;
     overflow: hidden !important;
+  }
+  [data-template="1"] .musk_collection1[data-collection-model="editorial"] .musk-collection-slide .img-content {
+    position: absolute !important;
+    inset: 0 !important;
+    height: 100% !important;
+  }
+  [data-template="1"] .musk_collection1[data-collection-model="editorial"] .tpl1-collection-footer {
+    opacity: 1 !important;
+    visibility: visible !important;
+    min-height: 48% !important;
+  }
+  [data-template="1"] .musk_collection1[data-collection-model="editorial"] .tpl1-col-index {
+    top: 12px !important;
+    left: 12px !important;
+    font-size: 10px !important;
+    padding: 5px 10px !important;
   }
   [data-template="1"] .musk_collection1 .musk-collection-slide .img-content img,
   [data-template="1"] .musk_collection1 .musk-collection-slide .img-content svg.placeholder-svg {

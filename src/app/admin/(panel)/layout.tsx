@@ -45,6 +45,7 @@ const Ico = {
   Sorteos:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
   OctagonX:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l8.5 5v10L12 22l-8.5-5V7L12 2z"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>,
   Sparkles:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>,
+  Catalogo:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 8h16"/><path d="M8 4v16"/><path d="M4 12h4"/><path d="M4 16h4"/></svg>,
 };
 
 /* Shopify-dark sidebar — no accent colors needed */
@@ -56,9 +57,6 @@ interface NavGroup { label: string; items: NavItem[]; defaultOpen?: boolean; }
 const NAV_GROUPS: NavGroup[] = [
   { label: 'General', defaultOpen: true, items: [
     { href: '/admin/dashboard', label: 'Inicio', icon: Ico.Dashboard },
-    { href: '/admin/product-votes', label: 'Productos que Llegan', icon: Ico.Ofertas },
-    { href: '/admin/store-settings', label: 'Mi Tienda', icon: Ico.Config },
-    { href: '/admin/orders',    label: 'Pedidos', icon: Ico.Pedidos, badge: 'orders' },
     { href: '', label: 'Productos', icon: Ico.Productos, children: [
       { href: '/admin/products',       label: 'Productos',       icon: Ico.Productos },
       { href: '/admin/wholesale-products', label: 'Productos Mayoristas', icon: Ico.Mayoristas },
@@ -71,6 +69,10 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/products/stock-editor', label: 'Editor de Stock', icon: Ico.Inventario },
       { href: '/admin/products/pack-qty', label: 'Cant. por Paquete', icon: Ico.Inventario },
     ]},
+    { href: '/admin/catalog-products', label: 'Productos a Pedido', icon: Ico.Catalogo },
+    { href: '/admin/product-votes', label: 'Productos que Llegan', icon: Ico.Ofertas },
+    { href: '/admin/store-settings', label: 'Mi Tienda', icon: Ico.Config },
+    { href: '/admin/orders',    label: 'Pedidos', icon: Ico.Pedidos, badge: 'orders' },
     { href: '/admin/users',     label: 'Clientes',    icon: Ico.Usuarios },
     { href: '/admin/analytics', label: 'Analytics',    icon: Ico.Analytics },
     { href: '', label: 'Marketing', icon: Ico.OfertasDia, children: [

@@ -916,7 +916,7 @@ export default function HomePage2() {
           databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.orderDesc('$createdAt'), Query.limit(20)]),
           databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [Query.orderDesc('$createdAt'), Query.limit(12)]),
           databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [Query.equal('isActive', true), Query.equal('status', 'active'), Query.limit(8)]),
-          databases.listDocuments(databaseId, LIVE_STREAMS_COLLECTION, [Query.equal('ISACTIVE', true), Query.limit(1)]).catch(() => ({ documents: [] })),
+          databases.listDocuments(databaseId, LIVE_STREAMS_COLLECTION, [Query.equal('isActive', true), Query.limit(1)]).catch(() => ({ documents: [] })),
           bannersPromise,
         ]);
         setProducts(pRes.documents as unknown as Product[]);
@@ -1442,6 +1442,8 @@ export default function HomePage2() {
                     </span>
                   )}
                   <span>{liveStream.title || liveTitle}</span>
+                  {liveStream.platform && <span style={{ fontSize: 11, opacity: .7 }}>{liveStream.platform === 'youtube' ? '▶' : liveStream.platform === 'facebook' ? 'f' : liveStream.platform === 'tiktok' ? '♪' : liveStream.platform === 'twitch' ? '🎮' : liveStream.platform === 'instagram' ? '📷' : ''} {liveStream.platform}</span>}
+                  {liveStream.viewerCount && liveStream.viewerCount > 0 && <span style={{ fontSize: 11, opacity: .7, display: 'inline-flex', alignItems: 'center', gap: 3 }}><Eye size={11} />{liveStream.viewerCount}</span>}
                   {ctaText && <span style={{ fontSize: 12, opacity: .8 }}>→ {ctaText}</span>}
                 </a>
                 <button onClick={dismissLiveBanner} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: txColor, padding: 4, zIndex: 10 }}>

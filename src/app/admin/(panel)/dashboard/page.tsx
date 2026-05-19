@@ -932,6 +932,7 @@ export default function DashboardPage() {
   const [allOrders, setAllOrders]             = useState<Order[]>([]);
   const [rangeOrders, setRangeOrders]         = useState<Order[]>([]);
   const [topProducts, setTopProducts]         = useState<Product[]>([]);
+  const [topViewedProducts, setTopViewedProducts] = useState<(Product & { viewCount: number })[]>([]);
   const [isLoading, setIsLoading]             = useState(true);
   const [error, setError]                     = useState('');
   const [lastRefresh, setLastRefresh]         = useState<Date>(new Date());
@@ -977,7 +978,24 @@ export default function DashboardPage() {
       setTopProducts(top);
       setLastRefresh(new Date());
       // Page views
-      getPageViewStats(30).then(pv => setPageViews({ totalViews: pv.totalViews, todayViews: pv.todayViews, topPages: pv.topPages, topComunas: pv.topComunas, visitorMarkers: pv.visitorMarkers })).catch(() => {});
+      getPageViewStats(30).then(pv => {
+        setPageViews({ totalViews: pv.totalViews, todayViews: pv.todayViews, topPages: pv.topPages, topComunas: pv.topComunas, visitorMarkers: pv.visitorMarkers });
+        // Compute most viewed products from page_views
+        const productPageViews: Record<string, number> = {};
+        pv.topPages.forEach(tp => {
+          const match = tp.page.match(/^\/productos?\/([a-zA-Z0-9_-]+)/);
+          if (match) {
+            const pid = match[1];
+            productPageViews[pid] = (productPageViews[pid] || 0) + tp.views;
+          }
+        });
+        const viewedEntries = Object.entries(productPageViews).sort((a, b) => b[1] - a[1]).slice(0, 6);
+        const viewedProducts = viewedEntries.map(([pid, views]) => {
+          const prod = products.find(p => p.$id === pid);
+          return prod ? { ...prod, viewCount: views } : null;
+        }).filter(Boolean) as (Product & { viewCount: number })[];
+        setTopViewedProducts(viewedProducts);
+      }).catch(() => {});
     } catch (e: any) { setError(e.message || 'Error cargando datos'); }
     finally { setIsLoading(false); }
   }, []);
@@ -1753,27 +1771,60 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Top products */}
+        {/* Top products — most viewed */}
         <div className="db-card" style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f3f4f6' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <BarChart3 size={15} color="#7c3aed" />
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: '#f0fdfa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Eye size={15} color="#0d9488" />
               </div>
-              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: 0 }}>Top productos</h2>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: 0 }}>Productos más vistos</h2>
             </div>
-            <Link href="/admin/products" style={{ fontSize: 12, fontWeight: 600, color: '#6366f1', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}>
+            <Link href="/admin/analytics" style={{ fontSize: 12, fontWeight: 600, color: '#6366f1', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}>
               Ver todos <ChevronRight size={13} />
             </Link>
           </div>
-          {topProducts.length === 0 ? (
-            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>Sin datos de ventas</div>
+          {topViewedProducts.length === 0 ? (
+            topProducts.length === 0 ? (
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>Sin datos de visitas</div>
+            ) : (
+              <div style={{ padding: '8px 0' }}>
+                {topProducts.map((p, i) => {
+                  const maxSold = Math.max(...topProducts.map(x => x.SOLDQUANTITY ?? 0), 1);
+                  const pct = Math.round(((p.SOLDQUANTITY ?? 0) / maxSold) * 100);
+                  const colors = ['#6366f1','#0891b2','#059669','#d97706','#ec4899','#7c3aed'];
+                  return (
+                    <div key={p.$id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 20px' }}>
+                      <span style={{
+                        fontSize: 12, fontWeight: 800, color: '#fff', width: 22, height: 22,
+                        borderRadius: '50%', background: colors[i] || '#6b7280',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      }}>{i + 1}</span>
+                      <div style={{ width: 34, height: 34, borderRadius: 8, background: '#f3f4f6', overflow: 'hidden', flexShrink: 0 }}>
+                        {p.IMAGEURL
+                          ? <img src={p.IMAGEURL} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <Package size={14} style={{ margin: '10px auto', display: 'block', color: '#d1d5db' }} />}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.NAME}</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
+                          <div style={{ flex: 1, height: 5, background: '#f3f4f6', borderRadius: 4, overflow: 'hidden' }}>
+                            <div className="db-progress-bar" style={{ height: '100%', width: `${pct}%`, background: colors[i] || '#6366f1', borderRadius: 4, transition: 'width .6s cubic-bezier(0.16,1,0.3,1)' }} />
+                          </div>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', flexShrink: 0 }}>{p.SOLDQUANTITY ?? 0} vendidos</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
           ) : (
             <div style={{ padding: '8px 0' }}>
-              {topProducts.map((p, i) => {
-                const maxSold = Math.max(...topProducts.map(x => x.SOLDQUANTITY ?? 0), 1);
-                const pct = Math.round(((p.SOLDQUANTITY ?? 0) / maxSold) * 100);
-                const colors = ['#6366f1','#0891b2','#059669','#d97706','#ec4899','#7c3aed'];
+              {topViewedProducts.map((p, i) => {
+                const maxViews = Math.max(...topViewedProducts.map(x => x.viewCount), 1);
+                const pct = Math.round((p.viewCount / maxViews) * 100);
+                const colors = ['#0d9488','#0891b2','#6366f1','#059669','#d97706','#ec4899'];
                 return (
                   <div key={p.$id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 20px' }}>
                     <span style={{
@@ -1790,9 +1841,9 @@ export default function DashboardPage() {
                       <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.NAME}</p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
                         <div style={{ flex: 1, height: 5, background: '#f3f4f6', borderRadius: 4, overflow: 'hidden' }}>
-                          <div className="db-progress-bar" style={{ height: '100%', width: `${pct}%`, background: colors[i] || '#6366f1', borderRadius: 4, transition: 'width .6s cubic-bezier(0.16,1,0.3,1)' }} />
+                          <div className="db-progress-bar" style={{ height: '100%', width: `${pct}%`, background: colors[i] || '#0d9488', borderRadius: 4, transition: 'width .6s cubic-bezier(0.16,1,0.3,1)' }} />
                         </div>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', flexShrink: 0 }}>{p.SOLDQUANTITY ?? 0}</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 2 }}><Eye size={10} />{p.viewCount}</span>
                       </div>
                     </div>
                   </div>

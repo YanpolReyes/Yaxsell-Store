@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search, ShoppingCart, User, Heart, Menu, X, MapPin, Bell, Receipt, LogOut, Package, Minus, Plus, Trash2, Home, ArrowLeft } from 'lucide-react';
+import { Search, ShoppingCart, User, Heart, Menu, X, MapPin, Bell, Receipt, LogOut, Package, Minus, Plus, Trash2, Home, ArrowLeft, Grid3x3, Sparkles, Ship, Container } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/context/CartContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -139,7 +139,9 @@ export default function Navbar1() {
 
   const NAV_LINKS = [
     { label: 'Inicio', href: '/' },
-    { label: 'Catálogo', href: '/productos' },
+    { label: 'Tienda', href: '/productos' },
+    { label: 'Catálogo', href: '/catalogo' },
+    { label: 'En Camino', href: '/llegan-pronto', icon: () => <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginRight: 4 }}><Container size={14} style={{ verticalAlign: 'middle' }} /><Ship size={14} style={{ verticalAlign: 'middle' }} /></span> },
     { label: 'Mis Pedidos', href: '/cuenta/pedidos' },
   ];
 
@@ -441,11 +443,14 @@ export default function Navbar1() {
           </div>
 
           <div className="tpl1-nav-links">
-            {NAV_LINKS.map(link => (
-              <Link key={link.href} href={link.href} className={pathname === link.href ? 'active' : ''}>
-                {link.label}
-              </Link>
-            ))}
+            {NAV_LINKS.map(link => {
+              const IconComp = (link as any).icon;
+              return (
+                <Link key={link.href} href={link.href} className={pathname === link.href ? 'active' : ''}>
+                  {IconComp && <IconComp />}{link.label}
+                </Link>
+              );
+            })}
           </div>
 
           <div className="tpl1-nav-actions">
@@ -672,7 +677,15 @@ export default function Navbar1() {
           </Link>
           <Link href="/productos" className={`tpl1-bottom-nav-item ${pathname === '/productos' ? 'active' : ''}`}>
             <Search />
+            <span>Tienda</span>
+          </Link>
+          <Link href="/catalogo" className={`tpl1-bottom-nav-item ${pathname === '/catalogo' ? 'active' : ''}`}>
+            <Grid3x3 />
             <span>Catálogo</span>
+          </Link>
+          <Link href="/llegan-pronto" className={`tpl1-bottom-nav-item ${pathname === '/llegan-pronto' ? 'active' : ''}`}>
+            <Sparkles />
+            <span>Llegan Pronto</span>
           </Link>
           <Link href="/favoritos" className={`tpl1-bottom-nav-item ${pathname === '/favoritos' || pathname?.startsWith('/cuenta/favoritos') ? 'active' : ''}`}>
             <Heart />
