@@ -10,12 +10,12 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // HTML pages — ISR: cachear 60s en edge, refrescar al volver
+        // HTML pages — no cache para que clientes móviles siempre vean cambios frescos
         source: '/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=0, s-maxage=60, stale-while-revalidate=60',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
           },
         ],
       },

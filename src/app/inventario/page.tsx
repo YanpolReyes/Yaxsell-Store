@@ -502,7 +502,7 @@ export default function InventarioPage() {
 
   const handleExportInventory = async () => {
     // Si estamos en vista de Excel, exportar productos seleccionados
-    if (view === 'excel' && rows.length > 0) {
+    if (view === 'excel') {
       const selected = rows.filter(r => r.selected);
       if (selected.length === 0) { alert('No hay productos seleccionados'); return; }
 
@@ -535,7 +535,7 @@ export default function InventarioPage() {
         if (!inventoryIds.has(pp.$id)) allProducts.push(pp);
       }
 
-      const rows = allProducts.map(p => {
+      const exportRows = allProducts.map(p => {
         const sku = getSkuFromProduct(p);
         const barcode = getBarcodeFromProduct(p);
         const section = getSectionFromProduct(p);
@@ -555,10 +555,10 @@ export default function InventarioPage() {
         };
       });
 
-      const ws = XLSX.utils.json_to_sheet(rows);
+      const ws = XLSX.utils.json_to_sheet(exportRows);
       // Auto-ajustar ancho de columnas
-      const colWidths = Object.keys(rows[0] || {}).map(key => ({
-        wch: Math.max(key.length, ...rows.map(r => String((r as any)[key] || '').length)).toString().length + 2,
+      const colWidths = Object.keys(exportRows[0] || {}).map(key => ({
+        wch: Math.max(key.length, ...exportRows.map(r => String((r as any)[key] || '').length)).toString().length + 2,
       }));
       ws['!cols'] = colWidths;
 
