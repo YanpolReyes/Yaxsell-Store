@@ -29,7 +29,7 @@ export async function GET() {
     if (res.ok) {
       const doc = await res.json();
       return NextResponse.json(
-        { success: true, sections: doc.sections },
+        { success: true, sections: doc.SECTIONS || doc.sections },
         { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } },
       );
     }
@@ -40,7 +40,7 @@ export async function GET() {
       headers,
       body: JSON.stringify({
         documentId: DOC_ID,
-        data: { NAME: 'homepage_sections', sections: '[]' },
+        data: { NAME: 'homepage_sections', SECTIONS: '[]' },
       }),
     });
 
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
       method: 'PATCH',
       headers,
       body: JSON.stringify({
-        data: { sections },
+        data: { SECTIONS: sections },
       }),
     });
     
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
       headers,
       body: JSON.stringify({
         documentId: DOC_ID,
-        data: { sections },
+        data: { SECTIONS: sections },
       }),
     });
     
