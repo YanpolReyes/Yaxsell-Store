@@ -69,6 +69,18 @@ async function main() {
       () => db.createIntegerAttribute(databaseId, collId, 'PACKQTY', false),
       'PACKQTY (integer)', collId,
     );
+
+    // DATE_ADDED para fecha de ingreso
+    await createAttr(
+      () => db.createStringAttribute(databaseId, collId, 'DATE_ADDED', 256, false),
+      'DATE_ADDED (string 256)', collId,
+    );
+
+    // COMING_SOON para productos que llegan pronto
+    await createAttr(
+      () => db.createBooleanAttribute(databaseId, collId, 'COMING_SOON', false),
+      'COMING_SOON (boolean)', collId,
+    );
   }
 
   console.log('\n⏳ Wait ~30s for Appwrite to process attributes, then try again.');

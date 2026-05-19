@@ -703,7 +703,7 @@ export default function HomePage1() {
         }
       }
       // Replace "Contacto" with "Mis Pedidos"
-      const contactoLink = navbar.querySelector('.nav_li a[aria-label="Contacto"]') || navbar.querySelector('.nav_li a[href*="contact"]');
+      const contactoLink = (navbar.querySelector('.nav_li a[aria-label="Contacto"]') || navbar.querySelector('.nav_li a[href*="contact"]')) as HTMLAnchorElement | null;
       if (contactoLink) {
         contactoLink.href = '/cuenta/pedidos';
         contactoLink.setAttribute('aria-label', 'Mis Pedidos');
