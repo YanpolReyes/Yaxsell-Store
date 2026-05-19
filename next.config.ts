@@ -10,12 +10,12 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // HTML pages — no cache para que clientes móviles siempre vean cambios frescos
+        // HTML pages — Service Worker maneja caché inteligentemente
         source: '/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+            value: 'public, max-age=0, s-maxage=60, stale-while-revalidate=60',
           },
         ],
       },
