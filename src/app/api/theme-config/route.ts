@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
       method: 'PATCH',
       headers,
       body: JSON.stringify({
-        data: { sections, UPDATEDAT: Date.now() },
+        data: { sections },
       }),
     });
     

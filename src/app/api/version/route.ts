@@ -25,7 +25,9 @@ export async function GET() {
 
     if (res.ok) {
       const doc = await res.json();
-      const updatedAt = doc.UPDATEDAT || doc.$updatedAt || 0;
+      // $updatedAt is Appwrite's automatic ISO timestamp — convert to ms for comparison
+      const raw = doc.$updatedAt || doc.UPDATEDAT;
+      const updatedAt = raw ? new Date(raw).getTime() : 0;
       return NextResponse.json(
         { updatedAt },
         {
