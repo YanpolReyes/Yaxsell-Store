@@ -15,7 +15,8 @@ import WhatsAppButton from '@/components/WhatsAppButton';
 import ScrollToTop from '@/components/ScrollToTop';
 import HomeOnlyWidgets from '@/components/HomeOnlyWidgets';
 import PageViewTracker from '@/components/PageViewTracker';
-import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
+import dynamic from 'next/dynamic';
+const ServiceWorkerRegister = dynamic(() => import('@/components/ServiceWorkerRegister'), { ssr: false });
 
 export const metadata: Metadata = {
   title: 'Tienda',
