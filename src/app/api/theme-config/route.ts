@@ -20,7 +20,12 @@ export async function GET() {
       method: 'GET',
       headers,
     });
-    
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('[API theme-config] Appwrite GET failed:', res.status, errorText);
+    }
+
     if (res.ok) {
       const doc = await res.json();
       return NextResponse.json(
@@ -28,7 +33,7 @@ export async function GET() {
         { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } },
       );
     }
-    
+
     // Documento no existe, crear vacío
     const createRes = await fetch(`${APPWRITE_ENDPOINT}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents`, {
       method: 'POST',
@@ -38,17 +43,23 @@ export async function GET() {
         data: { sections: '[]' },
       }),
     });
-    
+
+    if (!createRes.ok) {
+      const errorText = await createRes.text();
+      console.error('[API theme-config] Appwrite POST failed:', createRes.status, errorText);
+    }
+
     if (createRes.ok) {
       return NextResponse.json(
         { success: true, sections: '[]' },
         { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } },
       );
     }
-    
+
     const err = await createRes.json();
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   } catch (error: any) {
+    console.error('[API theme-config] Exception:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
