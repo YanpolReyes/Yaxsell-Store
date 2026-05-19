@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
         {
           method: 'PATCH',
           headers,
-          body: JSON.stringify({ data: { value: String(template) } }),
+          body: JSON.stringify({ data: { value: template } }),
         }
       );
       if (!updateRes.ok) {
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
         headers,
         body: JSON.stringify({
           documentId: 'unique()',
-          data: { key: TEMPLATE_KEY, value: String(template) },
+          data: { key: TEMPLATE_KEY, value: template },
         }),
       }
     );

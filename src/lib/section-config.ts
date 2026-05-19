@@ -1451,21 +1451,18 @@ export async function getSectionConfigAsync(): Promise<SectionConfig[]> {
 }
 
 function mergeWithDefaults(parsed: SectionConfig[]): SectionConfig[] {
-  // Start from saved config as primary source — only fill missing sections from defaults
-  const defaultIds = new Set(SECTION_DEFAULTS.map(d => d.id));
+  // Saved config is the PRIMARY source — only fill missing fields from defaults,
+  // never add sections that the user didn't explicitly include.
   const result = parsed.map(saved => {
     const def = SECTION_DEFAULTS.find(d => d.id === saved.id);
     if (def) {
-      // Merge: saved settings override defaults, but defaults provide fallback for missing fields
+      // Merge: saved settings override defaults, defaults only provide fallback for missing fields
       return { ...def, enabled: saved.enabled, order: saved.order, locked: saved.locked ?? def.locked, settings: { ...def.settings, ...saved.settings } };
     }
     // Saved section not in defaults — keep as-is
     return saved;
   });
-  // Add any default sections not present in saved config (e.g. newly added sections)
-  const savedIds = new Set(parsed.map(s => s.id));
-  const missing = SECTION_DEFAULTS.filter(d => !savedIds.has(d.id)).map(d => ({ ...d, order: d.order + 100 }));
-  return [...result, ...missing].sort((a, b) => a.order - b.order);
+  return result.sort((a, b) => a.order - b.order);
 }
 
 function getSectionConfigSync(): SectionConfig[] {
@@ -1473,10 +1470,14 @@ function getSectionConfigSync(): SectionConfig[] {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed: SectionConfig[] = JSON.parse(stored);
-      return mergeWithDefaults(parsed);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return mergeWithDefaults(parsed);
+      }
     }
   } catch {}
-  return [...SECTION_DEFAULTS].sort((a, b) => a.order - b.order);
+  // No saved config anywhere — return empty array instead of hardcoded defaults
+  // This prevents showing Yaxsel branding when no config has been saved yet
+  return [];
 }
 
 // Versión síncrona para compatibilidad (usa cache o localStorage)
