@@ -40,13 +40,14 @@ export async function GET() {
       headers,
       body: JSON.stringify({
         documentId: DOC_ID,
-        data: { sections: '[]' },
+        data: { NAME: 'homepage_sections', sections: '[]' },
       }),
     });
 
     if (!createRes.ok) {
       const errorText = await createRes.text();
       console.error('[API theme-config] Appwrite POST failed:', createRes.status, errorText);
+      return NextResponse.json({ success: false, error: errorText }, { status: 500 });
     }
 
     if (createRes.ok) {
@@ -55,9 +56,6 @@ export async function GET() {
         { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } },
       );
     }
-
-    const err = await createRes.json();
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   } catch (error: any) {
     console.error('[API theme-config] Exception:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
