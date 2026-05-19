@@ -986,6 +986,28 @@ export default function InventarioPage() {
     finally { setIsMigrating(false); }
   };
 
+  const handleExportSelected = () => {
+    const selected = rows.filter(r => r.selected);
+    if (selected.length === 0) { alert('No hay productos seleccionados'); return; }
+
+    const exportData = selected.map(r => ({
+      'Codigo': r.sku,
+      'Código Barra': r.barcode,
+      'Categoria': r.categoryEs,
+      'Subcategoria': r.subcategory,
+      'Nombre ES': r.nameEs || r.nameTranslated || r.nameCn,
+      'Nombre CN': r.nameCn,
+      'Precio Retail': r.priceRetail,
+      'Precio Caja': r.priceWholesale,
+      'Imagen URL': r.imageUrl,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Productos');
+    XLSX.writeFile(wb, 'productos_seleccionados.xlsx');
+  };
+
   const handleSave = async () => {
     const selected = rows.filter(r => r.selected);
     if (selected.length === 0) { alert('No hay productos seleccionados'); return; }
@@ -2568,6 +2590,11 @@ export default function InventarioPage() {
                     Aplicar ({selectedCount})
                   </>
                 )}
+              </button>
+              <button onClick={handleExportSelected} disabled={selectedCount === 0}
+                className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-xl text-sm font-medium transition whitespace-nowrap">
+                <Download className="w-4 h-4" />
+                Exportar ({selectedCount})
               </button>
             </div>
           </div>
