@@ -501,6 +501,31 @@ export default function InventarioPage() {
   };
 
   const handleExportInventory = async () => {
+    // Si estamos en vista de Excel, exportar productos seleccionados
+    if (view === 'excel' && rows.length > 0) {
+      const selected = rows.filter(r => r.selected);
+      if (selected.length === 0) { alert('No hay productos seleccionados'); return; }
+
+      const exportData = selected.map(r => ({
+        'Codigo': r.sku,
+        'Código Barra': r.barcode,
+        'Categoria': r.categoryEs,
+        'Subcategoria': r.subcategory,
+        'Nombre ES': r.nameEs || r.nameTranslated || r.nameCn,
+        'Nombre CN': r.nameCn,
+        'Precio Retail': r.priceRetail,
+        'Precio Caja': r.priceWholesale,
+        'Imagen URL': r.imageUrl,
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Productos');
+      XLSX.writeFile(wb, 'productos_seleccionados.xlsx');
+      return;
+    }
+
+    // Export normal del inventario completo
     setIsExporting(true);
     try {
       // Combinar inventario + catálogo publicado (sin duplicados)
