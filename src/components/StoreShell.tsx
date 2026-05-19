@@ -1,12 +1,10 @@
 'use client';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { RefreshCw } from 'lucide-react';
 import DynamicNavbar from '@/components/DynamicNavbar';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import AnnouncementBar from '@/components/AnnouncementBar';
 import MaintenanceGuard from '@/components/MaintenanceGuard';
-import UpdateNotifier from '@/components/UpdateNotifier';
 import { useTemplate } from '@/context/TemplateContext';
 
 const FOOTER_LINKS = [
@@ -34,16 +32,6 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
   const isAdmin       = pathname.startsWith('/admin');
   const isAuth        = pathname.startsWith('/login');
 
-  const handleForceReload = () => {
-    if ('caches' in window && (window as any).caches) {
-      (window as any).caches.keys().then((names: string[]) => {
-        names.forEach((name: string) => (window as any).caches.delete(name));
-      }).then(() => window.location.reload());
-    } else {
-      window.location.reload();
-    }
-  };
-
   if (isAdmin || isAuth) {
     return <>{children}</>;
   }
@@ -54,7 +42,6 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
   return (
     <MaintenanceGuard>
     <>
-      <UpdateNotifier />
       <DynamicNavbar />
       <main className="min-h-screen">{children}</main>
       {!hideNativeFooter && (
@@ -87,16 +74,6 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
         </div>
       </footer>
       )}
-
-      {/* Floating refresh button - always visible to force reload */}
-      <button
-        onClick={handleForceReload}
-        className="fixed bottom-20 right-4 z-[100] w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition hover:scale-110"
-        title="Actualizar página (limpiar caché)"
-        aria-label="Actualizar página"
-      >
-        <RefreshCw className="w-5 h-5" />
-      </button>
     </>
     </MaintenanceGuard>
   );
