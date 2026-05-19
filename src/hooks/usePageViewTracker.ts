@@ -17,15 +17,15 @@ function shouldTrack(path: string): boolean {
 // Obtener IP y geolocalización del visitante
 async function getGeoInfo(): Promise<{ ip: string; comuna: string; region: string; lat: number; lng: number }> {
   try {
-    const res = await fetch('https://ipapi.co/json/');
+    const res = await fetch('/api/geo', { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       return {
         ip: data.ip || 'unknown',
-        comuna: data.city || data.region || '',
+        comuna: data.comuna || '',
         region: data.region || '',
-        lat: data.latitude || 0,
-        lng: data.longitude || 0,
+        lat: data.lat || 0,
+        lng: data.lng || 0,
       };
     }
   } catch {}

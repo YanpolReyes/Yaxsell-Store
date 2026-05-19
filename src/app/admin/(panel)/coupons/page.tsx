@@ -65,20 +65,20 @@ export default function CouponsPage() {
       const resp = await databases.listDocuments(databaseId, COUPONS_COLLECTION_ID, [
         Query.orderDesc('$createdAt'), Query.limit(100),
       ]);
-      // Normalize attributes to aliases for UI (supporting both old and new schema)
+      // Normalize attributes to aliases for UI
       const normalized = resp.documents.map((doc: any) => ({
         ...doc,
-        code: doc.CODE,
-        discountType: doc.DISCOUNTTYPE || doc.TYPE || 'percent',
-        discountValue: doc.DISCOUNTVALUE || doc.VALUE || 0,
-        minOrderAmount: doc.MINORDERVALUE || doc.MINORDERAMOUNT,
-        maxDiscount: doc.MAXDISCOUNT,
-        usedCount: doc.USES || doc.USEDCOUNT || 0,
-        maxUses: doc.MAXUSES,
-        isActive: doc.ISACTIVE !== undefined ? doc.ISACTIVE : doc.ACTIVE,
-        expiresAt: doc.EXPIRESAT ? doc.EXPIRESAT : doc.ENDAT ? new Date(doc.ENDAT * 1000).toISOString() : undefined,
-        userRestriction: doc.USERRESTRICTION,
-        description: doc.DESCRIPTION,
+        code: doc.code,
+        discountType: doc.type || 'percent',
+        discountValue: doc.value || 0,
+        minOrderAmount: doc.minOrderAmount,
+        maxDiscount: doc.maxDiscount,
+        usedCount: doc.usedCount || 0,
+        maxUses: doc.maxUses,
+        isActive: doc.isActive !== undefined ? doc.isActive : true,
+        expiresAt: doc.expiresAt ? new Date(doc.expiresAt * 1000).toISOString() : undefined,
+        userRestriction: doc.userRestriction,
+        description: doc.description,
       }));
       setCoupons(normalized as unknown as Coupon[]);
     } catch (e: any) { setError(e.message); }
@@ -93,7 +93,7 @@ export default function CouponsPage() {
   };
 
   const openAdd = () => setModal({ mode: 'add', data: { code: generateCode(), discountType: 'percent', discountValue: 10, isActive: true } });
-  const openEdit = (c: Coupon) => setModal({ mode: 'edit', data: { ...c } });
+  const openEdit = (c: Coupon) => setModal({ mode: 'edit', data: { ...c, expiresAt: c.expiresAt ? (typeof c.expiresAt === 'number' ? new Date(c.expiresAt * 1000).toISOString() : c.expiresAt) : undefined } });
 
   const save = async () => {
     if (!modal) return;
@@ -105,33 +105,20 @@ export default function CouponsPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       const payload: Record<string, any> = {
-        CODE: d.code.toUpperCase().trim(),
-        DISCOUNTTYPE: d.discountType || 'percent',
-        TYPE: d.discountType || 'percent', // legacy
-        DISCOUNTVALUE: Number(d.discountValue),
-        VALUE: Number(d.discountValue), // legacy
-        ISACTIVE: d.isActive ?? true,
-        ACTIVE: d.isActive ?? true, // legacy
+        code: d.code.toUpperCase().trim(),
+        type: d.discountType || 'percent',
+        value: Number(d.discountValue),
+        isActive: d.isActive ?? true,
       };
-      if (d.minOrderAmount) {
-         payload.MINORDERVALUE = Number(d.minOrderAmount);
-         payload.MINORDERAMOUNT = Number(d.minOrderAmount);
-      }
-      if (d.maxDiscount) payload.MAXDISCOUNT = Number(d.maxDiscount);
-      if (d.maxUses) payload.MAXUSES = Number(d.maxUses);
-      if (d.userRestriction) payload.USERRESTRICTION = d.userRestriction;
-      if (d.description) payload.DESCRIPTION = d.description;
-      if (d.expiresAt) {
-        payload.EXPIRESAT = new Date(d.expiresAt).toISOString();
-        payload.ENDAT = Math.floor(new Date(d.expiresAt).getTime() / 1000);
-      }
+      if (d.maxUses) payload.maxUses = Number(d.maxUses);
+      if (d.expiresAt) payload.expiresAt = Math.floor(new Date(d.expiresAt).getTime() / 1000);
       if (modal.mode === 'add') {
         const doc = await databases.createDocument(databaseId, COUPONS_COLLECTION_ID, ID.unique(), payload);
-        const normalized = { ...doc, code: doc.CODE, discountType: doc.TYPE, discountValue: doc.VALUE, minOrderAmount: doc.MINORDERAMOUNT, maxDiscount: doc.MAXDISCOUNT, isActive: doc.ACTIVE, expiresAt: doc.ENDAT ? new Date(doc.ENDAT * 1000).toISOString() : undefined };
+        const normalized = { ...doc, code: doc.code, discountType: doc.type || 'percent', discountValue: doc.value || 0, isActive: doc.isActive !== undefined ? doc.isActive : true, expiresAt: doc.expiresAt || undefined };
         setCoupons(prev => [normalized as unknown as Coupon, ...prev]);
       } else {
         const doc = await databases.updateDocument(databaseId, COUPONS_COLLECTION_ID, (d as Coupon).$id, payload);
-        const normalized = { ...doc, code: doc.CODE, discountType: doc.TYPE, discountValue: doc.VALUE, minOrderAmount: doc.MINORDERAMOUNT, maxDiscount: doc.MAXDISCOUNT, isActive: doc.ACTIVE, expiresAt: doc.ENDAT ? new Date(doc.ENDAT * 1000).toISOString() : undefined };
+        const normalized = { ...doc, code: doc.code, discountType: doc.type || 'percent', discountValue: doc.value || 0, isActive: doc.isActive !== undefined ? doc.isActive : true, expiresAt: doc.expiresAt || undefined };
         setCoupons(prev => prev.map(c => c.$id === (d as Coupon).$id ? normalized as unknown as Coupon : c));
       }
       setModal(null);
@@ -153,7 +140,7 @@ export default function CouponsPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      await databases.updateDocument(databaseId, COUPONS_COLLECTION_ID, coupon.$id, { ISACTIVE: !coupon.isActive, ACTIVE: !coupon.isActive });
+      await databases.updateDocument(databaseId, COUPONS_COLLECTION_ID, coupon.$id, { isActive: !coupon.isActive });
       setCoupons(prev => prev.map(c => c.$id === coupon.$id ? { ...c, isActive: !c.isActive } : c));
     } catch (e: any) { alert('Error: ' + e.message); }
   };
@@ -164,17 +151,17 @@ export default function CouponsPage() {
       const { databaseId } = getAppwriteConfig();
       const newCode = generateCode();
       const payload: Record<string, any> = {
-        CODE: newCode, 
-        DISCOUNTTYPE: c.discountType, TYPE: c.discountType, 
-        DISCOUNTVALUE: c.discountValue, VALUE: c.discountValue,
-        ISACTIVE: false, ACTIVE: false,
+        code: newCode,
+        type: c.discountType,
+        value: c.discountValue,
+        isActive: false,
       };
-      if (c.minOrderAmount) { payload.MINORDERVALUE = c.minOrderAmount; payload.MINORDERAMOUNT = c.minOrderAmount; }
-      if (c.maxDiscount) payload.MAXDISCOUNT = c.maxDiscount;
-      if (c.maxUses) payload.MAXUSES = c.maxUses;
-      if (c.description) payload.DESCRIPTION = c.description + ' (Copia)';
+      if (c.minOrderAmount) payload.minOrderAmount = c.minOrderAmount;
+      if (c.maxDiscount) payload.maxDiscount = c.maxDiscount;
+      if (c.maxUses) payload.maxUses = c.maxUses;
+      if (c.description) payload.description = c.description + ' (Copia)';
       const doc = await databases.createDocument(databaseId, COUPONS_COLLECTION_ID, ID.unique(), payload);
-      const normalized = { ...doc, code: doc.CODE, discountType: doc.TYPE, discountValue: doc.VALUE, minOrderAmount: doc.MINORDERAMOUNT, maxUses: doc.MAXUSES, usedCount: doc.USEDCOUNT, isActive: doc.ACTIVE, expiresAt: doc.ENDAT ? new Date(doc.ENDAT * 1000).toISOString() : undefined };
+      const normalized = { ...doc, code: doc.code, discountType: doc.type || 'percent', discountValue: doc.value || 0, minOrderAmount: doc.minOrderAmount, maxUses: doc.maxUses, usedCount: doc.usedCount || 0, isActive: doc.isActive !== undefined ? doc.isActive : true, expiresAt: doc.expiresAt || undefined };
       setCoupons(prev => [normalized as unknown as Coupon, ...prev]);
     } catch (e: any) { alert('Error: ' + e.message); }
   };
@@ -466,7 +453,7 @@ export default function CouponsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Fecha de expiración</label>
-                  <input type="date" value={modal.data.expiresAt ? modal.data.expiresAt.slice(0, 10) : ''}
+                  <input type="date" value={modal.data.expiresAt?.slice(0, 10) || ''}
                     onChange={e => setModal(m => m ? { ...m, data: { ...m.data, expiresAt: e.target.value } } : m)}
                     className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>

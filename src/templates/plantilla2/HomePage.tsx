@@ -1665,7 +1665,7 @@ export default function HomePage2() {
 
                     {/* ═══ MODEL: DEFAULT — Grid 3D ═══ */}
                     {catModel === 'default' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(145px, 1fr))', gap: 14, overflow: 'visible' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(145px, 1fr))', gap: 16, overflow: 'visible' }}>
                       {categories.map((cat, idx) => {
                         const accent = getCategoryAccent(cat, idx);
                         const catSubs = subcategories.filter(sc => sc.categoryId === cat.$id);
@@ -1673,13 +1673,13 @@ export default function HomePage2() {
                         const hasSubs = catSubs.length > 0;
                         return (
                           <div key={cat.$id || idx} onClick={() => catClick(cat, hasSubs, isExpanded)} className="category-card" onMouseMove={catTiltMove} onMouseLeave={catTiltLeave}
-                            style={{ position: 'relative', background: isExpanded ? `linear-gradient(145deg, ${accent}10, ${accent}18)` : '#fff', border: isExpanded ? `2px solid ${accent}` : '1px solid rgba(0,0,0,0.06)', borderRadius: 18, padding: '22px 12px 18px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'box-shadow .35s cubic-bezier(.4,0,.2,1), border-color .35s ease, transform .35s cubic-bezier(.4,0,.2,1)', transformStyle: 'preserve-3d', willChange: 'transform', boxShadow: isExpanded ? `0 4px 20px ${accent}20` : '0 1px 3px rgba(0,0,0,0.04)' }}>
+                            style={{ position: 'relative', background: isExpanded ? `linear-gradient(145deg, ${accent}0a, ${accent}15)` : '#fff', border: isExpanded ? `2px solid ${accent}` : '1px solid rgba(0,0,0,0.05)', borderRadius: 20, padding: '24px 14px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, cursor: 'pointer', transition: 'box-shadow .35s cubic-bezier(.4,0,.2,1), border-color .35s ease, transform .35s cubic-bezier(.4,0,.2,1)', transformStyle: 'preserve-3d', willChange: 'transform', boxShadow: isExpanded ? `0 8px 28px ${accent}18, 0 2px 8px ${accent}10` : '0 1px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.02)' }}>
                             <div className="cat-accent-bar" style={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: 3, background: `linear-gradient(90deg, transparent, ${accent}, transparent)`, borderRadius: '0 0 4px 4px', opacity: isExpanded ? 1 : 0, transition: 'opacity .3s' }} />
-                            <div className="cat-icon-wrap" style={{ width: 90, height: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(145deg, ${accent}08, ${accent}14)`, borderRadius: 22, border: `1.5px solid ${accent}15`, transition: 'transform .3s cubic-bezier(.4,0,.2,1), box-shadow .3s' }}>
-                              {cat.iconUrl ? <Image src={cat.iconUrl} alt={cat.name || 'Categoría'} width={78} height={78} style={{ width: 78, height: 78, objectFit: 'contain' }} /> : <span style={{ fontSize: 38 }}>📦</span>}
+                            <div className="cat-icon-wrap" style={{ width: 88, height: 88, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(145deg, ${accent}06, ${accent}12)`, borderRadius: 24, border: `1.5px solid ${accent}12`, transition: 'transform .3s cubic-bezier(.4,0,.2,1), box-shadow .3s', boxShadow: isExpanded ? `0 0 16px ${accent}15` : 'none' }}>
+                              {cat.iconUrl ? <Image src={cat.iconUrl} alt={cat.name || 'Categoría'} width={72} height={72} style={{ width: 72, height: 72, objectFit: 'contain' }} /> : <span style={{ fontSize: 36 }}>📦</span>}
                             </div>
                             <p style={{ margin: 0, fontSize: 13, fontWeight: isExpanded ? 700 : 600, color: isExpanded ? accent : '#222', lineHeight: 1.3, textAlign: 'center', transition: 'color .25s', letterSpacing: '-0.2px' }}>{cat.name || 'Sin nombre'}</p>
-                            {hasSubs && <div style={{ position: 'absolute', bottom: 6, right: 8, background: `${accent}15`, color: accent, fontSize: 9, fontWeight: 700, padding: '3px 8px', borderRadius: 10, backdropFilter: 'blur(4px)', border: `1px solid ${accent}20` }}>{catSubs.length} sub</div>}
+                            {hasSubs && <div style={{ position: 'absolute', bottom: 8, right: 8, background: `${accent}12`, color: accent, fontSize: 9, fontWeight: 700, padding: '3px 8px', borderRadius: 10, border: `1px solid ${accent}18` }}>{catSubs.length} sub</div>}
                           </div>
                         );
                       })}
@@ -1825,6 +1825,81 @@ export default function HomePage2() {
                         </div>
                       );
                     })()}
+                    {/* ═══ MODEL: NEON — Neon glow on dark ═══ */}
+                    {catModel === 'neon' && (
+                    <div style={{ background: '#0a0a0a', borderRadius: 20, padding: '24px 20px', position: 'relative', overflow: 'hidden' }}>
+                      <div style={{ position: 'absolute', top: -60, left: -40, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.08), transparent 70%)', pointerEvents: 'none' }} />
+                      <div style={{ position: 'absolute', bottom: -40, right: -30, width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle, rgba(236,72,153,0.06), transparent 70%)', pointerEvents: 'none' }} />
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12, position: 'relative', zIndex: 1 }}>
+                        {categories.map((cat, idx) => {
+                          const accent = getCategoryAccent(cat, idx);
+                          const catSubs = subcategories.filter(sc => sc.categoryId === cat.$id);
+                          const isExpanded = expandedCat === cat.$id;
+                          const hasSubs = catSubs.length > 0;
+                          return (
+                            <div key={cat.$id || idx} onClick={() => catClick(cat, hasSubs, isExpanded)} className="category-card"
+                              style={{ position: 'relative', padding: '20px 10px 16px', background: isExpanded ? `${accent}10` : 'rgba(0,0,0,0.4)', border: isExpanded ? `1.5px solid ${accent}` : `1px solid ${accent}40`, borderRadius: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'box-shadow .3s, border-color .3s, background .3s', boxShadow: isExpanded ? `0 0 20px ${accent}30, 0 0 40px ${accent}10, inset 0 0 20px ${accent}08` : `0 0 8px ${accent}15` }}>
+                              <div style={{ width: 72, height: 72, borderRadius: 18, background: `${accent}12`, border: `1px solid ${accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 12px ${accent}20, inset 0 0 8px ${accent}08` }}>
+                                {cat.iconUrl ? <Image src={cat.iconUrl} alt={cat.name || ''} width={56} height={56} style={{ width: 56, height: 56, objectFit: 'contain', filter: 'brightness(1.2)' }} /> : <span style={{ fontSize: 30 }}>📦</span>}
+                              </div>
+                              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: isExpanded ? accent : `${accent}cc`, textAlign: 'center', lineHeight: 1.3, textShadow: `0 0 8px ${accent}40`, letterSpacing: '0.3px' }}>{cat.name || 'Sin nombre'}</p>
+                              {hasSubs && <div style={{ position: 'absolute', bottom: 5, right: 7, background: `${accent}20`, color: accent, fontSize: 8, fontWeight: 700, padding: '2px 6px', borderRadius: 8, border: `1px solid ${accent}40`, boxShadow: `0 0 6px ${accent}20` }}>{catSubs.length} sub</div>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>)}
+
+                    {/* ═══ MODEL: MINIMAL — Clean, no borders ═══ */}
+                    {catModel === 'minimal' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 8 }}>
+                      {categories.map((cat, idx) => {
+                        const accent = getCategoryAccent(cat, idx);
+                        const catSubs = subcategories.filter(sc => sc.categoryId === cat.$id);
+                        const isExpanded = expandedCat === cat.$id;
+                        const hasSubs = catSubs.length > 0;
+                        return (
+                          <div key={cat.$id || idx} onClick={() => catClick(cat, hasSubs, isExpanded)} className="category-card"
+                            style={{ padding: '18px 8px 14px', background: isExpanded ? `${accent}08` : 'transparent', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'background .3s', borderRadius: 12 }}>
+                            <div style={{ width: 64, height: 64, borderRadius: '50%', background: isExpanded ? `${accent}12` : '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background .3s, transform .3s', transform: isExpanded ? 'scale(1.08)' : 'scale(1)' }}>
+                              {cat.iconUrl ? <Image src={cat.iconUrl} alt={cat.name || ''} width={44} height={44} style={{ width: 44, height: 44, objectFit: 'contain' }} /> : <span style={{ fontSize: 26 }}>📦</span>}
+                            </div>
+                            <p style={{ margin: 0, fontSize: 12, fontWeight: isExpanded ? 700 : 500, color: isExpanded ? accent : '#555', textAlign: 'center', lineHeight: 1.3, transition: 'color .25s, font-weight .25s' }}>{cat.name || 'Sin nombre'}</p>
+                            {hasSubs && <span style={{ fontSize: 9, color: '#aaa', fontWeight: 500 }}>{catSubs.length}</span>}
+                          </div>
+                        );
+                      })}
+                    </div>)}
+
+                    {/* ═══ MODEL: LUXURY — Black + gold, serif ═══ */}
+                    {catModel === 'luxury' && (() => {
+                      const gold = '#d4a853';
+                      const goldLight = '#f0d78c';
+                      return (
+                    <div style={{ background: 'linear-gradient(135deg, #050505, #111, #050505)', borderRadius: 20, padding: '28px 24px', position: 'relative', overflow: 'hidden' }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${gold}50, transparent)` }} />
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${gold}50, transparent)` }} />
+                      <div style={{ position: 'absolute', top: -50, right: -30, width: 140, height: 140, borderRadius: '50%', background: `radial-gradient(circle, ${gold}08, transparent 70%)`, pointerEvents: 'none' }} />
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 14, position: 'relative', zIndex: 1 }}>
+                        {categories.map((cat, idx) => {
+                          const catSubs = subcategories.filter(sc => sc.categoryId === cat.$id);
+                          const isExpanded = expandedCat === cat.$id;
+                          const hasSubs = catSubs.length > 0;
+                          return (
+                            <div key={cat.$id || idx} onClick={() => catClick(cat, hasSubs, isExpanded)} className="category-card"
+                              style={{ position: 'relative', padding: '22px 12px 18px', background: isExpanded ? `${gold}08` : 'rgba(255,255,255,0.02)', border: isExpanded ? `1px solid ${gold}60` : `1px solid ${gold}20`, borderRadius: 14, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, cursor: 'pointer', transition: 'box-shadow .3s, border-color .3s, background .3s', boxShadow: isExpanded ? `0 0 24px ${gold}15, 0 4px 16px rgba(0,0,0,0.3)` : '0 2px 8px rgba(0,0,0,0.2)' }}>
+                              <div style={{ width: 76, height: 76, borderRadius: 18, background: `linear-gradient(145deg, ${gold}08, ${gold}15)`, border: `1px solid ${gold}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 8px ${gold}10` }}>
+                                {cat.iconUrl ? <Image src={cat.iconUrl} alt={cat.name || ''} width={56} height={56} style={{ width: 56, height: 56, objectFit: 'contain', filter: 'brightness(1.1) contrast(1.05)' }} /> : <span style={{ fontSize: 30 }}>📦</span>}
+                              </div>
+                              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: isExpanded ? goldLight : 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 1.3, fontFamily: '"Georgia", "Times New Roman", serif', letterSpacing: '0.5px', textTransform: 'uppercase', transition: 'color .25s' }}>{cat.name || 'Sin nombre'}</p>
+                              {hasSubs && <div style={{ position: 'absolute', bottom: 5, right: 7, background: `${gold}15`, color: gold, fontSize: 8, fontWeight: 700, padding: '2px 6px', borderRadius: 8, border: `1px solid ${gold}30`, letterSpacing: '0.5px' }}>{catSubs.length} sub</div>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>);
+                    })()}
+
                     {expandedCat && expandedSubs.length > 0 && (
                       <div style={{ marginTop: 14, padding: '18px 20px', background: `linear-gradient(135deg, ${expandedAccent}05, ${expandedAccent}10)`, border: `1.5px solid ${expandedAccent}25`, borderRadius: 18, animation: 'pc-entrance 0.3s ease both', backdropFilter: 'blur(8px)' }}>
                         <p style={{ margin: '0 0 14px', fontSize: 13, fontWeight: 700, color: expandedAccent, display: 'flex', alignItems: 'center', gap: 6, letterSpacing: '-0.2px' }}>

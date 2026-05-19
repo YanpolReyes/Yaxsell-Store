@@ -3650,12 +3650,13 @@ export default function HomePage1() {
           };
         }
       }
-      // 6) Imagen poster / reemplazo - enfoque directo
-      if (s.vtPosterImage) {
+      // 6) Imagen poster / reemplazo - enfoque directo (con imagen móvil si existe)
+      const vtImg = (window.innerWidth <= 768 && s.vtMobilePosterImage) ? s.vtMobilePosterImage : s.vtPosterImage;
+      if (vtImg) {
         // Limpiar todo el contenido y poner solo la imagen
         videoContent.innerHTML = '';
         const img = document.createElement('img');
-        img.src = s.vtPosterImage;
+        img.src = vtImg;
         img.alt = 'Yaxsell';
         img.style.cssText = `
           width: 100%;
@@ -3778,7 +3779,10 @@ export default function HomePage1() {
 
     // 1) Imagen de fondo con blur (usar pseudo-elemento separado para no blur el texto)
     const blur = s.overlayBlurAmount ?? 0;
-    if (s.overlayBgImage) {
+    // Elegir imagen según tamaño de pantalla (móvil vs PC)
+    const isMobileBg = window.innerWidth <= 768;
+    const bgImage = (isMobileBg && s.overlayMobileBgImage) ? s.overlayMobileBgImage : s.overlayBgImage;
+    if (bgImage) {
       if (blur > 0) {
         // Crear pseudo-elemento con blur
         let blurLayer = container.querySelector('.tpl1-bg-blur-layer') as HTMLElement | null;
@@ -3788,7 +3792,7 @@ export default function HomePage1() {
           blurLayer.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;';
           container.insertBefore(blurLayer, container.firstChild);
         }
-        blurLayer.style.backgroundImage = `url('${s.overlayBgImage}')`;
+        blurLayer.style.backgroundImage = `url('${bgImage}')`;
         blurLayer.style.backgroundSize = 'cover';
         blurLayer.style.backgroundPosition = 'center center';
         blurLayer.style.backgroundRepeat = 'no-repeat';
@@ -3799,7 +3803,7 @@ export default function HomePage1() {
         }
       } else {
         // Sin blur — aplicar directo al contenedor
-        container.style.setProperty('background-image', `url('${s.overlayBgImage}')`, 'important');
+        container.style.setProperty('background-image', `url('${bgImage}')`, 'important');
         container.style.setProperty('background-size', 'cover', 'important');
         container.style.setProperty('background-position', 'center center', 'important');
         container.style.setProperty('background-repeat', 'no-repeat', 'important');

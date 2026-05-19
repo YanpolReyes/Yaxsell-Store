@@ -47,7 +47,7 @@ export interface SectionSettings {
   // Design — Shadows & Effects
   shadow?: 'none' | 'sm' | 'md' | 'lg';
   // Category Layout Model
-  catModel?: 'default' | 'carousel' | 'bubble' | 'list' | 'glass' | 'magazine';
+  catModel?: 'default' | 'carousel' | 'bubble' | 'list' | 'glass' | 'magazine' | 'neon' | 'minimal' | 'luxury';
   // Card Design System
   cardStyle?: 'classic' | 'elegant' | 'glassmorphism' | 'neon' | 'magazine' | 'floating' | 'luxury' | 'brutalist' | 'gradient' | 'minimal';
   cardImageHeight?: number;
@@ -110,6 +110,9 @@ export interface SectionSettings {
   couponCopyText?: string;
   couponCopiedText?: string;
   couponLayout?: 'classic' | 'yaxsell-split' | 'noir-premium' | 'mono-ticket' | 'mono-magazine' | 'mono-stamp';
+  couponId?: string;
+  copyBtnColor?: string;
+  copyBtnTextColor?: string;
   // Colecciones (tpl1)
   collectionTitle?: string;
   collectionSubtitle?: string;
@@ -196,6 +199,7 @@ export interface SectionSettings {
   stlProductImage4?: string;
   // Banner con Texto / Image Overlay (tpl1)
   overlayBgImage?: string;
+  overlayMobileBgImage?: string; // Imagen de fondo para móvil
   overlayBlurAmount?: number; // 0-20px
   overlayOverlayOpacity?: number; // 0-1
   overlayOverlayColor?: string;
@@ -219,6 +223,7 @@ export interface SectionSettings {
   // Video con Texto (tpl1)
   vtVideoUrl?: string;
   vtPosterImage?: string;
+  vtMobilePosterImage?: string; // Imagen poster para móvil
   vtMediaPosition?: 'left' | 'right';
   vtBorderRadius?: number;
   vtHeading?: string;

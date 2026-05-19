@@ -1660,25 +1660,35 @@
     padding-right: 0 !important;
   }
 
-  /* FAQ title box */
+  /* FAQ title box — clean mobile look */
   [data-template="1"] .faq-titlebox {
-    padding: 32px 20px !important;
+    padding: 28px 20px !important;
+    border-radius: 20px !important;
+    background-size: cover !important;
+    background-position: center !important;
+    min-height: auto !important;
+  }
+  [data-template="1"] .faq-titlebox::before {
+    border-radius: 20px !important;
   }
   [data-template="1"] .faq-titlebox h2,
   [data-template="1"] .faq-titlebox .faq-heading {
-    font-size: 24px !important;
+    font-size: 22px !important;
     line-height: 1.3 !important;
+    letter-spacing: -0.02em !important;
+    font-weight: 800 !important;
   }
   [data-template="1"] .faq-titlebox p,
   [data-template="1"] .faq-titlebox .faq-subtitle {
-    font-size: 14px !important;
+    font-size: 13px !important;
+    line-height: 1.6 !important;
   }
 
   /* FAQ grid layout — stack vertically */
   [data-template="1"] .faq-wrapper,
   [data-template="1"] .faq-content-row {
     flex-direction: column !important;
-    gap: 24px !important;
+    gap: 20px !important;
   }
 
   /* Hide side images on mobile */
@@ -1699,16 +1709,18 @@
     height: 36px !important;
   }
 
-  /* Accordion items */
+  /* Accordion items — clean card style */
   [data-template="1"] .accordion-item {
     margin-bottom: 0 !important;
-    border-radius: 12px !important;
-    margin: 0 0 8px !important;
-    border: 1px solid rgba(0,0,0,0.06) !important;
+    border-radius: 14px !important;
+    margin: 0 0 10px !important;
+    border: 1px solid rgba(0,0,0,0.05) !important;
     overflow: hidden !important;
+    background: #fff !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04) !important;
   }
 
-  /* Accordion button (question) */
+  /* Accordion button (question) — readable text */
   [data-template="1"] .accordion-button {
     font-size: 14px !important;
     font-weight: 600 !important;
@@ -1716,15 +1728,22 @@
     line-height: 1.5 !important;
     gap: 12px !important;
     align-items: flex-start !important;
+    color: #1f2937 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  [data-template="1"] .accordion-button:not(.collapsed) {
+    color: #db2777 !important;
+    background: rgba(236,72,153,0.04) !important;
   }
   [data-template="1"] .accordion-button::after {
     flex-shrink: 0 !important;
-    width: 16px !important;
-    height: 16px !important;
-    margin-top: 2px !important;
+    width: 14px !important;
+    height: 14px !important;
+    margin-top: 3px !important;
   }
 
-  /* Accordion body (answer) */
+  /* Accordion body (answer) — clean readable text */
   [data-template="1"] .accordion-body {
     padding: 0 18px 16px !important;
   }
@@ -1745,6 +1764,15 @@
     padding: 0 12px !important;
     margin: 0 !important;
   }
+
+  /* FAQ jumbotron text */
+  [data-template="1"] .faq-jumbotron {
+    text-align: center !important;
+  }
+  [data-template="1"] .faq-contact-typo {
+    font-size: 13px !important;
+    line-height: 1.6 !important;
+  }
 }
 
 /* ─── FAQ ACCORDION — Small phones (≤ 400px) ─── */
@@ -1761,9 +1789,67 @@
   }
   [data-template="1"] .faq-titlebox {
     padding: 24px 16px !important;
+    border-radius: 16px !important;
   }
   [data-template="1"] .faq-titlebox h2,
   [data-template="1"] .faq-titlebox .faq-heading {
     font-size: 20px !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MARQUEE / TEXTO ANIMADO — MOBILE FIXES
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Fix imágenes del marquee en móvil — limitar tamaño de shapes/asteriscos a 28px */
+@media screen and (max-width: 768px) {
+  [data-template="1"] .marquee-text-wrapper .marquee-scroll-item .marquee-img-box img {
+    height: 28px !important;
+    width: 28px !important;
+    max-width: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    flex-shrink: 0 !important;
+    display: inline-block !important;
+    object-fit: contain !important;
+  }
+
+  /* Asegurar que el contenedor no tenga overflow oculto que corte el loop */
+  [data-template="1"] .marquee-text-wrapper {
+    overflow: hidden !important;
+    display: block !important;
+  }
+
+  /* Loop infinito: el container doble (original + clon) debe fluir en fila */
+  [data-template="1"] .marquee-text-container {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    width: max-content !important;
+    will-change: transform !important;
+  }
+
+  /* Cada item en fila horizontal, sin wrap */
+  [data-template="1"] .marquee-text-wrapper .marquee-scroll-item {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  /* Textos del marquee sin wrap en móvil — tamaño proporcional a las imágenes (28px) */
+  [data-template="1"] .marquee-text-wrapper .marquee-text-box h3 {
+    white-space: nowrap !important;
+    font-size: clamp(16px, 4vw, 22px) !important;
+    line-height: 1.1 !important;
+  }
+
+  /* Velocidad correcta en móvil — el CSS de Shopify pone 8s que es demasiado
+     rápido y hace que el loop se vea cortado. Con el doble de contenido (clon)
+     y velocidad razonable, el loop es seamless. */
+  [data-template="1"] #shopify-section-template--22405132419320__marquee_mdGXX9 .marquee-text-wrapper .marquee-text-container,
+  [data-template="1"] #shopify-section-template--22405132419320__marquee_nP83AA .marquee-text-wrapper .marquee-text-container {
+    animation-duration: 20s !important;
   }
 }

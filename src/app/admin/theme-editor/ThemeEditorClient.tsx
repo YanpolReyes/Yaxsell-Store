@@ -1394,6 +1394,22 @@ function DesignFields({ baseId, section, onUpdate }: {
   baseId: string; section: EditorSection; onUpdate: (p: Partial<SectionSettings>) => void;
 }) {
   const s = section.settings;
+  const [availCoupons, setAvailCoupons] = useState<Array<{$id: string; code: string; type: string; value: number}>>([]);
+  const [couponsLoading, setCouponsLoading] = useState(false);
+
+  useEffect(() => {
+    if (baseId !== 'coupon_banner' && baseId !== 'tpl1_coupon_banner') return;
+    setCouponsLoading(true);
+    (async () => {
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        const res = await databases.listDocuments(databaseId, 'discount_coupons', [Query.equal('isActive', true), Query.limit(50)]);
+        setAvailCoupons(res.documents as any);
+      } catch (e) { console.error(e); }
+      finally { setCouponsLoading(false); }
+    })();
+  }, [baseId]);
 
   /* â”€â”€ Shared design blocks â”€â”€ */
   const ColorsBlock = () => (
@@ -2200,6 +2216,7 @@ function DesignFields({ baseId, section, onUpdate }: {
         <FontBlock />
       </div>);
 
+    case 'tpl1_coupon_banner':
     case 'coupon_banner': {
       type CouponLayoutId = NonNullable<SectionSettings['couponLayout']>;
       const P: { id: string; l: string; layout: CouponLayoutId; bg: string; tx: string; ac: string; r: number; pd: number; sh: 'none'|'sm'|'md'|'lg'; previewHint: 'split'|'noir'|'ticket'|'magazine'|'stamp'|'classic' }[] = [
@@ -2272,7 +2289,7 @@ function DesignFields({ baseId, section, onUpdate }: {
           <div style={{ fontSize: 9, padding: '3px 4px', fontWeight: 700, background: sel ? '#ede9fe' : '#fff', color: '#1f2937', textAlign: 'center' }}>{m.l}</div>
         </button>);
         // classic preview (gradient + dot)
-        return (<button key={m.id} onClick={() => onUpdate({ couponLayout: m.layout, bgColor: m.bg, textColor: m.tx, accentColor: m.ac, borderRadius: m.r, padding: m.pd, shadow: m.sh })} style={wrap}>
+        return (<button key={m.id} onClick={() => onUpdate({ couponLayout: m.layout, bgColor: m.bg, textColor: m.tx, accentColor: m.ac, borderRadius: m.r, padding: m.pd, shadow: m.sh, copyBtnColor: undefined, copyBtnTextColor: undefined })} style={wrap}>
           <div style={{ height: 32, background: m.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
             <div style={{ width: 16, height: 6, background: m.ac, borderRadius: 2, opacity: 0.95, boxShadow: `0 0 6px ${m.ac}66` }} />
             <div style={{ position: 'absolute', left: -4, top: '50%', transform: 'translateY(-50%)', width: 8, height: 8, borderRadius: '50%', background: '#fff' }} />
@@ -2298,10 +2315,35 @@ function DesignFields({ baseId, section, onUpdate }: {
         <Field icon={<Type size={13} />} label="Etiqueta del código" value={s.couponCodeLabel || 'Tu código'} onChange={v => onUpdate({ couponCodeLabel: v })} placeholder="Tu código" />
         <Field icon={<Type size={13} />} label="Texto botón copiar" value={s.couponCopyText || 'Copiar'} onChange={v => onUpdate({ couponCopyText: v })} placeholder="Copiar" />
         <Field icon={<Type size={13} />} label="Texto botón copiado" value={s.couponCopiedText || '¡Copiado!'} onChange={v => onUpdate({ couponCopiedText: v })} placeholder="¡Copiado!" />
+        <SH>Cupón vinculado</SH>
+        <a href="/admin/coupons" target="_blank" rel="noopener noreferrer"
+          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#5850ec', fontWeight: 600, textDecoration: 'none', padding: '5px 0', marginBottom: 2 }}>
+          <Ticket size={12} /> Gestionar cupones &rarr;
+        </a>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 2 }}>Selecciona un cupón existente. Si no seleccionas ninguno, se mostrará el primer cupón activo.</div>
+          {couponsLoading ? (
+            <div style={{ fontSize: 11, color: '#9ca3af', padding: '6px 0' }}>Cargando cupones...</div>
+          ) : (
+            <select value={s.couponId || ''} onChange={e => onUpdate({ couponId: e.target.value || undefined })}
+              style={{ width: '100%', padding: '7px 10px', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 12, color: '#374151', background: '#fff', outline: 'none' }}>
+              <option value=''>— Automático (primer cupón activo) —</option>
+              {availCoupons.map(c => (
+                <option key={c.$id} value={c.$id}>
+                  {c.code} — {c.type === 'percent' || c.type === 'percentage' ? `${c.value}%` : `$${c.value?.toLocaleString()}`}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
         <SH>Colores</SH>
         <ColorField label="Fondo" value={s.bgColor || ''} onChange={v => onUpdate({ bgColor: v })} />
         <ColorField label="Texto" value={s.textColor || ''} onChange={v => onUpdate({ textColor: v })} />
         <ColorField label="Acento (código + botón)" value={s.accentColor || ''} onChange={v => onUpdate({ accentColor: v })} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <ColorField label="Fondo botón Copiar" value={s.copyBtnColor || ''} onChange={v => onUpdate({ copyBtnColor: v })} />
+          <ColorField label="Texto botón Copiar" value={s.copyBtnTextColor || ''} onChange={v => onUpdate({ copyBtnTextColor: v })} />
+        </div>
         <TypographyBlock />
         <SH>Layout</SH>
         <RangeField label="Radio de borde" value={s.borderRadius ?? 16} onChange={v => onUpdate({ borderRadius: v })} min={0} max={32} unit="px" />
@@ -2333,6 +2375,9 @@ function DesignFields({ baseId, section, onUpdate }: {
         { id: 'list',      l: 'Lista Premium',  desc: 'Filas horizontales con icono grande a la izquierda' },
         { id: 'glass',     l: 'Glassmorphism',  desc: 'Tarjetas translúcidas con blur y bordes de luz' },
         { id: 'magazine',  l: 'Magazine',       desc: 'Una categoría destacada grande + grid compacto' },
+        { id: 'neon',      l: 'Neón Glow',      desc: 'Bordes neón brillantes sobre fondo oscuro' },
+        { id: 'minimal',   l: 'Minimalista',    desc: 'Limpio, sin bordes, solo tipografía e icono' },
+        { id: 'luxury',    l: 'Lujo Dorado',    desc: 'Fondo negro, detalles dorados, tipografía serif' },
       ];
       const curModel = s.catModel || 'default';
       return (<div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -2374,6 +2419,21 @@ function DesignFields({ baseId, section, onUpdate }: {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, width: '100%' }}>
                       <div style={{ gridRow: 'span 2', borderRadius: 4, background: 'linear-gradient(145deg, #f0f9ff, #dbeafe)', border: '1px solid #bfdbfe', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}><div style={{ width: 14, height: 14, borderRadius: 4, background: '#93c5fd' }} /><div style={{ width: 18, height: 2, borderRadius: 1, background: '#93c5fd' }} /></div>
                       {[0,1].map(i => <div key={i} style={{ height: 14, borderRadius: 3, background: '#fff', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}><div style={{ width: 6, height: 6, borderRadius: 2, background: `hsl(${210 + i * 30}, 60%, 82%)` }} /><div style={{ width: 12, height: 2, borderRadius: 1, background: '#d1d5db' }} /></div>)}
+                    </div>
+                  )}
+                  {m.id === 'neon' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 3, width: '100%', background: '#0a0a0a', borderRadius: 4, padding: 4 }}>
+                      {[0,1,2].map(i => <div key={i} style={{ height: 16, borderRadius: 4, border: `1px solid hsl(${i * 120}, 100%, 55%)`, boxShadow: `0 0 4px hsl(${i * 120}, 100%, 55%)40, inset 0 0 4px hsl(${i * 120}, 100%, 55%)15`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, background: 'rgba(0,0,0,0.6)' }}><div style={{ width: 6, height: 6, borderRadius: '50%', background: `hsl(${i * 120}, 100%, 60%)`, boxShadow: `0 0 4px hsl(${i * 120}, 100%, 60%)` }} /><div style={{ width: 10, height: 2, borderRadius: 1, background: `hsl(${i * 120}, 100%, 70%)`, opacity: 0.7 }} /></div>)}
+                    </div>
+                  )}
+                  {m.id === 'minimal' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, width: '100%', padding: 4 }}>
+                      {[0,1,2].map(i => <div key={i} style={{ height: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}><div style={{ width: 10, height: 10, borderRadius: '50%', background: `hsl(${i * 120 + 200}, 15%, 92%)` }} /><div style={{ width: 16, height: 2, borderRadius: 1, background: '#d1d5db' }} /></div>)}
+                    </div>
+                  )}
+                  {m.id === 'luxury' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 3, width: '100%', background: '#0a0a0a', borderRadius: 4, padding: 4 }}>
+                      {[0,1,2].map(i => <div key={i} style={{ height: 16, borderRadius: 3, border: '1px solid rgba(212,168,83,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, background: 'rgba(212,168,83,0.04)' }}><div style={{ width: 6, height: 6, borderRadius: '50%', background: 'linear-gradient(135deg, #d4a853, #f0d78c)', boxShadow: '0 0 3px rgba(212,168,83,0.4)' }} /><div style={{ width: 10, height: 1.5, borderRadius: 1, background: 'rgba(212,168,83,0.5)' }} /></div>)}
                     </div>
                   )}
                 </div>
@@ -2998,6 +3058,23 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
     })();
   }, [baseId, s.productWidgetCategoryId]);
 
+  // Coupon selector for coupon_banner (hooks must be at top level)
+  const [availCoupons, setAvailCoupons] = useState<{ $id: string; code: string; value: number; type: string }[]>([]);
+  const [couponsLoading, setCouponsLoading] = useState(false);
+  useEffect(() => {
+    if (baseId !== 'coupon_banner' && baseId !== 'tpl1_coupon_banner') return;
+    (async () => {
+      try {
+        setCouponsLoading(true);
+        const { databaseId } = getAppwriteConfig();
+        const { databases } = getServices();
+        const res = await databases.listDocuments(databaseId, 'discount_coupons', [Query.orderDesc('$createdAt'), Query.limit(100)]);
+        setAvailCoupons(res.documents as any[]);
+      } catch { /* ignore */ }
+      finally { setCouponsLoading(false); }
+    })();
+  }, [baseId]);
+
   // Timed offer selector for countdown (hooks must be at top level)
   const [countdownOffers, setCountdownOffers] = useState<TimedOffer[]>([]);
   const [countdownOffersLoading, setCountdownOffersLoading] = useState(false);
@@ -3386,6 +3463,7 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         <Field icon={<Hash size={13} />} label="Cantidad" value={String(s.itemsCount || '')} onChange={v => onUpdate({ itemsCount: parseInt(v) || undefined })} placeholder="8" type="number" />
       </div>);
 
+    case 'tpl1_coupon_banner':
     case 'coupon_banner':
       return (<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <SH>Contenido</SH>
@@ -4057,7 +4135,8 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
       return (<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <SH>Media (Video o Imagen)</SH>
         <Field icon={<Video size={13} />} label="URL del video (MP4/YouTube)" value={s.vtVideoUrl || ''} onChange={v => onUpdate({ vtVideoUrl: v })} placeholder="https://...mp4" />
-        <ImageUploadField label="Imagen poster / reemplazo" value={s.vtPosterImage || ''} onChange={v => onUpdate({ vtPosterImage: v })} />
+        <ImageUploadField label="Imagen poster / reemplazo (PC)" value={s.vtPosterImage || ''} onChange={v => onUpdate({ vtPosterImage: v })} />
+        <ImageUploadField label="Imagen poster (Móvil)" value={s.vtMobilePosterImage || ''} onChange={v => onUpdate({ vtMobilePosterImage: v })} />
         <SH>Posición y Diseño</SH>
         <SelectField label="Media a la" value={s.vtMediaPosition || 'left'} onChange={v => onUpdate({ vtMediaPosition: v as 'left'|'right' })}
           options={[{ v: 'left', l: 'Izquierda' }, { v: 'right', l: 'Derecha' }]} />
@@ -4078,7 +4157,8 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
     case 'image_overlay': {
       return (<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <SH>Imagen / Video de fondo</SH>
-        <ImageUploadField label="Imagen de fondo" value={s.overlayBgImage || ''} onChange={v => onUpdate({ overlayBgImage: v })} />
+        <ImageUploadField label="Imagen de fondo (PC)" value={s.overlayBgImage || ''} onChange={v => onUpdate({ overlayBgImage: v })} />
+        <ImageUploadField label="Imagen de fondo (Móvil)" value={s.overlayMobileBgImage || ''} onChange={v => onUpdate({ overlayMobileBgImage: v })} />
         <RangeField label="Blur de imagen" value={s.overlayBlurAmount ?? 0} onChange={v => onUpdate({ overlayBlurAmount: v })} min={0} max={20} unit="px" />
         <Field icon={<Video size={13} />} label="Video de fondo (URL)" value={s.overlayVideoUrl || ''} onChange={v => onUpdate({ overlayVideoUrl: v })} placeholder="https://...mp4" />
         <SH>Overlay</SH>

@@ -211,7 +211,7 @@
 | key | string | 256 | ✓ | — |
 | value | integer | — | ✓ | — |
 
-### 3.9 `discount_coupons` (8 atributos)
+### 3.9 `discount_coupons` (8 atributos) — ⚠️ CORREGIDO: admin ahora envía minúsculas
 | Atributo | Tipo | Size | Requerido | Default |
 |----------|------|------|-----------|---------|
 | code | string | 100 | ✓ | — |
@@ -222,6 +222,10 @@
 | usedCount | integer | — | ✗ | — |
 | minPurchase | integer | — | ✗ | — |
 | expiresAt | integer | — | ✗ | — |
+
+> **⚠️ Corrección Mayo 19:** El admin de cupones enviaba atributos en UPPERCASE (`CODE`, `TYPE`, `VALUE`, `ISACTIVE`) que no existen en la nueva cuenta. Appwrite devolvía error `Unknown attribute: "CODE"`. Se corrigió `src/app/admin/(panel)/coupons/page.tsx` para enviar solo minúsculas. La normalización al leer también fue simplificada.
+
+> **Atributos adicionales usados por el admin pero NO en el esquema de Appwrite:** `minOrderAmount`, `maxDiscount`, `userRestriction`, `description`. Estos se envían pero Appwrite los ignora si no existen en la colección. Si se necesitan, deben crearse como atributos en la colección `discount_coupons`.
 
 ### 3.10 `points_store_items` (5 atributos)
 | Atributo | Tipo | Size | Requerido | Default |
@@ -803,7 +807,7 @@ Las colecciones usan **dos convenciones distintas** para los nombres de atributo
 
 ---
 
-## 10. Atributos Faltantes Detectados (Mayo 18, 2026)
+## 10. Atributos Faltantes Detectados y Correcciones (Mayo 19, 2026)
 
 ### ⚠️ Colecciones que alcanzaron el límite de atributos (`attribute_limit_exceeded`)
 Estas colecciones **NO** pueden recibir más atributos en el plan gratuito:
@@ -961,6 +965,8 @@ Estas colecciones **NO** pueden recibir más atributos en el plan gratuito:
 2. **Nomenclatura inconsistente** — `products` usa UPPERCASE, `users` usa camelCase. Recomendación: **NO cambiar** en esta migración, solo documentar. Unificar requeriría tocar 40-60 archivos.
 3. **`inventory_products` → `products` publish** — El payload de publicación fue ajustado para NO enviar `IMAGEURL4`, `IMAGEURL5`, `TAGS`, `FEATURES` porque no existen en `products`. Ver `src/app/inventario/page.tsx` líneas 918-934.
 4. **IDs cambian al migrar** — Los `$id` de documentos cambian. Cualquier campo que referencie otro documento (CATEGORYID, PRODUCTID, USERID, etc.) debe ser mapeado con una tabla de old_id → new_id.
+5. **`discount_coupons` solo acepta minúsculas** — La nueva cuenta NO tiene atributos UPPERCASE. El admin fue corregido (Mayo 19). Ver sección 3.9 arriba.
+6. **Cookie banner z-index** — La navbar inferior móvil tiene `z-index: 9998`. El cookie banner fue subido a `z-index: 10000` para no quedar oculto debajo.
 
 ### 🔧 Script de migración sugerido
 ```typescript
@@ -997,6 +1003,33 @@ Faltan (requieren upgrade a plan Pro o eliminar uno existente):
 - **No eliminar atributos existentes** — Aunque parezca que no se usan, pueden estar referenciados
 - **No cambiar UPPERCASE a camelCase** — Requiere cambios en 40-60 archivos, mejor hacerlo en una fase separada
 - **No modificar `inventory_products`** — Tiene 267 documentos con datos de inventario reales
+- **No enviar atributos UPPERCASE a `discount_coupons`** — La nueva cuenta solo tiene minúsculas, enviar mayúsculas causa error `Unknown attribute`
+
+---
+
+## 12. Cambios de Sesión — Mayo 19, 2026
+
+### ✅ Correcciones aplicadas
+| Issue | Archivo | Cambio |
+|-------|---------|--------|
+| Error `Unknown attribute: "CODE"` al crear cupón | `src/app/admin/(panel)/coupons/page.tsx` | Payload ahora envía solo minúsculas (`code`, `type`, `value`, `isActive`). Normalización simplificada. |
+| Cookie banner oculto bajo navbar móvil | `src/components/CookieConsent.tsx` | `z-index` subido de 9990 → 10000. Padding/font compactado para móvil. |
+| FAQ feo en móvil | `src/templates/plantilla1/mobile-responsive.css` | Titlebox border-radius 50px→20px, accordion con sombra/color activo, texto centrado. |
+| Banner con Texto: sin imagen móvil | `src/lib/section-config.ts` | Agregado `overlayMobileBgImage` al tipo `SectionSettings`. |
+| Banner con Texto: sin imagen móvil | `src/templates/plantilla1/HomePage.tsx` | Lógica JS detecta `window.innerWidth <= 768` y usa imagen móvil si existe. |
+| Banner con Texto: sin imagen móvil | `src/app/admin/theme-editor/ThemeEditorClient.tsx` | Campo "Imagen de fondo (Móvil)" en editor. |
+| Video con Texto: sin imagen móvil | `src/lib/section-config.ts` | Agregado `vtMobilePosterImage` al tipo `SectionSettings`. |
+| Video con Texto: sin imagen móvil | `src/templates/plantilla1/HomePage.tsx` | Lógica JS para poster móvil si existe. |
+| Video con Texto: sin imagen móvil | `src/app/admin/theme-editor/ThemeEditorClient.tsx` | Campo "Imagen poster (Móvil)" en editor. |
+
+### ⚠️ Atributos de `discount_coupons` que el admin envía pero NO existen en Appwrite
+Estos campos se envían en el payload pero Appwrite los rechazará si no están creados como atributos:
+- `minOrderAmount` (integer) — monto mínimo de compra
+- `maxDiscount` (integer) — descuento máximo
+- `userRestriction` (string) — restricción por usuario
+- `description` (string) — descripción del cupón
+
+**Acción pendiente:** Crear estos 4 atributos en la colección `discount_coupons` en Appwrite, o eliminarlos del payload del admin.
 
 ---
 

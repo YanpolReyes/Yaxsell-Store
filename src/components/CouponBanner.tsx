@@ -48,6 +48,9 @@ export default function CouponBanner({ settings: s }: Props) {
   const codeLabelText = s?.couponCodeLabel || 'Tu código';
   const copyText = s?.couponCopyText || 'Copiar';
   const copiedText = s?.couponCopiedText || '¡Copiado!';
+  const couponId = s?.couponId || null;
+  const copyBtnBg = s?.copyBtnColor || null;
+  const copyBtnTx = s?.copyBtnTextColor || null;
 
   const shadowMap: Record<string, string> = {
     none: 'none',
@@ -61,6 +64,10 @@ export default function CouponBanner({ settings: s }: Props) {
       try {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
+        if (couponId) {
+          const doc = await databases.getDocument(databaseId, COUPONS_COLLECTION, couponId) as unknown as Coupon;
+          if (doc) { setCoupon(doc); return; }
+        }
         const res = await databases.listDocuments(databaseId, COUPONS_COLLECTION, [
           Query.equal('isActive', true),
           Query.limit(5),
@@ -73,7 +80,7 @@ export default function CouponBanner({ settings: s }: Props) {
         if (valid) setCoupon(valid);
       } catch (e) { console.error(e); }
     })();
-  }, []);
+  }, [couponId]);
 
   useEffect(() => {
     const el = bannerRef.current;
@@ -104,7 +111,7 @@ export default function CouponBanner({ settings: s }: Props) {
     titleText, subtitleWithCoupon, messageWithoutCoupon, stampText,
     codeLabelText, copyText, copiedText, hasCoupon: !!coupon,
     onCopy: () => handleCopy(code),
-    bg, tx, ac, r, pd, hSize, tSize, sh, ht, shadowMap,
+    bg, tx, ac, r, pd, hSize, tSize, sh, ht, shadowMap, copyBtnBg, copyBtnTx,
   };
 
   // Render layout based on couponLayout
@@ -129,7 +136,50 @@ type LayoutProps = {
   bg: string; tx: string; ac: string; r: number; pd: number;
   hSize: number; tSize: number; sh: string; ht: number;
   shadowMap: Record<string, string>;
+  copyBtnBg?: string | null; copyBtnTx?: string | null;
 };
+
+/* ── Subtle CSS-only particles (zero JS, zero lag) ── */
+function CouponParticles({ color = 'rgba(255,255,255,0.5)', count = 12 }: { color?: string; count?: number }) {
+  const particles = Array.from({ length: count }, (_, i) => {
+    const size = 1.5 + Math.random() * 2.5;
+    const x = 5 + Math.random() * 90;
+    const y = 10 + Math.random() * 80;
+    const dur = 7 + Math.random() * 10;
+    const delay = Math.random() * -dur;
+    const driftX = -15 + Math.random() * 30;
+    const driftY = -(30 + Math.random() * 40);
+    return { size, x, y, dur, delay, driftX, driftY, key: i };
+  });
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 1 }}>
+      <style>{`
+        @keyframes cb-float-up {
+          0% { transform: translateY(0) translateX(0); opacity: 0; }
+          8% { opacity: 0.7; }
+          85% { opacity: 0.5; }
+          100% { transform: translateY(var(--dy)) translateX(var(--dx)); opacity: 0; }
+        }
+      `}</style>
+      {particles.map(p => (
+        <div key={p.key} style={{
+          position: 'absolute' as const,
+          left: `${p.x}%`,
+          top: `${p.y}%`,
+          width: p.size,
+          height: p.size,
+          borderRadius: '50%',
+          background: color,
+          boxShadow: `0 0 ${p.size * 2.5}px ${color}`,
+          animation: `cb-float-up ${p.dur}s ease-in-out ${p.delay}s infinite`,
+          willChange: 'transform, opacity',
+          ['--dx' as string]: `${p.driftX}px`,
+          ['--dy' as string]: `${p.driftY}px`,
+        }} />
+      ))}
+    </div>
+  );
+}
 
 /* ── 3D Tilt handler (shared by all layouts) ── */
 function handleTilt(e: React.MouseEvent<HTMLDivElement>) {
@@ -153,10 +203,16 @@ function resetTilt(e: React.MouseEvent<HTMLDivElement>) {
    LAYOUT 1: CLASSIC (el original con cambios mínimos)
    ═══════════════════════════════════════════════════════════════ */
 function LayoutClassic(p: LayoutProps) {
-  const { bannerRef, isVisible, copied, code, discountText, minAmount, titleText, subtitleWithCoupon, messageWithoutCoupon, stampText, codeLabelText, copyText, copiedText, hasCoupon, onCopy, bg, tx, ac, r, pd, hSize, tSize, sh, ht, shadowMap } = p;
+  const { bannerRef, isVisible, copied, code, discountText, minAmount, titleText, subtitleWithCoupon, messageWithoutCoupon, stampText, codeLabelText, copyText, copiedText, hasCoupon, onCopy, bg, tx, ac, r, pd, hSize, tSize, sh, ht, shadowMap, copyBtnBg, copyBtnTx } = p;
   const isBgGradient = bg.includes('gradient') || bg.includes(',');
   const bgStyle = isBgGradient ? { background: bg } : { backgroundColor: bg };
-  const copyButtonTextColor = ['#db2777', '#ec4899', '#be185d'].includes(ac.toLowerCase()) ? '#ffffff' : '#1a1a1a';
+  const resolvedBtnBg = copyBtnBg || `linear-gradient(135deg, ${ac}, ${ac}dd)`;
+  const resolvedBtnTx = copyBtnTx || (() => {
+    const hex = ac.replace('#', '');
+    const r = parseInt(hex.slice(0,2),16), g = parseInt(hex.slice(2,4),16), b = parseInt(hex.slice(4,6),16);
+    const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
+    return lum > 0.55 ? '#1a1a1a' : '#ffffff';
+  })();
   return (
     <>
       <style>{`
@@ -185,11 +241,22 @@ function LayoutClassic(p: LayoutProps) {
         .cb-banner:hover .cb-ticket-icon { transform: rotate(-12deg) scale(1.08); }
         .cb-stamp { animation: cb-stamp-bob 3s ease-in-out infinite; }
         .cb-hero-percent { background: linear-gradient(180deg, #fff 0%, #fff 55%, rgba(255,255,255,0.85) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: cb-percent-glow 2.5s ease-in-out infinite; }
+        @media (max-width: 600px) {
+          .cb-banner { padding: 20px 16px !important; border-radius: 20px !important; }
+          .cb-banner > div[style*="zIndex: 4"] { flex-direction: column !important; gap: 16px !important; align-items: stretch !important; }
+          .cb-banner .cb-stamp { display: none !important; }
+          .cb-mobile-row { flex-direction: column !important; align-items: center !important; text-align: center !important; }
+          .cb-divider { display: none !important; }
+          .cb-code-section { align-items: center !important; width: 100% !important; }
+          .cb-code-row { width: 100% !important; border-radius: 14px !important; overflow: hidden !important; }
+          .cb-copy-btn { width: 100% !important; justify-content: center !important; padding: 14px !important; }
+        }
       `}</style>
       <div ref={bannerRef} className="cb-banner"
         onMouseMove={handleTilt}
         onMouseLeave={resetTilt}
         style={{ ...bgStyle, borderRadius: r, padding: `${pd + 6}px ${pd + 20}px`, position: 'relative', boxShadow: shadowMap[sh] || '0 12px 40px rgba(0,0,0,0.15)', color: tx, ...(ht > 0 ? { minHeight: ht, display: 'flex', alignItems: 'center' } : {}), opacity: isVisible ? 1 : 0, transform: isVisible ? 'translateY(0)' : 'translateY(20px)', transition: 'opacity 0.6s, transform 0.6s', overflow: 'hidden' }}>
+        <CouponParticles color="rgba(255,255,255,0.35)" count={10} />
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
           <div style={{ position: 'absolute', top: '-40%', left: '-15%', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%)', filter: 'blur(30px)', animation: 'cb-mesh-drift 14s ease-in-out infinite' }} />
           <div style={{ position: 'absolute', bottom: '-50%', right: '-10%', width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 60%)', filter: 'blur(35px)', animation: 'cb-mesh-drift 17s ease-in-out infinite 3s' }} />
@@ -200,7 +267,7 @@ function LayoutClassic(p: LayoutProps) {
         </div>
         <div style={{ position: 'absolute', top: '50%', left: 0, transform: 'translate(-50%, -50%)', width: 28, height: 28, borderRadius: '50%', background: '#fff', zIndex: 3, pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', top: '50%', right: 0, transform: 'translate(50%, -50%)', width: 28, height: 28, borderRadius: '50%', background: '#fff', zIndex: 3, pointerEvents: 'none' }} />
-        <div style={{ position: 'relative', zIndex: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, flexWrap: 'wrap', width: '100%' }}>
+        <div className="cb-mobile-row" style={{ position: 'relative', zIndex: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, flexWrap: 'wrap', width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0, position: 'relative' }}>
             <div style={{ position: 'relative', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ position: 'absolute', inset: 0, borderRadius: 16, background: 'linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.08))', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.35)', animation: 'cb-glow-ring 3s ease-in-out infinite' }} />
@@ -218,18 +285,18 @@ function LayoutClassic(p: LayoutProps) {
               <Award size={10} />{stampText}
             </div>
           </div>
-          <div style={{ width: 2, height: 60, background: 'repeating-linear-gradient(180deg, rgba(255,255,255,0.3) 0, rgba(255,255,255,0.3) 3px, transparent 3px, transparent 8px)' }} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div className="cb-divider" style={{ width: 2, height: 60, background: 'repeating-linear-gradient(180deg, rgba(255,255,255,0.3) 0, rgba(255,255,255,0.3) 3px, transparent 3px, transparent 8px)' }} />
+          <div className="cb-code-section" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.2em', opacity: 0.75, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}>
               <Zap size={10} color={ac} fill={ac} /><span>{codeLabelText}</span>
               {minAmount && minAmount > 0 && <span style={{ marginLeft: 6, padding: '1px 7px', borderRadius: 10, background: 'rgba(255,255,255,0.18)', fontSize: 9, fontWeight: 700 }}>MÍN. ${minAmount.toLocaleString()}</span>}
             </div>
-            <div style={{ display: 'flex', alignItems: 'stretch', borderRadius: 14, overflow: 'hidden', boxShadow: '0 8px 20px rgba(0,0,0,0.15)' }}>
-              <div className="cb-code-box" style={{ padding: '14px 24px', background: 'linear-gradient(180deg, #ffffff 0%, #fafafa 100%)', display: 'flex', alignItems: 'center', gap: 10, borderRight: '2px dashed rgba(0,0,0,0.12)' }}>
+            <div className="cb-code-row" style={{ display: 'flex', alignItems: 'stretch', borderRadius: 14, overflow: 'hidden', boxShadow: '0 8px 20px rgba(0,0,0,0.15)' }}>
+              <div className="cb-code-box" style={{ flex: 1, padding: '14px 24px', background: 'linear-gradient(180deg, #ffffff 0%, #fafafa 100%)', display: 'flex', alignItems: 'center', gap: 10, borderRight: '2px dashed rgba(0,0,0,0.12)' }}>
                 <span style={{ fontSize: 20, fontWeight: 900, letterSpacing: 2.5, fontFamily: '"SF Mono", monospace', background: 'linear-gradient(135deg, #0a0a0a 0%, #3a3a3a 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{code}</span>
               </div>
               <button className="cb-copy-btn" onClick={onCopy}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 22px', background: copied ? 'linear-gradient(135deg, #10b981, #059669)' : `linear-gradient(135deg, ${ac}, ${ac}dd)`, color: copyButtonTextColor, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 900, letterSpacing: '0.05em', textTransform: 'uppercase', minWidth: 110, justifyContent: 'center' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 22px', background: copied ? 'linear-gradient(135deg, #10b981, #059669)' : resolvedBtnBg, color: copied ? '#ffffff' : resolvedBtnTx, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 900, letterSpacing: '0.05em', textTransform: 'uppercase', minWidth: 110, justifyContent: 'center' }}>
                 {copied ? <Check size={16} strokeWidth={3.5} /> : <Copy size={14} strokeWidth={2.8} />}
                 <span>{copied ? copiedText : copyText}</span>
                 {!copied && <ChevronRight size={13} strokeWidth={3} />}
@@ -270,6 +337,7 @@ function LayoutYaxsellSplit(p: LayoutProps) {
         onMouseMove={handleTilt}
         onMouseLeave={resetTilt}
         style={{ borderRadius: r, ...(ht > 0 ? { minHeight: ht } : { minHeight: 160 }), boxShadow: shadowMap[sh] || '0 8px 28px rgba(0,0,0,0.12)', opacity: isVisible ? 1 : 0, transform: isVisible ? 'translateY(0)' : 'translateY(20px)', transition: 'opacity 0.7s, transform 0.7s, box-shadow 0.3s' }}>
+        <CouponParticles color="rgba(0,0,0,0.15)" count={6} />
         {/* WHITE SIDE — porcentaje gigante */}
         <div style={{ flex: 1.1, background: '#ffffff', color: '#000', padding: `${pd + 10}px ${pd + 16}px`, position: 'relative', display: 'flex', alignItems: 'center', gap: 18, overflow: 'hidden', borderRight: '2px dashed #000' }}>
           {/* Subtle pattern */}
@@ -299,6 +367,7 @@ function LayoutYaxsellSplit(p: LayoutProps) {
 
         {/* BLACK SIDE — código */}
         <div style={{ flex: 1, background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%)', color: '#fff', padding: `${pd + 10}px ${pd + 16}px`, position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 12, overflow: 'hidden' }}>
+          <CouponParticles color="rgba(255,255,255,0.2)" count={6} />
           {/* Subtle grain */}
           <div style={{ position: 'absolute', inset: 0, opacity: 0.06, backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '14px 14px', pointerEvents: 'none' }} />
           {/* Shimmer */}
@@ -345,6 +414,7 @@ function LayoutNoirPremium(p: LayoutProps) {
         onMouseMove={handleTilt}
         onMouseLeave={resetTilt}
         style={{ background: 'linear-gradient(135deg, #050505 0%, #1a1a1a 35%, #2a2a2a 50%, #1a1a1a 65%, #050505 100%)', backgroundSize: '300% 300%', animation: 'np-grad 12s ease-in-out infinite', borderRadius: r, padding: `${pd + 10}px ${pd + 16}px`, position: 'relative', boxShadow: shadowMap[sh] || '0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)', color: '#fff', ...(ht > 0 ? { minHeight: ht, display: 'flex', alignItems: 'center' } : {}), opacity: isVisible ? 1 : 0, transform: isVisible ? 'translateY(0)' : 'translateY(20px)', transition: 'opacity 0.7s, transform 0.4s' }}>
+        <CouponParticles color="rgba(212,168,83,0.25)" count={8} />
         {/* Gold border lines */}
         <div style={{ position: 'absolute', top: 12, left: 12, right: 12, height: 1, background: `linear-gradient(90deg, transparent, ${accent}66, transparent)` }} />
         <div style={{ position: 'absolute', bottom: 12, left: 12, right: 12, height: 1, background: `linear-gradient(90deg, transparent, ${accent}66, transparent)` }} />
@@ -414,6 +484,7 @@ function LayoutMonoTicket(p: LayoutProps) {
         onMouseMove={handleTilt}
         onMouseLeave={resetTilt}
         style={{ display: 'flex', borderRadius: r, overflow: 'hidden', boxShadow: shadowMap[sh] || '0 20px 50px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.06)', background: '#fff', ...(ht > 0 ? { minHeight: ht } : { minHeight: 150 }), opacity: isVisible ? 1 : 0, transform: isVisible ? 'translateY(0)' : 'translateY(20px)', transition: 'opacity 0.7s, transform 0.4s' }}>
+        <CouponParticles color="rgba(0,0,0,0.12)" count={6} />
         {/* Stub LEFT (negro vertical) */}
         <div style={{ width: 90, background: '#000', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '14px 8px', position: 'relative', flexShrink: 0 }}>
           <div style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', fontSize: 11, fontWeight: 900, letterSpacing: '0.4em', textTransform: 'uppercase', textAlign: 'center' }}>{titleText} · {stampText}</div>
@@ -476,6 +547,7 @@ function LayoutMonoMagazine(p: LayoutProps) {
         onMouseMove={handleTilt}
         onMouseLeave={resetTilt}
         style={{ background: '#fff', borderRadius: r, padding: 0, position: 'relative', boxShadow: shadowMap[sh] || '0 20px 50px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.08)', color: '#000', ...(ht > 0 ? { minHeight: ht } : {}), opacity: isVisible ? 1 : 0, transform: isVisible ? 'translateY(0)' : 'translateY(20px)', transition: 'opacity 0.7s, transform 0.4s', overflow: 'hidden' }}>
+        <CouponParticles color="rgba(0,0,0,0.1)" count={6} />
         {/* Top marquee bar */}
         <div style={{ background: '#000', color: '#fff', padding: '7px 0', overflow: 'hidden', position: 'relative', borderBottom: '3px solid #000' }}>
           <div style={{ display: 'flex', whiteSpace: 'nowrap', animation: 'mm-marquee 22s linear infinite', fontSize: 11, fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase' }}>
@@ -540,6 +612,7 @@ function LayoutMonoStamp(p: LayoutProps) {
         onMouseMove={handleTilt}
         onMouseLeave={resetTilt}
         style={{ background: '#fff', border: '2px solid #000', borderRadius: r, padding: `${pd + 14}px ${pd + 18}px`, position: 'relative', boxShadow: shadowMap[sh] || '8px 8px 0 #000, 0 18px 40px rgba(0,0,0,0.1)', color: '#000', ...(ht > 0 ? { minHeight: ht, display: 'flex', alignItems: 'center' } : {}), opacity: isVisible ? 1 : 0, transform: isVisible ? 'translateY(0)' : 'translateY(20px)', transition: 'opacity 0.7s, transform 0.3s, box-shadow 0.3s' }}>
+        <CouponParticles color="rgba(0,0,0,0.1)" count={6} />
         {/* Postage perforation border */}
         <div style={{ position: 'absolute', top: -2, left: 0, right: 0, height: 4, background: 'repeating-linear-gradient(90deg, transparent, transparent 6px, #fff 6px, #fff 12px)', borderRadius: '4px 4px 0 0' }} />
         <div style={{ position: 'absolute', bottom: -2, left: 0, right: 0, height: 4, background: 'repeating-linear-gradient(90deg, transparent, transparent 6px, #fff 6px, #fff 12px)' }} />
