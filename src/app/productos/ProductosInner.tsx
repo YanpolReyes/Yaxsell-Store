@@ -38,6 +38,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
   const [activePriceRange, setActivePriceRange] = useState<[number, number] | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+  const [heroImgLoaded, setHeroImgLoaded] = useState(false);
   const { addItem } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { settings: apertura } = useAperturaPromotion();
@@ -283,14 +284,15 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
         {/* Hero header */}
         <div className="pk-hero-header" style={{ marginBottom: 24, borderRadius: 28, border: '1px solid rgba(252,231,243,0.9)', boxShadow: '0 18px 50px rgba(236,72,153,0.12)', overflow: 'hidden', background: '#fff' }}>
           <div className="pk-hero-banner" style={{ position: 'relative' }}>
+            {(!heroImgLoaded || (!lockedCategory?.iconUrl && !lockCategoryId)) && <div className="pk-hero-banner-skeleton" style={{ position: 'absolute', inset: 0, zIndex: 1, opacity: heroImgLoaded ? 0 : 1, transition: 'opacity 0.4s ease' }} />}
             {lockedCategory?.iconUrl ? (
-              <img className="pk-hero-banner-img" src={lockedCategory.iconUrl} alt={lockedCategory.name || 'Categoría'} style={{ objectFit: 'contain', padding: 24, background: 'linear-gradient(135deg,#fef2f8,#fff)' }} />
+              <img className="pk-hero-banner-img" src={lockedCategory.iconUrl} alt={lockedCategory.name || 'Categoría'} onLoad={() => setHeroImgLoaded(true)} style={{ objectFit: 'contain', padding: 24, background: 'linear-gradient(135deg,#fef2f8,#fff)', position: 'relative', zIndex: 2, opacity: heroImgLoaded ? 1 : 0, transition: 'opacity 0.4s ease' }} />
             ) : lockCategoryId ? (
-              <div className="pk-hero-banner-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,#ec4899,#f9a8d4)', color: '#fff', fontSize: 56, fontWeight: 900 }}>
+              <div className="pk-hero-banner-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,#ec4899,#f9a8d4)', color: '#fff', fontSize: 56, fontWeight: 900, position: 'relative', zIndex: 2 }}>
                 {(lockedCategory?.name || 'C').charAt(0).toUpperCase()}
               </div>
             ) : (
-              <img className="pk-hero-banner-img" src="/shopify/assets/template.jpg" alt="Portada catálogo" />
+              <img className="pk-hero-banner-img" src="/shopify/assets/template.jpg" alt="Portada catálogo" onLoad={() => setHeroImgLoaded(true)} style={{ position: 'relative', zIndex: 2, opacity: heroImgLoaded ? 1 : 0, transition: 'opacity 0.4s ease' }} />
             )}
           </div>
           <div className="pk-hero-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, padding: 24 }}>
@@ -637,6 +639,11 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           position: relative; width: 100%; overflow: hidden;
           aspect-ratio: 2.4 / 1; min-height: 140px; max-height: 320px;
           background: linear-gradient(135deg, #fef2f8, #fce7f3);
+        }
+        .pk-hero-banner-skeleton {
+          background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 37%, #f0f0f0 63%);
+          background-size: 200% 100%;
+          animation: pkShimmer 1.5s ease-in-out infinite;
         }
         .pk-hero-banner-img {
           width: 100%; height: 100%; display: block;

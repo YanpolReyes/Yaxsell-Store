@@ -234,11 +234,11 @@ export default function CatalogoPage() {
           .cat-card-img-side .cat-card-img { object-fit: contain !important; }
           .cat-card-info { padding: 20px !important; }
           .cat-card-info h3 { font-size: 18px !important; margin: 6px 0 12px !important; }
-          .cat-card-info .price-label { font-size: 11px !important; }
+          .cat-card-info .price-label { font-size: 13px !important; }
           .cat-card-info .price-val { font-size: 22px !important; }
           .cat-card-info .price-val-sm { font-size: 20px !important; }
           .cat-hero-title { font-size: 36px !important; letter-spacing: -1px !important; }
-          .cat-hero-wrap { padding: 60px 16px 50px !important; }
+          .cat-hero-wrap { padding: 90px 16px 50px !important; }
           .cat-hero-desc { font-size: 13px !important; }
           .cat-hero-notice { padding: 10px 14px !important; }
           .cat-hero-notice p { font-size: 11px !important; }
@@ -249,6 +249,13 @@ export default function CatalogoPage() {
           .cat-skeleton-info { padding: 20px !important; }
           .cat-section-title { font-size: 20px !important; }
           .cat-cta-btn { padding: 12px 0 !important; font-size: 11px !important; }
+          .cat-content-area { padding: 20px 16px 60px !important; }
+          .cat-pack-badge { font-size: 14px !important; padding: 8px 16px !important; }
+          .cat-pack-badge strong { font-size: 18px !important; }
+          .cat-price-card { padding: 14px 16px !important; border-width: 2px !important; }
+          .cat-price-card .price-label { font-size: 13px !important; }
+          .cat-price-card .price-val { font-size: 24px !important; }
+          .cat-price-card .price-val-sm { font-size: 22px !important; }
         }
       `}</style>
       {/* ── HERO ── */}
@@ -389,7 +396,7 @@ export default function CatalogoPage() {
       <div style={{ height: filterBarHeight }} />
 
       {/* ── CONTENT ── */}
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 20px 80px' }}>
+      <div className="cat-content-area" style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 20px 80px' }}>
         {isLoading ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             {Array.from({ length: 4 }).map((_, i) => (
@@ -552,25 +559,25 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
             {/* PRICES — embalaje (lower) first, mayorista (higher) second */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {product.PACKQTY && product.PACKQTY > 0 && product.PRICE && product.PRICE > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(168,85,247,0.04)', border: '1px solid rgba(168,85,247,0.1)' }}>
-                  <span className="price-label" style={{ fontSize: 14, fontWeight: 800, color: '#a855f7', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio por Embalaje</span>
-                  <span className="price-val-sm" style={{ fontSize: 32, fontWeight: 900, color: '#7c3aed', fontFamily: '"Playfair Display", serif', letterSpacing: '-0.5px' }}>
+                <div className="cat-price-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(22,163,74,0.06)', border: '1.5px solid rgba(22,163,74,0.15)' }}>
+                  <span className="price-label" style={{ fontSize: 14, fontWeight: 800, color: '#16a34a', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio por Embalaje</span>
+                  <span className="price-val-sm" style={{ fontSize: 32, fontWeight: 900, color: '#16a34a', fontFamily: '"Playfair Display", serif', letterSpacing: '-0.5px' }}>
                     {formatPrice(product.PRICE)}
                   </span>
                 </div>
               )}
               {product.WHOLESALEPRICE && product.WHOLESALEPRICE > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(236,72,153,0.04)', border: '1px solid rgba(225,29,72,0.1)' }}>
-                  <span className="price-label" style={{ fontSize: 14, fontWeight: 800, color: '#ec4899', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio Mayorista</span>
-                  <span className="price-val" style={{ fontSize: 36, fontWeight: 900, color: '#1a1a2e', fontFamily: '"Playfair Display", serif', letterSpacing: '-1px' }}>
+                <div className="cat-price-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(220,38,38,0.04)', border: '1.5px solid rgba(220,38,38,0.12)' }}>
+                  <span className="price-label" style={{ fontSize: 14, fontWeight: 800, color: '#dc2626', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio Mayorista</span>
+                  <span className="price-val" style={{ fontSize: 36, fontWeight: 900, color: '#dc2626', fontFamily: '"Playfair Display", serif', letterSpacing: '-1px' }}>
                     {formatPrice(product.WHOLESALEPRICE)}
                   </span>
                 </div>
               )}
               {(!product.WHOLESALEPRICE || product.WHOLESALEPRICE <= 0) && (!product.PACKQTY || product.PACKQTY <= 0 || !product.PRICE || product.PRICE <= 0) && displayPrice > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(236,72,153,0.04)', border: '1px solid rgba(225,29,72,0.1)' }}>
+                <div className="cat-price-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(236,72,153,0.04)', border: '1px solid rgba(225,29,72,0.1)' }}>
                   <span className="price-label" style={{ fontSize: 10, fontWeight: 800, color: '#ec4899', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio</span>
-                  <span className="price-val" style={{ fontSize: 34, fontWeight: 900, color: '#1a1a2e', fontFamily: '"Playfair Display", serif', letterSpacing: '-1px' }}>
+                  <span className="price-val" style={{ fontSize: 34, fontWeight: 900, color: '#ec4899', fontFamily: '"Playfair Display", serif', letterSpacing: '-1px' }}>
                     {formatPrice(displayPrice)}
                   </span>
                 </div>
@@ -579,10 +586,10 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
 
             {/* Pack qty */}
             {product.PACKQTY && product.PACKQTY > 0 && (
-              <div style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 8, background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.12)' }}>
-                <Package size={13} color="#a78bfa" />
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#a78bfa' }}>
-                  <strong style={{ color: '#c4b5fd' }}>{product.PACKQTY}</strong> unidades por paquete
+              <div className="cat-pack-badge" style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 10, background: 'rgba(22,163,74,0.08)', border: '1.5px solid rgba(22,163,74,0.18)' }}>
+                <Package size={15} color="#16a34a" />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>
+                  <strong style={{ fontSize: 16, color: '#15803d' }}>{product.PACKQTY}</strong> unidades por paquete
                 </span>
               </div>
             )}
