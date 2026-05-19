@@ -15,7 +15,6 @@ import WhatsAppButton from '@/components/WhatsAppButton';
 import ScrollToTop from '@/components/ScrollToTop';
 import HomeOnlyWidgets from '@/components/HomeOnlyWidgets';
 import PageViewTracker from '@/components/PageViewTracker';
-import UpdateNotifier from '@/components/UpdateNotifier';
 
 export const metadata: Metadata = {
   title: 'Tienda',
@@ -38,7 +37,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <CookieConsent />
                     <ScrollToTop />
                     <PageViewTracker />
-                    <UpdateNotifier />
                   </TemplateProvider>
                 </CartProvider>
               </FavoritesProvider>
