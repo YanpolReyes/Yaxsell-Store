@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search, ShoppingCart, User, Heart, Menu, X, MapPin, Bell, Receipt, LogOut, Package, Minus, Plus, Trash2, Home, ArrowLeft, Grid3x3, Sparkles, Ship, Container } from 'lucide-react';
+import { Search, ShoppingCart, User, Heart, Menu, X, MapPin, Bell, Receipt, LogOut, Package, Minus, Plus, Trash2, Home, ArrowLeft, Grid3x3, Sparkles, Ship, Container, Store, LayoutGrid, Truck, Compass } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/context/CartContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -48,8 +48,12 @@ export default function Navbar1() {
   const authPopupRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [fabOpen, setFabOpen] = useState(false);
   const [navLogoUrl, setNavLogoUrl] = useState<string>('');
   const [navStoreName, setNavStoreName] = useState<string>('');
+
+  // Close FAB on route change
+  useEffect(() => { setFabOpen(false); }, [pathname]);
 
   // Cargar logo del theme config (usar logo de scroll si existe)
   useEffect(() => {
@@ -261,6 +265,15 @@ export default function Navbar1() {
 
         /* Bottom mobile nav */
         @keyframes tpl1-nav-pop { 0% { transform: scale(0.92); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
+        @keyframes tpl1-fab-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(135deg); } }
+        @keyframes tpl1-fab-spin-back { 0% { transform: rotate(135deg); } 100% { transform: rotate(0deg); } }
+        @keyframes tpl1-bubble-in-1 { 0% { transform: translateY(0) scale(0); opacity: 0; } 50% { transform: translateY(-28px) scale(1.12); opacity: 1; } 100% { transform: translateY(-24px) scale(1); opacity: 1; } }
+        @keyframes tpl1-bubble-in-2 { 0% { transform: translateY(0) scale(0); opacity: 0; } 50% { transform: translateY(-56px) scale(1.12); opacity: 1; } 100% { transform: translateY(-48px) scale(1); opacity: 1; } }
+        @keyframes tpl1-bubble-in-3 { 0% { transform: translateY(0) scale(0); opacity: 0; } 50% { transform: translateY(-84px) scale(1.12); opacity: 1; } 100% { transform: translateY(-72px) scale(1); opacity: 1; } }
+        @keyframes tpl1-bubble-out-1 { 0% { transform: translateY(-24px) scale(1); opacity: 1; } 100% { transform: translateY(0) scale(0); opacity: 0; } }
+        @keyframes tpl1-bubble-out-2 { 0% { transform: translateY(-48px) scale(1); opacity: 1; } 100% { transform: translateY(0) scale(0); opacity: 0; } }
+        @keyframes tpl1-bubble-out-3 { 0% { transform: translateY(-72px) scale(1); opacity: 1; } 100% { transform: translateY(0) scale(0); opacity: 0; } }
+        @keyframes tpl1-bubble-glow { 0%, 100% { box-shadow: 0 4px 16px rgba(236,72,153,0.35); } 50% { box-shadow: 0 4px 24px rgba(236,72,153,0.55); } }
         .tpl1-bottom-nav {
           display: none;
           position: fixed; bottom: 0; left: 0; right: 0; z-index: 9998;
@@ -268,32 +281,85 @@ export default function Navbar1() {
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
           border-top: 1px solid rgba(236,72,153,0.12);
-          padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 8px));
+          padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 8px));
           box-shadow: 0 -8px 32px rgba(236,72,153,0.1);
         }
-        .tpl1-bottom-nav-inner { display: flex; justify-content: space-around; align-items: flex-end; max-width: 520px; margin: 0 auto; gap: 4px; }
+        .tpl1-bottom-nav-inner { display: flex; justify-content: space-around; align-items: center; max-width: 520px; margin: 0 auto; gap: 2px; }
         .tpl1-bottom-nav-item {
-          display: flex; flex-direction: column; align-items: center; gap: 4px;
-          text-decoration: none; padding: 6px 10px 4px; border-radius: 14px;
+          display: flex; flex-direction: column; align-items: center; gap: 3px;
+          text-decoration: none; padding: 5px 8px 3px; border-radius: 14px;
           transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), background 0.2s ease;
-          position: relative; background: transparent; border: none; cursor: pointer; min-width: 52px;
+          position: relative; background: transparent; border: none; cursor: pointer; min-width: 48px;
         }
         .tpl1-bottom-nav-item:active { transform: scale(0.92); }
-        .tpl1-bottom-nav-item svg { width: 22px; height: 22px; color: #9ca3af; transition: color 0.2s, transform 0.2s; }
-        .tpl1-bottom-nav-item span { font-size: 9.5px; font-weight: 700; color: #9ca3af; font-family: 'DM Sans', system-ui, sans-serif; transition: color 0.2s; letter-spacing: -0.01em; }
+        .tpl1-bottom-nav-item svg { width: 20px; height: 20px; color: #9ca3af; transition: color 0.2s, transform 0.2s; }
+        .tpl1-bottom-nav-item span { font-size: 9px; font-weight: 700; color: #9ca3af; font-family: 'DM Sans', system-ui, sans-serif; transition: color 0.2s; letter-spacing: -0.01em; }
         .tpl1-bottom-nav-item.active {
           background: linear-gradient(180deg, rgba(236,72,153,0.12), rgba(236,72,153,0.04));
         }
         .tpl1-bottom-nav-item.active svg { color: ${PINK_PRIMARY}; transform: translateY(-2px); animation: tpl1-nav-pop 0.35s ease; }
         .tpl1-bottom-nav-item.active span { color: ${PINK_PRIMARY}; font-weight: 800; }
         .tpl1-bottom-nav-item .tpl1-bottom-badge {
-          position: absolute; top: 2px; right: 6px;
+          position: absolute; top: 2px; right: 4px;
           background: linear-gradient(135deg, ${PINK_PRIMARY}, #db2777);
           color: #fff; font-size: 8px; font-weight: 800; border-radius: 999px;
           min-width: 16px; height: 16px; padding: 0 4px;
           display: flex; align-items: center; justify-content: center; border: 2px solid #fff;
           box-shadow: 0 2px 6px rgba(236,72,153,0.4);
         }
+
+        /* FAB central */
+        .tpl1-fab-wrap { position: relative; display: flex; flex-direction: column; align-items: center; }
+        .tpl1-fab-btn {
+          width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer;
+          background: linear-gradient(135deg, ${PINK_PRIMARY}, #db2777);
+          color: #fff; display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 4px 20px rgba(236,72,153,0.45), 0 0 0 4px rgba(236,72,153,0.12);
+          transition: box-shadow 0.3s ease, transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+          margin-top: -18px; position: relative; z-index: 2;
+        }
+        .tpl1-fab-btn:hover { box-shadow: 0 6px 28px rgba(236,72,153,0.55), 0 0 0 6px rgba(236,72,153,0.18); }
+        .tpl1-fab-btn:active { transform: scale(0.9); }
+        .tpl1-fab-btn svg { width: 24px; height: 24px; transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+        .tpl1-fab-btn.open svg { transform: rotate(135deg); }
+        .tpl1-fab-label { font-size: 9px; font-weight: 800; color: ${PINK_PRIMARY}; margin-top: 2px; font-family: 'DM Sans', system-ui, sans-serif; letter-spacing: -0.02em; }
+
+        /* Bubble items */
+        .tpl1-fab-bubbles { position: absolute; bottom: 44px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column-reverse; align-items: center; gap: 0; pointer-events: none; z-index: 3; }
+        .tpl1-fab-bubbles.open { pointer-events: auto; }
+        .tpl1-fab-bubble {
+          display: flex; align-items: center; gap: 8px; text-decoration: none;
+          opacity: 0; transform: translateY(0) scale(0); pointer-events: none;
+          position: absolute; white-space: nowrap;
+        }
+        .tpl1-fab-bubbles.open .tpl1-fab-bubble { pointer-events: auto; }
+        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(1) { animation: tpl1-bubble-in-1 0.4s cubic-bezier(0.34,1.56,0.64,1) 0.05s forwards; }
+        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(2) { animation: tpl1-bubble-in-2 0.4s cubic-bezier(0.34,1.56,0.64,1) 0.12s forwards; }
+        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(3) { animation: tpl1-bubble-in-3 0.4s cubic-bezier(0.34,1.56,0.64,1) 0.2s forwards; }
+        .tpl1-fab-bubbles.closing .tpl1-fab-bubble:nth-child(1) { animation: tpl1-bubble-out-1 0.25s ease-in forwards; }
+        .tpl1-fab-bubbles.closing .tpl1-fab-bubble:nth-child(2) { animation: tpl1-bubble-out-2 0.25s ease-in 0.04s forwards; }
+        .tpl1-fab-bubbles.closing .tpl1-fab-bubble:nth-child(3) { animation: tpl1-bubble-out-3 0.25s ease-in 0.08s forwards; }
+        .tpl1-bubble-circle {
+          width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+          background: #fff; border: 2px solid rgba(236,72,153,0.2); box-shadow: 0 4px 16px rgba(236,72,153,0.2);
+          transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s ease, border-color 0.2s ease;
+          animation: tpl1-bubble-glow 2.5s ease-in-out infinite;
+        }
+        .tpl1-bubble-circle:hover { transform: scale(1.08); border-color: ${PINK_PRIMARY}; box-shadow: 0 6px 24px rgba(236,72,153,0.35); }
+        .tpl1-bubble-circle:active { transform: scale(0.95); }
+        .tpl1-bubble-circle svg { width: 20px; height: 20px; color: ${PINK_PRIMARY}; }
+        .tpl1-bubble-label {
+          font-size: 11px; font-weight: 700; color: #1a1a2e; font-family: 'DM Sans', system-ui, sans-serif;
+          background: rgba(255,255,255,0.95); backdrop-filter: blur(8px); padding: 4px 10px; border-radius: 999px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid rgba(236,72,153,0.1);
+        }
+
+        /* FAB overlay */
+        .tpl1-fab-overlay {
+          position: fixed; inset: 0; z-index: 9997;
+          background: rgba(0,0,0,0); transition: background 0.3s ease;
+        }
+        .tpl1-fab-overlay.open { background: rgba(0,0,0,0.15); }
         /* Mobile search overlay */
         .tpl1-search-overlay { display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); flex-direction: column; padding: 0; animation: tpl1SearchSlideIn 0.25s ease-out; }
         .tpl1-search-overlay.open { display: flex; }
@@ -668,6 +734,9 @@ export default function Navbar1() {
         </div>
       )}
 
+      {/* FAB overlay */}
+      {fabOpen && <div className="tpl1-fab-overlay open" onClick={() => setFabOpen(false)} />}
+
       {/* Bottom mobile nav — hidden on /inventario */}
       <nav className={`tpl1-bottom-nav${pathname?.startsWith('/inventario') ? ' !hidden' : ''}`}>
         <div className="tpl1-bottom-nav-inner">
@@ -675,22 +744,33 @@ export default function Navbar1() {
             <Home />
             <span>Inicio</span>
           </Link>
-          <Link href="/productos" className={`tpl1-bottom-nav-item ${pathname === '/productos' ? 'active' : ''}`}>
-            <Search />
-            <span>Tienda</span>
-          </Link>
-          <Link href="/catalogo" className={`tpl1-bottom-nav-item ${pathname === '/catalogo' ? 'active' : ''}`}>
-            <Grid3x3 />
-            <span>Catálogo</span>
-          </Link>
-          <Link href="/llegan-pronto" className={`tpl1-bottom-nav-item ${pathname === '/llegan-pronto' ? 'active' : ''}`}>
-            <Sparkles />
-            <span>Llegan Pronto</span>
-          </Link>
           <Link href="/favoritos" className={`tpl1-bottom-nav-item ${pathname === '/favoritos' || pathname?.startsWith('/cuenta/favoritos') ? 'active' : ''}`}>
             <Heart />
             <span>Favoritos</span>
           </Link>
+
+          {/* FAB central — Tienda / Catálogo / Llegan Pronto */}
+          <div className="tpl1-fab-wrap">
+            <div className={`tpl1-fab-bubbles${fabOpen ? ' open' : ''}`}>
+              <Link href="/productos" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
+                <span className="tpl1-bubble-label">Tienda</span>
+                <div className="tpl1-bubble-circle"><Store /></div>
+              </Link>
+              <Link href="/catalogo" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
+                <span className="tpl1-bubble-label">Catálogo</span>
+                <div className="tpl1-bubble-circle"><LayoutGrid /></div>
+              </Link>
+              <Link href="/llegan-pronto" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
+                <span className="tpl1-bubble-label">Llegan Pronto</span>
+                <div className="tpl1-bubble-circle"><Truck /></div>
+              </Link>
+            </div>
+            <button className={`tpl1-fab-btn${fabOpen ? ' open' : ''}`} onClick={() => setFabOpen(v => !v)} aria-label="Explorar">
+              <Compass />
+            </button>
+            <span className="tpl1-fab-label">Explorar</span>
+          </div>
+
           <Link href="/carrito" className={`tpl1-bottom-nav-item ${pathname === '/carrito' ? 'active' : ''}`}>
             <ShoppingCart />
             {totalItems > 0 && <span className="tpl1-bottom-badge">{totalItems > 99 ? '99+' : totalItems}</span>}
@@ -702,7 +782,7 @@ export default function Navbar1() {
             ) : (
               <User />
             )}
-            <span>Mi perfil</span>
+            <span>Perfil</span>
           </Link>
         </div>
       </nav>
