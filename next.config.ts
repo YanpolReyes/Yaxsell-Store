@@ -1,10 +1,6 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Build ID único por deploy → Vercel invalida Full Route Cache automáticamente
-  generateBuildId: async () => {
-    return `deploy-${Date.now()}`;
-  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**' },

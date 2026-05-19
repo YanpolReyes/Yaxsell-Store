@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Force Vercel to never cache this API — theme config changes frequently
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
 const APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
 const PROJECT_ID = '6a0a4e8d0032177f3f90';
 const DATABASE_ID = '6a0a58ca001798410d86';
