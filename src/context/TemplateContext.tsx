@@ -1,11 +1,6 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { getServices, getAppwriteConfig } from '@/lib/appwrite';
-import { Query } from 'appwrite';
-
-const TEMPLATE_KEY = 'store_template';
-const SEQUENCES_COLLECTION = 'sequences';
 
 interface TemplateContextType {
   template: number;
@@ -35,16 +30,15 @@ export function TemplateProvider({ children }: { children: ReactNode }) {
         }
       }
       try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        if (!databaseId) { setIsLoading(false); return; }
-        const res = await databases.listDocuments(databaseId, SEQUENCES_COLLECTION, [
-          Query.equal('key', TEMPLATE_KEY), Query.limit(1),
-        ]);
-        if (res.documents.length > 0) {
-          setTemplate(Number(res.documents[0].value) || 1);
+        // Use server-side API to bypass public read permission issues on sequences collection
+        const res = await fetch(`/api/template?_t=${Date.now()}`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          const tpl = Number(data.template) || 1;
+          setTemplate(tpl);
         }
-      } catch {
+      } catch (err) {
+        console.error('[TemplateContext] failed to load template:', err);
         setTemplate(1);
       } finally {
         setIsLoading(false);

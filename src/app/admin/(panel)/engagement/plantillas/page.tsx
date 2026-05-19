@@ -3,10 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, Lock, ExternalLink, Loader, Zap, Eye, Palette, Pencil } from 'lucide-react';
-import { getServices, getAppwriteConfig, SEQUENCES_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { ID, Query } from 'appwrite';
-
-const TEMPLATE_KEY = 'store_template';
 
 interface Template {
   id: number;
@@ -129,13 +125,10 @@ export default function PlantillasPage() {
   useEffect(() => {
     async function load() {
       try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        const res = await databases.listDocuments(databaseId, SEQUENCES_COLLECTION_ID, [
-          Query.equal('key', TEMPLATE_KEY), Query.limit(1),
-        ]);
-        if (res.documents.length > 0) {
-          setActiveTemplate(Number(res.documents[0].value) || 1);
+        const res = await fetch('/api/template', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          setActiveTemplate(Number(data.template) || 1);
         }
       } catch {
         setActiveTemplate(1);
@@ -149,22 +142,22 @@ export default function PlantillasPage() {
   async function activateTemplate(id: number) {
     setSaving(true);
     try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-      const res = await databases.listDocuments(databaseId, SEQUENCES_COLLECTION_ID, [
-        Query.equal('key', TEMPLATE_KEY), Query.limit(1),
-      ]);
-      if (res.documents.length > 0) {
-        await databases.updateDocument(databaseId, SEQUENCES_COLLECTION_ID, res.documents[0].$id, { value: id });
+      const res = await fetch('/api/template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ template: id }),
+      });
+      if (res.ok) {
+        setActiveTemplate(id);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
       } else {
-        await databases.createDocument(databaseId, SEQUENCES_COLLECTION_ID, ID.unique(), { key: TEMPLATE_KEY, value: id });
+        const err = await res.json();
+        alert('Error al guardar: ' + (err.error || 'desconocido'));
       }
-      setActiveTemplate(id);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
     } catch (e) {
       console.error(e);
-      alert('Error al guardar. Verifica permisos en la colección sequences.');
+      alert('Error al guardar la plantilla.');
     } finally {
       setSaving(false);
     }
