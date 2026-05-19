@@ -1,0 +1,613 @@
+'use client';
+
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import Link from 'next/link';
+import { Search, Package, ArrowRight, Heart, Bell, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getServices, getAppwriteConfig, INVENTORY_PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
+import { normalizeProductImages } from '@/lib/product-images';
+import { cached, TTL } from '@/lib/cache';
+import { Query } from 'appwrite';
+import { Product, Category, Subcategory } from '@/types';
+import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
+import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
+import { useCart } from '@/context/CartContext';
+import { useFavorites } from '@/context/FavoritesContext';
+import { useAuth } from '@/hooks/useAuth';
+
+const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
+
+export default function CatalogoPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [selectedCat, setSelectedCat] = useState('');
+  const [selectedSub, setSelectedSub] = useState('');
+  const [search, setSearch] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [filterBarHeight, setFilterBarHeight] = useState(52);
+  const [barVisible, setBarVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  useCart();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const { user, isLoggedIn } = useAuth();
+  const { settings: apertura } = useAperturaPromotion();
+  const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
+  const [requestingId, setRequestingId] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(50);
+  const PAGE_SIZE = 50;
+
+  // Load user's existing requests
+  useEffect(() => {
+    if (!isLoggedIn || !user) return;
+    const loadRequested = async () => {
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        const res = await databases.listDocuments(databaseId, STOCK_ALERTS_COLLECTION, [
+          Query.equal('USERID', user.id),
+          Query.limit(500),
+        ]);
+        setRequestedIds(new Set(res.documents.map((d: any) => d.PRODUCTID)));
+      } catch {}
+    };
+    loadRequested();
+  }, [isLoggedIn, user]);
+
+  const handleRequestAvailability = async (productId: string, productName: string, productImage: string) => {
+    if (!isLoggedIn) {
+      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+      return;
+    }
+    if (requestedIds.has(productId) || requestingId) return;
+    setRequestingId(productId);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      await databases.createDocument(databaseId, STOCK_ALERTS_COLLECTION, ID.unique(), {
+        PRODUCTID: productId,
+        PRODUCTNAME: productName,
+        PRODUCTIMAGE: productImage || '',
+        USERID: user!.id,
+        USERNAME: user!.name || '',
+        EMAIL: user!.email || '',
+        STATUS: 'pending',
+        CREATEDAT: Date.now(),
+        NOTIFIED: false,
+      });
+      setRequestedIds(prev => new Set([...prev, productId]));
+    } catch (e: any) {
+      alert('Error al consultar disponibilidad: ' + (e.message || e));
+    } finally {
+      setRequestingId(null);
+    }
+  };
+
+  const load = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      const [catDocs, prodDocs] = await Promise.all([
+        cached('categories:all', TTL.categories, async () => {
+          const r = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [Query.orderAsc('$createdAt'), Query.limit(30)]);
+          return r.documents;
+        }),
+        cached('inventory_products:catalogo', TTL.products, async () => {
+          const allDocs: any[] = [];
+          let offset = 0;
+          while (true) {
+            const r = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION, [Query.limit(2000), Query.offset(offset)]);
+            allDocs.push(...r.documents);
+            if (r.documents.length < 2000) break;
+            offset += 2000;
+          }
+          return allDocs;
+        }),
+      ]);
+
+      setCategories(catDocs as unknown as Category[]);
+      setProducts((prodDocs as unknown as Product[]).map(p => normalizeProductImages(p)));
+    } catch (e) { console.error(e); }
+    finally { setIsLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Measure filter bar height for spacer
+  useEffect(() => {
+    const measure = () => {
+      const bar = document.getElementById('cat-filters-bar');
+      if (bar) setFilterBarHeight(bar.offsetHeight);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [selectedCat, selectedSub, subcategories.length]);
+
+  // Show/hide filter bar on scroll direction
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      setBarVisible(currentY <= 100 || currentY < lastScrollY.current);
+      lastScrollY.current = currentY;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Reset visible count when filters change
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [selectedCat, selectedSub, search]);
+
+  // Load subcategories when category selected
+  useEffect(() => {
+    if (!selectedCat) { setSubcategories([]); return; }
+    const loadSubs = async () => {
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        // Try with categoryId first, fallback to CATEGORYID
+        let subDocs: any[] = [];
+        try {
+          const r = await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [
+            Query.equal('categoryId', selectedCat),
+            Query.orderAsc('ORDER'),
+            Query.limit(50),
+          ]);
+          subDocs = r.documents;
+        } catch {
+          try {
+            const r = await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [
+              Query.equal('CATEGORYID', selectedCat),
+              Query.orderAsc('ORDER'),
+              Query.limit(50),
+            ]);
+            subDocs = r.documents;
+          } catch {
+            // Load all and filter client-side
+            const r = await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [Query.limit(500)]);
+            subDocs = r.documents.filter((d: any) => d.categoryId === selectedCat || d.CATEGORYID === selectedCat);
+          }
+        }
+        setSubcategories(subDocs as unknown as Subcategory[]);
+      } catch { setSubcategories([]); }
+    };
+    loadSubs();
+  }, [selectedCat]);
+
+  const filtered = useMemo(() => {
+    return products.filter(p => {
+      // Only show products with image and NO stock (catalog = a pedido)
+      // Exclude COMING_SOON products (they show in /llegan-pronto)
+      if (p.COMING_SOON) return false;
+      if (!p.IMAGEURL || !p.IMAGEURL.trim()) return false;
+      if (p.STOCK && p.STOCK > 0) return false;
+      if (selectedCat && p.CATEGORYID !== selectedCat) return false;
+      if (selectedSub && p.SUBCATEGORYID !== selectedSub) return false;
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return p.NAME.toLowerCase().includes(q) || (p.DESCRIPTION || '').toLowerCase().includes(q);
+    });
+  }, [products, selectedCat, selectedSub, search]);
+
+  // Group products by category
+  const groupedByCategory = useMemo(() => {
+    const map: Record<string, Product[]> = {};
+    filtered.forEach(p => {
+      const catId = p.CATEGORYID || 'uncategorized';
+      if (!map[catId]) map[catId] = [];
+      map[catId].push(p);
+    });
+    return map;
+  }, [filtered]);
+
+  const getCategoryName = (catId: string) => {
+    return categories.find(c => c.$id === catId)?.name || 'Sin categoría';
+  };
+
+  const getCategoryImage = (catId: string) => {
+    const cat = categories.find(c => c.$id === catId);
+    return cat?.iconUrl || '';
+  };
+
+  return (
+    <div style={{ fontFamily: FF, minHeight: '100vh', background: '#fafafa' }}>
+      <style>{`
+        @keyframes cat-shimmer { 0% { left: -100%; } 100% { left: 100%; } }
+        @keyframes cat-img-skeleton { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes subcat-in { 0% { opacity: 0; transform: translateY(8px) scale(0.9); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+        .subcat-pill { animation: subcat-in .3s ease-out both; }
+        .cat-img-skeleton {
+          background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 37%, #f0f0f0 63%);
+          background-size: 200% 100%;
+          animation: cat-img-skeleton 1.5s ease-in-out infinite;
+        }
+        @keyframes cat-bg { 0% { transform: scale(1); } 50% { transform: scale(1.06); } 100% { transform: scale(1); } }
+        @keyframes cat-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(225,29,72,0.4); } 50% { box-shadow: 0 0 0 8px rgba(225,29,72,0); } }
+        .cat-card-wrap:hover .cat-card-img { transform: scale(1.06); }
+        .cat-pill { transition: all .2s; }
+        .cat-pill:hover { transform: translateY(-2px); }
+        @media (max-width: 768px) {
+          .cat-card-wrap { flex-direction: column !important; min-height: auto !important; }
+          .cat-card-img-side { width: 100% !important; min-width: 0 !important; height: auto !important; min-height: 200px !important; }
+          .cat-card-img-side .cat-card-img { object-fit: contain !important; }
+          .cat-card-info { padding: 20px !important; }
+          .cat-card-info h3 { font-size: 18px !important; margin: 6px 0 12px !important; }
+          .cat-card-info .price-label { font-size: 11px !important; }
+          .cat-card-info .price-val { font-size: 22px !important; }
+          .cat-card-info .price-val-sm { font-size: 20px !important; }
+          .cat-hero-title { font-size: 36px !important; letter-spacing: -1px !important; }
+          .cat-hero-wrap { padding: 60px 16px 50px !important; }
+          .cat-hero-desc { font-size: 13px !important; }
+          .cat-hero-notice { padding: 10px 14px !important; }
+          .cat-hero-notice p { font-size: 11px !important; }
+          .cat-scroll-arrow { display: none !important; }
+          #cat-scroll { padding-left: 16px !important; padding-right: 16px !important; }
+          .cat-skeleton { flex-direction: column !important; min-height: auto !important; }
+          .cat-skeleton-img { width: 100% !important; height: 220px !important; }
+          .cat-skeleton-info { padding: 20px !important; }
+          .cat-section-title { font-size: 20px !important; }
+          .cat-cta-btn { padding: 12px 0 !important; font-size: 11px !important; }
+        }
+      `}</style>
+      {/* ── HERO ── */}
+      <div style={{
+        position: 'relative', overflow: 'hidden', textAlign: 'center',
+        background: 'url(https://static.vecteezy.com/system/resources/previews/010/930/988/non_2x/shopping-online-on-phone-with-podium-paper-art-modern-background-gifts-box-vector.jpg) center/cover',
+        padding: '110px 24px 90px',
+        animation: 'cat-bg 25s ease-in-out infinite',
+      }} className="cat-hero-wrap">
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0.92) 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(236,72,153,0.08) 0%, transparent 70%)' }} />
+        <div style={{ position: 'relative', maxWidth: 680, margin: '0 auto' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 20px', borderRadius: 50, background: 'rgba(236,72,153,0.08)', border: '1px solid rgba(225,29,72,0.2)', marginBottom: 22 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ec4899', animation: 'cat-pulse 2s infinite' }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#ec4899', letterSpacing: '3px', textTransform: 'uppercase' }}>Catálogo Exclusivo</span>
+          </div>
+          <h1 className="cat-hero-title" style={{ fontSize: 58, fontWeight: 900, color: '#1a1a2e', margin: '0 0 14px', lineHeight: 1, letterSpacing: '-2px', fontFamily: '"Playfair Display", Georgia, serif' }}>
+            PRODUCTOS<br /><span style={{ color: '#fbcfe8' }}>A PEDIDO</span>
+          </h1>
+          <p className="cat-hero-desc" style={{ fontSize: 15, color: 'rgba(0,0,0,0.45)', margin: '0 0 8px', letterSpacing: '0.5px' }}>
+            {isLoading ? 'Cargando catálogo...' : `${filtered.length.toLocaleString()} productos disponibles para pedido`}
+          </p>
+          <div className="cat-hero-notice" style={{ background: 'rgba(236,72,153,0.04)', border: '1px solid rgba(236,72,153,0.1)', borderRadius: 14, padding: '14px 20px', margin: '0 0 28px', textAlign: 'left' }}>
+            <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.5)', margin: 0, lineHeight: 1.7, fontFamily: FF }}>
+              <span style={{ color: '#ec4899', fontWeight: 700 }}>⚠ Importante:</span> Para consultar disponibilidad necesitás estar registrado. Recibirás la respuesta por las notificaciones de tu cuenta — si hay stock se agregará a la tienda y te avisaremos, si no lo hay también se te notificará. <span style={{ fontWeight: 700, color: '#1a1a2e' }}>Esto no es un pedido.</span> Si deseás comprar con stock disponible, ingresá a <Link href="/" style={{ color: '#ec4899', fontWeight: 700, textDecoration: 'underline' }}>Tienda</Link>.
+            </p>
+          </div>
+          <div style={{ position: 'relative', maxWidth: 500, margin: '0 auto' }}>
+            <Search size={18} style={{ position: 'absolute', left: 20, top: '50%', transform: 'translateY(-50%)', color: '#999' }} />
+            <input
+              type="text"
+              placeholder="Buscar en el catálogo..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{
+                width: '100%', padding: '16px 20px 16px 52px', borderRadius: 50,
+                border: '1px solid rgba(0,0,0,0.08)', fontSize: 14, fontFamily: FF,
+                background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)',
+                color: '#111', outline: 'none', boxSizing: 'border-box',
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* ── FILTERS ── */}
+      <div id="cat-filters-bar" style={{
+        background: '#fff', borderBottom: '1px solid #eee',
+        position: 'fixed', top: barVisible ? 0 : -120, left: 0, right: 0, zIndex: 40,
+        transition: 'top .3s ease',
+      }}>
+        {/* Compact mode: subcategory selected */}
+        {selectedSub ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 20px' }}>
+            <button
+              onClick={() => { setSelectedCat(''); setSelectedSub(''); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 50, border: '1px solid #fce7f3', background: '#fdf2f8', cursor: 'pointer', fontFamily: FF, fontSize: 12, fontWeight: 700, color: '#be185d', letterSpacing: '0.5px' }}
+            >
+              <ChevronLeft size={14} /> Volver
+            </button>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#ec4899', letterSpacing: '1px', textTransform: 'uppercase' }}>{subcategories.find(s => s.$id === selectedSub)?.name || 'Subcategoría'}</span>
+          </div>
+        ) : (
+          <>
+        <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+          <button
+            onClick={() => {
+              const el = document.getElementById('cat-scroll');
+              if (el) el.scrollBy({ left: -200, behavior: 'smooth' });
+            }}
+            style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(90deg, #fff 60%, transparent)', border: 'none', cursor: 'pointer', zIndex: 5, color: '#999' }}
+            className="cat-scroll-arrow"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <div id="cat-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '14px 24px 14px 44px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', width: '100%' }}>
+            <button className="cat-pill" onClick={() => { setSelectedCat(''); setSelectedSub(''); }} style={{
+              padding: '9px 22px', borderRadius: 50, cursor: 'pointer', fontFamily: FF, fontSize: 12,
+              fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: '1px', textTransform: 'uppercase',
+              border: `1px solid ${!selectedCat ? '#ec4899' : '#ddd'}`,
+              background: !selectedCat ? 'linear-gradient(135deg,#ec4899,#ec4899)' : '#fff',
+              color: !selectedCat ? '#fff' : '#666',
+              boxShadow: !selectedCat ? '0 2px 10px rgba(236,72,153,0.2)' : 'none',
+            }}>✦ Todos</button>
+            {categories.map(cat => (
+              <button key={cat.$id} className="cat-pill"
+                onClick={() => { setSelectedCat(selectedCat === cat.$id ? '' : cat.$id); setSelectedSub(''); }}
+                style={{
+                  padding: '9px 22px', borderRadius: 50, cursor: 'pointer', fontFamily: FF, fontSize: 12,
+                  fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: '1px', textTransform: 'uppercase',
+                  border: `1px solid ${selectedCat === cat.$id ? '#ec4899' : '#ddd'}`,
+                  background: selectedCat === cat.$id ? 'linear-gradient(135deg,#ec4899,#ec4899)' : '#fff',
+                  color: selectedCat === cat.$id ? '#fff' : '#666',
+                  boxShadow: selectedCat === cat.$id ? '0 2px 10px rgba(236,72,153,0.2)' : 'none',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                }}>
+                {getCategoryImage(cat.$id) && <img src={getCategoryImage(cat.$id)} alt="" style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', border: '1px solid #eee' }} />}
+                {cat.name}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => {
+              const el = document.getElementById('cat-scroll');
+              if (el) el.scrollBy({ left: 200, behavior: 'smooth' });
+            }}
+            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(270deg, #fff 60%, transparent)', border: 'none', cursor: 'pointer', zIndex: 5, color: '#999' }}
+            className="cat-scroll-arrow"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+        {selectedCat && !selectedSub && subcategories.length > 0 && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '0 24px 14px' }}>
+            {subcategories.map((sub, i) => (
+              <button key={sub.$id} className="cat-pill subcat-pill"
+                onClick={() => setSelectedSub(selectedSub === sub.$id ? '' : sub.$id)}
+                style={{
+                  animationDelay: `${i * 0.04}s`, padding: '8px 18px', borderRadius: 50, cursor: 'pointer', fontFamily: FF, fontSize: 11,
+                  fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: '0.8px', textTransform: 'uppercase',
+                  border: `1px solid ${selectedSub === sub.$id ? '#f9a8d4' : '#fce7f3'}`,
+                  background: selectedSub === sub.$id ? 'linear-gradient(135deg,#ec4899,#db2777)' : '#fdf2f8',
+                  color: selectedSub === sub.$id ? '#fff' : '#be185d',
+                  boxShadow: selectedSub === sub.$id ? '0 3px 14px rgba(236,72,153,0.3)' : '0 1px 3px rgba(236,72,153,0.08)',
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  transition: 'all .2s',
+                }}>
+                {sub.ICON_URL && <img src={sub.ICON_URL} alt="" style={{ width: 16, height: 16, borderRadius: '50%', objectFit: 'cover' }} />}
+                {sub.name}
+              </button>
+            ))}
+          </div>
+        )}
+        </>
+        )}
+      </div>
+      {/* Spacer for fixed filter bar */}
+      <div style={{ height: filterBarHeight }} />
+
+      {/* ── CONTENT ── */}
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 20px 80px' }}>
+        {isLoading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="cat-skeleton" style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', display: 'flex', flexDirection: i % 2 !== 0 ? 'row-reverse' : 'row', minHeight: 380, border: '1px solid #eee', boxShadow: '0 4px 6px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.03), 0 2px 4px rgba(0,0,0,0.08)' }}>
+                <div className="cat-skeleton-img" style={{ width: '42%', background: '#f8f8f8', position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: 16, left: 16, padding: '5px 12px', borderRadius: 6, background: '#fce7f3', width: 70, height: 18 }} />
+                </div>
+                <div className="cat-skeleton-info" style={{ flex: 1, padding: '32px 36px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div style={{ height: 10, background: '#eee', borderRadius: 50, width: '25%' }} />
+                  <div style={{ height: 24, background: '#eee', borderRadius: 8, width: '65%' }} />
+                  <div style={{ height: 1, background: '#fce7f3', width: '55%' }} />
+                  <div style={{ height: 20, background: '#eee', borderRadius: 12, width: '40%' }} />
+                  <div style={{ height: 20, background: '#eee', borderRadius: 12, width: '35%' }} />
+                  <div style={{ marginTop: 24, height: 52, background: '#fce7f3', borderRadius: 12 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '100px 20px' }}>
+            <Package size={56} color="#ccc" style={{ margin: '0 auto 20px' }} />
+            <p style={{ fontSize: 22, fontWeight: 700, color: '#333', margin: '0 0 8px', fontFamily: '"Playfair Display", serif' }}>Sin resultados</p>
+            <p style={{ fontSize: 14, color: '#888', margin: 0 }}>Prueba con otra búsqueda o categoría</p>
+          </div>
+        ) : (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 36 }}>
+              <div>
+                <h2 className="cat-section-title" style={{ fontSize: 28, fontWeight: 900, color: '#ec4899', margin: 0, fontFamily: '"Playfair Display", Georgia, serif', letterSpacing: '-0.5px' }}>
+                  {selectedCat ? getCategoryName(selectedCat) : 'Todos los productos'}
+                </h2>
+                <p style={{ fontSize: 13, color: '#888', margin: '6px 0 0', letterSpacing: '0.5px' }}>
+                  {filtered.length.toLocaleString()} producto{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+              {selectedCat && (
+                <Link href={`/categoria/${selectedCat}`} style={{ fontSize: 11, fontWeight: 700, color: '#ec4899', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, letterSpacing: '1.5px', textTransform: 'uppercase', border: '1px solid rgba(236,72,153,0.15)', padding: '8px 16px', borderRadius: 50, background: 'rgba(236,72,153,0.04)' }}>
+                  Ver en tienda <ArrowRight size={13} />
+                </Link>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              {filtered.slice(0, visibleCount).map((p, i) => <CatalogoProductCard key={p.$id} product={p} apertura={apertura} index={i} categories={categories} isLoggedIn={isLoggedIn} requestedIds={requestedIds} requestingId={requestingId} onRequest={handleRequestAvailability} />)}
+            </div>
+            {filtered.length > visibleCount && (
+              <div style={{ textAlign: 'center', marginTop: 32 }}>
+                <button onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)} style={{
+                  padding: '14px 40px', border: 'none', borderRadius: 50,
+                  background: 'linear-gradient(135deg, #ec4899, #db2777)',
+                  color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer',
+                  letterSpacing: '1.5px', textTransform: 'uppercase', fontFamily: FF,
+                  boxShadow: '0 6px 24px rgba(236,72,153,0.3)',
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                }}>
+                  <Package size={16} /> Cargar más ({filtered.length - visibleCount} restantes)
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CatalogoProductCard({ product, apertura, index = 0, categories, isLoggedIn, requestedIds, requestingId, onRequest }: { product: Product; apertura: any; index?: number; categories: Category[]; isLoggedIn: boolean; requestedIds: Set<string>; requestingId: string | null; onRequest: (id: string, name: string, img: string) => void }) {
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const { displayPrice, hasDiscount, discountPercent } = resolveProductDisplayPrice(product, apertura);
+  const img = product.IMAGEURL || product.IMAGEURL2;
+  const isReversed = index % 2 !== 0;
+  const catName = categories.find(c => c.$id === product.CATEGORYID)?.name || '';
+  const alreadyRequested = requestedIds.has(product.$id);
+  const isRequesting = requestingId === product.$id;
+  const [showZoom, setShowZoom] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
+
+  return (
+    <>
+      {showZoom && img && (
+        <div
+          onClick={() => setShowZoom(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.85)', cursor: 'zoom-out',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <img
+            src={img}
+            alt={product.NAME}
+            style={{
+              maxWidth: '95vw', maxHeight: '95vh', objectFit: 'contain',
+            }}
+          />
+          <div style={{ position: 'absolute', top: 20, right: 30, padding: '10px 20px', borderRadius: 50, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', color: '#fff', fontSize: 13, fontWeight: 700, fontFamily: FF, cursor: 'pointer' }}>
+            Cerrar ✕
+          </div>
+        </div>
+      )}
+    <Link href={`/producto/${product.$id}`} style={{ textDecoration: 'none', display: 'block' }}>
+      <div className="cat-card-wrap" style={{
+        background: '#fff', borderRadius: 20, overflow: 'hidden',
+        display: 'flex', flexDirection: isReversed ? 'row-reverse' : 'row',
+        minHeight: 280, border: '1px solid #eee',
+        transition: 'border-color .3s, box-shadow .3s, transform .3s', cursor: 'pointer',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.03), 0 2px 4px rgba(0,0,0,0.08)',
+      }}
+        onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#ec4899'; el.style.boxShadow = '0 12px 40px rgba(236,72,153,0.12), 0 6px 16px rgba(236,72,153,0.08)'; el.style.transform = 'translateY(-4px)'; }}
+        onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#eee'; el.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.03), 0 2px 4px rgba(0,0,0,0.08)'; el.style.transform = 'none'; }}
+      >
+        {/* ── IMAGE SIDE ── */}
+        <div
+          onClick={e => { if (img) { e.preventDefault(); e.stopPropagation(); setShowZoom(true); } }}
+          style={{ width: '42%', minWidth: 220, position: 'relative', overflow: 'hidden', flexShrink: 0, background: '#f8f8f8', cursor: img ? 'zoom-in' : 'default' }}
+          className="cat-card-img-side"
+        >
+          {img ? (
+            <>
+              {!imgLoaded && <div className="cat-img-skeleton" style={{ position: 'absolute', inset: 0, zIndex: 1 }} />}
+              <img
+                className="cat-card-img"
+                src={img}
+                alt={product.NAME}
+                onLoad={() => setImgLoaded(true)}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .5s ease, opacity .4s ease', display: 'block', opacity: imgLoaded ? 1 : 0 }}
+              />
+            </>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#ccc' }}><Package size={64} /></div>
+          )}
+          {/* A PEDIDO badge */}
+          <div style={{ position: 'absolute', top: 16, left: 16, padding: '5px 12px', borderRadius: 6, background: 'rgba(251,207,232,0.9)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#ec4899' }} />
+            <span style={{ fontSize: 10, fontWeight: 800, color: '#ec4899', letterSpacing: '1.5px', textTransform: 'uppercase' }}>A Pedido</span>
+          </div>
+          {/* Discount badge */}
+          {hasDiscount && discountPercent > 0 && (
+            <div style={{ position: 'absolute', top: 48, left: 16 }}>
+              <AperturaDiscountBadge percent={discountPercent} size="sm" />
+            </div>
+          )}
+        </div>
+
+        {/* ── INFO SIDE ── */}
+        <div className="cat-card-info" style={{ flex: 1, padding: '32px 36px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
+          <div>
+            {/* Category tag */}
+            {catName && (
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#999', letterSpacing: '2px', textTransform: 'uppercase' }}>
+                {catName}
+              </span>
+            )}
+            {/* Product name */}
+            <h3 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a2e', margin: '10px 0 20px', lineHeight: 1.2, fontFamily: '"Playfair Display", serif' }}>
+              {product.NAME}
+            </h3>
+            {/* Red rule */}
+            <div style={{ height: 1, background: 'linear-gradient(90deg, #ec4899 0%, transparent 100%)', width: '55%', marginBottom: 22 }} />
+
+            {/* PRICES — embalaje (lower) first, mayorista (higher) second */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {product.PACKQTY && product.PACKQTY > 0 && product.PRICE && product.PRICE > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(168,85,247,0.04)', border: '1px solid rgba(168,85,247,0.1)' }}>
+                  <span className="price-label" style={{ fontSize: 14, fontWeight: 800, color: '#a855f7', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio por Embalaje</span>
+                  <span className="price-val-sm" style={{ fontSize: 32, fontWeight: 900, color: '#7c3aed', fontFamily: '"Playfair Display", serif', letterSpacing: '-0.5px' }}>
+                    {formatPrice(product.PRICE)}
+                  </span>
+                </div>
+              )}
+              {product.WHOLESALEPRICE && product.WHOLESALEPRICE > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(236,72,153,0.04)', border: '1px solid rgba(225,29,72,0.1)' }}>
+                  <span className="price-label" style={{ fontSize: 14, fontWeight: 800, color: '#ec4899', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio Mayorista</span>
+                  <span className="price-val" style={{ fontSize: 36, fontWeight: 900, color: '#1a1a2e', fontFamily: '"Playfair Display", serif', letterSpacing: '-1px' }}>
+                    {formatPrice(product.WHOLESALEPRICE)}
+                  </span>
+                </div>
+              )}
+              {(!product.WHOLESALEPRICE || product.WHOLESALEPRICE <= 0) && (!product.PACKQTY || product.PACKQTY <= 0 || !product.PRICE || product.PRICE <= 0) && displayPrice > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(236,72,153,0.04)', border: '1px solid rgba(225,29,72,0.1)' }}>
+                  <span className="price-label" style={{ fontSize: 10, fontWeight: 800, color: '#ec4899', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio</span>
+                  <span className="price-val" style={{ fontSize: 34, fontWeight: 900, color: '#1a1a2e', fontFamily: '"Playfair Display", serif', letterSpacing: '-1px' }}>
+                    {formatPrice(displayPrice)}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Pack qty */}
+            {product.PACKQTY && product.PACKQTY > 0 && (
+              <div style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 8, background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.12)' }}>
+                <Package size={13} color="#a78bfa" />
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#a78bfa' }}>
+                  <strong style={{ color: '#c4b5fd' }}>{product.PACKQTY}</strong> unidades por paquete
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* CTA */}
+          <button className="cat-cta-btn" onClick={e => { e.preventDefault(); e.stopPropagation(); onRequest(product.$id, product.NAME, img || ''); }} disabled={alreadyRequested || isRequesting} style={{
+            marginTop: 24, padding: '15px 0', border: 'none', borderRadius: 12,
+            background: alreadyRequested ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : isRequesting ? '#ccc' : 'linear-gradient(135deg, #ec4899 0%, #ec4899 100%)',
+            color: '#fff', fontSize: 13, fontWeight: 800, cursor: alreadyRequested || isRequesting ? 'default' : 'pointer',
+            letterSpacing: '2px', textTransform: 'uppercase',
+            boxShadow: alreadyRequested ? '0 6px 24px rgba(22,163,74,0.3)' : isRequesting ? 'none' : '0 6px 24px rgba(225,29,72,0.3)',
+            position: 'relative', overflow: 'hidden', fontFamily: FF,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}>
+            {alreadyRequested ? <><Check size={16} /> Consultado</> : isRequesting ? 'Enviando...' : <><Bell size={16} /> Consultar Disponibilidad</>}
+            {!alreadyRequested && !isRequesting && <span style={{
+              position: 'absolute', top: 0, left: '-100%', width: '200%', height: '100%',
+              background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 25%, transparent 50%)',
+              animation: 'cat-shimmer 2.5s infinite linear',
+            }} />}
+          </button>
+        </div>
+      </div>
+    </Link>
+    </>
+  );
+}
