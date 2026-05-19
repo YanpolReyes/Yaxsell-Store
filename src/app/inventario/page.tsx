@@ -1036,23 +1036,22 @@ export default function InventarioPage() {
           // ⚠️ Validar duplicados contra catálogo PUBLICADO antes de crear
           const skuLower = row.sku.toLowerCase();
           const bcLower = row.barcode.toLowerCase();
-          let finalBarcode = row.barcode || '';
-
           if (skuLower && publishedSkus.has(skuLower)) {
             console.warn(`SKU ${row.sku} ya existe en catálogo publicado, saltando`);
             errors++;
             continue;
           }
           if (bcLower && publishedBarcodes.has(bcLower)) {
-            console.warn(`Barcode ${row.barcode} ya existe en catálogo publicado, agregando 1998 al final`);
-            finalBarcode = `${row.barcode}1998`;
+            console.warn(`Barcode ${row.barcode} ya existe en catálogo publicado, saltando`);
+            errors++;
+            continue;
           }
 
           const nameDisplay = row.nameEs || row.nameTranslated || row.nameCn;
           const { catId, subId } = resolveCategoryIds(row.categoryEs, row.subcategory);
           const payload: any = {
             sku: row.sku,
-            barcode: finalBarcode,
+            barcode: row.barcode || '',
             NAME: nameDisplay,
             PRICE: row.priceRetail || 0,
             STOCK: 0,                          // 🔒 SIEMPRE 0 al importar
