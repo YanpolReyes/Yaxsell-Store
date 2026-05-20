@@ -33,8 +33,9 @@ body {
 .fusion-scroll-top,
 .quickView-popup { display: none !important; }
 
-/* Fix white corners on plantilla1 footer */
-.main_footer_wrapp { background: rgb(26, 26, 26); overflow: hidden; }
+/* Plantilla1 footer: rounded top edges with content peeking through */
+.main_footer_wrapp { background: transparent; overflow: visible; margin-top: -60px; position: relative; z-index: 2; }
+.musk-main-footer { border-radius: 40px 40px 0 0 !important; }
 
 .gradient-text {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
