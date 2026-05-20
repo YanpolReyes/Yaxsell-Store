@@ -5,6 +5,7 @@ import DynamicNavbar from '@/components/DynamicNavbar';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import AnnouncementBar from '@/components/AnnouncementBar';
 import MaintenanceGuard from '@/components/MaintenanceGuard';
+import PageTransition from '@/components/PageTransition';
 import { useTemplate } from '@/context/TemplateContext';
 
 const FOOTER_LINKS = [
@@ -43,7 +44,7 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
     <MaintenanceGuard>
     <>
       <DynamicNavbar />
-      <main className="min-h-screen">{children}</main>
+      <PageTransition><main className="min-h-screen">{children}</main></PageTransition>
       {!hideNativeFooter && (
       <footer className="store-footer" style={{ background: '#f9f9f9', color: '#374151', borderTop: '1px solid #e5e7eb', marginTop: 40 }}>
         <div className="store-footer-grid" style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 5% 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 32 }}>

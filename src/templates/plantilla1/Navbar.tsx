@@ -15,7 +15,7 @@ import NotificationsOverlay from '@/components/NotificationsOverlay';
 import { usePrimaryAddress } from '@/hooks/usePrimaryAddress';
 import { getWhatsAppUrl, openChatbot } from '@/lib/store-contact';
 import NavAvatarWithBadge from '@/components/NavAvatarWithBadge';
-import lottie from 'lottie-web';
+// lottie-web loaded dynamically to avoid SSR issues
 
 const PINK_PRIMARY = '#ec4899';
 const PINK_LIGHT = '#f9a8d4';
@@ -53,21 +53,77 @@ export default function Navbar1() {
   const [navLogoUrl, setNavLogoUrl] = useState<string>('');
   const [navStoreName, setNavStoreName] = useState<string>('');
   const lottieRef = useRef<HTMLDivElement>(null);
+  const lottieAnimRef = useRef<any>(null);
 
   // Close FAB on route change
   useEffect(() => { setFabOpen(false); }, [pathname]);
 
-  // Load Lottie animation for FAB button
+  // Load Lottie animation for FAB button (dynamic import to avoid SSR)
   useEffect(() => {
-    if (!lottieRef.current) return;
-    lottie.loadAnimation({
-      container: lottieRef.current,
-      renderer: 'svg',
-      loop: true,
-      autoplay: true,
-      path: '/button.json'
-    });
-  }, []);
+    if (!mounted || !lottieRef.current) return;
+    let anim: any = null;
+    let destroyed = false;
+    Promise.all([
+      import('lottie-web'),
+      fetch(`/button.json?t=${Date.now()}`).then(r => r.json())
+    ]).then(([lottieModule, data]) => {
+      if (destroyed || !lottieRef.current) return;
+      // Replace all fill colors with soft pink and remove background circle layer
+      function patchColors(obj: any) {
+        if (!obj || typeof obj !== 'object') return;
+        if (Array.isArray(obj)) { obj.forEach(patchColors); return; }
+        for (const key of Object.keys(obj)) {
+          const val = obj[key];
+          if (key === 'c' && val && val.k && Array.isArray(val.k) && val.k.length === 4) {
+            val.k = [1, 0.714, 0.757, 1]; // soft pink #ffb6c1
+          }
+          patchColors(val);
+        }
+      }
+      // Remove the solid background circle layer and masks that create pink circle
+      if (data.layers) {
+        data.layers = data.layers.filter((layer: any) => {
+          if (layer.nm && layer.nm.toLowerCase().includes('circle')) return false;
+          if (layer.nm && layer.nm.toLowerCase().includes('bg')) return false;
+          return true;
+        });
+        // Remove masks from all layers (they create the pink circle effect)
+        data.layers.forEach((layer: any) => {
+          if (layer.hasMask) { delete layer.hasMask; delete layer.masksProperties; }
+        });
+      }
+      patchColors(data);
+      anim = lottieModule.default.loadAnimation({
+        container: lottieRef.current,
+        renderer: 'svg',
+        loop: false,
+        autoplay: false,
+        animationData: data
+      });
+      // Restrict animation to first 25 frames (open state)
+      anim.setSegment(0, 25);
+      anim.goToAndStop(0, true); // start frozen at frame 0
+      lottieAnimRef.current = anim;
+    }).catch(() => {});
+    return () => {
+      destroyed = true;
+      if (anim) { anim.destroy(); }
+      lottieAnimRef.current = null;
+    };
+  }, [mounted]);
+
+  // Play forward to frame 25 on open (freeze), reverse to frame 0 on close (freeze)
+  useEffect(() => {
+    const anim = lottieAnimRef.current;
+    if (!anim) return;
+    if (fabOpen) {
+      anim.setDirection(1);
+      anim.play();
+    } else {
+      anim.setDirection(-1);
+      anim.play();
+    }
+  }, [fabOpen]);
 
   // Cargar logo del theme config (usar logo de scroll si existe)
   useEffect(() => {
@@ -282,34 +338,66 @@ export default function Navbar1() {
         @keyframes tpl1-fab-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(135deg); } }
         @keyframes tpl1-fab-spin-back { 0% { transform: rotate(135deg); } 100% { transform: rotate(0deg); } }
         @keyframes tpl1-bbl-left   { 0% { opacity:0; transform: scale(0) translateY(30px); } 65% { opacity:1; transform: scale(1.1) translateY(-3px); } 100% { opacity:1; transform: scale(1) translateY(0); } }
-        @keyframes tpl1-bbl-top    { 0% { opacity:0; transform: translate(-50%,30px) scale(0); } 65% { opacity:1; transform: translate(-50%,-3px) scale(1.1); } 100% { opacity:1; transform: translate(-50%,0) scale(1); } }
+        @keyframes tpl1-bbl-top    { 0% { opacity:0; transform: translateY(30px) scale(0); } 65% { opacity:1; transform: translateY(-3px) scale(1.1); } 100% { opacity:1; transform: translateY(0) scale(1); } }
         @keyframes tpl1-bbl-right  { 0% { opacity:0; transform: scale(0) translateY(30px); } 65% { opacity:1; transform: scale(1.1) translateY(-3px); } 100% { opacity:1; transform: scale(1) translateY(0); } }
-        @keyframes tpl1-fab-particles-anim { 0%   { background-position: 20% 30%, 75% 18%, 55% 75%, 28% 68%, 80% 62%; opacity:0.7; } 25%  { background-position: 68% 15%, 22% 68%, 82% 32%, 72% 18%, 12% 52%; opacity:1; } 50%  { background-position: 85% 58%, 48% 88%, 14% 22%, 52% 82%, 72% 8%; opacity:0.75; } 75%  { background-position: 28% 82%, 78% 42%, 52% 62%, 14% 32%, 78% 78%; opacity:1; } 100% { background-position: 20% 30%, 75% 18%, 55% 75%, 28% 68%, 80% 62%; opacity:0.7; } }
+        @keyframes tpl1-bbl-left-out   { 0% { opacity:1; transform: scale(1) translateY(0); } 35% { opacity:1; transform: scale(1.1) translateY(-3px); } 100% { opacity:0; transform: scale(0) translateY(30px); } }
+        @keyframes tpl1-bbl-top-out    { 0% { opacity:1; transform: translateY(0) scale(1); } 35% { opacity:1; transform: translateY(-3px) scale(1.1); } 100% { opacity:0; transform: translateY(30px) scale(0); } }
+        @keyframes tpl1-bbl-right-out  { 0% { opacity:1; transform: scale(1) translateY(0); } 35% { opacity:1; transform: scale(1.1) translateY(-3px); } 100% { opacity:0; transform: scale(0) translateY(30px); } }
         .tpl1-bottom-nav {
           display: none;
           position: fixed; bottom: 0; left: 0; right: 0; z-index: 9998;
           background: rgba(255,255,255,0.94);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
-          border-top: 1px solid rgba(236,72,153,0.12);
+          border-top: 1px solid rgba(0,0,0,0.06);
           padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 8px));
-          box-shadow: 0 -8px 32px rgba(236,72,153,0.1);
+          box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
         }
         .tpl1-bottom-nav-inner { display: flex; justify-content: space-around; align-items: center; max-width: 520px; margin: 0 auto; gap: 2px; }
         .tpl1-bottom-nav-item {
           display: flex; flex-direction: column; align-items: center; gap: 3px;
           text-decoration: none; padding: 5px 8px 3px; border-radius: 14px;
-          transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), background 0.2s ease;
+          transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), background 0.3s ease;
           position: relative; background: transparent; border: none; cursor: pointer; min-width: 48px;
         }
-        .tpl1-bottom-nav-item:active { transform: scale(0.92); }
-        .tpl1-bottom-nav-item svg { width: 20px; height: 20px; color: #9ca3af; transition: color 0.2s, transform 0.2s; }
-        .tpl1-bottom-nav-item span { font-size: 9px; font-weight: 700; color: #9ca3af; font-family: 'DM Sans', system-ui, sans-serif; transition: color 0.2s; letter-spacing: -0.01em; }
-        .tpl1-bottom-nav-item.active {
-          background: linear-gradient(180deg, rgba(236,72,153,0.12), rgba(236,72,153,0.04));
+        .tpl1-bottom-nav-item:active { transform: scale(0.88); }
+        .tpl1-bottom-nav-item svg {
+          width: 20px; height: 20px; color: #9ca3af;
+          transition: color 0.3s ease, transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
         }
-        .tpl1-bottom-nav-item.active svg { color: ${PINK_PRIMARY}; transform: translateY(-2px); animation: tpl1-nav-pop 0.35s ease; }
-        .tpl1-bottom-nav-item.active span { color: ${PINK_PRIMARY}; font-weight: 800; }
+        .tpl1-bottom-nav-item span {
+          font-size: 9px; font-weight: 700; color: #9ca3af; font-family: 'DM Sans', system-ui, sans-serif;
+          transition: color 0.3s ease, transform 0.3s ease, font-weight 0.15s ease; letter-spacing: -0.01em;
+        }
+        .tpl1-bottom-nav-item.active {
+          background: transparent;
+        }
+        .tpl1-bottom-nav-item.active svg {
+          color: ${PINK_PRIMARY};
+          animation: tpl1-nav-bounce 0.5s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .tpl1-bottom-nav-item.active span {
+          color: ${PINK_PRIMARY}; font-weight: 800;
+          animation: tpl1-nav-label-pop 0.35s ease;
+        }
+        .tpl1-bottom-nav-item.active::after {
+          display: none;
+        }
+        @keyframes tpl1-nav-bounce {
+          0% { transform: scale(0.5) translateY(6px); opacity: 0; }
+          50% { transform: scale(1.2) translateY(-4px); opacity: 1; }
+          70% { transform: scale(0.9) translateY(1px); }
+          100% { transform: scale(1) translateY(-2px); }
+        }
+        @keyframes tpl1-nav-label-pop {
+          0% { transform: scale(0.8); opacity: 0.5; }
+          60% { transform: scale(1.1); }
+          100% { transform: scale(1); }
+        }
+        @keyframes tpl1-nav-dot-in {
+          0% { width: 0; opacity: 0; }
+          100% { width: 16px; opacity: 1; }
+        }
         .tpl1-bottom-nav-item .tpl1-bottom-badge {
           position: absolute; top: 2px; right: 4px;
           background: linear-gradient(135deg, ${PINK_PRIMARY}, #db2777);
@@ -322,62 +410,50 @@ export default function Navbar1() {
         /* FAB central */
         .tpl1-fab-wrap { position: relative; display: flex; flex-direction: column; align-items: center; }
         .tpl1-fab-btn {
-          width: 54px; height: 54px; border-radius: 50%; border: none; cursor: pointer;
-          background: linear-gradient(135deg, #ff8fab 0%, #ffb6c1 45%, #ffc0cb 100%);
-          color: #fff; display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 4px 16px rgba(247,37,133,0.25);
-          transition: box-shadow 0.25s ease, transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+          width: 64px; height: 64px; border-radius: 50%; border: none; cursor: pointer;
+          background: transparent; color: #fff; display: flex; align-items: center; justify-content: center;
+          box-shadow: none;
+          transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
           margin-top: -18px; position: relative; z-index: 2; overflow: hidden;
         }
-        .tpl1-fab-btn:hover { box-shadow: 0 6px 22px rgba(247,37,133,0.35); transform: scale(1.06); }
-        .tpl1-fab-btn:active { transform: scale(0.91); }
-        .tpl1-fab-label { font-size: 9px; font-weight: 800; color: #f72585; margin-top: 2px; font-family: 'DM Sans', system-ui, sans-serif; letter-spacing: -0.02em; }
-        .tpl1-fab-particles {
-          position: absolute; inset: 0; border-radius: 50%; pointer-events: none; z-index: 0;
-          background:
-            radial-gradient(circle 4px at 20% 30%, rgba(255,255,255,1), transparent),
-            radial-gradient(circle 3px at 75% 18%, rgba(255,255,255,0.9), transparent),
-            radial-gradient(circle 3.5px at 55% 75%, rgba(255,255,255,0.95), transparent),
-            radial-gradient(circle 3px at 28% 68%, rgba(255,255,255,0.85), transparent),
-            radial-gradient(circle 4px at 80% 62%, rgba(255,255,255,0.9), transparent);
-          background-size: 38% 38%, 28% 28%, 32% 32%, 26% 26%, 30% 30%;
-          background-repeat: no-repeat;
-          background-position: 20% 30%, 75% 18%, 55% 75%, 28% 68%, 80% 62%;
-          animation: tpl1-fab-particles-anim 3.5s linear infinite;
-        }
+        .tpl1-fab-btn svg { background: transparent !important; }
+        .tpl1-fab-btn svg > g > path:first-child { fill: transparent !important; }
+        .tpl1-fab-btn:hover { box-shadow: none; }
+        .tpl1-fab-btn:active { transform: scale(0.95); }
+        .tpl1-fab-label { font-size: 9px; font-weight: 700; color: #9ca3af; margin-top: -4px; font-family: 'DM Sans', system-ui, sans-serif; letter-spacing: -0.02em; transition: color 0.3s ease, font-weight 0.15s ease; }
+        .tpl1-fab-wrap.active .tpl1-fab-label { color: #f72585; font-weight: 800; }
 
         /* Bubble items — arc layout, label above circle */
         .tpl1-fab-bubbles {
-          position: absolute;
-          bottom: calc(100% + 24px);
-          left: 50%;
-          transform: translateX(-50%);
-          width: 280px; height: 160px;
+          position: fixed;
+          bottom: 80px;
+          left: 0;
+          right: 0;
+          margin: 0 auto;
+          width: 320px; height: 160px;
           pointer-events: none; z-index: 10;
         }
         .tpl1-fab-bubble {
           position: absolute;
           display: flex; flex-direction: column; align-items: center;
-          gap: 4px; text-decoration: none; white-space: nowrap;
-          opacity: 0; pointer-events: none;
-          transform-origin: center bottom;
+          gap: 4px; white-space: nowrap;
+          opacity: 0; pointer-events: none; cursor: pointer;
+          transform: scale(0) translateY(30px);
+          transition: opacity 0.35s ease, transform 0.35s ease;
         }
-        .tpl1-fab-bubble:hover { transform: none !important; }
-        .tpl1-fab-bubbles.open .tpl1-fab-bubble { pointer-events: auto; }
-        /* Llegan Pronto — left, lower */
-        .tpl1-fab-bubble:nth-child(1) { left: 70px; bottom: 0; }
+        .tpl1-fab-bubbles.open .tpl1-fab-bubble { pointer-events: auto; opacity: 1; transform: none; }
+        /* Tienda — left, lower */
+        .tpl1-fab-bubble:nth-child(1) { left: 60px; bottom: 0; transition-delay: 0.05s; }
         .tpl1-fab-bubble:nth-child(1) .tpl1-bubble-label { padding: 4px 24px 4px 14px; }
-        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(1) { animation: tpl1-bbl-left 0.44s cubic-bezier(0.34,1.56,0.64,1) 0.05s forwards; }
         /* Catálogo — top center, highest */
-        .tpl1-fab-bubble:nth-child(2) { left: 50%; top: -20px; transform: translate(-50%,0); }
-        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(2) { animation: tpl1-bbl-top 0.44s cubic-bezier(0.34,1.56,0.64,1) 0.10s forwards; }
-        /* Tienda — right, lower */
-        .tpl1-fab-bubble:nth-child(3) { right: 70px; bottom: 0; }
-        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(3) { animation: tpl1-bbl-right 0.44s cubic-bezier(0.34,1.56,0.64,1) 0.15s forwards; }
+        .tpl1-fab-bubble:nth-child(2) { left: 0; right: 0; margin: 0 auto; top: -20px; width: fit-content; transition-delay: 0.1s; }
+        /* En Camino — right, lower */
+        .tpl1-fab-bubble:nth-child(3) { right: 60px; bottom: 0; transition-delay: 0.15s; }
+        .tpl1-fab-bubble:nth-child(3) .tpl1-bubble-label { padding: 4px 14px 4px 24px; }
         .tpl1-bubble-circle {
           width: 54px; height: 54px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-          background: #fff; border: 2.5px solid rgba(247,37,133,0.3);
-          box-shadow: 0 6px 20px rgba(247,37,133,0.28);
+          background: #fff; border: 1.5px solid rgba(0,0,0,0.08);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
           flex-shrink: 0;
         }
         .tpl1-bubble-circle svg { width: 26px; height: 26px; color: #f72585; }
@@ -387,7 +463,7 @@ export default function Navbar1() {
         .tpl1-bubble-label {
           font-size: 11px; font-weight: 800; color: #1a1a2e; font-family: 'DM Sans', system-ui, sans-serif;
           background: rgba(255,255,255,0.96); backdrop-filter: blur(6px); padding: 4px 24px 4px 15px; border-radius: 999px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.12); border: 1px solid rgba(247,37,133,0.18);
+          box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.06);
           min-width: 80px; text-align: left;
         }
 
@@ -396,7 +472,7 @@ export default function Navbar1() {
           position: fixed; inset: 0; z-index: 9997;
           background: rgba(0,0,0,0); transition: background 0.3s ease;
         }
-        .tpl1-fab-overlay.open { background: rgba(0,0,0,0.15); }
+        .tpl1-fab-overlay.open { background: rgba(255,255,255,0.5); }
         /* Mobile search overlay */
         .tpl1-search-overlay { display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); flex-direction: column; padding: 0; animation: tpl1SearchSlideIn 0.25s ease-out; }
         .tpl1-search-overlay.open { display: flex; }
@@ -426,7 +502,7 @@ export default function Navbar1() {
         .tpl1-nav-mobile-fab--cb { background: linear-gradient(135deg, #3483fa, #6366f1) !important; }
         @media (max-width: 768px) {
           .tpl1-bottom-nav { display: block; }
-          body { padding-bottom: 64px; }
+          body { padding-bottom: 64px; overflow-x: hidden; }
         }
 
         @keyframes tpl1AuthSheetIn { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
@@ -777,58 +853,57 @@ export default function Navbar1() {
       {/* Bottom mobile nav — hidden on /inventario */}
       <nav className={`tpl1-bottom-nav${pathname?.startsWith('/inventario') ? ' !hidden' : ''}`}>
         <div className="tpl1-bottom-nav-inner">
-          <Link href="/" className={`tpl1-bottom-nav-item ${pathname === '/' ? 'active' : ''}`}>
+          <Link href="/" className={`tpl1-bottom-nav-item ${!fabOpen && pathname === '/' ? 'active' : ''}`}>
             <Home />
             <span>Inicio</span>
           </Link>
-          <Link href="/favoritos" className={`tpl1-bottom-nav-item ${pathname === '/favoritos' || pathname?.startsWith('/cuenta/favoritos') ? 'active' : ''}`}>
+          <Link href="/favoritos" className={`tpl1-bottom-nav-item ${!fabOpen && (pathname === '/favoritos' || pathname?.startsWith('/cuenta/favoritos')) ? 'active' : ''}`}>
             <Heart />
             <span>Favoritos</span>
           </Link>
 
-          {/* FAB central — Tienda / Catálogo / Llegan Pronto */}
-          <div className="tpl1-fab-wrap">
-            <div className={`tpl1-fab-bubbles${fabOpen ? ' open' : ''}`}>
-              <Link href="/llegan-pronto" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
-                <span className="tpl1-bubble-label">En Camino</span>
-                <div className="tpl1-bubble-circle">
-                  <svg viewBox="0 0 461.941 461.941" className="tpl1-en-camino-icon" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M226.496,190.563c2.862-0.638,5.832-0.639,8.695-0.001l113.612,25.286l-10.658-67.5c-1.112-7.041-7.171-12.233-14.3-12.252 l-31.675-0.085l-5.185-64.064c-0.609-7.523-6.882-13.325-14.43-13.345l-21.56-0.058l0.1-37.157 c0.03-11.045-8.9-20.024-19.946-20.054c-0.019,0-0.036,0-0.055,0c-11.02,0-19.969,8.919-19.999,19.946l-0.1,37.157l-20.988-0.056 c-7.548-0.021-13.852,5.747-14.501,13.268l-5.529,64.036l-31.26-0.084c-7.128-0.019-13.216,5.14-14.365,12.175l-11.116,68.028 L226.496,190.563z" fill="#e396bf"/>
-                    <path d="M110.416,375.186c17.402-12.674,38.307-19.514,60.277-19.514c21.969,0,42.875,6.841,60.277,19.514 c17.402-12.674,38.307-19.514,60.277-19.514c21.969,0,42.872,6.84,60.275,19.512c7.392-5.388,15.418-9.711,23.883-12.916 l27.664-76.601c1.417-3.924,1.077-8.268-0.932-11.924c-2.01-3.656-5.495-6.27-9.567-7.177l-161.721-35.994L69.365,266.558 c-4.071,0.907-7.556,3.522-9.565,7.178c-2.009,3.656-2.348,7.999-0.931,11.922l27.675,76.632 C95.007,365.49,103.029,369.806,110.416,375.186z" fill="#e396bf"/>
-                    <path d="M456.083,413.984c-11.828-11.828-27.554-18.342-44.281-18.342s-32.453,6.514-44.281,18.342 c-4.273,4.273-9.954,6.626-15.997,6.626c-6.043,0-11.724-2.353-15.996-6.626c-12.209-12.208-28.246-18.312-44.282-18.312 c-16.036,0-32.072,6.104-44.28,18.312c-4.273,4.273-9.954,6.626-15.997,6.626c-6.043,0-11.724-2.353-15.996-6.626 c-12.209-12.208-28.246-18.312-44.282-18.312c-16.036,0-32.072,6.104-44.28,18.312c-4.41,4.41-10.204,6.615-15.996,6.615 c-5.794,0-11.586-2.205-15.997-6.615c-12.208-12.208-28.245-18.312-44.281-18.312c-16.036,0-32.072,6.104-44.28,18.312 c-7.811,7.811-7.811,20.474,0,28.284c7.81,7.81,20.473,7.811,28.284,0c4.41-4.41,10.203-6.615,15.997-6.615 s11.586,2.205,15.997,6.616c12.208,12.208,28.244,18.312,44.28,18.312s32.073-6.104,44.281-18.312 c4.41-4.411,10.204-6.616,15.997-6.616s11.586,2.205,15.996,6.616c11.827,11.827,27.554,18.341,44.28,18.341c0,0,0,0,0,0h0 c16.727,0,32.453-6.514,44.281-18.342c4.41-4.41,10.204-6.615,15.997-6.615s11.586,2.205,15.996,6.616 c11.827,11.827,27.554,18.341,44.28,18.341h0h0c16.727,0,32.453-6.514,44.281-18.342c4.273-4.272,9.954-6.626,15.997-6.626 c6.043,0,11.724,2.354,15.997,6.626c7.811,7.81,20.473,7.811,28.284,0C463.894,434.458,463.894,421.794,456.083,413.984z" fill="#e396bf"/>
-                  </svg>
-                </div>
-              </Link>
-              <Link href="/catalogo" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
-                <span className="tpl1-bubble-label">Catálogo</span>
-                <div className="tpl1-bubble-circle">
-                  <svg viewBox="0 0 208 256" className="tpl1-catalog-icon" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M105.52,76.24c-15.29,0-27.64,12.37-27.64,27.58c0,15.26,12.4,27.59,27.64,27.59c15.25,0,27.65-12.33,27.65-27.59 S120.77,76.24,105.52,76.24z M105.52,123.36c-10.76,0-19.52-8.75-19.52-19.49c0-10.73,8.76-19.48,19.52-19.48 c10.77,0,19.53,8.7,19.53,19.48C125.05,114.61,116.29,123.36,105.52,123.36z M154.6,72.71h-12.51c-1.94,0-3.54,1.54-3.54,3.53v5.32 c0,1.93,1.55,3.52,3.54,3.52h12.51c1.94,0,3.53-1.54,3.53-3.52v-5.32C158.13,74.3,156.59,72.71,154.6,72.71z M154.6,72.71h-12.51 c-1.94,0-3.54,1.54-3.54,3.53v5.32c0,1.93,1.55,3.52,3.54,3.52h12.51c1.94,0,3.53-1.54,3.53-3.52v-5.32 C158.13,74.3,156.59,72.71,154.6,72.71z M105.52,76.24c-15.29,0-27.64,12.37-27.64,27.58c0,15.26,12.4,27.59,27.64,27.59 c15.25,0,27.65-12.33,27.65-27.59S120.77,76.24,105.52,76.24z M105.52,123.36c-10.76,0-19.52-8.75-19.52-19.49 c0-10.73,8.76-19.48,19.52-19.48c10.77,0,19.53,8.7,19.53,19.48C125.05,114.61,116.29,123.36,105.52,123.36z M205.82,196.86V2H35.8 C17.53,2,2,16.72,2,35c0,0,0,184.49,0,186c0,17.87,14.42,32.19,32.08,32.9v0.1h171.74v-9.29c-13.23,0-23.93-10.7-23.93-23.93 C181.89,207.56,192.59,196.86,205.82,196.86z M44,76.19c0-6.86,5.58-12.43,12.45-12.43h2.59c0.25,0,0.45-0.05,0.65-0.1V57h18.24 v6.56c0.24,0.15,0.59,0.25,0.94,0.25h75.73c6.87,0,12.45,5.57,12.4,12.43v53.33c0,6.86-5.58,12.43-12.45,12.43h-98.1 C49.58,142,44,136.43,44,129.57V76.19z M172.6,220.68c0,9.39,4.04,17.87,10.3,23.93H35.4c-13.23,0.1-24.03-10.7-24.03-23.93 c0-12.52,9.79-22.81,22.11-23.72l149.72-0.31C176.74,202.71,172.6,211.19,172.6,220.68z M142.09,85.08h12.51 c1.94,0,3.53-1.54,3.53-3.52v-5.32c0-1.94-1.54-3.53-3.53-3.53h-12.51c-1.94,0-3.54,1.54-3.54,3.53v5.32 C138.55,83.49,140.1,85.08,142.09,85.08z M105.52,131.41c15.25,0,27.65-12.33,27.65-27.59s-12.4-27.58-27.65-27.58 c-15.29,0-27.64,12.37-27.64,27.58C77.88,119.08,90.28,131.41,105.52,131.41z M105.52,84.39c10.77,0,19.53,8.7,19.53,19.48 c0,10.74-8.76,19.49-19.53,19.49c-10.76,0-19.52-8.75-19.52-19.49C86,93.14,94.76,84.39,105.52,84.39z" fill="#e396bf"/>
-                  </svg>
-                </div>
-              </Link>
-              <Link href="/productos" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
-                <span className="tpl1-bubble-label">Tienda</span>
-                <div className="tpl1-bubble-circle">
-                  <svg viewBox="0 0 256 253" className="tpl1-shop-icon" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M146.142,143.991c0-4.774,3.903-8.677,8.677-8.677s8.677,3.903,8.677,8.677s-3.827,8.677-8.677,8.677 C150.007,152.668,146.142,148.766,146.142,143.991z M177,122v86l-98-0.038V122H177z M171,128H85v62.671l25.991-49.599l17.718,36.375 l18.604-11.632L171,188.36V128z M2,69c0,13.678,9.625,25.302,22,29.576V233H2v18h252v-18h-22V98.554 c12.89-3.945,21.699-15.396,22-29.554v-8H2V69z M65.29,68.346c0,6.477,6.755,31.47,31.727,31.47 c21.689,0,31.202-19.615,31.202-31.47c0,11.052,7.41,31.447,31.464,31.447c21.733,0,31.363-20.999,31.363-31.447 c0,14.425,9.726,26.416,22.954,30.154V233H42V98.594C55.402,94.966,65.29,82.895,65.29,68.346z M222.832,22H223V2H34v20L2,54h252 L222.832,22z" fill="#e396bf"/>
-                  </svg>
-                </div>
-              </Link>
+          {/* FAB central — Tienda / Catálogo / En Camino */}
+          <div className={`tpl1-fab-bubbles${fabOpen ? ' open' : ''}`}>
+            <div className="tpl1-fab-bubble" onClick={() => { setFabOpen(false); router.push('/productos'); }}>
+              <span className="tpl1-bubble-label">Tienda</span>
+              <div className="tpl1-bubble-circle">
+                <svg viewBox="0 0 256 253" className="tpl1-shop-icon" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M146.142,143.991c0-4.774,3.903-8.677,8.677-8.677s8.677,3.903,8.677,8.677s-3.827,8.677-8.677,8.677 C150.007,152.668,146.142,148.766,146.142,143.991z M177,122v86l-98-0.038V122H177z M171,128H85v62.671l25.991-49.599l17.718,36.375 l18.604-11.632L171,188.36V128z M2,69c0,13.678,9.625,25.302,22,29.576V233H2v18h252v-18h-22V98.554 c12.89-3.945,21.699-15.396,22-29.554v-8H2V69z M65.29,68.346c0,6.477,6.755,31.47,31.727,31.47 c21.689,0,31.202-19.615,31.202-31.47c0,11.052,7.41,31.447,31.464,31.447c21.733,0,31.363-20.999,31.363-31.447 c0,14.425,9.726,26.416,22.954,30.154V233H42V98.594C55.402,94.966,65.29,82.895,65.29,68.346z M222.832,22H223V2H34v20L2,54h252 L222.832,22z" fill="#e396bf"/>
+                </svg>
+              </div>
             </div>
+            <div className="tpl1-fab-bubble" onClick={() => { setFabOpen(false); router.push('/catalogo'); }}>
+              <span className="tpl1-bubble-label">Catálogo</span>
+              <div className="tpl1-bubble-circle">
+                <svg viewBox="0 0 208 256" className="tpl1-catalog-icon" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M105.52,76.24c-15.29,0-27.64,12.37-27.64,27.58c0,15.26,12.4,27.59,27.64,27.59c15.25,0,27.65-12.33,27.65-27.59 S120.77,76.24,105.52,76.24z M105.52,123.36c-10.76,0-19.52-8.75-19.52-19.49c0-10.73,8.76-19.48,19.52-19.48 c10.77,0,19.53,8.7,19.53,19.48C125.05,114.61,116.29,123.36,105.52,123.36z M154.6,72.71h-12.51c-1.94,0-3.54,1.54-3.54,3.53v5.32 c0,1.93,1.55,3.52,3.54,3.52h12.51c1.94,0,3.53-1.54,3.53-3.52v-5.32C158.13,74.3,156.59,72.71,154.6,72.71z M154.6,72.71h-12.51 c-1.94,0-3.54,1.54-3.54,3.53v5.32c0,1.93,1.55,3.52,3.54,3.52h12.51c1.94,0,3.53-1.54,3.53-3.52v-5.32 C158.13,74.3,156.59,72.71,154.6,72.71z M105.52,76.24c-15.29,0-27.64,12.37-27.64,27.58c0,15.26,12.4,27.59,27.64,27.59 c15.25,0,27.65-12.33,27.65-27.59S120.77,76.24,105.52,76.24z M105.52,123.36c-10.76,0-19.52-8.75-19.52-19.49 c0-10.73,8.76-19.48,19.52-19.48c10.77,0,19.53,8.7,19.53,19.48C125.05,114.61,116.29,123.36,105.52,123.36z M205.82,196.86V2H35.8 C17.53,2,2,16.72,2,35c0,0,0,184.49,0,186c0,17.87,14.42,32.19,32.08,32.9v0.1h171.74v-9.29c-13.23,0-23.93-10.7-23.93-23.93 C181.89,207.56,192.59,196.86,205.82,196.86z M44,76.19c0-6.86,5.58-12.43,12.45-12.43h2.59c0.25,0,0.45-0.05,0.65-0.1V57h18.24 v6.56c0.24,0.15,0.59,0.25,0.94,0.25h75.73c6.87,0,12.45,5.57,12.4,12.43v53.33c0,6.86-5.58,12.43-12.45,12.43h-98.1 C49.58,142,44,136.43,44,129.57V76.19z M172.6,220.68c0,9.39,4.04,17.87,10.3,23.93H35.4c-13.23,0.1-24.03-10.7-24.03-23.93 c0-12.52,9.79-22.81,22.11-23.72l149.72-0.31C176.74,202.71,172.6,211.19,172.6,220.68z M142.09,85.08h12.51 c1.94,0,3.53-1.54,3.53-3.52v-5.32c0-1.94-1.54-3.53-3.53-3.53h-12.51c-1.94,0-3.54,1.54-3.54,3.53v5.32 C138.55,83.49,140.1,85.08,142.09,85.08z M105.52,131.41c15.25,0,27.65-12.33,27.65-27.59s-12.4-27.58-27.65-27.58 c-15.29,0-27.64,12.37-27.64,27.58C77.88,119.08,90.28,131.41,105.52,131.41z M105.52,84.39c10.77,0,19.53,8.7,19.53,19.48 c0,10.74-8.76,19.49-19.53,19.49c-10.76,0-19.52-8.75-19.52-19.49C86,93.14,94.76,84.39,105.52,84.39z" fill="#e396bf"/>
+                </svg>
+              </div>
+            </div>
+            <div className="tpl1-fab-bubble" onClick={() => { setFabOpen(false); router.push('/llegan-pronto'); }}>
+              <span className="tpl1-bubble-label">En Camino</span>
+              <div className="tpl1-bubble-circle">
+                <svg viewBox="0 0 461.941 461.941" className="tpl1-en-camino-icon" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M226.496,190.563c2.862-0.638,5.832-0.639,8.695-0.001l113.612,25.286l-10.658-67.5c-1.112-7.041-7.171-12.233-14.3-12.252 l-31.675-0.085l-5.185-64.064c-0.609-7.523-6.882-13.325-14.43-13.345l-21.56-0.058l0.1-37.157 c0.03-11.045-8.9-20.024-19.946-20.054c-0.019,0-0.036,0-0.055,0c-11.02,0-19.969,8.919-19.999,19.946l-0.1,37.157l-20.988-0.056 c-7.548-0.021-13.852,5.747-14.501,13.268l-5.529,64.036l-31.26-0.084c-7.128-0.019-13.216,5.14-14.365,12.175l-11.116,68.028 L226.496,190.563z" fill="#e396bf"/>
+                  <path d="M110.416,375.186c17.402-12.674,38.307-19.514,60.277-19.514c21.969,0,42.875,6.841,60.277,19.514 c17.402-12.674,38.307-19.514,60.277-19.514c21.969,0,42.872,6.84,60.275,19.512c7.392-5.388,15.418-9.711,23.883-12.916 l27.664-76.601c1.417-3.924,1.077-8.268-0.932-11.924c-2.01-3.656-5.495-6.27-9.567-7.177l-161.721-35.994L69.365,266.558 c-4.071,0.907-7.556,3.522-9.565,7.178c-2.009,3.656-2.348,7.999-0.931,11.922l27.675,76.632 C95.007,365.49,103.029,369.806,110.416,375.186z" fill="#e396bf"/>
+                  <path d="M456.083,413.984c-11.828-11.828-27.554-18.342-44.281-18.342s-32.453,6.514-44.281,18.342 c-4.273,4.273-9.954,6.626-15.997,6.626c-6.043,0-11.724-2.353-15.996-6.626c-12.209-12.208-28.246-18.312-44.282-18.312 c-16.036,0-32.072,6.104-44.28,18.312c-4.273,4.273-9.954,6.626-15.997,6.626c-6.043,0-11.724-2.353-15.996-6.626 c-12.209-12.208-28.246-18.312-44.282-18.312c-16.036,0-32.072,6.104-44.28,18.312c-4.41,4.41-10.204,6.615-15.996,6.615 c-5.794,0-11.586-2.205-15.997-6.615c-12.208-12.208-28.245-18.312-44.281-18.312c-16.036,0-32.072,6.104-44.28,18.312 c-7.811,7.811-7.811,20.474,0,28.284c7.81,7.81,20.473,7.811,28.284,0c4.41-4.41,10.203-6.615,15.997-6.615 s11.586,2.205,15.997,6.616c12.208,12.208,28.244,18.312,44.28,18.312s32.073-6.104,44.281-18.312 c4.41-4.411,10.204-6.616,15.997-6.616s11.586,2.205,15.996,6.616c11.827,11.827,27.554,18.341,44.28,18.341c0,0,0,0,0,0h0 c16.727,0,32.453-6.514,44.281-18.342c4.41-4.41,10.204-6.615,15.997-6.615s11.586,2.205,15.996,6.616 c11.827,11.827,27.554,18.341,44.28,18.341h0h0c16.727,0,32.453-6.514,44.281-18.342c4.273-4.272,9.954-6.626,15.997-6.626 c6.043,0,11.724,2.354,15.997,6.626c7.811,7.81,20.473,7.811,28.284,0C463.894,434.458,463.894,421.794,456.083,413.984z" fill="#e396bf"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div className={`tpl1-fab-wrap${fabOpen ? ' active' : ''}`}>
             <button className={`tpl1-fab-btn${fabOpen ? ' open' : ''}`} onClick={() => setFabOpen(v => !v)} aria-label="Explorar">
-              <span className="tpl1-fab-particles" aria-hidden="true" />
-              <div ref={lottieRef} style={{ width: '100%', height: '100%' }} />
+              <div ref={lottieRef} style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none' }} />
             </button>
             <span className="tpl1-fab-label">Explorar</span>
           </div>
 
-          <Link href="/carrito" className={`tpl1-bottom-nav-item ${pathname === '/carrito' ? 'active' : ''}`}>
+          <Link href="/carrito" className={`tpl1-bottom-nav-item ${!fabOpen && pathname === '/carrito' ? 'active' : ''}`}>
             <ShoppingCart />
             {totalItems > 0 && <span className="tpl1-bottom-badge">{totalItems > 99 ? '99+' : totalItems}</span>}
             <span>Carrito</span>
           </Link>
-          <Link href="/cuenta" className={`tpl1-bottom-nav-item ${pathname?.startsWith('/cuenta') ? 'active' : ''}`} style={{ position: 'relative' }}>
+          <Link href="/cuenta" className={`tpl1-bottom-nav-item ${!fabOpen && pathname?.startsWith('/cuenta') && !pathname?.startsWith('/cuenta/favoritos') ? 'active' : ''}`} style={{ position: 'relative' }}>
             {isLoggedIn && user ? (
               <NavAvatarWithBadge avatarUrl={avatarUrl} userName={user.name} size={26} loyaltyLevelId={loyaltyLevelId} />
             ) : (
