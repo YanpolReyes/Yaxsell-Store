@@ -7,7 +7,14 @@ import HomePage4 from '@/templates/plantilla4/HomePage';
 
 export default function DynamicHomePage({ children }: { children: React.ReactNode }) {
   const { template, isLoading } = useTemplate();
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 40, height: 40, border: '3px solid #f3f4f6', borderTopColor: '#ec4899', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
   if (template === 1) return <HomePage1 />;
   if (template === 2) return <HomePage2 />;
   if (template === 3) return <HomePage3 />;

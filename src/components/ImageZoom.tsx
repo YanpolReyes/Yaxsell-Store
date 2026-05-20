@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 
 interface Props {
@@ -15,12 +15,34 @@ export default function ImageZoom({ src, alt, width = 480, height = 480 }: Props
   const [pos, setPos] = useState({ x: 50, y: 50 });
   const containerRef = useRef<HTMLDivElement>(null);
 
-  function handleMove(e: React.MouseEvent) {
+  const updatePos = useCallback((clientX: number, clientY: number) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const x = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
+    const y = Math.min(100, Math.max(0, ((clientY - rect.top) / rect.height) * 100));
     setPos({ x, y });
+  }, []);
+
+  function handleMove(e: React.MouseEvent) {
+    updatePos(e.clientX, e.clientY);
+  }
+
+  function handleTouchStart(e: React.TouchEvent) {
+    e.preventDefault();
+    setZooming(true);
+    const t = e.touches[0];
+    if (t) updatePos(t.clientX, t.clientY);
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    e.preventDefault();
+    const t = e.touches[0];
+    if (t) updatePos(t.clientX, t.clientY);
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    e.preventDefault();
+    setZooming(false);
   }
 
   return (
@@ -29,6 +51,9 @@ export default function ImageZoom({ src, alt, width = 480, height = 480 }: Props
       onMouseEnter={() => setZooming(true)}
       onMouseLeave={() => setZooming(false)}
       onMouseMove={handleMove}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       style={{
         position: 'relative',
         width,
@@ -37,6 +62,7 @@ export default function ImageZoom({ src, alt, width = 480, height = 480 }: Props
         cursor: zooming ? 'zoom-in' : 'default',
         background: '#f9f9f9',
         borderRadius: 4,
+        touchAction: 'none',
       }}
     >
       <Image
