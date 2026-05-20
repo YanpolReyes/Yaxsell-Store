@@ -33,6 +33,9 @@ body {
 .fusion-scroll-top,
 .quickView-popup { display: none !important; }
 
+/* Fix white corners on plantilla1 footer */
+.main_footer_wrapp { background: rgb(26, 26, 26); overflow: hidden; }
+
 .gradient-text {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
