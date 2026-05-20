@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Heart, ShoppingCart, Trash2, Share2 } from 'lucide-react';
+import { ShoppingCart, Share2, ArrowLeft, Sparkles } from 'lucide-react';
+import AnimHeart from '@/components/AnimHeart';
+import LottieFavorite from '@/components/LottieFavorite';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -35,36 +37,42 @@ export default function FavoritosPage() {
   return (
     <>
       <style>{`
+        @keyframes favFadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        .fav-card { animation: favFadeUp .4s ease both; }
+        .fav-card:nth-child(2) { animation-delay: .04s; }
+        .fav-card:nth-child(3) { animation-delay: .08s; }
+        .fav-card:nth-child(4) { animation-delay: .12s; }
+        .fav-card:nth-child(5) { animation-delay: .16s; }
+        .fav-card:nth-child(6) { animation-delay: .2s; }
         .fav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
-        .fav-card { background: #fff; border-radius: 0 0 14px 14px; overflow: hidden; border: 1px solid #f0f0f0; display: flex; flex-direction: column; transition: all 0.2s; }
-        .fav-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); border-color: rgba(236,72,153,0.2); }
-        .fav-add-btn { flex: 1; padding: 8px 0; border: none; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all .2s; font-family: ${FF}; }
-        .fav-del-btn { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all .2s; }
+        .fav-card-inner { background: #fff; border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .fav-card-inner:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+        .fav-add-btn { flex: 1; padding: 10px 0; border: none; border-radius: 10px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all .2s; font-family: ${FF}; }
+        .fav-del-btn { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all .2s; border: none; }
 
         @media (max-width: 768px) {
-          .fav-page-header { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; margin-bottom: 16px !important; }
-          .fav-page-header h1 { font-size: 20px !important; }
-          .fav-page-header button { width: 100%; justify-content: center; padding: 12px !important; }
+          .fav-page-header { flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; margin-bottom: 14px !important; }
+          .fav-page-header h1 { font-size: 18px !important; padding-left: 0 !important; padding-top: 0 !important; }
+          .fav-page-header button { width: 100%; justify-content: center; padding: 10px !important; }
           .fav-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
-          .fav-card { border-radius: 0 0 16px 16px !important; border-color: #fce7f3 !important; box-shadow: 0 6px 20px rgba(236,72,153,0.08) !important; }
-          .fav-card > a > div { height: 140px !important; }
-          .fav-card > div { padding: 10px !important; }
-          .fav-card p { font-size: 12px !important; }
-          .fav-add-btn { padding: 10px 0 !important; font-size: 11px !important; border-radius: 10px !important; }
-          .fav-del-btn { width: 40px !important; height: 40px !important; }
-          .fav-empty { padding-top: 32px !important; padding-bottom: 24px !important; }
-          .fav-empty-icon { width: 110px !important; height: 110px !important; margin-bottom: 20px !important; }
-          .fav-empty h2 { font-size: 20px !important; }
-          .fav-empty p { font-size: 14px !important; padding: 0 8px !important; }
-          .fav-empty a { width: 100%; max-width: 280px; justify-content: center; box-sizing: border-box; }
+          .fav-card-inner { border-radius: 14px !important; }
+          .fav-card-inner > a > div { height: 120px !important; }
+          .fav-card-inner > div { padding: 8px 10px 10px !important; }
+          .fav-card-inner p { font-size: 11.5px !important; line-height: 1.25 !important; }
+          .fav-add-btn { padding: 10px 0 !important; font-size: 11px !important; border-radius: 10px !important; min-height: 38px !important; }
+          .fav-del-btn { width: 38px !important; height: 38px !important; border-radius: 10px !important; }
+          .fav-empty { padding-top: 16px !important; padding-bottom: 16px !important; }
+          .fav-empty h2 { font-size: 19px !important; }
+          .fav-empty p { font-size: 13px !important; padding: 0 16px !important; margin-bottom: 20px !important; }
+          .fav-empty a { width: calc(100% - 32px); max-width: 320px; justify-content: center; box-sizing: border-box; padding: 13px 24px !important; font-size: 14px !important; }
         }
       `}</style>
 
       {/* Header */}
-      <div className="fav-page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#1a1a1a', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Heart size={22} color={PINK} fill={PINK} /> Mis Favoritos
-          {favs.length > 0 && <span style={{ fontSize: 14, fontWeight: 500, color: '#9ca3af' }}>({favs.length})</span>}
+      <div className="fav-page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap' }}>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#1a1a1a', display: 'flex', alignItems: 'center', gap: 10, letterSpacing: '-0.01em' }}>
+          <AnimHeart filled size={22} /> Mis Favoritos
+          {favs.length > 0 && <span style={{ fontSize: 13, fontWeight: 500, color: '#9ca3af' }}>({favs.length})</span>}
         </h1>
         {favs.length > 0 && (
           <button onClick={() => {
@@ -73,25 +81,27 @@ export default function FavoritosPage() {
             if (navigator.share) { navigator.share({ title: 'Mi lista de deseos', url }).catch(() => {}); }
             else { navigator.clipboard.writeText(url); alert('Enlace copiado al portapapeles'); }
           }}
-            style={{ padding: '8px 16px', background: '#fef2f8', border: '1px solid rgba(236,72,153,0.2)', borderRadius: 10, color: PINK, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontFamily: FF }}>
+            style={{ padding: '8px 16px', background: '#fef2f8', border: '1px solid rgba(236,72,153,0.2)', borderRadius: 10, color: PINK, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontFamily: FF, transition: 'background .15s' }}>
             <Share2 size={14} /> Compartir lista
           </button>
         )}
       </div>
 
       {favs.length === 0 ? (
-        <div className="fav-empty" style={{ textAlign: 'center', paddingTop: 60, paddingBottom: 40 }}>
-          <div className="fav-empty-icon" style={{ width: 140, height: 140, borderRadius: '50%', background: 'linear-gradient(135deg,#fef2f8,#fce7f3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 28px', boxShadow: '0 8px 24px rgba(236,72,153,0.15)' }}>
-            <Heart size={64} color={PINK} fill={PINK} style={{ opacity: 0.7 }} />
+        <div className="fav-empty" style={{ textAlign: 'center', paddingTop: 48, paddingBottom: 32 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', margin: '0 auto 20px' }}>
+            <LottieFavorite size={140} />
           </div>
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a', margin: '0 0 12px', letterSpacing: '-0.01em' }}>Aún no tienes favoritos</h2>
-          <p style={{ fontSize: 15, color: '#6b7280', marginBottom: 32, maxWidth: 400, margin: '0 auto 32px', lineHeight: 1.6 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', margin: '0 0 10px', letterSpacing: '-0.02em' }}>Aún no tienes favoritos</h2>
+          <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 28, maxWidth: 380, margin: '0 auto 28px', lineHeight: 1.55 }}>
             Guarda los productos que te encantan tocando el ❤️. ¡Vuelve cuando hayas encontrado algo especial!
           </p>
-          <Link href="/productos" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 36px', background: PINK, color: '#fff', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 16, boxShadow: '0 6px 20px rgba(236,72,153,0.35)', transition: 'all 0.2s', fontFamily: FF }}>
-            Explorar productos <ShoppingCart size={18} />
+          <Link href="/productos" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 32px', background: `linear-gradient(135deg,${PINK},#db2777)`, color: '#fff', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 15, boxShadow: '0 4px 16px rgba(236,72,153,0.3)', transition: 'transform .2s, box-shadow .2s', fontFamily: FF }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(236,72,153,0.4)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(236,72,153,0.3)'; }}>
+            <Sparkles size={16} /> Explorar productos
           </Link>
-          <div style={{ marginTop: 50 }}>
+          <div style={{ marginTop: 40 }}>
             <RecentlyViewed />
           </div>
         </div>
@@ -103,40 +113,42 @@ export default function FavoritosPage() {
             const pct = hasDiscount ? Math.round((1 - p.CURRENTPRICE! / p.PRICE) * 100) : 0;
             return (
               <div key={p.$id} className="fav-card">
-                <Link href={`/productos/${p.$id}`} style={{ display: 'block', position: 'relative' }}>
-                  <div style={{ height: 160, background: '#fafafa', overflow: 'hidden' }}>
-                    {p.IMAGEURL
-                      ? <img src={p.IMAGEURL} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 8 }} />
-                      : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Heart size={36} color="#e0e0e0" /></div>
-                    }
-                  </div>
-                  {pct > 0 && (
-                    <span style={{ position: 'absolute', top: 8, left: 8, background: '#e53935', color: '#fff', fontSize: 11, fontWeight: 700, padding: '2px 6px', borderRadius: 4 }}>-{pct}%</span>
-                  )}
-                </Link>
-
-                <div style={{ padding: '10px 12px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
-                    <p style={{ margin: '0 0 6px', fontSize: 13, color: '#333', fontWeight: 500, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.NAME}</p>
+                <div className="fav-card-inner">
+                  <Link href={`/productos/${p.$id}`} style={{ display: 'block', position: 'relative' }}>
+                    <div style={{ height: 160, background: '#fafafa', overflow: 'hidden' }}>
+                      {p.IMAGEURL
+                        ? <img src={p.IMAGEURL} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 10 }} />
+                        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AnimHeart filled={false} size={36} /></div>
+                      }
+                    </div>
+                    {pct > 0 && (
+                      <span style={{ position: 'absolute', top: 8, left: 8, background: '#e53935', color: '#fff', fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 6 }}>-{pct}%</span>
+                    )}
                   </Link>
 
-                  <div style={{ marginBottom: 10 }}>
-                    {hasDiscount && <p style={{ margin: '0 0 1px', fontSize: 11, color: '#aaa', textDecoration: 'line-through' }}>{formatPrice(p.PRICE)}</p>}
-                    <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>{formatPrice(price)}</p>
-                  </div>
+                  <div style={{ padding: '10px 12px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
+                      <p style={{ margin: '0 0 4px', fontSize: 13, color: '#333', fontWeight: 600, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.NAME}</p>
+                    </Link>
 
-                  <div style={{ display: 'flex', gap: 6, marginTop: 'auto' }}>
-                    <button onClick={() => handleAdd(p)}
-                      className="fav-add-btn"
-                      style={{ background: added === p.$id ? '#16a34a' : PINK, color: '#fff' }}>
-                      <ShoppingCart size={13} />
-                      {added === p.$id ? '¡Listo!' : 'Agregar'}
-                    </button>
-                    <button onClick={() => toggleFavorite(p.$id)}
-                      className="fav-del-btn"
-                      style={{ background: '#fef2f8', border: '1px solid rgba(236,72,153,0.15)' }}>
-                      <Trash2 size={14} color={PINK} />
-                    </button>
+                    <div style={{ marginBottom: 8 }}>
+                      {hasDiscount && <p style={{ margin: '0 0 1px', fontSize: 11, color: '#aaa', textDecoration: 'line-through' }}>{formatPrice(p.PRICE)}</p>}
+                      <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#1a1a1a' }}>{formatPrice(price)}</p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 6, marginTop: 'auto' }}>
+                      <button onClick={() => handleAdd(p)}
+                        className="fav-add-btn"
+                        style={{ background: added === p.$id ? '#16a34a' : PINK, color: '#fff' }}>
+                        <ShoppingCart size={13} />
+                        {added === p.$id ? '¡Listo!' : 'Agregar'}
+                      </button>
+                      <button onClick={() => toggleFavorite(p.$id)}
+                        className="fav-del-btn"
+                        style={{ background: '#fef2f8' }}>
+                        <AnimHeart filled size={16} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

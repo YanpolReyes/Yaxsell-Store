@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, Grid3x3, List, ShoppingCart, X, Heart, SlidersHorizontal, Sparkles, ChevronDown } from 'lucide-react';
+import { Search, Grid3x3, List, ShoppingCart, X, SlidersHorizontal, Sparkles, ChevronDown } from 'lucide-react';
+import AnimHeart from '@/components/AnimHeart';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, formatPrice } from '@/lib/appwrite';
 import { cached, TTL } from '@/lib/cache';
 import { Query } from 'appwrite';
@@ -493,12 +494,12 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                             style={{
                               position: 'absolute', top: 8, right: 8, zIndex: 5,
                               width: 34, height: 34, borderRadius: '50%', border: 'none', cursor: 'pointer',
-                              alignItems: 'center', justifyContent: 'center',
-                              background: fav ? 'linear-gradient(135deg,#ec4899,#f9a8d4)' : 'rgba(255,255,255,0.95)',
-                              color: fav ? '#fff' : '#ec4899', boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              background: 'rgba(255,255,255,0.95)',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                             }}
                           >
-                            <Heart size={16} fill={fav ? '#fff' : 'none'} />
+                            <AnimHeart filled={fav} size={22} />
                           </button>
                           {hasDisc && (
                             <div className="pk-disc-badge" style={{ position: 'absolute', top: 8, right: 8, zIndex: 3 }}>
@@ -519,8 +520,8 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                             </button>
                             <button onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorite(p.$id); }}
                               title={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
-                              style={{ width: 36, height: 36, borderRadius: '50%', background: fav ? 'linear-gradient(135deg,#ec4899,#f9a8d4)' : '#fff', border: 'none', color: fav ? '#fff' : '#ec4899', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,0.12)', transition: 'all 0.2s' }}>
-                              <Heart size={15} fill={fav ? '#fff' : 'none'} />
+                              style={{ width: 36, height: 36, borderRadius: '50%', background: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,0.12)', transition: 'all 0.2s' }}>
+                              <AnimHeart filled={fav} size={24} />
                             </button>
                             <button onClick={e => { e.preventDefault(); e.stopPropagation(); if (p.STOCK !== 0) addItem(p); }}
                               disabled={p.STOCK === 0}
@@ -563,7 +564,6 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                       <Link href={`/productos/${p.$id}`} className="pk-card-list-media" onClick={e => handleCardImageClick(p, e)} style={{ position: 'relative', width: 110, height: 110, borderRadius: 14, overflow: 'hidden', background: '#fef2f8', flexShrink: 0 }}>
                         {p.IMAGEURL ? <Image src={p.IMAGEURL} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="110px" /> : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 36 }}>📦</div>}
                         {hasDisc && <div style={{ position: 'absolute', top: 6, left: 6, zIndex: 3 }}><AperturaDiscountBadge percent={disc} size="sm" /></div>}
-                        <button type="button" className="pk-card-fav pk-card-list-fav" aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'} onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorite(p.$id); }} style={{ position: 'absolute', top: 6, right: 6, zIndex: 5, width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer', alignItems: 'center', justifyContent: 'center', background: fav ? 'linear-gradient(135deg,#ec4899,#f9a8d4)' : 'rgba(255,255,255,0.95)', color: fav ? '#fff' : '#ec4899', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}><Heart size={14} fill={fav ? '#fff' : 'none'} /></button>
                       </Link>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
@@ -581,8 +581,8 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                           <Search size={16} />
                         </button>
                         <button onClick={() => toggleFavorite(p.$id)} title={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
-                          style={{ width: 40, height: 40, borderRadius: '50%', background: fav ? 'linear-gradient(135deg,#ec4899,#f9a8d4)' : '#fef2f8', border: 'none', color: fav ? '#fff' : '#ec4899', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Heart size={16} fill={fav ? '#fff' : 'none'} />
+                          style={{ width: 40, height: 40, borderRadius: '50%', background: '#fef2f8', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <AnimHeart filled={fav} size={24} />
                         </button>
                         <button onClick={() => p.STOCK !== 0 && addItem(p)} disabled={p.STOCK === 0} title="Agregar al carrito"
                           style={{ width: 40, height: 40, borderRadius: '50%', background: p.STOCK === 0 ? '#e5e7eb' : 'linear-gradient(135deg,#ec4899,#db2777)', border: 'none', color: '#fff', cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: p.STOCK === 0 ? 'none' : '0 4px 14px rgba(236,72,153,0.3)' }}>
@@ -661,7 +661,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           height: 148px; width: auto; max-width: min(240px, 42vw);
           object-fit: contain; display: block;
         }
-        .pk-card-fav { display: none; align-items: center; justify-content: center; }
+        .pk-card-fav { display: flex; align-items: center; justify-content: center; }
 
         @media (hover: hover) and (pointer: fine) {
           .pk-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(236,72,153,0.15); border-color: #fbcfe8; }
