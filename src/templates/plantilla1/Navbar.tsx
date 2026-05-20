@@ -339,7 +339,7 @@ export default function Navbar1() {
           bottom: calc(100% + 24px);
           left: 50%;
           transform: translateX(-50%);
-          width: 200px; height: 150px;
+          width: 280px; height: 160px;
           pointer-events: none; z-index: 10;
         }
         .tpl1-fab-bubble {
@@ -351,13 +351,13 @@ export default function Navbar1() {
         }
         .tpl1-fab-bubbles.open .tpl1-fab-bubble { pointer-events: auto; }
         /* Tienda — left, lower */
-        .tpl1-fab-bubble:nth-child(1) { left: 0; bottom: 0; transform: scale(0) translateY(50px); }
+        .tpl1-fab-bubble:nth-child(1) { left: 6px; bottom: 0; transform: scale(0) translateY(50px); }
         .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(1) { animation: tpl1-bbl-side 0.44s cubic-bezier(0.34,1.56,0.64,1) 0.05s forwards; }
         /* Catálogo — top center, highest */
         .tpl1-fab-bubble:nth-child(2) { left: 50%; top: 0; transform: translate(-50%, 50px) scale(0); }
         .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(2) { animation: tpl1-bbl-center 0.44s cubic-bezier(0.34,1.56,0.64,1) 0.10s forwards; }
         /* Llegan Pronto — right, lower */
-        .tpl1-fab-bubble:nth-child(3) { right: 0; bottom: 0; transform: scale(0) translateY(50px); }
+        .tpl1-fab-bubble:nth-child(3) { right: 6px; bottom: 0; transform: scale(0) translateY(50px); }
         .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(3) { animation: tpl1-bbl-side 0.44s cubic-bezier(0.34,1.56,0.64,1) 0.05s forwards; }
         .tpl1-bubble-circle {
           width: 54px; height: 54px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
