@@ -15,6 +15,7 @@ import NotificationsOverlay from '@/components/NotificationsOverlay';
 import { usePrimaryAddress } from '@/hooks/usePrimaryAddress';
 import { getWhatsAppUrl, openChatbot } from '@/lib/store-contact';
 import NavAvatarWithBadge from '@/components/NavAvatarWithBadge';
+import lottie from 'lottie-web';
 
 const PINK_PRIMARY = '#ec4899';
 const PINK_LIGHT = '#f9a8d4';
@@ -51,9 +52,22 @@ export default function Navbar1() {
   const [fabOpen, setFabOpen] = useState(false);
   const [navLogoUrl, setNavLogoUrl] = useState<string>('');
   const [navStoreName, setNavStoreName] = useState<string>('');
+  const lottieRef = useRef<HTMLDivElement>(null);
 
   // Close FAB on route change
   useEffect(() => { setFabOpen(false); }, [pathname]);
+
+  // Load Lottie animation for FAB button
+  useEffect(() => {
+    if (!lottieRef.current) return;
+    lottie.loadAnimation({
+      container: lottieRef.current,
+      renderer: 'svg',
+      loop: true,
+      autoplay: true,
+      path: '/button.json'
+    });
+  }, []);
 
   // Cargar logo del theme config (usar logo de scroll si existe)
   useEffect(() => {
@@ -309,25 +323,23 @@ export default function Navbar1() {
         .tpl1-fab-wrap { position: relative; display: flex; flex-direction: column; align-items: center; }
         .tpl1-fab-btn {
           width: 54px; height: 54px; border-radius: 50%; border: none; cursor: pointer;
-          background: linear-gradient(135deg, #ff006e 0%, #f72585 45%, #b5179e 100%);
+          background: linear-gradient(135deg, #ff8fab 0%, #ffb6c1 45%, #ffc0cb 100%);
           color: #fff; display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 4px 16px rgba(247,37,133,0.5);
+          box-shadow: 0 4px 16px rgba(247,37,133,0.25);
           transition: box-shadow 0.25s ease, transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
           margin-top: -18px; position: relative; z-index: 2; overflow: hidden;
         }
-        .tpl1-fab-btn:hover { box-shadow: 0 6px 22px rgba(247,37,133,0.65); transform: scale(1.06); }
+        .tpl1-fab-btn:hover { box-shadow: 0 6px 22px rgba(247,37,133,0.35); transform: scale(1.06); }
         .tpl1-fab-btn:active { transform: scale(0.91); }
-        .tpl1-fab-btn svg { width: 24px; height: 24px; transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1); position: relative; z-index: 1; }
-        .tpl1-fab-btn.open svg { transform: rotate(135deg); }
         .tpl1-fab-label { font-size: 9px; font-weight: 800; color: #f72585; margin-top: 2px; font-family: 'DM Sans', system-ui, sans-serif; letter-spacing: -0.02em; }
         .tpl1-fab-particles {
           position: absolute; inset: 0; border-radius: 50%; pointer-events: none; z-index: 0;
           background:
-            radial-gradient(circle 3px at 20% 30%, rgba(255,255,255,0.95), transparent),
-            radial-gradient(circle 2px at 75% 18%, rgba(255,255,255,0.8), transparent),
-            radial-gradient(circle 2.5px at 55% 75%, rgba(255,255,255,0.85), transparent),
-            radial-gradient(circle 2px at 28% 68%, rgba(255,255,255,0.7), transparent),
-            radial-gradient(circle 3px at 80% 62%, rgba(255,255,255,0.75), transparent);
+            radial-gradient(circle 4px at 20% 30%, rgba(255,255,255,1), transparent),
+            radial-gradient(circle 3px at 75% 18%, rgba(255,255,255,0.9), transparent),
+            radial-gradient(circle 3.5px at 55% 75%, rgba(255,255,255,0.95), transparent),
+            radial-gradient(circle 3px at 28% 68%, rgba(255,255,255,0.85), transparent),
+            radial-gradient(circle 4px at 80% 62%, rgba(255,255,255,0.9), transparent);
           background-size: 38% 38%, 28% 28%, 32% 32%, 26% 26%, 30% 30%;
           background-repeat: no-repeat;
           background-position: 20% 30%, 75% 18%, 55% 75%, 28% 68%, 80% 62%;
@@ -350,12 +362,14 @@ export default function Navbar1() {
           opacity: 0; pointer-events: none;
           transform-origin: center bottom;
         }
+        .tpl1-fab-bubble:hover { transform: none !important; }
         .tpl1-fab-bubbles.open .tpl1-fab-bubble { pointer-events: auto; }
         /* Llegan Pronto — left, lower */
         .tpl1-fab-bubble:nth-child(1) { left: 70px; bottom: 0; }
+        .tpl1-fab-bubble:nth-child(1) .tpl1-bubble-label { padding: 4px 24px 4px 14px; }
         .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(1) { animation: tpl1-bbl-left 0.44s cubic-bezier(0.34,1.56,0.64,1) 0.05s forwards; }
         /* Catálogo — top center, highest */
-        .tpl1-fab-bubble:nth-child(2) { left: 50%; top: 0; transform: translate(-50%,0); }
+        .tpl1-fab-bubble:nth-child(2) { left: 50%; top: -20px; transform: translate(-50%,0); }
         .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(2) { animation: tpl1-bbl-top 0.44s cubic-bezier(0.34,1.56,0.64,1) 0.10s forwards; }
         /* Tienda — right, lower */
         .tpl1-fab-bubble:nth-child(3) { right: 70px; bottom: 0; }
@@ -367,10 +381,14 @@ export default function Navbar1() {
           flex-shrink: 0;
         }
         .tpl1-bubble-circle svg { width: 26px; height: 26px; color: #f72585; }
+        .tpl1-en-camino-icon { width: 26px; height: 26px; }
+        .tpl1-catalog-icon { width: 26px; height: 26px; }
+        .tpl1-shop-icon { width: 26px; height: 26px; }
         .tpl1-bubble-label {
-          font-size: 10px; font-weight: 800; color: #1a1a2e; font-family: 'DM Sans', system-ui, sans-serif;
-          background: rgba(255,255,255,0.96); backdrop-filter: blur(6px); padding: 3px 9px; border-radius: 999px;
+          font-size: 11px; font-weight: 800; color: #1a1a2e; font-family: 'DM Sans', system-ui, sans-serif;
+          background: rgba(255,255,255,0.96); backdrop-filter: blur(6px); padding: 4px 24px 4px 15px; border-radius: 999px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.12); border: 1px solid rgba(247,37,133,0.18);
+          min-width: 80px; text-align: left;
         }
 
         /* FAB overlay */
@@ -772,21 +790,35 @@ export default function Navbar1() {
           <div className="tpl1-fab-wrap">
             <div className={`tpl1-fab-bubbles${fabOpen ? ' open' : ''}`}>
               <Link href="/llegan-pronto" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
-                <span className="tpl1-bubble-label">Llegan Pronto</span>
-                <div className="tpl1-bubble-circle"><Truck /></div>
+                <span className="tpl1-bubble-label">En Camino</span>
+                <div className="tpl1-bubble-circle">
+                  <svg viewBox="0 0 461.941 461.941" className="tpl1-en-camino-icon" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M226.496,190.563c2.862-0.638,5.832-0.639,8.695-0.001l113.612,25.286l-10.658-67.5c-1.112-7.041-7.171-12.233-14.3-12.252 l-31.675-0.085l-5.185-64.064c-0.609-7.523-6.882-13.325-14.43-13.345l-21.56-0.058l0.1-37.157 c0.03-11.045-8.9-20.024-19.946-20.054c-0.019,0-0.036,0-0.055,0c-11.02,0-19.969,8.919-19.999,19.946l-0.1,37.157l-20.988-0.056 c-7.548-0.021-13.852,5.747-14.501,13.268l-5.529,64.036l-31.26-0.084c-7.128-0.019-13.216,5.14-14.365,12.175l-11.116,68.028 L226.496,190.563z" fill="#e396bf"/>
+                    <path d="M110.416,375.186c17.402-12.674,38.307-19.514,60.277-19.514c21.969,0,42.875,6.841,60.277,19.514 c17.402-12.674,38.307-19.514,60.277-19.514c21.969,0,42.872,6.84,60.275,19.512c7.392-5.388,15.418-9.711,23.883-12.916 l27.664-76.601c1.417-3.924,1.077-8.268-0.932-11.924c-2.01-3.656-5.495-6.27-9.567-7.177l-161.721-35.994L69.365,266.558 c-4.071,0.907-7.556,3.522-9.565,7.178c-2.009,3.656-2.348,7.999-0.931,11.922l27.675,76.632 C95.007,365.49,103.029,369.806,110.416,375.186z" fill="#e396bf"/>
+                    <path d="M456.083,413.984c-11.828-11.828-27.554-18.342-44.281-18.342s-32.453,6.514-44.281,18.342 c-4.273,4.273-9.954,6.626-15.997,6.626c-6.043,0-11.724-2.353-15.996-6.626c-12.209-12.208-28.246-18.312-44.282-18.312 c-16.036,0-32.072,6.104-44.28,18.312c-4.273,4.273-9.954,6.626-15.997,6.626c-6.043,0-11.724-2.353-15.996-6.626 c-12.209-12.208-28.246-18.312-44.282-18.312c-16.036,0-32.072,6.104-44.28,18.312c-4.41,4.41-10.204,6.615-15.996,6.615 c-5.794,0-11.586-2.205-15.997-6.615c-12.208-12.208-28.245-18.312-44.281-18.312c-16.036,0-32.072,6.104-44.28,18.312 c-7.811,7.811-7.811,20.474,0,28.284c7.81,7.81,20.473,7.811,28.284,0c4.41-4.41,10.203-6.615,15.997-6.615 s11.586,2.205,15.997,6.616c12.208,12.208,28.244,18.312,44.28,18.312s32.073-6.104,44.281-18.312 c4.41-4.411,10.204-6.616,15.997-6.616s11.586,2.205,15.996,6.616c11.827,11.827,27.554,18.341,44.28,18.341c0,0,0,0,0,0h0 c16.727,0,32.453-6.514,44.281-18.342c4.41-4.41,10.204-6.615,15.997-6.615s11.586,2.205,15.996,6.616 c11.827,11.827,27.554,18.341,44.28,18.341h0h0c16.727,0,32.453-6.514,44.281-18.342c4.273-4.272,9.954-6.626,15.997-6.626 c6.043,0,11.724,2.354,15.997,6.626c7.811,7.81,20.473,7.811,28.284,0C463.894,434.458,463.894,421.794,456.083,413.984z" fill="#e396bf"/>
+                  </svg>
+                </div>
               </Link>
               <Link href="/catalogo" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
                 <span className="tpl1-bubble-label">Catálogo</span>
-                <div className="tpl1-bubble-circle"><LayoutGrid /></div>
+                <div className="tpl1-bubble-circle">
+                  <svg viewBox="0 0 208 256" className="tpl1-catalog-icon" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M105.52,76.24c-15.29,0-27.64,12.37-27.64,27.58c0,15.26,12.4,27.59,27.64,27.59c15.25,0,27.65-12.33,27.65-27.59 S120.77,76.24,105.52,76.24z M105.52,123.36c-10.76,0-19.52-8.75-19.52-19.49c0-10.73,8.76-19.48,19.52-19.48 c10.77,0,19.53,8.7,19.53,19.48C125.05,114.61,116.29,123.36,105.52,123.36z M154.6,72.71h-12.51c-1.94,0-3.54,1.54-3.54,3.53v5.32 c0,1.93,1.55,3.52,3.54,3.52h12.51c1.94,0,3.53-1.54,3.53-3.52v-5.32C158.13,74.3,156.59,72.71,154.6,72.71z M154.6,72.71h-12.51 c-1.94,0-3.54,1.54-3.54,3.53v5.32c0,1.93,1.55,3.52,3.54,3.52h12.51c1.94,0,3.53-1.54,3.53-3.52v-5.32 C158.13,74.3,156.59,72.71,154.6,72.71z M105.52,76.24c-15.29,0-27.64,12.37-27.64,27.58c0,15.26,12.4,27.59,27.64,27.59 c15.25,0,27.65-12.33,27.65-27.59S120.77,76.24,105.52,76.24z M105.52,123.36c-10.76,0-19.52-8.75-19.52-19.49 c0-10.73,8.76-19.48,19.52-19.48c10.77,0,19.53,8.7,19.53,19.48C125.05,114.61,116.29,123.36,105.52,123.36z M205.82,196.86V2H35.8 C17.53,2,2,16.72,2,35c0,0,0,184.49,0,186c0,17.87,14.42,32.19,32.08,32.9v0.1h171.74v-9.29c-13.23,0-23.93-10.7-23.93-23.93 C181.89,207.56,192.59,196.86,205.82,196.86z M44,76.19c0-6.86,5.58-12.43,12.45-12.43h2.59c0.25,0,0.45-0.05,0.65-0.1V57h18.24 v6.56c0.24,0.15,0.59,0.25,0.94,0.25h75.73c6.87,0,12.45,5.57,12.4,12.43v53.33c0,6.86-5.58,12.43-12.45,12.43h-98.1 C49.58,142,44,136.43,44,129.57V76.19z M172.6,220.68c0,9.39,4.04,17.87,10.3,23.93H35.4c-13.23,0.1-24.03-10.7-24.03-23.93 c0-12.52,9.79-22.81,22.11-23.72l149.72-0.31C176.74,202.71,172.6,211.19,172.6,220.68z M142.09,85.08h12.51 c1.94,0,3.53-1.54,3.53-3.52v-5.32c0-1.94-1.54-3.53-3.53-3.53h-12.51c-1.94,0-3.54,1.54-3.54,3.53v5.32 C138.55,83.49,140.1,85.08,142.09,85.08z M105.52,131.41c15.25,0,27.65-12.33,27.65-27.59s-12.4-27.58-27.65-27.58 c-15.29,0-27.64,12.37-27.64,27.58C77.88,119.08,90.28,131.41,105.52,131.41z M105.52,84.39c10.77,0,19.53,8.7,19.53,19.48 c0,10.74-8.76,19.49-19.53,19.49c-10.76,0-19.52-8.75-19.52-19.49C86,93.14,94.76,84.39,105.52,84.39z" fill="#e396bf"/>
+                  </svg>
+                </div>
               </Link>
               <Link href="/productos" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
                 <span className="tpl1-bubble-label">Tienda</span>
-                <div className="tpl1-bubble-circle"><Store /></div>
+                <div className="tpl1-bubble-circle">
+                  <svg viewBox="0 0 256 253" className="tpl1-shop-icon" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M146.142,143.991c0-4.774,3.903-8.677,8.677-8.677s8.677,3.903,8.677,8.677s-3.827,8.677-8.677,8.677 C150.007,152.668,146.142,148.766,146.142,143.991z M177,122v86l-98-0.038V122H177z M171,128H85v62.671l25.991-49.599l17.718,36.375 l18.604-11.632L171,188.36V128z M2,69c0,13.678,9.625,25.302,22,29.576V233H2v18h252v-18h-22V98.554 c12.89-3.945,21.699-15.396,22-29.554v-8H2V69z M65.29,68.346c0,6.477,6.755,31.47,31.727,31.47 c21.689,0,31.202-19.615,31.202-31.47c0,11.052,7.41,31.447,31.464,31.447c21.733,0,31.363-20.999,31.363-31.447 c0,14.425,9.726,26.416,22.954,30.154V233H42V98.594C55.402,94.966,65.29,82.895,65.29,68.346z M222.832,22H223V2H34v20L2,54h252 L222.832,22z" fill="#e396bf"/>
+                  </svg>
+                </div>
               </Link>
             </div>
             <button className={`tpl1-fab-btn${fabOpen ? ' open' : ''}`} onClick={() => setFabOpen(v => !v)} aria-label="Explorar">
               <span className="tpl1-fab-particles" aria-hidden="true" />
-              <Compass />
+              <div ref={lottieRef} style={{ width: '100%', height: '100%' }} />
             </button>
             <span className="tpl1-fab-label">Explorar</span>
           </div>
