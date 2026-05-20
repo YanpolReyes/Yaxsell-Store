@@ -325,18 +325,19 @@ export default function Navbar1() {
         /* Bubble items */
         .tpl1-fab-bubbles {
           position: absolute;
-          bottom: calc(100% + 6px);
-          left: 50%; transform: translateX(-50%);
+          bottom: calc(100% + 8px);
+          left: 50%;
+          transform: translateX(calc(-100% + 26px));
           display: flex; flex-direction: column;
-          align-items: center; gap: 10px;
+          align-items: flex-end; gap: 12px;
           pointer-events: none; z-index: 10;
-          padding-bottom: 2px;
         }
         .tpl1-fab-bubbles.open { pointer-events: auto; }
         .tpl1-fab-bubble {
-          display: flex; align-items: center; gap: 10px; text-decoration: none;
+          display: flex; flex-direction: row; align-items: center; gap: 10px;
+          text-decoration: none; white-space: nowrap;
           opacity: 0; transform: scale(0.3) translateY(12px);
-          pointer-events: none; white-space: nowrap;
+          pointer-events: none;
         }
         .tpl1-fab-bubbles.open .tpl1-fab-bubble { pointer-events: auto; }
         .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(1) { animation: tpl1-bubble-pop 0.42s cubic-bezier(0.34,1.56,0.64,1) 0.02s forwards; }
@@ -354,7 +355,6 @@ export default function Navbar1() {
           font-size: 12px; font-weight: 700; color: #1a1a2e; font-family: 'DM Sans', system-ui, sans-serif;
           background: rgba(255,255,255,0.96); backdrop-filter: blur(8px); padding: 5px 13px; border-radius: 999px;
           box-shadow: 0 2px 10px rgba(0,0,0,0.10); border: 1px solid rgba(236,72,153,0.15);
-          order: -1;
         }
 
         /* FAB overlay */
