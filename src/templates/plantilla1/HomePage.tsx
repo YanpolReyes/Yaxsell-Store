@@ -7974,7 +7974,7 @@ export default function HomePage1() {
 
     // Remove specific leftover elements after footer that cause blank scroll space
     const root = containerRef.current;
-    root.querySelectorAll('.fusion-overlay-custom, .fusion-scroll-top').forEach(el => el.remove());
+    root.querySelectorAll('.section-subscribe-popup, .fusion-overlay-custom, .fusion-scroll-top').forEach(el => el.remove());
   }, [bodyHtml, user, isLoggedIn]);
 
   /* ── Avatar en header Shopify: reintenta tras auth / settings ── */
