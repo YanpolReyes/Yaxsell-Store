@@ -267,8 +267,9 @@ export default function Navbar1() {
         @keyframes tpl1-nav-pop { 0% { transform: scale(0.92); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
         @keyframes tpl1-fab-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(135deg); } }
         @keyframes tpl1-fab-spin-back { 0% { transform: rotate(135deg); } 100% { transform: rotate(0deg); } }
-        @keyframes tpl1-bbl-side   { 0% { opacity:0; transform: scale(0) translateY(50px); } 70% { opacity:1; transform: scale(1.12) translateY(-4px); } 100% { opacity:1; transform: scale(1) translateY(0); } }
-        @keyframes tpl1-bbl-center { 0% { opacity:0; transform: translate(-50%,50px) scale(0); } 70% { opacity:1; transform: translate(-50%,-4px) scale(1.12); } 100% { opacity:1; transform: translate(-50%,0) scale(1); } }
+        @keyframes tpl1-bbl-left   { 0% { opacity:0; transform: scale(0) translateY(30px); } 65% { opacity:1; transform: scale(1.1) translateY(-3px); } 100% { opacity:1; transform: scale(1) translateY(0); } }
+        @keyframes tpl1-bbl-top    { 0% { opacity:0; transform: translate(-50%,30px) scale(0); } 65% { opacity:1; transform: translate(-50%,-3px) scale(1.1); } 100% { opacity:1; transform: translate(-50%,0) scale(1); } }
+        @keyframes tpl1-bbl-right  { 0% { opacity:0; transform: scale(0) translateY(30px); } 65% { opacity:1; transform: scale(1.1) translateY(-3px); } 100% { opacity:1; transform: scale(1) translateY(0); } }
         @keyframes tpl1-fab-particles-anim { 0%   { background-position: 20% 30%, 75% 18%, 55% 75%, 28% 68%, 80% 62%; opacity:0.7; } 25%  { background-position: 68% 15%, 22% 68%, 82% 32%, 72% 18%, 12% 52%; opacity:1; } 50%  { background-position: 85% 58%, 48% 88%, 14% 22%, 52% 82%, 72% 8%; opacity:0.75; } 75%  { background-position: 28% 82%, 78% 42%, 52% 62%, 14% 32%, 78% 78%; opacity:1; } 100% { background-position: 20% 30%, 75% 18%, 55% 75%, 28% 68%, 80% 62%; opacity:0.7; } }
         .tpl1-bottom-nav {
           display: none;
@@ -350,15 +351,15 @@ export default function Navbar1() {
           transform-origin: center bottom;
         }
         .tpl1-fab-bubbles.open .tpl1-fab-bubble { pointer-events: auto; }
-        /* Tienda — left, lower */
-        .tpl1-fab-bubble:nth-child(1) { left: 6px; bottom: 0; transform: scale(0) translateY(50px); }
-        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(1) { animation: tpl1-bbl-side 0.44s cubic-bezier(0.34,1.56,0.64,1) 0.05s forwards; }
+        /* Llegan Pronto — left, lower */
+        .tpl1-fab-bubble:nth-child(1) { left: 70px; bottom: 0; }
+        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(1) { animation: tpl1-bbl-left 0.44s cubic-bezier(0.34,1.56,0.64,1) 0.05s forwards; }
         /* Catálogo — top center, highest */
-        .tpl1-fab-bubble:nth-child(2) { left: 50%; top: 0; transform: translate(-50%, 50px) scale(0); }
-        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(2) { animation: tpl1-bbl-center 0.44s cubic-bezier(0.34,1.56,0.64,1) 0.10s forwards; }
-        /* Llegan Pronto — right, lower */
-        .tpl1-fab-bubble:nth-child(3) { right: 6px; bottom: 0; transform: scale(0) translateY(50px); }
-        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(3) { animation: tpl1-bbl-side 0.44s cubic-bezier(0.34,1.56,0.64,1) 0.05s forwards; }
+        .tpl1-fab-bubble:nth-child(2) { left: 50%; top: 0; transform: translate(-50%,0); }
+        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(2) { animation: tpl1-bbl-top 0.44s cubic-bezier(0.34,1.56,0.64,1) 0.10s forwards; }
+        /* Tienda — right, lower */
+        .tpl1-fab-bubble:nth-child(3) { right: 70px; bottom: 0; }
+        .tpl1-fab-bubbles.open .tpl1-fab-bubble:nth-child(3) { animation: tpl1-bbl-right 0.44s cubic-bezier(0.34,1.56,0.64,1) 0.15s forwards; }
         .tpl1-bubble-circle {
           width: 54px; height: 54px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
           background: #fff; border: 2.5px solid rgba(247,37,133,0.3);
@@ -770,17 +771,17 @@ export default function Navbar1() {
           {/* FAB central — Tienda / Catálogo / Llegan Pronto */}
           <div className="tpl1-fab-wrap">
             <div className={`tpl1-fab-bubbles${fabOpen ? ' open' : ''}`}>
-              <Link href="/productos" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
-                <span className="tpl1-bubble-label">Tienda</span>
-                <div className="tpl1-bubble-circle"><Store /></div>
+              <Link href="/llegan-pronto" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
+                <span className="tpl1-bubble-label">Llegan Pronto</span>
+                <div className="tpl1-bubble-circle"><Truck /></div>
               </Link>
               <Link href="/catalogo" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
                 <span className="tpl1-bubble-label">Catálogo</span>
                 <div className="tpl1-bubble-circle"><LayoutGrid /></div>
               </Link>
-              <Link href="/llegan-pronto" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
-                <span className="tpl1-bubble-label">Llegan Pronto</span>
-                <div className="tpl1-bubble-circle"><Truck /></div>
+              <Link href="/productos" className="tpl1-fab-bubble" onClick={() => setFabOpen(false)}>
+                <span className="tpl1-bubble-label">Tienda</span>
+                <div className="tpl1-bubble-circle"><Store /></div>
               </Link>
             </div>
             <button className={`tpl1-fab-btn${fabOpen ? ' open' : ''}`} onClick={() => setFabOpen(v => !v)} aria-label="Explorar">
