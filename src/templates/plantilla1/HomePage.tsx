@@ -7971,6 +7971,10 @@ export default function HomePage1() {
     containerRef.current.innerHTML = bodyHtml;
     containerRef.current.dataset.htmlSet = '1';
     scheduleHomeHeaderAvatarSync(user, isLoggedIn);
+
+    // Remove specific leftover elements after footer that cause blank scroll space
+    const root = containerRef.current;
+    root.querySelectorAll('.fusion-overlay-custom, .fusion-scroll-top').forEach(el => el.remove());
   }, [bodyHtml, user, isLoggedIn]);
 
   /* ── Avatar en header Shopify: reintenta tras auth / settings ── */

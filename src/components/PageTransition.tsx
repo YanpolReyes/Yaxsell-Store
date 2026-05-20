@@ -22,7 +22,7 @@ export default function PageTransition({ children }: PageTransitionProps) {
           duration: 0.28,
           ease: [0.25, 0.46, 0.45, 0.94],
         }}
-        style={{ minHeight: '100vh' }}
+        style={{ minHeight: 'auto' }}
       >
         {children}
       </motion.div>

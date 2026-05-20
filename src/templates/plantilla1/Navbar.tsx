@@ -68,26 +68,23 @@ export default function Navbar1() {
       fetch(`/button.json?t=${Date.now()}`).then(r => r.json())
     ]).then(([lottieModule, data]) => {
       if (destroyed || !lottieRef.current) return;
-      // Replace all fill colors with soft pink and remove background circle layer
       function patchColors(obj: any) {
         if (!obj || typeof obj !== 'object') return;
         if (Array.isArray(obj)) { obj.forEach(patchColors); return; }
         for (const key of Object.keys(obj)) {
           const val = obj[key];
           if (key === 'c' && val && val.k && Array.isArray(val.k) && val.k.length === 4) {
-            val.k = [1, 0.714, 0.757, 1]; // soft pink #ffb6c1
+            val.k = [1, 0.714, 0.757, 1];
           }
           patchColors(val);
         }
       }
-      // Remove the solid background circle layer and masks that create pink circle
       if (data.layers) {
         data.layers = data.layers.filter((layer: any) => {
           if (layer.nm && layer.nm.toLowerCase().includes('circle')) return false;
           if (layer.nm && layer.nm.toLowerCase().includes('bg')) return false;
           return true;
         });
-        // Remove masks from all layers (they create the pink circle effect)
         data.layers.forEach((layer: any) => {
           if (layer.hasMask) { delete layer.hasMask; delete layer.masksProperties; }
         });
@@ -97,12 +94,10 @@ export default function Navbar1() {
         container: lottieRef.current,
         renderer: 'svg',
         loop: false,
-        autoplay: false,
+        autoplay: true,
         animationData: data
       });
-      // Restrict animation to first 25 frames (open state)
       anim.setSegment(0, 25);
-      anim.goToAndStop(0, true); // start frozen at frame 0
       lottieAnimRef.current = anim;
     }).catch(() => {});
     return () => {
@@ -414,7 +409,7 @@ export default function Navbar1() {
           background: transparent; color: #fff; display: flex; align-items: center; justify-content: center;
           box-shadow: none;
           transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-          margin-top: -18px; position: relative; z-index: 2; overflow: hidden;
+          margin-top: -18px; position: relative; z-index: 2; overflow: visible;
         }
         .tpl1-fab-btn svg { background: transparent !important; }
         .tpl1-fab-btn svg > g > path:first-child { fill: transparent !important; }
@@ -502,7 +497,7 @@ export default function Navbar1() {
         .tpl1-nav-mobile-fab--cb { background: linear-gradient(135deg, #3483fa, #6366f1) !important; }
         @media (max-width: 768px) {
           .tpl1-bottom-nav { display: block; }
-          body { padding-bottom: 64px; overflow-x: hidden; }
+          body { overflow-x: hidden; }
         }
 
         @keyframes tpl1AuthSheetIn { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
