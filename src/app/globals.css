@@ -31,7 +31,8 @@ body {
 /* Hide Shopify leftover elements after footer that cause blank scroll space */
 .section-subscribe-popup,
 .fusion-overlay-custom,
-.fusion-scroll-top { display: none !important; }
+.fusion-scroll-top,
+.quickView-popup { display: none !important; }
 
 .gradient-text {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
