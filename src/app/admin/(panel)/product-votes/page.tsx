@@ -24,6 +24,10 @@ export default function ProductVotesPage() {
   const [imageSaveProgress, setImageSaveProgress] = useState(0);
   const [imageSaveResults, setImageSaveResults] = useState<{ updated: number; notFound: number; errors: number } | null>(null);
 
+  // Individual image edit state
+  const [editingImage, setEditingImage] = useState<{ productId: string; currentUrl: string } | null>(null);
+  const [newImageUrl, setNewImageUrl] = useState('');
+
   const load = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -102,6 +106,28 @@ export default function ProductVotesPage() {
       await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, product.$id, { COMING_SOON: newVal });
       setProducts(prev => prev.map(p => p.$id === product.$id ? { ...p, COMING_SOON: newVal } : p));
     } catch (e: any) { alert('Error: ' + e.message); }
+  };
+
+  const handleEditImage = (product: Product) => {
+    setEditingImage({ productId: product.$id, currentUrl: product.IMAGEURL || '' });
+    setNewImageUrl(product.IMAGEURL || '');
+  };
+
+  const handleSaveImageEdit = async () => {
+    if (!editingImage) return;
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, editingImage.productId, { IMAGEURL: newImageUrl });
+      setProducts(prev => prev.map(p => p.$id === editingImage.productId ? { ...p, IMAGEURL: newImageUrl } : p));
+      setEditingImage(null);
+      setNewImageUrl('');
+    } catch (e: any) { alert('Error: ' + e.message); }
+  };
+
+  const handleCancelImageEdit = () => {
+    setEditingImage(null);
+    setNewImageUrl('');
   };
 
   const handleImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -292,7 +318,24 @@ export default function ProductVotesPage() {
             {comingSoonProducts.map(p => (
               <div key={p.$id} style={{ background: '#faf5ff', border: '1px solid #ddd6fe', borderRadius: 12, overflow: 'hidden' }}>
                 <div style={{ position: 'relative', aspectRatio: '1/1', background: '#f3f4f6' }}>
-                  {p.IMAGEURL ? <img src={p.IMAGEURL} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (
+                  {editingImage?.productId === p.$id ? (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: 12, gap: 8 }}>
+                      <input
+                        type="text"
+                        value={newImageUrl}
+                        onChange={e => setNewImageUrl(e.target.value)}
+                        placeholder="URL de imagen"
+                        style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, outline: 'none' }}
+                        autoFocus
+                      />
+                      <div style={{ display: 'flex', gap: 6, marginTop: 'auto' }}>
+                        <button onClick={handleSaveImageEdit} style={{ flex: 1, padding: '6px 0', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>Guardar</button>
+                        <button onClick={handleCancelImageEdit} style={{ flex: 1, padding: '6px 0', background: '#e5e7eb', color: '#333', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>Cancelar</button>
+                      </div>
+                    </div>
+                  ) : p.IMAGEURL ? (
+                    <img src={p.IMAGEURL} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><Package size={32} color="#d1d5db" /></div>
                   )}
                   <span style={{ position: 'absolute', top: 8, right: 8, background: '#7c3aed', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>Llegan Pronto</span>
@@ -301,7 +344,8 @@ export default function ProductVotesPage() {
                   <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.NAME}</p>
                   <p style={{ fontSize: 11, color: '#6b7280', margin: '0 0 8px' }}>{catMap[p.CATEGORYID || ''] || 'Sin categoría'}{p.sku ? ` · SKU: ${p.sku}` : ''}</p>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <Link href={`/producto/${p.$id}`} target="_blank" style={{ flex: 1, padding: '6px 0', background: '#f1f5f9', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 11, fontWeight: 600, color: '#333', textDecoration: 'none', textAlign: 'center' }}>Ver</Link>
+                    <Link href={`/productos/${p.$id}`} target="_blank" style={{ flex: 1, padding: '6px 0', background: '#f1f5f9', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 11, fontWeight: 600, color: '#333', textDecoration: 'none', textAlign: 'center' }}>Ver</Link>
+                    <button onClick={() => handleEditImage(p)} disabled={editingImage?.productId === p.$id} style={{ flex: 1, padding: '6px 0', background: editingImage?.productId === p.$id ? '#e5e7eb' : '#dbeafe', border: '1px solid #bfdbfe', borderRadius: 6, fontSize: 11, fontWeight: 600, color: '#2563eb', cursor: editingImage?.productId === p.$id ? 'not-allowed' : 'pointer' }}>Imagen</button>
                     <button onClick={() => handleRemoveComingSoon(p.$id)} style={{ flex: 1, padding: '6px 0', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, fontSize: 11, fontWeight: 600, color: '#dc2626', cursor: 'pointer' }}>Quitar</button>
                   </div>
                 </div>
