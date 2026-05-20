@@ -83,7 +83,7 @@ export default function ProductDetailPlantilla1() {
             ]);
             const cat = catDoc as any;
             setCategoryName(cat.name || '');
-            setCategoryBg(cat.BACKGROUND_IMAGE_URL || '/shopify/assets/template.jpg');
+            setCategoryBg(cat.BACKGROUND_IMAGE_URL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/young-asian-woman-sunglasses-going-shopping-holding-bags-from-malls-stores-smiling-standi.jpg?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=Kriv9I1%2BxlaQ82%2Fe3rYaugEThNVyRAfMagiNC6isWPR5mNdXx0WaR4y1vLh5hQ4dmePjvlnq4M9QLS4Q0IReBjghaydSO8rWXbyJvc6823UgzvzZxChCZeYWjy0bBJ9EtW%2Bc5NN1YT%2B%2B5nW7k5DZW5aTZH%2F7np5s2NTquTvxGzxGzpefVaylS4KJc19%2FLVuaznxVuOfYWpKoMM6XScrcwQwwD8ir51EW9XFwLdN528WtGF%2FCspzulD%2BVDC4VYHD0EVurQiAGNhSzeFExCT2byhbijHmJgnxWEM6SR%2BZWaBoYxFTbDIkSNbzU736uiNbaM%2BKrxzF9bZSjgtfI947A5g%3D%3D');
             setCategoryColor(cat.COLOR || PINK_PRIMARY);
             setCategoryIcon(cat.iconUrl || '');
             setRelated((relRes.documents as unknown as Product[]).filter(r => r.$id !== id).slice(0, 6));
