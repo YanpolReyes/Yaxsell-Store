@@ -853,6 +853,12 @@ export default function ProductsPage() {
                 <tr key={p.$id} className={`hover:bg-gray-50 transition-colors ${(p.STOCK ?? 0) === 0 ? 'bg-red-50/40' : ''}`}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
+                      <button onClick={() => { openEdit(p); setTimeout(() => setYexyOpen(true), 100); }} className="relative shrink-0 group" title="Preguntar a Yexy AI">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center hover:from-violet-700 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/20">
+                          <Sparkles className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+                      </button>
                       <div className="relative w-10 h-10 shrink-0 cursor-pointer group" onClick={() => setImageUrlModal({ productId: p.$id, currentUrl: p.IMAGEURL || '', newUrl: p.IMAGEURL || '' })} title="Click para cambiar imagen">
                         <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden">
                           {p.IMAGEURL ? <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" /> : <Package className="w-5 h-5 text-gray-400 m-auto mt-2.5" />}
@@ -921,7 +927,6 @@ export default function ProductsPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
                       <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition" title="Editar"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => { openEdit(p); setTimeout(() => setYexyOpen(true), 100); }} className="p-1.5 rounded-lg hover:bg-violet-50 text-gray-400 hover:text-violet-600 transition" title="Preguntar a Yexy"><MessageSquare className="w-3.5 h-3.5" /></button>
                       <button onClick={() => duplicate(p)} className="p-1.5 rounded-lg hover:bg-violet-50 text-gray-400 hover:text-violet-600 transition" title="Duplicar"><Copy className="w-3.5 h-3.5" /></button>
                       <button onClick={() => remove(p.$id)} disabled={deleteId === p.$id} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition disabled:opacity-50" title="Eliminar">
                         {deleteId === p.$id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
