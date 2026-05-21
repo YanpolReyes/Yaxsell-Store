@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAppwriteConfig, getServices, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { serverUpdateDocument } from '@/lib/appwrite-server';
+import { PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -11,9 +12,6 @@ export async function PATCH(req: NextRequest) {
         { status: 400 }
       );
     }
-
-    const cfg = getAppwriteConfig();
-    const { databases } = getServices();
 
     const updates: Record<string, unknown> = {};
     if (name !== undefined) updates.NAME = name;
@@ -43,12 +41,7 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const result = await databases.updateDocument(
-      cfg.databaseId,
-      PRODUCTS_COLLECTION_ID,
-      productId,
-      updates
-    );
+    const result = await serverUpdateDocument(PRODUCTS_COLLECTION_ID, productId, updates);
 
     const fieldsUpdated = Object.keys(updates).join(', ');
     return NextResponse.json({

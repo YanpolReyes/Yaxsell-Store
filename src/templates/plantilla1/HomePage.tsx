@@ -3237,7 +3237,8 @@ export default function HomePage1() {
     gallerySlides.forEach((slide, idx) => {
       const media = mediaItems[idx];
       if (!media?.url) {
-        slide.style.display = 'none';
+        // Remove unused slides from DOM entirely so Swiper doesn't show blank ones
+        slide.remove();
         return;
       }
       slide.style.display = '';
@@ -3323,7 +3324,7 @@ export default function HomePage1() {
     thumbnailSlides.forEach((thumb, idx) => {
       const media = mediaItems[idx];
       if (!media?.url) {
-        thumb.style.display = 'none';
+        thumb.remove();
         return;
       }
       thumb.style.display = '';
@@ -3342,6 +3343,34 @@ export default function HomePage1() {
         }
       }
     });
+
+    // If only 1 image and no video, also inject the main image directly into the left-content area
+    // as a fallback (bypassing Swiper which may not initialize properly with 1 slide)
+    if (!settings.featuredProductVideoUrl && images.length === 1) {
+      const leftContent = section.querySelector('.left-content') as HTMLElement;
+      if (leftContent && !leftContent.querySelector('.tpl1-fp-single-img')) {
+        const directImg = document.createElement('img');
+        directImg.src = images[0];
+        directImg.alt = featuredProduct.NAME;
+        directImg.className = 'tpl1-fp-single-img';
+        directImg.style.cssText = 'width:100%;height:auto;max-height:600px;object-fit:cover;display:block;border-radius:50px;';
+        // Insert before the swiper element
+        const swiperEl = leftContent.querySelector('fuzion-swiper-slider') || leftContent.firstElementChild;
+        if (swiperEl) {
+          leftContent.insertBefore(directImg, swiperEl);
+        } else {
+          leftContent.appendChild(directImg);
+        }
+        // Hide the swiper entirely for single-image
+        const swiperSlider = leftContent.querySelector('fuzion-swiper-slider') as HTMLElement;
+        if (swiperSlider) swiperSlider.style.display = 'none';
+      }
+    } else {
+      // Remove any previously injected single image
+      section.querySelectorAll('.tpl1-fp-single-img').forEach(el => el.remove());
+      const swiperEl = section.querySelector('.left-content fuzion-swiper-slider') as HTMLElement;
+      if (swiperEl) swiperEl.style.display = '';
+    }
 
     const productName = section.querySelector('.product-name') as HTMLElement;
     if (productName) productName.textContent = featuredProduct.NAME;

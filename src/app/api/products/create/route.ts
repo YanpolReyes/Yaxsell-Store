@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ID } from 'appwrite';
-import { getAppwriteConfig, getServices, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { serverCreateDocument } from '@/lib/appwrite-server';
+import { PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,9 +12,6 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-
-    const cfg = getAppwriteConfig();
-    const { databases } = getServices();
 
     // Build FEATURES string from sku and barcode
     let features = '';
@@ -39,16 +36,11 @@ export async function POST(req: NextRequest) {
     if (sku) productData.sku = sku;
     if (barcode) productData.barcode = barcode;
 
-    const result = await databases.createDocument(
-      cfg.databaseId,
-      PRODUCTS_COLLECTION_ID,
-      ID.unique(),
-      productData
-    );
+    const result = await serverCreateDocument(PRODUCTS_COLLECTION_ID, 'unique()', productData);
 
     try {
       const { notifyNewProduct } = await import('@/services/notificationService');
-      await notifyNewProduct({ $id: result.$id, NAME: name });
+      await notifyNewProduct({ $id: (result as any).$id, NAME: name });
     } catch {
       /* notificación opcional */
     }
@@ -56,7 +48,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       product: result,
-      message: `Producto "${name}" creado exitosamente con ID: ${result.$id}`,
+      message: `Producto "${name}" creado exitosamente`,
     });
   } catch (error: any) {
     console.error('Error creating product:', error);

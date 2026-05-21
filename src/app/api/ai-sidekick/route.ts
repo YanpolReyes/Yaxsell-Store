@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     const body = {
       system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
       contents,
-      generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
+      generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
     };
 
     const res = await fetch(GEMINI_URL, {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ID } from 'appwrite';
-import { getAppwriteConfig, getServices, CATEGORIES_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { serverCreateDocument } from '@/lib/appwrite-server';
+import { CATEGORIES_COLLECTION_ID } from '@/lib/appwrite-admin';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,9 +13,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const cfg = getAppwriteConfig();
-    const { databases } = getServices();
-
     const data: Record<string, unknown> = {
       name: name.trim(),
       description: description || '',
@@ -23,12 +20,7 @@ export async function POST(req: NextRequest) {
     };
     if (parentId) data.parentId = parentId;
 
-    const result = await databases.createDocument(
-      cfg.databaseId,
-      CATEGORIES_COLLECTION_ID,
-      ID.unique(),
-      data
-    );
+    const result = await serverCreateDocument(CATEGORIES_COLLECTION_ID, 'unique()', data);
 
     return NextResponse.json({
       success: true,
