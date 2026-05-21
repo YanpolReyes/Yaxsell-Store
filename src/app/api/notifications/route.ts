@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServices, getAppwriteConfig, COUPONS_COLLECTION } from '@/lib/appwrite';
-import { Query } from 'appwrite';
+import { serverListDocuments } from '@/lib/appwrite-server';
+import { COUPONS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import {
   createNotificationServer,
   notifyUnclaimedReward,
@@ -27,12 +27,10 @@ export async function POST(req: NextRequest) {
 
       if (email) {
         try {
-          const { databases } = getServices();
-          const { databaseId } = getAppwriteConfig();
-          const coupons = await databases.listDocuments(databaseId, COUPONS_COLLECTION, [
-            Query.equal('assignedEmail', email),
-            Query.equal('isUsed', false),
-            Query.limit(3),
+          const coupons = await serverListDocuments(COUPONS_COLLECTION_ID, [
+            JSON.stringify({ method: 'equal', attribute: 'assignedEmail', values: [email] }),
+            JSON.stringify({ method: 'equal', attribute: 'isUsed', values: [false] }),
+            JSON.stringify({ method: 'limit', values: [3] }),
           ]);
           if (coupons.total > 0) {
             const code = (coupons.documents[0] as { code?: string }).code;

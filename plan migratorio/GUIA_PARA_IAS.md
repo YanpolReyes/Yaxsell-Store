@@ -1,7 +1,9 @@
 # 📚 Documentación para IAs — Yaxsel Web Store
 
-> 🗓️ Última actualización: 18 mayo 2026  
+> 🗓️ Última actualización: 20 mayo 2026  
 > 🤖 Si eres una IA perdida leyendo esto: **bienvenida al infierno**. Acá está todo lo que necesitas saber para no cagarla.
+
+> 🚀 **MIGRACIÓN A NUEVO CLIENTE:** Ver `MIGRACION_EJECUTABLE.md` en esta misma carpeta. Tiene TODO listo para ejecutar: scripts, pasos, checklist.
 
 ---
 

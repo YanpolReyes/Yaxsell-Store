@@ -49,13 +49,20 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
         const acc = await account.get();
         const prefs = (acc as any).prefs || {};
         if (prefs.avatarFileId) setAvatarUrl(getFilePreviewUrl(prefs.avatarFileId));
-        // Check if user has available gifts (only if not claimed yet)
         setHasGifts(!prefs.welcomeGiftClaimed);
       } catch {}
     })();
   }, [isLoggedIn]);
 
-  if (!isLoggedIn || !user) return <>{children}</>;
+  if (!isLoggedIn || !user) {
+    return (
+      <div style={{ minHeight: '100vh', fontFamily: FF }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '20px 12px 60px', boxSizing: 'border-box' }}>
+          {children}
+        </div>
+      </div>
+    );
+  }
 
   const initials = user.name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
 

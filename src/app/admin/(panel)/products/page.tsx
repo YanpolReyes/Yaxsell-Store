@@ -47,6 +47,7 @@ export default function ProductsPage() {
   const [stockModal, setStockModal] = useState(false);
   const [stockAdj, setStockAdj] = useState<{ type: 'add' | 'set'; value: string }>({ type: 'add', value: '' });
   const [applyingStock, setApplyingStock] = useState(false);
+  const [imageUrlModal, setImageUrlModal] = useState<{ productId: string; currentUrl: string; newUrl: string } | null>(null);
   const [aiLoading, setAiLoading] = useState<'title' | 'desc' | null>(null);
   const [aiTitles, setAiTitles] = useState<string[]>([]);
 
@@ -314,6 +315,20 @@ export default function ProductsPage() {
   const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
   const catName = (id?: string) => categories.find(c => c.$id === id)?.name || '—';
 
+  const saveImageUrl = async () => {
+    if (!imageUrlModal) return;
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, imageUrlModal.productId, {
+        IMAGEURL: imageUrlModal.newUrl,
+      });
+      setProducts(prev => prev.map(p => p.$id === imageUrlModal.productId ? { ...p, IMAGEURL: imageUrlModal.newUrl } : p));
+      setImageUrlModal(null);
+      invalidateProductCache();
+    } catch (e: any) { alert('Error: ' + e.message); }
+  };
+
   const exportCSV = () => {
     const headers = ['ID', 'Nombre', 'Descripción', 'Precio', 'Stock', 'Categoría', 'Costo', 'Margen %', 'Precio Mayorista', 'Mín. Mayorista', 'Vendidos', 'Destacado', 'URL Imagen'];
     const rows = filtered.map(p => [
@@ -514,9 +529,12 @@ export default function ProductsPage() {
                 <tr key={p.$id} className={`hover:bg-gray-50 transition-colors ${(p.STOCK ?? 0) === 0 ? 'bg-red-50/40' : ''}`}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="relative w-10 h-10 shrink-0">
+                      <div className="relative w-10 h-10 shrink-0 cursor-pointer group" onClick={() => setImageUrlModal({ productId: p.$id, currentUrl: p.IMAGEURL || '', newUrl: p.IMAGEURL || '' })} title="Click para cambiar imagen">
                         <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden">
                           {p.IMAGEURL ? <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" /> : <Package className="w-5 h-5 text-gray-400 m-auto mt-2.5" />}
+                        </div>
+                        <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Pencil className="w-3 h-3 text-white" />
                         </div>
                         {(() => { const cnt = [p.IMAGEURL, p.IMAGEURL2, p.IMAGEURL3].filter(Boolean).length; return cnt > 1 ? <span className="absolute -bottom-1 -right-1 text-[9px] font-bold bg-indigo-600 text-white rounded-full w-4 h-4 flex items-center justify-center leading-none">{cnt}</span> : null; })()}
                       </div>
@@ -845,6 +863,35 @@ export default function ProductsPage() {
                 {applyingStock ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Boxes className="w-4 h-4" />}
                 {applyingStock ? 'Aplicando...' : 'Aplicar'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image URL replacement modal */}
+      {imageUrlModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <p className="font-bold text-gray-900">Cambiar imagen</p>
+              <button onClick={() => setImageUrlModal(null)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              {imageUrlModal.currentUrl && (
+                <div className="w-full h-32 rounded-xl bg-gray-100 overflow-hidden">
+                  <img src={imageUrlModal.currentUrl} alt="Actual" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">URL de la nueva imagen</label>
+                <input type="url" value={imageUrlModal.newUrl} onChange={e => setImageUrlModal(m => m ? { ...m, newUrl: e.target.value } : null)}
+                  placeholder="https://ejemplo.com/imagen.jpg"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-5 border-t border-gray-100">
+              <button onClick={() => setImageUrlModal(null)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
+              <button onClick={saveImageUrl} className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition">Guardar</button>
             </div>
           </div>
         </div>

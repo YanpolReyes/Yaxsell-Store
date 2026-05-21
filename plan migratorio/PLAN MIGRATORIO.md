@@ -69,59 +69,67 @@
 
 ## 3. Esquemas Detallados por Colección
 
-### 3.1 `products` (24 atributos)
-| Atributo | Tipo | Size | Requerido | Default |
-|----------|------|------|-----------|---------|
-| NAME | string | 256 | ✓ | — |
-| DESCRIPTION | string | 8192 | ✗ | — |
-| PRICE | integer | — | ✓ | — |
-| CURRENTPRICE | integer | — | ✗ | — |
-| COST | integer | — | ✗ | — |
-| STOCK | integer | — | ✓ | — |
-| SOLDQUANTITY | integer | — | ✗ | — |
-| CATEGORYID | string | 256 | ✗ | — |
-| SUBCATEGORYID | string | 256 | ✗ | — |
-| SELLERID | string | 256 | ✗ | — |
-| IMAGEURL | string | 2048 | ✗ | — |
-| IMAGEURL2 | string | 2048 | ✗ | — |
-| IMAGEURL3 | string | 2048 | ✗ | — |
-| RATING | double | — | ✗ | — |
-| NUMREVIEWS | integer | — | ✗ | — |
-| WHOLESALEPRICE | integer | — | ✗ | — |
-| WHOLESALEMINQUANTITY | integer | — | ✗ | — |
-| ISFEATURED | boolean | — | ✗ | — |
-| ISACTIVE | boolean | — | ✗ | — |
-| PACKQTY | integer | — | ✗ | — |
-| RESTOCKTHRESHOLD | integer | — | ✗ | — |
-| CUSTOM_PRIMARY_COLOR | string | 50 | ✗ | — |
-| CUSTOM_SECONDARY_COLOR | string | 50 | ✗ | — |
-| CUSTOM_USE_GRADIENT | boolean | — | ✗ | — |
-| jumpseller_id | string | 256 | ✗ | — |
+### 3.1 `products` (25 atributos) — actualizado Mayo 19
+| Atributo | Tipo | Size | Requerido | Default | Notas |
+|----------|------|------|-----------|---------|-------|
+| NAME | string | 256 | ✓ | — | |
+| DESCRIPTION | string | 8192 | ✗ | — | |
+| PRICE | integer | — | ✓ | — | |
+| CURRENTPRICE | integer | — | ✗ | — | |
+| COST | integer | — | ✗ | — | |
+| STOCK | integer | — | ✓ | — | |
+| SOLDQUANTITY | integer | — | ✗ | — | |
+| CATEGORYID | string | 256 | ✗ | — | |
+| SUBCATEGORYID | string | 256 | ✗ | — | |
+| IMAGEURL | string | 2048 | ✗ | — | |
+| IMAGEURL2 | string | 2048 | ✗ | — | |
+| IMAGEURL3 | string | 2048 | ✗ | — | |
+| RATING | double | — | ✗ | — | |
+| NUMREVIEWS | integer | — | ✗ | — | |
+| WHOLESALEPRICE | integer | — | ✗ | — | |
+| WHOLESALEMINQUANTITY | integer | — | ✗ | — | |
+| ISFEATURED | boolean | — | ✗ | — | |
+| ISACTIVE | boolean | — | ✗ | — | |
+| PACKQTY | integer | — | ✗ | — | |
+| RESTOCKTHRESHOLD | integer | — | ✗ | — | |
+| jumpseller_id | string | 256 | ✗ | — | |
+| section | integer | — | ✗ | — | Nuevo |
+| barcode | string | 64 | ✗ | — | Nuevo |
+| sku | string | 128 | ✗ | — | Nuevo |
+| COMING_SOON | boolean | — | ✗ | — | Nuevo — marca "Llegan Pronto" |
+| DATE_ADDED | string | 20 | ✗ | — | Nuevo — fecha ingreso (YYYY-MM-DD) |
+| ~~CUSTOM_PRIMARY_COLOR~~ | ~~string~~ | ~~50~~ | ✗ | — | ❌ Eliminado Mayo 19 |
+| ~~CUSTOM_SECONDARY_COLOR~~ | ~~string~~ | ~~50~~ | ✗ | — | ❌ Eliminado Mayo 19 |
+| ~~CUSTOM_USE_GRADIENT~~ | ~~boolean~~ | — | ✗ | — | ❌ Eliminado Mayo 19 |
 
-### 3.2 `inventory_products` (21 atributos)
-| Atributo | Tipo | Size | Requerido | Default |
-|----------|------|------|-----------|---------|
-| sku | string | 256 | ✗ | — |
-| barcode | string | 256 | ✗ | — |
-| NAME | string | 256 | ✓ | — |
-| PRICE | integer | — | ✗ | 0 |
-| STOCK | integer | — | ✗ | 0 |
-| CATEGORYID | string | 256 | ✗ | — |
-| SUBCATEGORYID | string | 256 | ✗ | — |
-| IMAGEURL | string | 2048 | ✗ | — |
-| IMAGEURL2 | string | 2048 | ✗ | — |
-| IMAGEURL3 | string | 2048 | ✗ | — |
-| WHOLESALEPRICE | integer | — | ✗ | — |
-| WHOLESALEMINQUANTITY | integer | — | ✗ | — |
-| ISACTIVE | boolean | — | ✗ | false |
-| published_product_id | string | 256 | ✗ | — |
-| published_at | string | 64 | ✗ | — |
-| imported_at | string | 64 | ✗ | — |
-| FEATURES | string | 2048 | ✗ | — |
-| TAGS | string | 512 | ✗ | — |
-| name_cn | string | 256 | ✗ | — |
-| IMAGEURL4 | string | 1024 | ✗ | — |
-| IMAGEURL5 | string | 1024 | ✗ | — |
+### 3.2 `inventory_products` (25 atributos) — actualizado Mayo 19
+| Atributo | Tipo | Size | Requerido | Default | Notas |
+|----------|------|------|-----------|---------|-------|
+| sku | string | 256 | ✗ | — | |
+| barcode | string | 256 | ✗ | — | |
+| NAME | string | 256 | ✓ | — | |
+| PRICE | integer | — | ✗ | 0 | |
+| STOCK | integer | — | ✗ | 0 | |
+| CATEGORYID | string | 256 | ✗ | — | |
+| SUBCATEGORYID | string | 256 | ✗ | — | |
+| IMAGEURL | string | 2048 | ✗ | — | |
+| IMAGEURL2 | string | 2048 | ✗ | — | |
+| IMAGEURL3 | string | 2048 | ✗ | — | |
+| WHOLESALEPRICE | integer | — | ✗ | — | |
+| WHOLESALEMINQUANTITY | integer | — | ✗ | — | |
+| ISACTIVE | boolean | — | ✗ | false | |
+| published_product_id | string | 256 | ✗ | — | |
+| published_at | string | 64 | ✗ | — | |
+| imported_at | string | 64 | ✗ | — | |
+| FEATURES | string | 2048 | ✗ | — | |
+| TAGS | string | 512 | ✗ | — | |
+| name_cn | string | 256 | ✗ | — | |
+| IMAGEURL4 | string | 1024 | ✗ | — | |
+| IMAGEURL5 | string | 1024 | ✗ | — | |
+| PACKQTY | integer | — | ✗ | 0 | |
+| section | integer | — | ✗ | — | Nuevo |
+| COMING_SOON | boolean | — | ✗ | — | Nuevo — marca "Llegan Pronto" |
+| DATE_ADDED | string | 256 | ✗ | — | Nuevo — fecha ingreso |
 
 ### 3.3 `categories` (5 atributos)
 | Atributo | Tipo | Size | Requerido | Default |
@@ -839,7 +847,9 @@ Estas colecciones **NO** pueden recibir más atributos en el plan gratuito:
 | `theme_config` | `SECTIONS` | string |
 | `products` | `jumpseller_id` | string |
 
-### 3.1 `products` — esquema REAL actualizado (24 atributos)
+### 3.1 `products` — esquema REAL actualizado (25 atributos, Mayo 19)
+> ⚠️ Se eliminaron `CUSTOM_PRIMARY_COLOR`, `CUSTOM_SECONDARY_COLOR`, `CUSTOM_USE_GRADIENT`. Se agregaron `section`, `barcode`, `sku`, `COMING_SOON`, `DATE_ADDED`.
+
 | Atributo | Tipo | Size | Requerido | Default |
 |----------|------|------|-----------|---------|
 | NAME | string | 256 | ✓ | — |
@@ -851,7 +861,6 @@ Estas colecciones **NO** pueden recibir más atributos en el plan gratuito:
 | SOLDQUANTITY | integer | — | ✗ | — |
 | CATEGORYID | string | 256 | ✗ | — |
 | SUBCATEGORYID | string | 256 | ✗ | — |
-| SELLERID | string | 256 | ✗ | — |
 | IMAGEURL | string | 2048 | ✗ | — |
 | IMAGEURL2 | string | 2048 | ✗ | — |
 | IMAGEURL3 | string | 2048 | ✗ | — |
@@ -863,12 +872,14 @@ Estas colecciones **NO** pueden recibir más atributos en el plan gratuito:
 | ISACTIVE | boolean | — | ✗ | — |
 | PACKQTY | integer | — | ✗ | — |
 | RESTOCKTHRESHOLD | integer | — | ✗ | — |
-| CUSTOM_PRIMARY_COLOR | string | 50 | ✗ | — |
-| CUSTOM_SECONDARY_COLOR | string | 50 | ✗ | — |
-| CUSTOM_USE_GRADIENT | boolean | — | ✗ | — |
 | jumpseller_id | string | 256 | ✗ | — |
+| section | integer | — | ✗ | — |
+| barcode | string | 64 | ✗ | — |
+| sku | string | 128 | ✗ | — |
+| COMING_SOON | boolean | — | ✗ | — |
+| DATE_ADDED | string | 20 | ✗ | — |
 
-### 3.2 `inventory_products` — esquema REAL actualizado (22 atributos)
+### 3.2 `inventory_products` — esquema REAL actualizado (25 atributos, Mayo 19)
 | Atributo | Tipo | Size | Requerido | Default |
 |----------|------|------|-----------|---------|
 | sku | string | 256 | ✗ | — |
@@ -893,6 +904,9 @@ Estas colecciones **NO** pueden recibir más atributos en el plan gratuito:
 | IMAGEURL4 | string | 1024 | ✗ | — |
 | IMAGEURL5 | string | 1024 | ✗ | — |
 | PACKQTY | integer | — | ✗ | 0 |
+| section | integer | — | ✗ | — |
+| COMING_SOON | boolean | — | ✗ | — |
+| DATE_ADDED | string | 256 | ✗ | — |
 
 ### 3.11 `users` — esquema REAL actualizado (11 atributos)
 | Atributo | Tipo | Size | Requerido | Default |
@@ -1030,6 +1044,176 @@ Estos campos se envían en el payload pero Appwrite los rechazará si no están 
 - `description` (string) — descripción del cupón
 
 **Acción pendiente:** Crear estos 4 atributos en la colección `discount_coupons` en Appwrite, o eliminarlos del payload del admin.
+
+---
+
+## 13. Gestión de Atributos vía API (Mayo 19, 2026)
+
+### 🚀 Método rápido: usar `node-appwrite` SDK con API Key
+
+Para crear/eliminar atributos en colecciones de Appwrite sin tocar la UI, se usa el SDK de servidor `node-appwrite` con la API Key del proyecto. Esto permite automatizar cambios de esquema en segundos.
+
+#### Script disponible: `scripts/add-missing-attributes.ts`
+
+```bash
+# Desde la raíz del proyecto:
+$env:APPWRITE_API_KEY="standard_dea4a8654ed430bf3626a6cd6506a562cbfcebb7caeb417a1e83c8228ed1de0a84d60b11cc4776d023d0c5ac8d1dcb0ba59e43fef5fb8831a7252aaf5b2f13896769e2a5af222f9853d7f7abcada2d034e1d92e3b73d8de53d1c29adde00cd723aa5612189b2ee702e798acb0dffeb9ff154714a5f7af060c78567391d49923d"
+npx tsx scripts/add-missing-attributes.ts
+```
+
+El script recorre las colecciones `products` e `inventory_products` y crea los atributos faltantes. Si un atributo ya existe, lo salta (`⏭️`). Si la colección está en el límite, muestra error (`❌`).
+
+#### Comandos rápidos para operaciones puntuales
+
+```powershell
+# Listar atributos de una colección
+$env:APPWRITE_API_KEY="..."; npx tsx -e "const {Client,Databases}=require('node-appwrite');const c=new Client().setEndpoint('https://nyc.cloud.appwrite.io/v1').setProject('6a0a4e8d0032177f3f90').setKey(process.env.APPWRITE_API_KEY);const db=new Databases(c);db.listAttributes('6a0a58ca001798410d86','COLLECTION_ID').then(r=>{r.attributes.forEach(a=>console.log(a.key,'|',a.type,'|',a.size||''))}).catch(e=>console.error(e.message))"
+
+# Crear atributo string
+$env:APPWRITE_API_KEY="..."; npx tsx -e "const {Client,Databases}=require('node-appwrite');const c=new Client().setEndpoint('https://nyc.cloud.appwrite.io/v1').setProject('6a0a4e8d0032177f3f90').setKey(process.env.APPWRITE_API_KEY);const db=new Databases(c);db.createStringAttribute('6a0a58ca001798410d86','COLLECTION_ID','ATTR_NAME',SIZE,REQUIRED).then(()=>console.log('✅ Created')).catch(e=>console.error('❌',e.message))"
+
+# Crear atributo boolean
+db.createBooleanAttribute(databaseId, collectionId, 'ATTR_NAME', required)
+
+# Crear atributo integer
+db.createIntegerAttribute(databaseId, collectionId, 'ATTR_NAME', required)
+
+# Eliminar atributo
+db.deleteAttribute(databaseId, collectionId, 'ATTR_NAME')
+```
+
+#### ⚠️ Notas importantes
+- **La API Key está hardcodeada** en `src/lib/appwrite-server.ts` como fallback del env var `APPWRITE_API_KEY`
+- **Los atributos eliminados tardan ~30s** en desaparecer del límite de tamaño. No intentar crear uno nuevo inmediatamente después de eliminar.
+- **El límite es por tamaño total**, no por cantidad. Un `string(8192)` consume mucho más que un `string(20)`. Si falla con `attribute_limit_exceeded`, usar un size menor o eliminar atributos grandes innecesarios.
+- **Appwrite tarda ~30s** en procesar un atributo nuevo (estado `processing` → `available`). No hacer queries que usen el atributo hasta que esté `available`.
+
+### ✅ Atributos creados en esta sesión (Mayo 19, 2026 — 19:00)
+
+| Colección | Atributo | Tipo | Size | Método |
+|-----------|----------|------|------|--------|
+| `products` | `COMING_SOON` | boolean | — | `add-missing-attributes.ts` |
+| `products` | `DATE_ADDED` | string | 20 | API directa (size 20 para no exceder límite) |
+| `inventory_products` | `COMING_SOON` | boolean | — | `add-missing-attributes.ts` |
+| `inventory_products` | `DATE_ADDED` | string | 256 | Ya existía (⏭️) |
+| `products` | `section` | integer | — | Ya existía (⏭️) |
+| `products` | `barcode` | string | 64 | Ya existía (⏭️) |
+| `products` | `PACKQTY` | integer | — | Ya existía (⏭️) |
+| `inventory_products` | `section` | integer | — | Ya existía (⏭️) |
+| `inventory_products` | `barcode` | string | 64 | Ya existía (⏭️) |
+| `inventory_products` | `sku` | string | 128 | Ya existía (⏭️) |
+| `inventory_products` | `PACKQTY` | integer | — | Ya existía (⏭️) |
+
+### 🗑️ Atributos eliminados en esta sesión
+
+| Colección | Atributo | Tipo | Size | Razón |
+|-----------|----------|------|------|-------|
+| `products` | `CUSTOM_PRIMARY_COLOR` | string | 50 | No se usa en ningún componente, solo en type definition |
+| `products` | `CUSTOM_SECONDARY_COLOR` | string | 50 | No se usa en ningún componente, solo en type definition |
+| `products` | `CUSTOM_USE_GRADIENT` | boolean | — | No se usa en ningún componente, solo en type definition |
+
+**Razón:** La colección `products` alcanzó el límite de tamaño de atributos y no se podía crear `DATE_ADDED`. Se eliminaron estos 3 atributos custom de color que solo estaban declarados en `src/types/admin.ts` pero no se usaban en ningún componente real. Esto liberó espacio suficiente para crear `DATE_ADDED` con size 20.
+
+### 3.1 `products` — esquema REAL actualizado (Mayo 19, 2026 — 25 atributos)
+
+> ⚠️ Se eliminaron `CUSTOM_PRIMARY_COLOR`, `CUSTOM_SECONDARY_COLOR`, `CUSTOM_USE_GRADIENT`. Se agregaron `section`, `barcode`, `sku`, `COMING_SOON`, `DATE_ADDED`.
+
+| Atributo | Tipo | Size | Requerido | Default |
+|----------|------|------|-----------|---------|
+| NAME | string | 256 | ✓ | — |
+| DESCRIPTION | string | 8192 | ✗ | — |
+| PRICE | integer | — | ✓ | — |
+| CURRENTPRICE | integer | — | ✗ | — |
+| COST | integer | — | ✗ | — |
+| STOCK | integer | — | ✓ | — |
+| SOLDQUANTITY | integer | — | ✗ | — |
+| CATEGORYID | string | 256 | ✗ | — |
+| SUBCATEGORYID | string | 256 | ✗ | — |
+| IMAGEURL | string | 2048 | ✗ | — |
+| IMAGEURL2 | string | 2048 | ✗ | — |
+| IMAGEURL3 | string | 2048 | ✗ | — |
+| RATING | double | — | ✗ | — |
+| NUMREVIEWS | integer | — | ✗ | — |
+| WHOLESALEPRICE | integer | — | ✗ | — |
+| WHOLESALEMINQUANTITY | integer | — | ✗ | — |
+| ISFEATURED | boolean | — | ✗ | — |
+| ISACTIVE | boolean | — | ✗ | — |
+| PACKQTY | integer | — | ✗ | — |
+| RESTOCKTHRESHOLD | integer | — | ✗ | — |
+| jumpseller_id | string | 256 | ✗ | — |
+| section | integer | — | ✗ | — |
+| barcode | string | 64 | ✗ | — |
+| sku | string | 128 | ✗ | — |
+| COMING_SOON | boolean | — | ✗ | — |
+| DATE_ADDED | string | 20 | ✗ | — |
+
+### 3.2 `inventory_products` — esquema REAL actualizado (Mayo 19, 2026 — 25 atributos)
+
+| Atributo | Tipo | Size | Requerido | Default |
+|----------|------|------|-----------|---------|
+| sku | string | 256 | ✗ | — |
+| barcode | string | 256 | ✗ | — |
+| NAME | string | 256 | ✓ | — |
+| PRICE | integer | — | ✗ | 0 |
+| STOCK | integer | — | ✗ | 0 |
+| CATEGORYID | string | 256 | ✗ | — |
+| SUBCATEGORYID | string | 256 | ✗ | — |
+| IMAGEURL | string | 2048 | ✗ | — |
+| IMAGEURL2 | string | 2048 | ✗ | — |
+| IMAGEURL3 | string | 2048 | ✗ | — |
+| WHOLESALEPRICE | integer | — | ✗ | — |
+| WHOLESALEMINQUANTITY | integer | — | ✗ | — |
+| ISACTIVE | boolean | — | ✗ | false |
+| published_product_id | string | 256 | ✗ | — |
+| published_at | string | 64 | ✗ | — |
+| imported_at | string | 64 | ✗ | — |
+| FEATURES | string | 2048 | ✗ | — |
+| TAGS | string | 512 | ✗ | — |
+| name_cn | string | 256 | ✗ | — |
+| IMAGEURL4 | string | 1024 | ✗ | — |
+| IMAGEURL5 | string | 1024 | ✗ | — |
+| PACKQTY | integer | — | ✗ | 0 |
+| section | integer | — | ✗ | — |
+| COMING_SOON | boolean | — | ✗ | — |
+| DATE_ADDED | string | 256 | ✗ | — |
+
+### 📄 Nuevos documentos del proyecto
+
+| Archivo | Propósito |
+|---------|-----------|
+| `scripts/add-missing-attributes.ts` | Script para crear atributos faltantes en `products` e `inventory_products` vía API |
+| `src/app/inventario/fecha/page.tsx` | Página admin para asignar fechas de ingreso (DATE_ADDED) a productos desde Excel |
+| `src/app/inventario/imagenes/page.tsx` | Página admin para asignar imágenes a productos desde Excel |
+| `src/app/catalogo/page.tsx` | Página de catálogo con filtros dinámicos, diseño glass, responsive |
+| `src/app/llegan-pronto/page.tsx` | Página "Llegan Pronto" con estilo full glass (blanco/rosa), filtros, responsive |
+| `src/app/cuenta/consultas/page.tsx` | Página de consultas de cuenta |
+| `src/app/admin/(panel)/catalog-products/page.tsx` | Admin para gestión de productos del catálogo |
+| `src/app/api/admin/apertura/clear-coupons/route.ts` | API route para limpiar cupones de apertura |
+
+---
+
+## 14. Cambios de Sesión — Mayo 19, 2026 (19:00)
+
+### ✅ Correcciones aplicadas
+| Issue | Archivo | Cambio |
+|-------|---------|--------|
+| Error `Unknown attribute: "DATE_ADDED"` al guardar fechas | `src/app/inventario/fecha/page.tsx` | Detección específica del error con mensaje claro en UI. Se creó el atributo vía API. |
+| `COMING_SOON` no existía en colecciones | `scripts/add-missing-attributes.ts` | Agregado `COMING_SOON` (boolean) y `DATE_ADDED` (string) al script de creación |
+| `products` en límite de atributos | Ambas colecciones | Eliminados `CUSTOM_PRIMARY_COLOR`, `CUSTOM_SECONDARY_COLOR`, `CUSTOM_USE_GRADIENT` (no usados). Creado `DATE_ADDED` con size 20. |
+| Error build Vercel: `INVENTORY_PRODUCTS_COLLECTION` not exported | `src/lib/appwrite.ts` | No se había hecho push del archivo. Commit con `git add -A` para incluir todos los cambios. |
+| Error build Vercel: `Property 'href' does not exist on type 'Element'` | `src/templates/plantilla1/HomePage.tsx:708` | Cast a `HTMLAnchorElement` del resultado de `querySelector` |
+| Página "Llegan Pronto" sin productos (0) | `src/app/llegan-pronto/page.tsx` | Fix filtro `COMING_SOON` con `(p as any).COMING_SOON` para manejar tipos variables de Appwrite |
+| Página "Llegan Pronto" diseño anticuado | `src/app/llegan-pronto/page.tsx` | Rediseño completo: estilo full glass (blanco/rosa), filtros dinámicos, responsive, zoom, skeleton |
+| Página "Llegan Pronto" hero con overlay azul | `src/app/llegan-pronto/page.tsx` | Overlay cambiado a blanco translúcido, texto "¡LLEGAN" en blanco, "PRONTO!" en rosa |
+
+### 🔑 Lecciones aprendidas sobre la API de Appwrite
+
+1. **`git add -A` antes de push** — Si solo haces `git add` de archivos específicos, los cambios en librerías compartidas (como `appwrite.ts`) no se suben y Vercel falla.
+2. **El límite de atributos es por SIZE total** — No por cantidad. Un `string(8192)` consume ~8KB del límite. Si necesitas crear un atributo nuevo y falla, reduce el size o elimina atributos grandes innecesarios.
+3. **Los atributos eliminados tardan ~30s en liberar espacio** — No intentes crear uno nuevo inmediatamente después de eliminar.
+4. **`node-appwrite` SDK de servidor** — Permite crear/eliminar atributos programáticamente. Mucho más rápido que la UI de Appwrite Console.
+5. **Appwrite procesa atributos asíncronamente** — Un atributo nuevo pasa por estado `processing` antes de estar `available`. Esperar ~30s antes de usarlo.
+6. **Cast `(p as any).ATTR`** — Appwrite puede devolver tipos inesperados (string en vez de boolean). Usar `as any` para truthy checks evita errores de TypeScript.
 
 ---
 

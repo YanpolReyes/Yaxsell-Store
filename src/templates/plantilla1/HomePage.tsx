@@ -1864,7 +1864,7 @@ export default function HomePage1() {
     if (!overlayEl) {
       overlayEl = document.createElement('div');
       overlayEl.id = 'yaxsel-cart-overlay';
-      overlayEl.style.cssText = 'position:fixed;inset:0;z-index:9998;pointer-events:none;opacity:0;background:rgba(0,0,0,0.25);';
+      overlayEl.style.cssText = 'position:fixed;inset:0;z-index:9998;pointer-events:none;opacity:0;background:transparent;';
       document.body.appendChild(overlayEl);
     }
 

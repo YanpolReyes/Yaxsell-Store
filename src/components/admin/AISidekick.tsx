@@ -13,22 +13,46 @@ interface Message {
 }
 
 interface ProductAction {
+  type: 'create' | 'update' | 'create_category';
   name: string;
-  price: number;
-  description: string;
-  category: string;
+  price?: number;
+  description?: string;
+  category?: string;
+  stock?: number;
+  productId?: string;
+  imageUrl?: string;
+  tags?: string;
+  sku?: string;
+  barcode?: string;
+  icon?: string;
 }
 
 function parseAction(text: string): { clean: string; action: ProductAction | null } {
-  const match = text.match(/\[ACTION:CREATE_PRODUCT\]([\s\S]*?)\[\/ACTION\]/);
-  if (!match) return { clean: text, action: null };
-  try {
-    const action = JSON.parse(match[1]);
-    const clean = text.replace(/\[ACTION:CREATE_PRODUCT\][\s\S]*?\[\/ACTION\]/, '').trim();
-    return { clean, action };
-  } catch {
-    return { clean: text, action: null };
+  const createMatch = text.match(/\[ACTION:CREATE_PRODUCT\]([\s\S]*?)\[\/ACTION\]/);
+  if (createMatch) {
+    try {
+      const raw = JSON.parse(createMatch[1]);
+      const clean = text.replace(/\[ACTION:CREATE_PRODUCT\][\s\S]*?\[\/ACTION\]/, '').trim();
+      return { clean, action: { type: 'create', ...raw } };
+    } catch { return { clean: text, action: null }; }
   }
+  const updateMatch = text.match(/\[ACTION:UPDATE_PRODUCT\]([\s\S]*?)\[\/ACTION\]/);
+  if (updateMatch) {
+    try {
+      const raw = JSON.parse(updateMatch[1]);
+      const clean = text.replace(/\[ACTION:UPDATE_PRODUCT\][\s\S]*?\[\/ACTION\]/, '').trim();
+      return { clean, action: { type: 'update', ...raw } };
+    } catch { return { clean: text, action: null }; }
+  }
+  const categoryMatch = text.match(/\[ACTION:CREATE_CATEGORY\]([\s\S]*?)\[\/ACTION\]/);
+  if (categoryMatch) {
+    try {
+      const raw = JSON.parse(categoryMatch[1]);
+      const clean = text.replace(/\[ACTION:CREATE_CATEGORY\][\s\S]*?\[\/ACTION\]/, '').trim();
+      return { clean, action: { type: 'create_category', ...raw } };
+    } catch { return { clean: text, action: null }; }
+  }
+  return { clean: text, action: null };
 }
 
 const SUGGESTIONS = [
@@ -60,7 +84,10 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
     else if (visible) { setClosing(true); const t = setTimeout(() => { setClosing(false); setVisible(false); }, 350); return () => clearTimeout(t); }
   }, [open]);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => {
+    const container = bottomRef.current?.parentElement;
+    if (container) container.scrollTop = container.scrollHeight;
+  }, [messages]);
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 200); }, [open]);
 
   // Typing placeholder animation
@@ -98,25 +125,60 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
   const executeProductAction = async (msgIndex: number, action: ProductAction) => {
     setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'pending' } : m));
     try {
-      const res = await fetch('/api/products/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: action.name,
-          price: action.price,
-          description: action.description,
-          category: action.category || '',
-          stock: 0,
-        }),
-      });
-      
-      const data = await res.json();
-      
-      if (data.success) {
-        setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'done' } : m));
+      if (action.type === 'create_category') {
+        const res = await fetch('/api/categories/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: action.name, description: action.description, icon: action.icon }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'done' } : m));
+        } else {
+          console.error('Error creating category:', data.error);
+          setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'error' } : m));
+        }
+      } else if (action.type === 'update') {
+        let productId = action.productId;
+        if (!productId && action.name) {
+          const searchRes = await fetch(`/api/products/search?name=${encodeURIComponent(action.name)}&limit=1`);
+          const searchData = await searchRes.json();
+          if (searchData.success && searchData.products?.length > 0) {
+            productId = searchData.products[0].$id;
+          } else {
+            setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'error' } : m));
+            return;
+          }
+        }
+        if (!productId) {
+          setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'error' } : m));
+          return;
+        }
+        const res = await fetch('/api/products/update', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId, name: action.name, price: action.price, description: action.description, category: action.category, stock: action.stock, imageUrl: action.imageUrl, tags: action.tags, sku: action.sku, barcode: action.barcode }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'done' } : m));
+        } else {
+          console.error('Error updating product:', data.error);
+          setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'error' } : m));
+        }
       } else {
-        console.error('Error creating product:', data.error);
-        setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'error' } : m));
+        const res = await fetch('/api/products/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: action.name, price: action.price || 0, description: action.description || '', category: action.category || '', stock: action.stock || 0, tags: action.tags || '', sku: action.sku || '', barcode: action.barcode || '' }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'done' } : m));
+        } else {
+          console.error('Error creating product:', data.error);
+          setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'error' } : m));
+        }
       }
     } catch (error) {
       console.error('Error executing product action:', error);
@@ -164,6 +226,10 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
         typed: false 
       }]);
       setTimeout(() => typewriterEffect(newIdx, clean), 100);
+      // Auto-execute action after typewriter starts
+      if (action) {
+        setTimeout(() => executeProductAction(newIdx, action), 300);
+      }
     } catch (error) {
       console.error('Error in sendMessage:', error);
       setMessages(prev => [...prev, { 
@@ -304,7 +370,9 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
                         <p style={{ margin:0, color:'#e9d5ff', fontSize:12, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{msg.action.name}</p>
-                        <p style={{ margin:0, color:'rgba(167,139,250,0.6)', fontSize:10 }}>${msg.action.price.toLocaleString()} · {msg.action.description?.slice(0,35)||'—'}</p>
+                        <p style={{ margin:0, color:'rgba(167,139,250,0.6)', fontSize:10 }}>
+                          {msg.action.type === 'create_category' ? 'Nueva categoría' : msg.action.type === 'update' ? 'Modificar' : `${msg.action.price?.toLocaleString() ?? '—'} · ${msg.action.category || '—'}${msg.action.sku ? ` · SKU: ${msg.action.sku}` : ''}`}
+                        </p>
                       </div>
                       {msg.actionStatus === 'pending' && (
                         <button onClick={() => executeProductAction(i, msg.action!)} style={{
@@ -314,7 +382,7 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
                         }}
                         onMouseEnter={e=>{e.currentTarget.style.background='rgba(139,92,246,0.4)';e.currentTarget.style.borderColor='rgba(139,92,246,0.6)';}}
                         onMouseLeave={e=>{e.currentTarget.style.background='rgba(139,92,246,0.2)';e.currentTarget.style.borderColor='rgba(139,92,246,0.3)';}}
-                        >Crear</button>
+                        >{msg.action.type === 'create_category' ? 'Crear cat.' : msg.action.type === 'update' ? 'Aplicar' : 'Crear'}</button>
                       )}
                       {msg.actionStatus === 'done' && <CheckCircle2 size={16} style={{ color:'#4ade80', flexShrink:0 }}/>}
                       {msg.actionStatus === 'error' && <AlertCircle size={16} style={{ color:'#f87171', flexShrink:0 }}/>}

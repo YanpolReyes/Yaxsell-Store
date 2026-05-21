@@ -7,10 +7,8 @@ import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdminEmail } from '@/lib/admin-access';
 import { LogOut, Menu, X, ChevronDown, ChevronRight } from 'lucide-react';
-import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, WHOLESALE_REQUESTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import GlobalSearch from '@/components/admin/GlobalSearch';
 import AISidekick from '@/components/admin/AISidekick';
-import { Query } from 'appwrite';
 import gsap from 'gsap';
 
 /* ─────────────────────────── custom SVG icons ─────────────────────────── */
@@ -251,14 +249,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const fetchBadges = useCallback(async () => {
     try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-      const [o, n, w] = await Promise.all([
-        databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [Query.equal('STATUS','pending'), Query.limit(1)]),
-        databases.listDocuments(databaseId, NOTIFICATIONS_COLLECTION_ID, [Query.equal('isRead',false), Query.limit(1)]),
-        databases.listDocuments(databaseId, WHOLESALE_REQUESTS_COLLECTION_ID, [Query.equal('status','pending'), Query.limit(1)]),
-      ]);
-      setPendingOrders(o.total); setUnreadNotifs(n.total); setPendingWholesale(w.total);
+      const res = await fetch('/api/admin/badges');
+      const data = await res.json();
+      if (data.success) {
+        setPendingOrders(data.pendingOrders);
+        setUnreadNotifs(data.unreadNotifs);
+        setPendingWholesale(data.pendingWholesale);
+      }
     } catch { /* silent */ }
   }, []);
 
