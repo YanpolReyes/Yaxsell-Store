@@ -3,7 +3,7 @@ function getApiKey(): string {
     const stored = localStorage.getItem('gemini_api_key');
     if (stored) return stored;
   }
-  return process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
+  return process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyAPU7MGRQWFHHA1NhWD0rTfcVGOCVGOQok';
 }
 
 async function callGemini(prompt: string): Promise<string> {

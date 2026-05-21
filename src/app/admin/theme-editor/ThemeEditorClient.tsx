@@ -3594,8 +3594,8 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         <RangeField label="Peso" value={s.featuredProductFontWeight ?? 600} onChange={v => onUpdate({ featuredProductFontWeight: v })} min={100} max={900} unit="" />
         <Field icon={<Palette size={13} />} label="Color" value={s.featuredProductColor || ''} onChange={v => onUpdate({ featuredProductColor: v })} placeholder="#000000" />
         <SH>Contenido visual</SH>
+        <ImageUploadField label="Imagen personalizada (reemplaza la del producto)" value={s.featuredProductPosterImage || ''} onChange={v => onUpdate({ featuredProductPosterImage: v })} />
         <Field icon={<Video size={13} />} label="Video URL (MP4/WebM opcional)" value={s.featuredProductVideoUrl || ''} onChange={v => onUpdate({ featuredProductVideoUrl: v })} placeholder="https://cdn.example.com/video.mp4" />
-        <ImageUploadField label="Imagen de espera (mientras carga el video)" value={s.featuredProductPosterImage || ''} onChange={v => onUpdate({ featuredProductPosterImage: v })} />
         <SH>Producto de Appwrite</SH>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <label style={{ fontSize: 11, fontWeight: 600, color: '#374151' }}>Vincular producto</label>

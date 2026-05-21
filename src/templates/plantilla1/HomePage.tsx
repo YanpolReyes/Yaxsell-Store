@@ -3221,7 +3221,12 @@ export default function HomePage1() {
       featuredProduct.IMAGEURL4,
       featuredProduct.IMAGEURL5,
     ].filter(Boolean) as string[];
-    const posterImage = settings.featuredProductPosterImage || images[0];
+    // If a custom image is set, it replaces the product's main image
+    const customImage = settings.featuredProductPosterImage;
+    if (customImage && images.length > 0) {
+      images[0] = customImage;
+    }
+    const posterImage = customImage || images[0];
 
     const mediaItems = settings.featuredProductVideoUrl
       ? [{ type: 'video', url: settings.featuredProductVideoUrl, poster: posterImage }, ...images.map(url => ({ type: 'image', url }))]

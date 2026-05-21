@@ -5,7 +5,7 @@ import * as XLSX from 'xlsx';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Product, Category } from '@/types/admin';
-import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2 } from 'lucide-react';
 import ImageUploadField from '@/components/admin/ImageUploadField';
 import { generateProductTitle, generateProductDescription } from '@/lib/aiAdmin';
 import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures } from '@/lib/product-features';
@@ -50,6 +50,10 @@ export default function ProductsPage() {
   const [imageUrlModal, setImageUrlModal] = useState<{ productId: string; currentUrl: string; newUrl: string } | null>(null);
   const [aiLoading, setAiLoading] = useState<'title' | 'desc' | null>(null);
   const [aiTitles, setAiTitles] = useState<string[]>([]);
+  const [yexyOpen, setYexyOpen] = useState(false);
+  const [yexyMessages, setYexyMessages] = useState<{role: string; content: string}[]>([]);
+  const [yexyInput, setYexyInput] = useState('');
+  const [yexyLoading, setYexyLoading] = useState(false);
 
   const applyBulkStock = async () => {
     const v = parseInt(stockAdj.value, 10);
@@ -131,6 +135,37 @@ export default function ProductsPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const sendYexyMessage = async () => {
+    if (!yexyInput.trim() || yexyLoading) return;
+    const userMsg = yexyInput.trim();
+    setYexyInput('');
+    const contextPrefix = modal ? `[Contexto: Estoy editando el producto "${modal.data.NAME}" (ID: ${(modal.data as Product).$id}, Precio: ${modal.data.PRICE}, Stock: ${modal.data.STOCK}, Categoría: ${categories.find(c => c.$id === modal.data.CATEGORYID)?.name || 'Sin categoría'})] ` : '';
+    const newMessages = [...yexyMessages, { role: 'user', content: contextPrefix + userMsg }];
+    setYexyMessages(newMessages);
+    setYexyLoading(true);
+    try {
+      const res = await fetch('/api/ai-sidekick', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: newMessages }),
+      });
+      const data = await res.json();
+      const assistantMsg = data.response || data.message || 'No pude procesar la solicitud.';
+      setYexyMessages(prev => [...prev, { role: 'assistant', content: assistantMsg }]);
+      if (data.actions) {
+        for (const action of data.actions) {
+          if (action.type === 'update' && modal) {
+            setModal(m => m ? { ...m, data: { ...m.data, ...action.data } } : m);
+          }
+        }
+      }
+    } catch {
+      setYexyMessages(prev => [...prev, { role: 'assistant', content: 'Error al conectar con Yexy.' }]);
+    } finally {
+      setYexyLoading(false);
+    }
+  };
 
   const openAdd = () => setModal({ mode: 'add', data: { ...EMPTY, _barcode: '', _sku: '' } });
   const openEdit = (p: Product) => setModal({
@@ -412,6 +447,213 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-5">
+      {/* ═══════════════════════════════════════════════════════════════
+          FULL-PAGE PRODUCT EDITOR (shown when modal IS active)
+         ═══════════════════════════════════════════════════════════════ */}
+      {modal && (
+        <div className="flex-1 flex flex-col lg:flex-row gap-6 overflow-y-auto">
+          {/* Main editor */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 mb-4">
+              <button onClick={() => { setModal(null); setYexyOpen(false); setYexyMessages([]); }} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <h2 className="text-lg font-bold text-gray-900">{modal.mode === 'add' ? 'Agregar Producto' : 'Editar Producto'}</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-medium text-gray-600">Nombre *</label>
+                  <button type="button" disabled={aiLoading === 'title'} onClick={async () => {
+                    setAiLoading('title'); setAiTitles([]);
+                    try {
+                      const catName = categories.find(c => c.$id === modal.data.CATEGORYID)?.name || '';
+                      const titles = await generateProductTitle(modal.data.DESCRIPTION || modal.data.NAME || '', catName);
+                      setAiTitles(titles);
+                    } catch (e: any) { alert(e.message); }
+                    finally { setAiLoading(null); }
+                  }} className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 disabled:opacity-50">
+                    <Sparkles className="w-3 h-3" /> {aiLoading === 'title' ? 'Generando...' : 'Sugerir con IA'}
+                  </button>
+                </div>
+                <input value={modal.data.NAME || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, NAME: e.target.value } } : m)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                {aiTitles.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {aiTitles.map((t, i) => (
+                      <button key={i} type="button" onClick={() => { setModal(m => m ? { ...m, data: { ...m.data, NAME: t } } : m); setAiTitles([]); }}
+                        className="text-xs px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 border border-indigo-100 transition-colors truncate max-w-full">
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="sm:col-span-2">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-medium text-gray-600">Descripción</label>
+                  <button type="button" disabled={aiLoading === 'desc'} onClick={async () => {
+                    setAiLoading('desc');
+                    try {
+                      const catName = categories.find(c => c.$id === modal.data.CATEGORYID)?.name || '';
+                      const desc = await generateProductDescription(modal.data.NAME || '', catName, modal.data.DESCRIPTION || '');
+                      setModal(m => m ? { ...m, data: { ...m.data, DESCRIPTION: desc } } : m);
+                    } catch (e: any) { alert(e.message); }
+                    finally { setAiLoading(null); }
+                  }} className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 disabled:opacity-50">
+                    <Sparkles className="w-3 h-3" /> {aiLoading === 'desc' ? 'Generando...' : 'Generar con IA'}
+                  </button>
+                </div>
+                <textarea value={modal.data.DESCRIPTION || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, DESCRIPTION: e.target.value } } : m)}
+                  rows={4} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
+              </div>
+              <FieldInput label="Precio Normal (CLP)" field="PRICE" type="number" value={modal?.data.PRICE} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, PRICE: v } } : m)} />
+              <div>
+                <FieldInput label="Stock" field="STOCK" type="number" value={modal?.data.STOCK} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, STOCK: v } } : m)} />
+                {Number(modal.data.STOCK) === 0 && (
+                  <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                    <span>⚠</span> Stock en 0 — este producto aparecerá como agotado
+                  </p>
+                )}
+                {Number(modal.data.STOCK) > 0 && Number(modal.data.STOCK) <= 5 && (
+                  <p className="text-xs text-amber-500 mt-1 flex items-center gap-1">
+                    <span>⚠</span> Stock muy bajo ({modal.data.STOCK} unidades)
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Precio Oferta <span className="text-gray-400">(vacío = sin descuento)</span></label>
+                <input type="number" min="0"
+                  value={modal.data.CURRENTPRICE ?? ''}
+                  onChange={e => setModal(m => m ? { ...m, data: { ...m.data, CURRENTPRICE: e.target.value === '' ? undefined : Number(e.target.value) } } : m)}
+                  placeholder="Ej: 8990"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <FieldInput label="Costo" field="COST" type="number" value={modal?.data.COST} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, COST: v } } : m)} />
+                {(() => {
+                  const price = Number(modal.data.CURRENTPRICE || modal.data.PRICE) || 0;
+                  const cost = Number(modal.data.COST) || 0;
+                  if (!price || !cost) return null;
+                  const margin = Math.round(((price - cost) / price) * 100);
+                  const profit = price - cost;
+                  return (
+                    <p className={`text-xs mt-1 font-medium ${margin >= 40 ? 'text-emerald-600' : margin >= 20 ? 'text-amber-600' : 'text-red-500'}`}>
+                      Margen: {margin}% · Ganancia: ${profit.toLocaleString('es-CL')}
+                    </p>
+                  );
+                })()}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Categoría</label>
+                <div className="relative">
+                  <select value={modal.data.CATEGORYID || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, CATEGORYID: e.target.value } } : m)}
+                    className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">Sin categoría</option>
+                    {categories.map(c => <option key={c.$id} value={c.$id}>{c.name}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+              <FieldInput label="Precio Mayorista" field="WHOLESALEPRICE" type="number" value={modal?.data.WHOLESALEPRICE} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEPRICE: v } } : m)} />
+              <FieldInput label="Cant. Mínima Mayorista" field="WHOLESALEMINQUANTITY" type="number" value={modal?.data.WHOLESALEMINQUANTITY} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEMINQUANTITY: v } } : m)} />
+              <FieldInput label="Cant. por paquete" field="PACKQTY" type="number" value={modal?.data.PACKQTY} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, PACKQTY: v } } : m)} />
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">SKU</label>
+                <input type="text" value={modal.data._sku ?? ''}
+                  onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _sku: e.target.value } } : m)}
+                  placeholder="Código interno del producto"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Código de barras</label>
+                <input type="text" value={modal.data._barcode ?? ''}
+                  onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _barcode: e.target.value } } : m)}
+                  placeholder="EAN / UPC / código escaneado"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Sección (ubicación)</label>
+                <input type="number" value={(modal.data as Product).section ?? ''}
+                  onChange={e => setModal(m => m ? { ...m, data: { ...m.data, section: e.target.value ? Number(e.target.value) : undefined } } : m)}
+                  placeholder="Ej: 5 (Góndola A), 15 (Góndola B)"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div className="sm:col-span-2">
+                <ImageUploadField label="Imagen Principal" bucketId={PRODUCTS_BUCKET_ID}
+                  value={modal.data.IMAGEURL || ''}
+                  onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL: v } } : m)} />
+              </div>
+              <ImageUploadField label="Imagen 2" bucketId={PRODUCTS_BUCKET_ID}
+                value={modal.data.IMAGEURL2 || ''}
+                onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL2: v } } : m)} />
+              <ImageUploadField label="Imagen 3" bucketId={PRODUCTS_BUCKET_ID}
+                value={modal.data.IMAGEURL3 || ''}
+                onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL3: v } } : m)} />
+              <div className="sm:col-span-2"><FieldInput label="Tags (separados por coma)" field="TAGS" value={modal?.data.TAGS} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, TAGS: v } } : m)} /></div>
+              <div className="sm:col-span-2">
+                <FieldInput label="Características (otras)" field="FEATURES" value={modal?.data.FEATURES} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, FEATURES: v } } : m)} />
+                <p className="text-[10px] text-gray-400 mt-1">SKU y código de barras se guardan en los campos de arriba.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 mt-6">
+              <button onClick={() => setYexyOpen(!yexyOpen)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition ${yexyOpen ? 'bg-violet-600 text-white' : 'bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200'}`}>
+                <MessageSquare className="w-4 h-4" /> Preguntar a Yexy
+              </button>
+              <button onClick={() => setModal(null)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
+              <button onClick={save} disabled={isSaving} className="px-5 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-60 flex items-center gap-2">
+                {isSaving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Guardando...</> : 'Guardar'}
+              </button>
+            </div>
+          </div>
+          {/* Yexy AI Side Panel */}
+          {yexyOpen && (
+            <div className="w-full lg:w-80 shrink-0 border border-gray-200 rounded-2xl bg-white flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between p-3 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-violet-600" />
+                  <span className="text-sm font-semibold text-gray-900">Yexy AI</span>
+                </div>
+                <button onClick={() => setYexyOpen(false)} className="p-1 rounded hover:bg-gray-100 text-gray-400"><X className="w-4 h-4" /></button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-[200px] max-h-[400px]">
+                {yexyMessages.length === 0 && (
+                  <p className="text-xs text-gray-400 text-center mt-8">Pregúntale algo sobre el producto a Yexy...</p>
+                )}
+                {yexyMessages.map((msg, i) => (
+                  <div key={i} className={`text-xs p-2 rounded-lg ${msg.role === 'user' ? 'bg-indigo-50 text-indigo-800 ml-4' : 'bg-gray-50 text-gray-700 mr-4'}`}>
+                    {msg.content}
+                  </div>
+                ))}
+                {yexyLoading && (
+                  <div className="flex items-center gap-2 text-xs text-gray-400 px-2">
+                    <Loader2 className="w-3 h-3 animate-spin" /> Pensando...
+                  </div>
+                )}
+              </div>
+              <div className="p-3 border-t border-gray-100">
+                <div className="flex gap-2">
+                  <input value={yexyInput} onChange={e => setYexyInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && sendYexyMessage()}
+                    placeholder="Escribe tu pregunta..."
+                    className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                  <button onClick={sendYexyMessage} disabled={yexyLoading || !yexyInput.trim()}
+                    className="px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-medium hover:bg-violet-700 disabled:opacity-50 transition">
+                    Enviar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════
+          PRODUCT LIST (shown when modal is NOT active)
+         ═══════════════════════════════════════════════════════════════ */}
+      {!modal && (
+        <>
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Productos</h1>
@@ -597,6 +839,7 @@ export default function ProductsPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
                       <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition" title="Editar"><Pencil className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => { openEdit(p); setTimeout(() => setYexyOpen(true), 100); }} className="p-1.5 rounded-lg hover:bg-violet-50 text-gray-400 hover:text-violet-600 transition" title="Preguntar a Yexy"><MessageSquare className="w-3.5 h-3.5" /></button>
                       <button onClick={() => duplicate(p)} className="p-1.5 rounded-lg hover:bg-violet-50 text-gray-400 hover:text-violet-600 transition" title="Duplicar"><Copy className="w-3.5 h-3.5" /></button>
                       <button onClick={() => remove(p.$id)} disabled={deleteId === p.$id} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition disabled:opacity-50" title="Eliminar">
                         {deleteId === p.$id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
@@ -622,160 +865,6 @@ export default function ProductsPage() {
           </div>
         )}
       </div>
-
-      {/* Modal */}
-      {modal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center overflow-y-auto p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8">
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h2 className="font-bold text-gray-900">{modal.mode === 'add' ? 'Agregar Producto' : 'Editar Producto'}</h2>
-              <button onClick={() => setModal(null)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X className="w-4 h-4" /></button>
-            </div>
-            <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2">
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-medium text-gray-600">Nombre *</label>
-                  <button type="button" disabled={aiLoading === 'title'} onClick={async () => {
-                    setAiLoading('title'); setAiTitles([]);
-                    try {
-                      const catName = categories.find(c => c.$id === modal.data.CATEGORYID)?.name || '';
-                      const titles = await generateProductTitle(modal.data.DESCRIPTION || modal.data.NAME || '', catName);
-                      setAiTitles(titles);
-                    } catch (e: any) { alert(e.message); }
-                    finally { setAiLoading(null); }
-                  }} className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 disabled:opacity-50">
-                    <Sparkles className="w-3 h-3" /> {aiLoading === 'title' ? 'Generando...' : 'Sugerir con IA'}
-                  </button>
-                </div>
-                <input value={modal.data.NAME || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, NAME: e.target.value } } : m)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                {aiTitles.length > 0 && (
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {aiTitles.map((t, i) => (
-                      <button key={i} type="button" onClick={() => { setModal(m => m ? { ...m, data: { ...m.data, NAME: t } } : m); setAiTitles([]); }}
-                        className="text-xs px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 border border-indigo-100 transition-colors truncate max-w-full">
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="sm:col-span-2">
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-medium text-gray-600">Descripción</label>
-                  <button type="button" disabled={aiLoading === 'desc'} onClick={async () => {
-                    setAiLoading('desc');
-                    try {
-                      const catName = categories.find(c => c.$id === modal.data.CATEGORYID)?.name || '';
-                      const desc = await generateProductDescription(modal.data.NAME || '', catName, modal.data.DESCRIPTION || '');
-                      setModal(m => m ? { ...m, data: { ...m.data, DESCRIPTION: desc } } : m);
-                    } catch (e: any) { alert(e.message); }
-                    finally { setAiLoading(null); }
-                  }} className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 disabled:opacity-50">
-                    <Sparkles className="w-3 h-3" /> {aiLoading === 'desc' ? 'Generando...' : 'Generar con IA'}
-                  </button>
-                </div>
-                <textarea value={modal.data.DESCRIPTION || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, DESCRIPTION: e.target.value } } : m)}
-                  rows={3} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
-              </div>
-              <FieldInput label="Precio Normal (CLP)" field="PRICE" type="number" value={modal?.data.PRICE} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, PRICE: v } } : m)} />
-              <div>
-                <FieldInput label="Stock" field="STOCK" type="number" value={modal?.data.STOCK} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, STOCK: v } } : m)} />
-                {Number(modal.data.STOCK) === 0 && (
-                  <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                    <span>⚠</span> Stock en 0 — este producto aparecerá como agotado
-                  </p>
-                )}
-                {Number(modal.data.STOCK) > 0 && Number(modal.data.STOCK) <= 5 && (
-                  <p className="text-xs text-amber-500 mt-1 flex items-center gap-1">
-                    <span>⚠</span> Stock muy bajo ({modal.data.STOCK} unidades)
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Precio Oferta <span className="text-gray-400">(vacío = sin descuento)</span></label>
-                <input type="number" min="0"
-                  value={modal.data.CURRENTPRICE ?? ''}
-                  onChange={e => setModal(m => m ? { ...m, data: { ...m.data, CURRENTPRICE: e.target.value === '' ? undefined : Number(e.target.value) } } : m)}
-                  placeholder="Ej: 8990"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <FieldInput label="Costo" field="COST" type="number" value={modal?.data.COST} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, COST: v } } : m)} />
-                {(() => {
-                  const price = Number(modal.data.CURRENTPRICE || modal.data.PRICE) || 0;
-                  const cost = Number(modal.data.COST) || 0;
-                  if (!price || !cost) return null;
-                  const margin = Math.round(((price - cost) / price) * 100);
-                  const profit = price - cost;
-                  return (
-                    <p className={`text-xs mt-1 font-medium ${margin >= 40 ? 'text-emerald-600' : margin >= 20 ? 'text-amber-600' : 'text-red-500'}`}>
-                      Margen: {margin}% · Ganancia: ${profit.toLocaleString('es-CL')}
-                    </p>
-                  );
-                })()}
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Categoría</label>
-                <div className="relative">
-                  <select value={modal.data.CATEGORYID || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, CATEGORYID: e.target.value } } : m)}
-                    className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="">Sin categoría</option>
-                    {categories.map(c => <option key={c.$id} value={c.$id}>{c.name}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
-              </div>
-              <FieldInput label="Precio Mayorista" field="WHOLESALEPRICE" type="number" value={modal?.data.WHOLESALEPRICE} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEPRICE: v } } : m)} />
-              <FieldInput label="Cant. Mínima Mayorista" field="WHOLESALEMINQUANTITY" type="number" value={modal?.data.WHOLESALEMINQUANTITY} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEMINQUANTITY: v } } : m)} />
-              <FieldInput label="Cant. por paquete" field="PACKQTY" type="number" value={modal?.data.PACKQTY} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, PACKQTY: v } } : m)} />
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">SKU</label>
-                <input type="text" value={modal.data._sku ?? ''}
-                  onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _sku: e.target.value } } : m)}
-                  placeholder="Código interno del producto"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Código de barras</label>
-                <input type="text" value={modal.data._barcode ?? ''}
-                  onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _barcode: e.target.value } } : m)}
-                  placeholder="EAN / UPC / código escaneado"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Sección (ubicación)</label>
-                <input type="number" value={(modal.data as Product).section ?? ''}
-                  onChange={e => setModal(m => m ? { ...m, data: { ...m.data, section: e.target.value ? Number(e.target.value) : undefined } } : m)}
-                  placeholder="Ej: 5 (Góndola A), 15 (Góndola B)"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div className="sm:col-span-2">
-                <ImageUploadField label="Imagen Principal" bucketId={PRODUCTS_BUCKET_ID}
-                  value={modal.data.IMAGEURL || ''}
-                  onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL: v } } : m)} />
-              </div>
-              <ImageUploadField label="Imagen 2" bucketId={PRODUCTS_BUCKET_ID}
-                value={modal.data.IMAGEURL2 || ''}
-                onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL2: v } } : m)} />
-              <ImageUploadField label="Imagen 3" bucketId={PRODUCTS_BUCKET_ID}
-                value={modal.data.IMAGEURL3 || ''}
-                onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL3: v } } : m)} />
-              <div className="sm:col-span-2"><FieldInput label="Tags (separados por coma)" field="TAGS" value={modal?.data.TAGS} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, TAGS: v } } : m)} /></div>
-              <div className="sm:col-span-2">
-                <FieldInput label="Características (otras)" field="FEATURES" value={modal?.data.FEATURES} onChange={v => setModal(m => m ? { ...m, data: { ...m.data, FEATURES: v } } : m)} />
-                <p className="text-[10px] text-gray-400 mt-1">SKU y código de barras se guardan en los campos de arriba.</p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 p-5 border-t border-gray-100">
-              <button onClick={() => setModal(null)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
-              <button onClick={save} disabled={isSaving} className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-60 flex items-center gap-2">
-                {isSaving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Guardando...</> : 'Guardar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Bulk price modal */}
       {priceModal && (
@@ -895,6 +984,8 @@ export default function ProductsPage() {
             </div>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );
