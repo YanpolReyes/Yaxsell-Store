@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { serverUpdateDocument } from '@/lib/appwrite-server';
 import { PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 
+// Attributes that may not exist in all Appwrite schemas
+const OPTIONAL_ATTRS = ['TAGS', 'FEATURES', 'sku', 'barcode', 'IMAGEURL2', 'IMAGEURL3'];
+
 export async function PATCH(req: NextRequest) {
   try {
-    const { productId, name, price, description, category, stock, imageUrl, tags, sku, barcode } = await req.json();
+    const { productId, name, price, description, category, stock, imageUrl, imageUrl2, imageUrl3, tags, sku, barcode } = await req.json();
 
     if (!productId) {
       return NextResponse.json(
@@ -23,6 +26,8 @@ export async function PATCH(req: NextRequest) {
     if (category !== undefined) updates.CATEGORYID = category;
     if (stock !== undefined) updates.STOCK = parseInt(stock.toString());
     if (imageUrl !== undefined) updates.IMAGEURL = imageUrl;
+    if (imageUrl2 !== undefined) updates.IMAGEURL2 = imageUrl2;
+    if (imageUrl3 !== undefined) updates.IMAGEURL3 = imageUrl3;
     if (tags !== undefined) updates.TAGS = tags;
     if (sku !== undefined) updates.sku = sku;
     if (barcode !== undefined) updates.barcode = barcode;
@@ -41,7 +46,19 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const result = await serverUpdateDocument(PRODUCTS_COLLECTION_ID, productId, updates);
+    let result;
+    try {
+      result = await serverUpdateDocument(PRODUCTS_COLLECTION_ID, productId, updates);
+    } catch (attrErr: any) {
+      if (attrErr?.message?.includes('Unknown attribute')) {
+        console.warn('Retrying update without optional attrs:', attrErr.message);
+        const safeUpdates = { ...updates };
+        for (const attr of OPTIONAL_ATTRS) delete safeUpdates[attr];
+        result = await serverUpdateDocument(PRODUCTS_COLLECTION_ID, productId, safeUpdates);
+      } else {
+        throw attrErr;
+      }
+    }
 
     const fieldsUpdated = Object.keys(updates).join(', ');
     return NextResponse.json({

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { serverCreateDocument } from '@/lib/appwrite-server';
 import { PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 
+// Attributes that may not exist in all Appwrite schemas
+const OPTIONAL_ATTRS = ['TAGS', 'FEATURES', 'sku', 'barcode'];
+
 export async function POST(req: NextRequest) {
   try {
     const { name, price, description, category, stock = 0, imageUrl = '', tags = '', sku = '', barcode = '' } = await req.json();
@@ -30,13 +33,26 @@ export async function POST(req: NextRequest) {
       NUMREVIEWS: 0,
       SOLDQUANTITY: 0,
     };
-    // Optional fields that may not exist in schema
+    // Optional fields
     if (tags) productData.TAGS = tags;
     if (features) productData.FEATURES = features;
     if (sku) productData.sku = sku;
     if (barcode) productData.barcode = barcode;
 
-    const result = await serverCreateDocument(PRODUCTS_COLLECTION_ID, 'unique()', productData);
+    let result;
+    try {
+      result = await serverCreateDocument(PRODUCTS_COLLECTION_ID, 'unique()', productData);
+    } catch (attrErr: any) {
+      // If unknown attribute error, retry without optional fields
+      if (attrErr?.message?.includes('Unknown attribute')) {
+        console.warn('Retrying without optional attrs:', attrErr.message);
+        const safeData = { ...productData };
+        for (const attr of OPTIONAL_ATTRS) delete safeData[attr];
+        result = await serverCreateDocument(PRODUCTS_COLLECTION_ID, 'unique()', safeData);
+      } else {
+        throw attrErr;
+      }
+    }
 
     try {
       const { notifyNewProduct } = await import('@/services/notificationService');

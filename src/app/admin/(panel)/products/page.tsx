@@ -5,10 +5,12 @@ import * as XLSX from 'xlsx';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Product, Category } from '@/types/admin';
-import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2 } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus } from 'lucide-react';
 import ImageUploadField from '@/components/admin/ImageUploadField';
 import { generateProductTitle, generateProductDescription } from '@/lib/aiAdmin';
 import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures } from '@/lib/product-features';
+import Lottie from 'lottie-react';
+import iaAnimation from '@/ia.json';
 
 type ProductModalData = Partial<Product> & { _barcode?: string; _sku?: string };
 
@@ -151,7 +153,7 @@ export default function ProductsPage() {
         body: JSON.stringify({ messages: newMessages }),
       });
       const data = await res.json();
-      const assistantMsg = data.response || data.message || 'No pude procesar la solicitud.';
+      const assistantMsg = data.text || data.response || data.message || 'No pude procesar la solicitud.';
       setYexyMessages(prev => [...prev, { role: 'assistant', content: assistantMsg }]);
       // Execute actions if present
       if (data.actions) {
@@ -160,6 +162,72 @@ export default function ProductsPage() {
             // Apply updates to the current product being edited
             setModal(m => m ? { ...m, data: { ...m.data, ...action.data } } : m);
           }
+        }
+      }
+      // Check for inline action tags and execute them
+      const createMatch = assistantMsg.match(/\[ACTION:CREATE_PRODUCT\]([\s\S]*?)\[\/ACTION\]/);
+      const updateMatch = assistantMsg.match(/\[ACTION:UPDATE_PRODUCT\]([\s\S]*?)\[\/ACTION\]/);
+      const deleteMatch = assistantMsg.match(/\[ACTION:DELETE_PRODUCT\]([\s\S]*?)\[\/ACTION\]/);
+      if (createMatch || updateMatch || deleteMatch) {
+        try {
+          if (createMatch) {
+            const actionData = JSON.parse(createMatch[1]);
+            const res = await fetch('/api/products/create', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: actionData.name,
+                price: actionData.price || 0,
+                description: actionData.description || '',
+                category: actionData.category || '',
+                stock: actionData.stock || 0,
+                tags: actionData.tags || '',
+                sku: actionData.sku || '',
+                barcode: actionData.barcode || '',
+              }),
+            });
+            const result = await res.json();
+            if (result.success) {
+              setYexyMessages(prev => [...prev, { role: 'assistant', content: `✅ Producto "${actionData.name}" creado exitosamente.` }]);
+              load();
+            } else {
+              setYexyMessages(prev => [...prev, { role: 'assistant', content: `❌ Error al crear: ${result.error}` }]);
+            }
+          } else if (updateMatch) {
+            const actionData = JSON.parse(updateMatch[1]);
+            if (modal) {
+              setModal(m => m ? { ...m, data: { ...m.data, ...actionData } } : m);
+            } else if (actionData.name) {
+              const res = await fetch('/api/products/update', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(actionData),
+              });
+              const result = await res.json();
+              if (result.success) {
+                setYexyMessages(prev => [...prev, { role: 'assistant', content: `✅ Producto "${actionData.name}" actualizado.` }]);
+              } else {
+                setYexyMessages(prev => [...prev, { role: 'assistant', content: `❌ Error: ${result.error}` }]);
+              }
+            }
+            load();
+          } else if (deleteMatch) {
+            const actionData = JSON.parse(deleteMatch[1]);
+            const res = await fetch('/api/products/delete', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: actionData.name }),
+            });
+            const result = await res.json();
+            if (result.success) {
+              setYexyMessages(prev => [...prev, { role: 'assistant', content: `🗑️ Producto "${actionData.name}" eliminado.` }]);
+              load();
+            } else {
+              setYexyMessages(prev => [...prev, { role: 'assistant', content: `❌ Error al eliminar: ${result.error}` }]);
+            }
+          }
+        } catch (e) {
+          console.error('Error executing inline action:', e);
         }
       }
     } catch {
@@ -715,6 +783,31 @@ export default function ProductsPage() {
                 </div>
                 <div className="p-3 border-t border-gray-100">
                   <div className="flex gap-2">
+                    <input type="file" id="yexy-file-input" accept="image/*" className="hidden" onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setYexyLoading(true);
+                      try {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        if (modal?.data?.$id) formData.append('productId', (modal.data as Product).$id);
+                        formData.append('imageField', 'IMAGEURL');
+                        const res = await fetch('/api/products/upload-image', { method: 'POST', body: formData });
+                        const data = await res.json();
+                        if (data.success) {
+                          setYexyMessages(prev => [...prev, { role: 'user', content: '📷 Imagen enviada' }, { role: 'assistant', content: '✅ Imagen subida y asignada al producto.' }]);
+                          if (modal?.data) setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL: data.imageUrl } } : m);
+                          load();
+                        } else {
+                          setYexyMessages(prev => [...prev, { role: 'assistant', content: `❌ Error: ${data.error}` }]);
+                        }
+                      } catch { setYexyMessages(prev => [...prev, { role: 'assistant', content: '❌ Error al subir imagen.' }]); }
+                      finally { setYexyLoading(false); (e.target as HTMLInputElement).value = ''; }
+                    }} />
+                    <button onClick={() => document.getElementById('yexy-file-input')?.click()} disabled={yexyLoading}
+                      className="p-2 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition disabled:opacity-50" title="Subir imagen">
+                      <ImagePlus className="w-4 h-4" />
+                    </button>
                     <input value={yexyInput} onChange={e => setYexyInput(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendYexyMessage(); } }}
                       placeholder="Escribe tu pregunta..."
@@ -854,10 +947,10 @@ export default function ProductsPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <button onClick={() => { openEdit(p); setTimeout(() => setYexyOpen(true), 100); }} className="relative shrink-0 group" title="Preguntar a Yexy AI">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center hover:from-violet-700 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/20">
-                          <Sparkles className="w-5 h-5 text-white" />
+                        <div className="w-10 h-10">
+                          <Lottie animationData={iaAnimation} loop={true} autoplay={true} className="w-full h-full" />
                         </div>
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+                        <span className="absolute -top-1 -right-1 text-[8px] font-bold bg-violet-600 text-white rounded px-1 leading-tight">IA</span>
                       </button>
                       <div className="relative w-10 h-10 shrink-0 cursor-pointer group" onClick={() => setImageUrlModal({ productId: p.$id, currentUrl: p.IMAGEURL || '', newUrl: p.IMAGEURL || '' })} title="Click para cambiar imagen">
                         <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden">

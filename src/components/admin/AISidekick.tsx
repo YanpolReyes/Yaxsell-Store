@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Send, Sparkles, Package, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Send, Sparkles, Package, Loader2, CheckCircle2, AlertCircle, ImagePlus } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -13,7 +13,7 @@ interface Message {
 }
 
 interface ProductAction {
-  type: 'create' | 'update' | 'create_category';
+  type: 'create' | 'update' | 'delete' | 'create_category';
   name: string;
   price?: number;
   description?: string;
@@ -21,6 +21,8 @@ interface ProductAction {
   stock?: number;
   productId?: string;
   imageUrl?: string;
+  imageUrl2?: string;
+  imageUrl3?: string;
   tags?: string;
   sku?: string;
   barcode?: string;
@@ -44,6 +46,14 @@ function parseAction(text: string): { clean: string; action: ProductAction | nul
       return { clean, action: { type: 'update', ...raw } };
     } catch { return { clean: text, action: null }; }
   }
+  const deleteMatch = text.match(/\[ACTION:DELETE_PRODUCT\]([\s\S]*?)\[\/ACTION\]/);
+  if (deleteMatch) {
+    try {
+      const raw = JSON.parse(deleteMatch[1]);
+      const clean = text.replace(/\[ACTION:DELETE_PRODUCT\][\s\S]*?\[\/ACTION\]/, '').trim();
+      return { clean, action: { type: 'delete', ...raw } };
+    } catch { return { clean: text, action: null }; }
+  }
   const categoryMatch = text.match(/\[ACTION:CREATE_CATEGORY\]([\s\S]*?)\[\/ACTION\]/);
   if (categoryMatch) {
     try {
@@ -64,7 +74,7 @@ const SUGGESTIONS = [
 
 const PLACEHOLDERS = ['Crea un producto...', 'Pregunta lo que quieras...', 'Genera ideas...', 'Pide consejo...'];
 
-export default function AISidekick({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default function AISidekick({ open, onClose, onProductChange }: { open: boolean; onClose: () => void; onProductChange?: () => void }) {
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: '¡Hola! Soy **Yexy**, tu asistente de IA. Puedo ayudarte a crear productos, gestionar pedidos, analizar ventas, crear descuentos y mucho más. ¿En qué te ayudo hoy?', typed: true },
   ]);
@@ -75,6 +85,8 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
   const [inputFocused, setInputFocused] = useState(false);
   const [closing, setClosing] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const typingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -166,6 +178,8 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
             category: action.category,
             stock: action.stock,
             imageUrl: action.imageUrl,
+            imageUrl2: action.imageUrl2,
+            imageUrl3: action.imageUrl3,
             tags: action.tags,
             sku: action.sku,
             barcode: action.barcode,
@@ -174,8 +188,23 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
         const data = await res.json();
         if (data.success) {
           setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'done' } : m));
+          onProductChange?.();
         } else {
           console.error('Error updating product:', data.error);
+          setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'error' } : m));
+        }
+      } else if (action.type === 'delete') {
+        const res = await fetch('/api/products/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: action.name }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'done' } : m));
+          onProductChange?.();
+        } else {
+          console.error('Error deleting product:', data.error);
           setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'error' } : m));
         }
       } else {
@@ -196,6 +225,7 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
         const data = await res.json();
         if (data.success) {
           setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'done' } : m));
+          onProductChange?.();
         } else {
           console.error('Error creating product:', data.error);
           setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'error' } : m));
@@ -204,6 +234,48 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
     } catch (error) {
       console.error('Error executing product action:', error);
       setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'error' } : m));
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || imageUploading) return;
+    setImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/products/upload-image', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.success && data.imageUrl) {
+        const userMsg: Message = { role: 'user', content: `[Imagen enviada: ${data.imageUrl}]`, typed: true };
+        const history = [...messages, userMsg];
+        setMessages(history);
+        setLoading(true);
+        try {
+          const aiRes = await fetch('/api/ai-sidekick', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: history.map(m => ({ role: m.role, content: m.content })) }),
+          });
+          if (!aiRes.ok) throw new Error(`API error: ${aiRes.status}`);
+          const aiData = await aiRes.json();
+          const raw = aiData.text || 'No pude procesar la imagen.';
+          const { clean, action } = parseAction(raw);
+          const assistantMsg: Message = { role: 'assistant', content: clean, action, actionStatus: action ? 'pending' : undefined };
+          setMessages(prev => [...prev, assistantMsg]);
+        } catch {
+          setMessages(prev => [...prev, { role: 'assistant', content: 'Error al procesar la imagen.' }]);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setMessages(prev => [...prev, { role: 'assistant', content: '❌ Error al subir la imagen.' }]);
+      }
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', content: '❌ Error al subir la imagen.' }]);
+    } finally {
+      setImageUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -454,6 +526,16 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
         {/* Input area with rotating border */}
         <div style={{ padding:'10px 14px', borderTop:'1px solid rgba(255,255,255,0.06)', flexShrink:0, zIndex:1 }}>
           <div style={{ display:'flex', gap:8, alignItems:'flex-end', position:'relative' }}>
+            <input type="file" ref={fileInputRef} accept="image/*" onChange={handleImageUpload} style={{ display:'none' }} />
+            <button onClick={() => fileInputRef.current?.click()} disabled={imageUploading}
+              style={{
+                width:36, height:36, borderRadius:10, border:'none', cursor:imageUploading?'wait':'pointer',
+                background:'rgba(255,255,255,0.04)', color: imageUploading ? 'rgba(139,92,246,0.6)' : 'rgba(255,255,255,0.3)',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                transition:'all .2s', flexShrink:0,
+              }}>
+              {imageUploading ? <Loader2 size={15} style={{ animation:'spin 1s linear infinite' }}/> : <ImagePlus size={15}/>}
+            </button>
             <div style={{ flex:1, position:'relative', borderRadius:11, overflow:'hidden' }}>
               {/* Rotating conic gradient border */}
               <div style={{

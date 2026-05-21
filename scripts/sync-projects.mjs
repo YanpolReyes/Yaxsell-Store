@@ -15,13 +15,15 @@
  * USO:
  *   node scripts/sync-projects.mjs              # dry-run (solo muestra cambios)
  *   node scripts/sync-projects.mjs --apply       # aplica los cambios
+ *   node scripts/sync-projects.mjs --apply --push # aplica cambios + git push automático
  *   node scripts/sync-projects.mjs --force       # aplica sin confirmar
  */
 
 import fs from 'fs';
 import path from 'path';
+import { execSync } from 'child_process';
 
-const ROOT = path.resolve(import.meta.dirname, '..');
+const ROOT = path.resolve(import.meta.dirname, '../..');
 const SOURCE = path.join(ROOT, 'web-store');
 const TARGET = path.join(ROOT, 'PROJECT YAXSEL', 'web-store');
 
@@ -50,6 +52,7 @@ const EXCLUDE_PATTERNS = [
 
 const apply = process.argv.includes('--apply');
 const force = process.argv.includes('--force');
+const autoPush = process.argv.includes('--push');
 
 function isExcluded(relPath) {
   const normalized = relPath.replace(/\\/g, '/');
@@ -181,6 +184,20 @@ function main() {
   }
 
   console.log(`\n✅ Synced ${synced} file(s) successfully!`);
+
+  // ── Auto git push if requested ──
+  if (autoPush) {
+    console.log('\n📤 Running git add, commit, and push...');
+    try {
+      execSync('git add -A', { cwd: TARGET, stdio: 'inherit' });
+      execSync(`git commit -m "Sync: ${synced} file(s) synced from COMPRA REGION"`, { cwd: TARGET, stdio: 'inherit' });
+      execSync('git push', { cwd: TARGET, stdio: 'inherit' });
+      console.log('\n✅ Git push completed!');
+    } catch (err) {
+      console.error('\n❌ Git push failed:', err.message);
+      console.log('   You may need to push manually.');
+    }
+  }
 
   // ── Remind about excluded files ──
   console.log('\n⚠️  REMINDER: The following files were NOT synced (project-specific):');

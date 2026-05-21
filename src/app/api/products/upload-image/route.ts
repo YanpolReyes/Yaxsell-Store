@@ -1,0 +1,66 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { serverUploadFile, getServerFileUrl, serverUpdateDocument, serverListDocuments } from '@/lib/appwrite-server';
+import { PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { MEDIA_BUCKET_ID } from '@/lib/appwrite';
+
+export async function POST(req: NextRequest) {
+  try {
+    const formData = await req.formData();
+    const file = formData.get('file') as File | null;
+    const productName = formData.get('productName') as string | null;
+    const productId = formData.get('productId') as string | null;
+    const imageField = (formData.get('imageField') as string) || 'IMAGEURL'; // IMAGEURL, IMAGEURL2, IMAGEURL3
+
+    if (!file) {
+      return NextResponse.json({ success: false, error: 'No se envió archivo' }, { status: 400 });
+    }
+
+    // Upload to Appwrite Storage
+    const uploaded = await serverUploadFile(MEDIA_BUCKET_ID, file);
+    const imageUrl = getServerFileUrl(MEDIA_BUCKET_ID, uploaded.$id);
+
+    // If productName or productId provided, update the product
+    if (productName || productId) {
+      let docId = productId;
+
+      if (!docId && productName) {
+        const result = await serverListDocuments(PRODUCTS_COLLECTION_ID, [
+          JSON.stringify({ method: 'equal', attribute: 'NAME', values: [productName] }),
+        ]);
+        if (result.documents && result.documents.length > 0) {
+          docId = (result.documents[0] as any).$id;
+        }
+      }
+
+      if (docId) {
+        const OPTIONAL_ATTRS = ['TAGS', 'FEATURES', 'sku', 'barcode', 'IMAGEURL2', 'IMAGEURL3'];
+        const updates: Record<string, unknown> = { [imageField]: imageUrl };
+
+        try {
+          await serverUpdateDocument(PRODUCTS_COLLECTION_ID, docId, updates);
+        } catch (attrErr: any) {
+          if (attrErr?.message?.includes('Unknown attribute')) {
+            const safeUpdates = { ...updates };
+            for (const attr of OPTIONAL_ATTRS) delete safeUpdates[attr];
+            await serverUpdateDocument(PRODUCTS_COLLECTION_ID, docId, safeUpdates);
+          } else {
+            throw attrErr;
+          }
+        }
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      imageUrl,
+      fileId: uploaded.$id,
+      message: 'Imagen subida exitosamente',
+    });
+  } catch (error: any) {
+    console.error('Error uploading image:', error);
+    return NextResponse.json(
+      { success: false, error: error.message || 'Error al subir imagen' },
+      { status: 500 }
+    );
+  }
+}

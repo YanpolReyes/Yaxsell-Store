@@ -7,23 +7,19 @@ function getApiKey(): string {
 }
 
 async function callGemini(prompt: string): Promise<string> {
-  const apiKey = getApiKey();
-  if (!apiKey) throw new Error('API key de Gemini no configurada. Ve a Configuración > AI.');
+  const res = await fetch('/api/gemini', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt }),
+  });
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      }),
-    }
-  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error en la API de Gemini' }));
+    throw new Error(err.error || 'Error en la API de Gemini');
+  }
 
-  if (!res.ok) throw new Error('Error en la API de Gemini');
   const data = await res.json();
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return data.text || '';
 }
 
 export async function generateProductTitle(description: string, category: string): Promise<string[]> {
