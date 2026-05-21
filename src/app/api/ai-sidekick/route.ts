@@ -36,7 +36,9 @@ Solo incluye los campos que el usuario quiere cambiar. "name" es obligatorio y s
 
 ### Crear categoría
 Si necesitas crear una categoría nueva, usa:
-[ACTION:CREATE_CATEGORY]{"name":"...","description":"...","icon":"..."}[/ACTION]
+[ACTION:CREATE_CATEGORY]{"name":"...","iconUrl":"emoji"}[/ACTION]
+
+NOTA: La colección categories solo tiene los atributos: name, iconUrl, order, BACKGROUND_IMAGE_URL. NO uses "description" ni "icon" porque no existen.
 
 ## Reglas:
 - Responde siempre en español

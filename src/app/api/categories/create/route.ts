@@ -15,10 +15,9 @@ export async function POST(req: NextRequest) {
 
     const data: Record<string, unknown> = {
       name: name.trim(),
-      description: description || '',
-      icon: icon || '',
+      iconUrl: icon || '',
+      order: 0,
     };
-    if (parentId) data.parentId = parentId;
 
     const result = await serverCreateDocument(CATEGORIES_COLLECTION_ID, 'unique()', data);
 

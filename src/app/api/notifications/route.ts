@@ -28,9 +28,9 @@ export async function POST(req: NextRequest) {
       if (email) {
         try {
           const coupons = await serverListDocuments(COUPONS_COLLECTION_ID, [
-            JSON.stringify({ method: 'equal', attribute: 'assignedEmail', values: [email] }),
-            JSON.stringify({ method: 'equal', attribute: 'isUsed', values: [false] }),
-            JSON.stringify({ method: 'limit', values: [3] }),
+            `equal("assignedEmail", ["${email}"])`,
+            `equal("isUsed", [false])`,
+            `limit(3)`,
           ]);
           if (coupons.total > 0) {
             const code = (coupons.documents[0] as { code?: string }).code;
