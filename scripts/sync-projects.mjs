@@ -34,7 +34,6 @@ const EXCLUDE_PATTERNS = [
   '.env',
   'src/lib/appwrite.ts',
   'src/lib/appwrite-admin.ts',
-  'src/lib/appwrite-server.ts',
   // API routes con IDs hardcodeados
   'src/app/api/template/route.ts',
   'src/app/api/theme-config/route.ts',

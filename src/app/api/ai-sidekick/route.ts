@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverListDocuments } from '@/lib/appwrite-server';
+import { PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyAPU7MGRQWFHHA1NhWD0rTfcVGOCVGOQok';
 const MODELS = ['gemini-3.1-flash-lite', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'];
@@ -48,8 +50,14 @@ NOTA: La colección categories solo tiene los atributos: name, iconUrl, order, B
 
 ## Manejo de imágenes:
 - Si el usuario envía una imagen, el sistema la subirá automáticamente a Appwrite Storage y te dará la URL.
-- Si el usuario dice "recuerdas el producto X", busca en los productos mencionados en la conversación y muestra sus datos incluyendo la imagen.
+- Si el usuario dice "recuerdas el producto X", busca en los PRODUCTOS EN LA BASE DE DATOS que se te proporcionan abajo y muestra los datos reales.
 - Si el usuario dice "agrégale más fotos" o "pon esta foto", usa UPDATE_PRODUCT con el campo imageUrl (o imageUrl2, imageUrl3 para fotos adicionales).
+
+## 📊 ACCESO A BASE DE DATOS:
+- Tienes acceso a los productos reales de la tienda. Se te inyectan en el contexto al final de este prompt.
+- NUNCA inventes datos de productos. Si el usuario pregunta por un producto, búscalo en la lista de PRODUCTOS EN LA BASE DE DATOS.
+- Si no encuentras el producto, dile honestamente que no lo encontraste.
+- Para eliminar o actualizar un producto, usa el nombre EXACTO de la base de datos.
 
 ## Reglas:
 - Responde siempre en español
@@ -65,13 +73,66 @@ export async function POST(req: NextRequest) {
   try {
     const { messages } = await req.json();
 
+    // ── Fetch real product data from database ──
+    let productContext = '';
+    try {
+      const lastUserMsg = [...messages].reverse().find((m: { role: string }) => m.role === 'user');
+      const userText = (lastUserMsg?.content || '').toLowerCase();
+
+      // Always fetch all products for context (limited)
+      const result = await serverListDocuments(PRODUCTS_COLLECTION_ID);
+      const docs = (result as any).documents || [];
+
+      if (docs.length > 0) {
+        // If user mentions a specific product, find matching ones
+        const keywords = userText.split(/\s+/).filter((w: string) => w.length > 2);
+        let relevantProducts = docs;
+
+        // If user seems to reference a product, filter to relevant ones
+        if (keywords.length > 0) {
+          const matched = docs.filter((d: any) => {
+            const name = (d.NAME || '').toLowerCase();
+            const sku = (d.sku || d.TAGS || '').toLowerCase();
+            const desc = (d.DESCRIPTION || '').toLowerCase();
+            return keywords.some((k: string) => name.includes(k) || sku.includes(k) || desc.includes(k));
+          });
+          if (matched.length > 0) relevantProducts = matched;
+        }
+
+        const productList = relevantProducts.slice(0, 20).map((d: any) => {
+          const fields = [`ID: ${d.$id}`, `Nombre: ${d.NAME}`];
+          if (d.PRICE !== undefined) fields.push(`Precio: $${d.PRICE}`);
+          if (d.CURRENTPRICE !== undefined) fields.push(`Precio actual: $${d.CURRENTPRICE}`);
+          if (d.STOCK !== undefined) fields.push(`Stock: ${d.STOCK}`);
+          if (d.CATEGORYID) fields.push(`Categoría: ${d.CATEGORYID}`);
+          if (d.DESCRIPTION) fields.push(`Descripción: ${d.DESCRIPTION}`);
+          if (d.IMAGEURL) fields.push(`Imagen: ${d.IMAGEURL}`);
+          if (d.IMAGEURL2) fields.push(`Imagen2: ${d.IMAGEURL2}`);
+          if (d.IMAGEURL3) fields.push(`Imagen3: ${d.IMAGEURL3}`);
+          if (d.TAGS) fields.push(`Tags: ${d.TAGS}`);
+          if (d.sku) fields.push(`SKU: ${d.sku}`);
+          if (d.barcode) fields.push(`Código barras: ${d.barcode}`);
+          if (d.FEATURES) fields.push(`Características: ${d.FEATURES}`);
+          return fields.join(' | ');
+        });
+
+        productContext = `\n\n## 📦 PRODUCTOS EN LA BASE DE DATOS (${docs.length} total, mostrando ${Math.min(relevantProducts.length, 20)} relevantes):\n${productList.join('\n')}\n\nIMPORTANTE: Usa ESTOS datos reales cuando el usuario pregunte por productos. NUNCA inventes datos de productos. Si el producto no está en esta lista, dile que no lo encontraste.`;
+      } else {
+        productContext = '\n\n## 📦 BASE DE DATOS VACÍA: No hay productos registrados aún.';
+      }
+    } catch (dbErr) {
+      console.warn('Could not fetch product context:', dbErr);
+    }
+
+    const fullSystemPrompt = SYSTEM_PROMPT + productContext;
+
     const contents = messages.map((m: { role: string; content: string }) => ({
       role: m.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: m.content }],
     }));
 
     const body = {
-      system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      system_instruction: { parts: [{ text: fullSystemPrompt }] },
       contents,
       generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
     };
