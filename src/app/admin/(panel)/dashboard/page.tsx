@@ -290,7 +290,7 @@ function ChileMap({ regionCounts }: { regionCounts: Record<string, number> }) {
 
       // ═══ 3D RELIEF REGIONS (Vibrant Distinct Hover Colors) ═══
       const palette = [
-        '#6366f1', '#ec4899', '#10b981', '#f59e0b', 
+        '#6366f1', '#f18e04', '#10b981', '#f59e0b', 
         '#8b5cf6', '#ef4444', '#14b8a6', '#eab308', 
         '#a855f7', '#f43f5e', '#06b6d4', '#84cc16', 
         '#d946ef', '#f97316', '#0ea5e9', '#22c55e'
@@ -1344,7 +1344,7 @@ export default function DashboardPage() {
             { label: 'Productos', value: String(stats.totalProducts), icon: <Package size={14} color="#7c3aed" />, color: '#7c3aed', bg: '#f5f3ff' },
             { label: 'Visitas hoy', value: String(pageViews.todayViews), icon: <Eye size={14} color="#0d9488" />, color: '#0d9488', bg: '#f0fdfa' },
             { label: 'Visitas 30d', value: String(pageViews.totalViews), icon: <Globe size={14} color="#8b5cf6" />, color: '#8b5cf6', bg: '#f5f3ff' },
-            ...(newUsers > 0 ? [{ label: 'Nuevos usuarios', value: String(newUsers), icon: <Users size={14} color="#ec4899" />, color: '#ec4899', bg: '#fdf2f8' }] : []),
+            ...(newUsers > 0 ? [{ label: 'Nuevos usuarios', value: String(newUsers), icon: <Users size={14} color="#f18e04" />, color: '#f18e04', bg: '#fff7ed' }] : []),
           ].map((kpi, i, arr) => (
             <div key={i} className="db-kpi-item" style={{ textAlign: 'center', borderRight: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none', padding: '0 12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, marginBottom: 6 }}>
@@ -1545,9 +1545,9 @@ export default function DashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: 11, color: '#6b7280', width: 100, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tc.comuna}</span>
                         <div style={{ flex: 1, height: 8, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${(tc.count / maxC) * 100}%`, background: 'linear-gradient(90deg, #ec4899, #f43f5e)', borderRadius: 4, transition: 'width 0.5s' }} />
+                          <div style={{ height: '100%', width: `${(tc.count / maxC) * 100}%`, background: 'linear-gradient(90deg, #f18e04, #f43f5e)', borderRadius: 4, transition: 'width 0.5s' }} />
                         </div>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: '#ec4899', minWidth: 20, textAlign: 'right' }}>{tc.count}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#f18e04', minWidth: 20, textAlign: 'right' }}>{tc.count}</span>
                       </div>
                       {users.length > 0 && (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 3, paddingLeft: 108 }}>
@@ -1792,7 +1792,7 @@ export default function DashboardPage() {
                 {topProducts.map((p, i) => {
                   const maxSold = Math.max(...topProducts.map(x => x.SOLDQUANTITY ?? 0), 1);
                   const pct = Math.round(((p.SOLDQUANTITY ?? 0) / maxSold) * 100);
-                  const colors = ['#6366f1','#0891b2','#059669','#d97706','#ec4899','#7c3aed'];
+                  const colors = ['#6366f1','#0891b2','#059669','#d97706','#f18e04','#7c3aed'];
                   return (
                     <div key={p.$id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 20px' }}>
                       <span style={{
@@ -1824,7 +1824,7 @@ export default function DashboardPage() {
               {topViewedProducts.map((p, i) => {
                 const maxViews = Math.max(...topViewedProducts.map(x => x.viewCount), 1);
                 const pct = Math.round((p.viewCount / maxViews) * 100);
-                const colors = ['#0d9488','#0891b2','#6366f1','#059669','#d97706','#ec4899'];
+                const colors = ['#0d9488','#0891b2','#6366f1','#059669','#d97706','#f18e04'];
                 return (
                   <div key={p.$id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 20px' }}>
                     <span style={{

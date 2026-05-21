@@ -102,8 +102,8 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
       <div style={{ background: '#fff', maxWidth: 640, margin: '0 auto', maxHeight: '85vh', overflow: 'auto', borderRadius: 16, marginTop: 12, boxShadow: '0 8px 40px rgba(0,0,0,0.15)' }}
         onClick={e => e.stopPropagation()}>
         {/* Search input */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #fce7f3', background: 'linear-gradient(135deg, #fef2f8, #fdf2f8)' }}>
-          <Search size={18} color="#ec4899" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #ffedd5', background: 'linear-gradient(135deg, #fff8ed, #fff7ed)' }}>
+          <Search size={18} color="#f18e04" />
           <input
             ref={inputRef}
             value={query}
@@ -112,8 +112,8 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
             placeholder="Buscar productos, marcas y más..."
             style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: '#333', padding: '8px 0', background: 'transparent', fontFamily: "'DM Sans', system-ui, sans-serif" }}
           />
-          {query && <button onClick={() => { setQuery(''); setResults([]); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}><X size={16} color="#ec4899" /></button>}
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#ec4899', fontWeight: 600, padding: '4px 8px' }}>Cerrar</button>
+          {query && <button onClick={() => { setQuery(''); setResults([]); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}><X size={16} color="#f18e04" /></button>}
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#f18e04', fontWeight: 600, padding: '4px 8px' }}>Cerrar</button>
         </div>
 
         {showSuggestions ? (
@@ -123,7 +123,7 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
               <div style={{ marginBottom: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#999', textTransform: 'uppercase' }}>Búsquedas recientes</p>
-                  <button onClick={clearHistory} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#ec4899' }}>Limpiar</button>
+                  <button onClick={clearHistory} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#f18e04' }}>Limpiar</button>
                 </div>
                 {history.map(h => (
                   <div key={h} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid #f8f8f8' }}>
@@ -140,8 +140,8 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {TRENDING.map(t => (
                   <button key={t} onClick={() => goSearch(t)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: '#fef2f8', border: '1px solid rgba(236,72,153,0.15)', borderRadius: 20, cursor: 'pointer', fontSize: 13, color: '#be185d' }}>
-                    <TrendingUp size={12} color="#ec4899" /> {t}
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: '#fff8ed', border: '1px solid rgba(241,142,4,0.15)', borderRadius: 20, cursor: 'pointer', fontSize: 13, color: '#c2410c' }}>
+                    <TrendingUp size={12} color="#f18e04" /> {t}
                   </button>
                 ))}
               </div>
@@ -158,7 +158,7 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
               return (
                 <Link key={p.$id} href={`/productos/${p.$id}`} onClick={() => { addToHistory(query); onClose(); }}
                   style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', textDecoration: 'none', borderBottom: '1px solid #f8f8f8', transition: 'background .15s' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#fef2f8')}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#fff8ed')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   {p.IMAGEURL && (
                     <div style={{ width: 44, height: 44, borderRadius: 6, overflow: 'hidden', flexShrink: 0, background: '#f5f5f5' }}>
@@ -167,14 +167,14 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: 14, color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.NAME}</p>
-                    <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 700, color: '#ec4899' }}>{formatPrice(price)}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 700, color: '#f18e04' }}>{formatPrice(price)}</p>
                   </div>
                 </Link>
               );
             })}
             {results.length > 0 && (
               <button onClick={() => goSearch()}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#ec4899', fontWeight: 600 }}>
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#f18e04', fontWeight: 600 }}>
                 Ver todos los resultados <ArrowRight size={14} />
               </button>
             )}

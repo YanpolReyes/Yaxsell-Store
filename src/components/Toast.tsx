@@ -39,7 +39,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   };
 
   const bgMap: Record<ToastType, string> = {
-    success: 'linear-gradient(135deg, #fbcfe8, #f9a8d4)',
+    success: 'linear-gradient(135deg, #fed7aa, #f29718)',
     error: 'linear-gradient(135deg, #dc2626, #991b1b)',
     warning: 'linear-gradient(135deg, #f59e0b, #d97706)',
     info: 'linear-gradient(135deg, #3b82f6, #2563eb)',

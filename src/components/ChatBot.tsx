@@ -211,7 +211,7 @@ export default function ChatBot() {
         <div ref={scrollRef} className="yaxsel-chat-fullscreen__messages">
           {messages.length === 0 && (
             <div className="yaxsel-chat-fullscreen__welcome">
-              <Bot size={48} color="#f9a8d4" />
+              <Bot size={48} color="#f29718" />
               <p className="yaxsel-chat-fullscreen__welcome-title">¡Hola! Soy Yaxsel AI</p>
               <p className="yaxsel-chat-fullscreen__welcome-text">{WELCOME}</p>
               <div className="yaxsel-chat-fullscreen__quick">
@@ -284,7 +284,7 @@ export default function ChatBot() {
           flex-shrink: 0;
           display: flex; align-items: center; justify-content: space-between;
           padding: max(14px, env(safe-area-inset-top, 0px)) 16px 14px;
-          background: linear-gradient(135deg, #ec4899, #f472b6);
+          background: linear-gradient(135deg, #f18e04, #f472b6);
         }
         .yaxsel-chat-fullscreen__brand { display: flex; align-items: center; gap: 12px; }
         .yaxsel-chat-fullscreen__avatar {
@@ -335,8 +335,8 @@ export default function ChatBot() {
           display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 340px;
         }
         .yaxsel-chat-fullscreen__quick button {
-          padding: 12px 16px; background: #fef2f8; border: 1px solid #fce7f3;
-          border-radius: 12px; font-size: 13px; color: #ec4899; cursor: pointer;
+          padding: 12px 16px; background: #fff8ed; border: 1px solid #ffedd5;
+          border-radius: 12px; font-size: 13px; color: #f18e04; cursor: pointer;
           text-align: left; font-family: "DM Sans", system-ui, sans-serif; font-weight: 600;
         }
         .yaxsel-chat-msg { display: flex; gap: 10px; align-items: flex-end; }
@@ -344,7 +344,7 @@ export default function ChatBot() {
         .yaxsel-chat-msg__avatar {
           width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
           display: flex; align-items: center; justify-content: center;
-          background: linear-gradient(135deg, #ec4899, #f472b6);
+          background: linear-gradient(135deg, #f18e04, #f472b6);
         }
         .yaxsel-chat-msg--user .yaxsel-chat-msg__avatar { background: #e5e7eb; }
         .yaxsel-chat-msg__bubble {
@@ -357,7 +357,7 @@ export default function ChatBot() {
           box-shadow: 0 1px 4px rgba(0,0,0,0.06);
         }
         .yaxsel-chat-msg--user .yaxsel-chat-msg__bubble {
-          background: #ec4899; color: #fff; border-bottom-right-radius: 4px;
+          background: #f18e04; color: #fff; border-bottom-right-radius: 4px;
         }
         .yaxsel-chat-msg__bubble--loading { padding: 14px 18px; }
         .yaxsel-chat-fullscreen__footer {
@@ -367,7 +367,7 @@ export default function ChatBot() {
           display: flex; flex-direction: column; gap: 10px;
         }
         .yaxsel-chat-fullscreen__wa {
-          font-size: 12px; color: #ec4899; text-align: center;
+          font-size: 12px; color: #f18e04; text-align: center;
           text-decoration: none; font-weight: 600;
           font-family: "DM Sans", system-ui, sans-serif;
         }
@@ -378,12 +378,12 @@ export default function ChatBot() {
           color: #333; background: #fafafa;
           font-family: "DM Sans", system-ui, sans-serif;
         }
-        .yaxsel-chat-fullscreen__input-row input:focus { border-color: #ec4899; background: #fff; }
+        .yaxsel-chat-fullscreen__input-row input:focus { border-color: #f18e04; background: #fff; }
         .yaxsel-chat-fullscreen__input-row button {
           width: 48px; height: 48px; border-radius: 50%; border: none;
-          background: #ec4899; display: flex; align-items: center; justify-content: center;
+          background: #f18e04; display: flex; align-items: center; justify-content: center;
           cursor: pointer; flex-shrink: 0;
-          box-shadow: 0 4px 14px rgba(236,72,153,0.35);
+          box-shadow: 0 4px 14px rgba(241,142,4,0.35);
         }
         .yaxsel-chat-fullscreen__input-row button:disabled {
           background: #e0e0e0; cursor: not-allowed; box-shadow: none;
@@ -419,10 +419,10 @@ export default function ChatBot() {
           style={{
             position: 'fixed', bottom: 90, right: 20, zIndex: 9999,
             width: 44, height: 44, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #ec4899, #f472b6)',
+            background: 'linear-gradient(135deg, #f18e04, #f472b6)',
             border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 16px rgba(236,72,153,0.35)',
+            boxShadow: '0 4px 16px rgba(241,142,4,0.35)',
           }}
         >
           <MessageCircle size={20} color="#fff" />

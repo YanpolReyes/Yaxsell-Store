@@ -123,8 +123,8 @@ function CountdownBlocks({ offer }: { offer: TimedOffer; dark?: boolean }) {
 
 function HeroSkeleton() {
   return (
-    <div data-section-id="hero_carousel" style={{ position: 'relative', width: '100%', overflow: 'hidden', background: '#fef2f8' }}>
-      <div style={{ width: '100%', aspectRatio: '1920 / 540', minHeight: 220, backgroundImage: 'linear-gradient(90deg, #fef2f8 0%, #fce7f3 45%, #fef2f8 100%)', backgroundSize: '220% 100%', animation: 'hp-skeleton-wave 1.2s linear infinite' }} />
+    <div data-section-id="hero_carousel" style={{ position: 'relative', width: '100%', overflow: 'hidden', background: '#fff8ed' }}>
+      <div style={{ width: '100%', aspectRatio: '1920 / 540', minHeight: 220, backgroundImage: 'linear-gradient(90deg, #fff8ed 0%, #ffedd5 45%, #fff8ed 100%)', backgroundSize: '220% 100%', animation: 'hp-skeleton-wave 1.2s linear infinite' }} />
     </div>
   );
 }
@@ -643,7 +643,7 @@ function CardCarousel({ products, label }: { products: Product[]; label?: string
 
 const CATEGORY_THEMES = [
   '#3b82f6', '#f43f5e', '#22c55e', '#f97316', '#8b5cf6', '#06b6d4',
-  '#ec4899', '#14b8a6', '#f59e0b', '#6366f1',
+  '#f18e04', '#14b8a6', '#f59e0b', '#6366f1',
 ] as const;
 
 function getCategoryAccent(cat: Category, idx: number): string {
@@ -1551,8 +1551,8 @@ export default function HomePage2() {
                     background: rgba(255,255,255,.85);
                   }
                 `}</style>
-                <div style={{ position: 'relative', overflow: 'hidden', width: '100%', aspectRatio: '1920 / 540', background: '#fef2f8' }}>
-                <div style={{ position: 'absolute', inset: 0, zIndex: 2, background: '#fef2f8', backgroundImage: 'linear-gradient(90deg, #fef2f8 0%, #fce7f3 45%, #fef2f8 100%)', backgroundSize: '220% 100%', animation: heroLoading ? 'hp-skeleton-wave 1.2s linear infinite' : 'none', opacity: heroLoading ? 1 : 0, transition: 'opacity .5s ease', pointerEvents: 'none' }} />
+                <div style={{ position: 'relative', overflow: 'hidden', width: '100%', aspectRatio: '1920 / 540', background: '#fff8ed' }}>
+                <div style={{ position: 'absolute', inset: 0, zIndex: 2, background: '#fff8ed', backgroundImage: 'linear-gradient(90deg, #fff8ed 0%, #ffedd5 45%, #fff8ed 100%)', backgroundSize: '220% 100%', animation: heroLoading ? 'hp-skeleton-wave 1.2s linear infinite' : 'none', opacity: heroLoading ? 1 : 0, transition: 'opacity .5s ease', pointerEvents: 'none' }} />
                   {banners.map((banner, i) => (
                     <div key={banner.$id} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: i === heroIdx ? (heroImageReady ? 1 : 0) : 0, transition: 'opacity .4s ease', zIndex: i === heroIdx ? 1 : 0 }}>
                       {banner.LINKURL ? (
@@ -1760,7 +1760,7 @@ export default function HomePage2() {
                     {catModel === 'glass' && (
                     <div style={{ background: 'linear-gradient(135deg, #0f172a, #1e293b, #0f172a)', borderRadius: 20, padding: '24px 20px', position: 'relative', overflow: 'hidden' }}>
                       <div style={{ position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.15), transparent 70%)' }} />
-                      <div style={{ position: 'absolute', bottom: -30, left: -30, width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(236,72,153,0.1), transparent 70%)' }} />
+                      <div style={{ position: 'absolute', bottom: -30, left: -30, width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(241,142,4,0.1), transparent 70%)' }} />
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12, position: 'relative', zIndex: 1 }}>
                         {categories.map((cat, idx) => {
                           const accent = getCategoryAccent(cat, idx);
@@ -1831,7 +1831,7 @@ export default function HomePage2() {
                     {catModel === 'neon' && (
                     <div style={{ background: '#0a0a0a', borderRadius: 20, padding: '24px 20px', position: 'relative', overflow: 'hidden' }}>
                       <div style={{ position: 'absolute', top: -60, left: -40, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.08), transparent 70%)', pointerEvents: 'none' }} />
-                      <div style={{ position: 'absolute', bottom: -40, right: -30, width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle, rgba(236,72,153,0.06), transparent 70%)', pointerEvents: 'none' }} />
+                      <div style={{ position: 'absolute', bottom: -40, right: -30, width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle, rgba(241,142,4,0.06), transparent 70%)', pointerEvents: 'none' }} />
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12, position: 'relative', zIndex: 1 }}>
                         {categories.map((cat, idx) => {
                           const accent = getCategoryAccent(cat, idx);

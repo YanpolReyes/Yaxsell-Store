@@ -448,7 +448,7 @@
   [data-template="1"] .product-price .current-price {
     font-size: 24px !important;
     font-weight: 900 !important;
-    color: #ec4899 !important;
+    color: #f18e04 !important;
   }
   [data-template="1"] .fusion-featured-wrapper .product-price del,
   [data-template="1"] .product-price del {
@@ -464,7 +464,7 @@
   [data-template="1"] .product-content .price {
     font-size: 16px !important;
     font-weight: 800 !important;
-    color: #ec4899 !important;
+    color: #f18e04 !important;
     margin-top: 6px !important;
     line-height: 1.2 !important;
   }
@@ -840,7 +840,7 @@
   }
   .pk-page .pk-card:hover {
     transform: none !important;
-    box-shadow: 0 8px 28px rgba(236,72,153,0.08) !important;
+    box-shadow: 0 8px 28px rgba(241,142,4,0.08) !important;
   }
 }
 
@@ -1777,8 +1777,8 @@
     box-shadow: none !important;
   }
   [data-template="1"] .accordion-button:not(.collapsed) {
-    color: #db2777 !important;
-    background: rgba(236,72,153,0.04) !important;
+    color: #ea580c !important;
+    background: rgba(241,142,4,0.04) !important;
   }
   [data-template="1"] .accordion-button::after {
     flex-shrink: 0 !important;

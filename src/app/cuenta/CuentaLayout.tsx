@@ -12,7 +12,7 @@ import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from 
 import { CuentaBgProvider, useCuentaBgUrl } from './CuentaBgContext';
 
 const FF = '"DM Sans",system-ui,sans-serif';
-const PINK = '#ec4899';
+const PINK = '#f18e04';
 
 const SIDEBAR_NAV = [
   { icon: User,        label: 'Mi cuenta',      href: '/cuenta'               },
@@ -93,7 +93,7 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
           font-family: ${FF}; transition: all 0.18s;
         }
         .sb-link:hover { background: #f9fafb; color: #1a1a1a; }
-        .sb-link.active { background: #fef2f8; color: ${PINK}; font-weight: 700; }
+        .sb-link.active { background: #fff8ed; color: ${PINK}; font-weight: 700; }
         .sb-link-content { display: flex; align-items: center; gap: 14px; }
         @keyframes bgFloat { 0%,100%{transform:scale(1.1) translate(0,0)} 25%{transform:scale(1.15) translate(1%,-1%)} 50%{transform:scale(1.1) translate(-1%,1%)} 75%{transform:scale(1.15) translate(1%,1%)} }
         @keyframes pageSlideIn {
@@ -117,7 +117,7 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
             <div style={{ background: '#fff', borderRadius: 18, padding: 20, border: '1.5px solid #d1d5db', boxShadow: 'inset 0 1px 2px 0 rgba(0,0,0,0.02), 0 1px 2px 0 rgba(0,0,0,0.03), 0 2px 8px 0 rgba(0,0,0,0.04), 0 4px 16px 0 rgba(0,0,0,0.02)', position: 'sticky', top: 92 }}>
               {/* Profile mini */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 8px 20px', borderBottom: '1px solid #f3f4f6', marginBottom: 10 }}>
-                <div style={{ width: 52, height: 52, borderRadius: '50%', background: avatarUrl ? 'transparent' : '#fef2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, color: PINK, fontWeight: 700, fontSize: 17 }}>
+                <div style={{ width: 52, height: 52, borderRadius: '50%', background: avatarUrl ? 'transparent' : '#fff8ed', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, color: PINK, fontWeight: 700, fontSize: 17 }}>
                   {avatarUrl ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
                 </div>
                 <div style={{ minWidth: 0 }}>
@@ -142,7 +142,7 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
                             right: '-8px', 
                             width: 18, 
                             height: 18, 
-                            background: '#ec4899', 
+                            background: '#f18e04', 
                             color: '#fff', 
                             borderRadius: '50%', 
                             fontSize: 11, 

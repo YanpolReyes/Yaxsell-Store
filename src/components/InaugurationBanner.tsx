@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Sparkles, PartyPopper, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const PINK = '#ec4899';
+const PINK = '#f18e04';
 
 type Particle = {
   id: number;
@@ -53,10 +53,10 @@ export default function InaugurationBanner({ compact = false, href = '/ofertas' 
         overflow: 'hidden',
         borderRadius: compact ? 18 : 24,
         padding: compact ? '18px 16px' : '28px 32px',
-        background: 'linear-gradient(135deg, #db2777 0%, #ec4899 45%, #f43f5e 100%)',
+        background: 'linear-gradient(135deg, #ea580c 0%, #f18e04 45%, #f43f5e 100%)',
         boxShadow: compact
-          ? '0 12px 40px rgba(236,72,153,0.35), inset 0 1px 0 rgba(255,255,255,0.25)'
-          : '0 20px 60px rgba(236,72,153,0.4), inset 0 1px 0 rgba(255,255,255,0.3)',
+          ? '0 12px 40px rgba(241,142,4,0.35), inset 0 1px 0 rgba(255,255,255,0.25)'
+          : '0 20px 60px rgba(241,142,4,0.4), inset 0 1px 0 rgba(255,255,255,0.3)',
       }}
     >
       <style>{`

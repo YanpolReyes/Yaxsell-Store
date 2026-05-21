@@ -153,9 +153,9 @@ function ConfirmadoInner() {
 
   if (isLoading) {
     return (
-      <div style={{ fontFamily: FF, minHeight: '100vh', background: 'linear-gradient(180deg,#fff5f8 0%,#fff 280px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ fontFamily: FF, minHeight: '100vh', background: 'linear-gradient(180deg,#fff8ed 0%,#fff 280px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 60, height: 60, border: '4px solid #fce7f3', borderTop: '4px solid #ec4899', borderRadius: '50%', animation: 'pkSpin 1s linear infinite', margin: '0 auto 16px' }} />
+          <div style={{ width: 60, height: 60, border: '4px solid #ffedd5', borderTop: '4px solid #f18e04', borderRadius: '50%', animation: 'pkSpin 1s linear infinite', margin: '0 auto 16px' }} />
           <p style={{ color: '#9ca3af', fontSize: 14 }}>Cargando tu pedido...</p>
         </div>
         <style>{`@keyframes pkSpin { to { transform: rotate(360deg); } }`}</style>
@@ -165,14 +165,14 @@ function ConfirmadoInner() {
 
   if (!order) {
     return (
-      <div style={{ fontFamily: FF, minHeight: '100vh', background: 'linear-gradient(180deg,#fff5f8 0%,#fff 280px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-        <div style={{ background: '#fff', borderRadius: 24, padding: '40px 32px', border: '1px solid #fce7f3', textAlign: 'center', maxWidth: 420, boxShadow: '0 10px 40px rgba(236,72,153,0.08)' }}>
+      <div style={{ fontFamily: FF, minHeight: '100vh', background: 'linear-gradient(180deg,#fff8ed 0%,#fff 280px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+        <div style={{ background: '#fff', borderRadius: 24, padding: '40px 32px', border: '1px solid #ffedd5', textAlign: 'center', maxWidth: 420, boxShadow: '0 10px 40px rgba(241,142,4,0.08)' }}>
           <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
             <AlertTriangle size={36} color="#ef4444" />
           </div>
           <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111', margin: '0 0 6px' }}>Pedido no encontrado</h2>
           <p style={{ fontSize: 14, color: '#6b7280', margin: '0 0 20px' }}>No pudimos encontrar el pedido solicitado.</p>
-          <Link href="/" style={{ display: 'inline-block', padding: '11px 24px', background: 'linear-gradient(135deg,#ec4899,#f9a8d4)', color: '#fff', borderRadius: 12, textDecoration: 'none', fontSize: 13, fontWeight: 700, boxShadow: '0 6px 20px rgba(236,72,153,0.25)' }}>
+          <Link href="/" style={{ display: 'inline-block', padding: '11px 24px', background: 'linear-gradient(135deg,#f18e04,#f29718)', color: '#fff', borderRadius: 12, textDecoration: 'none', fontSize: 13, fontWeight: 700, boxShadow: '0 6px 20px rgba(241,142,4,0.25)' }}>
             Volver al inicio
           </Link>
         </div>
@@ -187,7 +187,7 @@ function ConfirmadoInner() {
   const showTimer = isPending && order.EXPIRESAT && !uploaded;
 
   return (
-    <div style={{ fontFamily: FF, minHeight: '100vh', background: 'linear-gradient(180deg,#fff5f8 0%,#fff 320px)' }}>
+    <div style={{ fontFamily: FF, minHeight: '100vh', background: 'linear-gradient(180deg,#fff8ed 0%,#fff 320px)' }}>
       {/* Confetti */}
       {showConfetti && (
         <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 100, overflow: 'hidden' }}>
@@ -198,7 +198,7 @@ function ConfirmadoInner() {
               top: '-20px',
               width: 8 + Math.random() * 6,
               height: 8 + Math.random() * 6,
-              background: ['#ec4899', '#f9a8d4', '#fbcfe8', '#a855f7', '#fde68a'][Math.floor(Math.random() * 5)],
+              background: ['#f18e04', '#f29718', '#fed7aa', '#a855f7', '#fde68a'][Math.floor(Math.random() * 5)],
               borderRadius: Math.random() > 0.5 ? '50%' : '2px',
               animation: `pkConfetti ${2 + Math.random() * 2}s ${Math.random() * 0.5}s ease-out forwards`,
             }} />
@@ -208,16 +208,16 @@ function ConfirmadoInner() {
 
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 20px 60px' }}>
         {/* ── Success header ── */}
-        <div style={{ background: '#fff', borderRadius: 24, padding: '40px 32px 32px', border: '1px solid #fce7f3', textAlign: 'center', boxShadow: '0 12px 48px rgba(236,72,153,0.1)', marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
+        <div style={{ background: '#fff', borderRadius: 24, padding: '40px 32px 32px', border: '1px solid #ffedd5', textAlign: 'center', boxShadow: '0 12px 48px rgba(241,142,4,0.1)', marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
           {/* Background decoration */}
-          <div style={{ position: 'absolute', top: -60, right: -60, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(236,72,153,0.08), transparent)' }} />
-          <div style={{ position: 'absolute', bottom: -40, left: -40, width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle, rgba(236,72,153,0.06), transparent)' }} />
+          <div style={{ position: 'absolute', top: -60, right: -60, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(241,142,4,0.08), transparent)' }} />
+          <div style={{ position: 'absolute', bottom: -40, left: -40, width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle, rgba(241,142,4,0.06), transparent)' }} />
 
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 84, height: 84, borderRadius: '50%', background: 'linear-gradient(135deg,#fce7f3,#fbcfe8)', marginBottom: 16, animation: 'pkPulse 2s ease-in-out infinite', boxShadow: '0 12px 40px rgba(236,72,153,0.2)' }}>
-              {isSuccess ? <CheckCircle2 size={44} color="#ec4899" strokeWidth={2.5} /> : <PartyPopper size={42} color="#ec4899" strokeWidth={2.2} />}
+            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 84, height: 84, borderRadius: '50%', background: 'linear-gradient(135deg,#ffedd5,#fed7aa)', marginBottom: 16, animation: 'pkPulse 2s ease-in-out infinite', boxShadow: '0 12px 40px rgba(241,142,4,0.2)' }}>
+              {isSuccess ? <CheckCircle2 size={44} color="#f18e04" strokeWidth={2.5} /> : <PartyPopper size={42} color="#f18e04" strokeWidth={2.2} />}
             </div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#fef2f8', color: '#ec4899', padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 10 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#fff8ed', color: '#f18e04', padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 10 }}>
               <Sparkles size={13} /> Pedido recibido
             </div>
             <h1 style={{ margin: '0 0 8px', fontSize: 30, fontWeight: 900, color: '#111', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
@@ -229,8 +229,8 @@ function ConfirmadoInner() {
               </p>
             )}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center', alignItems: 'center', marginTop: 8 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: '#fff', border: '1.5px solid #fce7f3', borderRadius: 999, fontSize: 13, color: '#6b7280', fontWeight: 600 }}>
-                Código: <strong style={{ color: '#ec4899', fontFamily: 'monospace' }}>{order.ORDERCODE}</strong>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: '#fff', border: '1.5px solid #ffedd5', borderRadius: 999, fontSize: 13, color: '#6b7280', fontWeight: 600 }}>
+                Código: <strong style={{ color: '#f18e04', fontFamily: 'monospace' }}>{order.ORDERCODE}</strong>
               </div>
               <span style={{ display: 'inline-flex', alignItems: 'center', padding: '6px 14px', borderRadius: 999, background: status.bg, color: status.color, border: `1.5px solid ${status.border}`, fontSize: 13, fontWeight: 700 }}>
                 {status.label}
@@ -251,10 +251,10 @@ function ConfirmadoInner() {
           const statusOrder = ['pending', 'processing', 'paid', 'shipped', 'delivered'];
           const currentIdx = statusOrder.indexOf(order.STATUS);
           return (
-            <div style={{ background: '#fff', borderRadius: 20, padding: '24px 20px', border: '1px solid #fce7f3', marginBottom: 16 }}>
+            <div style={{ background: '#fff', borderRadius: 20, padding: '24px 20px', border: '1px solid #ffedd5', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: 16, left: '10%', right: '10%', height: 3, background: '#fce7f3', zIndex: 0, borderRadius: 999 }} />
-                <div style={{ position: 'absolute', top: 16, left: '10%', height: 3, background: 'linear-gradient(90deg,#ec4899,#f9a8d4)', zIndex: 1, width: currentIdx >= 0 ? `${(currentIdx / (steps.length - 1)) * 80}%` : '0%', transition: 'width 0.6s cubic-bezier(0.16,1,0.3,1)', borderRadius: 999 }} />
+                <div style={{ position: 'absolute', top: 16, left: '10%', right: '10%', height: 3, background: '#ffedd5', zIndex: 0, borderRadius: 999 }} />
+                <div style={{ position: 'absolute', top: 16, left: '10%', height: 3, background: 'linear-gradient(90deg,#f18e04,#f29718)', zIndex: 1, width: currentIdx >= 0 ? `${(currentIdx / (steps.length - 1)) * 80}%` : '0%', transition: 'width 0.6s cubic-bezier(0.16,1,0.3,1)', borderRadius: 999 }} />
                 {steps.map((step, i) => {
                   const done = i <= currentIdx;
                   const active = i === currentIdx;
@@ -262,12 +262,12 @@ function ConfirmadoInner() {
                     <div key={step.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2, flex: 1 }}>
                       <div style={{
                         width: 34, height: 34, borderRadius: '50%',
-                        background: done ? 'linear-gradient(135deg,#ec4899,#f9a8d4)' : '#fff',
-                        border: `2px solid ${done ? '#ec4899' : '#fce7f3'}`,
+                        background: done ? 'linear-gradient(135deg,#f18e04,#f29718)' : '#fff',
+                        border: `2px solid ${done ? '#f18e04' : '#ffedd5'}`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: done ? '#fff' : '#fbcfe8',
+                        color: done ? '#fff' : '#fed7aa',
                         transition: 'all 0.3s',
-                        boxShadow: active ? '0 0 0 6px rgba(236,72,153,0.15)' : done ? '0 4px 12px rgba(236,72,153,0.25)' : 'none',
+                        boxShadow: active ? '0 0 0 6px rgba(241,142,4,0.15)' : done ? '0 4px 12px rgba(241,142,4,0.25)' : 'none',
                       }}>
                         {step.icon}
                       </div>
@@ -297,24 +297,24 @@ function ConfirmadoInner() {
 
         {/* ── Bank details ── */}
         {isPending && !uploaded && (
-          <div style={{ background: '#fff', borderRadius: 20, padding: '24px 22px', border: '1px solid #fce7f3', marginBottom: 16, boxShadow: '0 4px 16px rgba(236,72,153,0.06)' }}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: '24px 22px', border: '1px solid #ffedd5', marginBottom: 16, boxShadow: '0 4px 16px rgba(241,142,4,0.06)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
-                <CreditCard size={18} color="#ec4899" /> Datos para transferir
+                <CreditCard size={18} color="#f18e04" /> Datos para transferir
               </h2>
               <button onClick={() => copyAll(BANK)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: copied === 'all' ? 'linear-gradient(135deg,#22c55e,#10b981)' : 'linear-gradient(135deg,#ec4899,#f9a8d4)', color: '#fff', border: 'none', borderRadius: 999, cursor: 'pointer', fontSize: 12, fontWeight: 700, fontFamily: 'inherit', boxShadow: '0 4px 14px rgba(236,72,153,0.25)', transition: 'all 0.2s' }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: copied === 'all' ? 'linear-gradient(135deg,#22c55e,#10b981)' : 'linear-gradient(135deg,#f18e04,#f29718)', color: '#fff', border: 'none', borderRadius: 999, cursor: 'pointer', fontSize: 12, fontWeight: 700, fontFamily: 'inherit', boxShadow: '0 4px 14px rgba(241,142,4,0.25)', transition: 'all 0.2s' }}>
                 {copied === 'all' ? <><Check size={13} /> Copiado</> : <><Copy size={13} /> Copiar todo</>}
               </button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {BANK.map(b => (
                 <button key={b.key} onClick={() => copyField(b.key, b.value)}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: copied === b.key ? '#f0fdf4' : '#fef2f8', border: `1.5px solid ${copied === b.key ? '#bbf7d0' : '#fce7f3'}`, borderRadius: 12, cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', fontFamily: 'inherit' }}
-                  onMouseEnter={e => { if (copied !== b.key) { (e.currentTarget as HTMLElement).style.background = '#fce7f3'; (e.currentTarget as HTMLElement).style.borderColor = '#fbcfe8'; } }}
-                  onMouseLeave={e => { if (copied !== b.key) { (e.currentTarget as HTMLElement).style.background = '#fef2f8'; (e.currentTarget as HTMLElement).style.borderColor = '#fce7f3'; } }}>
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: copied === b.key ? '#f0fdf4' : '#fff8ed', border: `1.5px solid ${copied === b.key ? '#bbf7d0' : '#ffedd5'}`, borderRadius: 12, cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', fontFamily: 'inherit' }}
+                  onMouseEnter={e => { if (copied !== b.key) { (e.currentTarget as HTMLElement).style.background = '#ffedd5'; (e.currentTarget as HTMLElement).style.borderColor = '#fed7aa'; } }}
+                  onMouseLeave={e => { if (copied !== b.key) { (e.currentTarget as HTMLElement).style.background = '#fff8ed'; (e.currentTarget as HTMLElement).style.borderColor = '#ffedd5'; } }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 10, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ec4899', flexShrink: 0 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 10, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f18e04', flexShrink: 0 }}>
                       {b.icon}
                     </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
@@ -322,7 +322,7 @@ function ConfirmadoInner() {
                       <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.value}</p>
                     </div>
                   </div>
-                  <span style={{ fontSize: 11, color: copied === b.key ? '#16a34a' : '#ec4899', display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>
+                  <span style={{ fontSize: 11, color: copied === b.key ? '#16a34a' : '#f18e04', display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>
                     {copied === b.key ? <><Check size={12} /> Copiado</> : <><Copy size={12} /> Copiar</>}
                   </span>
                 </button>
@@ -338,9 +338,9 @@ function ConfirmadoInner() {
 
         {/* ── Upload proof ── */}
         {(isPending || order.STATUS === 'processing') && (
-          <div style={{ background: '#fff', borderRadius: 20, padding: '24px 22px', border: `1.5px solid ${uploaded ? '#bbf7d0' : '#fce7f3'}`, marginBottom: 16 }}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: '24px 22px', border: `1.5px solid ${uploaded ? '#bbf7d0' : '#ffedd5'}`, marginBottom: 16 }}>
             <h2 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
-              <Upload size={18} color={uploaded ? '#16a34a' : '#ec4899'} /> Comprobante de pago
+              <Upload size={18} color={uploaded ? '#16a34a' : '#f18e04'} /> Comprobante de pago
             </h2>
             {uploaded ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', background: '#f0fdf4', borderRadius: 14, border: '1.5px solid #bbf7d0' }}>
@@ -357,18 +357,18 @@ function ConfirmadoInner() {
                 </p>
                 <label style={{ display: 'block', cursor: uploading ? 'not-allowed' : 'pointer' }}>
                   <input type="file" accept="image/*,.pdf" onChange={handleUpload} style={{ display: 'none' }} disabled={uploading} />
-                  <div style={{ border: '2px dashed #fbcfe8', borderRadius: 16, padding: '32px 16px', textAlign: 'center', background: '#fef2f8', transition: 'all 0.2s' }}
-                    onMouseEnter={e => { if (!uploading) { (e.currentTarget as HTMLElement).style.borderColor = '#ec4899'; (e.currentTarget as HTMLElement).style.background = '#fce7f3'; } }}
-                    onMouseLeave={e => { if (!uploading) { (e.currentTarget as HTMLElement).style.borderColor = '#fbcfe8'; (e.currentTarget as HTMLElement).style.background = '#fef2f8'; } }}>
+                  <div style={{ border: '2px dashed #fed7aa', borderRadius: 16, padding: '32px 16px', textAlign: 'center', background: '#fff8ed', transition: 'all 0.2s' }}
+                    onMouseEnter={e => { if (!uploading) { (e.currentTarget as HTMLElement).style.borderColor = '#f18e04'; (e.currentTarget as HTMLElement).style.background = '#ffedd5'; } }}
+                    onMouseLeave={e => { if (!uploading) { (e.currentTarget as HTMLElement).style.borderColor = '#fed7aa'; (e.currentTarget as HTMLElement).style.background = '#fff8ed'; } }}>
                     {uploading ? (
                       <>
-                        <div style={{ width: 36, height: 36, border: '3px solid #fce7f3', borderTop: '3px solid #ec4899', borderRadius: '50%', animation: 'pkSpin 1s linear infinite', margin: '0 auto 10px' }} />
-                        <p style={{ margin: 0, fontSize: 14, color: '#ec4899', fontWeight: 700 }}>Subiendo comprobante...</p>
+                        <div style={{ width: 36, height: 36, border: '3px solid #ffedd5', borderTop: '3px solid #f18e04', borderRadius: '50%', animation: 'pkSpin 1s linear infinite', margin: '0 auto 10px' }} />
+                        <p style={{ margin: 0, fontSize: 14, color: '#f18e04', fontWeight: 700 }}>Subiendo comprobante...</p>
                       </>
                     ) : (
                       <>
-                        <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', boxShadow: '0 4px 14px rgba(236,72,153,0.15)' }}>
-                          <Upload size={24} color="#ec4899" />
+                        <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', boxShadow: '0 4px 14px rgba(241,142,4,0.15)' }}>
+                          <Upload size={24} color="#f18e04" />
                         </div>
                         <p style={{ margin: '0 0 4px', fontSize: 15, color: '#111', fontWeight: 700 }}>Click para subir comprobante</p>
                         <p style={{ margin: 0, fontSize: 12, color: '#9ca3af' }}>JPG, PNG o PDF · Máx. 10MB</p>
@@ -382,9 +382,9 @@ function ConfirmadoInner() {
         )}
 
         {/* ── Order items ── */}
-        <div style={{ background: '#fff', borderRadius: 20, padding: '24px 22px', border: '1px solid #fce7f3', marginBottom: 16 }}>
+        <div style={{ background: '#fff', borderRadius: 20, padding: '24px 22px', border: '1px solid #ffedd5', marginBottom: 16 }}>
           <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
-            <Package size={18} color="#ec4899" /> Detalle del pedido
+            <Package size={18} color="#f18e04" /> Detalle del pedido
           </h2>
           {items.length === 0 ? (
             <div style={{ padding: '20px 0', textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>
@@ -393,8 +393,8 @@ function ConfirmadoInner() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
               {items.map((item, i) => (
-                <div key={i} style={{ display: 'flex', gap: 14, paddingBottom: i < items.length - 1 ? 12 : 0, borderBottom: i < items.length - 1 ? '1px solid #fce7f3' : 'none', alignItems: 'center' }}>
-                  <div style={{ width: 60, height: 60, borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: 'linear-gradient(135deg,#fef2f8,#fce7f3)', border: '1px solid #fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                <div key={i} style={{ display: 'flex', gap: 14, paddingBottom: i < items.length - 1 ? 12 : 0, borderBottom: i < items.length - 1 ? '1px solid #ffedd5' : 'none', alignItems: 'center' }}>
+                  <div style={{ width: 60, height: 60, borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: 'linear-gradient(135deg,#fff8ed,#ffedd5)', border: '1px solid #ffedd5', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                     {item.img ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -408,20 +408,20 @@ function ConfirmadoInner() {
                           if (parent && !parent.querySelector('.pk-item-fallback')) {
                             const fb = document.createElement('div');
                             fb.className = 'pk-item-fallback';
-                            fb.style.cssText = 'font-size:24px;color:#ec4899;font-weight:800;';
+                            fb.style.cssText = 'font-size:24px;color:#f18e04;font-weight:800;';
                             fb.textContent = (item.name?.[0] || '🛍').toUpperCase();
                             parent.appendChild(fb);
                           }
                         }}
                       />
                     ) : (
-                      <span style={{ fontSize: 22, color: '#ec4899', fontWeight: 800 }}>{(item.name?.[0] || '🛍').toUpperCase()}</span>
+                      <span style={{ fontSize: 22, color: '#f18e04', fontWeight: 800 }}>{(item.name?.[0] || '🛍').toUpperCase()}</span>
                     )}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ margin: '0 0 4px', fontSize: 14, color: '#111', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: 1.3 }}>{item.name}</p>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#6b7280' }}>
-                      <span style={{ padding: '2px 8px', background: '#fef2f8', color: '#ec4899', borderRadius: 999, fontWeight: 700 }}>x{item.qty}</span>
+                      <span style={{ padding: '2px 8px', background: '#fff8ed', color: '#f18e04', borderRadius: 999, fontWeight: 700 }}>x{item.qty}</span>
                       <span>{formatPrice(item.price)} c/u</span>
                     </div>
                   </div>
@@ -430,7 +430,7 @@ function ConfirmadoInner() {
               ))}
             </div>
           )}
-          <div style={{ borderTop: '1.5px solid #fce7f3', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ borderTop: '1.5px solid #ffedd5', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#6b7280' }}>
               <span>Subtotal</span><span style={{ fontWeight: 600 }}>{formatPrice(order.SUBTOTAL)}</span>
             </div>
@@ -441,23 +441,23 @@ function ConfirmadoInner() {
               </span>
             </div>
             {order.DISCOUNT && order.DISCOUNT > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#ec4899' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#f18e04' }}>
                 <span>Descuento {order.COUPONCODE ? `(${order.COUPONCODE})` : ''}</span>
                 <span style={{ fontWeight: 700 }}>−{formatPrice(order.DISCOUNT)}</span>
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 20, fontWeight: 900, color: '#111', paddingTop: 10, borderTop: '1.5px solid #fce7f3', marginTop: 4, letterSpacing: '-0.02em' }}>
-              <span>Total</span><span style={{ color: '#ec4899' }}>{formatPrice(order.TOTAL)}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 20, fontWeight: 900, color: '#111', paddingTop: 10, borderTop: '1.5px solid #ffedd5', marginTop: 4, letterSpacing: '-0.02em' }}>
+              <span>Total</span><span style={{ color: '#f18e04' }}>{formatPrice(order.TOTAL)}</span>
             </div>
           </div>
         </div>
 
         {/* ── Shipping info ── */}
-        <div style={{ background: '#fff', borderRadius: 20, padding: '24px 22px', border: '1px solid #fce7f3', marginBottom: 16 }}>
+        <div style={{ background: '#fff', borderRadius: 20, padding: '24px 22px', border: '1px solid #ffedd5', marginBottom: 16 }}>
           <h2 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
-            <MapPin size={18} color="#ec4899" /> Datos de envío
+            <MapPin size={18} color="#f18e04" /> Datos de envío
           </h2>
-          <div style={{ background: '#fef2f8', borderRadius: 14, padding: '14px 16px' }}>
+          <div style={{ background: '#fff8ed', borderRadius: 14, padding: '14px 16px' }}>
             <p style={{ margin: 0, fontWeight: 800, color: '#111', fontSize: 15 }}>{order.CUSTOMERNAME}</p>
             <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>
               {order.CUSTOMERPHONE}
@@ -466,9 +466,9 @@ function ConfirmadoInner() {
             {order.ADDRESS && <p style={{ margin: '6px 0 0', fontSize: 13, color: '#374151' }}>{order.ADDRESS}</p>}
             <p style={{ margin: '2px 0 0', fontSize: 13, color: '#374151' }}>{order.COMUNA}, {order.REGION}</p>
             {order.SHIPPINGAGENCY && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, padding: '5px 12px', background: '#fff', borderRadius: 999, border: '1px solid #fce7f3' }}>
-                <Truck size={13} color="#ec4899" />
-                <span style={{ color: '#ec4899', fontWeight: 700, fontSize: 12 }}>{order.SHIPPINGAGENCY}</span>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, padding: '5px 12px', background: '#fff', borderRadius: 999, border: '1px solid #ffedd5' }}>
+                <Truck size={13} color="#f18e04" />
+                <span style={{ color: '#f18e04', fontWeight: 700, fontSize: 12 }}>{order.SHIPPINGAGENCY}</span>
               </div>
             )}
           </div>
@@ -491,20 +491,20 @@ function ConfirmadoInner() {
 
         {/* ── Actions ── */}
         <button onClick={() => generateOrderPdf(order, items)}
-          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px 0', background: '#fff', color: '#ec4899', border: '1.5px solid #fce7f3', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 12, transition: 'all 0.2s' }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#fef2f8'; e.currentTarget.style.borderColor = '#fbcfe8'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#fce7f3'; }}>
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px 0', background: '#fff', color: '#f18e04', border: '1.5px solid #ffedd5', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 12, transition: 'all 0.2s' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#fff8ed'; e.currentTarget.style.borderColor = '#fed7aa'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#ffedd5'; }}>
           <FileText size={16} /> Descargar comprobante PDF
         </button>
 
         <div style={{ display: 'flex', gap: 10 }}>
-          <Link href="/productos" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '13px 0', background: 'linear-gradient(135deg,#ec4899,#f9a8d4)', color: '#fff', textAlign: 'center', borderRadius: 14, fontSize: 14, fontWeight: 700, textDecoration: 'none', boxShadow: '0 6px 20px rgba(236,72,153,0.25)', transition: 'all 0.2s' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 28px rgba(236,72,153,0.35)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(236,72,153,0.25)'; }}>
+          <Link href="/productos" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '13px 0', background: 'linear-gradient(135deg,#f18e04,#f29718)', color: '#fff', textAlign: 'center', borderRadius: 14, fontSize: 14, fontWeight: 700, textDecoration: 'none', boxShadow: '0 6px 20px rgba(241,142,4,0.25)', transition: 'all 0.2s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 28px rgba(241,142,4,0.35)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(241,142,4,0.25)'; }}>
             Seguir comprando <ChevronRight size={16} />
           </Link>
-          <Link href="/cuenta/pedidos" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '13px 0', background: '#fff', color: '#ec4899', textAlign: 'center', borderRadius: 14, fontSize: 14, fontWeight: 700, textDecoration: 'none', border: '1.5px solid #fce7f3', transition: 'all 0.2s' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#fef2f8'; }}
+          <Link href="/cuenta/pedidos" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '13px 0', background: '#fff', color: '#f18e04', textAlign: 'center', borderRadius: 14, fontSize: 14, fontWeight: 700, textDecoration: 'none', border: '1.5px solid #ffedd5', transition: 'all 0.2s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#fff8ed'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff'; }}>
             Ver mis pedidos
           </Link>
@@ -526,8 +526,8 @@ function ConfirmadoInner() {
 export default function PedidoConfirmadoPage() {
   return (
     <Suspense fallback={
-      <div style={{ fontFamily: FF, minHeight: '100vh', background: 'linear-gradient(180deg,#fff5f8 0%,#fff 280px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: 60, height: 60, border: '4px solid #fce7f3', borderTop: '4px solid #ec4899', borderRadius: '50%', animation: 'pkSpin 1s linear infinite' }} />
+      <div style={{ fontFamily: FF, minHeight: '100vh', background: 'linear-gradient(180deg,#fff8ed 0%,#fff 280px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 60, height: 60, border: '4px solid #ffedd5', borderTop: '4px solid #f18e04', borderRadius: '50%', animation: 'pkSpin 1s linear infinite' }} />
         <style>{`@keyframes pkSpin { to { transform: rotate(360deg); } }`}</style>
       </div>
     }>

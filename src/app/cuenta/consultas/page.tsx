@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCuentaBg } from '../CuentaBgContext';
 import { Bell, CheckCircle, XCircle, Clock, Package, ArrowLeft } from 'lucide-react';
 
-const PINK = '#ec4899';
+const PINK = '#f18e04';
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 const BG_CONSULTAS = 'https://images.unsplash.com/photo-1556742049-0cfed4f6351a?w=800&q=80';
 

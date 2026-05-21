@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BenefitActionLink from '@/components/BenefitActionLink';
 
 const FF = '"DM Sans",system-ui,sans-serif';
-const PINK = '#ec4899';
+const PINK = '#f18e04';
 
 // Animations for particles
 const particleStyles = `
@@ -238,7 +238,7 @@ export default function LoyaltyLevel() {
           content:'';
           position:absolute;
           inset:-2px;
-          background: linear-gradient(120deg, transparent 0%, var(--chip-glow, rgba(236,72,153,0.25)) 45%, transparent 60%);
+          background: linear-gradient(120deg, transparent 0%, var(--chip-glow, rgba(241,142,4,0.25)) 45%, transparent 60%);
           transform: translateX(-120%);
           animation: llShine 3.2s ease-in-out infinite;
           pointer-events:none;
@@ -258,7 +258,7 @@ export default function LoyaltyLevel() {
           position:absolute;
           inset:-16px;
           border-radius: 999px;
-          background: conic-gradient(from 0deg, var(--orbit-c1, rgba(236,72,153,0.0)), var(--orbit-c2, rgba(236,72,153,0.35)), var(--orbit-c3, rgba(56,189,248,0.35)), var(--orbit-c1, rgba(236,72,153,0.0)));
+          background: conic-gradient(from 0deg, var(--orbit-c1, rgba(241,142,4,0.0)), var(--orbit-c2, rgba(241,142,4,0.35)), var(--orbit-c3, rgba(56,189,248,0.35)), var(--orbit-c1, rgba(241,142,4,0.0)));
           filter: blur(8px);
           opacity: 0.7;
           animation: llOrbit 6s linear infinite;
@@ -341,7 +341,7 @@ export default function LoyaltyLevel() {
       {/* Stats resumen */}
       <motion.div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: isMobile ? 8 : 12, marginBottom: isMobile ? 14 : 20, position: 'relative', zIndex: 1 }}>
         {[
-          { icon: ShoppingBag, value: String(paidOrdersCount), label: 'Pedidos realizados', color: '#ec4899', description: 'Pedidos pagados en total', particleColor: 'rgba(236, 72, 153, 0.45)' },
+          { icon: ShoppingBag, value: String(paidOrdersCount), label: 'Pedidos realizados', color: '#f18e04', description: 'Pedidos pagados en total', particleColor: 'rgba(236, 72, 153, 0.45)' },
           { icon: DollarSign, value: formatPrice(totalSpent), label: 'Total invertido', color: '#10b981', description: 'Acumulación de todos tus pedidos', particleColor: 'rgba(16, 185, 129, 0.45)' },
           { icon: Sparkles, value: points.toLocaleString(), label: 'Puntos acumulados', color: '#8b5cf6', description: `Gana 1 punto por $1000. ${currentLevel.id === 'bronze' ? '1x' : currentLevel.id === 'silver' ? '1.5x' : currentLevel.id === 'gold' ? '2x' : currentLevel.id === 'diamond' ? '3x' : '5x'} según nivel. Canjea por cupones y productos.`, particleColor: 'rgba(139, 92, 246, 0.45)' },
         ].map((stat, i) => (
@@ -367,7 +367,7 @@ export default function LoyaltyLevel() {
 
       {/* Progress & Motivation Section */}
       {nextLevel ? (
-        <div style={{ marginBottom: isMobile ? 16 : 40, position: 'relative', zIndex: 1, padding: isMobile ? '16px' : '24px 28px', background: 'linear-gradient(160deg, #ffffff 0%, #fdf2f8 100%)', borderRadius: isMobile ? 18 : 24, border: '1px solid #fce7f3', boxShadow: '0 8px 32px rgba(236,72,153,0.08)' }}>
+        <div style={{ marginBottom: isMobile ? 16 : 40, position: 'relative', zIndex: 1, padding: isMobile ? '16px' : '24px 28px', background: 'linear-gradient(160deg, #ffffff 0%, #fff7ed 100%)', borderRadius: isMobile ? 18 : 24, border: '1px solid #ffedd5', boxShadow: '0 8px 32px rgba(241,142,4,0.08)' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: isMobile ? 10 : 14, gap: 12 }}>
             <div>
               <p style={{ margin: 0, fontSize: isMobile ? 10 : 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Tu camino VIP</p>
@@ -440,7 +440,7 @@ export default function LoyaltyLevel() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
-              style={{ width: isMobile ? 120 : 160, height: isMobile ? 120 : 160, borderRadius: '50%', background: '#fef2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '1px solid rgba(236,72,153,0.15)', position: 'relative' }}
+              style={{ width: isMobile ? 120 : 160, height: isMobile ? 120 : 160, borderRadius: '50%', background: '#fff8ed', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '1px solid rgba(241,142,4,0.15)', position: 'relative' }}
             >
               <img 
                 src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778908676990-pegada-1778908675560.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=XTruju4f9iSTg6NKqqLaNvhH9sAfmLilJfIit%2B53j3p9KTQzlM%2FRtZfUAvA9WK8NgqCv8dj0tN0vUWVJvtTsvNN%2BXEsZbwofb%2BOmSO6sksZHfA4rxeGeqxAtO2DpPG0jJljedbKrdDKAxxhk%2FTwNkODeLLHm17%2BePMmMjhHfYoMH69jejOZK2Cu5MdRqwsVPANwuyNFvldcDSIkBdkHip36pwPZ4ir2vmGS2eExJQ826tUXcoM%2BtVp2S5uWyFcXv0DyFVwvRstLMiDAl4JLZqHInSOYtSpw06uhBDoXnoMgoD%2F1fY25idknEAiBmHV%2FpkfiO%2FpcqzVURY2lo85ffXQ%3D%3D"

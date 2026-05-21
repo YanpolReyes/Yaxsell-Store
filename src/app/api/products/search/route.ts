@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const name = searchParams.get('name');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = parseInt(searchParams.get('limit') || '5');
 
     if (!name) {
       return NextResponse.json(

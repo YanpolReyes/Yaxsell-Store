@@ -57,10 +57,10 @@ function injectStyles() {
       z-index: 0;
       background: conic-gradient(
         from 0deg,
-        var(--yaxsel-ring-color, #f9a8d4),
+        var(--yaxsel-ring-color, #f29718),
         var(--yaxsel-ring-glow, rgba(249,168,212,0.6)),
         #fff,
-        var(--yaxsel-ring-color, #f9a8d4)
+        var(--yaxsel-ring-color, #f29718)
       );
       animation: yaxsel-avatar-ring-spin 3.2s linear infinite, yaxsel-avatar-ring-pulse 2.4s ease-in-out infinite;
       -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
@@ -71,7 +71,7 @@ function injectStyles() {
       position: absolute;
       inset: 2px;
       border-radius: 50%;
-      box-shadow: 0 0 12px var(--yaxsel-ring-glow, rgba(236,72,153,0.45));
+      box-shadow: 0 0 12px var(--yaxsel-ring-glow, rgba(241,142,4,0.45));
       pointer-events: none;
     }
     .yaxsel-header-avatar-img,
@@ -91,7 +91,7 @@ function injectStyles() {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #ec4899, #f9a8d4);
+      background: linear-gradient(135deg, #f18e04, #f29718);
       color: #fff;
       font-size: 16px;
       font-weight: 800;

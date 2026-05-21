@@ -250,11 +250,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const fetchBadges = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/badges');
-      const data = await res.json();
-      if (data.success) {
-        setPendingOrders(data.pendingOrders);
-        setUnreadNotifs(data.unreadNotifs);
-        setPendingWholesale(data.pendingWholesale);
+      if (res.ok) {
+        const data = await res.json();
+        setPendingOrders(data.pendingOrders); setUnreadNotifs(data.unreadNotifs); setPendingWholesale(data.pendingWholesale);
       }
     } catch { /* silent */ }
   }, []);

@@ -26,18 +26,18 @@ export default function BackToTop() {
       style={{
         position: 'fixed', bottom: 90, right: 20, zIndex: 40,
         width: 44, height: 44, borderRadius: '50%',
-        background: 'rgba(255,255,255,0.92)', border: '2px solid rgba(236,72,153,0.25)', cursor: 'pointer',
+        background: 'rgba(255,255,255,0.92)', border: '2px solid rgba(241,142,4,0.25)', cursor: 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: '0 4px 16px rgba(236,72,153,0.2)',
+        boxShadow: '0 4px 16px rgba(241,142,4,0.2)',
         transition: 'opacity .2s, transform .2s, box-shadow .2s',
         opacity: visible ? 1 : 0,
         transform: visible ? 'translateY(0)' : 'translateY(10px)',
         backdropFilter: 'blur(12px)',
       }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 24px rgba(236,72,153,0.35)'; e.currentTarget.style.borderColor = '#ec4899'; }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(236,72,153,0.2)'; e.currentTarget.style.borderColor = 'rgba(236,72,153,0.25)'; }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 24px rgba(241,142,4,0.35)'; e.currentTarget.style.borderColor = '#f18e04'; }}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(241,142,4,0.2)'; e.currentTarget.style.borderColor = 'rgba(241,142,4,0.25)'; }}
     >
-      <ChevronUp size={22} color="#ec4899" />
+      <ChevronUp size={22} color="#f18e04" />
     </button>
   );
 }

@@ -1,30 +1,31 @@
 import { NextResponse } from 'next/server';
 import { serverListDocuments } from '@/lib/appwrite-server';
-import { ORDERS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, WHOLESALE_REQUESTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import {
+  ORDERS_COLLECTION_ID,
+  NOTIFICATIONS_COLLECTION_ID,
+  WHOLESALE_REQUESTS_COLLECTION_ID,
+} from '@/lib/appwrite-admin';
 
 export async function GET() {
   try {
-    const [o, n, w] = await Promise.all([
-      serverListDocuments(ORDERS_COLLECTION_ID, [
-        JSON.stringify({ method: 'equal', attribute: 'STATUS', values: ['pending'] }),
-        JSON.stringify({ method: 'limit', values: [1] }),
-      ]),
-      serverListDocuments(NOTIFICATIONS_COLLECTION_ID, [
-        JSON.stringify({ method: 'equal', attribute: 'isRead', values: [false] }),
-        JSON.stringify({ method: 'limit', values: [1] }),
-      ]),
-      serverListDocuments(WHOLESALE_REQUESTS_COLLECTION_ID, [
-        JSON.stringify({ method: 'equal', attribute: 'status', values: ['pending'] }),
-        JSON.stringify({ method: 'limit', values: [1] }),
-      ]),
+    const qPendingOrders = JSON.stringify({ method: 'equal', attribute: 'STATUS', values: ['pending'] });
+    const qLimit1 = JSON.stringify({ method: 'limit', values: [1] });
+    const qUnreadNotifs = JSON.stringify({ method: 'equal', attribute: 'isRead', values: [false] });
+    const qPendingWholesale = JSON.stringify({ method: 'equal', attribute: 'status', values: ['pending'] });
+
+    const [orders, notifs, wholesale] = await Promise.all([
+      serverListDocuments(ORDERS_COLLECTION_ID, [qPendingOrders, qLimit1]),
+      serverListDocuments(NOTIFICATIONS_COLLECTION_ID, [qUnreadNotifs, qLimit1]),
+      serverListDocuments(WHOLESALE_REQUESTS_COLLECTION_ID, [qPendingWholesale, qLimit1]),
     ]);
+
     return NextResponse.json({
-      success: true,
-      pendingOrders: o.total,
-      unreadNotifs: n.total,
-      pendingWholesale: w.total,
+      pendingOrders: orders.total,
+      unreadNotifs: notifs.total,
+      pendingWholesale: wholesale.total,
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error desconocido';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

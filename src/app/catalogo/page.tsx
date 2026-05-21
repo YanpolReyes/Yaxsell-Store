@@ -224,7 +224,7 @@ export default function CatalogoPage() {
           animation: cat-img-skeleton 1.5s ease-in-out infinite;
         }
         @keyframes cat-bg { 0% { transform: scale(1); } 50% { transform: scale(1.06); } 100% { transform: scale(1); } }
-        @keyframes cat-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(225,29,72,0.4); } 50% { box-shadow: 0 0 0 8px rgba(225,29,72,0); } }
+        @keyframes cat-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(194,65,12,0.4); } 50% { box-shadow: 0 0 0 8px rgba(194,65,12,0); } }
         .cat-card-wrap:hover .cat-card-img { transform: scale(1.06); }
         .cat-pill { transition: all .2s; }
         .cat-pill:hover { transform: translateY(-2px); }
@@ -266,21 +266,21 @@ export default function CatalogoPage() {
         animation: 'cat-bg 25s ease-in-out infinite',
       }} className="cat-hero-wrap">
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0.92) 100%)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(236,72,153,0.08) 0%, transparent 70%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(241,142,4,0.08) 0%, transparent 70%)' }} />
         <div style={{ position: 'relative', maxWidth: 680, margin: '0 auto' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 20px', borderRadius: 50, background: 'rgba(236,72,153,0.08)', border: '1px solid rgba(225,29,72,0.2)', marginBottom: 22 }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ec4899', animation: 'cat-pulse 2s infinite' }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#ec4899', letterSpacing: '3px', textTransform: 'uppercase' }}>Catálogo Exclusivo</span>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 20px', borderRadius: 50, background: 'rgba(241,142,4,0.08)', border: '1px solid rgba(194,65,12,0.2)', marginBottom: 22 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#f18e04', animation: 'cat-pulse 2s infinite' }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#f18e04', letterSpacing: '3px', textTransform: 'uppercase' }}>Catálogo Exclusivo</span>
           </div>
           <h1 className="cat-hero-title" style={{ fontSize: 58, fontWeight: 900, color: '#1a1a2e', margin: '0 0 14px', lineHeight: 1, letterSpacing: '-2px', fontFamily: '"Playfair Display", Georgia, serif' }}>
-            PRODUCTOS<br /><span style={{ color: '#fbcfe8' }}>A PEDIDO</span>
+            PRODUCTOS<br /><span style={{ color: '#fed7aa' }}>A PEDIDO</span>
           </h1>
           <p className="cat-hero-desc" style={{ fontSize: 15, color: 'rgba(0,0,0,0.45)', margin: '0 0 8px', letterSpacing: '0.5px' }}>
             {isLoading ? 'Cargando catálogo...' : `${filtered.length.toLocaleString()} productos disponibles para pedido`}
           </p>
-          <div className="cat-hero-notice" style={{ background: 'rgba(236,72,153,0.04)', border: '1px solid rgba(236,72,153,0.1)', borderRadius: 14, padding: '14px 20px', margin: '0 0 28px', textAlign: 'left' }}>
+          <div className="cat-hero-notice" style={{ background: 'rgba(241,142,4,0.04)', border: '1px solid rgba(241,142,4,0.1)', borderRadius: 14, padding: '14px 20px', margin: '0 0 28px', textAlign: 'left' }}>
             <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.5)', margin: 0, lineHeight: 1.7, fontFamily: FF }}>
-              <span style={{ color: '#ec4899', fontWeight: 700 }}>⚠ Importante:</span> Para consultar disponibilidad necesitás estar registrado. Recibirás la respuesta por las notificaciones de tu cuenta — si hay stock se agregará a la tienda y te avisaremos, si no lo hay también se te notificará. <span style={{ fontWeight: 700, color: '#1a1a2e' }}>Esto no es un pedido.</span> Si deseás comprar con stock disponible, ingresá a <Link href="/" style={{ color: '#ec4899', fontWeight: 700, textDecoration: 'underline' }}>Tienda</Link>.
+              <span style={{ color: '#f18e04', fontWeight: 700 }}>⚠ Importante:</span> Para consultar disponibilidad necesitás estar registrado. Recibirás la respuesta por las notificaciones de tu cuenta — si hay stock se agregará a la tienda y te avisaremos, si no lo hay también se te notificará. <span style={{ fontWeight: 700, color: '#1a1a2e' }}>Esto no es un pedido.</span> Si deseás comprar con stock disponible, ingresá a <Link href="/" style={{ color: '#f18e04', fontWeight: 700, textDecoration: 'underline' }}>Tienda</Link>.
             </p>
           </div>
           <div style={{ position: 'relative', maxWidth: 500, margin: '0 auto' }}>
@@ -312,11 +312,11 @@ export default function CatalogoPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 20px' }}>
             <button
               onClick={() => { setSelectedCat(''); setSelectedSub(''); }}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 50, border: '1px solid #fce7f3', background: '#fdf2f8', cursor: 'pointer', fontFamily: FF, fontSize: 12, fontWeight: 700, color: '#be185d', letterSpacing: '0.5px' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 50, border: '1px solid #ffedd5', background: '#fff7ed', cursor: 'pointer', fontFamily: FF, fontSize: 12, fontWeight: 700, color: '#c2410c', letterSpacing: '0.5px' }}
             >
               <ChevronLeft size={14} /> Volver
             </button>
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#ec4899', letterSpacing: '1px', textTransform: 'uppercase' }}>{subcategories.find(s => s.$id === selectedSub)?.name || 'Subcategoría'}</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#f18e04', letterSpacing: '1px', textTransform: 'uppercase' }}>{subcategories.find(s => s.$id === selectedSub)?.name || 'Subcategoría'}</span>
           </div>
         ) : (
           <>
@@ -335,10 +335,10 @@ export default function CatalogoPage() {
             <button className="cat-pill" onClick={() => { setSelectedCat(''); setSelectedSub(''); }} style={{
               padding: '9px 22px', borderRadius: 50, cursor: 'pointer', fontFamily: FF, fontSize: 12,
               fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: '1px', textTransform: 'uppercase',
-              border: `1px solid ${!selectedCat ? '#ec4899' : '#ddd'}`,
-              background: !selectedCat ? 'linear-gradient(135deg,#ec4899,#ec4899)' : '#fff',
+              border: `1px solid ${!selectedCat ? '#f18e04' : '#ddd'}`,
+              background: !selectedCat ? 'linear-gradient(135deg,#f18e04,#f18e04)' : '#fff',
               color: !selectedCat ? '#fff' : '#666',
-              boxShadow: !selectedCat ? '0 2px 10px rgba(236,72,153,0.2)' : 'none',
+              boxShadow: !selectedCat ? '0 2px 10px rgba(241,142,4,0.2)' : 'none',
             }}>✦ Todos</button>
             {categories.map(cat => (
               <button key={cat.$id} className="cat-pill"
@@ -346,10 +346,10 @@ export default function CatalogoPage() {
                 style={{
                   padding: '9px 22px', borderRadius: 50, cursor: 'pointer', fontFamily: FF, fontSize: 12,
                   fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: '1px', textTransform: 'uppercase',
-                  border: `1px solid ${selectedCat === cat.$id ? '#ec4899' : '#ddd'}`,
-                  background: selectedCat === cat.$id ? 'linear-gradient(135deg,#ec4899,#ec4899)' : '#fff',
+                  border: `1px solid ${selectedCat === cat.$id ? '#f18e04' : '#ddd'}`,
+                  background: selectedCat === cat.$id ? 'linear-gradient(135deg,#f18e04,#f18e04)' : '#fff',
                   color: selectedCat === cat.$id ? '#fff' : '#666',
-                  boxShadow: selectedCat === cat.$id ? '0 2px 10px rgba(236,72,153,0.2)' : 'none',
+                  boxShadow: selectedCat === cat.$id ? '0 2px 10px rgba(241,142,4,0.2)' : 'none',
                   display: 'flex', alignItems: 'center', gap: 8,
                 }}>
                 {getCategoryImage(cat.$id) && <img src={getCategoryImage(cat.$id)} alt="" style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', border: '1px solid #eee' }} />}
@@ -376,10 +376,10 @@ export default function CatalogoPage() {
                 style={{
                   animationDelay: `${i * 0.04}s`, padding: '8px 18px', borderRadius: 50, cursor: 'pointer', fontFamily: FF, fontSize: 11,
                   fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: '0.8px', textTransform: 'uppercase',
-                  border: `1px solid ${selectedSub === sub.$id ? '#f9a8d4' : '#fce7f3'}`,
-                  background: selectedSub === sub.$id ? 'linear-gradient(135deg,#ec4899,#db2777)' : '#fdf2f8',
-                  color: selectedSub === sub.$id ? '#fff' : '#be185d',
-                  boxShadow: selectedSub === sub.$id ? '0 3px 14px rgba(236,72,153,0.3)' : '0 1px 3px rgba(236,72,153,0.08)',
+                  border: `1px solid ${selectedSub === sub.$id ? '#f29718' : '#ffedd5'}`,
+                  background: selectedSub === sub.$id ? 'linear-gradient(135deg,#f18e04,#ea580c)' : '#fff7ed',
+                  color: selectedSub === sub.$id ? '#fff' : '#c2410c',
+                  boxShadow: selectedSub === sub.$id ? '0 3px 14px rgba(241,142,4,0.3)' : '0 1px 3px rgba(241,142,4,0.08)',
                   display: 'flex', alignItems: 'center', gap: 5,
                   transition: 'all .2s',
                 }}>
@@ -401,16 +401,16 @@ export default function CatalogoPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="cat-skeleton" style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', display: 'flex', flexDirection: i % 2 !== 0 ? 'row-reverse' : 'row', minHeight: 380, border: '1px solid #eee', boxShadow: '0 4px 6px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.03), 0 2px 4px rgba(0,0,0,0.08)' }}>
-                <div className="cat-skeleton-img" style={{ width: '42%', background: '#f8f8f8', position: 'relative' }}>
-                  <div style={{ position: 'absolute', top: 16, left: 16, padding: '5px 12px', borderRadius: 6, background: '#fce7f3', width: 70, height: 18 }} />
+                <div className="cat-skeleton-img" style={{ width: '42%', background: '#fff8ed', position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: 16, left: 16, padding: '5px 12px', borderRadius: 6, background: '#ffedd5', width: 70, height: 18 }} />
                 </div>
                 <div className="cat-skeleton-info" style={{ flex: 1, padding: '32px 36px', display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <div style={{ height: 10, background: '#eee', borderRadius: 50, width: '25%' }} />
                   <div style={{ height: 24, background: '#eee', borderRadius: 8, width: '65%' }} />
-                  <div style={{ height: 1, background: '#fce7f3', width: '55%' }} />
+                  <div style={{ height: 1, background: '#ffedd5', width: '55%' }} />
                   <div style={{ height: 20, background: '#eee', borderRadius: 12, width: '40%' }} />
                   <div style={{ height: 20, background: '#eee', borderRadius: 12, width: '35%' }} />
-                  <div style={{ marginTop: 24, height: 52, background: '#fce7f3', borderRadius: 12 }} />
+                  <div style={{ marginTop: 24, height: 52, background: '#ffedd5', borderRadius: 12 }} />
                 </div>
               </div>
             ))}
@@ -425,7 +425,7 @@ export default function CatalogoPage() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 36 }}>
               <div>
-                <h2 className="cat-section-title" style={{ fontSize: 28, fontWeight: 900, color: '#ec4899', margin: 0, fontFamily: '"Playfair Display", Georgia, serif', letterSpacing: '-0.5px' }}>
+                <h2 className="cat-section-title" style={{ fontSize: 28, fontWeight: 900, color: '#f18e04', margin: 0, fontFamily: '"Playfair Display", Georgia, serif', letterSpacing: '-0.5px' }}>
                   {selectedCat ? getCategoryName(selectedCat) : 'Todos los productos'}
                 </h2>
                 <p style={{ fontSize: 13, color: '#888', margin: '6px 0 0', letterSpacing: '0.5px' }}>
@@ -433,7 +433,7 @@ export default function CatalogoPage() {
                 </p>
               </div>
               {selectedCat && (
-                <Link href={`/categoria/${selectedCat}`} style={{ fontSize: 11, fontWeight: 700, color: '#ec4899', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, letterSpacing: '1.5px', textTransform: 'uppercase', border: '1px solid rgba(236,72,153,0.15)', padding: '8px 16px', borderRadius: 50, background: 'rgba(236,72,153,0.04)' }}>
+                <Link href={`/categoria/${selectedCat}`} style={{ fontSize: 11, fontWeight: 700, color: '#f18e04', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, letterSpacing: '1.5px', textTransform: 'uppercase', border: '1px solid rgba(241,142,4,0.15)', padding: '8px 16px', borderRadius: 50, background: 'rgba(241,142,4,0.04)' }}>
                   Ver en tienda <ArrowRight size={13} />
                 </Link>
               )}
@@ -445,10 +445,10 @@ export default function CatalogoPage() {
               <div style={{ textAlign: 'center', marginTop: 32 }}>
                 <button onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)} style={{
                   padding: '14px 40px', border: 'none', borderRadius: 50,
-                  background: 'linear-gradient(135deg, #ec4899, #db2777)',
+                  background: 'linear-gradient(135deg, #f18e04, #ea580c)',
                   color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer',
                   letterSpacing: '1.5px', textTransform: 'uppercase', fontFamily: FF,
-                  boxShadow: '0 6px 24px rgba(236,72,153,0.3)',
+                  boxShadow: '0 6px 24px rgba(241,142,4,0.3)',
                   display: 'inline-flex', alignItems: 'center', gap: 8,
                 }}>
                   <Package size={16} /> Cargar más ({filtered.length - visibleCount} restantes)
@@ -504,13 +504,13 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
         transition: 'border-color .3s, box-shadow .3s, transform .3s', cursor: 'pointer',
         boxShadow: '0 4px 6px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.03), 0 2px 4px rgba(0,0,0,0.08)',
       }}
-        onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#ec4899'; el.style.boxShadow = '0 12px 40px rgba(236,72,153,0.12), 0 6px 16px rgba(236,72,153,0.08)'; el.style.transform = 'translateY(-4px)'; }}
+        onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#f18e04'; el.style.boxShadow = '0 12px 40px rgba(241,142,4,0.12), 0 6px 16px rgba(241,142,4,0.08)'; el.style.transform = 'translateY(-4px)'; }}
         onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#eee'; el.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.03), 0 2px 4px rgba(0,0,0,0.08)'; el.style.transform = 'none'; }}
       >
         {/* ── IMAGE SIDE ── */}
         <div
           onClick={e => { if (img) { e.preventDefault(); e.stopPropagation(); setShowZoom(true); } }}
-          style={{ width: '42%', minWidth: 220, position: 'relative', overflow: 'hidden', flexShrink: 0, background: '#f8f8f8', cursor: img ? 'zoom-in' : 'default' }}
+          style={{ width: '42%', minWidth: 220, position: 'relative', overflow: 'hidden', flexShrink: 0, background: '#fff8ed', cursor: img ? 'zoom-in' : 'default' }}
           className="cat-card-img-side"
         >
           {img ? (
@@ -528,9 +528,9 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#ccc' }}><Package size={64} /></div>
           )}
           {/* A PEDIDO badge */}
-          <div style={{ position: 'absolute', top: 16, left: 16, padding: '5px 12px', borderRadius: 6, background: 'rgba(251,207,232,0.9)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#ec4899' }} />
-            <span style={{ fontSize: 10, fontWeight: 800, color: '#ec4899', letterSpacing: '1.5px', textTransform: 'uppercase' }}>A Pedido</span>
+          <div style={{ position: 'absolute', top: 16, left: 16, padding: '5px 12px', borderRadius: 6, background: 'rgba(254,215,170,0.9)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#f18e04' }} />
+            <span style={{ fontSize: 10, fontWeight: 800, color: '#f18e04', letterSpacing: '1.5px', textTransform: 'uppercase' }}>A Pedido</span>
           </div>
           {/* Discount badge */}
           {hasDiscount && discountPercent > 0 && (
@@ -554,7 +554,7 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
               {product.NAME}
             </h3>
             {/* Red rule */}
-            <div style={{ height: 1, background: 'linear-gradient(90deg, #ec4899 0%, transparent 100%)', width: '55%', marginBottom: 22 }} />
+            <div style={{ height: 1, background: 'linear-gradient(90deg, #f18e04 0%, transparent 100%)', width: '55%', marginBottom: 22 }} />
 
             {/* PRICES — embalaje (lower) first, mayorista (higher) second */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -575,9 +575,9 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
                 </div>
               )}
               {(!product.WHOLESALEPRICE || product.WHOLESALEPRICE <= 0) && (!product.PACKQTY || product.PACKQTY <= 0 || !product.PRICE || product.PRICE <= 0) && displayPrice > 0 && (
-                <div className="cat-price-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(236,72,153,0.04)', border: '1px solid rgba(225,29,72,0.1)' }}>
-                  <span className="price-label" style={{ fontSize: 10, fontWeight: 800, color: '#ec4899', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio</span>
-                  <span className="price-val" style={{ fontSize: 34, fontWeight: 900, color: '#ec4899', fontFamily: '"Playfair Display", serif', letterSpacing: '-1px' }}>
+                <div className="cat-price-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(241,142,4,0.04)', border: '1px solid rgba(194,65,12,0.1)' }}>
+                  <span className="price-label" style={{ fontSize: 10, fontWeight: 800, color: '#f18e04', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio</span>
+                  <span className="price-val" style={{ fontSize: 34, fontWeight: 900, color: '#f18e04', fontFamily: '"Playfair Display", serif', letterSpacing: '-1px' }}>
                     {formatPrice(displayPrice)}
                   </span>
                 </div>
@@ -598,10 +598,10 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
           {/* CTA */}
           <button className="cat-cta-btn" onClick={e => { e.preventDefault(); e.stopPropagation(); onRequest(product.$id, product.NAME, img || ''); }} disabled={alreadyRequested || isRequesting} style={{
             marginTop: 24, padding: '15px 0', border: 'none', borderRadius: 12,
-            background: alreadyRequested ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : isRequesting ? '#ccc' : 'linear-gradient(135deg, #ec4899 0%, #ec4899 100%)',
+            background: alreadyRequested ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : isRequesting ? '#ccc' : 'linear-gradient(135deg, #f18e04 0%, #f18e04 100%)',
             color: '#fff', fontSize: 13, fontWeight: 800, cursor: alreadyRequested || isRequesting ? 'default' : 'pointer',
             letterSpacing: '2px', textTransform: 'uppercase',
-            boxShadow: alreadyRequested ? '0 6px 24px rgba(22,163,74,0.3)' : isRequesting ? 'none' : '0 6px 24px rgba(225,29,72,0.3)',
+            boxShadow: alreadyRequested ? '0 6px 24px rgba(22,163,74,0.3)' : isRequesting ? 'none' : '0 6px 24px rgba(194,65,12,0.3)',
             position: 'relative', overflow: 'hidden', fontFamily: FF,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}>

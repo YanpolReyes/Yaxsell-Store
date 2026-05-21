@@ -11,7 +11,7 @@ import { markNotificationRead, isNotificationUnread, getNotificationLink } from 
 import { Query } from 'appwrite';
 import { useCuentaBg } from '../CuentaBgContext';
 
-const PINK = '#ec4899';
+const PINK = '#f18e04';
 const NOTIF_COLLECTION = 'notifications';
 const BG_NOTIFICACIONES = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRi67086jp_hDcg6WUM4q_dzl8r_BIs1TBwOg&s';
 
@@ -22,7 +22,7 @@ const TYPE_STYLE: Record<string, { icon: typeof Info; bg: string; color: string 
   error:   { icon: AlertTriangle, bg: '#ffebee', color: '#c62828' },
   promo:   { icon: Tag,           bg: '#f3e5f5', color: '#7b1fa2' },
   order:   { icon: ShoppingBag,   bg: '#e8f5e9', color: '#1b5e20' },
-  gift:    { icon: Gift,          bg: '#fef2f8', color: '#ec4899' },
+  gift:    { icon: Gift,          bg: '#fff8ed', color: '#f18e04' },
   product: { icon: Package,       bg: '#e3f2fd', color: '#1565c0' },
   stock:   { icon: Package,       bg: '#e8f5e9', color: '#2e7d32' },
 };
@@ -96,8 +96,8 @@ export default function NotificacionesPage() {
           background: #fff; border-radius: 14px; padding: 16px; border: 1px solid #f0f0f0;
           display: flex; gap: 14px; transition: all 0.2s; cursor: pointer;
         }
-        .notif-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.06); border-color: rgba(236,72,153,0.2); }
-        .notif-card.unread { background: linear-gradient(135deg,#fef2f8,#fff); border-left: 3px solid ${PINK}; }
+        .notif-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.06); border-color: rgba(241,142,4,0.2); }
+        .notif-card.unread { background: linear-gradient(135deg,#fff8ed,#fff); border-left: 3px solid ${PINK}; }
         .notif-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
@@ -107,7 +107,7 @@ export default function NotificacionesPage() {
         style={{
           background: 'rgba(255,255,255,0.95)',
           backdropFilter: 'blur(8px)',
-          borderBottom: '1px solid #fce7f3',
+          borderBottom: '1px solid #ffedd5',
           padding: '14px 16px',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -133,7 +133,7 @@ export default function NotificacionesPage() {
           onClick={() => router.push('/cuenta')}
           aria-label="Cerrar"
           style={{
-            width: 36, height: 36, borderRadius: '50%', border: '1.5px solid #fce7f3',
+            width: 36, height: 36, borderRadius: '50%', border: '1.5px solid #ffedd5',
             background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', flexShrink: 0,
           }}
@@ -153,7 +153,7 @@ export default function NotificacionesPage() {
         </div>
       ) : notifs.length === 0 ? (
         <div style={{ textAlign: 'center', paddingTop: 60, paddingBottom: 40 }}>
-          <div style={{ width: 140, height: 140, borderRadius: '50%', background: 'linear-gradient(135deg,#fef2f8,#fce7f3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 28px', boxShadow: '0 8px 24px rgba(236,72,153,0.15)' }}>
+          <div style={{ width: 140, height: 140, borderRadius: '50%', background: 'linear-gradient(135deg,#fff8ed,#ffedd5)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 28px', boxShadow: '0 8px 24px rgba(241,142,4,0.15)' }}>
             <Bell size={64} color={PINK} fill={PINK} style={{ opacity: 0.7 }} />
           </div>
           <h2 style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a', margin: '0 0 12px' }}>Sin notificaciones</h2>

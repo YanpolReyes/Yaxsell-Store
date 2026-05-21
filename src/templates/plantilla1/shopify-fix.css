@@ -206,17 +206,17 @@
 }
 /* Custom scrollbar for product grid */
 .tpl1-product-grid::-webkit-scrollbar { width: 8px; }
-.tpl1-product-grid::-webkit-scrollbar-track { background: #fdf2f8; border-radius: 8px; }
-.tpl1-product-grid::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #f9a8d4, #ec4899); border-radius: 8px; }
-.tpl1-product-grid::-webkit-scrollbar-thumb:hover { background: #ec4899; }
-.tpl1-product-grid { scrollbar-color: #ec4899 #fdf2f8; scrollbar-width: thin; }
+.tpl1-product-grid::-webkit-scrollbar-track { background: #fff7ed; border-radius: 8px; }
+.tpl1-product-grid::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #f29718, #f18e04); border-radius: 8px; }
+.tpl1-product-grid::-webkit-scrollbar-thumb:hover { background: #f18e04; }
+.tpl1-product-grid { scrollbar-color: #f18e04 #fff7ed; scrollbar-width: thin; }
 /* Hide spinner on number inputs in filters */
 .tpl1-filters-panel input[type="number"]::-webkit-outer-spin-button,
 .tpl1-filters-panel input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .tpl1-filters-panel input[type="number"] { -moz-appearance: textfield; }
 /* Focus styles for filter inputs */
-.tpl1-filters-panel input:focus { border-color: #ec4899 !important; box-shadow: 0 0 0 3px rgba(236,72,153,0.15); }
-.tpl1-select-btn:hover { border-color: #ec4899 !important; }
+.tpl1-filters-panel input:focus { border-color: #f18e04 !important; box-shadow: 0 0 0 3px rgba(241,142,4,0.15); }
+.tpl1-select-btn:hover { border-color: #f18e04 !important; }
 /* ─── Hide theme overlay when search is open ─── */
 [data-template="1"] .fusion-overlay-custom,
 [data-template="1"] .fusion-overlay-custom.overlay-active {
@@ -243,46 +243,54 @@
 [data-template="1"] #cart_drawer.active {
   display: flex !important;
 }
-/* ─── Theme's CartDrawer-Overlay: make it clickable for close-on-outside ─── */
+/* ─── Theme's CartDrawer-Overlay: HIDE completely ─── */
 [data-template="1"] .cart-drawer__overlay,
 [data-template="1"] #CartDrawer-Overlay {
-  display: block !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
+  display: none !important;
+  opacity: 0 !important;
   background: transparent !important;
-  z-index: 1 !important;
 }
-/* ─── Make theme's fusion-overlay-custom click-through ─── */
+/* ─── Make theme's fusion-overlay-custom invisible ─── */
 [data-template="1"] .fusion-overlay-custom {
-  z-index: 9997 !important;
+  display: none !important;
+  opacity: 0 !important;
+  background: none !important;
   pointer-events: none !important;
 }
 [data-template="1"] .fusion-overlay-custom.overlay-active {
-  display: block !important;
-  opacity: 1 !important;
+  display: none !important;
+  opacity: 0 !important;
+  background: none !important;
   pointer-events: none !important;
 }
 /* ─── Drawer panel must be above overlay ─── */
 [data-template="1"] .cart-sidebar {
   z-index: 9999 !important;
 }
-/* ─── Blur PAGE when cart drawer is active — tied to REAL DOM state via :has() ─── */
-[data-template="1"] body:has(cart-drawer.active) .musk-main-site-content,
+/* ─── Blur PAGE when cart drawer is active — DISABLED, causes issues with cart drawer itself ─── */
+/* [data-template="1"] body:has(cart-drawer.active) .musk-main-site-content,
 [data-template="1"] body:has(cart-drawer.active) header.musk-main-header,
 [data-template="1"] body:has(cart-drawer.active) .fusion-mobile-bottom-nav,
 [data-template="1"] body:has(cart-drawer.active) .announcement-bar-main {
   filter: blur(4px) !important;
   transition: filter 0.4s ease !important;
   pointer-events: none !important;
+} */
+/* ─── Cart drawer itself: NEVER blur ─── */
+[data-template="1"] cart-drawer,
+[data-template="1"] .cart-sidebar,
+[data-template="1"] cart-drawer * {
+  filter: none !important;
+  backdrop-filter: none !important;
 }
 /* ─── When drawer is NOT active, FORCE clear any stuck blur ─── */
-[data-template="1"] body:not(:has(cart-drawer.active)) .musk-main-site-content,
+/* [data-template="1"] body:not(:has(cart-drawer.active)) .musk-main-site-content,
 [data-template="1"] body:not(:has(cart-drawer.active)) header.musk-main-header,
 [data-template="1"] body:not(:has(cart-drawer.active)) .fusion-mobile-bottom-nav,
 [data-template="1"] body:not(:has(cart-drawer.active)) .announcement-bar-main {
   filter: none !important;
   pointer-events: auto !important;
-}
+} */
 /* ─── Cart drawer: white background, no dark overlay on panel ─── */
 /* Override CSS variables for sidebar colors */
 [data-template="1"] {
@@ -370,7 +378,7 @@ cart-drawer.cart-sidebar::after {
   justify-content: space-between !important;
   padding: 20px 32px !important;
   background: #ffffff !important;
-  border-bottom: 1.5px solid #fce7f3 !important;
+  border-bottom: 1.5px solid #ffedd5 !important;
   flex-shrink: 0 !important;
   gap: 144px !important;
 }
@@ -391,7 +399,7 @@ cart-drawer.cart-sidebar::after {
   min-width: 24px !important;
   height: 24px !important;
   padding: 0 7px !important;
-  background: linear-gradient(135deg, #ec4899, #db2777) !important;
+  background: linear-gradient(135deg, #f18e04, #ea580c) !important;
   color: #fff !important;
   border-radius: 999px !important;
   font-size: 12px !important;
@@ -405,7 +413,7 @@ cart-drawer.cart-sidebar::after {
   align-items: center !important;
   justify-content: center !important;
   border-radius: 50% !important;
-  background: #fce7f3 !important;
+  background: #ffedd5 !important;
   border: none !important;
   cursor: pointer !important;
   flex-shrink: 0 !important;
@@ -413,12 +421,12 @@ cart-drawer.cart-sidebar::after {
 }
 [data-template="1"] .cart-sidebar .cart-close-btn:hover,
 [data-template="1"] .cart-sidebar .cls-btn:hover {
-  background: #fbcfe8 !important;
+  background: #fed7aa !important;
   transform: scale(1.1) !important;
 }
 [data-template="1"] .cart-sidebar .cart-close-btn svg path,
 [data-template="1"] .cart-sidebar .cls-btn svg path {
-  fill: #db2777 !important;
+  fill: #ea580c !important;
 }
 /* ─── Empty state ─── */
 [data-template="1"] .empty_cart_drawer {
@@ -461,7 +469,7 @@ cart-drawer.cart-sidebar::after {
 [data-template="1"] .empty_cart_drawer .button_tertiary a {
   display: inline-block !important;
   padding: 13px 36px !important;
-  background: linear-gradient(135deg, #ec4899, #db2777) !important;
+  background: linear-gradient(135deg, #f18e04, #f29718) !important;
   color: #fff !important;
   border-radius: 999px !important;
   font-weight: 700 !important;
@@ -476,7 +484,62 @@ cart-drawer.cart-sidebar::after {
 [data-template="1"] .empty_cart_drawer .musk-third-btn:hover,
 [data-template="1"] .empty_cart_drawer .button_tertiary a:hover {
   transform: translateY(-2px) !important;
-  box-shadow: 0 12px 32px rgba(236, 72, 153, 0.45) !important;
+  box-shadow: 0 12px 32px rgba(241, 142, 4, 0.45) !important;
+}
+
+/* ─── Cart btn: relative so badge can sit on top ─── */
+[data-template="1"] .cart-btn,
+[data-template="1"] .cart-link-icon {
+  position: relative !important;
+}
+/* ─── HIDE original black badge ─── */
+[data-template="1"] .cart-btn .cart-count,
+[data-template="1"] .cart-icon .cart-count,
+[data-template="1"] .header-cart-count,
+[data-template="1"] .cart-item-count {
+  display: none !important;
+}
+/* ─── NEW orange badge via ::after ─── */
+[data-template="1"] .cart-btn[data-cart-item]:not([data-cart-item="0"])::after,
+[data-template="1"] .cart-link-icon[data-cart-item]:not([data-cart-item="0"])::after {
+  content: attr(data-cart-item) !important;
+  position: absolute !important;
+  top: -6px !important;
+  right: -6px !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  padding: 0 4px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(135deg, #f18e04, #f29718) !important;
+  color: #fff !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 10 !important;
+  border: 2px solid #fff !important;
+  box-shadow: 0 2px 6px rgba(241,142,4,0.4) !important;
+}
+/* Hide ::after when cart is empty */
+[data-template="1"] .cart-btn[data-cart-item="0"]::after,
+[data-template="1"] .cart-link-icon[data-cart-item="0"]::after {
+  display: none !important;
+}
+
+/* ─── Cart badge (Shopify): orange instead of black ─── */
+[data-template="1"] [data-cart-item]::after,
+[data-template="1"] .cart-icon [data-cart-item]::after {
+  background: linear-gradient(135deg, #f18e04, #f29718) !important;
+  color: #fff !important;
+}
+[data-template="1"] .cart-count,
+[data-template="1"] .cart-item-count,
+[data-template="1"] .header-cart-count {
+  background: linear-gradient(135deg, #f18e04, #f29718) !important;
+  color: #fff !important;
+  border: 2px solid #fff !important;
+  box-shadow: 0 2px 6px rgba(241,142,4,0.4) !important;
 }
 /* ─── Remove the line below form / cart-drawer-items ─── */
 [data-template="1"] cart-drawer-items,
@@ -524,7 +587,7 @@ cart-drawer.cart-sidebar::after {
 [data-template="1"] .drawer__inner > .tpl1-cart-footer {
   flex-shrink: 0 !important;
   background: #fff !important;
-  border-top: 2px solid #fce7f3 !important;
+  border-top: 2px solid #ffedd5 !important;
   z-index: 10 !important;
 }
 
@@ -560,8 +623,8 @@ cart-drawer.cart-sidebar::after {
   overflow: hidden !important;
   border-radius: 16px !important;
   background: #fff !important;
-  border: 1px solid #fce7f3 !important;
-  box-shadow: 0 6px 20px rgba(236,72,153,0.08) !important;
+  border: 1px solid #ffedd5 !important;
+  box-shadow: 0 6px 20px rgba(241,142,4,0.08) !important;
   cursor: pointer !important;
 }
 @media screen and (min-width: 769px) {
@@ -667,10 +730,10 @@ cart-drawer.cart-sidebar::after {
   font-weight: 700 !important;
   letter-spacing: 0.5px !important;
   color: #ffffff !important;
-  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important;
+  background: linear-gradient(135deg, #f18e04 0%, #ea580c 100%) !important;
   padding: 10px 26px !important;
   border-radius: 30px !important;
-  box-shadow: 0 4px 16px rgba(236,72,153,0.35) !important;
+  box-shadow: 0 4px 16px rgba(241,142,4,0.35) !important;
   transform: translateY(12px) !important;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.06s !important;
 }
@@ -837,7 +900,7 @@ cart-drawer.cart-sidebar::after {
   left: 18% !important;
   right: 18% !important;
   height: 3px !important;
-  background: linear-gradient(90deg, transparent, #ec4899, transparent) !important;
+  background: linear-gradient(90deg, transparent, #f18e04, transparent) !important;
   border-radius: 0 0 4px 4px !important;
   opacity: 0 !important;
   transition: opacity .3s ease !important;
@@ -854,13 +917,13 @@ cart-drawer.cart-sidebar::after {
   align-items: center !important;
   justify-content: center !important;
   border-radius: 22px !important;
-  background: linear-gradient(145deg, rgba(236,72,153,0.06), rgba(236,72,153,0.12)) !important;
-  border: 1.5px solid rgba(236,72,153,0.1) !important;
+  background: linear-gradient(145deg, rgba(241,142,4,0.06), rgba(241,142,4,0.12)) !important;
+  border: 1.5px solid rgba(241,142,4,0.1) !important;
   transition: transform .3s cubic-bezier(.4,0,.2,1), box-shadow .3s ease !important;
 }
 [data-template="1"] .tpl1-featured-cat-slide:hover .tpl1-featured-cat-icon-wrap {
   transform: scale(1.06) !important;
-  box-shadow: 0 4px 16px rgba(236,72,153,0.12) !important;
+  box-shadow: 0 4px 16px rgba(241,142,4,0.12) !important;
 }
 [data-template="1"] .tpl1-featured-cat-slide .tpl1-featured-cat-icon {
   width: 60px !important;
@@ -894,7 +957,7 @@ cart-drawer.cart-sidebar::after {
   font-weight: 700 !important;
   letter-spacing: 0.02em !important;
   color: #fff !important;
-  background: linear-gradient(135deg, #ec4899, #db2777) !important;
+  background: linear-gradient(135deg, #f18e04, #ea580c) !important;
   border-radius: 999px !important;
   line-height: 1.3 !important;
   box-shadow: 0 2px 8px rgba(236, 72, 153, 0.25) !important;
@@ -914,7 +977,7 @@ cart-drawer.cart-sidebar::after {
   transition: color .25s ease !important;
 }
 [data-template="1"] .tpl1-featured-cat-slide:hover .product-name a {
-  color: #ec4899 !important;
+  color: #f18e04 !important;
 }
 
 /* ─── Media gallery: move big title higher, remove opacity filters, video icons ─── */
@@ -1347,8 +1410,8 @@ cart-drawer.cart-sidebar::after {
 [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .musk-banner-slider,
 [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-slide,
 [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .slide-image {
-  background-color: #fff5f8 !important;
-  background-image: linear-gradient(180deg, #fff5f8 0%, #fce7f3 55%, #fbcfe8 100%) !important;
+  background-color: #fff8ed !important;
+  background-image: linear-gradient(180deg, #fff8ed 0%, #ffedd5 55%, #fed7aa 100%) !important;
 }
 
 [data-template="1"] #shopify-section-template--22405132419320__hero_banner_R6iEJ4 .swiper-wrapper,
@@ -1555,11 +1618,42 @@ cart-drawer.cart-sidebar::after {
   max-width: 100% !important;
 }
 
-/* ─── Sticky header: is-sticky aplica pill y sombra, colores ya vienen del tema ─── */
+/* ─── Sticky header: shadow + orange border only when sticky (scrolled) ─── */
 [data-template="1"] header.musk-main-header.is-sticky {
   top: 0 !important;
   border-radius: var(--radius-20) !important;
-  box-shadow: 0 5px 50px #00000020 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), 0 8px 40px rgba(0, 0, 0, 0.08) !important;
+  border-bottom: 2px solid #f18e04 !important;
+}
+
+/* ─── Nav links bar (Inicio, Tienda, etc): 3D shadow + orange border when expanded ─── */
+[data-template="1"] .musk-navbar {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.18), 0 6px 30px rgba(0, 0, 0, 0.1) !important;
+  border-bottom: 3px solid #f18e04 !important;
+  border-top: 2px solid #f18e04 !important;
+  background: #fff !important;
+}
+
+/* ─── Notification & Search icons: orange color ─── */
+[data-template="1"] header.musk-main-header .header-resource-link svg,
+[data-template="1"] header.musk-main-header .search-icon svg {
+  filter: brightness(0) saturate(100%) invert(56%) sepia(96%) saturate(500%) hue-rotate(-9deg) brightness(100%) contrast(97%) !important;
+}
+[data-template="1"] header.musk-main-header .header-resource-link,
+[data-template="1"] header.musk-main-header .search-icon {
+  background: rgba(241, 142, 4, 0.1) !important;
+  border-radius: 50% !important;
+}
+
+/* ─── Hero banner: subtle blur/dim overlay ─── */
+[data-template="1"] .swiper-slide .slide-image::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background: rgba(0, 0, 0, 0.15) !important;
+  backdrop-filter: blur(1px) !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
 }
 
 /* ─── Discover more button: icon to the right of text, not below ─── */

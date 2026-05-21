@@ -13,7 +13,7 @@ import { Product } from '@/types';
 import RecentlyViewed from '@/components/RecentlyViewed';
 import { useCuentaBg } from '../CuentaBgContext';
 
-const PINK = '#ec4899';
+const PINK = '#f18e04';
 const FF = '"DM Sans",system-ui,sans-serif';
 
 const BG_FAVORITOS = 'https://t3.ftcdn.net/jpg/03/58/30/68/360_F_358306827_NYg3eaDFRsStIWjO6CUwtuBDAo1A1TDF.jpg';
@@ -81,7 +81,7 @@ export default function FavoritosPage() {
             if (navigator.share) { navigator.share({ title: 'Mi lista de deseos', url }).catch(() => {}); }
             else { navigator.clipboard.writeText(url); alert('Enlace copiado al portapapeles'); }
           }}
-            style={{ padding: '8px 16px', background: '#fef2f8', border: '1px solid rgba(236,72,153,0.2)', borderRadius: 10, color: PINK, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontFamily: FF, transition: 'background .15s' }}>
+            style={{ padding: '8px 16px', background: '#fff8ed', border: '1px solid rgba(241,142,4,0.2)', borderRadius: 10, color: PINK, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontFamily: FF, transition: 'background .15s' }}>
             <Share2 size={14} /> Compartir lista
           </button>
         )}
@@ -96,9 +96,9 @@ export default function FavoritosPage() {
           <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 28, maxWidth: 380, margin: '0 auto 28px', lineHeight: 1.55 }}>
             Guarda los productos que te encantan tocando el ❤️. ¡Vuelve cuando hayas encontrado algo especial!
           </p>
-          <Link href="/productos" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 32px', background: `linear-gradient(135deg,${PINK},#db2777)`, color: '#fff', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 15, boxShadow: '0 4px 16px rgba(236,72,153,0.3)', transition: 'transform .2s, box-shadow .2s', fontFamily: FF }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(236,72,153,0.4)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(236,72,153,0.3)'; }}>
+          <Link href="/productos" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 32px', background: `linear-gradient(135deg,${PINK},#ea580c)`, color: '#fff', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 15, boxShadow: '0 4px 16px rgba(241,142,4,0.3)', transition: 'transform .2s, box-shadow .2s', fontFamily: FF }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(241,142,4,0.4)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(241,142,4,0.3)'; }}>
             <Sparkles size={16} /> Explorar productos
           </Link>
           <div style={{ marginTop: 40 }}>
@@ -145,7 +145,7 @@ export default function FavoritosPage() {
                       </button>
                       <button onClick={() => toggleFavorite(p.$id)}
                         className="fav-del-btn"
-                        style={{ background: '#fef2f8' }}>
+                        style={{ background: '#fff8ed' }}>
                         <AnimHeart filled size={16} />
                       </button>
                     </div>

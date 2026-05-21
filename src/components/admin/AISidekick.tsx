@@ -75,7 +75,7 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
   const [inputFocused, setInputFocused] = useState(false);
   const [closing, setClosing] = useState(false);
   const [visible, setVisible] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const typingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -85,8 +85,8 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
   }, [open]);
 
   useEffect(() => {
-    const container = bottomRef.current?.parentElement;
-    if (container) container.scrollTop = container.scrollHeight;
+    const el = messagesRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 200); }, [open]);
 
@@ -139,6 +139,7 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
           setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'error' } : m));
         }
       } else if (action.type === 'update') {
+        // For update, first search for the product by name if no productId
         let productId = action.productId;
         if (!productId && action.name) {
           const searchRes = await fetch(`/api/products/search?name=${encodeURIComponent(action.name)}&limit=1`);
@@ -157,7 +158,18 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
         const res = await fetch('/api/products/update', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ productId, name: action.name, price: action.price, description: action.description, category: action.category, stock: action.stock, imageUrl: action.imageUrl, tags: action.tags, sku: action.sku, barcode: action.barcode }),
+          body: JSON.stringify({
+            productId,
+            name: action.name,
+            price: action.price,
+            description: action.description,
+            category: action.category,
+            stock: action.stock,
+            imageUrl: action.imageUrl,
+            tags: action.tags,
+            sku: action.sku,
+            barcode: action.barcode,
+          }),
         });
         const data = await res.json();
         if (data.success) {
@@ -170,7 +182,16 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
         const res = await fetch('/api/products/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: action.name, price: action.price || 0, description: action.description || '', category: action.category || '', stock: action.stock || 0, tags: action.tags || '', sku: action.sku || '', barcode: action.barcode || '' }),
+          body: JSON.stringify({
+            name: action.name,
+            price: action.price || 0,
+            description: action.description || '',
+            category: action.category || '',
+            stock: action.stock || 0,
+            tags: action.tags || '',
+            sku: action.sku || '',
+            barcode: action.barcode || '',
+          }),
         });
         const data = await res.json();
         if (data.success) {
@@ -324,7 +345,7 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
         </div>
 
         {/* Messages */}
-        <div style={{ flex:1, overflowY:'auto', padding:'14px', display:'flex', flexDirection:'column', gap:10, zIndex:1 }}>
+        <div ref={messagesRef} style={{ flex:1, overflowY:'auto', padding:'14px', display:'flex', flexDirection:'column', gap:10, zIndex:1 }}>
           {messages.map((msg, i) => {
             const isUser = msg.role === 'user';
             const displayText = (!isUser && !msg.typed) ? (msg.displayedContent || '') : msg.content;
@@ -411,7 +432,6 @@ export default function AISidekick({ open, onClose }: { open: boolean; onClose: 
               </div>
             </div>
           )}
-          <div ref={bottomRef}/>
         </div>
 
         {/* Suggestions */}

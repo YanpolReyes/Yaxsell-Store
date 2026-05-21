@@ -10,7 +10,7 @@ import { useCuentaBg } from '../CuentaBgContext';
 import { PointsStoreService, type PointsStoreItem } from '@/services/pointsStoreService';
 import { getLevelMeta } from '@/lib/loyalty-levels';
 
-const PINK = '#ec4899';
+const PINK = '#f18e04';
 const FF = '"DM Sans",system-ui,sans-serif';
 
 const TYPE_ICONS: Record<string, typeof Gift> = {
@@ -139,9 +139,9 @@ export default function PuntosPage() {
           borderRadius: 24,
           padding: '28px 24px',
           marginBottom: 24,
-          background: `linear-gradient(135deg, ${level.color}22, #fdf2f8 40%, #fff)`,
-          border: '1px solid rgba(236,72,153,0.2)',
-          boxShadow: '0 12px 40px rgba(236,72,153,0.12)',
+          background: `linear-gradient(135deg, ${level.color}22, #fff7ed 40%, #fff)`,
+          border: '1px solid rgba(241,142,4,0.2)',
+          boxShadow: '0 12px 40px rgba(241,142,4,0.12)',
         }}
       >
         <div style={{ position: 'absolute', top: -30, right: -20, opacity: 0.15 }}>
@@ -161,7 +161,7 @@ export default function PuntosPage() {
             <img src={level.badge} alt={level.name} style={{ width: 56, height: 56, objectFit: 'contain' }} />
           )}
         </div>
-        <p style={{ margin: '16px 0 0', fontSize: 12, color: '#be185d', fontWeight: 600 }}>
+        <p style={{ margin: '16px 0 0', fontSize: 12, color: '#c2410c', fontWeight: 600 }}>
           Nivel {level.name} · multiplicador {level.pointsMultiplier}x en compras
         </p>
       </motion.div>
@@ -186,15 +186,15 @@ export default function PuntosPage() {
                 style={{
                   background: '#fff',
                   borderRadius: 20,
-                  border: '1px solid #fce7f3',
+                  border: '1px solid #ffedd5',
                   overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
-                  boxShadow: canAfford ? '0 8px 24px rgba(236,72,153,0.1)' : '0 2px 8px rgba(0,0,0,0.04)',
+                  boxShadow: canAfford ? '0 8px 24px rgba(241,142,4,0.1)' : '0 2px 8px rgba(0,0,0,0.04)',
                   opacity: canAfford ? 1 : 0.85,
                 }}
               >
-                <div style={{ height: 120, background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                <div style={{ height: 120, background: 'linear-gradient(135deg, #fff7ed, #ffedd5)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                   {item.IMAGEURL ? (
                     <img src={item.IMAGEURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
@@ -217,7 +217,7 @@ export default function PuntosPage() {
                         padding: '10px 16px',
                         borderRadius: 999,
                         border: 'none',
-                        background: canAfford ? `linear-gradient(135deg, ${PINK}, #db2777)` : '#e5e7eb',
+                        background: canAfford ? `linear-gradient(135deg, ${PINK}, #ea580c)` : '#e5e7eb',
                         color: canAfford ? '#fff' : '#9ca3af',
                         fontSize: 12,
                         fontWeight: 800,

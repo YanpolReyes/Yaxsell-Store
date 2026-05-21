@@ -28,15 +28,15 @@ export default function WelcomeGiftSuccess({ percent, couponCode, onCopy, copied
           height: 88,
           margin: '0 auto 20px',
           borderRadius: '50%',
-          background: 'linear-gradient(145deg, #fdf2f8, #fce7f3, #fbcfe8)',
-          border: '3px solid #f9a8d4',
+          background: 'linear-gradient(145deg, #fff7ed, #ffedd5, #fed7aa)',
+          border: '3px solid #f29718',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 12px 40px rgba(236,72,153,0.25), inset 0 2px 0 rgba(255,255,255,0.9)',
+          boxShadow: '0 12px 40px rgba(241,142,4,0.25), inset 0 2px 0 rgba(255,255,255,0.9)',
         }}
       >
-        <CheckCircle2 size={44} color="#ec4899" strokeWidth={2} />
+        <CheckCircle2 size={44} color="#f18e04" strokeWidth={2} />
       </motion.div>
 
       <motion.span
@@ -49,11 +49,11 @@ export default function WelcomeGiftSuccess({ percent, couponCode, onCopy, copied
           gap: 6,
           padding: '6px 14px',
           borderRadius: 999,
-          background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)',
-          border: '1px solid #f9a8d4',
+          background: 'linear-gradient(135deg, #fff7ed, #ffedd5)',
+          border: '1px solid #f29718',
           fontSize: 10,
           fontWeight: 800,
-          color: '#be185d',
+          color: '#c2410c',
           textTransform: 'uppercase',
           letterSpacing: '0.14em',
           marginBottom: 12,
@@ -102,12 +102,12 @@ export default function WelcomeGiftSuccess({ percent, couponCode, onCopy, copied
             gap: 10,
             padding: '12px 20px',
             borderRadius: 14,
-            border: '2px dashed #f9a8d4',
+            border: '2px dashed #f29718',
             background: '#fff',
             fontFamily: 'ui-monospace, monospace',
             fontSize: 16,
             fontWeight: 800,
-            color: '#db2777',
+            color: '#ea580c',
             cursor: 'pointer',
             marginBottom: 18,
           }}
@@ -133,12 +133,12 @@ export default function WelcomeGiftSuccess({ percent, couponCode, onCopy, copied
             gap: 8,
             padding: '14px 28px',
             borderRadius: 16,
-            background: 'linear-gradient(135deg, #f9a8d4, #ec4899, #db2777)',
+            background: 'linear-gradient(135deg, #f29718, #f18e04, #ea580c)',
             color: '#fff',
             fontSize: 14,
             fontWeight: 800,
             textDecoration: 'none',
-            boxShadow: '0 10px 28px rgba(236,72,153,0.35)',
+            boxShadow: '0 10px 28px rgba(241,142,4,0.35)',
           }}
         >
           <ShoppingBag size={18} /> Ver productos con descuento

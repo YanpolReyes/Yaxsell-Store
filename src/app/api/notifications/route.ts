@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { serverListDocuments } from '@/lib/appwrite-server';
 import { COUPONS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { serverListDocuments } from '@/lib/appwrite-server';
 import {
   createNotificationServer,
   notifyUnclaimedReward,
