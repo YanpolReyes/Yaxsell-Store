@@ -78,11 +78,13 @@ export default function Navbar1() {
       // Define a visible segment (skip empty start, stop before fade-out)
       const segStart = 50;
       const segEnd = 200;
-      anim.addEventListener('data_ready', () => {
+      lottieAnimRef.current = anim;
+      // Set initial frame after render
+      requestAnimationFrame(() => {
+        if (!lottieRef.current) return;
         anim.setSegment(segStart, segEnd);
         anim.goToAndStop(segStart, true);
       });
-      lottieAnimRef.current = anim;
       // Freeze at end of play (forward -> stay at end, reverse -> stay at start)
       anim.addEventListener('complete', () => {
         if (lottieAnimRef.current !== anim) return;
