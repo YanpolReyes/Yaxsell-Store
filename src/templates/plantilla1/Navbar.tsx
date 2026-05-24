@@ -77,7 +77,7 @@ export default function Navbar1() {
       });
       // Define a visible segment (skip empty start, stop before fade-out)
       const segStart = 50;
-      const segEnd = 190;
+      const segEnd = 180;
       lottieAnimRef.current = anim;
       // Set initial frame after render
       requestAnimationFrame(() => {
@@ -108,13 +108,13 @@ export default function Navbar1() {
     if (!anim) return;
     if (fabOpen) {
       anim.setDirection(1);
-      anim.setSegment(50, 190);
+      anim.setSegment(50, 180);
       anim.goToAndStop(50, true);
       anim.play();
     } else {
       anim.setDirection(-1);
-      anim.setSegment(50, 190);
-      anim.goToAndStop(190, true);
+      anim.setSegment(50, 180);
+      anim.goToAndStop(180, true);
       anim.play();
     }
   }, [fabOpen]);
@@ -432,7 +432,7 @@ export default function Navbar1() {
           display: flex; flex-direction: column; align-items: center;
           gap: 4px; white-space: nowrap;
           opacity: 0; pointer-events: none; cursor: pointer;
-          transform: scale(0) translateY(30px);
+          transform: scale(0.7) translateY(40px);
           transition: opacity 0.35s ease, transform 0.35s ease;
         }
         .tpl1-fab-bubbles.open .tpl1-fab-bubble { pointer-events: auto; opacity: 1; transform: none; }
