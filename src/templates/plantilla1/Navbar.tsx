@@ -75,8 +75,8 @@ export default function Navbar1() {
         autoplay: false,
         animationData: data
       });
-      // Play first frame to show initial state
-      anim.goToAndStop(0, true);
+      // Show first visible frame (ip may not be 0)
+      anim.goToAndStop(data.ip || 0, true);
       lottieAnimRef.current = anim;
     }).catch(() => {});
     return () => {
