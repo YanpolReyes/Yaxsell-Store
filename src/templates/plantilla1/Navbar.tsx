@@ -68,17 +68,7 @@ export default function Navbar1() {
       fetch(`/button.json?t=${Date.now()}`).then(r => r.json())
     ]).then(([lottieModule, data]) => {
       if (destroyed || !lottieRef.current) return;
-      function patchColors(obj: any) {
-        if (!obj || typeof obj !== 'object') return;
-        if (Array.isArray(obj)) { obj.forEach(patchColors); return; }
-        for (const key of Object.keys(obj)) {
-          const val = obj[key];
-          if (key === 'c' && val && val.k && Array.isArray(val.k) && val.k.length === 4) {
-            val.k = [0.945, 0.557, 0.016, 1];
-          }
-          patchColors(val);
-        }
-      }
+      // No parchear colores - usar los originales del lottie
       if (data.layers) {
         data.layers = data.layers.filter((layer: any) => {
           if (layer.nm && layer.nm.toLowerCase().includes('circle')) return false;
@@ -89,7 +79,6 @@ export default function Navbar1() {
           if (layer.hasMask) { delete layer.hasMask; delete layer.masksProperties; }
         });
       }
-      patchColors(data);
       anim = lottieModule.default.loadAnimation({
         container: lottieRef.current,
         renderer: 'svg',
