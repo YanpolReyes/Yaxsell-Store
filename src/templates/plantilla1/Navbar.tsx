@@ -68,25 +68,13 @@ export default function Navbar1() {
       fetch(`/button.json?t=${Date.now()}`).then(r => r.json())
     ]).then(([lottieModule, data]) => {
       if (destroyed || !lottieRef.current) return;
-      // No parchear colores - usar los originales del lottie
-      if (data.layers) {
-        data.layers = data.layers.filter((layer: any) => {
-          if (layer.nm && layer.nm.toLowerCase().includes('circle')) return false;
-          if (layer.nm && layer.nm.toLowerCase().includes('bg')) return false;
-          return true;
-        });
-        data.layers.forEach((layer: any) => {
-          if (layer.hasMask) { delete layer.hasMask; delete layer.masksProperties; }
-        });
-      }
       anim = lottieModule.default.loadAnimation({
         container: lottieRef.current,
         renderer: 'svg',
-        loop: false,
+        loop: true,
         autoplay: true,
         animationData: data
       });
-      anim.setSegment(0, 25);
       lottieAnimRef.current = anim;
     }).catch(() => {});
     return () => {
@@ -96,18 +84,8 @@ export default function Navbar1() {
     };
   }, [mounted]);
 
-  // Play forward to frame 25 on open (freeze), reverse to frame 0 on close (freeze)
-  useEffect(() => {
-    const anim = lottieAnimRef.current;
-    if (!anim) return;
-    if (fabOpen) {
-      anim.setDirection(1);
-      anim.play();
-    } else {
-      anim.setDirection(-1);
-      anim.play();
-    }
-  }, [fabOpen]);
+  // Lottie runs in loop — no segment control needed
+  useEffect(() => {}, [fabOpen]);
 
   // Cargar logo del theme config (usar logo de scroll si existe)
   useEffect(() => {
