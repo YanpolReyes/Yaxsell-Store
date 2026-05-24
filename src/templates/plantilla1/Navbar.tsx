@@ -75,9 +75,18 @@ export default function Navbar1() {
         autoplay: false,
         animationData: data
       });
-      // Show first visible frame (ip may not be 0)
-      anim.goToAndStop(data.ip || 0, true);
+      // Define a visible segment (skip empty start, stop before fade-out)
+      const segStart = 50;
+      const segEnd = 200;
+      anim.setSegment(segStart, segEnd);
+      anim.goToAndStop(segStart, true);
       lottieAnimRef.current = anim;
+      // Freeze at end of forward play
+      anim.addEventListener('complete', () => {
+        if (lottieAnimRef.current === anim) {
+          anim.goToAndStop(fabOpen ? segEnd : segStart, true);
+        }
+      });
     }).catch(() => {});
     return () => {
       destroyed = true;
