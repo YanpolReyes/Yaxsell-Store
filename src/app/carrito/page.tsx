@@ -13,7 +13,7 @@ import { getServices, getAppwriteConfig, COUPONS_COLLECTION } from '@/lib/appwri
 import { Coupon } from '@/types';
 import { MINIMUM_ORDER_CLP, isBelowMinimumOrder, minimumOrderMessage } from '@/lib/order-rules';
 
-const PINK = '#f18e04';
+const PINK = '#e396bf';
 const FF = '"DM Sans",system-ui,sans-serif';
 
 export default function CarritoPage() {
@@ -83,9 +83,9 @@ export default function CarritoPage() {
               <div>
                 <p style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.02em' }}>Tu carrito está vacío</p>
                 <p style={{ margin: '0 0 20px', fontSize: 15, color: '#6b7280', lineHeight: 1.55 }}>Agrega productos y consigue envío gratis en tu primera compra.</p>
-                <Link href="/productos" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 28px', background: `linear-gradient(135deg,${PINK},#ea580c)`, color: '#fff', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 14, boxShadow: '0 4px 16px rgba(241,142,4,0.3)', transition: 'transform .2s, box-shadow .2s' }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(241,142,4,0.4)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(241,142,4,0.3)'; }}>
+                <Link href="/productos" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 28px', background: `linear-gradient(135deg,${PINK},#c0547a)`, color: '#fff', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 14, boxShadow: '0 4px 16px rgba(227,150,191,0.3)', transition: 'transform .2s, box-shadow .2s' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(227,150,191,0.4)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(227,150,191,0.3)'; }}>
                   <ShoppingCart size={16} /> Explorar productos
                 </Link>
               </div>
@@ -147,7 +147,7 @@ export default function CarritoPage() {
             <div className="cart-items-col" style={{ flex: 1, minWidth: 300, display: 'flex', flexDirection: 'column', gap: 12 }}>
 
               <div className="cart-shipping-banner" style={{ background: '#fff', borderRadius: 14, padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-                <div style={{ width: 28, height: 28, borderRadius: 8, background: '#fff8ed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Truck size={15} color={PINK} />
                 </div>
                 <span style={{ fontSize: 14, color: '#1a1a1a', fontWeight: 500 }}>Envío disponible a todo Chile</span>
@@ -185,8 +185,8 @@ export default function CarritoPage() {
 
                 {aperturaSavings > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 14 }}>
-                    <span style={{ color: '#c2410c', display: 'flex', alignItems: 'center', gap: 4 }}><Sparkles size={12} /> Promoción apertura</span>
-                    <span style={{ color: '#c2410c', fontWeight: 700 }}>-{formatPrice(aperturaSavings)}</span>
+                    <span style={{ color: '#be185d', display: 'flex', alignItems: 'center', gap: 4 }}><Sparkles size={12} /> Promoción apertura</span>
+                    <span style={{ color: '#be185d', fontWeight: 700 }}>-{formatPrice(aperturaSavings)}</span>
                   </div>
                 )}
 
@@ -221,7 +221,7 @@ export default function CarritoPage() {
                   </span>
                 ) : (
                   <Link href={`/checkout${couponData ? `?coupon=${couponData.$id}&discount=${discount}` : ''}`}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '15px 0', background: `linear-gradient(135deg,${PINK},#ea580c)`, color: '#fff', textAlign: 'center', borderRadius: 12, fontSize: 16, fontWeight: 700, textDecoration: 'none', boxSizing: 'border-box', boxShadow: '0 6px 20px rgba(241,142,4,0.35)', transition: 'all 0.2s' }}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '15px 0', background: `linear-gradient(135deg,${PINK},#c0547a)`, color: '#fff', textAlign: 'center', borderRadius: 12, fontSize: 16, fontWeight: 700, textDecoration: 'none', boxSizing: 'border-box', boxShadow: '0 6px 20px rgba(227,150,191,0.35)', transition: 'all 0.2s' }}
                     onMouseEnter={e => ((e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)')}
                     onMouseLeave={e => ((e.currentTarget as HTMLElement).style.transform = 'translateY(0)')}
                   >Continuar compra</Link>
@@ -245,7 +245,7 @@ export default function CarritoPage() {
                     onKeyDown={e => e.key === 'Enter' && applyCoupon()}
                     style={{ flex: 1, padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: 10, fontSize: 13, outline: 'none', color: '#1a1a1a', background: '#fafafa', fontFamily: FF, transition: 'border-color .15s' }} />
                   <button onClick={applyCoupon} disabled={loadingCoupon}
-                    style={{ padding: '10px 16px', background: '#fff8ed', color: PINK, border: '1px solid rgba(241,142,4,0.2)', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', flexShrink: 0, opacity: loadingCoupon ? 0.6 : 1, fontFamily: FF, transition: 'background .15s' }}>
+                    style={{ padding: '10px 16px', background: '#fdf2f8', color: PINK, border: '1px solid rgba(227,150,191,0.2)', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', flexShrink: 0, opacity: loadingCoupon ? 0.6 : 1, fontFamily: FF, transition: 'background .15s' }}>
                     {loadingCoupon ? '...' : 'Aplicar'}
                   </button>
                 </div>

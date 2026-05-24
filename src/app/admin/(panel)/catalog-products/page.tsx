@@ -203,9 +203,9 @@ export default function CatalogProductsPage() {
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
-        <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#ea580c', textTransform: 'uppercase', letterSpacing: '.5px' }}>Pendientes</div>
-          <div style={{ fontSize: 28, fontWeight: 900, color: '#c2410c', marginTop: 4 }}>{totalPending}</div>
+        <div style={{ background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 12, padding: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#c0547a', textTransform: 'uppercase', letterSpacing: '.5px' }}>Pendientes</div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: '#be185d', marginTop: 4 }}>{totalPending}</div>
         </div>
         <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '.5px' }}>Con Stock</div>
@@ -262,7 +262,7 @@ export default function CatalogProductsPage() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
                   {u.pendingCount > 0 && (
-                    <span style={{ fontSize: 10, fontWeight: 700, background: '#fff7ed', color: '#ea580c', padding: '2px 8px', borderRadius: 10, border: '1px solid #fed7aa' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, background: '#fdf2f8', color: '#c0547a', padding: '2px 8px', borderRadius: 10, border: '1px solid #fbcfe8' }}>
                       {u.pendingCount} pend.
                     </span>
                   )}
@@ -297,7 +297,7 @@ export default function CatalogProductsPage() {
                 {selectedUser.requests.map(a => (
                   <div key={a.$id} style={{
                     background: a.STATUS === 'pending' ? '#fffbf5' : a.STATUS === 'available' ? '#f0fdf4' : '#fef2f2',
-                    border: `1px solid ${a.STATUS === 'pending' ? '#fed7aa' : a.STATUS === 'available' ? '#bbf7d0' : '#fecaca'}`,
+                    border: `1px solid ${a.STATUS === 'pending' ? '#fbcfe8' : a.STATUS === 'available' ? '#bbf7d0' : '#fecaca'}`,
                     borderRadius: 10, padding: 14, marginBottom: 10,
                   }}>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
@@ -315,7 +315,7 @@ export default function CatalogProductsPage() {
                             {a.PRODUCTNAME}
                           </p>
                           {a.STATUS === 'pending' && (
-                            <span style={{ fontSize: 10, fontWeight: 700, background: '#fff7ed', color: '#ea580c', padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap', border: '1px solid #fed7aa' }}>
+                            <span style={{ fontSize: 10, fontWeight: 700, background: '#fdf2f8', color: '#c0547a', padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap', border: '1px solid #fbcfe8' }}>
                               Pendiente
                             </span>
                           )}

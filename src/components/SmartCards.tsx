@@ -89,7 +89,7 @@ export default function SmartCards() {
         title: 'Medios de pago',
         desc: 'Paga tus compras de forma rápida y segura.',
         href: '/login?tab=register',
-        accent: '#ff6900',
+        accent: '#db2777',
         priority: 3,
       });
 
@@ -163,7 +163,7 @@ export default function SmartCards() {
           title: 'Agrega tu teléfono',
           desc: 'Recibe notificaciones de tus pedidos.',
           href: '/cuenta/perfil',
-          accent: '#ff6900',
+          accent: '#db2777',
           priority: 3,
         });
       }

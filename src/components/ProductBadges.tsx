@@ -16,13 +16,13 @@ export default function ProductBadges({ product, style }: Props) {
     const created = new Date(createdAt).getTime();
     const sevenDays = 7 * 24 * 60 * 60 * 1000;
     if (Date.now() - created < sevenDays) {
-      badges.push({ label: 'Nuevo', bg: 'linear-gradient(135deg,#f18e04,#f29718)', color: '#fff' });
+      badges.push({ label: 'Nuevo', bg: 'linear-gradient(135deg,#e396bf,#f5a8cf)', color: '#fff' });
     }
   }
 
   // Best seller: sold > 20
   if (product.SOLDQUANTITY && product.SOLDQUANTITY >= 20) {
-    badges.push({ label: 'Más vendido', bg: '#ff6900', color: '#fff' });
+    badges.push({ label: 'Más vendido', bg: '#db2777', color: '#fff' });
   }
 
   // On sale

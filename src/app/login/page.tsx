@@ -89,7 +89,7 @@ function LoginInner() {
         particleCount: 150,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ['#f18e04', '#f43f5e', '#ffffff']
+        colors: ['#e396bf', '#f43f5e', '#ffffff']
       });
       setShowWelcomeModal(true);
     }

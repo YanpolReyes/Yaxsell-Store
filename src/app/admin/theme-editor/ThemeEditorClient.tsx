@@ -1681,10 +1681,10 @@ function DesignFields({ baseId, section, onUpdate }: {
             { id:'sol',      l:'Sol Premium', g:'linear-gradient(135deg,#fff9c4 0%,#fff176 25%,#ffee58 50%,#fff176 75%,#fff9c4 100%)', preview:'linear-gradient(135deg,#fff9c4,#fff176,#ffee58)' },
             { id:'white',    l:'Blanco', g:'linear-gradient(135deg,#ffffff 0%,#f8fafc 35%,#eef2f7 65%,#ffffff 100%)', preview:'linear-gradient(135deg,#ffffff,#f8fafc,#e5e7eb)' },
             { id:'luxury-gold', l:'Oro Lujo', g:'linear-gradient(135deg,#bf953f 0%,#fcf6ba 25%,#b38728 50%,#fbf5b7 75%,#aa771c 100%)', preview:'linear-gradient(135deg,#bf953f,#fcf6ba,#aa771c)' },
-            { id:'aurora',   l:'Aurora',   g:'linear-gradient(135deg,#6366f1,#a855f7,#f18e04,#6366f1)', preview:'linear-gradient(135deg,#6366f1,#a855f7,#f18e04)' },
+            { id:'aurora',   l:'Aurora',   g:'linear-gradient(135deg,#6366f1,#a855f7,#e396bf,#6366f1)', preview:'linear-gradient(135deg,#6366f1,#a855f7,#e396bf)' },
             { id:'ocean',    l:'Océano',   g:'linear-gradient(135deg,#0ea5e9,#06b6d4,#0d9488,#0ea5e9)', preview:'linear-gradient(135deg,#0ea5e9,#06b6d4,#0d9488)' },
             { id:'dark',     l:'Oscuro',   g:'linear-gradient(135deg,#111827,#1f2937,#374151,#111827)', preview:'linear-gradient(135deg,#111827,#1f2937,#374151)' },
-            { id:'flame',    l:'Llama',    g:'linear-gradient(135deg,#dc2626,#ea580c,#f59e0b,#dc2626)', preview:'linear-gradient(135deg,#dc2626,#ea580c,#f59e0b)' },
+            { id:'flame',    l:'Llama',    g:'linear-gradient(135deg,#dc2626,#c0547a,#f59e0b,#dc2626)', preview:'linear-gradient(135deg,#dc2626,#c0547a,#f59e0b)' },
             { id:'lime',     l:'Lima',     g:'linear-gradient(135deg,#84cc16,#22c55e,#10b981,#84cc16)', preview:'linear-gradient(135deg,#84cc16,#22c55e,#10b981)' },
           ];
           const hasNbGrad = !!s.bgGradient;
@@ -1794,7 +1794,7 @@ function DesignFields({ baseId, section, onUpdate }: {
             <button key={m.id} onClick={() => applyCmNav(m)}
               style={{ padding: 0, border: `2px solid ${s.cmNavModel === m.id ? '#F97316' : '#e5e7eb'}`, borderRadius: 8, cursor: 'pointer', overflow: 'hidden', background: 'none' }}>
               <MiniCmNav m={m} />
-              <div style={{ padding: '3px 6px', background: s.cmNavModel === m.id ? '#fff7ed' : '#fff', textAlign: 'center' }}>
+              <div style={{ padding: '3px 6px', background: s.cmNavModel === m.id ? '#fdf2f8' : '#fff', textAlign: 'center' }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#374151' }}>{m.label}</div>
                 <div style={{ fontSize: 8, color: '#9ca3af', lineHeight: 1.2 }}>{m.desc}</div>
               </div>
@@ -1814,7 +1814,7 @@ function DesignFields({ baseId, section, onUpdate }: {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
           {(['left', 'center'] as const).map(p => (
             <button key={p} onClick={() => onUpdate({ cmNavLogoPosition: p })}
-              style={{ padding: '6px 0', fontSize: 11, fontWeight: 600, border: `2px solid ${s.cmNavLogoPosition === p ? '#F97316' : '#e5e7eb'}`, borderRadius: 6, background: s.cmNavLogoPosition === p ? '#fff7ed' : '#fff', cursor: 'pointer', color: '#374151' }}>
+              style={{ padding: '6px 0', fontSize: 11, fontWeight: 600, border: `2px solid ${s.cmNavLogoPosition === p ? '#F97316' : '#e5e7eb'}`, borderRadius: 6, background: s.cmNavLogoPosition === p ? '#fdf2f8' : '#fff', cursor: 'pointer', color: '#374151' }}>
               {p === 'left' ? 'Izquierda' : 'Centro'}
             </button>
           ))}
@@ -1826,7 +1826,7 @@ function DesignFields({ baseId, section, onUpdate }: {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 4 }}>
           {([['none','Sin'], ['sm','S'], ['md','M'], ['lg','XL']] as const).map(([v, l]) => (
             <button key={v} onClick={() => onUpdate({ cmNavShadow: v })}
-              style={{ padding: '5px 0', fontSize: 10, fontWeight: 600, border: `1.5px solid ${s.cmNavShadow === v ? '#F97316' : '#e5e7eb'}`, borderRadius: 4, background: s.cmNavShadow === v ? '#fff7ed' : '#fff', cursor: 'pointer', color: '#374151' }}>
+              style={{ padding: '5px 0', fontSize: 10, fontWeight: 600, border: `1.5px solid ${s.cmNavShadow === v ? '#F97316' : '#e5e7eb'}`, borderRadius: 4, background: s.cmNavShadow === v ? '#fdf2f8' : '#fff', cursor: 'pointer', color: '#374151' }}>
               {l}
             </button>
           ))}
@@ -1883,7 +1883,7 @@ function DesignFields({ baseId, section, onUpdate }: {
             <button key={m.id} onClick={() => applyCmHero(m)}
               style={{ padding: 0, border: `2px solid ${s.cmHeroModel === m.id ? '#F97316' : '#e5e7eb'}`, borderRadius: 8, cursor: 'pointer', overflow: 'hidden', background: 'none' }}>
               <MiniHero m={m} />
-              <div style={{ padding: '3px 6px', background: s.cmHeroModel === m.id ? '#fff7ed' : '#fff', textAlign: 'center' }}>
+              <div style={{ padding: '3px 6px', background: s.cmHeroModel === m.id ? '#fdf2f8' : '#fff', textAlign: 'center' }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#374151' }}>{m.label}</div>
                 <div style={{ fontSize: 8, color: '#9ca3af', lineHeight: 1.2 }}>{m.desc}</div>
               </div>
@@ -1904,7 +1904,7 @@ function DesignFields({ baseId, section, onUpdate }: {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
           {(['left', 'center', 'right'] as const).map(a => (
             <button key={a} onClick={() => onUpdate({ cmHeroAlign: a })}
-              style={{ padding: '6px 0', fontSize: 11, fontWeight: 600, border: `2px solid ${s.cmHeroAlign === a ? '#F97316' : '#e5e7eb'}`, borderRadius: 6, background: s.cmHeroAlign === a ? '#fff7ed' : '#fff', cursor: 'pointer', color: '#374151' }}>
+              style={{ padding: '6px 0', fontSize: 11, fontWeight: 600, border: `2px solid ${s.cmHeroAlign === a ? '#F97316' : '#e5e7eb'}`, borderRadius: 6, background: s.cmHeroAlign === a ? '#fdf2f8' : '#fff', cursor: 'pointer', color: '#374151' }}>
               {a === 'left' ? 'Izquierda' : a === 'center' ? 'Centro' : 'Derecha'}
             </button>
           ))}
@@ -1951,7 +1951,7 @@ function DesignFields({ baseId, section, onUpdate }: {
             <button key={m.id} onClick={() => applyCmFtr(m)}
               style={{ padding: 0, border: `2px solid ${s.cmFooterBg === m.bg ? '#F97316' : '#e5e7eb'}`, borderRadius: 8, cursor: 'pointer', overflow: 'hidden', background: 'none' }}>
               <MiniFtr m={m} />
-              <div style={{ padding: '3px 6px', background: s.cmFooterBg === m.bg ? '#fff7ed' : '#fff', textAlign: 'center' }}>
+              <div style={{ padding: '3px 6px', background: s.cmFooterBg === m.bg ? '#fdf2f8' : '#fff', textAlign: 'center' }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#374151' }}>{m.label}</div>
                 <div style={{ fontSize: 8, color: '#9ca3af', lineHeight: 1.2 }}>{m.desc}</div>
               </div>
@@ -2014,9 +2014,9 @@ function DesignFields({ baseId, section, onUpdate }: {
         // ── Bicolor ──
         { id:'bw',        l:'Blanco/Negro', g:'linear-gradient(90deg,#ffffff,#111111)',                            tc:'#111111',  preview:'linear-gradient(90deg,#ffffff,#111111)' },
         { id:'wb',        l:'Negro/Blanco', g:'linear-gradient(90deg,#111111,#ffffff)',                            tc:'#ffffff',  preview:'linear-gradient(90deg,#111111,#ffffff)' },
-        { id:'pinkwhite', l:'Rosa/Blanco',  g:'linear-gradient(90deg,#f18e04,#ffffff)',                           tc:'#831843',  preview:'linear-gradient(90deg,#f18e04,#ffffff)' },
+        { id:'pinkwhite', l:'Rosa/Blanco',  g:'linear-gradient(90deg,#e396bf,#ffffff)',                           tc:'#831843',  preview:'linear-gradient(90deg,#e396bf,#ffffff)' },
         { id:'purpleorange', l:'Morado/Naranja', g:'linear-gradient(90deg,#a855f7,#f97316)',                     tc:'#ffffff',  preview:'linear-gradient(90deg,#a855f7,#f97316)' },
-        { id:'bluepink',  l:'Azul/Rosa',   g:'linear-gradient(90deg,#3b82f6,#f18e04)',                           tc:'#ffffff',  preview:'linear-gradient(90deg,#3b82f6,#f18e04)' },
+        { id:'bluepink',  l:'Azul/Rosa',   g:'linear-gradient(90deg,#3b82f6,#e396bf)',                           tc:'#ffffff',  preview:'linear-gradient(90deg,#3b82f6,#e396bf)' },
         { id:'greenwhite', l:'Verde/Blanco', g:'linear-gradient(90deg,#22c55e,#ffffff)',                          tc:'#14532d',  preview:'linear-gradient(90deg,#22c55e,#ffffff)' },
       ];
       const hasGrad = !!s.bgGradient;
@@ -2148,8 +2148,8 @@ function DesignFields({ baseId, section, onUpdate }: {
     case 'live_banner': {
       const LB_GRADS = [
         { id:'white',    l:'Blanco',    g:'linear-gradient(90deg,#ffffff,#f8fafc,#eef2f7,#ffffff)', gI:'linear-gradient(90deg,#f3f4f6,#e5e7eb,#d1d5db,#f3f4f6)', preview:'linear-gradient(90deg,#ffffff,#f8fafc,#e5e7eb)' },
-        { id:'fire',     l:'Fuego',     g:'linear-gradient(90deg,#dc2626,#ea580c,#fbbf24,#dc2626)', gI:'linear-gradient(90deg,#f87171,#fb923c,#fbbf24,#f87171)', preview:'linear-gradient(90deg,#dc2626,#ea580c,#fbbf24)' },
-        { id:'aurora',   l:'Aurora',    g:'linear-gradient(90deg,#6366f1,#a855f7,#f18e04,#6366f1)', gI:'linear-gradient(90deg,#8b5cf6,#a855f7,#f18e04,#8b5cf6)', preview:'linear-gradient(90deg,#6366f1,#a855f7,#f18e04)' },
+        { id:'fire',     l:'Fuego',     g:'linear-gradient(90deg,#dc2626,#c0547a,#fbbf24,#dc2626)', gI:'linear-gradient(90deg,#f87171,#fb923c,#fbbf24,#f87171)', preview:'linear-gradient(90deg,#dc2626,#c0547a,#fbbf24)' },
+        { id:'aurora',   l:'Aurora',    g:'linear-gradient(90deg,#6366f1,#a855f7,#e396bf,#6366f1)', gI:'linear-gradient(90deg,#8b5cf6,#a855f7,#e396bf,#8b5cf6)', preview:'linear-gradient(90deg,#6366f1,#a855f7,#e396bf)' },
         { id:'ocean',    l:'OcÃ©ano',    g:'linear-gradient(90deg,#0ea5e9,#06b6d4,#0d9488,#0ea5e9)', gI:'linear-gradient(90deg,#0ea5e9,#06b6d4,#14b8a6,#0ea5e9)', preview:'linear-gradient(90deg,#0ea5e9,#06b6d4,#0d9488)' },
         { id:'emerald',  l:'Esmeralda', g:'linear-gradient(90deg,#059669,#10b981,#34d399,#059669)', gI:'linear-gradient(90deg,#10b981,#34d399,#6ee7b7,#10b981)', preview:'linear-gradient(90deg,#059669,#10b981,#34d399)' },
         { id:'neon',     l:'NeÃ³n',      g:'linear-gradient(90deg,#7c3aed,#2563eb,#0ea5e9,#7c3aed)', gI:'linear-gradient(90deg,#7c3aed,#2563eb,#0ea5e9,#7c3aed)', preview:'linear-gradient(90deg,#7c3aed,#2563eb,#0ea5e9)' },
@@ -2229,13 +2229,13 @@ function DesignFields({ baseId, section, onUpdate }: {
         // ── Classic (layout original) con paletas de color ──
         { id: 'classic-bn',   l: 'B/N Negro',   layout: 'classic', bg: '#0a0a0a', tx: '#ffffff', ac: '#ffffff', r: 16, pd: 22, sh: 'lg', previewHint: 'classic' },
         { id: 'classic-nb',  l: 'B/N Blanco',   layout: 'classic', bg: '#ffffff', tx: '#111111', ac: '#111111', r: 16, pd: 22, sh: 'lg', previewHint: 'classic' },
-        { id: 'aurora',    l: 'Aurora',    layout: 'classic', bg: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #f18e04 100%)', tx: '#fff', ac: '#fbbf24', r: 16, pd: 20, sh: 'lg', previewHint: 'classic' },
+        { id: 'aurora',    l: 'Aurora',    layout: 'classic', bg: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #e396bf 100%)', tx: '#fff', ac: '#fbbf24', r: 16, pd: 20, sh: 'lg', previewHint: 'classic' },
         { id: 'urgent',    l: 'Urgente',   layout: 'classic', bg: 'linear-gradient(135deg, #dc2626, #f97316)', tx: '#fff', ac: '#fbbf24', r: 14, pd: 20, sh: 'lg', previewHint: 'classic' },
-        { id: 'neon',      l: 'Neón',      layout: 'classic', bg: 'linear-gradient(135deg, #7c3aed, #f18e04)', tx: '#fff', ac: '#34d399', r: 20, pd: 22, sh: 'lg', previewHint: 'classic' },
+        { id: 'neon',      l: 'Neón',      layout: 'classic', bg: 'linear-gradient(135deg, #7c3aed, #e396bf)', tx: '#fff', ac: '#34d399', r: 20, pd: 22, sh: 'lg', previewHint: 'classic' },
         { id: 'nature',    l: 'Natural',   layout: 'classic', bg: 'linear-gradient(135deg, #059669, #10b981)', tx: '#fff', ac: '#fef3c7', r: 14, pd: 20, sh: 'md', previewHint: 'classic' },
         { id: 'ocean',     l: 'Oceánico',  layout: 'classic', bg: 'linear-gradient(135deg, #0369a1, #0891b2)', tx: '#fff', ac: '#fbbf24', r: 16, pd: 20, sh: 'lg', previewHint: 'classic' },
-        { id: 'warm',      l: 'Cálido',    layout: 'classic', bg: 'linear-gradient(135deg, #ea580c, #f59e0b)', tx: '#fff', ac: '#fff7ed', r: 14, pd: 20, sh: 'md', previewHint: 'classic' },
-        { id: 'rose',      l: 'Rosado',    layout: 'classic', bg: 'linear-gradient(135deg, #fed7aa, #fda4af)', tx: '#831843', ac: '#ea580c', r: 16, pd: 20, sh: 'lg', previewHint: 'classic' },
+        { id: 'warm',      l: 'Cálido',    layout: 'classic', bg: 'linear-gradient(135deg, #c0547a, #f59e0b)', tx: '#fff', ac: '#fdf2f8', r: 14, pd: 20, sh: 'md', previewHint: 'classic' },
+        { id: 'rose',      l: 'Rosado',    layout: 'classic', bg: 'linear-gradient(135deg, #fbcfe8, #fda4af)', tx: '#831843', ac: '#c0547a', r: 16, pd: 20, sh: 'lg', previewHint: 'classic' },
         { id: 'sky',       l: 'Cielo',     layout: 'classic', bg: '#f0f9ff', tx: '#0c4a6e', ac: '#0ea5e9', r: 16, pd: 24, sh: 'lg', previewHint: 'classic' },
         { id: 'minimal',   l: 'Minimal',   layout: 'classic', bg: '#ffffff', tx: '#0f172a', ac: '#6366f1', r: 12, pd: 18, sh: 'md', previewHint: 'classic' },
       ];
@@ -2789,7 +2789,7 @@ function DesignFields({ baseId, section, onUpdate }: {
         { id: 'dark',   l: 'Oscuro',    bg: '#0f172a', tx: '#e2e8f0', hd: '#f8fafc', cBg: '#1e293b', cTx: '#e2e8f0', ac: '#38bdf8', sh: 'lg' as const, r: 12, cols: 3 },
         { id: 'flat',   l: 'Plano',     bg: '#f1f5f9', tx: '#334155', hd: '#0f172a', cBg: '#fff', cTx: '#334155', ac: '#2563eb', sh: 'none' as const, r: 4, cols: 4 },
         { id: 'round',  l: 'Redondeado',bg: '#fff',    tx: '#374151', hd: '#111', cBg: '#f0fdf4', cTx: '#166534', ac: '#16a34a', sh: 'sm' as const, r: 20, cols: 3 },
-        { id: 'pastel', l: 'Pastel',    bg: '#fff7ed', tx: '#831843', hd: '#9d174d', cBg: '#ffedd5', cTx: '#831843', ac: '#f18e04', sh: 'sm' as const, r: 16, cols: 3 },
+        { id: 'pastel', l: 'Pastel',    bg: '#fdf2f8', tx: '#831843', hd: '#9d174d', cBg: '#fce7f3', cTx: '#831843', ac: '#e396bf', sh: 'sm' as const, r: 16, cols: 3 },
         { id: 'bold',   l: 'Vibrante',  bg: '#1e1b4b', tx: '#c7d2fe', hd: '#e0e7ff', cBg: '#312e81', cTx: '#c7d2fe', ac: '#f97316', sh: 'md' as const, r: 8, cols: 2 },
       ];
       return (<div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -2822,7 +2822,7 @@ function DesignFields({ baseId, section, onUpdate }: {
     case 'newsletter': {
       const P = [
         { id: 'dark',     l: 'Oscuro',    bg: '#111827', tx: '#f3f4f6', hd: '#fff',     ac: '#6366f1', btn: '#6366f1', btnTx: '#fff', r: 0  },
-        { id: 'gradient', l: 'Gradiente', bg: 'linear-gradient(135deg,#6366f1,#f18e04)', tx: '#fff', hd: '#fff', ac: '#fbbf24', btn: '#fbbf24', btnTx: '#111', r: 12 },
+        { id: 'gradient', l: 'Gradiente', bg: 'linear-gradient(135deg,#6366f1,#e396bf)', tx: '#fff', hd: '#fff', ac: '#fbbf24', btn: '#fbbf24', btnTx: '#111', r: 12 },
         { id: 'light',    l: 'Claro',     bg: '#f1f5f9', tx: '#475569', hd: '#0f172a',  ac: '#2563eb', btn: '#2563eb', btnTx: '#fff', r: 8  },
         { id: 'warm',     l: 'CÃ¡lido',    bg: '#451a03', tx: '#fde68a', hd: '#fef3c7',  ac: '#f59e0b', btn: '#f59e0b', btnTx: '#111', r: 0  },
         { id: 'nature',   l: 'Natural',   bg: '#14532d', tx: '#bbf7d0', hd: '#dcfce7',  ac: '#4ade80', btn: '#4ade80', btnTx: '#111', r: 16 },
@@ -3692,7 +3692,7 @@ function ContentFields({ baseId, section, onUpdate, onIframeReload }: {
         <RangeField label="Blur del fondo" value={s.productWidgetBlur ?? 10} onChange={v => onUpdate({ productWidgetBlur: v })} min={0} max={30} unit="px" />
         <RangeField label="Redondez de tarjeta" value={s.productWidgetBorderRadius ?? 16} onChange={v => onUpdate({ productWidgetBorderRadius: v })} min={0} max={30} unit="px" />
         <SH>Diseño de botón</SH>
-        <ColorField label="Color de botón" value={s.productWidgetButtonColor || '#f18e04'} onChange={v => onUpdate({ productWidgetButtonColor: v })} />
+        <ColorField label="Color de botón" value={s.productWidgetButtonColor || '#e396bf'} onChange={v => onUpdate({ productWidgetButtonColor: v })} />
         <ColorField label="Color de texto del botón" value={s.productWidgetButtonTextColor || '#ffffff'} onChange={v => onUpdate({ productWidgetButtonTextColor: v })} />
         <RangeField label="Redondez del botón" value={s.productWidgetButtonRadius ?? 8} onChange={v => onUpdate({ productWidgetButtonRadius: v })} min={0} max={30} unit="px" />
         <RangeField label="Padding del botón" value={s.productWidgetButtonPadding ?? 12} onChange={v => onUpdate({ productWidgetButtonPadding: v })} min={8} max={24} unit="px" />

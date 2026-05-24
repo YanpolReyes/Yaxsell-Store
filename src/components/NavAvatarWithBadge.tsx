@@ -81,7 +81,7 @@ export default function NavAvatarWithBadge({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: `linear-gradient(135deg, ${ringColor}, #fed7aa)`,
+              background: `linear-gradient(135deg, ${ringColor}, #fbcfe8)`,
               color: '#fff',
               fontSize: Math.round(size * 0.38),
               fontWeight: 800,

@@ -17,8 +17,8 @@ import { getWhatsAppUrl, openChatbot } from '@/lib/store-contact';
 import NavAvatarWithBadge from '@/components/NavAvatarWithBadge';
 // lottie-web loaded dynamically to avoid SSR issues
 
-const ORANGE_PRIMARY = '#f18e04';
-const PINK_LIGHT = '#f29718';
+const ORANGE_PRIMARY = '#e396bf';
+const PINK_LIGHT = '#f5a8cf';
 const LOGO_URL = '';
 
 function getFilePreviewUrl(fileId: string): string {
@@ -250,7 +250,7 @@ export default function Navbar1() {
     <>
       <style>{`
         .tpl1-nav { position: sticky; top: 0; z-index: 9999; transition: all 0.3s ease; }
-        .tpl1-nav.scrolled { box-shadow: 0 2px 12px rgba(241,142,4,0.04); backdrop-filter: blur(12px); }
+        .tpl1-nav.scrolled { box-shadow: 0 2px 12px rgba(227,150,191,0.04); backdrop-filter: blur(12px); }
         .tpl1-nav-inner { max-width: 1600px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; height: 76px; }
         .tpl1-nav-logo { display: flex; align-items: center; text-decoration: none; gap: 10px; }
         .tpl1-nav-logo img { height: 48px; max-width: 160px; width: auto; object-fit: contain; transition: transform 0.3s ease, opacity 0.4s ease; flex-shrink: 0; }
@@ -258,15 +258,15 @@ export default function Navbar1() {
         .tpl1-nav-logo:hover img { transform: scale(1.05); }
         .tpl1-nav-links { display: flex; gap: 4px; align-items: center; }
         .tpl1-nav-links a { font-family: 'DM Sans', system-ui, sans-serif; font-size: 14px; font-weight: 600; color: #444; text-decoration: none; padding: 10px 20px; border-radius: 999px; transition: all 0.25s ease; position: relative; }
-        .tpl1-nav-links a:hover { background: linear-gradient(135deg, rgba(241,142,4,0.08), rgba(249,168,212,0.12)); color: ${ORANGE_PRIMARY}; transform: translateY(-1px); }
-        .tpl1-nav-links a.active { background: linear-gradient(135deg, rgba(241,142,4,0.12), rgba(249,168,212,0.18)); color: ${ORANGE_PRIMARY}; font-weight: 700; }
+        .tpl1-nav-links a:hover { background: linear-gradient(135deg, rgba(227,150,191,0.08), rgba(249,168,212,0.12)); color: ${ORANGE_PRIMARY}; transform: translateY(-1px); }
+        .tpl1-nav-links a.active { background: linear-gradient(135deg, rgba(227,150,191,0.12), rgba(249,168,212,0.18)); color: ${ORANGE_PRIMARY}; font-weight: 700; }
         .tpl1-nav-actions { display: flex; align-items: center; gap: 6px; }
         .tpl1-nav-mobile-tools { display: flex; align-items: center; gap: 4px; }
         .tpl1-nav-btn { width: 44px; height: 44px; border-radius: 50%; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.25s ease; color: #666; position: relative; }
-        .tpl1-nav-btn:hover { background: linear-gradient(135deg, rgba(241,142,4,0.1), rgba(249,168,212,0.15)); color: ${ORANGE_PRIMARY}; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(241,142,4,0.15); }
+        .tpl1-nav-btn:hover { background: linear-gradient(135deg, rgba(227,150,191,0.1), rgba(249,168,212,0.15)); color: ${ORANGE_PRIMARY}; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(227,150,191,0.15); }
         .tpl1-nav-search-wrap { display: flex; align-items: center; overflow: hidden; transition: all 0.35s cubic-bezier(0.4,0,0.2,1); max-width: 0; opacity: 0; }
         .tpl1-nav-search-wrap.open { max-width: 260px; opacity: 1; margin-right: 4px; }
-        .tpl1-nav-search-wrap form { display: flex; align-items: center; background: linear-gradient(135deg, #fff8ed, #fff7ed); border: 1.5px solid rgba(241,142,4,0.2); border-radius: 999px; padding: 0 16px; height: 40px; width: 240px; }
+        .tpl1-nav-search-wrap form { display: flex; align-items: center; background: linear-gradient(135deg, #fdf2f8, #fdf2f8); border: 1.5px solid rgba(227,150,191,0.2); border-radius: 999px; padding: 0 16px; height: 40px; width: 240px; }
         .tpl1-nav-search-wrap input { border: none; background: transparent; outline: none; font-size: 14px; width: 100%; color: #333; font-family: 'DM Sans', system-ui, sans-serif; }
         .tpl1-nav-search-wrap input::placeholder { color: #c084a0; }
         .tpl1-nav-mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 998; }
@@ -274,59 +274,59 @@ export default function Navbar1() {
         .tpl1-nav-mobile-menu { display: none; position: fixed; top: 76px; right: 0; bottom: 0; width: 300px; background: #fff; z-index: 999; padding: 24px; flex-direction: column; gap: 4px; box-shadow: -8px 0 30px rgba(0,0,0,0.08); transform: translateX(100%); transition: transform 0.3s ease; }
         .tpl1-nav-mobile-menu.open { display: flex; transform: translateX(0); }
         .tpl1-nav-mobile-menu a { font-family: 'DM Sans', system-ui, sans-serif; font-size: 16px; font-weight: 600; color: #444; text-decoration: none; padding: 14px 18px; border-radius: 12px; transition: all 0.2s ease; display: flex; align-items: center; gap: 10px; }
-        .tpl1-nav-mobile-menu a:hover { background: linear-gradient(135deg, rgba(241,142,4,0.08), rgba(249,168,212,0.12)); color: ${ORANGE_PRIMARY}; }
+        .tpl1-nav-mobile-menu a:hover { background: linear-gradient(135deg, rgba(227,150,191,0.08), rgba(249,168,212,0.12)); color: ${ORANGE_PRIMARY}; }
         .tpl1-nav-divider { height: 1px; background: #f3f4f6; margin: 8px 0; }
 
         /* Badge para cart/notif */
-        .tpl1-nav-badge { position: absolute; top: 2px; right: 2px; background: linear-gradient(135deg, #f18e04, #f29718); color: #fff; font-size: 9px; font-weight: 800; border-radius: 999px; min-width: 16px; height: 16px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(241,142,4,0.4); }
+        .tpl1-nav-badge { position: absolute; top: 2px; right: 2px; background: linear-gradient(135deg, #e396bf, #f5a8cf); color: #fff; font-size: 9px; font-weight: 800; border-radius: 999px; min-width: 16px; height: 16px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(227,150,191,0.4); }
         .tpl1-nav-notif-link { display: flex; align-items: center; text-decoration: none; background: none; border: none; padding: 0; cursor: pointer; font: inherit; }
         .tpl1-bottom-nav-item { cursor: pointer; }
 
         /* Dirección pill */
-        .tpl1-nav-addr { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: linear-gradient(135deg, #fff8ed, #fff7ed); border: 1px solid rgba(241,142,4,0.15); border-radius: 999px; font-size: 12px; font-weight: 600; color: #555; text-decoration: none; max-width: 180px; transition: all 0.2s ease; }
-        .tpl1-nav-addr:hover { background: linear-gradient(135deg, #ffedd5, #fed7aa); border-color: rgba(241,142,4,0.3); transform: translateY(-1px); }
+        .tpl1-nav-addr { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: linear-gradient(135deg, #fdf2f8, #fdf2f8); border: 1px solid rgba(227,150,191,0.15); border-radius: 999px; font-size: 12px; font-weight: 600; color: #555; text-decoration: none; max-width: 180px; transition: all 0.2s ease; }
+        .tpl1-nav-addr:hover { background: linear-gradient(135deg, #fce7f3, #fbcfe8); border-color: rgba(227,150,191,0.3); transform: translateY(-1px); }
         .tpl1-nav-addr span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         /* Avatar */
-        .tpl1-nav-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, ${ORANGE_PRIMARY}, ${PINK_LIGHT}); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 700; overflow: hidden; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 2px 8px rgba(241,142,4,0.3); }
+        .tpl1-nav-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, ${ORANGE_PRIMARY}, ${PINK_LIGHT}); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 700; overflow: hidden; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 2px 8px rgba(227,150,191,0.3); }
         .tpl1-nav-avatar.lg { width: 40px; height: 40px; font-size: 16px; }
         .tpl1-nav-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
         /* Account button */
         .tpl1-nav-account { position: relative; }
         .tpl1-nav-account-btn { display: flex; align-items: center; gap: 8px; padding: 2px 14px 2px 2px; border: none; background: transparent; cursor: pointer; border-radius: 999px; transition: all 0.2s ease; }
-        .tpl1-nav-account-btn:hover { background: linear-gradient(135deg, rgba(241,142,4,0.08), rgba(249,168,212,0.12)); }
+        .tpl1-nav-account-btn:hover { background: linear-gradient(135deg, rgba(227,150,191,0.08), rgba(249,168,212,0.12)); }
         .tpl1-nav-account-name { font-size: 13px; font-weight: 600; color: #444; font-family: 'DM Sans', system-ui, sans-serif; }
 
         /* Dropdown */
-        .tpl1-nav-dropdown { position: absolute; top: calc(100% + 12px); right: 0; min-width: 260px; background: #fff; border-radius: 16px; box-shadow: 0 12px 40px rgba(241,142,4,0.15), 0 4px 12px rgba(0,0,0,0.06); padding: 8px; z-index: 1001; border: 1px solid #ffedd5; animation: dropdownIn 0.2s ease; }
+        .tpl1-nav-dropdown { position: absolute; top: calc(100% + 12px); right: 0; min-width: 260px; background: #fff; border-radius: 16px; box-shadow: 0 12px 40px rgba(227,150,191,0.15), 0 4px 12px rgba(0,0,0,0.06); padding: 8px; z-index: 1001; border: 1px solid #fce7f3; animation: dropdownIn 0.2s ease; }
         @keyframes dropdownIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes cartDrawerIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
         .tpl1-nav-dropdown-header { display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid #f3f4f6; margin-bottom: 6px; }
         .tpl1-nav-dropdown-name { margin: 0; font-size: 14px; font-weight: 700; color: #222; }
         .tpl1-nav-dropdown-email { margin: 2px 0 0; font-size: 12px; color: #888; }
         .tpl1-nav-dropdown a, .tpl1-nav-dropdown button { display: flex; align-items: center; gap: 10px; padding: 10px 14px; font-size: 13px; font-weight: 500; color: #444; text-decoration: none; border-radius: 10px; transition: all 0.15s ease; border: none; background: transparent; cursor: pointer; width: 100%; text-align: left; font-family: 'DM Sans', system-ui, sans-serif; }
-        .tpl1-nav-dropdown a:hover, .tpl1-nav-dropdown button:hover { background: linear-gradient(135deg, rgba(241,142,4,0.06), rgba(249,168,212,0.1)); color: ${ORANGE_PRIMARY}; }
+        .tpl1-nav-dropdown a:hover, .tpl1-nav-dropdown button:hover { background: linear-gradient(135deg, rgba(227,150,191,0.06), rgba(249,168,212,0.1)); color: ${ORANGE_PRIMARY}; }
         .tpl1-nav-logout { color: #dc2626 !important; }
         .tpl1-nav-logout:hover { background: rgba(220,38,38,0.06) !important; color: #dc2626 !important; }
 
         /* Auth popup */
-        .tpl1-auth-popup { position: absolute; top: calc(100% + 14px); right: 0; width: 300px; background: #fff; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(241,142,4,0.1); border: 1px solid #ffedd5; padding: 28px 22px 22px; z-index: 1002; animation: dropdownIn 0.22s ease; text-align: center; }
-        .tpl1-auth-popup-icon { width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 50%; background: linear-gradient(135deg, #fff8ed, #ffedd5); display: flex; align-items: center; justify-content: center; color: ${ORANGE_PRIMARY}; box-shadow: 0 4px 14px rgba(241,142,4,0.15); }
+        .tpl1-auth-popup { position: absolute; top: calc(100% + 14px); right: 0; width: 300px; background: #fff; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(227,150,191,0.1); border: 1px solid #fce7f3; padding: 28px 22px 22px; z-index: 1002; animation: dropdownIn 0.22s ease; text-align: center; }
+        .tpl1-auth-popup-icon { width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 50%; background: linear-gradient(135deg, #fdf2f8, #fce7f3); display: flex; align-items: center; justify-content: center; color: ${ORANGE_PRIMARY}; box-shadow: 0 4px 14px rgba(227,150,191,0.15); }
         .tpl1-auth-popup-title { font-size: 17px; font-weight: 800; color: #111; font-family: 'DM Sans', system-ui, sans-serif; margin: 0 0 8px; padding-right: 0; line-height: 1.25; letter-spacing: -0.02em; }
         .tpl1-auth-popup-sub { font-size: 13px; font-weight: 500; color: #6b7280; font-family: 'DM Sans', system-ui, sans-serif; margin: 0 0 18px; line-height: 1.45; }
         .tpl1-auth-popup-close { position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; border-radius: 50%; border: none; background: #f9fafb; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: #666; }
-        .tpl1-auth-popup-close:hover { background: #ffedd5; color: ${ORANGE_PRIMARY}; }
-        .tpl1-auth-primary-btn { display: block; width: 100%; padding: 14px; background: linear-gradient(135deg, ${ORANGE_PRIMARY}, #ea580c); color: #fff; border: none; border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; font-family: 'DM Sans', system-ui, sans-serif; box-shadow: 0 4px 16px rgba(241,142,4,0.3); transition: all 0.2s; margin-bottom: 10px; }
-        .tpl1-auth-primary-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(241,142,4,0.4); }
-        .tpl1-auth-secondary-btn { display: block; width: 100%; padding: 13px; background: #fff; color: ${ORANGE_PRIMARY}; border: 2px solid #ffedd5; border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; font-family: 'DM Sans', system-ui, sans-serif; transition: all 0.2s; }
-        .tpl1-auth-secondary-btn:hover { border-color: ${ORANGE_PRIMARY}; background: rgba(241,142,4,0.04); }
+        .tpl1-auth-popup-close:hover { background: #fce7f3; color: ${ORANGE_PRIMARY}; }
+        .tpl1-auth-primary-btn { display: block; width: 100%; padding: 14px; background: linear-gradient(135deg, ${ORANGE_PRIMARY}, #c0547a); color: #fff; border: none; border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; font-family: 'DM Sans', system-ui, sans-serif; box-shadow: 0 4px 16px rgba(227,150,191,0.3); transition: all 0.2s; margin-bottom: 10px; }
+        .tpl1-auth-primary-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(227,150,191,0.4); }
+        .tpl1-auth-secondary-btn { display: block; width: 100%; padding: 13px; background: #fff; color: ${ORANGE_PRIMARY}; border: 2px solid #fce7f3; border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; font-family: 'DM Sans', system-ui, sans-serif; transition: all 0.2s; }
+        .tpl1-auth-secondary-btn:hover { border-color: ${ORANGE_PRIMARY}; background: rgba(227,150,191,0.04); }
         /* Nav avatar circle on button */
         .tpl1-nav-user-avatar { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; margin-top: 0; }
         .tpl1-nav-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
         /* Mobile user header */
-        .tpl1-nav-mobile-user { display: flex; align-items: center; gap: 12px; padding: 16px; background: linear-gradient(135deg, #fff8ed, #fff7ed); border-radius: 14px; margin-bottom: 8px; }
+        .tpl1-nav-mobile-user { display: flex; align-items: center; gap: 12px; padding: 16px; background: linear-gradient(135deg, #fdf2f8, #fdf2f8); border-radius: 14px; margin-bottom: 8px; }
 
         /* Bottom mobile nav */
         @keyframes tpl1-nav-pop { 0% { transform: scale(0.92); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
@@ -395,11 +395,11 @@ export default function Navbar1() {
         }
         .tpl1-bottom-nav-item .tpl1-bottom-badge {
           position: absolute; top: 2px; right: 4px;
-          background: linear-gradient(135deg, ${ORANGE_PRIMARY}, #ea580c);
+          background: linear-gradient(135deg, ${ORANGE_PRIMARY}, #c0547a);
           color: #fff; font-size: 8px; font-weight: 800; border-radius: 999px;
           min-width: 16px; height: 16px; padding: 0 4px;
           display: flex; align-items: center; justify-content: center; border: 2px solid #fff;
-          box-shadow: 0 2px 6px rgba(241,142,4,0.4);
+          box-shadow: 0 2px 6px rgba(227,150,191,0.4);
         }
 
         /* FAB central */
@@ -471,21 +471,21 @@ export default function Navbar1() {
         /* Mobile search overlay */
         .tpl1-search-overlay { display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); flex-direction: column; padding: 0; animation: tpl1SearchSlideIn 0.25s ease-out; }
         .tpl1-search-overlay.open { display: flex; }
-        .tpl1-search-overlay-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #ffedd5; }
+        .tpl1-search-overlay-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #fce7f3; }
         .tpl1-search-overlay-back { width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #666; flex-shrink: 0; }
-        .tpl1-search-overlay-form { flex: 1; display: flex; align-items: center; background: linear-gradient(135deg, #fff8ed, #fff7ed); border: 1.5px solid rgba(241,142,4,0.25); border-radius: 999px; padding: 0 14px; height: 40px; }
+        .tpl1-search-overlay-form { flex: 1; display: flex; align-items: center; background: linear-gradient(135deg, #fdf2f8, #fdf2f8); border: 1.5px solid rgba(227,150,191,0.25); border-radius: 999px; padding: 0 14px; height: 40px; }
         .tpl1-search-overlay-form input { border: none; background: transparent; outline: none; font-size: 15px; width: 100%; color: #333; font-family: 'DM Sans', system-ui, sans-serif; }
-        .tpl1-search-overlay-form input::placeholder { color: #f29718; }
+        .tpl1-search-overlay-form input::placeholder { color: #f5a8cf; }
         .tpl1-search-overlay-suggestions { padding: 16px; display: flex; flex-direction: column; gap: 6px; }
         .tpl1-search-overlay-suggestions p { font-size: 12px; font-weight: 600; color: #999; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .tpl1-search-overlay-tag { display: inline-block; padding: 8px 16px; background: #fff8ed; border: 1px solid rgba(241,142,4,0.15); border-radius: 999px; font-size: 13px; color: #f18e04; cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', system-ui, sans-serif; }
-        .tpl1-search-overlay-tag:hover { background: rgba(241,142,4,0.1); }
+        .tpl1-search-overlay-tag { display: inline-block; padding: 8px 16px; background: #fdf2f8; border: 1px solid rgba(227,150,191,0.15); border-radius: 999px; font-size: 13px; color: #e396bf; cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', system-ui, sans-serif; }
+        .tpl1-search-overlay-tag:hover { background: rgba(227,150,191,0.1); }
         .tpl1-search-overlay-results { padding: 0 16px; flex: 1; overflow-y: auto; }
         .tpl1-search-overlay-result { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f5f5f5; text-decoration: none; color: #333; }
         .tpl1-search-overlay-result img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: #f9f9f9; }
         .tpl1-search-overlay-result-info { flex: 1; }
         .tpl1-search-overlay-result-name { font-size: 14px; font-weight: 500; color: #333; }
-        .tpl1-search-overlay-result-price { font-size: 13px; color: #f18e04; font-weight: 600; }
+        .tpl1-search-overlay-result-price { font-size: 13px; color: #e396bf; font-weight: 600; }
         .tpl1-search-overlay-empty { text-align: center; padding: 40px 16px; color: #999; font-size: 14px; }
         @keyframes tpl1SearchSlideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         /* Mobile fabs (WhatsApp + ChatBot) in navbar */
@@ -542,7 +542,7 @@ export default function Navbar1() {
           .tpl1-nav-mobile-fabs { display: flex !important; }
           .tpl1-nav-hamburger { display: none !important; }
           .tpl1-nav-inner { padding: 0 10px !important; height: 48px !important; min-height: 48px !important; gap: 0 !important; justify-content: space-between !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; position: relative !important; }
-          .tpl1-nav-mobile-center { position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; display: flex !important; align-items: center !important; gap: 4px !important; font-size: 10px !important; color: #c2410c !important; white-space: nowrap !important; max-width: 140px !important; overflow: hidden !important; text-overflow: ellipsis !important; background: linear-gradient(135deg, #fff8ed, #fff7ed) !important; border: 1px solid rgba(241,142,4,0.25) !important; border-radius: 999px !important; padding: 4px 10px !important; font-weight: 500 !important; font-family: 'DM Sans', system-ui, sans-serif !important; pointer-events: none !important; animation: tpl1AddrIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both !important; z-index: 10 !important; }
+          .tpl1-nav-mobile-center { position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; display: flex !important; align-items: center !important; gap: 4px !important; font-size: 10px !important; color: #be185d !important; white-space: nowrap !important; max-width: 140px !important; overflow: hidden !important; text-overflow: ellipsis !important; background: linear-gradient(135deg, #fdf2f8, #fdf2f8) !important; border: 1px solid rgba(227,150,191,0.25) !important; border-radius: 999px !important; padding: 4px 10px !important; font-weight: 500 !important; font-family: 'DM Sans', system-ui, sans-serif !important; pointer-events: none !important; animation: tpl1AddrIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both !important; z-index: 10 !important; }
           @keyframes tpl1AddrIn { from { opacity: 0; transform: translate(-50%, calc(-50% - 6px)); } to { opacity: 1; transform: translate(-50%, -50%); } }
           .tpl1-nav-mobile-center svg { flex-shrink: 0 !important; }
           .tpl1-nav-logo img { height: 22px !important; max-width: 58px !important; }
@@ -582,10 +582,10 @@ export default function Navbar1() {
           .tpl1-nav-btn:hover { background: transparent !important; color: #666 !important; transform: none !important; box-shadow: none !important; }
           .tpl1-nav-mobile-menu a:hover { background: transparent !important; color: #444 !important; }
           .tpl1-auth-popup-close:hover { background: #f3f4f6 !important; color: #666 !important; }
-          .tpl1-auth-primary-btn:hover { transform: none !important; box-shadow: 0 4px 16px rgba(241,142,4,0.3) !important; }
+          .tpl1-auth-primary-btn:hover { transform: none !important; box-shadow: 0 4px 16px rgba(227,150,191,0.3) !important; }
           .tpl1-nav-dropdown a:hover, .tpl1-nav-dropdown button:hover { background: transparent !important; color: #444 !important; transform: none !important; }
-          .tpl1-auth-secondary-btn:hover { border-color: #ffedd5 !important; background: #fff !important; transform: none !important; }
-          .tpl1-nav-addr:hover { background: transparent !important; border-color: rgba(241,142,4,0.15) !important; transform: none !important; }
+          .tpl1-auth-secondary-btn:hover { border-color: #fce7f3 !important; background: #fff !important; transform: none !important; }
+          .tpl1-nav-addr:hover { background: transparent !important; border-color: rgba(227,150,191,0.15) !important; transform: none !important; }
         }
       `}</style>
 
@@ -593,7 +593,7 @@ export default function Navbar1() {
 
       {/* Top navbar: on mobile only show on homepage */}
       {!(isMobile && !isHome) && (
-      <nav className={`tpl1-nav ${scrolled ? 'scrolled' : ''}`} style={{ background: scrolled ? 'rgba(255,255,255,0.95)' : '#fff', borderBottom: `1px solid ${scrolled ? '#ffedd5' : '#f5f5f5'}` }}>
+      <nav className={`tpl1-nav ${scrolled ? 'scrolled' : ''}`} style={{ background: scrolled ? 'rgba(255,255,255,0.95)' : '#fff', borderBottom: `1px solid ${scrolled ? '#fce7f3' : '#f5f5f5'}` }}>
         <div className="tpl1-nav-inner">
           {/* Mobile center: address â€” solo visible con navbar expandida (scroll) */}
           {isMobile && scrolled && (
@@ -764,11 +764,11 @@ export default function Navbar1() {
           <div style={{ position: 'relative', width: 420, maxWidth: '92vw', background: '#fff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-12px 0 48px rgba(0,0,0,0.15)', animation: 'cartDrawerIn 0.3s cubic-bezier(0.4,0,0.2,1)' }}>
 
             {/* Header */}
-            <div style={{ padding: '18px 24px', borderBottom: '1px solid #ffedd5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, #fff8ed, #fff)', flexShrink: 0 }}>
+            <div style={{ padding: '18px 24px', borderBottom: '1px solid #fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, #fdf2f8, #fff)', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <ShoppingCart size={20} color={ORANGE_PRIMARY} />
                 <span style={{ fontSize: 18, fontWeight: 700, color: '#222', fontFamily: 'DM Sans, system-ui, sans-serif' }}>Mi carrito</span>
-                {totalItems > 0 && <span style={{ background: `linear-gradient(135deg, ${ORANGE_PRIMARY}, #ea580c)`, color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 800, padding: '2px 8px', minWidth: 20, textAlign: 'center' }}>{totalItems}</span>}
+                {totalItems > 0 && <span style={{ background: `linear-gradient(135deg, ${ORANGE_PRIMARY}, #c0547a)`, color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 800, padding: '2px 8px', minWidth: 20, textAlign: 'center' }}>{totalItems}</span>}
               </div>
               <button onClick={() => setCartOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', padding: 6, borderRadius: 8, display: 'flex', alignItems: 'center' }}>
                 <X size={20} />
@@ -778,9 +778,9 @@ export default function Navbar1() {
             {/* Items list */}
             {items.length === 0 ? (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32, color: '#aaa' }}>
-                <ShoppingCart size={56} strokeWidth={1} color="#f29718" />
+                <ShoppingCart size={56} strokeWidth={1} color="#f5a8cf" />
                 <p style={{ margin: 0, fontSize: 15, color: '#888', fontFamily: 'DM Sans, system-ui, sans-serif' }}>Tu carrito está vacío</p>
-                <Link href="/productos" onClick={() => setCartOpen(false)} style={{ color: '#fff', fontSize: 13, fontWeight: 700, textDecoration: 'none', padding: '9px 20px', background: 'linear-gradient(135deg, #f18e04, #f29718)', borderRadius: 999, transition: 'all .2s', boxShadow: '0 4px 12px rgba(241,142,4,0.35)' }}>Ver productos →</Link>
+                <Link href="/productos" onClick={() => setCartOpen(false)} style={{ color: '#fff', fontSize: 13, fontWeight: 700, textDecoration: 'none', padding: '9px 20px', background: 'linear-gradient(135deg, #e396bf, #f5a8cf)', borderRadius: 999, transition: 'all .2s', boxShadow: '0 4px 12px rgba(227,150,191,0.35)' }}>Ver productos →</Link>
               </div>
             ) : (
               <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
@@ -798,14 +798,14 @@ export default function Navbar1() {
                         <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 600, color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'DM Sans, system-ui, sans-serif' }}>{item.product.NAME}</p>
                         <p style={{ margin: '0 0 10px', fontSize: 16, fontWeight: 700, color: ORANGE_PRIMARY, fontFamily: 'DM Sans, system-ui, sans-serif' }}>{formatPrice(price)}</p>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', border: `1.5px solid #ffedd5`, borderRadius: 8, overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', border: `1.5px solid #fce7f3`, borderRadius: 8, overflow: 'hidden' }}>
                             <button onClick={() => updateQuantity(item.product.$id, item.quantity - 1)} style={{ width: 30, height: 30, border: 'none', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: ORANGE_PRIMARY, transition: 'background .15s' }}
-                              onMouseEnter={e => (e.currentTarget.style.background = '#fff8ed')} onMouseLeave={e => (e.currentTarget.style.background = '#fff')}>
+                              onMouseEnter={e => (e.currentTarget.style.background = '#fdf2f8')} onMouseLeave={e => (e.currentTarget.style.background = '#fff')}>
                               <Minus size={12} />
                             </button>
-                            <span style={{ width: 32, textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#333', borderLeft: '1px solid #ffedd5', borderRight: '1px solid #ffedd5', lineHeight: '30px' }}>{item.quantity}</span>
+                            <span style={{ width: 32, textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#333', borderLeft: '1px solid #fce7f3', borderRight: '1px solid #fce7f3', lineHeight: '30px' }}>{item.quantity}</span>
                             <button onClick={() => updateQuantity(item.product.$id, item.quantity + 1)} style={{ width: 30, height: 30, border: 'none', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: ORANGE_PRIMARY, transition: 'background .15s' }}
-                              onMouseEnter={e => (e.currentTarget.style.background = '#fff8ed')} onMouseLeave={e => (e.currentTarget.style.background = '#fff')}>
+                              onMouseEnter={e => (e.currentTarget.style.background = '#fdf2f8')} onMouseLeave={e => (e.currentTarget.style.background = '#fff')}>
                               <Plus size={12} />
                             </button>
                           </div>
@@ -823,14 +823,14 @@ export default function Navbar1() {
 
             {/* Footer */}
             {items.length > 0 && (
-              <div style={{ padding: '16px 24px 24px', borderTop: '1px solid #ffedd5', background: 'linear-gradient(135deg, #fff8ed, #fff)', flexShrink: 0 }}>
+              <div style={{ padding: '16px 24px 24px', borderTop: '1px solid #fce7f3', background: 'linear-gradient(135deg, #fdf2f8, #fff)', flexShrink: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
                   <span style={{ fontSize: 14, color: '#666', fontFamily: 'DM Sans, system-ui, sans-serif' }}>Subtotal</span>
                   <span style={{ fontSize: 22, fontWeight: 800, color: '#222', fontFamily: 'DM Sans, system-ui, sans-serif', letterSpacing: -0.5 }}>{formatPrice(subtotal)}</span>
                 </div>
-                <Link href="/checkout" onClick={() => setCartOpen(false)} style={{ display: 'block', textAlign: 'center', background: `linear-gradient(135deg, ${ORANGE_PRIMARY}, #ea580c)`, color: '#fff', padding: '14px', borderRadius: 12, fontWeight: 700, fontSize: 15, textDecoration: 'none', boxShadow: '0 6px 20px rgba(241,142,4,0.3)', marginBottom: 10, fontFamily: 'DM Sans, system-ui, sans-serif', transition: 'all .25s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 28px rgba(241,142,4,0.4)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(241,142,4,0.3)'; }}>
+                <Link href="/checkout" onClick={() => setCartOpen(false)} style={{ display: 'block', textAlign: 'center', background: `linear-gradient(135deg, ${ORANGE_PRIMARY}, #c0547a)`, color: '#fff', padding: '14px', borderRadius: 12, fontWeight: 700, fontSize: 15, textDecoration: 'none', boxShadow: '0 6px 20px rgba(227,150,191,0.3)', marginBottom: 10, fontFamily: 'DM Sans, system-ui, sans-serif', transition: 'all .25s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 28px rgba(227,150,191,0.4)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(227,150,191,0.3)'; }}>
                   Ir al checkout →
                 </Link>
                 <Link href="/carrito" onClick={() => setCartOpen(false)} style={{ display: 'block', textAlign: 'center', color: ORANGE_PRIMARY, fontSize: 13, fontWeight: 600, padding: '8px', textDecoration: 'none', fontFamily: 'DM Sans, system-ui, sans-serif' }}>

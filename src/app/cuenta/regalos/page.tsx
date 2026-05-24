@@ -15,19 +15,19 @@ import WelcomeGiftSuccess from '@/components/WelcomeGiftSuccess';
 import { useCuentaBg } from '../CuentaBgContext';
 
 const FF = '"DM Sans",system-ui,sans-serif';
-const PINK = '#f18e04';
+const PINK = '#e396bf';
 
 function fireCelebration() {
-  confetti({ particleCount: 120, spread: 80, origin: { y: 0.55 }, colors: ['#f18e04', '#f43f5e', '#fbbf24', '#fff'] });
+  confetti({ particleCount: 120, spread: 80, origin: { y: 0.55 }, colors: ['#e396bf', '#f43f5e', '#fbbf24', '#fff'] });
   setTimeout(() => {
-    confetti({ particleCount: 60, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#f18e04', '#fff'] });
+    confetti({ particleCount: 60, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#e396bf', '#fff'] });
     confetti({ particleCount: 60, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#f43f5e', '#fff'] });
   }, 200);
 }
 
 export default function RegalosPage() {
   const { user, isLoggedIn } = useAuth();
-  useCuentaBg('linear-gradient(135deg, #831843, #f18e04)');
+  useCuentaBg('linear-gradient(135deg, #831843, #e396bf)');
   const [showWelcomeReward, setShowWelcomeReward] = useState(false);
   const [claimedCode, setClaimedCode] = useState<string | null>(null);
   const [claiming, setClaiming] = useState(false);
@@ -128,7 +128,7 @@ export default function RegalosPage() {
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid #ffedd5', borderTopColor: PINK }}
+          style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid #fce7f3', borderTopColor: PINK }}
         />
       </motion.div>
     );
@@ -155,8 +155,8 @@ export default function RegalosPage() {
                 overflow: 'hidden',
                 borderRadius: 28,
                 padding: '32px 28px 28px',
-                background: 'linear-gradient(145deg, #fff7ed 0%, #ffedd5 35%, #f29718 70%, #f472b6 100%)',
-                boxShadow: '0 20px 50px rgba(241,142,4,0.28)',
+                background: 'linear-gradient(145deg, #fdf2f8 0%, #fce7f3 35%, #f5a8cf 70%, #f472b6 100%)',
+                boxShadow: '0 20px 50px rgba(227,150,191,0.28)',
                 marginBottom: 16,
               }}
             >
@@ -225,8 +225,8 @@ export default function RegalosPage() {
                 background: '#fff',
                 borderRadius: 24,
                 padding: 28,
-                border: '1px solid #ffedd5',
-                boxShadow: '0 16px 48px rgba(241,142,4,0.12)',
+                border: '1px solid #fce7f3',
+                boxShadow: '0 16px 48px rgba(227,150,191,0.12)',
                 position: 'relative',
                 overflow: 'hidden',
               }}
@@ -234,7 +234,7 @@ export default function RegalosPage() {
               <div
                 style={{
                   position: 'absolute', top: 0, right: 0, width: 180, height: 180,
-                  background: 'radial-gradient(circle, rgba(241,142,4,0.08) 0%, transparent 70%)',
+                  background: 'radial-gradient(circle, rgba(227,150,191,0.08) 0%, transparent 70%)',
                   pointerEvents: 'none',
                 }}
               />
@@ -251,12 +251,12 @@ export default function RegalosPage() {
                       style={{
                         display: 'flex', alignItems: 'stretch', gap: 0,
                         borderRadius: 20, overflow: 'hidden',
-                        border: '2px solid #ffedd5',
+                        border: '2px solid #fce7f3',
                         marginBottom: 20,
                       }}
                     >
                       <motion.div
-                        animate={{ background: ['#f29718', '#f18e04', '#f29718'] }}
+                        animate={{ background: ['#f5a8cf', '#e396bf', '#f5a8cf'] }}
                         transition={{ duration: 4, repeat: Infinity }}
                         style={{
                           width: 100, flexShrink: 0,
@@ -285,7 +285,7 @@ export default function RegalosPage() {
                               key={tag}
                               style={{
                                 padding: '4px 10px', borderRadius: 8, fontSize: 10, fontWeight: 700,
-                                background: '#fff7ed', color: '#c2410c', border: '1px solid #ffedd5',
+                                background: '#fdf2f8', color: '#be185d', border: '1px solid #fce7f3',
                               }}
                             >
                               {tag}
@@ -302,11 +302,11 @@ export default function RegalosPage() {
                       disabled={claiming}
                       style={{
                         width: '100%', padding: 18,
-                        background: claiming ? '#9ca3af' : 'linear-gradient(135deg, #f29718, #f18e04)',
+                        background: claiming ? '#9ca3af' : 'linear-gradient(135deg, #f5a8cf, #e396bf)',
                         color: '#fff', border: 'none', borderRadius: 18,
                         fontSize: 14, fontWeight: 900, cursor: claiming ? 'wait' : 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                        boxShadow: '0 12px 32px rgba(241,142,4,0.4)',
+                        boxShadow: '0 12px 32px rgba(227,150,191,0.4)',
                         textTransform: 'uppercase', letterSpacing: '0.06em',
                       }}
                     >

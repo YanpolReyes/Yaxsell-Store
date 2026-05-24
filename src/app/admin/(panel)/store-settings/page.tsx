@@ -212,7 +212,7 @@ export default function StoreSettingsPage() {
         boxShadow: '0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden',
       }}>
         <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid #f5f5f5', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 8, background: '#ffedd5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ea580c' }}>
+          <div style={{ width: 30, height: 30, borderRadius: 8, background: '#fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c0547a' }}>
             <Eye size={16} />
           </div>
           <div>

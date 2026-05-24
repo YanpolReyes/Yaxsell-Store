@@ -15,7 +15,7 @@ import {
 } from '@/services/notificationService';
 import { Query } from 'appwrite';
 
-const PINK = '#f18e04';
+const PINK = '#e396bf';
 const NOTIF_COLLECTION = 'notifications';
 
 const TYPE_STYLE: Record<string, { icon: typeof Info; bg: string; color: string }> = {
@@ -25,7 +25,7 @@ const TYPE_STYLE: Record<string, { icon: typeof Info; bg: string; color: string 
   error:   { icon: AlertTriangle, bg: '#ffebee', color: '#c62828' },
   promo:   { icon: Tag,           bg: '#f3e5f5', color: '#7b1fa2' },
   order:   { icon: ShoppingBag,   bg: '#e8f5e9', color: '#1b5e20' },
-  gift:    { icon: Gift,          bg: '#fff8ed', color: '#f18e04' },
+  gift:    { icon: Gift,          bg: '#fdf2f8', color: '#e396bf' },
   product: { icon: Package,       bg: '#e3f2fd', color: '#1565c0' },
   stock:   { icon: Package,       bg: '#e8f5e9', color: '#2e7d32' },
 };
@@ -121,7 +121,7 @@ export default function NotificationsOverlay({ onClose }: Props) {
         <div style={{ ...panelStyle, padding: 32, textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
           <Bell size={40} color={PINK} style={{ marginBottom: 12 }} />
           <p style={{ margin: '0 0 16px', color: '#6b7280' }}>Iniciá sesión para ver tus notificaciones</p>
-          <button type="button" onClick={() => { onClose(); router.push('/login'); }} style={{ padding: '10px 24px', background: `linear-gradient(135deg,${PINK},#ea580c)`, color: '#fff', border: 'none', borderRadius: 999, fontWeight: 700, cursor: 'pointer' }}>
+          <button type="button" onClick={() => { onClose(); router.push('/login'); }} style={{ padding: '10px 24px', background: `linear-gradient(135deg,${PINK},#c0547a)`, color: '#fff', border: 'none', borderRadius: 999, fontWeight: 700, cursor: 'pointer' }}>
             Iniciar sesión
           </button>
         </div>
@@ -136,7 +136,7 @@ export default function NotificationsOverlay({ onClose }: Props) {
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} onClick={onClose}>
       <div style={panelStyle} onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 16px', borderBottom: '1px solid #ffedd5', background: 'linear-gradient(135deg, #fff8ed, #fff7ed)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 16px', borderBottom: '1px solid #fce7f3', background: 'linear-gradient(135deg, #fdf2f8, #fdf2f8)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Bell size={22} color={PINK} fill={PINK} />
             <span style={{ fontSize: 17, fontWeight: 800, color: '#1a1a1a' }}>Notificaciones</span>
@@ -144,7 +144,7 @@ export default function NotificationsOverlay({ onClose }: Props) {
               <span style={{ fontSize: 12, fontWeight: 700, color: '#fff', background: PINK, borderRadius: 999, padding: '2px 8px' }}>{unread}</span>
             )}
           </div>
-          <button type="button" onClick={onClose} aria-label="Cerrar" style={{ width: 36, height: 36, borderRadius: '50%', border: '1.5px solid #ffedd5', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <button type="button" onClick={onClose} aria-label="Cerrar" style={{ width: 36, height: 36, borderRadius: '50%', border: '1.5px solid #fce7f3', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <X size={18} color="#6b7280" />
           </button>
         </div>
@@ -175,7 +175,7 @@ export default function NotificationsOverlay({ onClose }: Props) {
                     onClick={() => handleOpen(n)}
                     style={{
                       display: 'flex', gap: 12, padding: 14, borderRadius: 14, border: '1px solid #f0f0f0',
-                      background: read ? '#fff' : 'linear-gradient(135deg,#fff8ed,#fff)',
+                      background: read ? '#fff' : 'linear-gradient(135deg,#fdf2f8,#fff)',
                       borderLeft: read ? '1px solid #f0f0f0' : `3px solid ${PINK}`,
                       cursor: 'pointer', textAlign: 'left', width: '100%',
                     }}

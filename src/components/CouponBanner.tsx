@@ -32,7 +32,7 @@ export default function CouponBanner({ settings: s }: Props) {
 
   // Section settings with defaults
   const layout = s?.couponLayout || 'classic';
-  const bg = s?.bgColor || 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #f18e04 100%)';
+  const bg = s?.bgColor || 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #e396bf 100%)';
   const tx = s?.textColor || '#ffffff';
   const ac = s?.accentColor || '#fbbf24';
   const r = s?.borderRadius ?? 16;

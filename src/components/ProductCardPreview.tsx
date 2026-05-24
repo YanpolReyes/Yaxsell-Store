@@ -94,7 +94,7 @@ export default function ProductCardPreview({ product, onClose }: Props) {
           style={{
             position: 'absolute', top: 12, right: 12, zIndex: 2,
             width: 36, height: 36, borderRadius: '50%', border: 'none',
-            background: 'rgba(255,255,255,0.95)', color: '#f18e04', cursor: 'pointer',
+            background: 'rgba(255,255,255,0.95)', color: '#e396bf', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
             transform: isOpen ? 'scale(1) rotate(0deg)' : 'scale(0.8) rotate(-90deg)',
@@ -107,7 +107,7 @@ export default function ProductCardPreview({ product, onClose }: Props) {
         <div
           style={{
             position: 'relative', width: '100%', aspectRatio: '1',
-            background: 'linear-gradient(135deg,#fff8ed,#fff)',
+            background: 'linear-gradient(135deg,#fdf2f8,#fff)',
             transform: isOpen ? 'scale(1)' : 'scale(1.04)',
             opacity: isOpen ? 1 : 0.85,
             transition: 'transform 0.38s cubic-bezier(0.16,1,0.3,1), opacity 0.32s ease',
@@ -129,7 +129,7 @@ export default function ProductCardPreview({ product, onClose }: Props) {
         >
           <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: '#111827', lineHeight: 1.35 }}>{product.NAME}</p>
           <div style={{ margin: '0 0 14px', display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-            <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#f18e04' }}>{formatPrice(price)}</p>
+            <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#e396bf' }}>{formatPrice(price)}</p>
             {pricing.hasDiscount && pricing.originalPrice != null && (
               <p style={{ margin: 0, fontSize: 14, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</p>
             )}
@@ -140,10 +140,10 @@ export default function ProductCardPreview({ product, onClose }: Props) {
             disabled={outOfStock}
             style={{
               width: '100%', padding: 14, border: 'none', borderRadius: 14, marginBottom: 10,
-              background: outOfStock ? '#f3f4f6' : 'linear-gradient(135deg,#f18e04,#f29718)',
+              background: outOfStock ? '#f3f4f6' : 'linear-gradient(135deg,#e396bf,#f5a8cf)',
               color: outOfStock ? '#9ca3af' : '#fff', fontSize: 15, fontWeight: 800, cursor: outOfStock ? 'not-allowed' : 'pointer',
               fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: outOfStock ? 'none' : '0 6px 20px rgba(241,142,4,0.35)',
+              boxShadow: outOfStock ? 'none' : '0 6px 20px rgba(227,150,191,0.35)',
             }}
           >
             <ShoppingCart size={18} /> {outOfStock ? 'Sin stock' : 'Comprar ahora'}
@@ -153,7 +153,7 @@ export default function ProductCardPreview({ product, onClose }: Props) {
             onClick={close}
             style={{
               display: 'block', width: '100%', padding: 13, borderRadius: 14, textAlign: 'center',
-              border: '1.5px solid #ffedd5', background: '#fff', color: '#f18e04',
+              border: '1.5px solid #fce7f3', background: '#fff', color: '#e396bf',
               fontSize: 14, fontWeight: 700, textDecoration: 'none', fontFamily: 'inherit',
             }}
           >

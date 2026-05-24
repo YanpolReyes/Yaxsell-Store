@@ -8,7 +8,7 @@ import { formatPrice } from '@/lib/appwrite';
 import { useCartItemPrice } from '@/hooks/useCartItemPrice';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 
-const PINK = '#f18e04';
+const PINK = '#e396bf';
 
 type Props = {
   item: CartItem;
@@ -47,7 +47,7 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
             <span style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', background: '#f0fdf4', padding: '2px 6px', borderRadius: 6 }}>{pricing.discountPercent}% OFF</span>
           )}
           {pricing.fromApertura && (
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#c2410c', background: '#fff8ed', padding: '2px 6px', borderRadius: 6 }}>Promo</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#be185d', background: '#fdf2f8', padding: '2px 6px', borderRadius: 6 }}>Promo</span>
           )}
         </div>
 

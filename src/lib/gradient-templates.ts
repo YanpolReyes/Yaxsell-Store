@@ -119,15 +119,15 @@ export const gradientTemplates: GradientTemplate[] = [
   {
     id: 'rose-pastel',
     label: 'Rosa Pastel',
-    gradient: 'linear-gradient(90deg, #ffedd5, #fed7aa, #f29718, #f472b6, #f29718, #fed7aa)',
-    preview: ['#ffedd5', '#f29718', '#f472b6'],
+    gradient: 'linear-gradient(90deg, #fce7f3, #fbcfe8, #f5a8cf, #f472b6, #f5a8cf, #fbcfe8)',
+    preview: ['#fce7f3', '#f5a8cf', '#f472b6'],
     category: 'subtle',
   },
   {
     id: 'rose-gold',
     label: 'Rosa Dorado',
-    gradient: 'linear-gradient(90deg, #fed7aa, #f29718, #fbbf24, #f59e0b, #fbbf24, #f29718)',
-    preview: ['#fed7aa', '#fbbf24', '#f59e0b'],
+    gradient: 'linear-gradient(90deg, #fbcfe8, #f5a8cf, #fbbf24, #f59e0b, #fbbf24, #f5a8cf)',
+    preview: ['#fbcfe8', '#fbbf24', '#f59e0b'],
     category: 'classic',
   },
   {
@@ -140,16 +140,16 @@ export const gradientTemplates: GradientTemplate[] = [
   {
     id: 'sunset-blush',
     label: 'Atardecer',
-    gradient: 'linear-gradient(90deg, #ffedd5, #f29718, #fb923c, #f97316, #fb923c, #f29718)',
-    preview: ['#ffedd5', '#fb923c', '#f97316'],
+    gradient: 'linear-gradient(90deg, #fce7f3, #f5a8cf, #fb923c, #f97316, #fb923c, #f5a8cf)',
+    preview: ['#fce7f3', '#fb923c', '#f97316'],
     category: 'classic',
   },
   // ── NUEVOS: Neón / Vibrante ──
   {
     id: 'neon-pink',
     label: 'Neón Rosa',
-    gradient: 'linear-gradient(90deg, #f18e04, #f472b6, #fb7185, #f472b6, #f18e04)',
-    preview: ['#f18e04', '#f472b6', '#fb7185'],
+    gradient: 'linear-gradient(90deg, #e396bf, #f472b6, #fb7185, #f472b6, #e396bf)',
+    preview: ['#e396bf', '#f472b6', '#fb7185'],
     category: 'high-impact',
   },
   {
@@ -169,8 +169,8 @@ export const gradientTemplates: GradientTemplate[] = [
   {
     id: 'tropical',
     label: 'Tropical',
-    gradient: 'linear-gradient(90deg, #f18e04, #f97316, #fde047, #4ade80, #22d3ee, #a78bfa)',
-    preview: ['#f18e04', '#fde047', '#22d3ee'],
+    gradient: 'linear-gradient(90deg, #e396bf, #f97316, #fde047, #4ade80, #22d3ee, #a78bfa)',
+    preview: ['#e396bf', '#fde047', '#22d3ee'],
     category: 'classic',
   },
   // ── NUEVOS: Elegante / Premium ──
@@ -207,8 +207,8 @@ export const gradientTemplates: GradientTemplate[] = [
   {
     id: 'white-to-rose',
     label: 'Blanco a Rosa',
-    gradient: 'linear-gradient(90deg, #ffffff, #ffedd5, #fed7aa, #f29718, #f472b6)',
-    preview: ['#ffffff', '#fed7aa', '#f472b6'],
+    gradient: 'linear-gradient(90deg, #ffffff, #fce7f3, #fbcfe8, #f5a8cf, #f472b6)',
+    preview: ['#ffffff', '#fbcfe8', '#f472b6'],
     category: 'subtle',
     needsShadowFallback: true,
   },

@@ -62,7 +62,7 @@ export default function CartDrawer({ open, onClose }: Props) {
           <div style={{ flexShrink: 0, borderTop: '1px solid #f0f0f0', padding: '16px 20px', background: '#fff', position: 'sticky', bottom: 0, zIndex: 2 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ fontSize: 14, color: '#666' }}>Subtotal</span>
-              <span style={{ fontSize: 18, fontWeight: 700, color: '#f18e04' }}>{formatPrice(subtotal)}</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: '#e396bf' }}>{formatPrice(subtotal)}</span>
             </div>
             <Link href="/carrito" onClick={onClose}
               style={{ display: 'block', width: '100%', padding: '12px 0', background: '#fff', color: '#3483fa', border: '1.5px solid #3483fa', borderRadius: 6, fontSize: 14, fontWeight: 600, textAlign: 'center', textDecoration: 'none', marginBottom: 8 }}>
@@ -106,7 +106,7 @@ function CartDrawerRow({
         {pricing.hasDiscount && pricing.originalPrice != null && (
           <p style={{ margin: '0 0 2px', fontSize: 11, color: '#999', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</p>
         )}
-        <p style={{ margin: '0 0 6px', fontSize: 15, fontWeight: 700, color: pricing.fromApertura ? '#f18e04' : '#333' }}>{formatPrice(unitPrice)}</p>
+        <p style={{ margin: '0 0 6px', fontSize: 15, fontWeight: 700, color: pricing.fromApertura ? '#e396bf' : '#333' }}>{formatPrice(unitPrice)}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: 4 }}>
             <button type="button" onClick={() => updateQuantity(item.product.$id, Math.max(1, item.quantity - 1))}

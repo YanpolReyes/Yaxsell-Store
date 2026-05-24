@@ -24,10 +24,10 @@ import AperturaPromoBanner from '@/components/AperturaPromoBanner';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 
 // Paleta Yaxsell — púrpura
-const ORANGE_PRIMARY = '#f18e04';
-const PINK_LIGHT = '#f29718';
-const PINK_BG = '#fff7ed';
-const PINK_BG_DARK = '#ffedd5';
+const ORANGE_PRIMARY = '#e396bf';
+const PINK_LIGHT = '#f5a8cf';
+const PINK_BG = '#fdf2f8';
+const PINK_BG_DARK = '#fce7f3';
 const TEXT_DARK = '#374151';
 const TEXT_MUTED = '#6b7280';
 
@@ -166,10 +166,10 @@ export default function ProductDetailPlantilla1() {
       <style>{`
         @keyframes pdSkShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         .pd-skeleton { background: ${PINK_BG}; min-height: 100vh; padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
-        .pd-skeleton-shine { background: linear-gradient(90deg, #fff8ed, #ffedd5, #fff8ed); background-size: 200% 100%; animation: pdSkShimmer 1.4s ease infinite; }
+        .pd-skeleton-shine { background: linear-gradient(90deg, #fdf2f8, #fce7f3, #fdf2f8); background-size: 200% 100%; animation: pdSkShimmer 1.4s ease infinite; }
         .pd-skeleton-banner { height: 600px; width: 100%; }
         .pd-skeleton-container { max-width: 1400px; margin: -550px auto 0; padding: 0 16px 24px; position: relative; z-index: 2; }
-        .pd-skeleton-card { background: #fff; border-radius: 24px; padding: 48px 40px; display: grid; grid-template-columns: auto 1fr; gap: 40px; box-shadow: 0 10px 40px rgba(241,142,4,0.1); }
+        .pd-skeleton-card { background: #fff; border-radius: 24px; padding: 48px 40px; display: grid; grid-template-columns: auto 1fr; gap: 40px; box-shadow: 0 10px 40px rgba(227,150,191,0.1); }
         .pd-skeleton-gallery { width: 460px; height: 460px; border-radius: 16px; }
         .pd-skeleton-info { display: flex; flex-direction: column; gap: 14px; }
         .pd-skeleton-line { height: 18px; border-radius: 8px; }
@@ -224,7 +224,7 @@ export default function ProductDetailPlantilla1() {
   }
 
   const buyBoxContent = (className: string) => (
-    <div className={className} style={{ position: 'sticky', top: 16, background: '#fff', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 16, padding: '18px 18px 22px', boxShadow: '0 4px 16px rgba(241,142,4,0.08)' }}>
+    <div className={className} style={{ position: 'sticky', top: 16, background: '#fff', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 16, padding: '18px 18px 22px', boxShadow: '0 4px 16px rgba(227,150,191,0.08)' }}>
       <p style={{ margin: '0 0 4px', fontSize: 14, color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
         <Truck size={15} /> Sale entre hoy y mañana
       </p>
@@ -272,7 +272,7 @@ export default function ProductDetailPlantilla1() {
             </div>
             {qty > 1 && <p style={{ margin: '8px 0 0', fontSize: 12, color: TEXT_MUTED }}>Total: <strong style={{ color: ORANGE_PRIMARY, fontSize: 14 }}>{formatPrice(lineTotal)}</strong></p>}
           </div>
-          <button type="button" onClick={handleAdd} style={{ width: '100%', padding: '13px 18px', background: `linear-gradient(135deg, ${ORANGE_PRIMARY} 0%, ${PINK_LIGHT} 100%)`, color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 16px rgba(241,142,4,0.3)', marginBottom: 8 }}>Comprar ahora</button>
+          <button type="button" onClick={handleAdd} style={{ width: '100%', padding: '13px 18px', background: `linear-gradient(135deg, ${ORANGE_PRIMARY} 0%, ${PINK_LIGHT} 100%)`, color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 16px rgba(227,150,191,0.3)', marginBottom: 8 }}>Comprar ahora</button>
           <button type="button" onClick={handleAdd} style={{ width: '100%', padding: '12px 18px', background: added ? '#ecfdf5' : '#f9fafb', color: added ? '#10b981' : ORANGE_PRIMARY, border: `1.5px solid ${added ? '#10b981' : PINK_LIGHT}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             {added ? <><Check size={15} /> Agregado</> : <><ShoppingCart size={15} /> Agregar al carrito</>}
           </button>
@@ -358,15 +358,15 @@ export default function ProductDetailPlantilla1() {
           bottom: calc(68px + env(safe-area-inset-bottom, 0px));
           z-index: 10020; background: rgba(255,255,255,0.98);
           backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-          border-top: 1px solid #ffedd5; padding: 10px 12px; gap: 10px;
-          align-items: center; box-shadow: 0 -6px 24px rgba(241,142,4,0.1);
+          border-top: 1px solid #fce7f3; padding: 10px 12px; gap: 10px;
+          align-items: center; box-shadow: 0 -6px 24px rgba(227,150,191,0.1);
         }
         .pd-mobile-bar-info { flex-shrink: 0; min-width: 0; }
         .pd-mobile-bar-price { font-size: 19px; font-weight: 700; color: ${TEXT_DARK}; line-height: 1.1; }
         .pd-mobile-bar-meta { font-size: 10px; color: ${TEXT_MUTED}; margin-top: 2px; }
         .pd-mobile-bar-actions { display: flex; gap: 8px; flex: 1; min-width: 0; }
         .pd-mobile-bar-actions button { flex: 1; border-radius: 10px; font-size: 12px; font-weight: 700; padding: 11px 8px; cursor: pointer; }
-        .pd-mbar-buy { border: none; background: linear-gradient(135deg, ${ORANGE_PRIMARY}, ${PINK_LIGHT}); color: #fff; box-shadow: 0 4px 12px rgba(241,142,4,0.35); }
+        .pd-mbar-buy { border: none; background: linear-gradient(135deg, ${ORANGE_PRIMARY}, ${PINK_LIGHT}); color: #fff; box-shadow: 0 4px 12px rgba(227,150,191,0.35); }
         .pd-mbar-cart { background: #fff; color: ${ORANGE_PRIMARY}; border: 1.5px solid ${PINK_LIGHT}; display: flex; align-items: center; justify-content: center; gap: 4px; }
       `}</style>
 
@@ -391,7 +391,7 @@ export default function ProductDetailPlantilla1() {
         background: categoryBg ? '#000' : `linear-gradient(135deg, ${ORANGE_PRIMARY} 0%, ${PINK_LIGHT} 50%, ${PINK_BG_DARK} 100%)`,
       }}>
         {categoryBg && !categoryBgLoaded && (
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,#fff8ed,#ffedd5,#fff8ed)', backgroundSize: '200% 100%', animation: 'skeletonShimmer 1.5s ease infinite' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,#fdf2f8,#fce7f3,#fdf2f8)', backgroundSize: '200% 100%', animation: 'skeletonShimmer 1.5s ease infinite' }} />
         )}
         {categoryBg
           ? <Image src={categoryBg} alt={categoryName} fill style={{ objectFit: 'cover', opacity: 0.9 }} onLoad={() => setCategoryBgLoaded(true)} />
@@ -409,7 +409,7 @@ export default function ProductDetailPlantilla1() {
               display: 'inline-flex', alignItems: 'center', gap: 12,
               background: 'rgba(255,255,255,0.97)', borderRadius: 14,
               padding: '10px 18px',
-              boxShadow: '0 8px 28px rgba(241,142,4,0.2)',
+              boxShadow: '0 8px 28px rgba(227,150,191,0.2)',
               backdropFilter: 'blur(8px)',
             }}>
               {categoryIcon && (
@@ -424,7 +424,7 @@ export default function ProductDetailPlantilla1() {
         )}
 
         {/* Main: 3-column ML-style layout */}
-        <div className="pd-main-grid" style={{ background: '#fff', borderRadius: 24, padding: '48px 40px', display: 'grid', gridTemplateColumns: 'auto 1fr 380px', gap: 40, marginBottom: 20, boxShadow: '0 10px 40px rgba(241,142,4,0.1)', alignItems: 'flex-start' }}>
+        <div className="pd-main-grid" style={{ background: '#fff', borderRadius: 24, padding: '48px 40px', display: 'grid', gridTemplateColumns: 'auto 1fr 380px', gap: 40, marginBottom: 20, boxShadow: '0 10px 40px rgba(227,150,191,0.1)', alignItems: 'flex-start' }}>
 
           {/* Column 1: Image gallery (thumbs + main) */}
           <div className="pd-gallery" style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
@@ -433,7 +433,7 @@ export default function ProductDetailPlantilla1() {
                 ? <ImageZoom src={images[selectedImg]} alt={product.NAME} width={420} height={420} />
                 : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 80 }}>💄</span>}
               {hasDisc && (
-                <span style={{ position: 'absolute', top: 12, left: 12, background: `linear-gradient(135deg, ${ORANGE_PRIMARY}, ${PINK_LIGHT})`, color: '#fff', fontSize: 11, fontWeight: 800, padding: '4px 10px', borderRadius: 16, boxShadow: '0 3px 10px rgba(241,142,4,0.4)' }}>
+                <span style={{ position: 'absolute', top: 12, left: 12, background: `linear-gradient(135deg, ${ORANGE_PRIMARY}, ${PINK_LIGHT})`, color: '#fff', fontSize: 11, fontWeight: 800, padding: '4px 10px', borderRadius: 16, boxShadow: '0 3px 10px rgba(227,150,191,0.4)' }}>
                   -{discPct}% OFF
                 </span>
               )}
@@ -467,7 +467,7 @@ export default function ProductDetailPlantilla1() {
               </p>
             )}
             {isBestSeller && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 8, background: `linear-gradient(135deg, ${ORANGE_PRIMARY}, ${PINK_LIGHT})`, padding: '4px 12px', borderRadius: 16, boxShadow: '0 3px 10px rgba(241,142,4,0.3)' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 8, background: `linear-gradient(135deg, ${ORANGE_PRIMARY}, ${PINK_LIGHT})`, padding: '4px 12px', borderRadius: 16, boxShadow: '0 3px 10px rgba(227,150,191,0.3)' }}>
                 <span style={{ color: '#fff', fontSize: 10, fontWeight: 800, letterSpacing: 0.5 }}>⭐ MÁS VENDIDO</span>
               </div>
             )}
@@ -569,7 +569,7 @@ export default function ProductDetailPlantilla1() {
 
         {/* Features + Description */}
         {((features.length > 0) || (tags.length > 0) || product.DESCRIPTION) && (
-          <div className="pd-section" style={{ background: '#fff', borderRadius: 24, padding: '32px 36px', marginBottom: 20, boxShadow: '0 6px 24px rgba(241,142,4,0.06)' }}>
+          <div className="pd-section" style={{ background: '#fff', borderRadius: 24, padding: '32px 36px', marginBottom: 20, boxShadow: '0 6px 24px rgba(227,150,191,0.06)' }}>
             {features.length > 0 && (
               <div style={{ marginBottom: 32 }}>
                 <h2 style={{ margin: '0 0 18px', fontSize: 22, fontWeight: 700, color: TEXT_DARK, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -606,7 +606,7 @@ export default function ProductDetailPlantilla1() {
 
         {/* Related products */}
         {related.length > 0 && (
-          <div className="pd-section" style={{ background: '#fff', borderRadius: 24, padding: '32px 36px', marginBottom: 20, boxShadow: '0 6px 24px rgba(241,142,4,0.06)' }}>
+          <div className="pd-section" style={{ background: '#fff', borderRadius: 24, padding: '32px 36px', marginBottom: 20, boxShadow: '0 6px 24px rgba(227,150,191,0.06)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
               <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: TEXT_DARK }}>Productos relacionados</h2>
               {categoryName && (
@@ -621,7 +621,7 @@ export default function ProductDetailPlantilla1() {
                 const rdisc = rPricing.discountPercent;
                 return (
                   <Link key={p.$id} href={`/productos/${p.$id}`} className="pd-related-card" style={{ flexShrink: 0, width: 180, textDecoration: 'none', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 16, overflow: 'hidden', background: '#fff', display: 'block', transition: 'all .25s' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 28px rgba(241,142,4,0.18)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLElement).style.borderColor = PINK_LIGHT; }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 28px rgba(227,150,191,0.18)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLElement).style.borderColor = PINK_LIGHT; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.borderColor = PINK_BG_DARK; }}
                   >
                     <div style={{ position: 'relative', height: 158, background: '#fff' }}>

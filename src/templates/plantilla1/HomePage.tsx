@@ -2789,7 +2789,7 @@ export default function HomePage1() {
     const cSh = settings.shadow ? (shadowMap[settings.shadow] || shadowMap.md) : shadowMap.md;
     const cR = settings.borderRadius !== undefined ? settings.borderRadius : 20;
     const cCols = settings.columns || 3;
-    const accent = settings.accentColor || settings.buttonColor || '#c2410c';
+    const accent = settings.accentColor || settings.buttonColor || '#be185d';
     const btnTx = settings.buttonTextColor || '#ffffff';
     const headingFont = settings.headingFontFamily || '"Fraunces", "Playfair Display", Georgia, serif';
     const bodyFont = settings.fontFamily || '"DM Sans", system-ui, sans-serif';

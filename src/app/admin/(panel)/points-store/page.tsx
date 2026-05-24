@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import { Query, ID } from 'appwrite';
@@ -159,7 +159,7 @@ export default function PointsStoreAdminPage() {
         <p style={{ color: '#9ca3af' }}>Cargando...</p>
       ) : items.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 48, background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb' }}>
-          <Coins size={40} color="#f18e04" style={{ marginBottom: 12 }} />
+          <Coins size={40} color="#e396bf" style={{ marginBottom: 12 }} />
           <p style={{ margin: 0, fontWeight: 700 }}>Sin ítems</p>
         </div>
       ) : (
@@ -169,8 +169,8 @@ export default function PointsStoreAdminPage() {
               {item.IMAGEURL ? (
                 <img src={item.IMAGEURL} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover' }} />
               ) : (
-                <div style={{ width: 56, height: 56, borderRadius: 12, background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Coins size={24} color="#f18e04" />
+                <div style={{ width: 56, height: 56, borderRadius: 12, background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Coins size={24} color="#e396bf" />
                 </div>
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -180,7 +180,7 @@ export default function PointsStoreAdminPage() {
                   {!item.ISACTIVE && <span style={{ fontSize: 10, color: '#ef4444', fontWeight: 700 }}>Inactivo</span>}
                 </div>
                 <p style={{ margin: '4px 0 0', fontSize: 12, color: '#6b7280' }}>{item.DESCRIPTION || '—'}</p>
-                <p style={{ margin: '4px 0 0', fontSize: 12, fontWeight: 700, color: '#f18e04' }}>{item.POINTSCOST.toLocaleString()} pts</p>
+                <p style={{ margin: '4px 0 0', fontSize: 12, fontWeight: 700, color: '#e396bf' }}>{item.POINTSCOST.toLocaleString()} pts</p>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button type="button" onClick={() => toggleActive(item)} style={btnIcon}>
@@ -241,6 +241,6 @@ function Field({ label, value, onChange, type = 'text' }: { label: string; value
 
 const lbl: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 700, color: '#374151' };
 const inp: React.CSSProperties = { padding: '10px 12px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14 };
-const btnPri: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 16px', background: '#f18e04', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontSize: 13 };
+const btnPri: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 16px', background: '#e396bf', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontSize: 13 };
 const btnSec: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 16px', background: '#fff', color: '#374151', border: '1px solid #d1d5db', borderRadius: 10, fontWeight: 600, cursor: 'pointer', fontSize: 13 };
 const btnIcon: React.CSSProperties = { padding: 8, background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' };

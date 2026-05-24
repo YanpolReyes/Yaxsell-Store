@@ -6,7 +6,7 @@ import { getServices, getAppwriteConfig, APERTURA_SETTINGS_COLLECTION_ID } from 
 import { Query, ID } from 'appwrite';
 
 const FF = '"DM Sans",system-ui,sans-serif';
-const PINK = '#f18e04';
+const PINK = '#e396bf';
 
 export default function AperturaPage() {
   const [isActive, setIsActive] = useState(false);
@@ -98,7 +98,7 @@ export default function AperturaPage() {
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', fontFamily: FF }}>
-        <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid #ffedd5', borderTopColor: PINK, animation: 'spin 1s linear infinite' }} />
+        <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid #fce7f3', borderTopColor: PINK, animation: 'spin 1s linear infinite' }} />
       </div>
     );
   }
@@ -114,9 +114,9 @@ export default function AperturaPage() {
         </p>
       </div>
 
-      <div style={{ background: '#fff', borderRadius: 16, padding: 32, border: '1px solid #ffedd5', boxShadow: '0 4px 24px rgba(241,142,4,0.08)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32, paddingBottom: 24, borderBottom: '1px solid #ffedd5' }}>
-          <div style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg,#f18e04,#f43f5e)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: '#fff', borderRadius: 16, padding: 32, border: '1px solid #fce7f3', boxShadow: '0 4px 24px rgba(227,150,191,0.08)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32, paddingBottom: 24, borderBottom: '1px solid #fce7f3' }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg,#e396bf,#f43f5e)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Sparkles size={24} color="#fff" />
           </div>
           <div>
@@ -131,7 +131,7 @@ export default function AperturaPage() {
 
         <div style={{ display: 'grid', gap: 24 }}>
           {/* Toggle Activo/Inactivo */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 20, background: '#fff7ed', borderRadius: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 20, background: '#fdf2f8', borderRadius: 12 }}>
             <div>
               <label style={{ fontSize: 15, fontWeight: 700, color: '#111827', display: 'block', marginBottom: 4 }}>
                 Estado de la Promoción
@@ -144,7 +144,7 @@ export default function AperturaPage() {
               onClick={() => setIsActive(!isActive)}
               style={{
                 width: 56, height: 32, borderRadius: 999, border: 'none', cursor: 'pointer',
-                background: isActive ? 'linear-gradient(135deg,#f18e04,#f43f5e)' : '#e5e7eb',
+                background: isActive ? 'linear-gradient(135deg,#e396bf,#f43f5e)' : '#e5e7eb',
                 position: 'relative', transition: 'background 0.2s'
               }}
             >
@@ -169,7 +169,7 @@ export default function AperturaPage() {
                 min={0}
                 max={100}
                 style={{
-                  width: 120, padding: '12px 16px', borderRadius: 10, border: '1.5px solid #ffedd5',
+                  width: 120, padding: '12px 16px', borderRadius: 10, border: '1.5px solid #fce7f3',
                   fontSize: 16, fontWeight: 700, color: '#111', outline: 'none', fontFamily: FF
                 }}
               />
@@ -194,7 +194,7 @@ export default function AperturaPage() {
                 min={0}
                 step={1000}
                 style={{
-                  width: 200, padding: '12px 16px', borderRadius: 10, border: '1.5px solid #ffedd5',
+                  width: 200, padding: '12px 16px', borderRadius: 10, border: '1.5px solid #fce7f3',
                   fontSize: 16, fontWeight: 700, color: '#111', outline: 'none', fontFamily: FF
                 }}
               />
@@ -211,10 +211,10 @@ export default function AperturaPage() {
               disabled={saving}
               style={{
                 flex: 1, padding: 16, borderRadius: 12, border: 'none',
-                background: saving ? '#9ca3af' : 'linear-gradient(135deg,#f18e04,#f43f5e)',
+                background: saving ? '#9ca3af' : 'linear-gradient(135deg,#e396bf,#f43f5e)',
                 color: '#fff', fontSize: 14, fontWeight: 700, cursor: saving ? 'wait' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: '0 4px 16px rgba(241,142,4,0.3)'
+                boxShadow: '0 4px 16px rgba(227,150,191,0.3)'
               }}
             >
               {saving ? (

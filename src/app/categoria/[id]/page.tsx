@@ -14,7 +14,7 @@ function CategoriaContent() {
 export default function CategoriaPage() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f18e04', fontWeight: 700 }}>
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e396bf', fontWeight: 700 }}>
         Cargando categoría...
       </div>
     }>
