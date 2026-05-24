@@ -71,10 +71,12 @@ export default function Navbar1() {
       anim = lottieModule.default.loadAnimation({
         container: lottieRef.current,
         renderer: 'svg',
-        loop: true,
-        autoplay: true,
+        loop: false,
+        autoplay: false,
         animationData: data
       });
+      // Play first frame to show initial state
+      anim.goToAndStop(0, true);
       lottieAnimRef.current = anim;
     }).catch(() => {});
     return () => {
@@ -84,8 +86,18 @@ export default function Navbar1() {
     };
   }, [mounted]);
 
-  // Lottie runs in loop — no segment control needed
-  useEffect(() => {}, [fabOpen]);
+  // Play forward on FAB open, reverse on close
+  useEffect(() => {
+    const anim = lottieAnimRef.current;
+    if (!anim) return;
+    if (fabOpen) {
+      anim.setDirection(1);
+      anim.play();
+    } else {
+      anim.setDirection(-1);
+      anim.play();
+    }
+  }, [fabOpen]);
 
   // Cargar logo del theme config (usar logo de scroll si existe)
   useEffect(() => {
@@ -372,18 +384,18 @@ export default function Navbar1() {
         /* FAB central */
         .tpl1-fab-wrap { position: relative; display: flex; flex-direction: column; align-items: center; }
         .tpl1-fab-btn {
-          width: 64px; height: 64px; border-radius: 50%; border: none; cursor: pointer;
+          width: 76px; height: 76px; border-radius: 50%; border: none; cursor: pointer;
           background: transparent; color: #fff; display: flex; align-items: center; justify-content: center;
           box-shadow: none;
           transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-          margin-top: -18px; position: relative; z-index: 2; overflow: visible;
+          margin-top: -24px; position: relative; z-index: 2; overflow: visible;
         }
         .tpl1-fab-btn svg { background: transparent !important; }
         .tpl1-fab-btn svg > g > path:first-child { fill: transparent !important; }
         .tpl1-fab-btn:hover { box-shadow: none; }
         .tpl1-fab-btn:active { transform: scale(0.95); }
-        .tpl1-fab-label { font-size: 9px; font-weight: 700; color: #9ca3af; margin-top: -4px; font-family: 'DM Sans', system-ui, sans-serif; letter-spacing: -0.02em; transition: color 0.3s ease, font-weight 0.15s ease; }
-        .tpl1-fab-wrap.active .tpl1-fab-label { color: #f72585; font-weight: 800; }
+        .tpl1-fab-label { font-size: 10px; font-weight: 700; color: #9ca3af; margin-top: -2px; font-family: 'DM Sans', system-ui, sans-serif; letter-spacing: -0.02em; transition: color 0.3s ease, font-weight 0.15s ease; }
+        .tpl1-fab-wrap.active .tpl1-fab-label { color: #e396bf; font-weight: 800; }
 
         /* Bubble items — arc layout, label above circle */
         .tpl1-fab-bubbles {
