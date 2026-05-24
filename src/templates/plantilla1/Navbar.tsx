@@ -78,13 +78,18 @@ export default function Navbar1() {
       // Define a visible segment (skip empty start, stop before fade-out)
       const segStart = 50;
       const segEnd = 200;
-      anim.setSegment(segStart, segEnd);
-      anim.goToAndStop(segStart, true);
+      anim.addEventListener('data_ready', () => {
+        anim.setSegment(segStart, segEnd);
+        anim.goToAndStop(segStart, true);
+      });
       lottieAnimRef.current = anim;
-      // Freeze at end of forward play
+      // Freeze at end of play (forward -> stay at end, reverse -> stay at start)
       anim.addEventListener('complete', () => {
-        if (lottieAnimRef.current === anim) {
-          anim.goToAndStop(fabOpen ? segEnd : segStart, true);
+        if (lottieAnimRef.current !== anim) return;
+        if (fabOpen) {
+          anim.goToAndStop(segEnd, true);
+        } else {
+          anim.goToAndStop(segStart, true);
         }
       });
     }).catch(() => {});
@@ -95,15 +100,19 @@ export default function Navbar1() {
     };
   }, [mounted]);
 
-  // Play forward on FAB open, reverse on close
+  // Play forward on FAB open (freeze at end), reverse on close (freeze at start)
   useEffect(() => {
     const anim = lottieAnimRef.current;
     if (!anim) return;
     if (fabOpen) {
       anim.setDirection(1);
+      anim.setSegment(50, 200);
+      anim.goToAndStop(50, true);
       anim.play();
     } else {
       anim.setDirection(-1);
+      anim.setSegment(50, 200);
+      anim.goToAndStop(200, true);
       anim.play();
     }
   }, [fabOpen]);
