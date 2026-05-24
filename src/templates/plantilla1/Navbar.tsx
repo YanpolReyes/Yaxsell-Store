@@ -77,7 +77,7 @@ export default function Navbar1() {
       });
       // Define a visible segment (skip empty start, stop before fade-out)
       const segStart = 50;
-      const segEnd = 200;
+      const segEnd = 190;
       lottieAnimRef.current = anim;
       // Set initial frame after render
       requestAnimationFrame(() => {
@@ -108,13 +108,13 @@ export default function Navbar1() {
     if (!anim) return;
     if (fabOpen) {
       anim.setDirection(1);
-      anim.setSegment(50, 200);
+      anim.setSegment(50, 190);
       anim.goToAndStop(50, true);
       anim.play();
     } else {
       anim.setDirection(-1);
-      anim.setSegment(50, 200);
-      anim.goToAndStop(200, true);
+      anim.setSegment(50, 190);
+      anim.goToAndStop(190, true);
       anim.play();
     }
   }, [fabOpen]);
