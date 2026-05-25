@@ -69,7 +69,7 @@ export const NOTIFICATIONS_COLLECTION            = 'notifications';
 export const THEME_CONFIG_COLLECTION             = 'theme_config';
 export const APERTURA_SETTINGS_COLLECTION        = 'apertura_settings';
 export const PRODUCT_VIEWS_COLLECTION             = 'product_views';
-export const ADMIN_CHAT_COLLECTION                = 'admin_chat';
+export const ADMIN_CHAT_COLLECTION                = 'admin_chat'; // Admin-user chat collection
 // ============================================
 // STORAGE — Un solo bucket con prefijos
 // ============================================
