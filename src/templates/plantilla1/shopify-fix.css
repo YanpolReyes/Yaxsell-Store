@@ -1634,14 +1634,14 @@ cart-drawer.cart-sidebar::after {
   background: #fff !important;
 }
 
-/* ─── Notification & Search icons: orange color ─── */
+/* ─── Header icons: default color ─── */
 [data-template="1"] header.musk-main-header .header-resource-link svg,
 [data-template="1"] header.musk-main-header .search-icon svg {
-  filter: brightness(0) saturate(100%) invert(56%) sepia(96%) saturate(500%) hue-rotate(-9deg) brightness(100%) contrast(97%) !important;
+  filter: none !important;
 }
 [data-template="1"] header.musk-main-header .header-resource-link,
 [data-template="1"] header.musk-main-header .search-icon {
-  background: rgba(241, 142, 4, 0.1) !important;
+  background: transparent !important;
   border-radius: 50% !important;
 }
 

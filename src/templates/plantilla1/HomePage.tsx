@@ -523,6 +523,30 @@ export default function HomePage1() {
           /<a[^>]*href="[^"]*contact[^"]*"[^>]*>Contacto<\/a>/i,
           '<a href="/cuenta/pedidos" aria-label="Mis Pedidos">Mis Pedidos</a>'
         );
+        // Reducir tamaño del logo del header Shopify — override del style inline del header
+        processed = processed.replace(
+          /#shopify-section-sections--[a-z0-9]+__header_[a-zA-Z0-9]+ \.musk-main-header \.logo-col img \{\s*max-width: \d+px;\s*height: auto;\s*\}/,
+          '#shopify-section-sections--22405132747000__header_fYEwWD .musk-main-header .logo-col img { max-width: 50px !important; height: auto !important; }'
+        );
+        // Forzar logo pequeño — inyectar al final del style tag del header
+        processed = processed.replace(
+          'max-width: 80px;\n    }\n  }',
+          'max-width: 50px;\n    }\n  }\n  .musk-main-header .logo-col img { max-width:50px!important;max-height:50px!important;height:auto!important;width:auto!important; }'
+        );
+        // Force navbar icons to be white — Shopify theme has global svg path{fill:...!important}
+        // Only reliable fix: add inline style with !important directly on SVG elements in HTML
+        processed = processed.replace(
+          /(<button[^>]*class="header-resource-link[^"]*"[^>]*>\s*<svg[^>]*>)([\s\S]*?)(<\/svg>)/g,
+          (match: string, open: string, inner: string, close: string) => {
+            return open + inner.replace(/fill="[^"]*"/g, 'fill="#ffffff" style="fill:#ffffff!important;stroke:#ffffff!important"') + close;
+          }
+        );
+        processed = processed.replace(
+          /(<a[^>]*class="header-resource-link[^"]*"[^>]*>\s*<svg[^>]*>)([\s\S]*?)(<\/svg>)/g,
+          (match: string, open: string, inner: string, close: string) => {
+            return open + inner.replace(/fill="[^"]*"/g, 'fill="#ffffff" style="fill:#ffffff!important;stroke:#ffffff!important"') + close;
+          }
+        );
         setBodyHtml(processed);
       })
       .catch(err => {
@@ -636,43 +660,55 @@ export default function HomePage1() {
       document.head.appendChild(style);
     }
     style.textContent = `
-      header.musk-main-header.is-sticky .header-resource-link svg,
-      header.musk-main-header.is-sticky .search-icon svg,
-      header.musk-main-header.is-sticky .cart-icon svg,
-      header.musk-main-header.is-sticky .account-icon svg,
-      header.musk-main-header.scrolling_upwards_header .header-resource-link svg,
-      header.musk-main-header.scrolling_upwards_header .search-icon svg,
-      header.musk-main-header.scrolling_upwards_header .cart-icon svg,
-      header.musk-main-header.scrolling_upwards_header .account-icon svg {
-        filter: brightness(0) saturate(100%) !important;
-      }
       header.musk-main-header.scrolling_upwards_header {
         z-index: 9999 !important;
       }
     `;
+    // Force icon colors by overriding CSS custom properties AND directly setting SVG fills
+    // Shopify theme uses: svg path{fill:rgb(var(--primary-background))!important}
+    // --primary-background resolves to 254,242,248 (pink/orange)
+    const forceIconColors = () => {
+      const h = document.querySelector('header.musk-main-header');
+      if (!h) return;
+      const isSticky = h.classList.contains('is-sticky') || h.classList.contains('scrolling_upwards_header');
+      const color = isSticky ? '#374151' : '#ffffff';
+      h.querySelectorAll('.header-resource-link svg, .user-toggle svg, .cart-btn svg').forEach(svg => {
+        const el = svg as SVGSVGElement;
+        el.style.setProperty('fill', color, 'important');
+        el.style.setProperty('stroke', color, 'important');
+        el.querySelectorAll('path, circle, rect, line, polyline, polygon').forEach(child => {
+          (child as SVGElement).setAttribute('fill', color);
+          (child as SVGElement).setAttribute('stroke', color);
+          (child as HTMLElement).style.setProperty('fill', color, 'important');
+          (child as HTMLElement).style.setProperty('stroke', color, 'important');
+        });
+      });
+    };
     const sync = () => {
       const h = document.querySelector('header.musk-main-header') as HTMLElement | null;
       if (!h) return;
       if ((window.scrollY || 0) > 50) {
-        // Scrolleando: ocultar header Shopify con animación
+        // Scrolleando: ocultar header Shopify con animación sincronizada
         h.classList.add('is-sticky', 'scrolling_down_header');
         h.classList.remove('scrolling_upwards_header');
-        h.style.setProperty('transform', 'translateY(-100%) !important', 'important');
-        h.style.setProperty('opacity', '0 !important', 'important');
-        h.style.setProperty('transition', 'transform 0.3s ease, opacity 0.3s ease !important', 'important');
-        h.style.setProperty('visibility', 'hidden !important', 'important');
+        h.style.setProperty('transform', 'translateY(-100%)', 'important');
+        h.style.setProperty('opacity', '0', 'important');
+        h.style.setProperty('transition', 'transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s cubic-bezier(0.4,0,0.2,1)', 'important');
       } else {
-        // Arriba: mostrar header Shopify con animación
+        // Arriba: mostrar header Shopify con animación sincronizada
         h.classList.remove('is-sticky', 'scrolling_down_header');
         h.classList.add('scrolling_upwards_header');
-        h.style.setProperty('transform', 'translateY(0) !important', 'important');
-        h.style.setProperty('opacity', '1 !important', 'important');
-        h.style.setProperty('transition', 'transform 0.3s ease, opacity 0.3s ease !important', 'important');
-        h.style.setProperty('visibility', 'visible !important', 'important');
+        h.style.setProperty('transform', 'translateY(0)', 'important');
+        h.style.setProperty('opacity', '1', 'important');
+        h.style.setProperty('transition', 'transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s cubic-bezier(0.4,0,0.2,1)', 'important');
       }
+      forceIconColors();
     };
+    sync();
+    forceIconColors();
     window.addEventListener('scroll', sync, { passive: true });
-    return () => window.removeEventListener('scroll', sync);
+    const interval = setInterval(forceIconColors, 300);
+    return () => { window.removeEventListener('scroll', sync); clearInterval(interval); };
   }, [bodyHtml]);
 
   /* ── Fix Shopify navbar: ensure Catálogo link exists ── */
@@ -7972,10 +8008,9 @@ export default function HomePage1() {
     };
   }, [bodyHtml]);
 
-  /* ── Smart header: hide on scroll down, show on scroll up ── */
+  /* ── Smart header: always sticky on scroll, collapses at top ── */
   useEffect(() => {
     if (!bodyHtml) return;
-    let lastScrollY = window.scrollY;
     let ticking = false;
 
     const onScroll = () => {
@@ -7986,22 +8021,16 @@ export default function HomePage1() {
         if (!header) { ticking = false; return; }
 
         const currentY = window.scrollY;
-        const delta = currentY - lastScrollY;
 
         if (currentY < 100) {
-          // Near top — no sticky, no hide
-          header.classList.remove('scrolling_down_header', 'scrolling_upwards_header', 'is-sticky');
-        } else if (delta > 5) {
-          // Scrolling down — just hide, no sticky styling needed
-          header.classList.add('scrolling_down_header');
-          header.classList.remove('scrolling_upwards_header', 'is-sticky');
-        } else if (delta < -5) {
-          // Scrolling up — show header with sticky styling (no overlay)
-          header.classList.add('scrolling_upwards_header', 'is-sticky');
-          header.classList.remove('scrolling_down_header');
+          // Near top — transparent/collapsed style
+          header.classList.remove('is-sticky', 'scrolling_down_header', 'scrolling_upwards_header');
+        } else {
+          // Scrolled — sticky expanded with white bg
+          header.classList.add('is-sticky');
+          header.classList.remove('scrolling_down_header', 'scrolling_upwards_header');
         }
 
-        lastScrollY = currentY;
         ticking = false;
       });
     };
@@ -8021,6 +8050,30 @@ export default function HomePage1() {
     // Remove specific leftover elements after footer that cause blank scroll space
     const root = containerRef.current;
     root.querySelectorAll('.fusion-overlay-custom, .fusion-scroll-top, .quickView-popup').forEach(el => el.remove());
+    // Agregar clase para identificar homepage en CSS
+    root.classList.add('is-homepage');
+
+    // Reducir tamaño del logo del header Shopify
+    const fixLogo = () => {
+      const header = root.querySelector('header.musk-main-header');
+      if (!header) return;
+      header.querySelectorAll('.logo-col img, .light-logo img, .dark-logo img, .logo-col svg, .light-logo svg, .dark-logo svg').forEach(el => {
+        const img = el as HTMLElement;
+        img.style.setProperty('max-height', '50px', 'important');
+        img.style.setProperty('max-width', '180px', 'important');
+        img.style.setProperty('width', 'auto', 'important');
+        img.style.setProperty('height', 'auto', 'important');
+      });
+      header.querySelectorAll('.logo-col .h4, .logo-col .light-logo span, .logo-col .dark-logo span, .logo-col .light-logo, .logo-col .dark-logo').forEach(el => {
+        const txt = el as HTMLElement;
+        txt.style.setProperty('font-size', '22px', 'important');
+        txt.style.setProperty('line-height', '1', 'important');
+      });
+    };
+    fixLogo();
+    // Reintentar por si el header se renderiza después
+    setTimeout(fixLogo, 500);
+    setTimeout(fixLogo, 1500);
   }, [bodyHtml, user, isLoggedIn]);
 
   /* ── Avatar en header Shopify: reintenta tras auth / settings ── */

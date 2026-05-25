@@ -202,8 +202,13 @@ export default function Navbar1() {
     return () => { document.body.style.overflow = prev; };
   }, [authPopupOpen, isMobile]);
 
-  // En desktop (no mobile) solo mostrar fuera de homepage
-  if (!isMobile && isHome) return null;
+  // Force icon colors via JS to override any theme CSS
+  useEffect(() => {
+    // Desactivado para usar estilos CSS en su lugar
+    return () => {};
+  }, [scrolled]);
+
+  // Navbar siempre montado - se controla visibilidad con CSS animado
 
   const NAV_LINKS = [
     { label: 'Inicio', href: '/' },
@@ -248,25 +253,47 @@ export default function Navbar1() {
   return (
     <>
       <style>{`
-        .tpl1-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 999999 !important; transition: transform 0.35s ease, opacity 0.35s ease; }
-        /* Homepage: Navbar oculto arriba, aparece con slide-down al scrollear */
-        .tpl1-nav--home:not(.scrolled) { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+        .tpl1-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 999999 !important; transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s cubic-bezier(0.4,0,0.2,1), background 0.3s ease, box-shadow 0.3s ease; }
+        .tpl1-nav--home { transform: translateY(-100%); opacity: 0; pointer-events: none; }
         .tpl1-nav--home.scrolled { transform: translateY(0); opacity: 1; pointer-events: auto; }
-        .tpl1-nav.scrolled { box-shadow: 0 2px 12px rgba(227,150,191,0.04); backdrop-filter: blur(12px); }
+        .tpl1-nav.scrolled { background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.08); backdrop-filter: blur(12px); }
         .tpl1-nav-inner { max-width: 1600px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; height: 76px; }
         .tpl1-nav-logo { display: flex; align-items: center; text-decoration: none; gap: 10px; }
-        .tpl1-nav-logo img { height: 48px; max-width: 160px; width: auto; object-fit: contain; transition: transform 0.3s ease, opacity 0.4s ease; flex-shrink: 0; }
+        .tpl1-nav-logo img { height: 48px; max-width: 160px; width: auto; object-fit: contain; transition: transform 0.3s ease; flex-shrink: 0; }
         .tpl1-nav-logo-img { height: 42px !important; max-width: 140px !important; width: auto !important; object-fit: contain !important; }
         @keyframes tpl1LogoFadeIn { from { opacity: 0; } to { opacity: 1; } }
         .tpl1-nav-logo:hover img { transform: scale(1.05); }
         .tpl1-nav-links { display: flex; gap: 4px; align-items: center; }
-        .tpl1-nav-links a { font-family: 'DM Sans', system-ui, sans-serif; font-size: 14px; font-weight: 600; color: #444; text-decoration: none; padding: 10px 20px; border-radius: 999px; transition: all 0.25s ease; position: relative; }
-        .tpl1-nav-links a:hover { background: linear-gradient(135deg, rgba(227,150,191,0.08), rgba(249,168,212,0.12)); color: ${ORANGE_PRIMARY}; transform: translateY(-1px); }
-        .tpl1-nav-links a.active { background: linear-gradient(135deg, rgba(227,150,191,0.12), rgba(249,168,212,0.18)); color: ${ORANGE_PRIMARY}; font-weight: 700; }
+        .tpl1-nav-links a { font-family: 'DM Sans', system-ui, sans-serif; font-size: 14px; font-weight: 600; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 999px; transition: all 0.25s ease; position: relative; }
+        .tpl1-nav-links a:hover { background: rgba(255,255,255,0.15); color: #fff; transform: translateY(-1px); }
+        .tpl1-nav-links a.active { background: rgba(255,255,255,0.2); color: #fff; font-weight: 700; }
+        .tpl1-nav.scrolled .tpl1-nav-links a { color: #444; }
+        .tpl1-nav.scrolled .tpl1-nav-links a:hover { background: linear-gradient(135deg, rgba(227,150,191,0.08), rgba(249,168,212,0.12)); color: ${ORANGE_PRIMARY}; }
+        .tpl1-nav.scrolled .tpl1-nav-links a.active { background: linear-gradient(135deg, rgba(227,150,191,0.12), rgba(249,168,212,0.18)); color: ${ORANGE_PRIMARY}; }
         .tpl1-nav-actions { display: flex; align-items: center; gap: 6px; }
         .tpl1-nav-mobile-tools { display: flex; align-items: center; gap: 4px; }
-        .tpl1-nav-btn { width: 44px; height: 44px; border-radius: 50%; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.25s ease; color: #666; position: relative; }
-        .tpl1-nav-btn:hover { background: linear-gradient(135deg, rgba(227,150,191,0.1), rgba(249,168,212,0.15)); color: ${ORANGE_PRIMARY}; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(227,150,191,0.15); }
+        .tpl1-nav-btn { width: 44px; height: 44px; border-radius: 50%; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.25s ease; color: #fff !important; position: relative; }
+        .tpl1-nav-btn svg { color: #fff !important; fill: #fff !important; stroke: #fff !important; }
+        .tpl1-nav-btn:hover { background: rgba(255,255,255,0.15); color: #fff !important; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .tpl1-nav-btn:hover svg { color: #fff !important; fill: #fff !important; stroke: #fff !important; }
+        .tpl1-nav.scrolled .tpl1-nav-btn { color: #fff !important; }
+        .tpl1-nav.scrolled .tpl1-nav-btn svg { color: #fff !important; fill: #fff !important; stroke: #fff !important; }
+        .tpl1-nav.scrolled .tpl1-nav-btn:hover { background: linear-gradient(135deg, rgba(227,150,191,0.1), rgba(249,168,212,0.15)); color: #fff !important; box-shadow: 0 4px 12px rgba(227,150,191,0.15); }
+        .tpl1-nav.scrolled .tpl1-nav-btn:hover svg { color: #fff !important; fill: #fff !important; stroke: #fff !important; }
+
+        /* ── Homepage: navbar siempre blanca/gris ── */
+        .tpl1-nav--home { background: rgba(255,255,255,0.95) !important; }
+        .tpl1-nav--home .tpl1-nav-inner { height: 60px; }
+        .tpl1-nav--home .tpl1-nav-logo img { height: 42px; max-width: 140px; }
+        .tpl1-nav--home .tpl1-nav-links a { color: #444; }
+        .tpl1-nav--home .tpl1-nav-links a:hover { background: linear-gradient(135deg, rgba(227,150,191,0.08), rgba(249,168,212,0.12)); color: ${ORANGE_PRIMARY}; }
+        .tpl1-nav--home .tpl1-nav-links a.active { background: linear-gradient(135deg, rgba(227,150,191,0.12), rgba(249,168,212,0.18)); color: ${ORANGE_PRIMARY}; }
+        .tpl1-nav--home .tpl1-nav-btn { color: #fff !important; }
+        .tpl1-nav--home .tpl1-nav-btn svg { color: #fff !important; fill: #fff !important; stroke: #fff !important; }
+        .tpl1-nav--home .tpl1-nav-btn:hover { background: linear-gradient(135deg, rgba(227,150,191,0.1), rgba(249,168,212,0.15)); color: #fff !important; }
+        .tpl1-nav--home .tpl1-nav-btn:hover svg { color: #fff !important; fill: #fff !important; stroke: #fff !important; }
+        .tpl1-nav--home .tpl1-nav-addr { color: #666; }
+        .tpl1-nav--home .tpl1-nav-addr:hover { background: linear-gradient(135deg, rgba(227,150,191,0.1), rgba(249,168,212,0.15)); color: ${ORANGE_PRIMARY}; }
         .tpl1-nav-search-wrap { display: flex; align-items: center; overflow: hidden; transition: all 0.35s cubic-bezier(0.4,0,0.2,1); max-width: 0; opacity: 0; }
         .tpl1-nav-search-wrap.open { max-width: 260px; opacity: 1; margin-right: 4px; }
         .tpl1-nav-search-wrap form { display: flex; align-items: center; background: linear-gradient(135deg, #fdf2f8, #fdf2f8); border: 1.5px solid rgba(227,150,191,0.2); border-radius: 999px; padding: 0 16px; height: 40px; width: 240px; }
@@ -281,13 +308,14 @@ export default function Navbar1() {
         .tpl1-nav-divider { height: 1px; background: #f3f4f6; margin: 8px 0; }
 
         /* Badge para cart/notif */
-        .tpl1-nav-badge { position: absolute; top: 2px; right: 2px; background: linear-gradient(135deg, #e396bf, #f5a8cf); color: #fff; font-size: 9px; font-weight: 800; border-radius: 999px; min-width: 16px; height: 16px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(227,150,191,0.4); }
+        .tpl1-nav-badge { position: absolute; top: 2px; right: 2px; background: #fff; color: ${ORANGE_PRIMARY}; font-size: 9px; font-weight: 800; border-radius: 999px; min-width: 16px; height: 16px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border: 2px solid ${ORANGE_PRIMARY}; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+        .tpl1-nav.scrolled .tpl1-nav-badge { background: linear-gradient(135deg, #e396bf, #f5a8cf); color: #fff; border-color: #fff; box-shadow: 0 2px 6px rgba(227,150,191,0.4); }
         .tpl1-nav-notif-link { display: flex; align-items: center; text-decoration: none; background: none; border: none; padding: 0; cursor: pointer; font: inherit; }
         .tpl1-bottom-nav-item { cursor: pointer; }
 
         /* Dirección pill */
-        .tpl1-nav-addr { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: linear-gradient(135deg, #fdf2f8, #fdf2f8); border: 1px solid rgba(227,150,191,0.15); border-radius: 999px; font-size: 12px; font-weight: 600; color: #555; text-decoration: none; max-width: 180px; transition: all 0.2s ease; }
-        .tpl1-nav-addr:hover { background: linear-gradient(135deg, #fce7f3, #fbcfe8); border-color: rgba(227,150,191,0.3); transform: translateY(-1px); }
+        .tpl1-nav-addr { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: transparent; border: 1px solid transparent; border-radius: 999px; font-size: 12px; font-weight: 600; color: #666; text-decoration: none; max-width: 180px; transition: all 0.2s ease; }
+        .tpl1-nav-addr:hover { background: linear-gradient(135deg, rgba(227,150,191,0.1), rgba(249,168,212,0.15)); color: ${ORANGE_PRIMARY}; transform: translateY(-1px); }
         .tpl1-nav-addr span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         /* Avatar */
@@ -531,8 +559,8 @@ export default function Navbar1() {
             z-index: 10050 !important;
             animation: dropdownIn 0.2s ease !important;
           }
-          .tpl1-nav { min-height: 48px !important; height: auto !important; background: rgba(255,255,255,0.98) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border-bottom: none !important; border-radius: 999px !important; box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important; margin: 10px 80px 0 !important; position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; z-index: 9999 !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
-          .tpl1-nav.scrolled { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; margin: 0 !important; border-radius: 0 !important; min-height: 48px !important; box-shadow: 0 2px 16px rgba(0,0,0,0.08) !important; }
+          .tpl1-nav { min-height: 48px !important; height: auto !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border-bottom: none !important; border-radius: 999px !important; box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important; margin: 10px 80px 0 !important; position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; z-index: 9999 !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
+          .tpl1-nav.scrolled { background: rgba(255,255,255,0.98) !important; position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; margin: 0 !important; border-radius: 0 !important; min-height: 48px !important; box-shadow: 0 2px 16px rgba(0,0,0,0.08) !important; }
           .tpl1-nav.scrolled .tpl1-nav-inner { height: 48px !important; min-height: 48px !important; padding: 0 12px !important; }
           .tpl1-nav.scrolled .tpl1-nav-btn { width: 34px !important; height: 34px !important; }
           .tpl1-nav.scrolled .tpl1-nav-btn svg { width: 17px !important; height: 17px !important; }
@@ -549,7 +577,8 @@ export default function Navbar1() {
           @keyframes tpl1AddrIn { from { opacity: 0; transform: translate(-50%, calc(-50% - 6px)); } to { opacity: 1; transform: translate(-50%, -50%); } }
           .tpl1-nav-mobile-center svg { flex-shrink: 0 !important; }
           .tpl1-nav-logo img { height: 22px !important; max-width: 58px !important; }
-          .tpl1-nav-btn { width: 32px !important; height: 32px !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
+          .tpl1-nav-btn { width: 32px !important; height: 32px !important; color: #fff !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
+          .tpl1-nav.scrolled .tpl1-nav-btn { color: #666 !important; }
           .tpl1-nav-btn svg { width: 16px !important; height: 16px !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
           .tpl1-nav-avatar { width: 24px !important; height: 24px !important; font-size: 9px !important; border-width: 1px !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
           .tpl1-nav-user-avatar { width: 24px !important; height: 24px !important; margin-top: 0 !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
@@ -581,8 +610,10 @@ export default function Navbar1() {
           .tpl1-nav-mobile-center,
           .tpl1-nav-mobile-center:hover { transform: translate(-50%, -50%) !important; }
           .tpl1-nav-logo:hover img { transform: none !important; }
-          .tpl1-nav-links a:hover { background: transparent !important; color: #444 !important; transform: none !important; }
-          .tpl1-nav-btn:hover { background: transparent !important; color: #666 !important; transform: none !important; box-shadow: none !important; }
+          .tpl1-nav-links a:hover { background: transparent !important; color: #fff !important; transform: none !important; }
+          .tpl1-nav.scrolled .tpl1-nav-links a:hover { color: #444 !important; }
+          .tpl1-nav-btn:hover { background: transparent !important; color: #fff !important; transform: none !important; box-shadow: none !important; }
+          .tpl1-nav.scrolled .tpl1-nav-btn:hover { color: #666 !important; }
           .tpl1-nav-mobile-menu a:hover { background: transparent !important; color: #444 !important; }
           .tpl1-auth-popup-close:hover { background: #f3f4f6 !important; color: #666 !important; }
           .tpl1-auth-primary-btn:hover { transform: none !important; box-shadow: 0 4px 16px rgba(227,150,191,0.3) !important; }
@@ -596,17 +627,17 @@ export default function Navbar1() {
 
       {/* Top navbar: on mobile only show on homepage */}
       {!(isMobile && !isHome) && (
-      <nav className={`tpl1-nav ${scrolled ? 'scrolled' : ''} ${isHome ? 'tpl1-nav--home' : ''}`} style={{ background: isHome ? 'rgba(255,255,255,0.95)' : (scrolled ? 'rgba(255,255,255,0.95)' : '#fff'), borderBottom: `1px solid ${scrolled ? '#fce7f3' : '#f5f5f5'}` }}>
+      <nav className={`tpl1-nav ${scrolled ? 'scrolled' : ''} ${isHome ? 'tpl1-nav--home' : ''}`} style={{ background: isHome ? 'rgba(255,255,255,0.95)' : (scrolled ? 'rgba(255,255,255,0.95)' : `linear-gradient(135deg, ${ORANGE_PRIMARY}, ${PINK_LIGHT})`), borderBottom: '1px solid #fce7f3' }}>
         <div className="tpl1-nav-inner">
           {/* Mobile center: address â€” solo visible con navbar expandida (scroll) */}
           {isMobile && scrolled && (
             <div className="tpl1-nav-mobile-center" aria-live="polite">
-              <MapPin size={10} color={ORANGE_PRIMARY} />
+              <MapPin size={10} />
               <span>{primaryAddress || (isLoggedIn ? 'Mi ubicación' : 'Ubicación')}</span>
             </div>
           )}
           <Link href="/" className="tpl1-nav-logo">
-            {navLogoUrl ? <img src={navLogoUrl} alt="Inicio" style={{ opacity: 0, transition: 'opacity 0.4s ease', animation: 'tpl1LogoFadeIn 0.4s ease forwards' }} className="tpl1-nav-logo-img" /> : null}
+            {navLogoUrl ? <img src={navLogoUrl} alt="Inicio" style={{ height: '42px', maxWidth: '140px', width: 'auto', objectFit: 'contain' }} className="tpl1-nav-logo-img" /> : null}
           </Link>
 
           {/* Mobile fabs - WhatsApp + ChatBot (replaces logo on mobile) */}
@@ -633,12 +664,12 @@ export default function Navbar1() {
           <div className="tpl1-nav-actions">
             <div className={`tpl1-nav-search-wrap ${searchOpen ? 'open' : ''}`}>
               <form onSubmit={handleSearch}>
-                <Search size={16} color={ORANGE_PRIMARY} style={{ marginRight: 8, flexShrink: 0 }} />
+                <Search size={16} style={{ marginRight: 8, flexShrink: 0 }} />
                 <input placeholder="Buscar productos..." autoFocus={searchOpen} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
               </form>
             </div>
             <div className="tpl1-nav-mobile-tools">
-              <button className="tpl1-nav-btn" onClick={() => setSearchOpen(!searchOpen)} title="Buscar"><Search size={20} /></button>
+              <button className="tpl1-nav-btn" onClick={() => setSearchOpen(!searchOpen)} title="Buscar"><Search size={20} color="#fff" /></button>
               {isLoggedIn && (
                 <button
                   type="button"
@@ -646,7 +677,7 @@ export default function Navbar1() {
                   title="Notificaciones"
                   onClick={() => setNotifOpen(true)}
                 >
-                  <Bell size={20} />
+                  <Bell size={20} color="#fff" />
                   {unreadCount > 0 && (
                     <span className="tpl1-nav-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
                   )}
@@ -656,17 +687,17 @@ export default function Navbar1() {
 
             {/* Dirección primaria */}
             <Link href="/cuenta/direcciones" className="tpl1-nav-addr" title="Mis direcciones">
-              <MapPin size={14} color={ORANGE_PRIMARY} />
+              <MapPin size={14} color="#fff" />
               <span>{primaryAddress || (isLoggedIn ? 'Agregar ubicación' : 'Ingresa ubicación')}</span>
             </Link>
 
             <Link href="/favoritos" title="Favoritos">
-              <button className="tpl1-nav-btn"><Heart size={20} /></button>
+              <button className="tpl1-nav-btn"><Heart size={20} color="#fff" /></button>
             </Link>
 
             {/* Carrito con badge */}
             <button className="tpl1-nav-btn" onClick={() => setCartOpen(true)} title="Carrito">
-              <ShoppingCart size={20} />
+              <ShoppingCart size={20} color="#fff" />
               {totalItems > 0 && <span className="tpl1-nav-badge">{totalItems > 9 ? '9+' : totalItems}</span>}
             </button>
 
@@ -696,19 +727,19 @@ export default function Navbar1() {
                         <p className="tpl1-nav-dropdown-email">{user.email}</p>
                       </div>
                     </div>
-                    <Link href="/cuenta" onClick={() => setAccountOpen(false)}><User size={16} /> Mi cuenta</Link>
-                    <Link href="/cuenta/pedidos" onClick={() => setAccountOpen(false)}><Receipt size={16} /> Mis pedidos</Link>
-                    <Link href="/cuenta/direcciones" onClick={() => setAccountOpen(false)}><MapPin size={16} /> Direcciones</Link>
-                    <Link href="/favoritos" onClick={() => setAccountOpen(false)}><Heart size={16} /> Favoritos</Link>
+                    <Link href="/cuenta" onClick={() => setAccountOpen(false)}><User size={16} color="#666" /> Mi cuenta</Link>
+                    <Link href="/cuenta/pedidos" onClick={() => setAccountOpen(false)}><Receipt size={16} color="#666" /> Mis pedidos</Link>
+                    <Link href="/cuenta/direcciones" onClick={() => setAccountOpen(false)}><MapPin size={16} color="#666" /> Direcciones</Link>
+                    <Link href="/favoritos" onClick={() => setAccountOpen(false)}><Heart size={16} color="#666" /> Favoritos</Link>
                     <div className="tpl1-nav-divider" />
-                    <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesión</button>
+                    <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} color="#666" /> Cerrar sesión</button>
                   </div>
                 )}
               </div>
             ) : (
               <div className="tpl1-nav-auth-wrap" ref={authPopupRef} style={{ position: 'relative' }}>
                 <button className="tpl1-nav-btn" onClick={() => setAuthPopupOpen(!authPopupOpen)} title="Iniciar sesión">
-                  <User size={20} />
+                  <User size={20} color="#fff" />
                 </button>
                 {authPopupOpen && !isMobile && authPopupPanel}
               </div>
@@ -769,7 +800,7 @@ export default function Navbar1() {
             {/* Header */}
             <div style={{ padding: '18px 24px', borderBottom: '1px solid #fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, #fdf2f8, #fff)', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <ShoppingCart size={20} color={ORANGE_PRIMARY} />
+                <ShoppingCart size={20} />
                 <span style={{ fontSize: 18, fontWeight: 700, color: '#222', fontFamily: 'DM Sans, system-ui, sans-serif' }}>Mi carrito</span>
                 {totalItems > 0 && <span style={{ background: `linear-gradient(135deg, ${ORANGE_PRIMARY}, #c0547a)`, color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 800, padding: '2px 8px', minWidth: 20, textAlign: 'center' }}>{totalItems}</span>}
               </div>
