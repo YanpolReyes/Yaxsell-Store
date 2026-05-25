@@ -151,7 +151,7 @@ export default function Navbar1() {
   }, []);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
+    const onScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -248,11 +248,15 @@ export default function Navbar1() {
   return (
     <>
       <style>{`
-        .tpl1-nav { position: sticky; top: 0; z-index: 9999; transition: all 0.3s ease; }
+        .tpl1-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 999999 !important; transition: transform 0.35s ease, opacity 0.35s ease; }
+        /* Homepage: Navbar oculto arriba, aparece con slide-down al scrollear */
+        .tpl1-nav--home:not(.scrolled) { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+        .tpl1-nav--home.scrolled { transform: translateY(0); opacity: 1; pointer-events: auto; }
         .tpl1-nav.scrolled { box-shadow: 0 2px 12px rgba(227,150,191,0.04); backdrop-filter: blur(12px); }
         .tpl1-nav-inner { max-width: 1600px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; height: 76px; }
         .tpl1-nav-logo { display: flex; align-items: center; text-decoration: none; gap: 10px; }
         .tpl1-nav-logo img { height: 48px; max-width: 160px; width: auto; object-fit: contain; transition: transform 0.3s ease, opacity 0.4s ease; flex-shrink: 0; }
+        .tpl1-nav-logo-img { height: 42px !important; max-width: 140px !important; width: auto !important; object-fit: contain !important; }
         @keyframes tpl1LogoFadeIn { from { opacity: 0; } to { opacity: 1; } }
         .tpl1-nav-logo:hover img { transform: scale(1.05); }
         .tpl1-nav-links { display: flex; gap: 4px; align-items: center; }
@@ -592,7 +596,7 @@ export default function Navbar1() {
 
       {/* Top navbar: on mobile only show on homepage */}
       {!(isMobile && !isHome) && (
-      <nav className={`tpl1-nav ${scrolled ? 'scrolled' : ''}`} style={{ background: scrolled ? 'rgba(255,255,255,0.95)' : '#fff', borderBottom: `1px solid ${scrolled ? '#fce7f3' : '#f5f5f5'}` }}>
+      <nav className={`tpl1-nav ${scrolled ? 'scrolled' : ''} ${isHome ? 'tpl1-nav--home' : ''}`} style={{ background: isHome ? 'rgba(255,255,255,0.95)' : (scrolled ? 'rgba(255,255,255,0.95)' : '#fff'), borderBottom: `1px solid ${scrolled ? '#fce7f3' : '#f5f5f5'}` }}>
         <div className="tpl1-nav-inner">
           {/* Mobile center: address â€” solo visible con navbar expandida (scroll) */}
           {isMobile && scrolled && (
@@ -602,7 +606,7 @@ export default function Navbar1() {
             </div>
           )}
           <Link href="/" className="tpl1-nav-logo">
-            {navLogoUrl ? <img src={navLogoUrl} alt="Inicio" style={{ opacity: 0, transition: 'opacity 0.4s ease', animation: 'tpl1LogoFadeIn 0.4s ease forwards' }} /> : null}
+            {navLogoUrl ? <img src={navLogoUrl} alt="Inicio" style={{ opacity: 0, transition: 'opacity 0.4s ease', animation: 'tpl1LogoFadeIn 0.4s ease forwards' }} className="tpl1-nav-logo-img" /> : null}
           </Link>
 
           {/* Mobile fabs - WhatsApp + ChatBot (replaces logo on mobile) */}

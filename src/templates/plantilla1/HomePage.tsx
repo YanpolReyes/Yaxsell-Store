@@ -653,10 +653,22 @@ export default function HomePage1() {
     const sync = () => {
       const h = document.querySelector('header.musk-main-header') as HTMLElement | null;
       if (!h) return;
-      if ((window.scrollY || 0) > 100) {
-        h.classList.add('is-sticky');
+      if ((window.scrollY || 0) > 50) {
+        // Scrolleando: ocultar header Shopify con animación
+        h.classList.add('is-sticky', 'scrolling_down_header');
+        h.classList.remove('scrolling_upwards_header');
+        h.style.setProperty('transform', 'translateY(-100%) !important', 'important');
+        h.style.setProperty('opacity', '0 !important', 'important');
+        h.style.setProperty('transition', 'transform 0.3s ease, opacity 0.3s ease !important', 'important');
+        h.style.setProperty('visibility', 'hidden !important', 'important');
       } else {
-        h.classList.remove('is-sticky', 'scrolling_down_header', 'scrolling_upwards_header');
+        // Arriba: mostrar header Shopify con animación
+        h.classList.remove('is-sticky', 'scrolling_down_header');
+        h.classList.add('scrolling_upwards_header');
+        h.style.setProperty('transform', 'translateY(0) !important', 'important');
+        h.style.setProperty('opacity', '1 !important', 'important');
+        h.style.setProperty('transition', 'transform 0.3s ease, opacity 0.3s ease !important', 'important');
+        h.style.setProperty('visibility', 'visible !important', 'important');
       }
     };
     window.addEventListener('scroll', sync, { passive: true });
