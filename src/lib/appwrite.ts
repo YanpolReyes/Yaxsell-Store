@@ -68,6 +68,8 @@ export const STOCK_ALERTS_COLLECTION             = 'stock_alerts';
 export const NOTIFICATIONS_COLLECTION            = 'notifications';
 export const THEME_CONFIG_COLLECTION             = 'theme_config';
 export const APERTURA_SETTINGS_COLLECTION        = 'apertura_settings';
+export const PRODUCT_VIEWS_COLLECTION             = 'product_views';
+export const ADMIN_CHAT_COLLECTION                = 'admin_chat';
 // ============================================
 // STORAGE — Un solo bucket con prefijos
 // ============================================

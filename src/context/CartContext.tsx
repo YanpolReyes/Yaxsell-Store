@@ -1,10 +1,13 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode, useMemo } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useMemo, useCallback, useRef } from 'react';
 import { CartItem, Product } from '@/types';
 import { useToast } from '@/components/Toast';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
+import { useAuth } from '@/hooks/useAuth';
+import { getServices, getAppwriteConfig } from '@/lib/appwrite';
+import { Query, ID } from 'appwrite';
 
 interface CartContextType {
   items: CartItem[];
@@ -18,13 +21,17 @@ interface CartContextType {
   aperturaSavings: number;
 }
 
+const CART_ITEMS_COLLECTION = 'cart_items';
 const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const { showToast } = useToast();
   const { settings: apertura } = useAperturaPromotion();
+  const { user, isLoggedIn } = useAuth();
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Load cart from localStorage on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem('yaxsel_cart');
@@ -32,12 +39,65 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, []);
 
+  // Load cart from Appwrite when user logs in
+  useEffect(() => {
+    if (!isLoggedIn || !user) return;
+    (async () => {
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        const res = await databases.listDocuments(databaseId, CART_ITEMS_COLLECTION, [
+          Query.equal('userId', user.id), Query.limit(100),
+        ]);
+        if (res.documents.length > 0) {
+          const serverItems: CartItem[] = [];
+          for (const doc of res.documents as any[]) {
+            try {
+              const p = await databases.getDocument(databaseId, 'products', doc.productId);
+              serverItems.push({ product: p as unknown as Product, quantity: doc.quantity || 1 });
+            } catch {}
+          }
+          if (serverItems.length > 0) {
+            setItems(serverItems);
+          }
+        }
+      } catch {}
+    })();
+  }, [isLoggedIn, user?.id]);
+
+  // Save to localStorage + sync to Appwrite
   useEffect(() => {
     localStorage.setItem('yaxsel_cart', JSON.stringify(items));
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('yaxsel:cart-updated'));
     }
-  }, [items]);
+    // Debounced sync to Appwrite
+    if (!isLoggedIn || !user) return;
+    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    syncTimeoutRef.current = setTimeout(async () => {
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        // Delete all existing cart items for this user
+        const existing = await databases.listDocuments(databaseId, CART_ITEMS_COLLECTION, [
+          Query.equal('userId', user.id), Query.limit(100),
+        ]);
+        for (const doc of existing.documents) {
+          await databases.deleteDocument(databaseId, CART_ITEMS_COLLECTION, doc.$id);
+        }
+        // Create new cart items
+        for (const item of items) {
+          await databases.createDocument(databaseId, CART_ITEMS_COLLECTION, ID.unique(), {
+            userId: user.id,
+            productId: item.product.$id,
+            quantity: item.quantity,
+            addedAt: Math.floor(Date.now() / 1000),
+          });
+        }
+      } catch {}
+    }, 2000);
+    return () => { if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current); };
+  }, [items, isLoggedIn, user?.id]);
 
   const getEffectivePrice = (item: CartItem): number => {
     const now = Date.now();

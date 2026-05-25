@@ -3,14 +3,15 @@
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Query, ID } from 'appwrite';
-import { getServices, getAppwriteConfig, USERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, USERS_COLLECTION_ID, FAVORITES_COLLECTION_ID, PRODUCTS_COLLECTION_ID, CART_ITEMS_COLLECTION_ID, ADMIN_CHAT_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { formatPrice } from '@/lib/appwrite';
 import type { AdminCustomerRow } from '@/lib/admin-customers';
 import { getLevelMeta } from '@/lib/loyalty-levels';
 import {
   RefreshCw, AlertTriangle, Search, X, Users, Phone, Mail, Calendar,
-  Download, ShoppingCart, MessageSquare, Save, Ban, CheckCircle, Eye,
+  Download, ShoppingCart, MessageSquare, Send, Ban, CheckCircle, Eye,
   Trophy, DollarSign, Shield, Gift, KeyRound, MapPin, Clock, Hash,
+  Heart, Image as ImageIcon, ClipboardList,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -23,6 +24,17 @@ function fmtDate(iso?: string | null) {
   }
 }
 
+function getOnlineStatus(lastAccessAt?: string | null): { online: boolean; recent: boolean; label: string } {
+  if (!lastAccessAt) return { online: false, recent: false, label: 'Nunca' };
+  const now = Date.now();
+  const last = new Date(lastAccessAt).getTime();
+  const diffMin = (now - last) / 60000;
+  if (diffMin < 5) return { online: true, recent: true, label: 'En línea' };
+  if (diffMin < 60) return { online: false, recent: true, label: `Hace ${Math.floor(diffMin)} min` };
+  if (diffMin < 1440) return { online: false, recent: false, label: `Hace ${Math.floor(diffMin / 60)} h` };
+  return { online: false, recent: false, label: fmtDate(lastAccessAt) };
+}
+
 function UsersPageInner() {
   const searchParams = useSearchParams();
   const [users, setUsers] = useState<AdminCustomerRow[]>([]);
@@ -33,11 +45,19 @@ function UsersPageInner() {
   const [showWholesaleOnly, setShowWholesaleOnly] = useState(false);
   const [showBannedOnly, setShowBannedOnly] = useState(false);
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'orders' | 'spent'>('date');
-  const [noteModal, setNoteModal] = useState<AdminCustomerRow | null>(null);
+  const [chatModal, setChatModal] = useState<AdminCustomerRow | null>(null);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatDraft, setChatDraft] = useState('');
+  const [sendingMsg, setSendingMsg] = useState(false);
   const [detailModal, setDetailModal] = useState<AdminCustomerRow | null>(null);
-  const [noteDraft, setNoteDraft] = useState('');
-  const [savingNote, setSavingNote] = useState(false);
   const [togglingBanId, setTogglingBanId] = useState<string | null>(null);
+  const [favModal, setFavModal] = useState<AdminCustomerRow | null>(null);
+  const [favProducts, setFavProducts] = useState<any[]>([]);
+  const [favLoading, setFavLoading] = useState(false);
+  const [cartModal, setCartModal] = useState<AdminCustomerRow | null>(null);
+  const [cartProducts, setCartProducts] = useState<any[]>([]);
+  const [cartLoading, setCartLoading] = useState(false);
 
   const resolveProfileDocId = async (u: AdminCustomerRow): Promise<string> => {
     if (u.hasProfileDoc && !u.$id.startsWith('auth:')) return u.$id;
@@ -54,7 +74,6 @@ function UsersPageInner() {
       name: u.name,
       phone: u.phone || '',
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     });
     return created.$id;
   };
@@ -75,20 +94,25 @@ function UsersPageInner() {
     }
   };
 
-  const saveNote = async () => {
-    if (!noteModal) return;
-    setSavingNote(true);
+  const sendChatMessage = async () => {
+    if (!chatModal || !chatDraft.trim()) return;
+    setSendingMsg(true);
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const docId = await resolveProfileDocId(noteModal);
-      await databases.updateDocument(databaseId, USERS_COLLECTION_ID, docId, { adminNotes: noteDraft });
-      setUsers(prev => prev.map(u => u.$id === noteModal.$id ? { ...u, adminNotes: noteDraft, hasProfileDoc: true, $id: docId } : u));
-      setNoteModal(null);
+      const msg = await databases.createDocument(databaseId, ADMIN_CHAT_COLLECTION_ID, ID.unique(), {
+        userId: chatModal.userId,
+        senderRole: 'admin',
+        message: chatDraft.trim(),
+        readByUser: false,
+        readByAdmin: true,
+      });
+      setChatMessages(prev => [...prev, msg]);
+      setChatDraft('');
     } catch (e: unknown) {
-      alert('Error: ' + (e instanceof Error ? e.message : 'No se pudo guardar'));
+      alert('Error: ' + (e instanceof Error ? e.message : 'No se pudo enviar'));
     } finally {
-      setSavingNote(false);
+      setSendingMsg(false);
     }
   };
 
@@ -271,9 +295,14 @@ function UsersPageInner() {
                 return (
                   <tr key={u.$id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900 truncate max-w-[200px]">{u.name}</p>
-                      <p className="text-xs text-gray-400 truncate max-w-[200px]">{u.email}</p>
-                      {u.isBanned && <span className="text-[10px] font-bold text-red-600">Bloqueado</span>}
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${getOnlineStatus(u.lastAccessAt).online ? 'bg-emerald-500 animate-pulse' : getOnlineStatus(u.lastAccessAt).recent ? 'bg-amber-400' : 'bg-gray-300'}`} title={getOnlineStatus(u.lastAccessAt).label} />
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 truncate max-w-[200px]">{u.name}</p>
+                          <p className="text-xs text-gray-400 truncate max-w-[200px]">{u.email}</p>
+                          {u.isBanned && <span className="text-[10px] font-bold text-red-600">Bloqueado</span>}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-3 py-3">
                       <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: level.color }}>
@@ -291,8 +320,11 @@ function UsersPageInner() {
                       {formatPrice(u.orders.revenuePaid)}
                     </td>
                     <td className="px-3 py-3 text-xs text-gray-500 hidden lg:table-cell">
-                      <span className="block">Acceso: {fmtDate(u.lastAccessAt)}</span>
-                      <span className="block">Pedido: {fmtDate(u.orders.lastOrderAt)}</span>
+                      <span className={`inline-flex items-center gap-1 ${getOnlineStatus(u.lastAccessAt).online ? 'text-emerald-600 font-semibold' : ''}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${getOnlineStatus(u.lastAccessAt).online ? 'bg-emerald-500' : 'bg-gray-300'}`} />
+                        {getOnlineStatus(u.lastAccessAt).label}
+                      </span>
+                      <span className="block text-gray-400">Pedido: {fmtDate(u.orders.lastOrderAt)}</span>
                     </td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-1 justify-end">
@@ -300,9 +332,76 @@ function UsersPageInner() {
                           <Eye className="w-3.5 h-3.5" />
                         </button>
                         <Link href={`/admin/orders?userId=${u.userId}`} className="p-1.5 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600" title="Pedidos">
-                          <ShoppingCart className="w-3.5 h-3.5" />
+                          <ClipboardList className="w-3.5 h-3.5" />
                         </Link>
-                        <button type="button" onClick={() => { setNoteModal(u); setNoteDraft(u.adminNotes || ''); }} className="p-1.5 rounded-lg hover:bg-violet-50 text-gray-400 hover:text-violet-500">
+                        <button type="button" onClick={async () => {
+                          setFavModal(u);
+                          setFavLoading(true);
+                          try {
+                            const { databases } = getServices();
+                            const { databaseId } = getAppwriteConfig();
+                            const favRes = await databases.listDocuments(databaseId, FAVORITES_COLLECTION_ID, [
+                              Query.equal('userId', u.userId), Query.limit(100),
+                            ]);
+                            const productIds = favRes.documents.map((d: any) => d.productId);
+                            if (productIds.length === 0) { setFavProducts([]); setFavLoading(false); return; }
+                            const prods: any[] = [];
+                            for (const pid of productIds) {
+                              try {
+                                const p = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, pid);
+                                prods.push(p);
+                              } catch {}
+                            }
+                            setFavProducts(prods);
+                          } catch (e: unknown) { console.error(e); setFavProducts([]); }
+                          finally { setFavLoading(false); }
+                        }} className="p-1.5 rounded-lg hover:bg-pink-50 text-gray-400 hover:text-pink-500" title="Ver favoritos">
+                          <Heart className="w-3.5 h-3.5" />
+                        </button>
+                        <button type="button" onClick={async () => {
+                          setCartModal(u);
+                          setCartLoading(true);
+                          try {
+                            const { databases } = getServices();
+                            const { databaseId } = getAppwriteConfig();
+                            const cartRes = await databases.listDocuments(databaseId, CART_ITEMS_COLLECTION_ID, [
+                              Query.equal('userId', u.userId), Query.limit(100),
+                            ]);
+                            if (cartRes.documents.length === 0) { setCartProducts([]); setCartLoading(false); return; }
+                            const prods: any[] = [];
+                            for (const doc of cartRes.documents as any[]) {
+                              try {
+                                const p = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, doc.productId);
+                                prods.push({ ...p, _cartQty: doc.quantity || 1 });
+                              } catch {}
+                            }
+                            setCartProducts(prods);
+                          } catch (e: unknown) { console.error(e); setCartProducts([]); }
+                          finally { setCartLoading(false); }
+                        }} className="p-1.5 rounded-lg hover:bg-emerald-50 text-gray-400 hover:text-emerald-500" title="Ver carrito">
+                          <ShoppingCart className="w-3.5 h-3.5" />
+                        </button>
+                        <button type="button" onClick={async () => {
+                          setChatModal(u);
+                          setChatLoading(true);
+                          setChatDraft('');
+                          try {
+                            const { databases } = getServices();
+                            const { databaseId } = getAppwriteConfig();
+                            const res = await databases.listDocuments(databaseId, ADMIN_CHAT_COLLECTION_ID, [
+                              Query.equal('userId', u.userId),
+                              Query.orderAsc('$createdAt'),
+                              Query.limit(200),
+                            ]);
+                            setChatMessages(res.documents as any[]);
+                            // Mark admin as read
+                            const unread = res.documents.filter((d: any) => d.senderRole === 'user' && !d.readByAdmin);
+                            for (const doc of unread) {
+                              try { await databases.updateDocument(databaseId, ADMIN_CHAT_COLLECTION_ID, doc.$id, { readByAdmin: true }); } catch {}
+                            }
+                          } catch (e: unknown) { console.error(e); setChatMessages([]); }
+                          finally { setChatLoading(false); }
+                        }} className="p-1.5 rounded-lg hover:bg-violet-50 text-gray-400 hover:text-violet-500" title="Chat">
                           <MessageSquare className="w-3.5 h-3.5" />
                         </button>
                         <button type="button" onClick={() => toggleBan(u)} disabled={togglingBanId === u.$id}
@@ -319,19 +418,158 @@ function UsersPageInner() {
         </div>
       </div>
 
-      {noteModal && (
+      {/* Cart modal */}
+      {cartModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5">
-            <p className="font-bold text-gray-900">Nota interna</p>
-            <p className="text-xs text-gray-500 mb-3">{noteModal.name}</p>
-            <textarea rows={5} value={noteDraft} onChange={e => setNoteDraft(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none" />
-            <div className="flex justify-end gap-2 mt-4">
-              <button type="button" onClick={() => setNoteModal(null)} className="px-4 py-2 rounded-xl border text-sm">Cancelar</button>
-              <button type="button" onClick={saveNote} disabled={savingNote}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold disabled:opacity-60">
-                <Save className="w-4 h-4" />{savingNote ? 'Guardando…' : 'Guardar'}
-              </button>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 shrink-0">
+              <div>
+                <p className="font-bold text-gray-900 flex items-center gap-2"><ShoppingCart className="w-4 h-4 text-emerald-500" /> Carrito</p>
+                <p className="text-xs text-gray-500 mt-0.5">{cartModal.name || cartModal.email || 'Usuario'}</p>
+              </div>
+              <button type="button" onClick={() => { setCartModal(null); setCartProducts([]); }} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="overflow-y-auto p-5 flex-1">
+              {cartLoading ? (
+                <div className="flex items-center justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-400" /></div>
+              ) : cartProducts.length === 0 ? (
+                <div className="text-center py-8">
+                  <ShoppingCart className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                  <p className="text-sm text-gray-400">Carrito vacío</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {cartProducts.map((p: any) => (
+                    <div key={p.$id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                      <div className="w-12 h-12 rounded-lg bg-white border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
+                        {p.IMAGEURL ? (
+                          <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageIcon className="w-5 h-5 text-gray-300" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 truncate">{p.NAME || 'Sin nombre'}</p>
+                        <p className="text-xs text-gray-400">
+                          {p.PRICE > 0 ? `$${Number(p.PRICE).toLocaleString('es-CL')}` : 'Sin precio'}
+                        </p>
+                      </div>
+                      <div className="shrink-0 flex items-center gap-2">
+                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">×{p._cartQty}</span>
+                        {p.STOCK > 0 ? (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Stock: {p.STOCK}</span>
+                        ) : (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-600">Agotado</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t border-gray-100 shrink-0">
+              <p className="text-xs text-gray-400 text-center">{cartProducts.length} producto{cartProducts.length !== 1 ? 's' : ''} en carrito · {cartProducts.reduce((s: number, p: any) => s + (p._cartQty || 1), 0)} unidades</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Favorites modal */}
+      {favModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 shrink-0">
+              <div>
+                <p className="font-bold text-gray-900 flex items-center gap-2"><Heart className="w-4 h-4 text-pink-500" /> Favoritos</p>
+                <p className="text-xs text-gray-500 mt-0.5">{favModal.name || favModal.email || 'Usuario'}</p>
+              </div>
+              <button type="button" onClick={() => { setFavModal(null); setFavProducts([]); }} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="overflow-y-auto p-5 flex-1">
+              {favLoading ? (
+                <div className="flex items-center justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-400" /></div>
+              ) : favProducts.length === 0 ? (
+                <div className="text-center py-8">
+                  <Heart className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                  <p className="text-sm text-gray-400">Sin productos favoritos</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {favProducts.map((p: any) => (
+                    <div key={p.$id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                      <div className="w-12 h-12 rounded-lg bg-white border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
+                        {p.IMAGEURL ? (
+                          <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageIcon className="w-5 h-5 text-gray-300" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 truncate">{p.NAME || 'Sin nombre'}</p>
+                        <p className="text-xs text-gray-400">
+                          {p.PRICE > 0 ? `$${Number(p.PRICE).toLocaleString('es-CL')}` : 'Sin precio'}
+                          {p.WHOLESALEPRICE > 0 && ` · Mayorista: $${Number(p.WHOLESALEPRICE).toLocaleString('es-CL')}`}
+                        </p>
+                      </div>
+                      <div className="shrink-0">
+                        {p.STOCK > 0 ? (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Stock: {p.STOCK}</span>
+                        ) : (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-600">Agotado</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t border-gray-100 shrink-0">
+              <p className="text-xs text-gray-400 text-center">{favProducts.length} producto{favProducts.length !== 1 ? 's' : ''} en favoritos</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chat modal */}
+      {chatModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
+              <div>
+                <p className="font-bold text-gray-900 flex items-center gap-2"><MessageSquare className="w-4 h-4 text-violet-500" /> Chat</p>
+                <p className="text-xs text-gray-500 mt-0.5">{chatModal.name || chatModal.email || 'Usuario'}</p>
+              </div>
+              <button type="button" onClick={() => { setChatModal(null); setChatMessages([]); }} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="overflow-y-auto p-4 flex-1 space-y-2 min-h-[200px]">
+              {chatLoading ? (
+                <div className="flex items-center justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-400" /></div>
+              ) : chatMessages.length === 0 ? (
+                <div className="text-center py-8">
+                  <MessageSquare className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                  <p className="text-sm text-gray-400">Sin mensajes</p>
+                </div>
+              ) : (
+                chatMessages.map((msg: any) => {
+                  const isAdmin = msg.senderRole === 'admin';
+                  return (
+                    <div key={msg.$id} className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${isAdmin ? 'bg-indigo-600 text-white rounded-br-md' : 'bg-gray-100 text-gray-800 rounded-bl-md'}`}>
+                        <p>{msg.message}</p>
+                        <p className={`text-[10px] mt-1 ${isAdmin ? 'text-indigo-200' : 'text-gray-400'}`}>{new Date(msg.$createdAt).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            <div className="p-3 border-t border-gray-100 shrink-0">
+              <div className="flex gap-2">
+                <input value={chatDraft} onChange={e => setChatDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }} placeholder="Escribe un mensaje..." className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <button type="button" onClick={sendChatMessage} disabled={sendingMsg || !chatDraft.trim()} className="p-2 rounded-xl bg-indigo-600 text-white disabled:opacity-50 hover:bg-indigo-700">
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -375,9 +613,12 @@ function CustomerDetailModal({
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-5 border-b border-gray-100 shrink-0">
-          <div>
-            <h2 className="text-lg font-bold text-gray-900">{u.name}</h2>
-            <p className="text-sm text-gray-500">{u.email}</p>
+          <div className="flex items-center gap-3">
+            <span className={`w-3 h-3 rounded-full shrink-0 ${getOnlineStatus(u.lastAccessAt).online ? 'bg-emerald-500 animate-pulse' : getOnlineStatus(u.lastAccessAt).recent ? 'bg-amber-400' : 'bg-gray-300'}`} />
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">{u.name}</h2>
+              <p className="text-sm text-gray-500">{u.email}</p>
+            </div>
           </div>
           <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100"><X className="w-5 h-5" /></button>
         </div>
@@ -395,7 +636,12 @@ function CustomerDetailModal({
             <InfoRow icon={KeyRound} label="Contraseña" value={passwordNote || 'Hash en Appwrite (no visible)'} />
             <InfoRow icon={Clock} label="Último cambio contraseña" value={fmtDate(u.passwordUpdatedAt)} />
             <InfoRow icon={Calendar} label="Registro Auth" value={fmtDate(u.authCreatedAt || u.registrationAt)} />
-            <InfoRow icon={Clock} label="Último acceso" value={fmtDate(u.lastAccessAt)} />
+            <InfoRow icon={Clock} label="Último acceso" value={
+              <span className={`inline-flex items-center gap-1.5 ${getOnlineStatus(u.lastAccessAt).online ? 'text-emerald-600 font-semibold' : ''}`}>
+                <span className={`w-2 h-2 rounded-full ${getOnlineStatus(u.lastAccessAt).online ? 'bg-emerald-500 animate-pulse' : getOnlineStatus(u.lastAccessAt).recent ? 'bg-amber-400' : 'bg-gray-300'}`} />
+                {getOnlineStatus(u.lastAccessAt).label}
+              </span>
+            } />
             <InfoRow icon={Shield} label="Estado Auth" value={u.authStatus} />
             {u.authLabels?.length ? <InfoRow icon={Hash} label="Labels" value={u.authLabels.join(', ')} /> : null}
           </section>

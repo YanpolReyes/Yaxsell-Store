@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   User, ShoppingBag, Heart, MapPin, HelpCircle, Gift,
-  LogOut, ChevronRight,
+  LogOut, ChevronRight, MessageCircle,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from '@/lib/appwrite';
@@ -15,9 +15,10 @@ const FF = '"DM Sans",system-ui,sans-serif';
 const PINK = '#e396bf';
 
 const SIDEBAR_NAV = [
-  { icon: User,        label: 'Mi cuenta',      href: '/cuenta'               },
-  { icon: Heart,       label: 'Favoritos',        href: '/cuenta/favoritos'      },
-  { icon: HelpCircle,  label: 'Soporte',          href: '/cuenta/tickets'        },
+  { icon: User,         label: 'Mi cuenta',      href: '/cuenta'               },
+  { icon: Heart,        label: 'Favoritos',        href: '/cuenta/favoritos'      },
+  { icon: MessageCircle,label: 'Chat Admin',       href: '/cuenta/chat'          },
+  { icon: HelpCircle,   label: 'Soporte',          href: '/cuenta/tickets'        },
 ];
 
 function getFilePreviewUrl(fileId: string): string {
