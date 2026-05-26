@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ShoppingCart, Check, ChevronRight, Truck, Shield, RefreshCw } from 'lucide-react';
 import ShareButton from '@/components/ShareButton';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
+import { normalizeProductImages, getProductImageUrl, resolveStorageImageUrl } from '@/lib/product-images';
 import { Query } from 'appwrite';
 import { Product } from '@/types';
 import { useCart } from '@/context/CartContext';
@@ -45,7 +46,7 @@ export default function ProductDetailPlantilla2() {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (!product) return;
-      const imgs = [product.IMAGEURL, product.IMAGEURL2, product.IMAGEURL3, product.IMAGEURL4, product.IMAGEURL5].filter(Boolean);
+      const imgs = [product.IMAGEURL, product.IMAGEURL2, product.IMAGEURL3, product.IMAGEURL4, product.IMAGEURL5].filter(Boolean).map(v => resolveStorageImageUrl(v));
       if (imgs.length <= 1) return;
       if (e.key === 'ArrowLeft') setSelectedImg(i => (i - 1 + imgs.length) % imgs.length);
       else if (e.key === 'ArrowRight') setSelectedImg(i => (i + 1) % imgs.length);
@@ -60,7 +61,7 @@ export default function ProductDetailPlantilla2() {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
         const doc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, id);
-        const p = doc as unknown as Product;
+        const p = normalizeProductImages(doc as unknown as Product);
         setProduct(p);
         trackView(p.$id);
         if (p.CATEGORYID) {
@@ -101,7 +102,7 @@ export default function ProductDetailPlantilla2() {
     setMeta('og:title', product.NAME);
     setMeta('og:description', desc);
     setMeta('og:type', 'product');
-    if (product.IMAGEURL) setMeta('og:image', product.IMAGEURL);
+    if (product.IMAGEURL) setMeta('og:image', resolveStorageImageUrl(product.IMAGEURL));
     setMeta('og:url', window.location.href);
     setMeta('product:price:amount', String(price));
     setMeta('product:price:currency', 'CLP');
@@ -122,7 +123,7 @@ export default function ProductDetailPlantilla2() {
           '@type': 'Product',
           name: product.NAME,
           description: desc,
-          image: product.IMAGEURL || undefined,
+          image: resolveStorageImageUrl(product.IMAGEURL) || undefined,
           sku: product.$id,
           offers: {
             '@type': 'Offer',
@@ -154,7 +155,7 @@ export default function ProductDetailPlantilla2() {
 
   if (!product) return null;
 
-  const images = [product.IMAGEURL, product.IMAGEURL2, product.IMAGEURL3, product.IMAGEURL4, product.IMAGEURL5].filter(Boolean) as string[];
+  const images = [product.IMAGEURL, product.IMAGEURL2, product.IMAGEURL3, product.IMAGEURL4, product.IMAGEURL5].filter(Boolean).map(v => resolveStorageImageUrl(v)) as string[];
   const priceResolved = resolveProductDisplayPrice(product, apertura);
   const displayPrice = priceResolved.displayPrice;
   const hasDisc = priceResolved.hasDiscount;
@@ -210,7 +211,60 @@ export default function ProductDetailPlantilla2() {
           ? <Image src={categoryBg} alt={categoryName} fill style={{ objectFit: 'cover', opacity: 0.9 }} onLoad={() => setCategoryBgLoaded(true)} />
           : null}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.15) 50%, rgba(235,235,235,0.95) 100%)' }} />
-        <style>{`@keyframes skeletonShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+        <style>{`@keyframes skeletonShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        /* Buy button particles */
+        @keyframes p2OrbFloat {
+          0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+          10% { opacity: 0.9; }
+          50% { transform: translateY(-22px) translateX(8px) scale(1.4); opacity: 1; }
+          90% { opacity: 0.7; }
+          100% { transform: translateY(-44px) translateX(-4px) scale(0.6); opacity: 0; }
+        }
+        @keyframes p2Sparkle {
+          0% { transform: scale(0) rotate(0deg); opacity: 0; }
+          20% { transform: scale(1.2) rotate(90deg); opacity: 1; }
+          50% { transform: scale(0.8) rotate(180deg); opacity: 0.8; }
+          80% { transform: scale(1.1) rotate(270deg); opacity: 0.5; }
+          100% { transform: scale(0) rotate(360deg); opacity: 0; }
+        }
+        @keyframes p2Shimmer { 0% { left: -40%; } 100% { left: 110%; } }
+        @keyframes p2Pulse {
+          0%, 100% { box-shadow: 0 4px 14px rgba(52,131,250,0.3), inset 0 0 12px rgba(255,255,255,0.1); }
+          50% { box-shadow: 0 4px 14px rgba(52,131,250,0.5), inset 0 0 20px rgba(255,255,255,0.2); }
+        }
+        .p2-buy-btn { animation: p2Pulse 2s ease-in-out infinite; }
+        .p2-buy-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 12px 32px rgba(52,131,250,0.35), inset 0 0 20px rgba(255,255,255,0.15); }
+        .p2-orb {
+          position: absolute; border-radius: 50%;
+          background: radial-gradient(circle, rgba(255,255,255,0.9), rgba(255,255,255,0.1));
+          box-shadow: 0 0 6px rgba(255,255,255,0.5);
+          animation: p2OrbFloat 2.8s ease-in-out infinite;
+        }
+        .p2-orb:nth-child(1) { width: 8px; height: 8px; left: 8%; bottom: 4px; animation-delay: 0s; }
+        .p2-orb:nth-child(2) { width: 5px; height: 5px; left: 22%; bottom: 2px; animation-delay: 0.4s; }
+        .p2-orb:nth-child(3) { width: 10px; height: 10px; left: 38%; bottom: 6px; animation-delay: 0.8s; }
+        .p2-orb:nth-child(4) { width: 6px; height: 6px; left: 52%; bottom: 3px; animation-delay: 1.2s; }
+        .p2-orb:nth-child(5) { width: 7px; height: 7px; left: 68%; bottom: 5px; animation-delay: 1.6s; }
+        .p2-orb:nth-child(6) { width: 4px; height: 4px; left: 82%; bottom: 2px; animation-delay: 2s; }
+        .p2-orb:nth-child(7) { width: 9px; height: 9px; left: 92%; bottom: 4px; animation-delay: 2.4s; }
+        .p2-sparkle {
+          position: absolute; width: 4px; height: 4px; background: white;
+          clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+          animation: p2Sparkle 2s ease-in-out infinite;
+          filter: drop-shadow(0 0 3px rgba(255,255,255,0.8));
+        }
+        .p2-sparkle:nth-child(8) { left: 15%; top: 30%; animation-delay: 0s; }
+        .p2-sparkle:nth-child(9) { left: 45%; top: 20%; animation-delay: 0.7s; width: 5px; height: 5px; }
+        .p2-sparkle:nth-child(10) { left: 75%; top: 40%; animation-delay: 1.4s; }
+        .p2-sparkle:nth-child(11) { left: 30%; top: 55%; animation-delay: 0.3s; width: 3px; height: 3px; }
+        .p2-sparkle:nth-child(12) { left: 60%; top: 15%; animation-delay: 1s; }
+        .p2-shimmer-line {
+          position: absolute; top: 0; bottom: 0; width: 40%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+          animation: p2Shimmer 2.5s ease-in-out infinite;
+          pointer-events: none;
+        }
+        `}</style>
         {(categoryName || categoryIcon) && (
           <div style={{
             position: 'absolute', bottom: 140, left: '12%',
@@ -274,7 +328,7 @@ export default function ProductDetailPlantilla2() {
                 </span>
               )}
               <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 2, display: 'flex', gap: 6 }}>
-                <ShareButton title={product.NAME} text={`${product.NAME} - ${formatPrice(displayPrice)}`} image={product.IMAGEURL} />
+                <ShareButton title={product.NAME} text={`${product.NAME} - ${formatPrice(displayPrice)}`} image={resolveStorageImageUrl(product.IMAGEURL)} />
                 <FavoriteButton productId={product.$id} size={22} />
               </div>
             </div>
@@ -411,10 +465,17 @@ export default function ProductDetailPlantilla2() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 400 }}>
                   <StockIndicator stock={product.STOCK} soldQuantity={product.SOLDQUANTITY} />
-                  <button onClick={handleAdd} style={{ padding: '15px 24px', background: '#3483fa', color: '#fff', border: 'none', borderRadius: 6, fontSize: 16, fontWeight: 600, cursor: 'pointer', transition: 'background .15s' }}
+                  <button onClick={handleAdd} className="p2-buy-btn" style={{ padding: '15px 24px', background: '#3483fa', color: '#fff', border: 'none', borderRadius: 6, fontSize: 16, fontWeight: 600, cursor: 'pointer', transition: 'background .15s', position: 'relative', overflow: 'hidden' }}
                     onMouseEnter={e => (e.currentTarget.style.background = '#2968c8')}
                     onMouseLeave={e => (e.currentTarget.style.background = '#3483fa')}
-                  >Comprar ahora</button>
+                  >
+                    <span style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+                      <span className="p2-orb" /><span className="p2-orb" /><span className="p2-orb" /><span className="p2-orb" /><span className="p2-orb" /><span className="p2-orb" /><span className="p2-orb" />
+                      <span className="p2-sparkle" /><span className="p2-sparkle" /><span className="p2-sparkle" /><span className="p2-sparkle" /><span className="p2-sparkle" />
+                    </span>
+                    <span className="p2-shimmer-line" />
+                    <span style={{ position: 'relative', zIndex: 2, textShadow: '0 1px 3px rgba(0,0,0,0.12)' }}>Comprar ahora</span>
+                  </button>
                   <button onClick={handleAdd} style={{ padding: '14px 24px', background: added ? '#e8f5e9' : '#fff', color: added ? '#00a650' : '#3483fa', border: `1.5px solid ${added ? '#00a650' : '#3483fa'}`, borderRadius: 6, fontSize: 16, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all .15s' }}>
                     {added ? <><Check size={17} /> Agregado</> : <><ShoppingCart size={17} /> Agregar al carrito</>}
                   </button>
@@ -516,7 +577,7 @@ export default function ProductDetailPlantilla2() {
                     onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = 'none')}
                   >
                     <div style={{ position: 'relative', height: 148, background: '#f9f9f9' }}>
-                      {p.IMAGEURL ? <Image src={p.IMAGEURL} alt={p.NAME} fill className="object-contain p-2" /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44 }}>📦</span>}
+                      {getProductImageUrl(p) ? <Image src={getProductImageUrl(p)} alt={p.NAME} fill className="object-contain p-2" unoptimized /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44 }}>📦</span>}
                       {rhasDisc && rPricing.fromApertura && (
                         <span style={{ position: 'absolute', top: 6, left: 6, zIndex: 2 }}>
                           <AperturaDiscountBadge percent={rdisc} size="sm" />

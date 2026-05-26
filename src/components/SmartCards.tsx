@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/context/FavoritesContext';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, formatPrice } from '@/lib/appwrite';
+import { normalizeProductImages, resolveStorageImageUrl } from '@/lib/product-images';
 import { Query } from 'appwrite';
 import { Product } from '@/types';
 import gsap from 'gsap';
@@ -102,7 +103,7 @@ export default function SmartCards() {
           title: p.NAME?.slice(0, 30) || 'Producto',
           desc: formatPrice(price),
           href: `/productos/${p.$id}`,
-          productImage: p.IMAGEURL,
+          productImage: resolveStorageImageUrl(p.IMAGEURL),
           productPrice: price,
           accent: '#8b5cf6',
           priority: 4,
@@ -177,7 +178,7 @@ export default function SmartCards() {
           title: p.NAME?.length > 28 ? p.NAME.slice(0, 28) + '…' : (p.NAME || 'Producto'),
           desc: formatPrice(price),
           href: `/productos/${p.$id}`,
-          productImage: p.IMAGEURL,
+          productImage: resolveStorageImageUrl(p.IMAGEURL),
           productPrice: price,
           accent: '#8b5cf6',
           priority: 10 + i,
@@ -192,7 +193,7 @@ export default function SmartCards() {
           title: `${favorites.length} favorito${favorites.length > 1 ? 's' : ''}`,
           desc: fav ? (fav.NAME?.slice(0, 30) || '') : 'Ve tus productos guardados',
           href: '/favoritos',
-          productImage: fav?.IMAGEURL,
+          productImage: resolveStorageImageUrl(fav?.IMAGEURL),
           accent: '#e53935',
           priority: 8,
         });

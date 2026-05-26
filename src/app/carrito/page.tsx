@@ -94,6 +94,58 @@ export default function CarritoPage() {
           .cart-summary-card .cart-total-row span:last-child { font-size: 20px !important; }
           .cart-coupon-card { padding: 12px 14px !important; border-radius: 16px !important; }
         }
+        /* Checkout button particles */
+        @keyframes cartOrbFloat {
+          0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+          10% { opacity: 0.9; }
+          50% { transform: translateY(-22px) translateX(8px) scale(1.4); opacity: 1; }
+          90% { opacity: 0.7; }
+          100% { transform: translateY(-44px) translateX(-4px) scale(0.6); opacity: 0; }
+        }
+        @keyframes cartSparkle {
+          0% { transform: scale(0) rotate(0deg); opacity: 0; }
+          20% { transform: scale(1.2) rotate(90deg); opacity: 1; }
+          50% { transform: scale(0.8) rotate(180deg); opacity: 0.8; }
+          80% { transform: scale(1.1) rotate(270deg); opacity: 0.5; }
+          100% { transform: scale(0) rotate(360deg); opacity: 0; }
+        }
+        @keyframes cartShimmer { 0% { left: -40%; } 100% { left: 110%; } }
+        @keyframes cartPulse {
+          0%, 100% { box-shadow: 0 6px 20px rgba(227,150,191,0.35), inset 0 0 12px rgba(255,255,255,0.1); }
+          50% { box-shadow: 0 6px 20px rgba(227,150,191,0.55), inset 0 0 20px rgba(255,255,255,0.2); }
+        }
+        .cart-checkout-btn { animation: cartPulse 2s ease-in-out infinite; position: relative; overflow: hidden; }
+        .cart-checkout-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 12px 32px rgba(227,150,191,0.35), inset 0 0 20px rgba(255,255,255,0.15); }
+        .cart-orb {
+          position: absolute; border-radius: 50%;
+          background: radial-gradient(circle, rgba(255,255,255,0.9), rgba(255,255,255,0.1));
+          box-shadow: 0 0 6px rgba(255,255,255,0.5);
+          animation: cartOrbFloat 2.8s ease-in-out infinite;
+        }
+        .cart-orb:nth-child(1) { width: 8px; height: 8px; left: 8%; bottom: 4px; animation-delay: 0s; }
+        .cart-orb:nth-child(2) { width: 5px; height: 5px; left: 22%; bottom: 2px; animation-delay: 0.4s; }
+        .cart-orb:nth-child(3) { width: 10px; height: 10px; left: 38%; bottom: 6px; animation-delay: 0.8s; }
+        .cart-orb:nth-child(4) { width: 6px; height: 6px; left: 52%; bottom: 3px; animation-delay: 1.2s; }
+        .cart-orb:nth-child(5) { width: 7px; height: 7px; left: 68%; bottom: 5px; animation-delay: 1.6s; }
+        .cart-orb:nth-child(6) { width: 4px; height: 4px; left: 82%; bottom: 2px; animation-delay: 2s; }
+        .cart-orb:nth-child(7) { width: 9px; height: 9px; left: 92%; bottom: 4px; animation-delay: 2.4s; }
+        .cart-sparkle {
+          position: absolute; width: 4px; height: 4px; background: white;
+          clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+          animation: cartSparkle 2s ease-in-out infinite;
+          filter: drop-shadow(0 0 3px rgba(255,255,255,0.8));
+        }
+        .cart-sparkle:nth-child(8) { left: 15%; top: 30%; animation-delay: 0s; }
+        .cart-sparkle:nth-child(9) { left: 45%; top: 20%; animation-delay: 0.7s; width: 5px; height: 5px; }
+        .cart-sparkle:nth-child(10) { left: 75%; top: 40%; animation-delay: 1.4s; }
+        .cart-sparkle:nth-child(11) { left: 30%; top: 55%; animation-delay: 0.3s; width: 3px; height: 3px; }
+        .cart-sparkle:nth-child(12) { left: 60%; top: 15%; animation-delay: 1s; }
+        .cart-shimmer-line {
+          position: absolute; top: 0; bottom: 0; width: 40%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+          animation: cartShimmer 2.5s ease-in-out infinite;
+          pointer-events: none;
+        }
       `}</style>
       <div style={{ minHeight: '100vh', background: '#fafafa', fontFamily: FF }}>
         <div className="cart-page-wrap" style={{ position: 'relative', zIndex: 1, maxWidth: 900, margin: '0 auto', padding: '24px 5%' }}>
@@ -172,10 +224,18 @@ export default function CarritoPage() {
                   </span>
                 ) : (
                   <Link href="/checkout"
+                    className="cart-checkout-btn"
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '15px 0', background: `linear-gradient(135deg,${PINK},#c0547a)`, color: '#fff', textAlign: 'center', borderRadius: 12, fontSize: 16, fontWeight: 700, textDecoration: 'none', boxSizing: 'border-box', boxShadow: '0 6px 20px rgba(227,150,191,0.35)', transition: 'all 0.2s' }}
                     onMouseEnter={e => ((e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)')}
                     onMouseLeave={e => ((e.currentTarget as HTMLElement).style.transform = 'translateY(0)')}
-                  >Continuar compra</Link>
+                  >
+                    <span style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+                      <span className="cart-orb" /><span className="cart-orb" /><span className="cart-orb" /><span className="cart-orb" /><span className="cart-orb" /><span className="cart-orb" /><span className="cart-orb" />
+                      <span className="cart-sparkle" /><span className="cart-sparkle" /><span className="cart-sparkle" /><span className="cart-sparkle" /><span className="cart-sparkle" />
+                    </span>
+                    <span className="cart-shimmer-line" />
+                    <span style={{ position: 'relative', zIndex: 2, textShadow: '0 1px 3px rgba(0,0,0,0.12)' }}>Continuar compra</span>
+                  </Link>
                 )}
 
                 <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 8, background: '#f8fafc', padding: '10px 12px', borderRadius: 10 }}>

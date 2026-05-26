@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { X, ShoppingCart, Check, Eye, ChevronLeft, ChevronRight, Star, Truck, Shield, RotateCcw, Heart, Zap } from 'lucide-react';
 import { formatPrice } from '@/lib/appwrite';
+import { resolveStorageImageUrl } from '@/lib/product-images';
 import { Product } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,7 +26,7 @@ export default function QuickView({ product, onClose }: Props) {
 
   useEffect(() => { requestAnimationFrame(() => setOpen(true)); }, []);
 
-  const images = [product.IMAGEURL, product.IMAGEURL2, product.IMAGEURL3, product.IMAGEURL4, product.IMAGEURL5].filter(Boolean) as string[];
+  const images = [product.IMAGEURL, product.IMAGEURL2, product.IMAGEURL3, product.IMAGEURL4, product.IMAGEURL5].filter(Boolean).map(v => resolveStorageImageUrl(v)) as string[];
   const price = product.CURRENTPRICE && product.CURRENTPRICE > 0 ? product.CURRENTPRICE : product.PRICE;
   const hasDisc = !!(product.CURRENTPRICE && product.CURRENTPRICE < product.PRICE);
   const discPct = hasDisc ? Math.round(((product.PRICE - product.CURRENTPRICE!) / product.PRICE) * 100) : 0;

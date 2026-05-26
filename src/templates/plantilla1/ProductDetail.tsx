@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ShoppingCart, Check, ChevronRight, Truck, Shield, RefreshCw, Heart, Sparkles, Star } from 'lucide-react';
 import ShareButton from '@/components/ShareButton';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
+import { normalizeProductImages, getProductImageUrl, resolveStorageImageUrl } from '@/lib/product-images';
 import { Query } from 'appwrite';
 import { Product } from '@/types';
 import { useCart } from '@/context/CartContext';
@@ -47,6 +48,7 @@ export default function ProductDetailPlantilla1() {
   const [selectedImg, setSelectedImg] = useState(0);
   const [added, setAdded] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [shippingModalOpen, setShippingModalOpen] = useState(false);
   const { addItem } = useCart();
   const { settings: apertura, isActive: aperturaActive, discountPercent: aperturaPct } = useAperturaPromotion();
 
@@ -54,7 +56,7 @@ export default function ProductDetailPlantilla1() {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (!product) return;
-      const imgs = [product.IMAGEURL, product.IMAGEURL2, product.IMAGEURL3, product.IMAGEURL4, product.IMAGEURL5].filter(Boolean);
+      const imgs = [product.IMAGEURL, product.IMAGEURL2, product.IMAGEURL3, product.IMAGEURL4, product.IMAGEURL5].filter(Boolean).map(v => resolveStorageImageUrl(v));
       if (imgs.length <= 1) return;
       if (e.key === 'ArrowLeft') setSelectedImg(i => (i - 1 + imgs.length) % imgs.length);
       else if (e.key === 'ArrowRight') setSelectedImg(i => (i + 1) % imgs.length);
@@ -69,7 +71,7 @@ export default function ProductDetailPlantilla1() {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
         const doc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, id);
-        const p = doc as unknown as Product;
+        const p = normalizeProductImages(doc as unknown as Product);
         setProduct(p);
         trackView(p.$id);
         if (p.CATEGORYID) {
@@ -110,7 +112,7 @@ export default function ProductDetailPlantilla1() {
     setMeta('og:title', product.NAME);
     setMeta('og:description', desc);
     setMeta('og:type', 'product');
-    if (product.IMAGEURL) setMeta('og:image', product.IMAGEURL);
+    if (product.IMAGEURL) setMeta('og:image', resolveStorageImageUrl(product.IMAGEURL));
     setMeta('og:url', window.location.href);
     const jsonLd = {
       '@context': 'https://schema.org',
@@ -128,7 +130,7 @@ export default function ProductDetailPlantilla1() {
           '@type': 'Product',
           name: product.NAME,
           description: desc,
-          image: product.IMAGEURL || undefined,
+          image: resolveStorageImageUrl(product.IMAGEURL) || undefined,
           sku: product.$id,
           offers: {
             '@type': 'Offer',
@@ -195,7 +197,7 @@ export default function ProductDetailPlantilla1() {
 
   if (!product) return null;
 
-  const images = [product.IMAGEURL, product.IMAGEURL2, product.IMAGEURL3, product.IMAGEURL4, product.IMAGEURL5].filter(Boolean) as string[];
+  const images = [product.IMAGEURL, product.IMAGEURL2, product.IMAGEURL3, product.IMAGEURL4, product.IMAGEURL5].filter(Boolean).map(v => resolveStorageImageUrl(v)) as string[];
   const features = product.FEATURES ? (Array.isArray(product.FEATURES) ? product.FEATURES : (product.FEATURES as string).split(',').map((s: string) => s.trim()).filter(Boolean)) : [];
   const tags = product.TAGS ? (Array.isArray(product.TAGS) ? product.TAGS : (product.TAGS as string).split(',').map((s: string) => s.trim()).filter(Boolean)) : [];
   const priceResolved = resolveProductDisplayPrice(product, apertura);
@@ -229,7 +231,7 @@ export default function ProductDetailPlantilla1() {
         <Truck size={15} /> Sale entre hoy y mañana
       </p>
       <p style={{ margin: '0 0 12px', fontSize: 13, color: TEXT_MUTED }}>
-        Envío disponible a todo Chile. <Link href="#" style={{ color: ORANGE_PRIMARY, textDecoration: 'none', fontWeight: 500 }}>Más detalles</Link>
+        Envío disponible a todo Chile. <button type="button" onClick={() => setShippingModalOpen(true)} style={{ color: ORANGE_PRIMARY, textDecoration: 'none', fontWeight: 500, background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}>Más detalles</button>
       </p>
       <div style={{ borderTop: `1px solid ${PINK_BG_DARK}`, paddingTop: 12, marginBottom: 12 }}>
         <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: stockColor }}>{stockLabel}</p>
@@ -272,7 +274,14 @@ export default function ProductDetailPlantilla1() {
             </div>
             {qty > 1 && <p style={{ margin: '8px 0 0', fontSize: 12, color: TEXT_MUTED }}>Total: <strong style={{ color: ORANGE_PRIMARY, fontSize: 14 }}>{formatPrice(lineTotal)}</strong></p>}
           </div>
-          <button type="button" onClick={handleAdd} style={{ width: '100%', padding: '13px 18px', background: `linear-gradient(135deg, ${ORANGE_PRIMARY} 0%, ${PINK_LIGHT} 100%)`, color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 16px rgba(227,150,191,0.3)', marginBottom: 8 }}>Comprar ahora</button>
+          <button type="button" onClick={handleAdd} className="pd-buy-btn" style={{ width: '100%', padding: '13px 18px', background: `linear-gradient(135deg, ${ORANGE_PRIMARY} 0%, ${PINK_LIGHT} 100%)`, color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 16px rgba(227,150,191,0.3)', marginBottom: 8, position: 'relative', overflow: 'hidden' }}>
+            <span style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+              <span className="pd-orb" /><span className="pd-orb" /><span className="pd-orb" /><span className="pd-orb" /><span className="pd-orb" /><span className="pd-orb" /><span className="pd-orb" />
+              <span className="pd-sparkle" /><span className="pd-sparkle" /><span className="pd-sparkle" /><span className="pd-sparkle" /><span className="pd-sparkle" />
+            </span>
+            <span className="pd-shimmer-line" />
+            <span style={{ position: 'relative', zIndex: 2 }}>Comprar ahora</span>
+          </button>
           <button type="button" onClick={handleAdd} style={{ width: '100%', padding: '12px 18px', background: added ? '#ecfdf5' : '#f9fafb', color: added ? '#10b981' : ORANGE_PRIMARY, border: `1.5px solid ${added ? '#10b981' : PINK_LIGHT}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             {added ? <><Check size={15} /> Agregado</> : <><ShoppingCart size={15} /> Agregar al carrito</>}
           </button>
@@ -368,6 +377,61 @@ export default function ProductDetailPlantilla1() {
         .pd-mobile-bar-actions button { flex: 1; border-radius: 10px; font-size: 12px; font-weight: 700; padding: 11px 8px; cursor: pointer; }
         .pd-mbar-buy { border: none; background: linear-gradient(135deg, ${ORANGE_PRIMARY}, ${PINK_LIGHT}); color: #fff; box-shadow: 0 4px 12px rgba(227,150,191,0.35); }
         .pd-mbar-cart { background: #fff; color: ${ORANGE_PRIMARY}; border: 1.5px solid ${PINK_LIGHT}; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        /* Buy button particles */
+        @keyframes pdOrbFloat {
+          0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+          10% { opacity: 0.9; }
+          50% { transform: translateY(-22px) translateX(8px) scale(1.4); opacity: 1; }
+          90% { opacity: 0.7; }
+          100% { transform: translateY(-44px) translateX(-4px) scale(0.6); opacity: 0; }
+        }
+        @keyframes pdSparkle {
+          0% { transform: scale(0) rotate(0deg); opacity: 0; }
+          20% { transform: scale(1.2) rotate(90deg); opacity: 1; }
+          50% { transform: scale(0.8) rotate(180deg); opacity: 0.8; }
+          80% { transform: scale(1.1) rotate(270deg); opacity: 0.5; }
+          100% { transform: scale(0) rotate(360deg); opacity: 0; }
+        }
+        @keyframes pdShimmer {
+          0% { left: -40%; }
+          100% { left: 110%; }
+        }
+        .pd-buy-btn { animation: pdPulse 2s ease-in-out infinite; }
+        .pd-buy-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 12px 32px rgba(227,150,191,0.35), inset 0 0 20px rgba(255,255,255,0.15); }
+        @keyframes pdPulse {
+          0%, 100% { box-shadow: 0 6px 16px rgba(227,150,191,0.3), inset 0 0 12px rgba(255,255,255,0.1); }
+          50% { box-shadow: 0 6px 16px rgba(227,150,191,0.5), inset 0 0 20px rgba(255,255,255,0.2); }
+        }
+        .pd-orb {
+          position: absolute; border-radius: 50%;
+          background: radial-gradient(circle, rgba(255,255,255,0.9), rgba(255,255,255,0.1));
+          box-shadow: 0 0 6px rgba(255,255,255,0.5);
+          animation: pdOrbFloat 2.8s ease-in-out infinite;
+        }
+        .pd-orb:nth-child(1) { width: 8px; height: 8px; left: 8%; bottom: 4px; animation-delay: 0s; }
+        .pd-orb:nth-child(2) { width: 5px; height: 5px; left: 22%; bottom: 2px; animation-delay: 0.4s; }
+        .pd-orb:nth-child(3) { width: 10px; height: 10px; left: 38%; bottom: 6px; animation-delay: 0.8s; }
+        .pd-orb:nth-child(4) { width: 6px; height: 6px; left: 52%; bottom: 3px; animation-delay: 1.2s; }
+        .pd-orb:nth-child(5) { width: 7px; height: 7px; left: 68%; bottom: 5px; animation-delay: 1.6s; }
+        .pd-orb:nth-child(6) { width: 4px; height: 4px; left: 82%; bottom: 2px; animation-delay: 2s; }
+        .pd-orb:nth-child(7) { width: 9px; height: 9px; left: 92%; bottom: 4px; animation-delay: 2.4s; }
+        .pd-sparkle {
+          position: absolute; width: 4px; height: 4px; background: white;
+          clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+          animation: pdSparkle 2s ease-in-out infinite;
+          filter: drop-shadow(0 0 3px rgba(255,255,255,0.8));
+        }
+        .pd-sparkle:nth-child(8) { left: 15%; top: 30%; animation-delay: 0s; }
+        .pd-sparkle:nth-child(9) { left: 45%; top: 20%; animation-delay: 0.7s; width: 5px; height: 5px; }
+        .pd-sparkle:nth-child(10) { left: 75%; top: 40%; animation-delay: 1.4s; }
+        .pd-sparkle:nth-child(11) { left: 30%; top: 55%; animation-delay: 0.3s; width: 3px; height: 3px; }
+        .pd-sparkle:nth-child(12) { left: 60%; top: 15%; animation-delay: 1s; }
+        .pd-shimmer-line {
+          position: absolute; top: 0; bottom: 0; width: 40%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+          animation: pdShimmer 2.5s ease-in-out infinite;
+          pointer-events: none;
+        }
       `}</style>
 
       {/* Breadcrumb */}
@@ -438,7 +502,7 @@ export default function ProductDetailPlantilla1() {
                 </span>
               )}
               <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 2, display: 'flex', gap: 6 }}>
-                <ShareButton title={product.NAME} text={`${product.NAME} - ${formatPrice(displayPrice)}`} image={product.IMAGEURL} />
+                <ShareButton title={product.NAME} text={`${product.NAME} - ${formatPrice(displayPrice)}`} image={resolveStorageImageUrl(product.IMAGEURL)} />
                 <FavoriteButton productId={product.$id} size={20} />
               </div>
             </div>
@@ -625,7 +689,7 @@ export default function ProductDetailPlantilla1() {
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.borderColor = PINK_BG_DARK; }}
                   >
                     <div style={{ position: 'relative', height: 158, background: '#fff' }}>
-                      {p.IMAGEURL ? <Image src={p.IMAGEURL} alt={p.NAME} fill className="object-contain p-2" /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44 }}>💄</span>}
+                      {getProductImageUrl(p) ? <Image src={getProductImageUrl(p)} alt={p.NAME} fill className="object-contain p-2" unoptimized /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44 }}>💄</span>}
                       {rhasDisc && <span style={{ position: 'absolute', top: 8, left: 8, background: `linear-gradient(135deg, ${ORANGE_PRIMARY}, ${PINK_LIGHT})`, color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 12 }}>-{rdisc}%</span>}
                     </div>
                     <div style={{ padding: '12px 14px 16px' }}>
@@ -754,6 +818,59 @@ export default function ProductDetailPlantilla1() {
                 </div>
               </div>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Shipping Details Modal */}
+      {shippingModalOpen && (
+        <div onClick={() => setShippingModalOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 480, maxHeight: '85vh', overflow: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #f3f4f6', position: 'sticky', top: 0, background: '#fff', zIndex: 1, borderRadius: '16px 16px 0 0' }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: TEXT_DARK, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Truck size={20} color={ORANGE_PRIMARY} /> Detalles de envío
+              </h2>
+              <button onClick={() => setShippingModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#666', display: 'flex', alignItems: 'center' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            {/* Content */}
+            <div style={{ padding: '20px 24px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Truck size={18} color="#10b981" /></div>
+                  <div>
+                    <p style={{ margin: '0 0 2px', fontSize: 14, fontWeight: 700, color: TEXT_DARK }}>Envío a todo Chile</p>
+                    <p style={{ margin: 0, fontSize: 12, color: TEXT_MUTED, lineHeight: 1.5 }}>Realizamos despacho a todas las regiones y comunas de Chile continental.</p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: PINK_BG, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><RefreshCw size={18} color={ORANGE_PRIMARY} /></div>
+                  <div>
+                    <p style={{ margin: '0 0 2px', fontSize: 14, fontWeight: 700, color: TEXT_DARK }}>Devolución gratis</p>
+                    <p style={{ margin: 0, fontSize: 12, color: TEXT_MUTED, lineHeight: 1.5 }}>Tienes 30 días desde la recepción para devolver el producto sin costo.</p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Shield size={18} color="#3b82f6" /></div>
+                  <div>
+                    <p style={{ margin: '0 0 2px', fontSize: 14, fontWeight: 700, color: TEXT_DARK }}>Compra Protegida</p>
+                    <p style={{ margin: 0, fontSize: 12, color: TEXT_MUTED, lineHeight: 1.5 }}>Recibe el producto o te devolvemos el dinero. Tu compra está protegida.</p>
+                  </div>
+                </div>
+                <div style={{ background: '#f9fafb', borderRadius: 10, padding: '14px 16px', border: '1px solid #f3f4f6' }}>
+                  <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 700, color: TEXT_DARK }}>Tiempos de entrega estimados</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <p style={{ margin: 0, fontSize: 12, color: TEXT_MUTED }}>• Región Metropolitana: 1–2 días hábiles</p>
+                    <p style={{ margin: 0, fontSize: 12, color: TEXT_MUTED }}>• Zona central: 2–4 días hábiles</p>
+                    <p style={{ margin: 0, fontSize: 12, color: TEXT_MUTED }}>• Zona sur/norte: 3–6 días hábiles</p>
+                    <p style={{ margin: 0, fontSize: 12, color: TEXT_MUTED }}>• Zona austral: 5–8 días hábiles</p>
+                  </div>
+                </div>
+                <p style={{ margin: 0, fontSize: 11, color: '#9ca3af', fontStyle: 'italic' }}>El costo de envío se coordina con el vendedor tras confirmar el pedido.</p>
+              </div>
             </div>
           </div>
         </div>

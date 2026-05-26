@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { Search, Clock, X, TrendingUp, ArrowRight } from 'lucide-react';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, formatPrice } from '@/lib/appwrite';
+import { normalizeProductImages, getProductImageUrl } from '@/lib/product-images';
 import { Query } from 'appwrite';
 import { Product } from '@/types';
 
@@ -52,7 +53,7 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
         Query.search('NAME', q),
         Query.limit(6),
       ]);
-      setResults(res.documents as unknown as Product[]);
+      setResults((res.documents as unknown as Product[]).map(p => normalizeProductImages(p)));
     } catch {
       // Fallback: try contains search
       try {
@@ -63,7 +64,7 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
           p.NAME.toLowerCase().includes(q.toLowerCase()) ||
           (p.DESCRIPTION || '').toLowerCase().includes(q.toLowerCase())
         ).slice(0, 6);
-        setResults(filtered);
+        setResults(filtered.map(p => normalizeProductImages(p)));
       } catch { setResults([]); }
     } finally {
       setLoading(false);
@@ -160,9 +161,9 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
                   style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', textDecoration: 'none', borderBottom: '1px solid #f8f8f8', transition: 'background .15s' }}
                   onMouseEnter={e => (e.currentTarget.style.background = '#fdf2f8')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                  {p.IMAGEURL && (
+                  {getProductImageUrl(p) && (
                     <div style={{ width: 44, height: 44, borderRadius: 6, overflow: 'hidden', flexShrink: 0, background: '#f5f5f5' }}>
-                      <img src={p.IMAGEURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                      <img src={getProductImageUrl(p)} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     </div>
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>

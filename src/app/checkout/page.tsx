@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { User, MapPin, Package, ChevronDown, ChevronRight, Shield, Truck, RefreshCw, Plus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, WHOLESALE_REQUESTS_COLLECTION_ID, APERTURA_SETTINGS_COLLECTION_ID, COUPONS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { serverListDocuments } from '@/lib/appwrite-server';
 import { ADDRESSES_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { CHILE_REGIONES } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
@@ -97,27 +98,48 @@ function CheckoutInner() {
 
   useEffect(() => {
     setAgencies(CHECKOUT_AGENCIES);
-    setAgency(CHECKOUT_AGENCIES[0]?.name || '');
+    // Don't auto-select agency — user must choose
   }, []);
 
-  // Fetch public coupons
+  // Fetch public coupons (using server SDK with API key to bypass read permissions)
   useEffect(() => {
     (async () => {
       try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        const res = await databases.listDocuments(databaseId, COUPONS_COLLECTION_ID, [
-          Query.equal('ISACTIVE', true),
-          Query.limit(20),
+        // Try with 'isActive' first, if no results try 'ISACTIVE'
+        let res = await serverListDocuments(COUPONS_COLLECTION_ID, [
+          'equal("isActive", [true])',
+          'limit(50)',
         ]);
-        const active = res.documents.filter((c: any) => {
-          const expiresAt = c.EXPIRESAT || (c.ENDAT ? new Date(c.ENDAT * 1000).toISOString() : null);
+        let docs = (res.documents as any[]) || [];
+        // If no results with lowercase, try uppercase field name
+        if (docs.length === 0) {
+          try {
+            res = await serverListDocuments(COUPONS_COLLECTION_ID, [
+              'equal("ISACTIVE", [true])',
+              'limit(50)',
+            ]);
+            docs = (res.documents as any[]) || [];
+          } catch {}
+        }
+        // If still no results, fetch all and filter client-side
+        if (docs.length === 0) {
+          res = await serverListDocuments(COUPONS_COLLECTION_ID, ['limit(50)']);
+          docs = (res.documents as any[]) || [];
+        }
+        const active = docs.filter((c: any) => {
+          const isActive = c.isActive ?? c.ISACTIVE ?? c.ACTIVE ?? true;
+          if (!isActive) return false;
+          const expiresAt = c.expiresAt || c.EXPIRESAT || (c.endAt ? new Date(c.endAt * 1000).toISOString() : null) || (c.ENDAT ? new Date(c.ENDAT * 1000).toISOString() : null);
           if (expiresAt && new Date(expiresAt) < new Date()) return false;
-          if (c.MAXUSES && (c.USEDCOUNT || 0) >= c.MAXUSES) return false;
+          const maxUses = c.maxUses || c.MAXUSES || 0;
+          const usedCount = c.usedCount || c.USEDCOUNT || 0;
+          if (maxUses && usedCount >= maxUses) return false;
+          const code = (c.code || c.CODE || '').toUpperCase();
+          if (!code) return false;
           return true;
         });
         setPublicCoupons(active);
-      } catch {}
+      } catch (e) { console.error('Failed to fetch public coupons:', e); }
     })();
   }, []);
 
@@ -555,12 +577,12 @@ function CheckoutInner() {
             <div style={{ flex: 1, minWidth: 320, display: 'flex', flexDirection: 'column', gap: 12 }}>
 
               {/* Shipping agencies */}
-              <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #fce7f3', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)' }}>
+              <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #fce7f3', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)', position: 'relative', zIndex: 50 }}>
                 <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 10, fontFamily: FF }}>
                   <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, #c0547a)`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>1</span>
                   Agencia de envío
                 </h2>
-                <div style={{ position: 'relative' }}>
+                <div style={{ position: 'relative', zIndex: 10 }}>
                   <button type="button" onClick={() => setAgencyDropdownOpen(!agencyDropdownOpen)}
                     style={{ width: '100%', padding: '14px 16px', border: `2px solid ${agency ? PINK : '#fce7f3'}`, borderRadius: 14, background: agency ? PINK_BG : '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 10, boxShadow: agency ? '0 4px 14px rgba(227,150,191,0.1)' : 'none' }}>
                     {agency ? (() => {
@@ -648,7 +670,7 @@ function CheckoutInner() {
               )}
 
               {/* Personal data */}
-              <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #fce7f3', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)' }}>
+              <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #fce7f3', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)', position: 'relative', zIndex: 1 }}>
                 <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 10, fontFamily: FF }}>
                   <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, #c0547a)`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>3</span>
                   Datos personales
@@ -865,8 +887,8 @@ function CheckoutInner() {
                           {publicCoupons.map((c: any) => {
                             const code = (c.code || c.CODE || '').toUpperCase();
                             if (!code) return null;
-                            const discType = c.DISCOUNTTYPE ?? c.TYPE ?? 'percent';
-                            const discVal = c.DISCOUNTVALUE ?? c.VALUE ?? 0;
+                            const discType = c.type ?? c.DISCOUNTTYPE ?? c.TYPE ?? 'percent';
+                            const discVal = c.value ?? c.DISCOUNTVALUE ?? c.VALUE ?? 0;
                             const label = discType === 'percent' || discType === 'percentage' ? `${discVal}% OFF` : formatPrice(discVal);
                             return (
                               <button key={c.$id} type="button" onClick={() => { setCouponCode(code); setCouponError(''); }}
@@ -883,16 +905,17 @@ function CheckoutInner() {
                   </div>
                 )}
 
-                {/* Agency badge */}
+                {/* Agency badge — only show when selected */}
+                {agency && (
                 <div style={{ margin: '0 22px 14px', padding: '10px 14px', borderRadius: 12, background: 'linear-gradient(135deg, rgba(227,150,191,0.06), rgba(249,168,212,0.1))', border: '1px solid #fce7f3', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ width: 28, height: 28, borderRadius: 8, background: PINK_BG, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #fce7f3' }}>
                     <Truck size={13} color={PINK} />
                   </div>
                   <div>
-                    <p style={{ margin: 0, fontSize: 11, color: '#9ca3af', fontFamily: FF }}>Envío por</p>
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#111', fontFamily: FF }}>{agency}</p>
                   </div>
                 </div>
+                )}
 
                 {/* Note */}
                 <div style={{ padding: '0 22px 16px' }}>

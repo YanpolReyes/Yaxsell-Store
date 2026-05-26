@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { X, ShoppingCart } from 'lucide-react';
 import { Product } from '@/types';
 import { formatPrice } from '@/lib/appwrite';
+import { getProductImageUrl } from '@/lib/product-images';
 import { useCart } from '@/context/CartContext';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
@@ -113,8 +114,8 @@ export default function ProductCardPreview({ product, onClose }: Props) {
             transition: 'transform 0.38s cubic-bezier(0.16,1,0.3,1), opacity 0.32s ease',
           }}
         >
-          {product.IMAGEURL ? (
-            <Image src={product.IMAGEURL} alt={product.NAME} fill style={{ objectFit: 'contain' }} sizes="100vw" priority />
+          {getProductImageUrl(product) ? (
+            <Image src={getProductImageUrl(product)} alt={product.NAME} fill style={{ objectFit: 'contain' }} sizes="100vw" priority unoptimized />
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 64 }}>📦</div>
           )}

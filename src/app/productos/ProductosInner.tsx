@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { Search, Grid3x3, List, ShoppingCart, X, SlidersHorizontal, Sparkles, ChevronDown } from 'lucide-react';
 import AnimHeart from '@/components/AnimHeart';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, formatPrice } from '@/lib/appwrite';
+import { normalizeProductImages, getProductImageUrl } from '@/lib/product-images';
 import { cached, TTL } from '@/lib/cache';
 import { Query } from 'appwrite';
 import { Product, Category, Subcategory } from '@/types';
@@ -53,7 +54,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     : products.length;
 
   const handleCardImageClick = (p: Product) => {
-    const imgSrc = p.IMAGEURL;
+    const imgSrc = getProductImageUrl(p);
     if (imgSrc) {
       setZoomImage({ src: imgSrc, alt: p.NAME });
     }
@@ -94,7 +95,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
         const r = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, queries);
         return r.documents;
       });
-      setProducts(prodDocs as unknown as Product[]);
+      setProducts((prodDocs as unknown as Product[]).map(p => normalizeProductImages(p)));
 
       // 4. Cargar subcategorías para la categoría seleccionada (caché 30 min)
       if (catIdToUse || selectedCat) {
@@ -489,8 +490,8 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                     <div key={p.$id} className="pk-card" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '0 0 22px 22px', overflow: 'hidden', border: '1px solid rgba(255,237,213,0.95)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)' }}>
                       <div className="pk-card-media-link" onClick={() => handleCardImageClick(p)} style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
                         <div className="pk-card-image" style={{ position: 'relative', aspectRatio: '1/1', background: 'linear-gradient(135deg,#fdf2f8,#fff)', overflow: 'hidden' }}>
-                          {p.IMAGEURL ? (
-                            <Image src={p.IMAGEURL} alt={p.NAME} fill className="pk-card-img" style={{ objectFit: 'cover', pointerEvents: 'none' }} sizes="(max-width: 768px) 50vw, 25vw" />
+                          {getProductImageUrl(p) ? (
+                            <Image src={getProductImageUrl(p)} alt={p.NAME} fill className="pk-card-img" style={{ objectFit: 'cover', pointerEvents: 'none' }} sizes="(max-width: 768px) 50vw, 25vw" unoptimized />
                           ) : (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 48, color: '#fbcfe8' }}>📦</div>
                           )}
@@ -577,7 +578,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                   return (
                     <div key={p.$id} className="pk-card-list" style={{ background: '#fff', borderRadius: 18, border: '1px solid #fce7f3', display: 'flex', gap: 16, padding: 12, transition: 'all 0.2s', alignItems: 'center' }}>
                       <div className="pk-card-list-media" onClick={() => handleCardImageClick(p)} style={{ position: 'relative', width: 110, height: 110, borderRadius: 14, overflow: 'hidden', background: '#fdf2f8', flexShrink: 0, cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                        {p.IMAGEURL ? <Image src={p.IMAGEURL} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="110px" /> : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 36 }}>📦</div>}
+                        {getProductImageUrl(p) ? <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="110px" unoptimized /> : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 36 }}>📦</div>}
                         {hasDisc && <div style={{ position: 'absolute', top: 6, left: 6, zIndex: 3 }}><AperturaDiscountBadge percent={disc} size="sm" /></div>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Clock } from 'lucide-react';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, formatPrice } from '@/lib/appwrite';
+import { normalizeProductImages, getProductImageUrl } from '@/lib/product-images';
 import { Query } from 'appwrite';
 import { Product } from '@/types';
 
@@ -40,7 +41,7 @@ export default function RecentlyViewed({ excludeId }: { excludeId?: string }) {
           Query.limit(8),
         ]);
         // Sort to match recency order
-        const map = new Map(res.documents.map(d => [d.$id, d as unknown as Product]));
+        const map = new Map(res.documents.map(d => [d.$id, normalizeProductImages(d as unknown as Product)]));
         setProducts(ids.map(id => map.get(id)).filter(Boolean) as Product[]);
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
@@ -67,7 +68,7 @@ export default function RecentlyViewed({ excludeId }: { excludeId?: string }) {
             >
               <div style={{ position: 'relative', width: '100%', height: 140, background: '#f9f9f9' }}>
                 {p.IMAGEURL ? (
-                  <Image src={p.IMAGEURL} alt={p.NAME} fill style={{ objectFit: 'contain', padding: 8 }} sizes="160px" />
+                  <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'contain', padding: 8 }} sizes="160px" unoptimized />
                 ) : (
                   <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>📦</span>
                 )}

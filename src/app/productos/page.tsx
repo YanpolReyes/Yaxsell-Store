@@ -600,7 +600,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
                   return (
                     <div key={p.$id} className="pk-card-list" style={{ background: '#fff', borderRadius: 18, border: '1px solid #fce7f3', display: 'flex', gap: 16, padding: 12, transition: 'all 0.2s', alignItems: 'center' }}>
                       <div className="pk-card-list-media" onClick={() => handleCardImageClick(p)} style={{ position: 'relative', width: 110, height: 110, borderRadius: 14, overflow: 'hidden', background: '#fdf2f8', flexShrink: 0, cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                        {p.IMAGEURL ? <Image src={p.IMAGEURL} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="110px" /> : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 36 }}>📦</div>}
+                        {getProductImageUrl(p) ? <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="110px" unoptimized /> : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 36 }}>📦</div>}
                         {hasDisc && <div style={{ position: 'absolute', top: 6, left: 6, zIndex: 3 }}><AperturaDiscountBadge percent={disc} size="sm" /></div>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
