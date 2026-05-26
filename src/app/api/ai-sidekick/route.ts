@@ -22,9 +22,10 @@ Si el usuario NO proporciona alguno de estos 3, NO crees el producto. En su luga
 Solo cuando tengas los 3, procede a crear con el formato de acción.
 
 ## 🖼️ ANÁLISIS DE IMÁGENES
-- Si el usuario envía una imagen (aparece como [Imagen adjunta: URL]), ANALIZA la imagen para obtener contexto: tipo de producto, material, color, uso, estilo, etc.
+- Si el usuario envía una imagen, verás la imagen como inline_data Y un texto que dice [URL de esta imagen: URL].
+- ANALIZA la imagen para obtener contexto: tipo de producto, material, color, uso, estilo, etc.
 - USA esa información para generar MEJORES descripciones, categorías, tags y subcategorías.
-- USA la URL de la imagen en el campo "imageUrl" del JSON de acción.
+- ⚠️ CRÍTICO: En el campo "imageUrl" del JSON de acción, USA EXACTAMENTE la URL que aparece en [URL de esta imagen: ...]. NUNCA inventes una URL. NUNCA uses otra URL que no sea la proporcionada. Si ves [URL de esta imagen: https://nyc.cloud.appwrite.io/...], USA ESA URL exacta.
 - Si la imagen muestra un producto específico (ropa, alimento, electrodoméstico, etc.), genera datos coherentes con lo que ves.
 
 ## Acciones ejecutables (se ejecutan automáticamente):
@@ -163,13 +164,15 @@ export async function POST(req: NextRequest) {
         if (match.index > lastIndex) {
           parts.push({ text: m.content.slice(lastIndex, match.index) });
         }
-        // Fetch image and send as inline_data
+        // Fetch image and send as inline_data, BUT also keep the URL text so AI knows the URL
         try {
           const imgRes = await fetch(match[1]);
           const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
           const buffer = await imgRes.arrayBuffer();
           const base64 = Buffer.from(buffer).toString('base64');
           parts.push({ inline_data: { mime_type: contentType, data: base64 } });
+          // Keep the URL reference so AI uses THIS exact URL in imageUrl field
+          parts.push({ text: `[URL de esta imagen: ${match[1]}]` });
         } catch {
           // If fetch fails, just include the URL as text
           parts.push({ text: `[Imagen adjunta: ${match[1]}]` });
