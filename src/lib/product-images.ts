@@ -1,5 +1,4 @@
-import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from './appwrite';
-import { cleanStorageUrl } from './appwrite-server';
+import { getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from './appwrite';
 
 export const PRODUCTS_BUCKET_ID = MEDIA_BUCKET_ID; // Backward compatibility
 
@@ -13,20 +12,34 @@ export function resolveStorageImageUrl(
   const v = value.trim();
   if (!v) return '';
 
-  if (v.startsWith('http://') || v.startsWith('https://') || v.startsWith('data:') || v.startsWith('blob:')) {
-    return cleanStorageUrl(v);
+  // Data URIs and blobs pass through directly
+  if (v.startsWith('data:') || v.startsWith('blob:')) return v;
+
+  // Strip mode=admin from any URL
+  const clean = v.replace(/&?mode=admin/, '').replace(/\?mode=admin/, '?').replace(/\?$/, '');
+
+  // External URLs (non-Appwrite) pass through as-is
+  if ((clean.startsWith('http://') || clean.startsWith('https://')) && !clean.includes('cloud.appwrite.io')) {
+    return clean;
+  }
+
+  // Appwrite Storage URLs — route through /api/image proxy to bypass auth
+  if (clean.startsWith('http://') || clean.startsWith('https://')) {
+    return `/api/image?url=${encodeURIComponent(clean)}`;
   }
 
   const { endpoint, projectId } = getAppwriteConfig();
 
-  if (v.startsWith('/storage/buckets/')) {
-    return `${endpoint.replace(/\/$/, '')}${v}${v.includes('?') ? '' : `?project=${projectId}`}`;
+  if (clean.startsWith('/storage/buckets/')) {
+    const fullUrl = `${endpoint.replace(/\/$/, '')}${clean}${clean.includes('?') ? '' : `?project=${projectId}`}`;
+    return `/api/image?url=${encodeURIComponent(fullUrl)}`;
   }
 
   // File ID de Appwrite (sin slashes ni espacios)
-  if (/^[a-zA-Z0-9]{10,}$/.test(v) && !v.includes('/') && !v.includes('.')) {
-    const path = MEDIA_PREFIXES[prefix] + v;
-    return `${endpoint}/storage/buckets/${bucketId}/files/${path}/view?project=${projectId}`;
+  if (/^[a-zA-Z0-9]{10,}$/.test(clean) && !clean.includes('/') && !clean.includes('.')) {
+    const path = MEDIA_PREFIXES[prefix] + clean;
+    const fullUrl = `${endpoint}/storage/buckets/${bucketId}/files/${path}/view?project=${projectId}`;
+    return `/api/image?url=${encodeURIComponent(fullUrl)}`;
   }
 
   return v;
