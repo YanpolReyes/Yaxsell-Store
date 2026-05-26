@@ -30,6 +30,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { settings: apertura } = useAperturaPromotion();
   const { user, isLoggedIn } = useAuth();
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const serverLoadedRef = useRef(false);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -39,9 +40,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, []);
 
-  // Load cart from Appwrite when user logs in
+  // Reset server load flag when user logs out
+  useEffect(() => {
+    if (!isLoggedIn) serverLoadedRef.current = false;
+  }, [isLoggedIn]);
+
+  // Load cart from Appwrite ONCE when user first logs in
   useEffect(() => {
     if (!isLoggedIn || !user) return;
+    if (serverLoadedRef.current) return;
+    serverLoadedRef.current = true;
     (async () => {
       try {
         const { databases } = getServices();
