@@ -51,10 +51,9 @@ export async function POST(req: NextRequest) {
 
     const models = ['gemini-2.0-flash-exp', 'gemini-2.0-flash-preview-image-generation'];
     let res;
-    let lastModel = '';
+    let lastErrText = '';
 
     for (const model of models) {
-      lastModel = model;
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
       res = await fetch(url, {
         method: 'POST',
@@ -62,15 +61,14 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify(body),
       });
       if (res.ok) break;
-      const errText = await res.text();
-      console.warn(`Model ${model} failed (${res.status}):`, errText.slice(0, 200));
+      lastErrText = await res.text();
+      console.warn(`Model ${model} failed (${res.status}):`, lastErrText.slice(0, 200));
       if (res.status === 404 || res.status === 400) continue;
       break;
     }
 
     if (!res || !res.ok) {
-      const errText = res ? await res.text() : 'All models unavailable';
-      console.error('Gemini image gen error:', res?.status, errText);
+      console.error('Gemini image gen error:', res?.status, lastErrText);
       return NextResponse.json({ error: `Error generando imagen (${res?.status || 503})` }, { status: res?.status || 503 });
     }
 
