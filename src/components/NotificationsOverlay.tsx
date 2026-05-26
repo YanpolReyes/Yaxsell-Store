@@ -93,7 +93,7 @@ export default function NotificationsOverlay({ onClose }: Props) {
       try {
         await markNotificationRead(id);
         setNotifs((prev) =>
-          prev.map((doc) => (doc.$id === id ? { ...doc, isRead: true, read: true } : doc))
+          prev.map((doc) => (doc.$id === id ? { ...doc, isRead: true } : doc))
         );
         refreshCount();
       } catch { /* ignore */ }

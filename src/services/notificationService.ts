@@ -100,7 +100,6 @@ export async function createNotificationClient(input: CreateNotificationInput) {
     message: input.message,
     type: input.type,
     isRead: false,
-    read: false,
     userId: input.userId || (input.broadcast ? 'all' : ''),
   };
   const data = buildDataPayload(input.link, input.refKey);
@@ -115,12 +114,12 @@ export async function createNotificationServer(input: CreateNotificationInput) {
     message: input.message,
     type: input.type,
     isRead: false,
-    read: false,
     userId: input.userId || (input.broadcast ? 'all' : ''),
   };
   const data = buildDataPayload(input.link, input.refKey);
   if (data) payload.data = data;
-  return serverCreateDocument(NOTIFICATIONS_COLLECTION, ID.unique(), payload);
+  // Usar 'unique()' para que Appwrite genere el ID automáticamente
+  return serverCreateDocument(NOTIFICATIONS_COLLECTION, 'unique()', payload);
 }
 
 async function existsByRefKey(refKey: string, userId?: string): Promise<boolean> {
@@ -252,7 +251,6 @@ export async function markNotificationRead(documentId: string) {
   const { databaseId } = getAppwriteConfig();
   await databases.updateDocument(databaseId, NOTIFICATIONS_COLLECTION, documentId, {
     isRead: true,
-    read: true,
   });
 }
 

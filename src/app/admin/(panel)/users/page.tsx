@@ -108,7 +108,27 @@ function UsersPageInner() {
         readByAdmin: true,
       });
       setChatMessages(prev => [...prev, msg]);
+      // Guardar mensaje antes de limpiar
+      const messageText = chatDraft.trim();
       setChatDraft('');
+      // Crear notificación para el usuario vía API server-side
+      try {
+        const notifRes = await fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: 'Nuevo mensaje',
+            message: messageText.length > 50 ? messageText.slice(0, 50) + '…' : messageText,
+            type: 'info',
+            userId: chatModal.userId,
+            link: '/cuenta/chat',
+          }),
+        });
+        const notifData = await notifRes.json();
+        console.log('[admin] Notificación creada:', notifData);
+      } catch (e) {
+        console.error('[admin] Error notificación:', e);
+      }
     } catch (e: unknown) {
       alert('Error: ' + (e instanceof Error ? e.message : 'No se pudo enviar'));
     } finally {

@@ -23,13 +23,41 @@
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media screen and (max-width: 1024px) {
-  /* Ocultar el header de Shopify y announcement bar en mobile â€” Navbar1 toma el control */
+  /* Ocultar el header de Shopify en mobile â€” Navbar1 toma el control */
   [data-template="1"] .musk-main-header,
-  [data-template="1"] #shopify-section-sections--22405132747000__header_fYEwWD,
-  [data-template="1"] #shopify-section-sections--22405132747000__announcement_bar_B8FdRK,
-  [data-template="1"] .announcement-bar,
-  [data-template="1"] .musk-announcement-bar {
+  [data-template="1"] #shopify-section-sections--22405132747000__header_fYEwWD {
     display: none !important;
+  }
+
+  /* Announcement bar más delgada en mobile */
+  [data-template="1"] .announcement-bar-main,
+  [data-template="1"] .musk-announcement-bar {
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+    min-height: auto !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    margin-top: 48px !important;
+  }
+  [data-template="1"] #shopify-section-sections--22405132747000__announcement_bar_B8FdRK {
+    margin-top: 48px !important;
+  }
+  [data-template="1"] .announcement-bar-main .announcement-message,
+  [data-template="1"] .musk-announcement-bar .announcement-message,
+  [data-template="1"] .announcement-bar-main .announcement-content-slide,
+  [data-template="1"] .musk-announcement-bar .announcement-content-slide {
+    font-size: 11px !important;
+    padding: 1px 8px !important;
+  }
+  [data-template="1"] .announcement-bar-main .announcement-content-slide a,
+  [data-template="1"] .musk-announcement-bar .announcement-content-slide a {
+    font-size: 11px !important;
+    padding: 1px 4px !important;
+  }
+  [data-template="1"] .announcement-bar-main svg,
+  [data-template="1"] .musk-announcement-bar svg {
+    width: 12px !important;
+    height: 12px !important;
   }
 
   /* Eliminar gap arriba y abajo del hero en mobile */

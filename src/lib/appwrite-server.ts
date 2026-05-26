@@ -4,12 +4,12 @@
 const APPWRITE_ENDPOINT =
   process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1';
 const PROJECT_ID =
-  process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '6a0e374b0009138bc6fa';
+  process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '6a0a4e8d0032177f3f90';
 const DATABASE_ID =
-  process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a0e37ac0016762b9dc4';
+  process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a0a58ca001798410d86';
 const API_KEY =
   process.env.APPWRITE_API_KEY ||
-  'standard_4fc3847401fa354922245a979fdbb343bf0ba794d2b569f63fd8083bb493cd21ce2571d2c9f2d88747e7a79553faa4635eddf5500842d0ee132f9f0b853a12f678e88c4a3b2327f8dcc13ac9981f52e6cffd9efbbb2eab7a3e353f9ba18466821df3d08f7d40a5625388a3ce4bd2f6248b1ac12661045180dd2a031fec206641';
+  'standard_c476eaadc21bbecc3b6949ee4d0a932613b7a3d4ee52c80cf2c1406750ff75267becfad617da0acd444d0b903b8faea19661d48b2f8b6dc09b678e0db164ddd4b472417c3477a091188554bdd2adfad944778a2927090744ae991c9dcf48c7cebc60e437f5c8a841ffb0736da27daf197bf5716065c2ea5dda65070b07d74642';
 
 const headers = () => ({
   'Content-Type': 'application/json',
@@ -40,14 +40,21 @@ export async function serverListDocuments(
 export async function serverCreateDocument(
   collectionId: string,
   documentId: string,
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
+  readPermissions: string[] = [],
+  writePermissions: string[] = []
 ): Promise<Record<string, unknown>> {
+  // Appwrite REST API requiere: { documentId, data: {...}, permissions: [...] }
+  const body: Record<string, unknown> = { documentId, data };
+  const perms = [...readPermissions, ...writePermissions];
+  if (perms.length) body.permissions = perms;
+  console.log('[serverCreateDoc]', collectionId, JSON.stringify(body).slice(0, 300));
   const res = await fetch(
     `${APPWRITE_ENDPOINT}/databases/${DATABASE_ID}/collections/${collectionId}/documents`,
     {
       method: 'POST',
       headers: headers(),
-      body: JSON.stringify({ documentId, data }),
+      body: JSON.stringify(body),
     }
   );
   if (!res.ok) {

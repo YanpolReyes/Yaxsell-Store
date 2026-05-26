@@ -307,9 +307,38 @@ export default function Navbar1() {
         .tpl1-nav-mobile-menu a:hover { background: linear-gradient(135deg, rgba(227,150,191,0.08), rgba(249,168,212,0.12)); color: ${ORANGE_PRIMARY}; }
         .tpl1-nav-divider { height: 1px; background: #f3f4f6; margin: 8px 0; }
 
-        /* Badge para cart/notif */
+        /* Badge para cart */
         .tpl1-nav-badge { position: absolute; top: 2px; right: 2px; background: #fff; color: ${ORANGE_PRIMARY}; font-size: 9px; font-weight: 800; border-radius: 999px; min-width: 16px; height: 16px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border: 2px solid ${ORANGE_PRIMARY}; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
         .tpl1-nav.scrolled .tpl1-nav-badge { background: linear-gradient(135deg, #e396bf, #f5a8cf); color: #fff; border-color: #fff; box-shadow: 0 2px 6px rgba(227,150,191,0.4); }
+
+        /* Notification badge — Facebook-style red dot */
+        @keyframes tpl1-notif-badge-pop {
+          0% { transform: scale(0); opacity: 0; }
+          50% { transform: scale(1.25); }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes tpl1-notif-badge-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(229,57,53,0.5); }
+          50% { box-shadow: 0 0 0 5px rgba(229,57,53,0); }
+        }
+        .tpl1-nav-notif-badge {
+          position: absolute; top: 0px; right: 0px;
+          background: linear-gradient(135deg, #ef5350, #c62828);
+          color: #fff; font-size: 10px; font-weight: 800;
+          border-radius: 999px; min-width: 18px; height: 18px; padding: 0 5px;
+          display: flex; align-items: center; justify-content: center;
+          border: 2px solid #fff;
+          box-shadow: 0 2px 8px rgba(229,57,53,0.45);
+          animation: tpl1-notif-badge-pop .35s cubic-bezier(0.34,1.56,0.64,1), tpl1-notif-badge-pulse 2s ease-in-out 1s infinite;
+          font-family: 'DM Sans', system-ui, sans-serif;
+          line-height: 1;
+          z-index: 2;
+          transform: translate(40%, -40%);
+        }
+        .tpl1-nav.scrolled .tpl1-nav-notif-badge {
+          border-color: rgba(255,255,255,0.9);
+          box-shadow: 0 2px 8px rgba(229,57,53,0.5);
+        }
         .tpl1-nav-notif-link { display: flex; align-items: center; text-decoration: none; background: none; border: none; padding: 0; cursor: pointer; font: inherit; }
         .tpl1-bottom-nav-item { cursor: pointer; }
 
@@ -560,6 +589,7 @@ export default function Navbar1() {
             animation: dropdownIn 0.2s ease !important;
           }
           .tpl1-nav { min-height: 48px !important; height: auto !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border-bottom: none !important; border-radius: 999px !important; box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important; margin: 10px 80px 0 !important; position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; z-index: 9999 !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
+          .tpl1-nav--home { transform: none !important; opacity: 1 !important; pointer-events: auto !important; background: rgba(255,255,255,0.98) !important; }
           .tpl1-nav.scrolled { background: rgba(255,255,255,0.98) !important; position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; margin: 0 !important; border-radius: 0 !important; min-height: 48px !important; box-shadow: 0 2px 16px rgba(0,0,0,0.08) !important; }
           .tpl1-nav.scrolled .tpl1-nav-inner { height: 48px !important; min-height: 48px !important; padding: 0 12px !important; }
           .tpl1-nav.scrolled .tpl1-nav-btn { width: 34px !important; height: 34px !important; }
@@ -625,12 +655,11 @@ export default function Navbar1() {
 
       <div className={`tpl1-nav-mobile-overlay ${menuOpen ? 'open' : ''}`} onClick={() => setMenuOpen(false)} />
 
-      {/* Top navbar: on mobile only show on homepage */}
-      {!(isMobile && !isHome) && (
+      {/* Top navbar: always visible */}
       <nav className={`tpl1-nav ${scrolled ? 'scrolled' : ''} ${isHome ? 'tpl1-nav--home' : ''}`} style={{ background: isHome ? 'rgba(255,255,255,0.95)' : (scrolled ? 'rgba(255,255,255,0.95)' : `linear-gradient(135deg, ${ORANGE_PRIMARY}, ${PINK_LIGHT})`), borderBottom: '1px solid #fce7f3' }}>
         <div className="tpl1-nav-inner">
           {/* Mobile center: address â€” solo visible con navbar expandida (scroll) */}
-          {isMobile && scrolled && (
+          {isMobile && (
             <div className="tpl1-nav-mobile-center" aria-live="polite">
               <MapPin size={10} />
               <span>{primaryAddress || (isLoggedIn ? 'Mi ubicación' : 'Ubicación')}</span>
@@ -679,7 +708,7 @@ export default function Navbar1() {
                 >
                   <Bell size={20} color="#fff" />
                   {unreadCount > 0 && (
-                    <span className="tpl1-nav-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                    <span className="tpl1-nav-notif-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
                   )}
                 </button>
               )}
@@ -789,7 +818,6 @@ export default function Navbar1() {
           )}
         </div>
       </nav>
-      )}
 
       {/* â”€â”€ Cart Drawer â”€â”€ */}
       {cartOpen && (

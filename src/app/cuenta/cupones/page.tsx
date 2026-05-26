@@ -12,7 +12,7 @@ import { useCuentaBg } from '../CuentaBgContext';
 
 const FF = '"DM Sans",system-ui,sans-serif';
 const PINK = '#e396bf';
-const DB_ID = '6a0e37ac0016762b9dc4';
+const DB_ID = '6a0a58ca001798410d86';
 const COUPONS_COL = 'coupons';
 
 const COUPON_IMG = 'https://cdn3d.iconscout.com/3d/premium/thumb/cupon-3d-icon-png-download-10660366.png';

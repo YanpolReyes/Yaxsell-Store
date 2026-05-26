@@ -57,10 +57,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log('[notifications] Creating:', JSON.stringify(input));
     const doc = await createNotificationServer(input);
+    console.log('[notifications] Created:', doc.$id || 'ok');
     return NextResponse.json({ success: true, notification: doc });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Error desconocido';
+    console.error('[notifications] Error:', message);
     return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
