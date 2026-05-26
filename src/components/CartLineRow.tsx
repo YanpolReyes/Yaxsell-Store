@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { Trash2, Minus, Plus } from 'lucide-react';
 import type { CartItem } from '@/types';
 import { formatPrice } from '@/lib/appwrite';
@@ -25,7 +24,7 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
     <div className="cart-item" style={{ display: 'flex', gap: 14, alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #f3f4f6' }}>
       <Link href={`/productos/${p.$id}`} style={{ flexShrink: 0, position: 'relative', width: 90, height: 90, background: '#fafafa', borderRadius: 14, overflow: 'hidden', display: 'block', border: '1px solid #f0f0f0' }}>
         {p.IMAGEURL
-          ? <Image src={p.IMAGEURL} alt={p.NAME} fill style={{ objectFit: 'contain', padding: 6 }} />
+          ? <img src={p.IMAGEURL} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 6, position: 'absolute', inset: 0 }} />
           : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📦</span>}
         {pricing.hasDiscount && pricing.fromApertura && (
           <span style={{ position: 'absolute', top: 4, left: 4, zIndex: 2 }}>
