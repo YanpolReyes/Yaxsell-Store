@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { Search, Package, ArrowRight, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getServices, getAppwriteConfig, INVENTORY_PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, formatPrice } from '@/lib/appwrite';
-import { normalizeProductImages, resolveStorageImageUrl } from '@/lib/product-images';
+import { normalizeProductImages, resolveStorageImageUrl, getProductImageUrl } from '@/lib/product-images';
 import { cached, TTL } from '@/lib/cache';
 import { Query } from 'appwrite';
 import { Product, Category, Subcategory } from '@/types';
@@ -12,6 +12,7 @@ import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 import { useFavorites } from '@/context/FavoritesContext';
+import ImageZoomModal from '@/components/ImageZoomModal';
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 
@@ -30,6 +31,7 @@ export default function LleganProntoPage() {
   const PAGE_SIZE = 50;
   const { isFavorite, toggleFavorite } = useFavorites();
   const { settings: apertura } = useAperturaPromotion();
+  const [zoomImage, setZoomImage] = useState<{ src: string; alt: string } | null>(null);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -370,7 +372,7 @@ export default function LleganProntoPage() {
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              {filtered.slice(0, visibleCount).map((p, i) => <LleganProntoCard key={p.$id} product={p} apertura={apertura} index={i} categories={categories} />)}
+              {filtered.slice(0, visibleCount).map((p, i) => <LleganProntoCard key={p.$id} product={p} apertura={apertura} index={i} categories={categories} onZoom={() => { const src = getProductImageUrl(p); if (src) setZoomImage({ src, alt: p.NAME }); }} />)}
             </div>
             {filtered.length > visibleCount && (
               <div style={{ textAlign: 'center', marginTop: 32 }}>
@@ -388,37 +390,21 @@ export default function LleganProntoPage() {
           </div>
         )}
       </div>
+      {zoomImage && <ImageZoomModal src={zoomImage.src} alt={zoomImage.alt} onClose={() => setZoomImage(null)} />}
     </div>
   );
 }
 
-function LleganProntoCard({ product, apertura, index = 0, categories }: { product: Product; apertura: any; index?: number; categories: Category[] }) {
+function LleganProntoCard({ product, apertura, index = 0, categories, onZoom }: { product: Product; apertura: any; index?: number; categories: Category[]; onZoom: () => void }) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { displayPrice, hasDiscount, discountPercent } = resolveProductDisplayPrice(product, apertura);
   const img = resolveStorageImageUrl(product.IMAGEURL) || resolveStorageImageUrl(product.IMAGEURL2);
   const isReversed = index % 2 !== 0;
   const catName = categories.find(c => c.$id === product.CATEGORYID)?.name || '';
   const liked = isFavorite(product.$id);
-  const [showZoom, setShowZoom] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
 
   return (
-    <>
-      {showZoom && img && (
-        <div
-          onClick={() => setShowZoom(false)}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'rgba(0,0,0,0.85)', cursor: 'zoom-out',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <img src={img} alt={product.NAME} style={{ maxWidth: '95vw', maxHeight: '95vh', objectFit: 'contain' }} />
-          <div style={{ position: 'absolute', top: 20, right: 30, padding: '10px 20px', borderRadius: 50, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', color: '#fff', fontSize: 13, fontWeight: 700, fontFamily: FF, cursor: 'pointer' }}>
-            Cerrar ✕
-          </div>
-        </div>
-      )}
     <Link href={`/producto/${product.$id}`} style={{ textDecoration: 'none', display: 'block' }}>
       <div className="lp-card-wrap" style={{
         background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(12px)', borderRadius: 20, overflow: 'hidden',
@@ -432,7 +418,7 @@ function LleganProntoCard({ product, apertura, index = 0, categories }: { produc
       >
         {/* ── IMAGE SIDE ── */}
         <div
-          onClick={e => { if (img) { e.preventDefault(); e.stopPropagation(); setShowZoom(true); } }}
+          onClick={e => { if (img) { e.preventDefault(); e.stopPropagation(); onZoom(); } }}
           style={{ width: '42%', minWidth: 220, position: 'relative', overflow: 'hidden', flexShrink: 0, background: '#fdf2f8', cursor: img ? 'zoom-in' : 'default' }}
           className="lp-card-img-side"
         >
@@ -533,6 +519,5 @@ function LleganProntoCard({ product, apertura, index = 0, categories }: { produc
         </div>
       </div>
     </Link>
-    </>
   );
 }

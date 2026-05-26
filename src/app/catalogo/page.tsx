@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { Search, Package, ArrowRight, Heart, Bell, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getServices, getAppwriteConfig, INVENTORY_PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
-import { normalizeProductImages, resolveStorageImageUrl } from '@/lib/product-images';
+import { normalizeProductImages, resolveStorageImageUrl, getProductImageUrl } from '@/lib/product-images';
 import { cached, TTL } from '@/lib/cache';
 import { Query } from 'appwrite';
 import { Product, Category, Subcategory } from '@/types';
@@ -14,6 +14,7 @@ import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useAuth } from '@/hooks/useAuth';
+import ImageZoomModal from '@/components/ImageZoomModal';
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 
@@ -34,6 +35,7 @@ export default function CatalogoPage() {
   const { settings: apertura } = useAperturaPromotion();
   const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
   const [requestingId, setRequestingId] = useState<string | null>(null);
+  const [zoomImage, setZoomImage] = useState<{ src: string; alt: string } | null>(null);
   const [visibleCount, setVisibleCount] = useState(30);
   const PAGE_SIZE = 30;
 
@@ -464,7 +466,7 @@ export default function CatalogoPage() {
               )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              {filtered.slice(0, visibleCount).map((p, i) => <CatalogoProductCard key={p.$id} product={p} apertura={apertura} index={i} categories={categories} isLoggedIn={isLoggedIn} requestedIds={requestedIds} requestingId={requestingId} onRequest={handleRequestAvailability} />)}
+              {filtered.slice(0, visibleCount).map((p, i) => <CatalogoProductCard key={p.$id} product={p} apertura={apertura} index={i} categories={categories} isLoggedIn={isLoggedIn} requestedIds={requestedIds} requestingId={requestingId} onRequest={handleRequestAvailability} onZoom={() => { const src = getProductImageUrl(p); if (src) setZoomImage({ src, alt: p.NAME }); }} />)}
             </div>
             {filtered.length > visibleCount && (
               <div style={{ textAlign: 'center', marginTop: 32 }}>
@@ -483,11 +485,12 @@ export default function CatalogoPage() {
           </div>
         )}
       </div>
+      {zoomImage && <ImageZoomModal src={zoomImage.src} alt={zoomImage.alt} onClose={() => setZoomImage(null)} />}
     </div>
   );
 }
 
-function CatalogoProductCard({ product, apertura, index = 0, categories, isLoggedIn, requestedIds, requestingId, onRequest }: { product: Product; apertura: any; index?: number; categories: Category[]; isLoggedIn: boolean; requestedIds: Set<string>; requestingId: string | null; onRequest: (id: string, name: string, img: string) => void }) {
+function CatalogoProductCard({ product, apertura, index = 0, categories, isLoggedIn, requestedIds, requestingId, onRequest, onZoom }: { product: Product; apertura: any; index?: number; categories: Category[]; isLoggedIn: boolean; requestedIds: Set<string>; requestingId: string | null; onRequest: (id: string, name: string, img: string) => void; onZoom: () => void }) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { displayPrice, hasDiscount, discountPercent } = resolveProductDisplayPrice(product, apertura);
   const img = resolveStorageImageUrl(product.IMAGEURL) || resolveStorageImageUrl(product.IMAGEURL2);
@@ -495,56 +498,9 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
   const catName = categories.find(c => c.$id === product.CATEGORYID)?.name || '';
   const alreadyRequested = requestedIds.has(product.$id);
   const isRequesting = requestingId === product.$id;
-  const [showZoom, setShowZoom] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
 
   return (
-    <>
-      {showZoom && img && (
-        <div
-          onClick={() => setShowZoom(false)}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 10000,
-            background: 'rgba(0,0,0,0.9)', cursor: 'zoom-out',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <img
-            src={img}
-            alt={product.NAME}
-            onClick={e => e.stopPropagation()}
-            style={{
-              maxWidth: '90vw', maxHeight: '75vh', objectFit: 'contain',
-              borderRadius: 12, boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
-            }}
-          />
-          <div style={{ display: 'flex', gap: 10, marginTop: 16 }} onClick={e => e.stopPropagation()}>
-            <Link
-              href={`/producto/${product.$id}`}
-              onClick={() => setShowZoom(false)}
-              style={{
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                padding: '10px 24px', background: 'linear-gradient(135deg, #e396bf, #c0547a)',
-                color: '#fff', borderRadius: 10, fontSize: 13, fontWeight: 700,
-                textDecoration: 'none', boxShadow: '0 4px 16px rgba(227,150,191,0.4)',
-              }}
-            >
-              Ver detalle
-            </Link>
-            <button
-              onClick={() => setShowZoom(false)}
-              style={{
-                padding: '10px 20px', background: 'rgba(255,255,255,0.12)',
-                color: '#fff', border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                backdropFilter: 'blur(8px)',
-              }}
-            >
-              Cerrar ✕
-            </button>
-          </div>
-        </div>
-      )}
     <Link href={`/producto/${product.$id}`} style={{ textDecoration: 'none', display: 'block' }}>
       <div className="cat-card-wrap" style={{
         background: '#fff', borderRadius: 20, overflow: 'hidden',
@@ -558,7 +514,7 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
       >
         {/* ── IMAGE SIDE ── */}
         <div
-          onClick={e => { if (img) { e.preventDefault(); e.stopPropagation(); setShowZoom(true); } }}
+          onClick={e => { if (img) { e.preventDefault(); e.stopPropagation(); onZoom(); } }}
           style={{ width: '42%', minWidth: 220, position: 'relative', overflow: 'hidden', flexShrink: 0, background: '#fdf2f8', cursor: img ? 'zoom-in' : 'default' }}
           className="cat-card-img-side"
         >
@@ -664,6 +620,5 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
         </div>
       </div>
     </Link>
-    </>
   );
 }
