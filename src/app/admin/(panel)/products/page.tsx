@@ -60,6 +60,7 @@ export default function ProductsPage() {
   const [brokenOnly, setBrokenOnly] = useState(false);
   const [syncingImages, setSyncingImages] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ checked: 0, broken: 0 });
+  const [aiImageLoading, setAiImageLoading] = useState<'main' | 'img2' | 'img3' | null>(null);
 
   const applyBulkStock = async () => {
     const v = parseInt(stockAdj.value, 10);
@@ -424,6 +425,41 @@ export default function ProductsPage() {
   const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
   const catName = (id?: string) => categories.find(c => c.$id === id)?.name || '—';
 
+  const generateAiImage = async (slot: 'main' | 'img2' | 'img3') => {
+    if (!modal) return;
+    const refUrl = slot === 'main' ? modal.data.IMAGEURL : slot === 'img2' ? modal.data.IMAGEURL2 : modal.data.IMAGEURL3;
+    const productName = modal.data.NAME || 'producto';
+    setAiImageLoading(slot);
+    try {
+      const prompt = `Genera una imagen de producto profesional para e-commerce de: ${productName}. La imagen debe tener fondo blanco puro, iluminación de estudio, alta calidad, estilo fotografía de catálogo. ${refUrl ? 'Usa la imagen de referencia como base para mantener el mismo estilo y ángulo.' : ''}`;
+      const res = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, referenceImageUrl: refUrl || undefined }),
+      });
+      const data = await res.json();
+      if (data.error) { alert(data.error); return; }
+      if (!data.imageUrl) { alert('No se generó imagen'); return; }
+      // Upload the generated image to Appwrite Storage
+      const { storage } = getServices();
+      const { endpoint, projectId } = getAppwriteConfig();
+      const fileId = MEDIA_PREFIXES['products'] + ID.unique();
+      // Convert data URL to blob
+      const resp = await fetch(data.imageUrl);
+      const blob = await resp.blob();
+      const file = new File([blob], `ai_${slot}_${Date.now()}.png`, { type: blob.type || 'image/png' });
+      await storage.createFile(PRODUCTS_BUCKET_ID, fileId, file);
+      const uploadedUrl = `${endpoint}/storage/buckets/${PRODUCTS_BUCKET_ID}/files/${fileId}/view?project=${projectId}`;
+      // Update modal
+      const field = slot === 'main' ? 'IMAGEURL' : slot === 'img2' ? 'IMAGEURL2' : 'IMAGEURL3';
+      setModal(m => m ? { ...m, data: { ...m.data, [field]: uploadedUrl } } : m);
+    } catch (e: any) {
+      alert('Error generando imagen: ' + e.message);
+    } finally {
+      setAiImageLoading(null);
+    }
+  };
+
   const saveImageUrl = async () => {
     if (!imageUrlModal) return;
     try {
@@ -604,16 +640,38 @@ export default function ProductsPage() {
                 <div className="flex gap-6 flex-col lg:flex-row">
                   {/* Image section */}
                   <div className="lg:w-80 shrink-0 space-y-3">
-                    <ImageUploadField label="Imagen Principal" bucketId={PRODUCTS_BUCKET_ID}
-                      value={modal.data.IMAGEURL || ''}
-                      onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL: v } } : m)} />
+                    <div className="relative">
+                      <ImageUploadField label="Imagen Principal" bucketId={PRODUCTS_BUCKET_ID}
+                        value={modal.data.IMAGEURL || ''}
+                        onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL: v } } : m)} />
+                      <button type="button" onClick={() => generateAiImage('main')} disabled={aiImageLoading === 'main'}
+                        className="absolute top-0 right-0 flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200 transition disabled:opacity-50"
+                        title="Generar imagen con IA basada en la imagen actual">
+                        {aiImageLoading === 'main' ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImagePlus className="w-3 h-3" />}
+                        {aiImageLoading === 'main' ? 'Generando...' : 'IA'}
+                      </button>
+                    </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <ImageUploadField label="Imagen 2" bucketId={PRODUCTS_BUCKET_ID}
-                        value={modal.data.IMAGEURL2 || ''}
-                        onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL2: v } } : m)} />
-                      <ImageUploadField label="Imagen 3" bucketId={PRODUCTS_BUCKET_ID}
-                        value={modal.data.IMAGEURL3 || ''}
-                        onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL3: v } } : m)} />
+                      <div className="relative">
+                        <ImageUploadField label="Imagen 2" bucketId={PRODUCTS_BUCKET_ID}
+                          value={modal.data.IMAGEURL2 || ''}
+                          onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL2: v } } : m)} />
+                        <button type="button" onClick={() => generateAiImage('img2')} disabled={aiImageLoading === 'img2'}
+                          className="absolute top-0 right-0 flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200 transition disabled:opacity-50"
+                          title="Generar imagen con IA">
+                          {aiImageLoading === 'img2' ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImagePlus className="w-3 h-3" />}
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <ImageUploadField label="Imagen 3" bucketId={PRODUCTS_BUCKET_ID}
+                          value={modal.data.IMAGEURL3 || ''}
+                          onChange={v => setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL3: v } } : m)} />
+                        <button type="button" onClick={() => generateAiImage('img3')} disabled={aiImageLoading === 'img3'}
+                          className="absolute top-0 right-0 flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200 transition disabled:opacity-50"
+                          title="Generar imagen con IA">
+                          {aiImageLoading === 'img3' ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImagePlus className="w-3 h-3" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
                   {/* Name + Description */}
