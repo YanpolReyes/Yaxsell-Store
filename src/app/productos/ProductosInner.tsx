@@ -42,6 +42,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(30);
   const { addItem } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { settings: apertura } = useAperturaPromotion();
@@ -84,8 +85,8 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
         if (found) setSelectedCat(found.$id);
       }
 
-      // 3. Cargar TODOS los productos (filtrado client-side, caché 15 min)
-      const queries: string[] = [Query.limit(1000), Query.greaterThan('STOCK', 0)];
+      // 3. Cargar productos (filtrado client-side, caché 15 min)
+      const queries: string[] = [Query.limit(2000), Query.greaterThan('STOCK', 0)];
       if (sortBy === 'newest') queries.push(Query.orderDesc('$createdAt'));
       else if (sortBy === 'price_asc') queries.push(Query.orderAsc('PRICE'));
       else if (sortBy === 'price_desc') queries.push(Query.orderDesc('PRICE'));
@@ -156,6 +157,12 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     const q = search.toLowerCase();
     return p.NAME.toLowerCase().includes(q) || (p.DESCRIPTION || '').toLowerCase().includes(q);
   });
+
+  const visibleProducts = filtered.slice(0, visibleCount);
+  const hasMore = visibleCount < filtered.length;
+
+  // Reset visible count when filters change
+  useEffect(() => { setVisibleCount(30); }, [selectedCat, selectedSubcat, selectedTag, search, sortBy, activePriceRange]);
 
   const hasActiveFilters = !!(
     (selectedCat && selectedCat !== lockCategoryId) || selectedSubcat || selectedTag || search
@@ -473,7 +480,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
               </div>
             ) : view === 'grid' ? (
               <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
-                {filtered.map(p => {
+                {visibleProducts.map(p => {
                   const pricing = resolveProductDisplayPrice(p, apertura);
                   const price = pricing.displayPrice;
                   const hasDisc = pricing.hasDiscount;
@@ -556,7 +563,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {filtered.map(p => {
+                {visibleProducts.map(p => {
                   const pricing = resolveProductDisplayPrice(p, apertura);
                   const price = pricing.displayPrice;
                   const hasDisc = pricing.hasDiscount;
@@ -595,6 +602,13 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                     </div>
                   );
                 })}
+              </div>
+            )}
+            {hasMore && (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0 8px' }}>
+                <button onClick={() => setVisibleCount(c => c + 30)} style={{ padding: '12px 32px', background: 'linear-gradient(135deg,#e396bf,#f5a8cf)', color: '#fff', border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 20px rgba(227,150,191,0.25)', fontFamily: 'inherit' }}>
+                  Cargar más ({filtered.length - visibleCount} restantes)
+                </button>
               </div>
             )}
           </div>
