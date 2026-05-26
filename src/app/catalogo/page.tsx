@@ -568,7 +568,7 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
               )}
               {product.WHOLESALEPRICE && product.WHOLESALEPRICE > 0 && (
                 <div className="cat-price-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(220,38,38,0.04)', border: '1.5px solid rgba(220,38,38,0.12)' }}>
-                  <span className="price-label" style={{ fontSize: 14, fontWeight: 800, color: '#dc2626', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio Mayorista</span>
+                  <span className="price-label" style={{ fontSize: 14, fontWeight: 800, color: '#dc2626', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio</span>
                   <span className="price-val" style={{ fontSize: 36, fontWeight: 900, color: '#dc2626', fontFamily: '"Playfair Display", serif', letterSpacing: '-1px' }}>
                     {formatPrice(product.WHOLESALEPRICE)}
                   </span>

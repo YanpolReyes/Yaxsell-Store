@@ -10,6 +10,7 @@ export type AperturaSettings = {
 export type ProductPriceLike = {
   PRICE: number;
   CURRENTPRICE?: number | null;
+  WHOLESALEPRICE?: number | null;
 };
 
 export type ResolvedProductPrice = {
@@ -37,27 +38,30 @@ export function resolveProductDisplayPrice(
   apertura: AperturaSettings | null | undefined,
 ): ResolvedProductPrice {
   const base = product.PRICE || 0;
+  const wholesale = product.WHOLESALEPRICE && product.WHOLESALEPRICE > 0 ? product.WHOLESALEPRICE : null;
+  // If PRICE is 0 but WHOLESALEPRICE exists, use wholesale as base
+  const effectiveBase = base > 0 ? base : (wholesale ?? 0);
   const sale =
-    product.CURRENTPRICE && product.CURRENTPRICE > 0 && product.CURRENTPRICE < base
+    product.CURRENTPRICE && product.CURRENTPRICE > 0 && product.CURRENTPRICE < effectiveBase
       ? product.CURRENTPRICE
       : null;
 
   if (sale != null) {
     return {
       displayPrice: sale,
-      originalPrice: base,
+      originalPrice: effectiveBase,
       hasDiscount: true,
-      discountPercent: base > 0 ? Math.round(((base - sale) / base) * 100) : 0,
+      discountPercent: effectiveBase > 0 ? Math.round(((effectiveBase - sale) / effectiveBase) * 100) : 0,
       fromApertura: false,
     };
   }
 
-  if (apertura?.isActive && apertura.discountPercent > 0 && base > 0) {
-    const displayPrice = getAperturaDiscountedPrice(base, apertura.discountPercent);
-    if (displayPrice < base) {
+  if (apertura?.isActive && apertura.discountPercent > 0 && effectiveBase > 0 && base > 0) {
+    const displayPrice = getAperturaDiscountedPrice(effectiveBase, apertura.discountPercent);
+    if (displayPrice < effectiveBase) {
       return {
         displayPrice,
-        originalPrice: base,
+        originalPrice: effectiveBase,
         hasDiscount: true,
         discountPercent: apertura.discountPercent,
         fromApertura: true,
@@ -66,7 +70,7 @@ export function resolveProductDisplayPrice(
   }
 
   return {
-    displayPrice: base,
+    displayPrice: effectiveBase,
     originalPrice: null,
     hasDiscount: false,
     discountPercent: 0,

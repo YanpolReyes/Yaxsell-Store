@@ -549,8 +549,14 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                           </p>
                         </Link>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 'auto' }}>
-                          <span className="pk-price" style={{ fontSize: 19, fontWeight: 800, color: hasDisc ? '#c0547a' : '#111', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
-                          {hasDisc && pricing.originalPrice != null && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500 }}>{formatPrice(pricing.originalPrice)}</span>}
+                          {price > 0 ? (
+                            <>
+                              <span className="pk-price" style={{ fontSize: 19, fontWeight: 800, color: hasDisc ? '#c0547a' : '#111', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
+                              {hasDisc && pricing.originalPrice != null && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500 }}>{formatPrice(pricing.originalPrice)}</span>}
+                            </>
+                          ) : (
+                            <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>
+                          )}
                         </div>
                         <button onClick={() => p.STOCK !== 0 && addItem(p)} disabled={p.STOCK === 0} className="pk-add-btn"
                           style={{ marginTop: 10, padding: '9px 12px', borderRadius: 12, border: 'none', background: p.STOCK === 0 ? '#f3f4f6' : 'linear-gradient(135deg,#e396bf,#f5a8cf)', color: p.STOCK === 0 ? '#9ca3af' : '#fff', fontSize: 12, fontWeight: 700, cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.2s', boxShadow: p.STOCK === 0 ? 'none' : '0 4px 14px rgba(227,150,191,0.25)', fontFamily: 'inherit' }}>
@@ -581,8 +587,14 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                         </Link>
                         <p style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>{p.DESCRIPTION}</p>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                          <span style={{ fontSize: 18, fontWeight: 800, color: '#111' }}>{formatPrice(price)}</span>
-                          {hasDisc && pricing.originalPrice != null && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</span>}
+                          {price > 0 ? (
+                            <>
+                              <span style={{ fontSize: 18, fontWeight: 800, color: hasDisc ? '#c0547a' : '#111' }}>{formatPrice(price)}</span>
+                              {hasDisc && pricing.originalPrice != null && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</span>}
+                            </>
+                          ) : (
+                            <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>
+                          )}
                         </div>
                       </div>
                       <div className="pk-card-list-actions" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
