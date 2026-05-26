@@ -402,12 +402,12 @@ export default function Navbar1() {
           100% { width: 16px; opacity: 1; }
         }
         .tpl1-bottom-nav-item .tpl1-bottom-badge {
-          position: absolute; top: 0; right: 2px;
+          position: absolute; top: -4px; right: -4px;
           background: linear-gradient(135deg, #e396bf, #c084a0);
-          color: #fff; font-size: 9px; font-weight: 800; border-radius: 999px;
-          min-width: 16px; height: 16px; padding: 0 4px;
+          color: #fff; font-size: 11px; font-weight: 800; border-radius: 999px;
+          min-width: 20px; height: 20px; padding: 0 5px;
           display: flex; align-items: center; justify-content: center; border: 2px solid #fff;
-          box-shadow: 0 2px 6px rgba(236,72,153,0.4); line-height: 1;
+          box-shadow: 0 2px 8px rgba(236,72,153,0.5); line-height: 1;
         }
 
         /* FAB central */
@@ -987,7 +987,7 @@ export default function Navbar1() {
 
           <Link href="/carrito" className={`tpl1-bottom-nav-item ${!fabOpen && pathname === '/carrito' ? 'active' : ''}`}>
             <ShoppingCart />
-            {totalItems > 0 && <span className="tpl1-bottom-badge" style={{ lineHeight: '12px' }}>{totalItems > 99 ? '99+' : totalItems}</span>}
+            {totalItems > 0 && <span className="tpl1-bottom-badge">{totalItems > 99 ? '99+' : totalItems}</span>}
             <span>Carrito</span>
           </Link>
           <Link href="/cuenta" className={`tpl1-bottom-nav-item ${!fabOpen && pathname?.startsWith('/cuenta') && !pathname?.startsWith('/cuenta/favoritos') ? 'active' : ''}`} style={{ position: 'relative' }}>

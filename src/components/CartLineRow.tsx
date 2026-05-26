@@ -28,21 +28,23 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
         {/* Remove X button — top right */}
         <button
           type="button"
-          onClick={() => onRemove(p.$id)}
+          onClick={e => { e.stopPropagation(); onRemove(p.$id); }}
           style={{
-            position: 'absolute', top: 6, right: 0,
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: '#d1d5db', padding: 2, lineHeight: 1, transition: 'color .15s',
+            position: 'absolute', top: 2, right: 2, zIndex: 10,
+            width: 28, height: 28, borderRadius: '50%',
+            background: 'rgba(0,0,0,0.04)', border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#9ca3af', transition: 'all .15s',
           }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#d1d5db')}
+          onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; }}
         >
-          <X size={14} />
+          <X size={16} />
         </button>
 
         {/* Image — click to zoom */}
         <div
-          onClick={() => p.IMAGEURL && setZoomSrc(p.IMAGEURL)}
+          onClick={e => { e.stopPropagation(); if (p.IMAGEURL) setZoomSrc(p.IMAGEURL); }}
           style={{ flexShrink: 0, position: 'relative', width: 60, height: 60, background: '#fafafa', borderRadius: 12, overflow: 'hidden', cursor: p.IMAGEURL ? 'zoom-in' : 'default', border: '1px solid #f0f0f0' }}
         >
           {p.IMAGEURL
