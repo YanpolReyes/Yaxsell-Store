@@ -133,6 +133,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const removeItem = (productId: string) => {
     setItems(prev => prev.filter(i => i.product.$id !== productId));
+    // Immediately delete from Appwrite so server stays in sync
+    if (isLoggedIn && user) {
+      (async () => {
+        try {
+          const { databases } = getServices();
+          const { databaseId } = getAppwriteConfig();
+          const res = await databases.listDocuments(databaseId, CART_ITEMS_COLLECTION, [
+            Query.equal('userId', user.id),
+            Query.equal('productId', productId),
+            Query.limit(1),
+          ]);
+          for (const doc of res.documents) {
+            await databases.deleteDocument(databaseId, CART_ITEMS_COLLECTION, doc.$id);
+          }
+        } catch {}
+      })();
+    }
   };
 
   const updateQuantity = (productId: string, qty: number) => {
@@ -143,7 +160,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }));
   };
 
-  const clearCart = () => setItems([]);
+  const clearCart = () => {
+    setItems([]);
+    // Immediately delete all from Appwrite
+    if (isLoggedIn && user) {
+      (async () => {
+        try {
+          const { databases } = getServices();
+          const { databaseId } = getAppwriteConfig();
+          const res = await databases.listDocuments(databaseId, CART_ITEMS_COLLECTION, [
+            Query.equal('userId', user.id), Query.limit(100),
+          ]);
+          for (const doc of res.documents) {
+            await databases.deleteDocument(databaseId, CART_ITEMS_COLLECTION, doc.$id);
+          }
+        } catch {}
+      })();
+    }
+  };
 
   const totalItems = items.reduce((s, i) => s + i.quantity, 0);
   const subtotal = useMemo(
