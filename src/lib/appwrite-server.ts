@@ -131,3 +131,13 @@ export async function serverUploadFile(
 export function getServerFileUrl(bucketId: string, fileId: string): string {
   return `${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${fileId}/view?project=${PROJECT_ID}`;
 }
+
+export function getPublicFileUrl(bucketId: string, fileId: string): string {
+  return `${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${fileId}/view?project=${PROJECT_ID}`;
+}
+
+/** Limpia mode=admin de URLs de Appwrite Storage para usar vista pública */
+export function cleanStorageUrl(url: string): string {
+  if (!url) return url;
+  return url.replace(/&?mode=admin/, '').replace(/\?mode=admin/, '?').replace(/\?$/, '');
+}

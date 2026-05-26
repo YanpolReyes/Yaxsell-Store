@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { serverUploadFile, getServerFileUrl, serverUpdateDocument, serverListDocuments } from '@/lib/appwrite-server';
+import { serverUploadFile, getServerFileUrl, serverUpdateDocument, serverListDocuments, cleanStorageUrl } from '@/lib/appwrite-server';
 import { PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 
 export async function POST(req: NextRequest) {
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     // Upload to Appwrite Storage
     const arrayBuffer = await file.arrayBuffer();
     const uploaded = await serverUploadFile('6a15f9a5001070a3c408', arrayBuffer, file.name || 'upload.jpg');
-    const imageUrl = getServerFileUrl('6a15f9a5001070a3c408', uploaded.$id);
+    const imageUrl = cleanStorageUrl(getServerFileUrl('6a15f9a5001070a3c408', uploaded.$id));
 
     // If productName or productId provided, update the product
     if (productName || productId) {

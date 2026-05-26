@@ -1,4 +1,5 @@
 import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from './appwrite';
+import { cleanStorageUrl } from './appwrite-server';
 
 export const PRODUCTS_BUCKET_ID = MEDIA_BUCKET_ID; // Backward compatibility
 
@@ -13,7 +14,7 @@ export function resolveStorageImageUrl(
   if (!v) return '';
 
   if (v.startsWith('http://') || v.startsWith('https://') || v.startsWith('data:') || v.startsWith('blob:')) {
-    return v;
+    return cleanStorageUrl(v);
   }
 
   const { endpoint, projectId } = getAppwriteConfig();
