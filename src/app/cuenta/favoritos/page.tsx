@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ShoppingCart, Share2, ArrowLeft, Sparkles } from 'lucide-react';
 import AnimHeart from '@/components/AnimHeart';
@@ -24,6 +24,11 @@ export default function FavoritosPage() {
   useCuentaBg(BG_FAVORITOS);
   const { addItem } = useCart();
   const [added, setAdded] = useState<string | null>(null);
+
+  // Guard: si no está logueado, redirigir con hard refresh para evitar hooks mismatch
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return null;
 
   function handleAdd(p: Product) {
     addItem(p, 1);

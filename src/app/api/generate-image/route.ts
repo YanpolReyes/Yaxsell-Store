@@ -9,10 +9,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'prompt es requerido' }, { status: 400 });
     }
 
-    // Build parts array for Gemini
+    // ── Strategy 1: Gemini generateContent with IMAGE modality ──
     const parts: any[] = [{ text: prompt }];
 
-    // If we have a reference image URL, fetch it and include as inline data
     if (referenceImageUrl) {
       try {
         const imgRes = await fetch(referenceImageUrl);
@@ -20,79 +19,77 @@ export async function POST(req: NextRequest) {
           const contentType = imgRes.headers.get('content-type') || 'image/png';
           const buffer = await imgRes.arrayBuffer();
           const base64 = Buffer.from(buffer).toString('base64');
-          parts.push({
-            inlineData: {
-              mimeType: contentType,
-              data: base64,
-            },
-          });
+          parts.push({ inlineData: { mimeType: contentType, data: base64 } });
         }
       } catch (e) {
-        console.warn('Could not fetch reference image:', e);
+        console.warn('[generate-image] Could not fetch reference image:', e);
       }
     } else if (referenceImageBase64) {
-      parts.push({
-        inlineData: {
-          mimeType: 'image/png',
-          data: referenceImageBase64,
-        },
-      });
+      parts.push({ inlineData: { mimeType: 'image/png', data: referenceImageBase64 } });
     }
 
-    // Use Gemini 2.0 Flash with image generation capability
-    const body = {
+    const geminiBody = {
       contents: [{ role: 'user', parts }],
-      generationConfig: {
-        responseModalities: ['TEXT', 'IMAGE'],
-        temperature: 1,
-        maxOutputTokens: 8192,
-      },
+      generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
     };
 
-    const models = ['gemini-2.0-flash-exp-image-generation', 'gemini-2.5-flash-preview-image-generation', 'gemini-2.5-flash-image'];
-    let res;
-    let lastErrText = '';
+    const geminiModels = [
+      'gemini-2.5-flash-image',
+      'gemini-3.1-flash-image-preview',
+    ];
 
-    for (const model of models) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-      res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (res.ok) break;
-      lastErrText = await res.text();
-      console.warn(`Model ${model} failed (${res.status}):`, lastErrText.slice(0, 200));
-      if (res.status === 404 || res.status === 400) continue;
-      break;
-    }
+    for (const model of geminiModels) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(geminiBody),
+        });
 
-    if (!res || !res.ok) {
-      console.error('Gemini image gen error:', res?.status, lastErrText);
-      return NextResponse.json({ error: `Error generando imagen (${res?.status || 503})` }, { status: res?.status || 503 });
-    }
-
-    const data = await res.json();
-    const candidates = data?.candidates || [];
-
-    // Extract generated image from response
-    for (const candidate of candidates) {
-      const parts = candidate?.content?.parts || [];
-      for (const part of parts) {
-        if (part.inlineData) {
-          const { mimeType, data: base64 } = part.inlineData;
-          // Return as data URL
-          const dataUrl = `data:${mimeType};base64,${base64}`;
-          return NextResponse.json({ imageUrl: dataUrl, mimeType });
+        const rawText = await res.text();
+        if (!res.ok) {
+          console.warn(`[generate-image] Gemini ${model} failed (${res.status}):`, rawText.slice(0, 200));
+          continue;
         }
+
+        const data = JSON.parse(rawText);
+        const candidates = data?.candidates || [];
+        for (const candidate of candidates) {
+          const cParts = candidate?.content?.parts || [];
+          for (const part of cParts) {
+            if (part.inlineData) {
+              const { mimeType, data: base64 } = part.inlineData;
+              return NextResponse.json({ imageUrl: `data:${mimeType};base64,${base64}`, mimeType });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(`[generate-image] Gemini ${model} threw:`, e);
       }
     }
 
-    // If no image was generated, return the text response
-    const text = candidates?.[0]?.content?.parts?.find((p: any) => p.text)?.text || '';
-    return NextResponse.json({ error: 'No se pudo generar la imagen. La IA respondió con texto: ' + text.slice(0, 200) }, { status: 400 });
+    // ── Strategy 2: Pollinations.ai (free, no auth, no DNS issues) ──
+    try {
+      const encodedPrompt = encodeURIComponent(prompt);
+      const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&seed=${Date.now()}`;
+      const imgRes = await fetch(pollinationsUrl, { signal: AbortSignal.timeout(30000) });
+
+      if (imgRes.ok) {
+        const imgBuffer = await imgRes.arrayBuffer();
+        const base64 = Buffer.from(imgBuffer).toString('base64');
+        return NextResponse.json({ imageUrl: `data:image/png;base64,${base64}`, mimeType: 'image/png' });
+      }
+      console.warn('[generate-image] Pollinations failed:', imgRes.status);
+    } catch (e) {
+      console.warn('[generate-image] Pollinations threw:', e);
+    }
+
+    return NextResponse.json({
+      error: 'No se pudo generar la imagen. Gemini tiene un bug de cuota temporal (Ghost 429). Intenta de nuevo más tarde.',
+    }, { status: 503 });
   } catch (err: any) {
-    console.error('Generate image route error:', err);
+    console.error('[generate-image] Route error:', err);
     return NextResponse.json({ error: err.message || 'Error interno' }, { status: 500 });
   }
 }

@@ -228,6 +228,8 @@
 
 /* ─── Hide Shopify-specific UI we don't want ─── */
 [data-template="1"] .skip-to-content-link,
+[data-template="1"] cart-drawer,
+[data-template="1"] #cart_drawer,
 [data-template="1"] cart-drawer:not(.active),
 [data-template="1"] #cart_drawer:not(.active),
 [data-template="1"] .fusion-overlay-custom,
@@ -236,12 +238,14 @@
 [data-template="1"] a[href*="wa.me"][style*="fixed"],
 [data-template="1"] button[style*="fixed"]:not([id^="tpl1-"]) {
   display: none !important;
+  visibility: hidden !important;
 }
 
-/* ─── Cart drawer: show when active ─── */
+/* ─── Cart drawer: HIDDEN completely ─── */
 [data-template="1"] cart-drawer.active,
 [data-template="1"] #cart_drawer.active {
-  display: flex !important;
+  display: none !important;
+  visibility: hidden !important;
 }
 /* ─── Theme's CartDrawer-Overlay: HIDE completely ─── */
 [data-template="1"] .cart-drawer__overlay,
@@ -496,7 +500,32 @@ cart-drawer.cart-sidebar::after {
 [data-template="1"] .cart-btn .cart-count,
 [data-template="1"] .cart-icon .cart-count,
 [data-template="1"] .header-cart-count,
-[data-template="1"] .cart-item-count {
+[data-template="1"] .cart-item-count,
+[data-template="1"] .tpl1-nav-badge,
+[data-template="1"] .cart-count-bubble,
+[data-template="1"] .cart-count-badge,
+[data-template="1"] a[href="/cart"] .cart-count,
+[data-template="1"] .header__icon--cart .cart-count,
+[data-template="1"] .header__icon--cart span:not(svg),
+[data-template="1"] .cart-link-icon .cart-count,
+[data-template="1"] .cart-btn > span:not(.tpl1-nav-btn),
+[data-template="1"] .cart-link-icon > span,
+[data-template="1"] .cart-toggle > span,
+[data-template="1"] a[href*="cart"] > span[class*="count"],
+[data-template="1"] .cart-icon span,
+[data-template="1"] .cart-link-icon span,
+[data-template="1"] .cart-btn span[class],
+[data-template="1"] .cart-btn-num .header-resource-link::after,
+[data-template="1"] .cart-btn-num a::after,
+[data-template="1"] .cart-btn-num span,
+[data-template="1"] .cart-btn-num .cart-count,
+[data-template="1"] .cart-btn-num .cart-item-count {
+  display: none !important;
+}
+/* Kill the black badge ::before on .cart-btn-num */
+[data-template="1"] .cart-btn-num::before,
+[data-template="1"] .cart-btn-num a::before {
+  content: none !important;
   display: none !important;
 }
 /* ─── NEW orange badge via ::after ─── */

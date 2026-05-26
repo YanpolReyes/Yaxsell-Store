@@ -2133,6 +2133,11 @@ export default function HomePage1() {
       });
     }
 
+    // ── Listen for custom event from Navbar to open Shopify cart drawer ──
+    window.addEventListener('yaxsel:open-cart-drawer', () => {
+      openDrawer();
+    });
+
     // ── Click-outside: close when clicking anywhere NOT inside the drawer panel ──
     // This replaces the theme's document click listener that never gets added
     // because we bypass the theme's open() method
@@ -2155,12 +2160,13 @@ export default function HomePage1() {
       if (!target) return;
 
       // Cart button (desktop: .cart-btn dentro de <a>, mobile: .cart-toggle)
+      // Abre el custom cart drawer de Navbar en lugar de Shopify
       const isCartClick = target.closest('.cart-btn, .cart-toggle, .cart-link-icon');
       if (isCartClick) {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
-        openDrawer();
+        window.dispatchEvent(new CustomEvent('yaxsel:open-navbar-cart'));
         return;
       }
 
@@ -2253,14 +2259,14 @@ export default function HomePage1() {
         return;
       }
 
-      let html = '<div class="tpl1-cart-items-scroll" style="overflow-y:auto;flex:1;padding:16px 16px 8px;">';
+      let html = '<div class="tpl1-cart-items-scroll" style="overflow-y:auto;flex:1;padding:20px;">';
       items.forEach(item => {
         const now = Date.now();
         const price = (item.timedOfferPrice && item.timedOfferExpiresAt && now < item.timedOfferExpiresAt)
           ? item.timedOfferPrice
           : (item.product.CURRENTPRICE && item.product.CURRENTPRICE > 0 ? item.product.CURRENTPRICE : item.product.PRICE);
         const hasDisc = item.product.CURRENTPRICE && item.product.CURRENTPRICE > 0 && item.product.CURRENTPRICE < item.product.PRICE;
-        html += `<div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid #fce7f3;align-items:flex-start;">
+        html += `<div style="display:flex;gap:16px;padding:18px 0;border-bottom:1px solid #fce7f3;align-items:flex-start;">
           <div class="tpl1-cart-item-img" data-product-id="${item.product.$id}" style="width:72px;height:72px;border-radius:12px;overflow:hidden;background:#fef2f8;flex-shrink:0;border:1px solid #fce7f3;cursor:pointer;position:relative;transition:transform 0.2s ease;">
             ${item.product.IMAGEURL ? `<img src="${item.product.IMAGEURL}" alt="${item.product.NAME}" style="width:100%;height:100%;object-fit:contain;padding:4px;transition:transform 0.3s ease;">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:24px;">📦</div>'}
             <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);opacity:0;transition:opacity 0.2s ease;border-radius:12px;" class="tpl1-cart-img-overlay"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/></svg></div>
@@ -2287,7 +2293,7 @@ export default function HomePage1() {
         </div>`;
       });
       html += `</div>
-      <div class="tpl1-cart-footer" style="padding:16px;border-top:2px solid #fce7f3;background:#fff;flex-shrink:0;">
+      <div class="tpl1-cart-footer" style="padding:20px;border-top:2px solid #fce7f3;background:#fff;flex-shrink:0;">
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
           <span style="font-size:14px;color:#666;font-weight:500;">Subtotal</span>
           <span style="font-size:20px;font-weight:800;color:#111;">${formatPrice(subtotal)}</span>

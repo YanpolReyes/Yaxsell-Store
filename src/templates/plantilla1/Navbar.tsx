@@ -151,9 +151,16 @@ export default function Navbar1() {
   }, []);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
+    const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Escuchar evento para abrir carrito desde HomePage.tsx
+  useEffect(() => {
+    const openCart = () => setCartOpen(true);
+    window.addEventListener('yaxsel:open-navbar-cart', openCart);
+    return () => window.removeEventListener('yaxsel:open-navbar-cart', openCart);
   }, []);
 
   // Cargar avatar y nivel VIP del usuario
@@ -202,13 +209,9 @@ export default function Navbar1() {
     return () => { document.body.style.overflow = prev; };
   }, [authPopupOpen, isMobile]);
 
-  // Force icon colors via JS to override any theme CSS
-  useEffect(() => {
-    // Desactivado para usar estilos CSS en su lugar
-    return () => {};
-  }, [scrolled]);
-
-  // Navbar siempre montado - se controla visibilidad con CSS animado
+  // En desktop homepage: el navbar SIEMPRE existe pero solo es visible al hacer scroll
+  // (el `scrolled` state ya está controlado por el useEffect de la línea ~154)
+  const showNavDesktopHome = !isMobile && isHome;
 
   const NAV_LINKS = [
     { label: 'Inicio', href: '/' },
@@ -253,98 +256,43 @@ export default function Navbar1() {
   return (
     <>
       <style>{`
-        .tpl1-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 999999 !important; transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s cubic-bezier(0.4,0,0.2,1), background 0.3s ease, box-shadow 0.3s ease; }
-        .tpl1-nav--home { transform: translateY(-100%); opacity: 0; pointer-events: none; }
-        .tpl1-nav--home.scrolled { transform: translateY(0); opacity: 1; pointer-events: auto; }
-        .tpl1-nav.scrolled { background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.08); backdrop-filter: blur(12px); }
+        .tpl1-nav { position: sticky; top: 0; z-index: 9999; transition: all 0.3s ease; }
+        .tpl1-nav.scrolled { box-shadow: 0 2px 12px rgba(227,150,191,0.04); backdrop-filter: blur(12px); }
         .tpl1-nav-inner { max-width: 1600px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; height: 76px; }
         .tpl1-nav-logo { display: flex; align-items: center; text-decoration: none; gap: 10px; }
-        .tpl1-nav-logo img { height: 48px; max-width: 160px; width: auto; object-fit: contain; transition: transform 0.3s ease; flex-shrink: 0; }
-        .tpl1-nav-logo-img { height: 42px !important; max-width: 140px !important; width: auto !important; object-fit: contain !important; }
+        .tpl1-nav-logo img { height: 36px !important; max-width: 120px !important; width: auto !important; object-fit: contain !important; transition: transform 0.3s ease, opacity 0.4s ease, height 0.3s ease, max-width 0.3s ease; flex-shrink: 0 !important; }
+        .tpl1-nav.scrolled .tpl1-nav-logo img { height: 42px !important; max-width: 130px !important; }
         @keyframes tpl1LogoFadeIn { from { opacity: 0; } to { opacity: 1; } }
         .tpl1-nav-logo:hover img { transform: scale(1.05); }
         .tpl1-nav-links { display: flex; gap: 4px; align-items: center; }
-        .tpl1-nav-links a { font-family: 'DM Sans', system-ui, sans-serif; font-size: 14px; font-weight: 600; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 999px; transition: all 0.25s ease; position: relative; }
-        .tpl1-nav-links a:hover { background: rgba(255,255,255,0.15); color: #fff; transform: translateY(-1px); }
-        .tpl1-nav-links a.active { background: rgba(255,255,255,0.2); color: #fff; font-weight: 700; }
-        .tpl1-nav.scrolled .tpl1-nav-links a { color: #444; }
-        .tpl1-nav.scrolled .tpl1-nav-links a:hover { background: linear-gradient(135deg, rgba(227,150,191,0.08), rgba(249,168,212,0.12)); color: ${ORANGE_PRIMARY}; }
-        .tpl1-nav.scrolled .tpl1-nav-links a.active { background: linear-gradient(135deg, rgba(227,150,191,0.12), rgba(249,168,212,0.18)); color: ${ORANGE_PRIMARY}; }
+        .tpl1-nav-links a { font-family: 'DM Sans', system-ui, sans-serif; font-size: 14px; font-weight: 600; color: #444; text-decoration: none; padding: 10px 20px; border-radius: 999px; transition: all 0.25s ease; position: relative; }
+        .tpl1-nav-links a:hover { background: linear-gradient(135deg, rgba(236,72,153,0.08), rgba(249,168,212,0.12)); color: #e396bf; transform: translateY(-1px); }
+        .tpl1-nav-links a.active { background: linear-gradient(135deg, rgba(236,72,153,0.12), rgba(249,168,212,0.18)); color: #e396bf; font-weight: 700; }
         .tpl1-nav-actions { display: flex; align-items: center; gap: 6px; }
         .tpl1-nav-mobile-tools { display: flex; align-items: center; gap: 4px; }
-        .tpl1-nav-btn { width: 44px; height: 44px; border-radius: 50%; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.25s ease; color: #fff !important; position: relative; }
-        .tpl1-nav-btn svg { color: #fff !important; fill: #fff !important; stroke: #fff !important; }
-        .tpl1-nav-btn:hover { background: rgba(255,255,255,0.15); color: #fff !important; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .tpl1-nav-btn:hover svg { color: #fff !important; fill: #fff !important; stroke: #fff !important; }
-        .tpl1-nav.scrolled .tpl1-nav-btn { color: #fff !important; }
-        .tpl1-nav.scrolled .tpl1-nav-btn svg { color: #fff !important; fill: #fff !important; stroke: #fff !important; }
-        .tpl1-nav.scrolled .tpl1-nav-btn:hover { background: linear-gradient(135deg, rgba(227,150,191,0.1), rgba(249,168,212,0.15)); color: #fff !important; box-shadow: 0 4px 12px rgba(227,150,191,0.15); }
-        .tpl1-nav.scrolled .tpl1-nav-btn:hover svg { color: #fff !important; fill: #fff !important; stroke: #fff !important; }
-
-        /* ── Homepage: navbar siempre blanca/gris ── */
-        .tpl1-nav--home { background: rgba(255,255,255,0.95) !important; }
-        .tpl1-nav--home .tpl1-nav-inner { height: 60px; }
-        .tpl1-nav--home .tpl1-nav-logo img { height: 42px; max-width: 140px; }
-        .tpl1-nav--home .tpl1-nav-links a { color: #444; }
-        .tpl1-nav--home .tpl1-nav-links a:hover { background: linear-gradient(135deg, rgba(227,150,191,0.08), rgba(249,168,212,0.12)); color: ${ORANGE_PRIMARY}; }
-        .tpl1-nav--home .tpl1-nav-links a.active { background: linear-gradient(135deg, rgba(227,150,191,0.12), rgba(249,168,212,0.18)); color: ${ORANGE_PRIMARY}; }
-        .tpl1-nav--home .tpl1-nav-btn { color: #fff !important; }
-        .tpl1-nav--home .tpl1-nav-btn svg { color: #fff !important; fill: #fff !important; stroke: #fff !important; }
-        .tpl1-nav--home .tpl1-nav-btn:hover { background: linear-gradient(135deg, rgba(227,150,191,0.1), rgba(249,168,212,0.15)); color: #fff !important; }
-        .tpl1-nav--home .tpl1-nav-btn:hover svg { color: #fff !important; fill: #fff !important; stroke: #fff !important; }
-        .tpl1-nav--home .tpl1-nav-addr { color: #666; }
-        .tpl1-nav--home .tpl1-nav-addr:hover { background: linear-gradient(135deg, rgba(227,150,191,0.1), rgba(249,168,212,0.15)); color: ${ORANGE_PRIMARY}; }
+        .tpl1-nav-btn { width: 44px; height: 44px; border-radius: 50%; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.25s ease; color: #e396bf; position: relative; }
+        .tpl1-nav-btn:hover { background: linear-gradient(135deg, rgba(236,72,153,0.1), rgba(249,168,212,0.15)); color: #e396bf; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(236,72,153,0.15); }
         .tpl1-nav-search-wrap { display: flex; align-items: center; overflow: hidden; transition: all 0.35s cubic-bezier(0.4,0,0.2,1); max-width: 0; opacity: 0; }
         .tpl1-nav-search-wrap.open { max-width: 260px; opacity: 1; margin-right: 4px; }
         .tpl1-nav-search-wrap form { display: flex; align-items: center; background: linear-gradient(135deg, #fdf2f8, #fdf2f8); border: 1.5px solid rgba(227,150,191,0.2); border-radius: 999px; padding: 0 16px; height: 40px; width: 240px; }
-        .tpl1-nav-search-wrap input { border: none; background: transparent; outline: none; font-size: 14px; width: 100%; color: #333; font-family: 'DM Sans', system-ui, sans-serif; }
+        .tpl1-nav-search-wrap input { border: none; background: transparent; outline: none; font-size: 14px; width: 100%; color: #111; caret-color: #111; font-family: 'DM Sans', system-ui, sans-serif; }
         .tpl1-nav-search-wrap input::placeholder { color: #c084a0; }
         .tpl1-nav-mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 998; }
         .tpl1-nav-mobile-overlay.open { display: block; }
         .tpl1-nav-mobile-menu { display: none; position: fixed; top: 76px; right: 0; bottom: 0; width: 300px; background: #fff; z-index: 999; padding: 24px; flex-direction: column; gap: 4px; box-shadow: -8px 0 30px rgba(0,0,0,0.08); transform: translateX(100%); transition: transform 0.3s ease; }
         .tpl1-nav-mobile-menu.open { display: flex; transform: translateX(0); }
         .tpl1-nav-mobile-menu a { font-family: 'DM Sans', system-ui, sans-serif; font-size: 16px; font-weight: 600; color: #444; text-decoration: none; padding: 14px 18px; border-radius: 12px; transition: all 0.2s ease; display: flex; align-items: center; gap: 10px; }
-        .tpl1-nav-mobile-menu a:hover { background: linear-gradient(135deg, rgba(227,150,191,0.08), rgba(249,168,212,0.12)); color: ${ORANGE_PRIMARY}; }
+        .tpl1-nav-mobile-menu a:hover { background: linear-gradient(135deg, rgba(236,72,153,0.08), rgba(249,168,212,0.12)); color: #e396bf; }
         .tpl1-nav-divider { height: 1px; background: #f3f4f6; margin: 8px 0; }
 
-        /* Badge para cart */
-        .tpl1-nav-badge { position: absolute; top: 2px; right: 2px; background: #fff; color: ${ORANGE_PRIMARY}; font-size: 9px; font-weight: 800; border-radius: 999px; min-width: 16px; height: 16px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border: 2px solid ${ORANGE_PRIMARY}; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
-        .tpl1-nav.scrolled .tpl1-nav-badge { background: linear-gradient(135deg, #e396bf, #f5a8cf); color: #fff; border-color: #fff; box-shadow: 0 2px 6px rgba(227,150,191,0.4); }
-
-        /* Notification badge — Facebook-style red dot */
-        @keyframes tpl1-notif-badge-pop {
-          0% { transform: scale(0); opacity: 0; }
-          50% { transform: scale(1.25); }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        @keyframes tpl1-notif-badge-pulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(229,57,53,0.5); }
-          50% { box-shadow: 0 0 0 5px rgba(229,57,53,0); }
-        }
-        .tpl1-nav-notif-badge {
-          position: absolute; top: 0px; right: 0px;
-          background: linear-gradient(135deg, #ef5350, #c62828);
-          color: #fff; font-size: 10px; font-weight: 800;
-          border-radius: 999px; min-width: 18px; height: 18px; padding: 0 5px;
-          display: flex; align-items: center; justify-content: center;
-          border: 2px solid #fff;
-          box-shadow: 0 2px 8px rgba(229,57,53,0.45);
-          animation: tpl1-notif-badge-pop .35s cubic-bezier(0.34,1.56,0.64,1), tpl1-notif-badge-pulse 2s ease-in-out 1s infinite;
-          font-family: 'DM Sans', system-ui, sans-serif;
-          line-height: 1;
-          z-index: 2;
-          transform: translate(40%, -40%);
-        }
-        .tpl1-nav.scrolled .tpl1-nav-notif-badge {
-          border-color: rgba(255,255,255,0.9);
-          box-shadow: 0 2px 8px rgba(229,57,53,0.5);
-        }
+        /* Badge para cart/notif */
+        .tpl1-nav-badge { position: absolute; top: 2px; right: 2px; background: linear-gradient(135deg, #e396bf, #c084a0); color: #fff; font-size: 9px; font-weight: 800; border-radius: 999px; min-width: 16px; height: 16px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(236,72,153,0.4); }
         .tpl1-nav-notif-link { display: flex; align-items: center; text-decoration: none; background: none; border: none; padding: 0; cursor: pointer; font: inherit; }
         .tpl1-bottom-nav-item { cursor: pointer; }
 
         /* Dirección pill */
-        .tpl1-nav-addr { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: transparent; border: 1px solid transparent; border-radius: 999px; font-size: 12px; font-weight: 600; color: #666; text-decoration: none; max-width: 180px; transition: all 0.2s ease; }
-        .tpl1-nav-addr:hover { background: linear-gradient(135deg, rgba(227,150,191,0.1), rgba(249,168,212,0.15)); color: ${ORANGE_PRIMARY}; transform: translateY(-1px); }
+        .tpl1-nav-addr { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: linear-gradient(135deg, #fdf2f8, #fdf2f8); border: 1px solid rgba(227,150,191,0.15); border-radius: 999px; font-size: 12px; font-weight: 600; color: #555; text-decoration: none; max-width: 180px; transition: all 0.2s ease; }
+        .tpl1-nav-addr:hover { background: linear-gradient(135deg, #fce7f3, #fbcfe8); border-color: rgba(227,150,191,0.3); transform: translateY(-1px); }
         .tpl1-nav-addr span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         /* Avatar */
@@ -428,11 +376,11 @@ export default function Navbar1() {
           background: transparent;
         }
         .tpl1-bottom-nav-item.active svg {
-          color: ${ORANGE_PRIMARY};
+          color: #e396bf;
           animation: tpl1-nav-bounce 0.5s cubic-bezier(0.34,1.56,0.64,1);
         }
         .tpl1-bottom-nav-item.active span {
-          color: ${ORANGE_PRIMARY}; font-weight: 800;
+          color: #e396bf; font-weight: 800;
           animation: tpl1-nav-label-pop 0.35s ease;
         }
         .tpl1-bottom-nav-item.active::after {
@@ -455,11 +403,11 @@ export default function Navbar1() {
         }
         .tpl1-bottom-nav-item .tpl1-bottom-badge {
           position: absolute; top: 2px; right: 4px;
-          background: linear-gradient(135deg, ${ORANGE_PRIMARY}, #c0547a);
+          background: linear-gradient(135deg, #e396bf, #c084a0);
           color: #fff; font-size: 8px; font-weight: 800; border-radius: 999px;
           min-width: 16px; height: 16px; padding: 0 4px;
           display: flex; align-items: center; justify-content: center; border: 2px solid #fff;
-          box-shadow: 0 2px 6px rgba(227,150,191,0.4);
+          box-shadow: 0 2px 6px rgba(236,72,153,0.4);
         }
 
         /* FAB central */
@@ -511,7 +459,7 @@ export default function Navbar1() {
           box-shadow: 0 2px 8px rgba(0,0,0,0.08);
           flex-shrink: 0;
         }
-        .tpl1-bubble-circle svg { width: 26px; height: 26px; color: #f72585; }
+        .tpl1-bubble-circle svg { width: 26px; height: 26px; color: #e396bf; }
         .tpl1-en-camino-icon { width: 26px; height: 26px; }
         .tpl1-catalog-icon { width: 26px; height: 26px; }
         .tpl1-shop-icon { width: 26px; height: 26px; }
@@ -534,12 +482,12 @@ export default function Navbar1() {
         .tpl1-search-overlay-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #fce7f3; }
         .tpl1-search-overlay-back { width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #666; flex-shrink: 0; }
         .tpl1-search-overlay-form { flex: 1; display: flex; align-items: center; background: linear-gradient(135deg, #fdf2f8, #fdf2f8); border: 1.5px solid rgba(227,150,191,0.25); border-radius: 999px; padding: 0 14px; height: 40px; }
-        .tpl1-search-overlay-form input { border: none; background: transparent; outline: none; font-size: 15px; width: 100%; color: #333; font-family: 'DM Sans', system-ui, sans-serif; }
+        .tpl1-search-overlay-form input { border: none; background: transparent; outline: none; font-size: 15px; width: 100%; color: #111; caret-color: #111; font-family: 'DM Sans', system-ui, sans-serif; }
         .tpl1-search-overlay-form input::placeholder { color: #f5a8cf; }
         .tpl1-search-overlay-suggestions { padding: 16px; display: flex; flex-direction: column; gap: 6px; }
         .tpl1-search-overlay-suggestions p { font-size: 12px; font-weight: 600; color: #999; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .tpl1-search-overlay-tag { display: inline-block; padding: 8px 16px; background: #fdf2f8; border: 1px solid rgba(227,150,191,0.15); border-radius: 999px; font-size: 13px; color: #e396bf; cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', system-ui, sans-serif; }
-        .tpl1-search-overlay-tag:hover { background: rgba(227,150,191,0.1); }
+        .tpl1-search-overlay-tag { display: inline-block; padding: 8px 16px; background: #fdf2f8; border: 1px solid rgba(236,72,153,0.15); border-radius: 999px; font-size: 13px; color: #e396bf; cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', system-ui, sans-serif; }
+        .tpl1-search-overlay-tag:hover { background: rgba(236,72,153,0.1); }
         .tpl1-search-overlay-results { padding: 0 16px; flex: 1; overflow-y: auto; }
         .tpl1-search-overlay-result { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f5f5f5; text-decoration: none; color: #333; }
         .tpl1-search-overlay-result img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: #f9f9f9; }
@@ -588,9 +536,8 @@ export default function Navbar1() {
             z-index: 10050 !important;
             animation: dropdownIn 0.2s ease !important;
           }
-          .tpl1-nav { min-height: 48px !important; height: auto !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border-bottom: none !important; border-radius: 999px !important; box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important; margin: 10px 80px 0 !important; position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; z-index: 9999 !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
-          .tpl1-nav--home { transform: none !important; opacity: 1 !important; pointer-events: auto !important; background: rgba(255,255,255,0.98) !important; }
-          .tpl1-nav.scrolled { background: rgba(255,255,255,0.98) !important; position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; margin: 0 !important; border-radius: 0 !important; min-height: 48px !important; box-shadow: 0 2px 16px rgba(0,0,0,0.08) !important; }
+          .tpl1-nav { min-height: 48px !important; height: auto !important; background: rgba(255,255,255,0.98) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border-bottom: none !important; border-radius: 999px !important; box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important; margin: 6px 80px 0 !important; position: absolute !important; top: 24px !important; left: 0 !important; right: 0 !important; z-index: 9999 !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
+          .tpl1-nav.scrolled { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; margin: 0 !important; border-radius: 0 !important; min-height: 48px !important; box-shadow: 0 2px 16px rgba(0,0,0,0.08) !important; }
           .tpl1-nav.scrolled .tpl1-nav-inner { height: 48px !important; min-height: 48px !important; padding: 0 12px !important; }
           .tpl1-nav.scrolled .tpl1-nav-btn { width: 34px !important; height: 34px !important; }
           .tpl1-nav.scrolled .tpl1-nav-btn svg { width: 17px !important; height: 17px !important; }
@@ -600,15 +547,17 @@ export default function Navbar1() {
           .tpl1-nav.scrolled .tpl1-nav-mobile-fab svg { width: 14px !important; height: 14px !important; }
           .tpl1-nav-links { display: none !important; }
           .tpl1-nav-logo { display: none !important; }
+          .tpl1-nav.scrolled .tpl1-nav-logo { display: flex !important; }
+          .tpl1-nav.scrolled .tpl1-nav-mobile-fabs { display: none !important; }
           .tpl1-nav-mobile-fabs { display: flex !important; }
           .tpl1-nav-hamburger { display: none !important; }
           .tpl1-nav-inner { padding: 0 10px !important; height: 48px !important; min-height: 48px !important; gap: 0 !important; justify-content: space-between !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; position: relative !important; }
-          .tpl1-nav-mobile-center { position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; display: flex !important; align-items: center !important; gap: 4px !important; font-size: 10px !important; color: #be185d !important; white-space: nowrap !important; max-width: 140px !important; overflow: hidden !important; text-overflow: ellipsis !important; background: linear-gradient(135deg, #fdf2f8, #fdf2f8) !important; border: 1px solid rgba(227,150,191,0.25) !important; border-radius: 999px !important; padding: 4px 10px !important; font-weight: 500 !important; font-family: 'DM Sans', system-ui, sans-serif !important; pointer-events: none !important; animation: tpl1AddrIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both !important; z-index: 10 !important; }
+          .tpl1-nav-mobile-center { position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; display: flex !important; align-items: center !important; gap: 4px !important; font-size: 10px !important; color: #c084a0 !important; white-space: nowrap !important; max-width: 140px !important; overflow: hidden !important; text-overflow: ellipsis !important; background: linear-gradient(135deg, #fdf2f8, #fdf2f8) !important; border: 1px solid rgba(227,150,191,0.25) !important; border-radius: 999px !important; padding: 4px 10px !important; font-weight: 500 !important; font-family: 'DM Sans', system-ui, sans-serif !important; pointer-events: none !important; animation: tpl1AddrIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both !important; z-index: 10 !important; }
           @keyframes tpl1AddrIn { from { opacity: 0; transform: translate(-50%, calc(-50% - 6px)); } to { opacity: 1; transform: translate(-50%, -50%); } }
           .tpl1-nav-mobile-center svg { flex-shrink: 0 !important; }
           .tpl1-nav-logo img { height: 22px !important; max-width: 58px !important; }
-          .tpl1-nav-btn { width: 32px !important; height: 32px !important; color: #fff !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
-          .tpl1-nav.scrolled .tpl1-nav-btn { color: #666 !important; }
+          .tpl1-nav.scrolled .tpl1-nav-logo img { height: 18px !important; max-width: 48px !important; }
+          .tpl1-nav-btn { width: 32px !important; height: 32px !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
           .tpl1-nav-btn svg { width: 16px !important; height: 16px !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
           .tpl1-nav-avatar { width: 24px !important; height: 24px !important; font-size: 9px !important; border-width: 1px !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
           .tpl1-nav-user-avatar { width: 24px !important; height: 24px !important; margin-top: 0 !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
@@ -640,10 +589,8 @@ export default function Navbar1() {
           .tpl1-nav-mobile-center,
           .tpl1-nav-mobile-center:hover { transform: translate(-50%, -50%) !important; }
           .tpl1-nav-logo:hover img { transform: none !important; }
-          .tpl1-nav-links a:hover { background: transparent !important; color: #fff !important; transform: none !important; }
-          .tpl1-nav.scrolled .tpl1-nav-links a:hover { color: #444 !important; }
-          .tpl1-nav-btn:hover { background: transparent !important; color: #fff !important; transform: none !important; box-shadow: none !important; }
-          .tpl1-nav.scrolled .tpl1-nav-btn:hover { color: #666 !important; }
+          .tpl1-nav-links a:hover { background: transparent !important; color: #444 !important; transform: none !important; }
+          .tpl1-nav-btn:hover { background: transparent !important; color: #666 !important; transform: none !important; box-shadow: none !important; }
           .tpl1-nav-mobile-menu a:hover { background: transparent !important; color: #444 !important; }
           .tpl1-auth-popup-close:hover { background: #f3f4f6 !important; color: #666 !important; }
           .tpl1-auth-primary-btn:hover { transform: none !important; box-shadow: 0 4px 16px rgba(227,150,191,0.3) !important; }
@@ -655,19 +602,35 @@ export default function Navbar1() {
 
       <div className={`tpl1-nav-mobile-overlay ${menuOpen ? 'open' : ''}`} onClick={() => setMenuOpen(false)} />
 
-      {/* Top navbar: always visible */}
-      <nav className={`tpl1-nav ${scrolled ? 'scrolled' : ''} ${isHome ? 'tpl1-nav--home' : ''}`} style={{ background: isHome ? 'rgba(255,255,255,0.95)' : (scrolled ? 'rgba(255,255,255,0.95)' : `linear-gradient(135deg, ${ORANGE_PRIMARY}, ${PINK_LIGHT})`), borderBottom: '1px solid #fce7f3' }}>
+      {/* Top navbar: on mobile only show on homepage */}
+      {!(isMobile && !isHome) && (
+      <nav
+        className={`tpl1-nav ${scrolled ? 'scrolled' : ''}`}
+        style={{
+          background: scrolled ? 'rgba(255,255,255,0.95)' : '#fff',
+          borderBottom: `1px solid ${scrolled ? '#fce7f3' : '#f5f5f5'}`,
+          ...(showNavDesktopHome ? {
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            transform: scrolled ? 'translateY(0)' : 'translateY(-100%)',
+            transition: 'transform 0.35s cubic-bezier(0.4,0,0.2,1), background 0.3s ease',
+            pointerEvents: scrolled ? 'auto' : 'none',
+          } : {})
+        }}
+      >
         <div className="tpl1-nav-inner">
           {/* Mobile center: address â€” solo visible con navbar expandida (scroll) */}
-          {isMobile && (
+          {isMobile && scrolled && (
             <div className="tpl1-nav-mobile-center" aria-live="polite">
-              <MapPin size={10} />
+              <MapPin size={10} color={ORANGE_PRIMARY} />
               <span>{primaryAddress || (isLoggedIn ? 'Mi ubicación' : 'Ubicación')}</span>
             </div>
           )}
-          <Link href="/" className="tpl1-nav-logo">
-            {navLogoUrl ? <img src={navLogoUrl} alt="Inicio" style={{ height: '42px', maxWidth: '140px', width: 'auto', objectFit: 'contain' }} className="tpl1-nav-logo-img" /> : null}
-          </Link>
+          <a href="/" className="tpl1-nav-logo" onClick={(e) => { e.preventDefault(); window.location.href = '/'; }}>
+            {navLogoUrl ? <img src={navLogoUrl} alt="Inicio" style={{ opacity: 0, transition: 'opacity 0.4s ease', animation: 'tpl1LogoFadeIn 0.4s ease forwards' }} /> : null}
+          </a>
 
           {/* Mobile fabs - WhatsApp + ChatBot (replaces logo on mobile) */}
           <div className="tpl1-nav-mobile-fabs">
@@ -693,12 +656,12 @@ export default function Navbar1() {
           <div className="tpl1-nav-actions">
             <div className={`tpl1-nav-search-wrap ${searchOpen ? 'open' : ''}`}>
               <form onSubmit={handleSearch}>
-                <Search size={16} style={{ marginRight: 8, flexShrink: 0 }} />
+                <Search size={16} color={ORANGE_PRIMARY} style={{ marginRight: 8, flexShrink: 0 }} />
                 <input placeholder="Buscar productos..." autoFocus={searchOpen} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
               </form>
             </div>
             <div className="tpl1-nav-mobile-tools">
-              <button className="tpl1-nav-btn" onClick={() => setSearchOpen(!searchOpen)} title="Buscar"><Search size={20} color="#fff" /></button>
+              <button className="tpl1-nav-btn" onClick={() => setSearchOpen(!searchOpen)} title="Buscar"><Search size={20} color="#e396bf" /></button>
               {isLoggedIn && (
                 <button
                   type="button"
@@ -706,9 +669,9 @@ export default function Navbar1() {
                   title="Notificaciones"
                   onClick={() => setNotifOpen(true)}
                 >
-                  <Bell size={20} color="#fff" />
+                  <Bell size={20} color="#e396bf" />
                   {unreadCount > 0 && (
-                    <span className="tpl1-nav-notif-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+                    <span className="tpl1-nav-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
                   )}
                 </button>
               )}
@@ -716,18 +679,17 @@ export default function Navbar1() {
 
             {/* Dirección primaria */}
             <Link href="/cuenta/direcciones" className="tpl1-nav-addr" title="Mis direcciones">
-              <MapPin size={14} color="#fff" />
+              <MapPin size={14} color={ORANGE_PRIMARY} />
               <span>{primaryAddress || (isLoggedIn ? 'Agregar ubicación' : 'Ingresa ubicación')}</span>
             </Link>
 
-            <Link href="/favoritos" title="Favoritos">
-              <button className="tpl1-nav-btn"><Heart size={20} color="#fff" /></button>
-            </Link>
+            <a href="/favoritos" title="Favoritos" onClick={(e) => { e.preventDefault(); window.location.href = '/cuenta/favoritos'; }}>
+              <button className="tpl1-nav-btn"><Heart size={20} color="#e396bf" /></button>
+            </a>
 
-            {/* Carrito con badge */}
-            <button className="tpl1-nav-btn" onClick={() => setCartOpen(true)} title="Carrito">
-              <ShoppingCart size={20} color="#fff" />
-              {totalItems > 0 && <span className="tpl1-nav-badge">{totalItems > 9 ? '9+' : totalItems}</span>}
+            {/* Carrito con badge — abre custom cart drawer */}
+            <button className="tpl1-nav-btn cart-btn" data-cart-item={totalItems} onClick={() => setCartOpen(true)} title="Carrito">
+              <ShoppingCart size={20} color="#e396bf" />
             </button>
 
             {/* Cuenta - logueado vs no logueado */}
@@ -756,19 +718,19 @@ export default function Navbar1() {
                         <p className="tpl1-nav-dropdown-email">{user.email}</p>
                       </div>
                     </div>
-                    <Link href="/cuenta" onClick={() => setAccountOpen(false)}><User size={16} color="#666" /> Mi cuenta</Link>
-                    <Link href="/cuenta/pedidos" onClick={() => setAccountOpen(false)}><Receipt size={16} color="#666" /> Mis pedidos</Link>
-                    <Link href="/cuenta/direcciones" onClick={() => setAccountOpen(false)}><MapPin size={16} color="#666" /> Direcciones</Link>
-                    <Link href="/favoritos" onClick={() => setAccountOpen(false)}><Heart size={16} color="#666" /> Favoritos</Link>
+                    <Link href="/cuenta" onClick={() => setAccountOpen(false)}><User size={16} /> Mi cuenta</Link>
+                    <Link href="/cuenta/pedidos" onClick={() => setAccountOpen(false)}><Receipt size={16} /> Mis pedidos</Link>
+                    <Link href="/cuenta/direcciones" onClick={() => setAccountOpen(false)}><MapPin size={16} /> Direcciones</Link>
+                    <a href="/cuenta/favoritos" onClick={(e) => { e.preventDefault(); window.location.href = '/cuenta/favoritos'; setAccountOpen(false); }}><Heart size={16} /> Favoritos</a>
                     <div className="tpl1-nav-divider" />
-                    <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} color="#666" /> Cerrar sesión</button>
+                    <button onClick={handleLogout} className="tpl1-nav-logout"><LogOut size={16} /> Cerrar sesión</button>
                   </div>
                 )}
               </div>
             ) : (
               <div className="tpl1-nav-auth-wrap" ref={authPopupRef} style={{ position: 'relative' }}>
                 <button className="tpl1-nav-btn" onClick={() => setAuthPopupOpen(!authPopupOpen)} title="Iniciar sesión">
-                  <User size={20} color="#fff" />
+                  <User size={20} color="#e396bf" />
                 </button>
                 {authPopupOpen && !isMobile && authPopupPanel}
               </div>
@@ -802,7 +764,7 @@ export default function Navbar1() {
           ))}
           <div className="tpl1-nav-divider" />
           <Link href="/cuenta/direcciones" onClick={() => setMenuOpen(false)}><MapPin size={16} /> Direcciones</Link>
-          <Link href="/favoritos" onClick={() => setMenuOpen(false)}><Heart size={16} /> Favoritos</Link>
+          <a href="/cuenta/favoritos" onClick={(e) => { e.preventDefault(); window.location.href = '/cuenta/favoritos'; setMenuOpen(false); }}><Heart size={16} /> Favoritos</a>
           <Link href="/carrito" onClick={() => setMenuOpen(false)}><ShoppingCart size={16} /> Carrito {totalItems > 0 && `(${totalItems})`}</Link>
           {isLoggedIn ? (
             <>
@@ -818,6 +780,7 @@ export default function Navbar1() {
           )}
         </div>
       </nav>
+      )}
 
       {/* â”€â”€ Cart Drawer â”€â”€ */}
       {cartOpen && (
@@ -826,23 +789,46 @@ export default function Navbar1() {
           <div style={{ position: 'relative', width: 420, maxWidth: '92vw', background: '#fff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-12px 0 48px rgba(0,0,0,0.15)', animation: 'cartDrawerIn 0.3s cubic-bezier(0.4,0,0.2,1)' }}>
 
             {/* Header */}
-            <div style={{ padding: '18px 24px', borderBottom: '1px solid #fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, #fdf2f8, #fff)', flexShrink: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <ShoppingCart size={20} />
-                <span style={{ fontSize: 18, fontWeight: 700, color: '#222', fontFamily: 'DM Sans, system-ui, sans-serif' }}>Mi carrito</span>
-                {totalItems > 0 && <span style={{ background: `linear-gradient(135deg, ${ORANGE_PRIMARY}, #c0547a)`, color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 800, padding: '2px 8px', minWidth: 20, textAlign: 'center' }}>{totalItems}</span>}
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid #fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, #fdf2f8, #fff)', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(135deg, ${PINK_LIGHT}, ${ORANGE_PRIMARY})`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(227,150,191,0.3)' }}>
+                  <ShoppingCart size={20} color="#fff" />
+                </div>
+                <div>
+                  <span style={{ fontSize: 18, fontWeight: 700, color: '#222', fontFamily: 'DM Sans, system-ui, sans-serif', display: 'block' }}>Mi carrito</span>
+                  <span style={{ fontSize: 12, color: '#888', fontFamily: 'DM Sans, system-ui, sans-serif' }}>{totalItems} {totalItems === 1 ? 'producto' : 'productos'}</span>
+                </div>
               </div>
-              <button onClick={() => setCartOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', padding: 6, borderRadius: 8, display: 'flex', alignItems: 'center' }}>
-                <X size={20} />
+              <button onClick={() => setCartOpen(false)} style={{ background: '#f9fafb', border: '1.5px solid #e5e7eb', cursor: 'pointer', color: '#666', width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .2s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#f3f4f6'; e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.color = '#444'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#f9fafb'; e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = '#666'; }}>
+                <X size={18} />
               </button>
             </div>
 
             {/* Items list */}
             {items.length === 0 ? (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32, color: '#aaa' }}>
-                <ShoppingCart size={56} strokeWidth={1} color="#f5a8cf" />
-                <p style={{ margin: 0, fontSize: 15, color: '#888', fontFamily: 'DM Sans, system-ui, sans-serif' }}>Tu carrito está vacío</p>
-                <Link href="/productos" onClick={() => setCartOpen(false)} style={{ color: '#fff', fontSize: 13, fontWeight: 700, textDecoration: 'none', padding: '9px 20px', background: 'linear-gradient(135deg, #e396bf, #f5a8cf)', borderRadius: 999, transition: 'all .2s', boxShadow: '0 4px 12px rgba(227,150,191,0.35)' }}>Ver productos →</Link>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20, padding: 40, textAlign: 'center' }}>
+                <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(227,150,191,0.2)' }}>
+                  <ShoppingCart size={48} strokeWidth={1.5} color={ORANGE_PRIMARY} />
+                </div>
+                <div>
+                  <p style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 700, color: '#222', fontFamily: 'DM Sans, system-ui, sans-serif' }}>Tu carrito está vacío</p>
+                  <p style={{ margin: 0, fontSize: 14, color: '#888', fontFamily: 'DM Sans, system-ui, sans-serif', maxWidth: 260, lineHeight: 1.5 }}>¡Explora nuestros productos y encuentra algo que te encante!</p>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 280 }}>
+                  <Link href="/productos" onClick={() => setCartOpen(false)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#fff', fontSize: 15, fontWeight: 700, textDecoration: 'none', padding: '14px 24px', background: `linear-gradient(135deg, ${ORANGE_PRIMARY}, #c0547a)`, borderRadius: 12, transition: 'all .2s', boxShadow: '0 4px 16px rgba(227,150,191,0.35)', fontFamily: 'DM Sans, system-ui, sans-serif' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 24px rgba(227,150,191,0.45)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 16px rgba(227,150,191,0.35)'; }}>
+                    <ShoppingCart size={18} />
+                    Explorar productos
+                  </Link>
+                  <button onClick={() => setCartOpen(false)} style={{ background: '#fff', color: '#666', fontSize: 14, fontWeight: 600, padding: '12px 24px', borderRadius: 10, border: '1.5px solid #e5e7eb', cursor: 'pointer', fontFamily: 'DM Sans, system-ui, sans-serif', transition: 'all .2s' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#f9fafb'; e.currentTarget.style.borderColor = '#d1d5db'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e5e7eb'; }}>
+                    Seguir navegando
+                  </button>
+                </div>
               </div>
             ) : (
               <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
@@ -852,28 +838,46 @@ export default function Navbar1() {
                     ? item.timedOfferPrice
                     : (item.product.CURRENTPRICE && item.product.CURRENTPRICE > 0 ? item.product.CURRENTPRICE : item.product.PRICE);
                   return (
-                    <div key={item.product.$id} style={{ display: 'flex', gap: 14, padding: '14px 24px', borderBottom: '1px solid #f9f9f9', alignItems: 'flex-start' }}>
-                      <div style={{ width: 72, height: 72, borderRadius: 10, overflow: 'hidden', background: '#f9fafb', flexShrink: 0, border: '1px solid #f3f4f6' }}>
-                        {item.product.IMAGEURL && <img src={item.product.IMAGEURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 6 }} />}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 600, color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'DM Sans, system-ui, sans-serif' }}>{item.product.NAME}</p>
-                        <p style={{ margin: '0 0 10px', fontSize: 16, fontWeight: 700, color: ORANGE_PRIMARY, fontFamily: 'DM Sans, system-ui, sans-serif' }}>{formatPrice(price)}</p>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', border: `1.5px solid #fce7f3`, borderRadius: 8, overflow: 'hidden' }}>
-                            <button onClick={() => updateQuantity(item.product.$id, item.quantity - 1)} style={{ width: 30, height: 30, border: 'none', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: ORANGE_PRIMARY, transition: 'background .15s' }}
-                              onMouseEnter={e => (e.currentTarget.style.background = '#fdf2f8')} onMouseLeave={e => (e.currentTarget.style.background = '#fff')}>
-                              <Minus size={12} />
+                    <div key={item.product.$id} style={{ display: 'flex', gap: 16, padding: '16px 24px', borderBottom: '1px solid #f3f4f6', alignItems: 'center' }}>
+                      {/* Imagen del producto - clickable */}
+                      <Link href={`/producto/${item.product.$id}`} onClick={() => setCartOpen(false)} style={{ width: 80, height: 80, borderRadius: 12, overflow: 'hidden', background: '#f9fafb', flexShrink: 0, border: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {item.product.IMAGEURL ? <img src={item.product.IMAGEURL} alt={item.product.NAME} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ShoppingCart size={24} color="#ccc" />}
+                      </Link>
+                      
+                      {/* Info del producto */}
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {/* Nombre - clickable */}
+                        <Link href={`/producto/${item.product.$id}`} onClick={() => setCartOpen(false)} style={{ textDecoration: 'none' }}>
+                          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'DM Sans, system-ui, sans-serif', lineHeight: 1.3 }}>{item.product.NAME}</p>
+                        </Link>
+                        
+                        {/* Precios */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 15, fontWeight: 700, color: ORANGE_PRIMARY, fontFamily: 'DM Sans, system-ui, sans-serif' }}>{formatPrice(price * item.quantity)}</span>
+                          <span style={{ fontSize: 12, color: '#888', fontFamily: 'DM Sans, system-ui, sans-serif' }}>({formatPrice(price)} × {item.quantity})</span>
+                        </div>
+                        
+                        {/* Controles */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #fce7f3', borderRadius: 8, overflow: 'hidden', background: '#fff' }}>
+                            <button onClick={() => updateQuantity(item.product.$id, item.quantity - 1)} style={{ width: 32, height: 32, border: 'none', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: ORANGE_PRIMARY, transition: 'all .15s' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = '#fdf2f8'; e.currentTarget.style.color = '#c0547a'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = ORANGE_PRIMARY; }}>
+                              <Minus size={14} />
                             </button>
-                            <span style={{ width: 32, textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#333', borderLeft: '1px solid #fce7f3', borderRight: '1px solid #fce7f3', lineHeight: '30px' }}>{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.product.$id, item.quantity + 1)} style={{ width: 30, height: 30, border: 'none', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: ORANGE_PRIMARY, transition: 'background .15s' }}
-                              onMouseEnter={e => (e.currentTarget.style.background = '#fdf2f8')} onMouseLeave={e => (e.currentTarget.style.background = '#fff')}>
-                              <Plus size={12} />
+                            <span style={{ width: 36, textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#333', borderLeft: '1px solid #fce7f3', borderRight: '1px solid #fce7f3', lineHeight: '32px', fontFamily: 'DM Sans, system-ui, sans-serif' }}>{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.product.$id, item.quantity + 1)} style={{ width: 32, height: 32, border: 'none', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: ORANGE_PRIMARY, transition: 'all .15s' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = '#fdf2f8'; e.currentTarget.style.color = '#c0547a'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = ORANGE_PRIMARY; }}>
+                              <Plus size={14} />
                             </button>
                           </div>
-                          <button onClick={() => removeItem(item.product.$id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: 5, borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'background .15s' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.08)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                            <Trash2 size={14} />
+                          
+                          <button onClick={() => removeItem(item.product.$id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 8, borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontFamily: 'DM Sans, system-ui, sans-serif', transition: 'all .15s' }}
+                            onMouseEnter={e => { e.currentTarget.style.color = '#dc2626'; e.currentTarget.style.background = 'rgba(220,38,38,0.06)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = '#999'; e.currentTarget.style.background = 'none'; }}>
+                            <Trash2 size={16} />
+                            <span>Eliminar</span>
                           </button>
                         </div>
                       </div>
@@ -885,19 +889,45 @@ export default function Navbar1() {
 
             {/* Footer */}
             {items.length > 0 && (
-              <div style={{ padding: '16px 24px 24px', borderTop: '1px solid #fce7f3', background: 'linear-gradient(135deg, #fdf2f8, #fff)', flexShrink: 0 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
-                  <span style={{ fontSize: 14, color: '#666', fontFamily: 'DM Sans, system-ui, sans-serif' }}>Subtotal</span>
-                  <span style={{ fontSize: 22, fontWeight: 800, color: '#222', fontFamily: 'DM Sans, system-ui, sans-serif', letterSpacing: -0.5 }}>{formatPrice(subtotal)}</span>
+              <div style={{ padding: '20px 24px 24px', borderTop: '1px solid #fce7f3', background: 'linear-gradient(135deg, #fdf2f8, #fff)', flexShrink: 0 }}>
+                {/* Resumen de costos */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 14, color: '#666', fontFamily: 'DM Sans, system-ui, sans-serif' }}>Subtotal ({totalItems} {totalItems === 1 ? 'producto' : 'productos'})</span>
+                    <span style={{ fontSize: 16, fontWeight: 600, color: '#444', fontFamily: 'DM Sans, system-ui, sans-serif' }}>{formatPrice(subtotal)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 14, color: '#888', fontFamily: 'DM Sans, system-ui, sans-serif' }}>Envío</span>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: '#22c55e', fontFamily: 'DM Sans, system-ui, sans-serif' }}>Calculado en checkout</span>
+                  </div>
+                  <div style={{ height: 1, background: '#fce7f3', margin: '4px 0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: '#222', fontFamily: 'DM Sans, system-ui, sans-serif' }}>Total</span>
+                    <span style={{ fontSize: 24, fontWeight: 800, color: '#222', fontFamily: 'DM Sans, system-ui, sans-serif', letterSpacing: -0.5 }}>{formatPrice(subtotal)}</span>
+                  </div>
                 </div>
-                <Link href="/checkout" onClick={() => setCartOpen(false)} style={{ display: 'block', textAlign: 'center', background: `linear-gradient(135deg, ${ORANGE_PRIMARY}, #c0547a)`, color: '#fff', padding: '14px', borderRadius: 12, fontWeight: 700, fontSize: 15, textDecoration: 'none', boxShadow: '0 6px 20px rgba(227,150,191,0.3)', marginBottom: 10, fontFamily: 'DM Sans, system-ui, sans-serif', transition: 'all .25s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 28px rgba(227,150,191,0.4)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(227,150,191,0.3)'; }}>
-                  Ir al checkout →
-                </Link>
-                <Link href="/carrito" onClick={() => setCartOpen(false)} style={{ display: 'block', textAlign: 'center', color: ORANGE_PRIMARY, fontSize: 13, fontWeight: 600, padding: '8px', textDecoration: 'none', fontFamily: 'DM Sans, system-ui, sans-serif' }}>
-                  Ver carrito completo
-                </Link>
+                
+                {/* Botones de acción */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <Link href="/checkout" onClick={() => setCartOpen(false)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: `linear-gradient(135deg, ${ORANGE_PRIMARY}, #c0547a)`, color: '#fff', padding: '14px 20px', borderRadius: 12, fontWeight: 700, fontSize: 15, textDecoration: 'none', boxShadow: '0 6px 20px rgba(227,150,191,0.3)', fontFamily: 'DM Sans, system-ui, sans-serif', transition: 'all .25s' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 28px rgba(227,150,191,0.4)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(227,150,191,0.3)'; }}>
+                    <ShoppingCart size={18} />
+                    Ir al checkout
+                  </Link>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <Link href="/carrito" onClick={() => setCartOpen(false)} style={{ flex: 1, textAlign: 'center', background: '#fff', color: ORANGE_PRIMARY, fontSize: 14, fontWeight: 600, padding: '12px', borderRadius: 10, textDecoration: 'none', fontFamily: 'DM Sans, system-ui, sans-serif', border: `1.5px solid ${PINK_LIGHT}`, transition: 'all .2s' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#fdf2f8'; (e.currentTarget as HTMLElement).style.borderColor = ORANGE_PRIMARY; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff'; (e.currentTarget as HTMLElement).style.borderColor = PINK_LIGHT; }}>
+                      Ver carrito
+                    </Link>
+                    <button onClick={() => setCartOpen(false)} style={{ flex: 1, background: '#f9fafb', color: '#666', fontSize: 14, fontWeight: 600, padding: '12px', borderRadius: 10, border: '1.5px solid #e5e7eb', cursor: 'pointer', fontFamily: 'DM Sans, system-ui, sans-serif', transition: 'all .2s' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#f3f4f6'; e.currentTarget.style.borderColor = '#d1d5db'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#f9fafb'; e.currentTarget.style.borderColor = '#e5e7eb'; }}>
+                      Seguir comprando
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -910,14 +940,14 @@ export default function Navbar1() {
       {/* Bottom mobile nav — hidden on /inventario */}
       <nav className={`tpl1-bottom-nav${pathname?.startsWith('/inventario') ? ' !hidden' : ''}`}>
         <div className="tpl1-bottom-nav-inner">
-          <Link href="/" className={`tpl1-bottom-nav-item ${!fabOpen && pathname === '/' ? 'active' : ''}`}>
+          <a href="/" className={`tpl1-bottom-nav-item ${!fabOpen && pathname === '/' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); window.location.href = '/'; }}>
             <Home />
             <span>Inicio</span>
-          </Link>
-          <Link href="/favoritos" className={`tpl1-bottom-nav-item ${!fabOpen && (pathname === '/favoritos' || pathname?.startsWith('/cuenta/favoritos')) ? 'active' : ''}`}>
+          </a>
+          <a href="/cuenta/favoritos" className={`tpl1-bottom-nav-item ${!fabOpen && (pathname === '/favoritos' || pathname?.startsWith('/cuenta/favoritos')) ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); window.location.href = '/cuenta/favoritos'; }}>
             <Heart />
             <span>Favoritos</span>
-          </Link>
+          </a>
 
           {/* FAB central — Tienda / Catálogo / En Camino */}
           <div className={`tpl1-fab-bubbles${fabOpen ? ' open' : ''}`}>
