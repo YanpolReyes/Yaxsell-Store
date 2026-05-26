@@ -67,6 +67,12 @@ export default function CategoriesPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    const handler = () => load();
+    window.addEventListener('yaxsel-data-change', handler);
+    return () => window.removeEventListener('yaxsel-data-change', handler);
+  }, [load]);
+
   const openAdd = () => setModal({ mode: 'add', data: { name: '', iconUrl: '', color: '', order: categories.length } });
   const openEdit = (c: Category) => setModal({ mode: 'edit', data: { ...c } });
 

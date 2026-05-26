@@ -134,7 +134,6 @@ export async function upsertUserProfile(input: {
     email,
     name: (input.name || 'Usuario').trim(),
     phone: input.phone || '',
-    updatedAt: new Date().toISOString(),
   };
 
   let existingId: string | null = null;

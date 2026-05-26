@@ -24,7 +24,7 @@ export default function CarritoPage() {
   const [loadingCoupon, setLoadingCoupon] = useState(false);
 
   const discount = couponData
-    ? couponData.type === 'percentage'
+    ? (couponData.type === 'percentage' || couponData.type === 'percent')
       ? (subtotal * couponData.value) / 100
       : couponData.value
     : 0;
@@ -246,7 +246,7 @@ export default function CarritoPage() {
                   </button>
                 </div>
                 {couponError && <p style={{ margin: '8px 0 0', fontSize: 12, color: '#ef4444' }}>{couponError}</p>}
-                {couponData && <p style={{ margin: '8px 0 0', fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✓ Cupón aplicado: -{couponData.type === 'percentage' ? `${couponData.value}%` : formatPrice(couponData.value)}</p>}
+                {couponData && <p style={{ margin: '8px 0 0', fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✓ Cupón aplicado: -{(couponData.type === 'percentage' || couponData.type === 'percent') ? `${couponData.value}%` : formatPrice(couponData.value)}</p>}
               </div>
 
               <Link href="/productos" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, color: PINK, textDecoration: 'none', padding: '8px 0', fontWeight: 600 }}>

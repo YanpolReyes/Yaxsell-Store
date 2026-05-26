@@ -142,6 +142,12 @@ export default function ProductsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    const handler = () => load();
+    window.addEventListener('yaxsel-data-change', handler);
+    return () => window.removeEventListener('yaxsel-data-change', handler);
+  }, [load]);
+
   const sendYexyMessage = async () => {
     if (!yexyInput.trim() || yexyLoading) return;
     const userMsg = yexyInput.trim();

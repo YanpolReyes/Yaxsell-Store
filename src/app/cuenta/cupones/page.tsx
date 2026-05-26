@@ -145,7 +145,7 @@ export default function CuponesPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {coupons.map((coupon, i) => {
               const status = getCouponStatus(coupon);
-              const discountLabel = coupon.DISCOUNTTYPE === 'percentage' ? `${coupon.DISCOUNTVALUE}%` : `$${coupon.DISCOUNTVALUE.toLocaleString()}`;
+              const discountLabel = (coupon.DISCOUNTTYPE === 'percentage' || coupon.DISCOUNTTYPE === 'percent') ? `${coupon.DISCOUNTVALUE}%` : `$${coupon.DISCOUNTVALUE.toLocaleString()}`;
               return (
                 <motion.div
                   key={coupon.$id}

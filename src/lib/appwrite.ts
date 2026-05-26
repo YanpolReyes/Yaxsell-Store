@@ -73,7 +73,7 @@ export const ADMIN_CHAT_COLLECTION                = 'admin_chat'; // Admin-user 
 // ============================================
 // STORAGE — Un solo bucket con prefijos
 // ============================================
-export const MEDIA_BUCKET_ID = 'media';
+export const MEDIA_BUCKET_ID = '6a15f9a5001070a3c408';
 
 // Prefijos para organizar archivos en el bucket único
 export const MEDIA_PREFIXES = {
@@ -82,6 +82,7 @@ export const MEDIA_PREFIXES = {
   categories: 'categories/',
   comprobantes: 'comprobantes/',
   thumbnails: 'thumbnails/',
+  chat: 'chat/',
 } as const;
 
 export type MediaPrefix = keyof typeof MEDIA_PREFIXES;

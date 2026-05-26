@@ -27,6 +27,12 @@ interface ProductAction {
   sku?: string;
   barcode?: string;
   icon?: string;
+  wholesalePrice?: number;
+  wholesaleMinQuantity?: number;
+  packQty?: number;
+  internalCode?: string;
+  section?: number;
+  features?: string;
 }
 
 function parseAction(text: string): { clean: string; action: ProductAction | null } {
@@ -75,6 +81,10 @@ const SUGGESTIONS = [
 const PLACEHOLDERS = ['Crea un producto...', 'Pregunta lo que quieras...', 'Genera ideas...', 'Pide consejo...'];
 
 export default function AISidekick({ open, onClose, onProductChange }: { open: boolean; onClose: () => void; onProductChange?: () => void }) {
+  const notifyChange = useCallback(() => {
+    onProductChange?.();
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('yaxsel-data-change'));
+  }, [onProductChange]);
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: '¡Hola! Soy **Yexy**, tu asistente de IA. Puedo ayudarte a crear productos, gestionar pedidos, analizar ventas, crear descuentos y mucho más. ¿En qué te ayudo hoy?', typed: true },
   ]);
@@ -86,6 +96,7 @@ export default function AISidekick({ open, onClose, onProductChange }: { open: b
   const [closing, setClosing] = useState(false);
   const [visible, setVisible] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
+  const [pendingImage, setPendingImage] = useState<{ file: File; preview: string; name: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -98,7 +109,7 @@ export default function AISidekick({ open, onClose, onProductChange }: { open: b
 
   useEffect(() => {
     const el = messagesRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (el) requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
   }, [messages]);
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 200); }, [open]);
 
@@ -183,12 +194,18 @@ export default function AISidekick({ open, onClose, onProductChange }: { open: b
             tags: action.tags,
             sku: action.sku,
             barcode: action.barcode,
+            wholesalePrice: action.wholesalePrice,
+            wholesaleMinQuantity: action.wholesaleMinQuantity,
+            packQty: action.packQty,
+            internalCode: action.internalCode,
+            section: action.section,
+            features: action.features,
           }),
         });
         const data = await res.json();
         if (data.success) {
           setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'done' } : m));
-          onProductChange?.();
+          notifyChange();
         } else {
           console.error('Error updating product:', data.error);
           setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'error' } : m));
@@ -202,7 +219,7 @@ export default function AISidekick({ open, onClose, onProductChange }: { open: b
         const data = await res.json();
         if (data.success) {
           setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'done' } : m));
-          onProductChange?.();
+          notifyChange();
         } else {
           console.error('Error deleting product:', data.error);
           setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'error' } : m));
@@ -220,12 +237,21 @@ export default function AISidekick({ open, onClose, onProductChange }: { open: b
             tags: action.tags || '',
             sku: action.sku || '',
             barcode: action.barcode || '',
+            imageUrl: action.imageUrl || '',
+            imageUrl2: action.imageUrl2 || '',
+            imageUrl3: action.imageUrl3 || '',
+            wholesalePrice: action.wholesalePrice || 0,
+            wholesaleMinQuantity: action.wholesaleMinQuantity || 0,
+            packQty: action.packQty || 0,
+            internalCode: action.internalCode || '',
+            section: action.section || 0,
+            features: action.features || '',
           }),
         });
         const data = await res.json();
         if (data.success) {
           setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'done' } : m));
-          onProductChange?.();
+          notifyChange();
         } else {
           console.error('Error creating product:', data.error);
           setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, actionStatus: 'error' } : m));
@@ -237,53 +263,46 @@ export default function AISidekick({ open, onClose, onProductChange }: { open: b
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || imageUploading) return;
-    setImageUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await fetch('/api/products/upload-image', { method: 'POST', body: formData });
-      const data = await res.json();
-      if (data.success && data.imageUrl) {
-        const userMsg: Message = { role: 'user', content: `[Imagen enviada: ${data.imageUrl}]`, typed: true };
-        const history = [...messages, userMsg];
-        setMessages(history);
-        setLoading(true);
-        try {
-          const aiRes = await fetch('/api/ai-sidekick', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messages: history.map(m => ({ role: m.role, content: m.content })) }),
-          });
-          if (!aiRes.ok) throw new Error(`API error: ${aiRes.status}`);
-          const aiData = await aiRes.json();
-          const raw = aiData.text || 'No pude procesar la imagen.';
-          const { clean, action } = parseAction(raw);
-          const assistantMsg: Message = { role: 'assistant', content: clean, action, actionStatus: action ? 'pending' : undefined };
-          setMessages(prev => [...prev, assistantMsg]);
-        } catch {
-          setMessages(prev => [...prev, { role: 'assistant', content: 'Error al procesar la imagen.' }]);
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        setMessages(prev => [...prev, { role: 'assistant', content: '❌ Error al subir la imagen.' }]);
-      }
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: '❌ Error al subir la imagen.' }]);
-    } finally {
-      setImageUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    if (!file) return;
+    const preview = URL.createObjectURL(file);
+    setPendingImage({ file, preview, name: file.name });
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const sendMessage = async (text?: string) => {
     const content = (text ?? input).trim();
-    if (!content || loading) return;
+    if ((!content && !pendingImage) || loading) return;
     setInput('');
-    const userMsg: Message = { role: 'user', content, typed: true };
+
+    // Upload image if pending (server-side to avoid permission issues)
+    let imageUrl: string | undefined;
+    if (pendingImage) {
+      try {
+        const formData = new FormData();
+        formData.append('file', pendingImage.file);
+        const res = await fetch('/api/products/upload-image', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success && data.imageUrl) {
+          imageUrl = data.imageUrl;
+        } else {
+          throw new Error(data.error || 'Upload failed');
+        }
+      } catch (e: any) {
+        setMessages(prev => [...prev, { role: 'assistant', content: `❌ Error al subir la imagen: ${e.message}` }]);
+        URL.revokeObjectURL(pendingImage.preview);
+        setPendingImage(null);
+        setLoading(false);
+        return;
+      }
+      URL.revokeObjectURL(pendingImage.preview);
+      setPendingImage(null);
+    }
+
+    const imageTag = imageUrl ? `[Imagen adjunta: ${imageUrl}]` : '';
+    const fullContent = [content, imageTag].filter(Boolean).join(' ');
+    const userMsg: Message = { role: 'user', content: fullContent, typed: true };
     const history = [...messages, userMsg];
     setMessages(history);
     setLoading(true);
@@ -336,6 +355,7 @@ export default function AISidekick({ open, onClose, onProductChange }: { open: b
   };
 
   const renderText = (text: string) => text
+    .replace(/\[Imagen adjunta: (https?:\/\/[^\]]+)\]/g, '<img src="$1" alt="" style="max-width:100%;border-radius:10px;margin:4px 0;display:block" />')
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/\n/g, '<br/>');
@@ -525,6 +545,15 @@ export default function AISidekick({ open, onClose, onProductChange }: { open: b
 
         {/* Input area with rotating border */}
         <div style={{ padding:'10px 14px', borderTop:'1px solid rgba(255,255,255,0.06)', flexShrink:0, zIndex:1 }}>
+          {pendingImage && (
+            <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 4px', marginBottom:8 }}>
+              <img src={pendingImage.preview} alt="" style={{ width:40, height:40, objectFit:'cover', borderRadius:8, border:'1px solid rgba(255,255,255,0.1)' }} />
+              <span style={{ fontSize:11, color:'rgba(255,255,255,0.5)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pendingImage.name}</span>
+              <button onClick={() => setPendingImage(null)} style={{ background:'none', border:'none', cursor:'pointer', padding:2 }}>
+                <X size={14} color="#ef4444" />
+              </button>
+            </div>
+          )}
           <div style={{ display:'flex', gap:8, alignItems:'flex-end', position:'relative' }}>
             <input type="file" ref={fileInputRef} accept="image/*" onChange={handleImageUpload} style={{ display:'none' }} />
             <button onClick={() => fileInputRef.current?.click()} disabled={imageUploading}
@@ -551,7 +580,7 @@ export default function AISidekick({ open, onClose, onProductChange }: { open: b
                 onChange={e=>setInput(e.target.value)}
                 onFocus={()=>setInputFocused(true)} onBlur={()=>setInputFocused(false)}
                 onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}}
-                placeholder={placeholder}
+                placeholder={pendingImage ? 'Añade un mensaje (opcional)...' : placeholder}
                 rows={1}
                 style={{
                   position:'relative', zIndex:1, width:'100%', background:'#1a1a1a',
@@ -561,11 +590,11 @@ export default function AISidekick({ open, onClose, onProductChange }: { open: b
                 }}
               />
             </div>
-            <button className="sk-send" onClick={()=>sendMessage()} disabled={!input.trim()||loading}
+            <button className="sk-send" onClick={()=>sendMessage()} disabled={(!input.trim() && !pendingImage)||loading}
               style={{
                 width:36, height:36, borderRadius:10, border:'none', cursor:'pointer',
-                background:input.trim()&&!loading ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.04)',
-                color:input.trim()&&!loading ? '#a78bfa' : 'rgba(255,255,255,0.2)',
+                background:(input.trim()||pendingImage)&&!loading ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.04)',
+                color:(input.trim()||pendingImage)&&!loading ? '#a78bfa' : 'rgba(255,255,255,0.2)',
                 display:'flex', alignItems:'center', justifyContent:'center',
                 transition:'all .2s', flexShrink:0,
               }}>

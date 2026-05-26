@@ -98,11 +98,15 @@ export interface TimedOffer {
 export interface Coupon {
   $id: string;
   code: string;
-  type: 'percentage' | 'fixed';
+  type: 'percentage' | 'percent' | 'fixed';
   value: number;
   isActive: boolean;
   maxUses?: number;
   usedCount?: number;
+  minOrderAmount?: number;
+  maxDiscount?: number;
+  expiresAt?: number;
+  description?: string;
 }
 
 export type OrderStatus = 'pending' | 'processing' | 'paid' | 'shipped' | 'delivered' | 'cancelled';

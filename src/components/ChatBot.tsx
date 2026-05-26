@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
-import { MessageCircle, X, Send, Bot, User as UserIcon, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User as UserIcon, Loader2, ImagePlus, Trash2 } from 'lucide-react';
 import {
   CHATBOT_OPEN_EVENT,
   WHATSAPP_DISPLAY,
@@ -17,6 +17,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   ts: number;
+  imageUrl?: string;
 }
 
 const WELCOME = `¡Hola! Soy Yaxsel AI, asistente de ${STORE_NAME}. Puedo ayudarte con pedidos, envíos, pagos y más.`;
@@ -128,8 +129,10 @@ export default function ChatBot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [pendingImage, setPendingImage] = useState<{ file: File; preview: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isHiddenRoute = pathname.startsWith('/admin') || pathname.startsWith('/login') || pathname.startsWith('/inventario');
 
@@ -137,9 +140,23 @@ export default function ChatBot() {
 
   const handleSend = useCallback(async (textOverride?: string) => {
     const text = (textOverride ?? input).trim();
-    if (!text || loading) return;
+    if ((!text && !pendingImage) || loading) return;
     setInput('');
-    const userMsg: Message = { role: 'user', content: text, ts: Date.now() };
+
+    let imageUrl: string | undefined;
+    if (pendingImage) {
+      try {
+        const formData = new FormData();
+        formData.append('file', pendingImage.file);
+        const res = await fetch('/api/chat/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) imageUrl = data.url;
+      } catch {}
+      URL.revokeObjectURL(pendingImage.preview);
+      setPendingImage(null);
+    }
+
+    const userMsg: Message = { role: 'user', content: text || '(imagen)', ts: Date.now(), imageUrl };
     const updated = [...messages, userMsg];
     setMessages(updated);
     setLoading(true);
@@ -152,7 +169,7 @@ export default function ChatBot() {
     } finally {
       setLoading(false);
     }
-  }, [input, loading, messages]);
+  }, [input, loading, messages, pendingImage]);
 
   useEffect(() => {
     setMounted(true);
@@ -227,7 +244,10 @@ export default function ChatBot() {
               <div className="yaxsel-chat-msg__avatar">
                 {m.role === 'user' ? <UserIcon size={14} color="#666" /> : <Bot size={14} color="#fff" />}
               </div>
-              <div className="yaxsel-chat-msg__bubble">{m.content}</div>
+              <div className="yaxsel-chat-msg__bubble">
+                {m.imageUrl && <img src={m.imageUrl} alt="" style={{ maxWidth: '100%', borderRadius: 10, marginBottom: m.content && m.content !== '(imagen)' ? 8 : 0 }} />}
+                {m.content !== '(imagen)' && m.content}
+              </div>
             </div>
           ))}
 
@@ -245,6 +265,15 @@ export default function ChatBot() {
           <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="yaxsel-chat-fullscreen__wa">
             ¿Prefieres humano? WhatsApp {WHATSAPP_DISPLAY}
           </a>
+          {pendingImage && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 4px' }}>
+              <img src={pendingImage.preview} alt="" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+              <span style={{ fontSize: 12, color: '#6b7280', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pendingImage.file.name}</span>
+              <button type="button" onClick={() => setPendingImage(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                <Trash2 size={16} color="#ef4444" />
+              </button>
+            </div>
+          )}
           <div className="yaxsel-chat-fullscreen__input-row">
             <input
               ref={inputRef}
@@ -253,7 +282,24 @@ export default function ChatBot() {
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
               placeholder="Escribe tu mensaje..."
             />
-            <button type="button" onClick={() => handleSend()} disabled={!input.trim() || loading} aria-label="Enviar">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={e => {
+                const f = e.target.files?.[0];
+                if (f) {
+                  const preview = URL.createObjectURL(f);
+                  setPendingImage({ file: f, preview });
+                }
+                e.target.value = '';
+              }}
+            />
+            <button type="button" onClick={() => fileInputRef.current?.click()} aria-label="Adjuntar imagen" style={{ width: 48, height: 48, borderRadius: '50%', border: 'none', background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+              <ImagePlus size={20} color="#e396bf" />
+            </button>
+            <button type="button" onClick={() => handleSend()} disabled={(!input.trim() && !pendingImage) || loading} aria-label="Enviar">
               <Send size={18} color="#fff" />
             </button>
           </div>
