@@ -13,6 +13,7 @@ import { Product, Category, Subcategory } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import ProductCardPreview from '@/components/ProductCardPreview';
+import ImageZoomModal from '@/components/ImageZoomModal';
 import ProductBadges from '@/components/ProductBadges';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
@@ -34,6 +35,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [isLoading, setIsLoading] = useState(true);
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
+  const [zoomImage, setZoomImage] = useState<{ src: string; alt: string } | null>(null);
   const [selectedTag, setSelectedTag] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
   const [activePriceRange, setActivePriceRange] = useState<[number, number] | null>(null);
@@ -50,9 +52,10 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     : products.length;
 
   const handleCardImageClick = (p: Product, e: React.MouseEvent) => {
-    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) {
-      e.preventDefault();
-      setPreviewProduct(p);
+    e.preventDefault();
+    const imgSrc = p.IMAGEURL;
+    if (imgSrc) {
+      setZoomImage({ src: imgSrc, alt: p.NAME });
     }
   };
 
@@ -600,6 +603,9 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
 
       {/* Quick View Modal */}
       {previewProduct && <ProductCardPreview product={previewProduct} onClose={() => setPreviewProduct(null)} />}
+
+      {/* Image Zoom Modal */}
+      {zoomImage && <ImageZoomModal src={zoomImage.src} alt={zoomImage.alt} onClose={() => setZoomImage(null)} />}
 
       <style>{`
         @keyframes pkShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
