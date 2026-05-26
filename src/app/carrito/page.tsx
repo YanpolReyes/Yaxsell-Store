@@ -29,7 +29,7 @@ export default function CarritoPage() {
       : couponData.value
     : 0;
   const total = Math.max(0, subtotal - discount);
-  const belowMinimum = isBelowMinimumOrder(total);
+  const belowMinimum = isBelowMinimumOrder(subtotal);
 
   async function applyCoupon() {
     if (!couponCode.trim()) return;
@@ -209,7 +209,7 @@ export default function CarritoPage() {
 
                 {belowMinimum && (
                   <p style={{ margin: '0 0 12px', fontSize: 12, color: '#b91c1c', background: '#fef2f2', padding: '10px 12px', borderRadius: 10, border: '1px solid #fecaca', lineHeight: 1.45 }}>
-                    ⚠ {minimumOrderMessage(total)}
+                    ⚠ {minimumOrderMessage(subtotal, total)}
                   </p>
                 )}
 

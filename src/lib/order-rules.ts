@@ -1,10 +1,15 @@
-/** Monto mínimo a pagar (después de cupones y promos). */
+/** Monto mínimo de compra (se evalúa sobre el precio original, antes de cupones y promos). */
 export const MINIMUM_ORDER_CLP = 50_000;
 
-export function isBelowMinimumOrder(totalToPay: number): boolean {
-  return totalToPay < MINIMUM_ORDER_CLP;
+/** Retorna true si el precio original (sin descuentos) está por debajo del mínimo. */
+export function isBelowMinimumOrder(subtotalBeforeDiscounts: number): boolean {
+  return subtotalBeforeDiscounts < MINIMUM_ORDER_CLP;
 }
 
-export function minimumOrderMessage(totalToPay: number): string {
-  return `El monto mínimo de compra es $${MINIMUM_ORDER_CLP.toLocaleString('es-CL')}. Tu total a pagar es $${Math.round(totalToPay).toLocaleString('es-CL')} (con descuentos aplicados).`;
+export function minimumOrderMessage(subtotalBeforeDiscounts: number, totalAfterDiscounts?: number): string {
+  const base = `El monto mínimo de compra es $${MINIMUM_ORDER_CLP.toLocaleString('es-CL')}.`;
+  if (totalAfterDiscounts !== undefined && totalAfterDiscounts < subtotalBeforeDiscounts) {
+    return `${base} Tu carrito suma $${Math.round(subtotalBeforeDiscounts).toLocaleString('es-CL')} (antes de descuentos) → $${Math.round(totalAfterDiscounts).toLocaleString('es-CL')} a pagar.`;
+  }
+  return `${base} Tu total es $${Math.round(subtotalBeforeDiscounts).toLocaleString('es-CL')}.`;
 }
