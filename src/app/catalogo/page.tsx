@@ -264,11 +264,11 @@ export default function CatalogoPage() {
           .cat-card-info .price-label { font-size: 13px !important; }
           .cat-card-info .price-val { font-size: 22px !important; }
           .cat-card-info .price-val-sm { font-size: 20px !important; }
-          .cat-hero-title { font-size: 36px !important; letter-spacing: -1px !important; }
-          .cat-hero-wrap { padding: 90px 16px 50px !important; }
+          .cat-hero-title { font-size: 32px !important; letter-spacing: -0.5px !important; }
+          .cat-hero-wrap { padding: 80px 16px 40px !important; }
           .cat-hero-desc { font-size: 13px !important; }
-          .cat-hero-notice { padding: 10px 14px !important; }
-          .cat-hero-notice p { font-size: 11px !important; }
+          .cat-hero-notice { padding: 10px 12px !important; }
+          .cat-hero-notice p { font-size: 11px !important; line-height: 1.5 !important; }
           .cat-scroll-arrow { display: none !important; }
           #cat-scroll { padding-left: 16px !important; padding-right: 16px !important; }
           .cat-skeleton { flex-direction: column !important; min-height: auto !important; }
@@ -289,40 +289,39 @@ export default function CatalogoPage() {
       <div style={{
         position: 'relative', overflow: 'hidden', textAlign: 'center',
         background: 'url(https://static.vecteezy.com/system/resources/previews/010/930/988/non_2x/shopping-online-on-phone-with-podium-paper-art-modern-background-gifts-box-vector.jpg) center/cover',
-        padding: '110px 24px 90px',
-        animation: 'cat-bg 25s ease-in-out infinite',
+        padding: '100px 24px 70px',
       }} className="cat-hero-wrap">
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0.92) 100%)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(227,150,191,0.08) 0%, transparent 70%)' }} />
-        <div style={{ position: 'relative', maxWidth: 680, margin: '0 auto' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 20px', borderRadius: 50, background: 'rgba(227,150,191,0.08)', border: '1px solid rgba(194,65,12,0.2)', marginBottom: 22 }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#e396bf', animation: 'cat-pulse 2s infinite' }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#e396bf', letterSpacing: '3px', textTransform: 'uppercase' }}>Catálogo Exclusivo</span>
-          </div>
-          <h1 className="cat-hero-title" style={{ fontSize: 58, fontWeight: 900, color: '#1a1a2e', margin: '0 0 14px', lineHeight: 1, letterSpacing: '-2px', fontFamily: '"Playfair Display", Georgia, serif' }}>
-            PRODUCTOS<br /><span style={{ color: '#fbcfe8' }}>A PEDIDO</span>
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.78) 60%, rgba(255,255,255,0.95) 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 40% at 50% 30%, rgba(227,150,191,0.12) 0%, transparent 70%)' }} />
+        <div style={{ position: 'relative', maxWidth: 600, margin: '0 auto' }}>
+          <span style={{ display: 'inline-block', fontSize: 11, fontWeight: 700, color: '#c0547a', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: 12 }}>Catálogo Exclusivo</span>
+          <h1 className="cat-hero-title" style={{ fontSize: 52, fontWeight: 900, color: '#1a1a2e', margin: '0 0 10px', lineHeight: 1.05, letterSpacing: '-1.5px', fontFamily: '"Playfair Display", Georgia, serif' }}>
+            Productos<br /><span style={{ color: '#e396bf' }}>a Pedido</span>
           </h1>
-          <p className="cat-hero-desc" style={{ fontSize: 15, color: 'rgba(0,0,0,0.45)', margin: '0 0 8px', letterSpacing: '0.5px' }}>
-            {isLoading ? 'Cargando catálogo...' : `${filtered.length.toLocaleString()} productos disponibles para pedido`}
+          <p className="cat-hero-desc" style={{ fontSize: 14, color: 'rgba(0,0,0,0.4)', margin: '0 0 20px', letterSpacing: '0.3px' }}>
+            {isLoading ? 'Cargando catálogo...' : `${filtered.length.toLocaleString()} productos disponibles para consultar`}
           </p>
-          <div className="cat-hero-notice" style={{ background: 'rgba(227,150,191,0.04)', border: '1px solid rgba(227,150,191,0.1)', borderRadius: 14, padding: '14px 20px', margin: '0 0 28px', textAlign: 'left' }}>
-            <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.5)', margin: 0, lineHeight: 1.7, fontFamily: FF }}>
-              <span style={{ color: '#e396bf', fontWeight: 700 }}>⚠ Importante:</span> Para consultar disponibilidad necesitás estar registrado. Recibirás la respuesta por las notificaciones de tu cuenta — si hay stock se agregará a la tienda y te avisaremos, si no lo hay también se te notificará. <span style={{ fontWeight: 700, color: '#1a1a2e' }}>Esto no es un pedido.</span> Si deseás comprar con stock disponible, ingresá a <Link href="/" style={{ color: '#e396bf', fontWeight: 700, textDecoration: 'underline' }}>Tienda</Link>.
+          <div className="cat-hero-notice" style={{ background: 'rgba(227,150,191,0.06)', border: '1px solid rgba(227,150,191,0.12)', borderRadius: 12, padding: '12px 16px', margin: '0 0 24px', textAlign: 'left' }}>
+            <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', margin: 0, lineHeight: 1.6, fontFamily: FF }}>
+              <span style={{ color: '#c0547a', fontWeight: 700 }}>⚠</span> Para consultar disponibilidad necesitás estar registrado. Recibirás la respuesta por notificaciones — si hay stock se agregará a la tienda, si no, también se te notificará. <strong style={{ color: '#1a1a2e' }}>Esto no es un pedido.</strong> Para comprar con stock disponible, ingresá a <Link href="/" style={{ color: '#c0547a', fontWeight: 600, textDecoration: 'underline' }}>Tienda</Link>.
             </p>
           </div>
-          <div style={{ position: 'relative', maxWidth: 500, margin: '0 auto' }}>
-            <Search size={18} style={{ position: 'absolute', left: 20, top: '50%', transform: 'translateY(-50%)', color: '#999' }} />
+          <div style={{ position: 'relative', maxWidth: 460, margin: '0 auto' }}>
+            <Search size={17} style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)', color: '#bbb' }} />
             <input
               type="text"
               placeholder="Buscar en el catálogo..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               style={{
-                width: '100%', padding: '16px 20px 16px 52px', borderRadius: 50,
-                border: '1px solid rgba(0,0,0,0.08)', fontSize: 14, fontFamily: FF,
-                background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)',
+                width: '100%', padding: '14px 20px 14px 48px', borderRadius: 14,
+                border: '1.5px solid rgba(227,150,191,0.15)', fontSize: 14, fontFamily: FF,
+                background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(16px)',
                 color: '#111', outline: 'none', boxSizing: 'border-box',
+                transition: 'border-color .2s, box-shadow .2s',
               }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'rgba(227,150,191,0.4)'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(227,150,191,0.08)'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'rgba(227,150,191,0.15)'; e.currentTarget.style.boxShadow = 'none'; }}
             />
           </div>
         </div>
