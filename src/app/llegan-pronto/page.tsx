@@ -129,6 +129,31 @@ export default function LleganProntoPage() {
     });
   }, [products, selectedCat, selectedSub, search]);
 
+  // Count products per category and subcategory from filtered list
+  const catCountMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    filtered.forEach(p => {
+      const catId = p.CATEGORYID || 'uncategorized';
+      map[catId] = (map[catId] || 0) + 1;
+    });
+    return map;
+  }, [filtered]);
+
+  const subcatCountMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    filtered.forEach(p => {
+      if (p.SUBCATEGORYID) {
+        map[p.SUBCATEGORYID] = (map[p.SUBCATEGORYID] || 0) + 1;
+      }
+    });
+    return map;
+  }, [filtered]);
+
+  // Only categories that have products in the filtered list
+  const categoriesWithProducts = useMemo(() => {
+    return categories.filter(c => catCountMap[c.$id] > 0);
+  }, [categories, catCountMap]);
+
   const getCategoryName = (catId: string) => categories.find(c => c.$id === catId)?.name || 'Sin categoría';
   const getCategoryImage = (catId: string) => categories.find(c => c.$id === catId)?.iconUrl || '';
 
@@ -247,7 +272,7 @@ export default function LleganProntoPage() {
               color: !selectedCat ? '#be185d' : '#666',
               boxShadow: !selectedCat ? '0 2px 10px rgba(227,150,191,0.12)' : 'none',
             }}>✦ Todos</button>
-            {categories.map(cat => (
+            {categoriesWithProducts.map(cat => (
               <button key={cat.$id} className="lp-pill"
                 onClick={() => { setSelectedCat(selectedCat === cat.$id ? '' : cat.$id); setSelectedSub(''); }}
                 style={{
@@ -261,7 +286,7 @@ export default function LleganProntoPage() {
                   display: 'flex', alignItems: 'center', gap: 8,
                 }}>
                 {getCategoryImage(cat.$id) && <img src={getCategoryImage(cat.$id)} alt="" style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', border: '1px solid #eee' }} />}
-                {cat.name}
+                {cat.name} <span style={{ fontSize: 10, fontWeight: 700, opacity: .7 }}>({catCountMap[cat.$id] || 0})</span>
               </button>
             ))}
           </div>
@@ -275,7 +300,7 @@ export default function LleganProntoPage() {
         </div>
         {selectedCat && !selectedSub && subcategories.length > 0 && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '0 24px 14px' }}>
-            {subcategories.map((sub, i) => (
+            {subcategories.filter(sub => (subcatCountMap[sub.$id] || 0) > 0).map((sub, i) => (
               <button key={sub.$id} className="lp-pill subcat-pill-lp"
                 onClick={() => setSelectedSub(selectedSub === sub.$id ? '' : sub.$id)}
                 style={{
@@ -290,7 +315,7 @@ export default function LleganProntoPage() {
                   transition: 'all .2s',
                 }}>
                 {sub.ICON_URL && <img src={sub.ICON_URL} alt="" style={{ width: 16, height: 16, borderRadius: '50%', objectFit: 'cover' }} />}
-                {sub.name}
+                {sub.name} <span style={{ fontSize: 9, fontWeight: 700, opacity: .7 }}>({subcatCountMap[sub.$id] || 0})</span>
               </button>
             ))}
           </div>
