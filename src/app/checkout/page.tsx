@@ -211,7 +211,7 @@ function CheckoutInner() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       const res = await databases.listDocuments(databaseId, COUPONS_COLLECTION_ID, [
-        Query.equal('CODE', code),
+        Query.equal('code', code),
         Query.limit(1),
       ]);
       if (res.documents.length === 0) {

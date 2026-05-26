@@ -34,8 +34,8 @@ export default function CatalogoPage() {
   const { settings: apertura } = useAperturaPromotion();
   const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
   const [requestingId, setRequestingId] = useState<string | null>(null);
-  const [visibleCount, setVisibleCount] = useState(50);
-  const PAGE_SIZE = 50;
+  const [visibleCount, setVisibleCount] = useState(30);
+  const PAGE_SIZE = 30;
 
   // Load user's existing requests
   useEffect(() => {
@@ -479,20 +479,44 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
         <div
           onClick={() => setShowZoom(false)}
           style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'rgba(0,0,0,0.85)', cursor: 'zoom-out',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            position: 'fixed', inset: 0, zIndex: 10000,
+            background: 'rgba(0,0,0,0.9)', cursor: 'zoom-out',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           }}
         >
           <img
             src={img}
             alt={product.NAME}
+            onClick={e => e.stopPropagation()}
             style={{
-              maxWidth: '95vw', maxHeight: '95vh', objectFit: 'contain',
+              maxWidth: '90vw', maxHeight: '75vh', objectFit: 'contain',
+              borderRadius: 12, boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
             }}
           />
-          <div style={{ position: 'absolute', top: 20, right: 30, padding: '10px 20px', borderRadius: 50, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', color: '#fff', fontSize: 13, fontWeight: 700, fontFamily: FF, cursor: 'pointer' }}>
-            Cerrar ✕
+          <div style={{ display: 'flex', gap: 10, marginTop: 16 }} onClick={e => e.stopPropagation()}>
+            <Link
+              href={`/producto/${product.$id}`}
+              onClick={() => setShowZoom(false)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                padding: '10px 24px', background: 'linear-gradient(135deg, #e396bf, #c0547a)',
+                color: '#fff', borderRadius: 10, fontSize: 13, fontWeight: 700,
+                textDecoration: 'none', boxShadow: '0 4px 16px rgba(227,150,191,0.4)',
+              }}
+            >
+              Ver detalle
+            </Link>
+            <button
+              onClick={() => setShowZoom(false)}
+              style={{
+                padding: '10px 20px', background: 'rgba(255,255,255,0.12)',
+                color: '#fff', border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                backdropFilter: 'blur(8px)',
+              }}
+            >
+              Cerrar ✕
+            </button>
           </div>
         </div>
       )}
@@ -556,9 +580,9 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
             {/* Red rule */}
             <div style={{ height: 1, background: 'linear-gradient(90deg, #e396bf 0%, transparent 100%)', width: '55%', marginBottom: 22 }} />
 
-            {/* PRICES — embalaje (lower) first, mayorista (higher) second */}
+            {/* PRICES */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {product.PACKQTY && product.PACKQTY > 0 && product.PRICE && product.PRICE > 0 && (
+              {(product.PACKQTY ?? 0) > 0 && (product.PRICE ?? 0) > 0 && (
                 <div className="cat-price-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(22,163,74,0.06)', border: '1.5px solid rgba(22,163,74,0.15)' }}>
                   <span className="price-label" style={{ fontSize: 14, fontWeight: 800, color: '#16a34a', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio por Embalaje</span>
                   <span className="price-val-sm" style={{ fontSize: 32, fontWeight: 900, color: '#16a34a', fontFamily: '"Playfair Display", serif', letterSpacing: '-0.5px' }}>
@@ -566,18 +590,18 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
                   </span>
                 </div>
               )}
-              {product.WHOLESALEPRICE && product.WHOLESALEPRICE > 0 && (
-                <div className="cat-price-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(220,38,38,0.04)', border: '1.5px solid rgba(220,38,38,0.12)' }}>
-                  <span className="price-label" style={{ fontSize: 14, fontWeight: 800, color: '#dc2626', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio</span>
-                  <span className="price-val" style={{ fontSize: 36, fontWeight: 900, color: '#dc2626', fontFamily: '"Playfair Display", serif', letterSpacing: '-1px' }}>
-                    {formatPrice(product.WHOLESALEPRICE)}
+              {(product.WHOLESALEPRICE ?? 0) > 0 && (
+                <div className="cat-price-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(227,150,191,0.06)', border: '1.5px solid rgba(227,150,191,0.18)' }}>
+                  <span className="price-label" style={{ fontSize: 14, fontWeight: 800, color: '#e396bf', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio Mayorista</span>
+                  <span className="price-val" style={{ fontSize: 36, fontWeight: 900, color: '#e396bf', fontFamily: '"Playfair Display", serif', letterSpacing: '-1px' }}>
+                    {formatPrice(product.WHOLESALEPRICE ?? 0)}
                   </span>
                 </div>
               )}
-              {(!product.WHOLESALEPRICE || product.WHOLESALEPRICE <= 0) && (!product.PACKQTY || product.PACKQTY <= 0 || !product.PRICE || product.PRICE <= 0) && displayPrice > 0 && (
-                <div className="cat-price-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(227,150,191,0.04)', border: '1px solid rgba(194,65,12,0.1)' }}>
-                  <span className="price-label" style={{ fontSize: 10, fontWeight: 800, color: '#e396bf', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio</span>
-                  <span className="price-val" style={{ fontSize: 34, fontWeight: 900, color: '#e396bf', fontFamily: '"Playfair Display", serif', letterSpacing: '-1px' }}>
+              {!((product.WHOLESALEPRICE ?? 0) > 0) && !((product.PACKQTY ?? 0) > 0 && (product.PRICE ?? 0) > 0) && displayPrice > 0 && (
+                <div className="cat-price-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(227,150,191,0.06)', border: '1.5px solid rgba(227,150,191,0.18)' }}>
+                  <span className="price-label" style={{ fontSize: 14, fontWeight: 800, color: '#e396bf', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio</span>
+                  <span className="price-val" style={{ fontSize: 36, fontWeight: 900, color: '#e396bf', fontFamily: '"Playfair Display", serif', letterSpacing: '-1px' }}>
                     {formatPrice(displayPrice)}
                   </span>
                 </div>
@@ -601,7 +625,7 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
             background: alreadyRequested ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : isRequesting ? '#ccc' : 'linear-gradient(135deg, #e396bf 0%, #e396bf 100%)',
             color: '#fff', fontSize: 13, fontWeight: 800, cursor: alreadyRequested || isRequesting ? 'default' : 'pointer',
             letterSpacing: '2px', textTransform: 'uppercase',
-            boxShadow: alreadyRequested ? '0 6px 24px rgba(22,163,74,0.3)' : isRequesting ? 'none' : '0 6px 24px rgba(194,65,12,0.3)',
+            boxShadow: alreadyRequested ? '0 6px 24px rgba(22,163,74,0.3)' : isRequesting ? 'none' : '0 6px 24px rgba(227,150,191,0.3)',
             position: 'relative', overflow: 'hidden', fontFamily: FF,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}>
