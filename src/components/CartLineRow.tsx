@@ -126,31 +126,21 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
               position: 'absolute', left: '50%', bottom: '8%',
               transform: 'translateX(-50%)',
               display: 'flex', gap: 10,
+              width: '90vw', maxWidth: 400,
             }}
           >
             <Link
               href={`/productos/${p.$id}`}
               onClick={() => setZoomSrc(null)}
               style={{
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                padding: '10px 24px', background: `linear-gradient(135deg, ${PINK}, #c0547a)`,
-                color: '#fff', borderRadius: 10, fontSize: 13, fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                width: '100%', padding: '14px 24px', background: `linear-gradient(135deg, ${PINK}, #c0547a)`,
+                color: '#fff', borderRadius: 14, fontSize: 14, fontWeight: 700,
                 textDecoration: 'none', boxShadow: '0 4px 16px rgba(227,150,191,0.4)',
               }}
             >
-              Ver más detalle del producto
+              Ver detalle
             </Link>
-            <button
-              onClick={() => setZoomSrc(null)}
-              style={{
-                padding: '10px 20px', background: 'rgba(255,255,255,0.12)',
-                color: '#fff', border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                backdropFilter: 'blur(8px)',
-              }}
-            >
-              Cerrar
-            </button>
           </div>
         </div>,
         document.body

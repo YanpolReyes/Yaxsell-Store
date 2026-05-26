@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getServices, getAppwriteConfig } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, COUPONS_COLLECTION } from '@/lib/appwrite';
 import { Query, Client, Databases } from 'appwrite';
 import { ArrowLeft, Ticket, Gift, Tag, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -12,8 +12,6 @@ import { useCuentaBg } from '../CuentaBgContext';
 
 const FF = '"DM Sans",system-ui,sans-serif';
 const PINK = '#e396bf';
-const DB_ID = '6a0a58ca001798410d86';
-const COUPONS_COL = 'coupons';
 
 const COUPON_IMG = 'https://cdn3d.iconscout.com/3d/premium/thumb/cupon-3d-icon-png-download-10660366.png';
 
@@ -50,8 +48,9 @@ export default function CuponesPage() {
     (async () => {
       try {
         const { client, account } = getServices();
+        const { databaseId } = getAppwriteConfig();
         const db = new Databases(client);
-        const res = await db.listDocuments(DB_ID, COUPONS_COL, [
+        const res = await db.listDocuments(databaseId, COUPONS_COLLECTION, [
           Query.equal('ISACTIVE', true),
           Query.orderDesc('$createdAt'),
           Query.limit(50),

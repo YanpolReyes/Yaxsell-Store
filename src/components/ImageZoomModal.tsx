@@ -48,7 +48,7 @@ export default function ImageZoomModal({ src, alt, onClose }: Props) {
           src={src}
           alt={alt}
           onError={() => setImgError(true)}
-          onClick={e => e.stopPropagation()}
+          onClick={close}
         />
       )}
 

@@ -75,6 +75,10 @@ function CheckoutInner() {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponApplied, setCouponApplied] = useState('');
   const [couponDocId, setCouponDocId] = useState('');
+  const [publicCoupons, setPublicCoupons] = useState<any[]>([]);
+
+  // Agency dropdown state
+  const [agencyDropdownOpen, setAgencyDropdownOpen] = useState(false);
 
   const comunas = form.region ? CHILE_REGIONES[form.region] || [] : [];
   const totalDiscount = discountParam + couponDiscount;
@@ -94,6 +98,27 @@ function CheckoutInner() {
   useEffect(() => {
     setAgencies(CHECKOUT_AGENCIES);
     setAgency(CHECKOUT_AGENCIES[0]?.name || '');
+  }, []);
+
+  // Fetch public coupons
+  useEffect(() => {
+    (async () => {
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        const res = await databases.listDocuments(databaseId, COUPONS_COLLECTION_ID, [
+          Query.equal('ISACTIVE', true),
+          Query.limit(20),
+        ]);
+        const active = res.documents.filter((c: any) => {
+          const expiresAt = c.EXPIRESAT || (c.ENDAT ? new Date(c.ENDAT * 1000).toISOString() : null);
+          if (expiresAt && new Date(expiresAt) < new Date()) return false;
+          if (c.MAXUSES && (c.USEDCOUNT || 0) >= c.MAXUSES) return false;
+          return true;
+        });
+        setPublicCoupons(active);
+      } catch {}
+    })();
   }, []);
 
   useEffect(() => {
@@ -357,9 +382,42 @@ function CheckoutInner() {
           const updatedPrefs: any = { ...currentPrefs };
           if (form.rut) updatedPrefs.rut = form.rut;
           if (form.phone) updatedPrefs.phone = form.phone;
+          if (form.region) updatedPrefs.region = form.region;
+          if (form.comuna) updatedPrefs.comuna = form.comuna;
+          if (form.address) updatedPrefs.address = form.address;
           await account.updatePrefs(updatedPrefs);
         } catch (prefError) {
           console.log('Error saving user prefs:', prefError);
+        }
+      }
+      
+      // Save address to addresses collection for future purchases
+      if (user && form.region && form.comuna && form.address) {
+        try {
+          const { databases } = getServices();
+          const { databaseId } = getAppwriteConfig();
+          // Check if this address already exists for the user
+          const existing = await databases.listDocuments(databaseId, ADDRESSES_COLLECTION_ID, [
+            Query.equal('userId', user.id),
+            Query.equal('fullAddress', form.address),
+            Query.equal('commune', form.comuna),
+            Query.limit(1),
+          ]);
+          if (existing.documents.length === 0) {
+            await databases.createDocument(databaseId, ADDRESSES_COLLECTION_ID, ID.unique(), {
+              userId: user.id,
+              alias: 'Otro',
+              name: form.name,
+              phone: form.phone,
+              fullAddress: form.address,
+              commune: form.comuna,
+              region: form.region,
+              lat: 0,
+              lng: 0,
+            });
+          }
+        } catch (addrError) {
+          console.log('Error saving address:', addrError);
         }
       }
       
@@ -502,23 +560,51 @@ function CheckoutInner() {
                   <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, #c0547a)`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>1</span>
                   Agencia de envío
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
-                  {agencies.map((ag: AgencyOption) => {
-                    const sel = agency === ag.name;
-                    return (
-                      <button type="button" key={ag.name} onClick={() => setAgency(ag.name)}
-                        style={{ padding: '14px 16px', border: `2px solid ${sel ? PINK : '#fce7f3'}`, borderRadius: 14, background: sel ? PINK_BG : '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all .2s', position: 'relative', boxShadow: sel ? '0 4px 14px rgba(227,150,191,0.15)' : 'none' }}>
-                        {sel && <span style={{ position: 'absolute', top: 8, right: 10, width: 18, height: 18, borderRadius: '50%', background: `linear-gradient(135deg, ${PINK}, #c0547a)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                        </span>}
-                        <div style={{ width: 40, height: 40, marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: ag.bg, borderRadius: 10 }}>
-                          <Truck size={18} color={ag.color} />
-                        </div>
-                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: sel ? ag.color : '#333' }}>{ag.name}</p>
-                    <p style={{ margin: '2px 0 0', fontSize: 11, color: '#888' }}>{ag.desc}</p>
-                      </button>
-                    );
-                  })}
+                <div style={{ position: 'relative' }}>
+                  <button type="button" onClick={() => setAgencyDropdownOpen(!agencyDropdownOpen)}
+                    style={{ width: '100%', padding: '14px 16px', border: `2px solid ${agency ? PINK : '#fce7f3'}`, borderRadius: 14, background: agency ? PINK_BG : '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 10, boxShadow: agency ? '0 4px 14px rgba(227,150,191,0.1)' : 'none' }}>
+                    {agency ? (() => {
+                      const ag = agencies.find((a: AgencyOption) => a.name === agency);
+                      return ag ? (
+                        <>
+                          <div style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: ag.bg, borderRadius: 10, flexShrink: 0 }}>
+                            <Truck size={16} color={ag.color} />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: ag.color }}>{ag.name}</p>
+                            <p style={{ margin: '2px 0 0', fontSize: 11, color: '#888' }}>{ag.desc}</p>
+                          </div>
+                        </>
+                      ) : null;
+                    })() : (
+                      <span style={{ color: '#9ca3af', fontSize: 14 }}>Selecciona agencia de envío</span>
+                    )}
+                    <ChevronDown size={16} color="#999" style={{ marginLeft: 'auto', transition: 'transform .2s', transform: agencyDropdownOpen ? 'rotate(180deg)' : 'rotate(0)' }} />
+                  </button>
+                  {agencyDropdownOpen && (
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, marginTop: 4, background: '#fff', borderRadius: 14, border: '1px solid #fce7f3', boxShadow: '0 12px 40px rgba(0,0,0,0.12)', maxHeight: 280, overflowY: 'auto' }}>
+                      {agencies.map((ag: AgencyOption) => {
+                        const sel = agency === ag.name;
+                        return (
+                          <button type="button" key={ag.name} onClick={() => { setAgency(ag.name); setAgencyDropdownOpen(false); }}
+                            style={{ width: '100%', padding: '12px 16px', border: 'none', background: sel ? PINK_BG : 'transparent', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid #fdf2f8', transition: 'background .15s' }}
+                            onMouseEnter={e => { if (!sel) e.currentTarget.style.background = '#fefcfe'; }}
+                            onMouseLeave={e => { if (!sel) e.currentTarget.style.background = 'transparent'; }}>
+                            <div style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', background: ag.bg, borderRadius: 9, flexShrink: 0 }}>
+                              <Truck size={15} color={ag.color} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: sel ? ag.color : '#333' }}>{ag.name}</p>
+                              <p style={{ margin: '1px 0 0', fontSize: 11, color: '#888' }}>{ag.desc}</p>
+                            </div>
+                            {sel && <span style={{ width: 20, height: 20, borderRadius: '50%', background: `linear-gradient(135deg, ${PINK}, #c0547a)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                            </span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
                 <p style={{ margin: '12px 0 0', fontSize: 12, color: '#00a650', display: 'flex', alignItems: 'center', gap: 5 }}>
                   <RefreshCw size={12} /> El costo de envío se coordina con el vendedor tras confirmar el pedido.
@@ -567,6 +653,9 @@ function CheckoutInner() {
                   <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, #c0547a)`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>3</span>
                   Datos personales
                 </h2>
+                <div style={{ margin: '0 0 14px', padding: '8px 12px', borderRadius: 10, background: '#eff6ff', border: '1px solid #dbeafe', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: '#3b82f6', fontFamily: FF, fontWeight: 600 }}>
+                  <Shield size={13} /> Estos datos quedarán guardados en tu cuenta y no necesitarás volver a ingresarlos
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div style={{ gridColumn: '1/-1' }}>
                     <label style={label}>Nombre completo *</label>
@@ -607,6 +696,9 @@ function CheckoutInner() {
                         ← Usar dirección guardada
                       </button>
                     )}
+                  </div>
+                  <div style={{ margin: '0 0 14px', padding: '8px 12px', borderRadius: 10, background: '#eff6ff', border: '1px solid #dbeafe', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: '#3b82f6', fontFamily: FF, fontWeight: 600 }}>
+                    <MapPin size={13} /> Esta dirección quedará guardada en tu cuenta para futuros pedidos
                   </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div style={{ position: 'relative' }}>
@@ -766,6 +858,28 @@ function CheckoutInner() {
                       </button>
                     </div>
                     {couponError && <p style={{ margin: '4px 0 0', fontSize: 11, color: '#ef4444', fontFamily: FF }}>⚠ {couponError}</p>}
+                    {publicCoupons.length > 0 && (
+                      <div style={{ marginTop: 8 }}>
+                        <p style={{ margin: '0 0 6px', fontSize: 10, fontWeight: 700, color: '#9ca3af', fontFamily: FF, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Cupones disponibles</p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {publicCoupons.map((c: any) => {
+                            const code = (c.code || c.CODE || '').toUpperCase();
+                            if (!code) return null;
+                            const discType = c.DISCOUNTTYPE ?? c.TYPE ?? 'percent';
+                            const discVal = c.DISCOUNTVALUE ?? c.VALUE ?? 0;
+                            const label = discType === 'percent' || discType === 'percentage' ? `${discVal}% OFF` : formatPrice(discVal);
+                            return (
+                              <button key={c.$id} type="button" onClick={() => { setCouponCode(code); setCouponError(''); }}
+                                style={{ padding: '5px 10px', borderRadius: 999, border: `1.5px solid ${couponCode === code ? PINK : '#fce7f3'}`, background: couponCode === code ? PINK_BG : '#fff', color: couponCode === code ? PINK : '#6b7280', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: FF, transition: 'all .15s', letterSpacing: 0.5 }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
+                                onMouseLeave={e => { if (couponCode !== code) { e.currentTarget.style.borderColor = '#fce7f3'; e.currentTarget.style.color = '#6b7280'; } }}>
+                                🎟 {code} <span style={{ fontWeight: 800, color: '#00a650' }}>{label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

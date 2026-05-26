@@ -286,7 +286,7 @@ export default function Navbar1() {
         .tpl1-nav-divider { height: 1px; background: #f3f4f6; margin: 8px 0; }
 
         /* Badge para cart/notif */
-        .tpl1-nav-badge { position: absolute; top: 2px; right: 2px; background: linear-gradient(135deg, #e396bf, #c084a0); color: #fff; font-size: 9px; font-weight: 800; border-radius: 999px; min-width: 16px; height: 16px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(236,72,153,0.4); }
+        .tpl1-nav-badge { position: absolute; top: 2px; right: 2px; background: linear-gradient(135deg, #e396bf, #c084a0); color: #fff !important; font-size: 9px; font-weight: 800; border-radius: 999px; min-width: 16px; height: 16px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(236,72,153,0.4); }
         .tpl1-nav-notif-link { display: flex; align-items: center; text-decoration: none; background: none; border: none; padding: 0; cursor: pointer; font: inherit; }
         .tpl1-bottom-nav-item { cursor: pointer; }
 
@@ -404,7 +404,7 @@ export default function Navbar1() {
         .tpl1-bottom-nav-item .tpl1-bottom-badge {
           position: absolute; top: -4px; right: -4px;
           background: linear-gradient(135deg, #e396bf, #c084a0);
-          color: #fff; font-size: 11px; font-weight: 800; border-radius: 999px;
+          color: #fff !important; font-size: 11px; font-weight: 800; border-radius: 999px;
           min-width: 20px; height: 20px; padding: 0 5px;
           display: flex; align-items: center; justify-content: center; border: 2px solid #fff;
           box-shadow: 0 2px 8px rgba(236,72,153,0.5); line-height: 1;

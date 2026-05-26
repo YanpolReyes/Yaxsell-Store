@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Sparkles, PartyPopper, ArrowRight } from 'lucide-react';
+import { Sparkles, PartyPopper, ArrowRight, Ticket } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const PINK = '#e396bf';
@@ -198,7 +198,7 @@ export default function InaugurationBanner({ compact = false, href = '/ofertas' 
               <Sparkles size={12} /> Gran inauguración
             </span>
             <span style={{ fontSize: compact ? 10 : 11, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>
-              Yaxsell
+              KEVIN&amp;COCO CHILE
             </span>
           </div>
 
@@ -226,6 +226,10 @@ export default function InaugurationBanner({ compact = false, href = '/ofertas' 
           >
             Ofertas exclusivas, regalos de bienvenida y beneficios VIP por tiempo limitado.
           </p>
+          <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 999, background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(8px)' }}>
+            <Ticket size={14} color="#fff" />
+            <span style={{ fontSize: compact ? 11 : 13, fontWeight: 800, color: '#fff', letterSpacing: '0.04em' }}>Cupón: KEVINCOCOCL</span>
+          </div>
         </div>
 
         {!compact && (

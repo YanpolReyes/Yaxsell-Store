@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Zap, Clock, ShoppingCart, Timer } from 'lucide-react';
-import { getServices, getAppwriteConfig, TIMED_OFFERS_COLLECTION, formatPrice } from '@/lib/appwrite';
+import { Zap, Clock, ShoppingCart, Timer, Ticket, Tag, Copy, CheckCircle2 } from 'lucide-react';
+import { getServices, getAppwriteConfig, TIMED_OFFERS_COLLECTION, COUPONS_COLLECTION, formatPrice } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 import { TimedOffer } from '@/types';
 
@@ -62,6 +62,8 @@ function CountdownTimer({ offer }: { offer: TimedOffer }) {
 export default function OfertasPage() {
   const [offers, setOffers] = useState<TimedOffer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [publicCoupons, setPublicCoupons] = useState<any[]>([]);
+  const [copiedCode, setCopiedCode] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -76,6 +78,27 @@ export default function OfertasPage() {
       setOffers(active);
     } catch (e) { console.error(e); }
     finally { setIsLoading(false); }
+  }, []);
+
+  // Load public coupons
+  useEffect(() => {
+    (async () => {
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        const res = await databases.listDocuments(databaseId, COUPONS_COLLECTION, [
+          Query.equal('ISACTIVE', true),
+          Query.limit(20),
+        ]);
+        const active = res.documents.filter((c: any) => {
+          const expiresAt = c.EXPIRESAT || c.EXPIRYDATE || (c.ENDAT ? new Date(c.ENDAT * 1000).toISOString() : null);
+          if (expiresAt && new Date(expiresAt) < new Date()) return false;
+          if (c.MAXUSES && (c.USEDCOUNT || 0) >= c.MAXUSES) return false;
+          return true;
+        });
+        setPublicCoupons(active);
+      } catch {}
+    })();
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -97,6 +120,45 @@ export default function OfertasPage() {
         <h1 className="text-3xl font-bold">Ofertas por tiempo limitado</h1>
       </div>
       <p className="text-white/50 text-sm mb-8 ml-[52px]">Precios especiales disponibles solo por tiempo limitado</p>
+
+      {/* Public coupons */}
+      {publicCoupons.length > 0 && (
+        <div className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <Ticket size={18} className="text-pink-400" />
+            <h2 className="text-lg font-bold text-white/90">Cupones disponibles</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {publicCoupons.map((c: any) => {
+              const code = (c.code || c.CODE || '').toUpperCase();
+              if (!code) return null;
+              const discType = c.DISCOUNTTYPE ?? c.TYPE ?? 'percent';
+              const discVal = c.DISCOUNTVALUE ?? c.VALUE ?? 0;
+              const label = (discType === 'percent' || discType === 'percentage') ? `${discVal}% OFF` : `${formatPrice(discVal)} OFF`;
+              const copied = copiedCode === code;
+              return (
+                <div key={c.$id} className="glass rounded-2xl p-5 flex items-center gap-4 group hover:border-pink-500/30 transition-all">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-500/20 to-rose-500/20 flex items-center justify-center shrink-0 border border-pink-500/10">
+                    <Tag size={22} className="text-pink-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <code className="text-sm font-extrabold text-white tracking-wider bg-white/10 px-2 py-0.5 rounded">{code}</code>
+                      <span className="text-xs font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full">{label}</span>
+                    </div>
+                    {c.DESCRIPTION && <p className="text-xs text-white/50 truncate">{c.DESCRIPTION}</p>}
+                  </div>
+                  <button onClick={() => { navigator.clipboard.writeText(code); setCopiedCode(code); setTimeout(() => setCopiedCode(''), 2000); }}
+                    className="shrink-0 w-9 h-9 rounded-lg bg-white/10 hover:bg-pink-500/20 flex items-center justify-center transition-all border border-white/10 hover:border-pink-500/30"
+                    title="Copiar cupón">
+                    {copied ? <CheckCircle2 size={16} className="text-green-400" /> : <Copy size={16} className="text-white/60" />}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
