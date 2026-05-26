@@ -256,33 +256,36 @@ export default function CatalogoPage() {
         .cat-pill { transition: all .2s; }
         .cat-pill:hover { transform: translateY(-2px); }
         @media (max-width: 768px) {
-          .cat-card-wrap { flex-direction: column !important; min-height: auto !important; }
-          .cat-card-img-side { width: 100% !important; min-width: 0 !important; height: auto !important; min-height: 200px !important; }
+          .cat-card-wrap { flex-direction: column !important; min-height: auto !important; border-radius: 14px !important; }
+          .cat-card-img-side { width: 100% !important; min-width: 0 !important; height: auto !important; min-height: 160px !important; max-height: 200px !important; }
           .cat-card-img-side .cat-card-img { object-fit: contain !important; }
-          .cat-card-info { padding: 20px !important; }
-          .cat-card-info h3 { font-size: 18px !important; margin: 6px 0 12px !important; }
-          .cat-card-info .price-label { font-size: 13px !important; }
-          .cat-card-info .price-val { font-size: 22px !important; }
-          .cat-card-info .price-val-sm { font-size: 20px !important; }
-          .cat-hero-title { font-size: 32px !important; letter-spacing: -0.5px !important; }
-          .cat-hero-wrap { padding: 80px 16px 40px !important; }
-          .cat-hero-desc { font-size: 13px !important; }
-          .cat-hero-notice { padding: 10px 12px !important; }
-          .cat-hero-notice p { font-size: 11px !important; line-height: 1.5 !important; }
+          .cat-card-info { padding: 14px 16px 16px !important; }
+          .cat-card-info h3 { font-size: 16px !important; margin: 4px 0 10px !important; }
+          .cat-card-info .price-label { font-size: 11px !important; letter-spacing: 1px !important; }
+          .cat-card-info .price-val { font-size: 20px !important; }
+          .cat-card-info .price-val-sm { font-size: 18px !important; }
+          .cat-hero-title { font-size: 28px !important; letter-spacing: -0.5px !important; }
+          .cat-hero-wrap { padding: 70px 16px 28px !important; }
+          .cat-hero-desc { font-size: 12px !important; }
+          .cat-hero-notice { padding: 8px 10px !important; margin-bottom: 16px !important; }
+          .cat-hero-notice p { font-size: 10.5px !important; line-height: 1.45 !important; }
           .cat-scroll-arrow { display: none !important; }
-          #cat-scroll { padding-left: 16px !important; padding-right: 16px !important; }
+          #cat-scroll { padding-left: 12px !important; padding-right: 12px !important; }
           .cat-skeleton { flex-direction: column !important; min-height: auto !important; }
-          .cat-skeleton-img { width: 100% !important; height: 220px !important; }
-          .cat-skeleton-info { padding: 20px !important; }
-          .cat-section-title { font-size: 20px !important; }
-          .cat-cta-btn { padding: 12px 0 !important; font-size: 11px !important; }
-          .cat-content-area { padding: 20px 16px 60px !important; }
-          .cat-pack-badge { font-size: 14px !important; padding: 8px 16px !important; }
-          .cat-pack-badge strong { font-size: 18px !important; }
-          .cat-price-card { padding: 14px 16px !important; border-width: 2px !important; }
-          .cat-price-card .price-label { font-size: 13px !important; }
-          .cat-price-card .price-val { font-size: 24px !important; }
-          .cat-price-card .price-val-sm { font-size: 22px !important; }
+          .cat-skeleton-img { width: 100% !important; height: 160px !important; }
+          .cat-skeleton-info { padding: 14px 16px !important; }
+          .cat-section-title { font-size: 18px !important; }
+          .cat-cta-btn { padding: 11px 0 !important; font-size: 11px !important; margin-top: 14px !important; letter-spacing: 1px !important; }
+          .cat-content-area { padding: 16px 12px 60px !important; }
+          .cat-pack-badge { font-size: 12px !important; padding: 6px 12px !important; margin-top: 8px !important; }
+          .cat-pack-badge strong { font-size: 14px !important; }
+          .cat-price-card { padding: 10px 12px !important; border-radius: 10px !important; gap: 4px !important; }
+          .cat-price-card .price-label { font-size: 11px !important; letter-spacing: 1px !important; }
+          .cat-price-card .price-val { font-size: 18px !important; letter-spacing: -0.3px !important; }
+          .cat-price-card .price-val-sm { font-size: 16px !important; }
+          .cat-red-rule { width: 40% !important; margin-bottom: 12px !important; }
+          .cat-cat-tag { font-size: 9px !important; letter-spacing: 1px !important; }
+          .cat-card-list { gap: 14px !important; }
         }
       `}</style>
       {/* ── HERO ── */}
@@ -464,7 +467,7 @@ export default function CatalogoPage() {
                 </Link>
               )}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div className="cat-card-list" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               {filtered.slice(0, visibleCount).map((p, i) => <CatalogoProductCard key={p.$id} product={p} apertura={apertura} index={i} categories={categories} isLoggedIn={isLoggedIn} requestedIds={requestedIds} requestingId={requestingId} onRequest={handleRequestAvailability} onZoom={() => { const src = getProductImageUrl(p); if (src) setZoomImage({ src, alt: p.NAME }); }} />)}
             </div>
             {filtered.length > visibleCount && (
@@ -549,7 +552,7 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
           <div>
             {/* Category tag */}
             {catName && (
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#999', letterSpacing: '2px', textTransform: 'uppercase' }}>
+              <span className="cat-cat-tag" style={{ fontSize: 10, fontWeight: 700, color: '#999', letterSpacing: '2px', textTransform: 'uppercase' }}>
                 {catName}
               </span>
             )}
@@ -558,7 +561,7 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
               {product.NAME}
             </h3>
             {/* Red rule */}
-            <div style={{ height: 1, background: 'linear-gradient(90deg, #e396bf 0%, transparent 100%)', width: '55%', marginBottom: 22 }} />
+            <div className="cat-red-rule" style={{ height: 1, background: 'linear-gradient(90deg, #e396bf 0%, transparent 100%)', width: '55%', marginBottom: 22 }} />
 
             {/* PRICES */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
