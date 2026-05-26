@@ -154,7 +154,7 @@ export default function HomePage3() {
                     <Link href={`/productos/${product.$id}`}>
                       <div className="relative h-36 bg-gray-50">
                         {product.IMAGEURL
-                          ? <Image src={resolveStorageImageUrl(product.IMAGEURL)} alt={product.NAME} fill className="object-contain p-2" />
+                          ? <Image src={resolveStorageImageUrl(product.IMAGEURL)} alt={product.NAME} fill className="object-contain p-2" unoptimized />
                           : <div className="flex items-center justify-center h-full text-4xl">📦</div>}
                         {hasDisc && (
                           <span className="absolute top-1 right-1 bg-[#F96302] text-white text-[10px] font-bold px-1.5 py-0.5 rounded">-{disc}%</span>

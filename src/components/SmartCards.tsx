@@ -334,7 +334,7 @@ export default function SmartCards() {
                 flexShrink: 0, position: 'relative', zIndex: 1,
                 boxShadow: `inset 0 1px 0 rgba(255,255,255,.6), 0 1px 3px ${card.accent}14`,
               }}>
-                <Image src={card.productImage} alt={card.title} width={76} height={76} style={{ width: 64, height: 64, objectFit: 'contain' }} />
+                <Image src={card.productImage} alt={card.title} width={76} height={76} style={{ width: 64, height: 64, objectFit: 'contain' }} unoptimized />
               </div>
             ) : card.icon ? (
               <div className="smart-card-icon-wrap" style={{
