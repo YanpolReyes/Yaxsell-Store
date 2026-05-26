@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 interface Props {
   src: string;
@@ -9,55 +10,87 @@ interface Props {
 }
 
 export default function ImageZoomModal({ src, alt, onClose }: Props) {
-  const [open, setOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    requestAnimationFrame(() => setOpen(true));
+    setMounted(true);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
   }, []);
 
-  function close() {
-    setOpen(false);
-    setTimeout(onClose, 300);
-  }
+  const close = useCallback(() => {
+    onClose();
+  }, [onClose]);
 
-  return (
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [close]);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <div
       onClick={close}
       style={{
-        position: 'fixed', inset: 0, zIndex: 10000,
-        background: open ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        transition: 'background 0.3s ease',
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000,
+        background: 'rgba(0,0,0,0.92)',
         cursor: 'zoom-out',
+        WebkitTapHighlightColor: 'transparent',
       }}
     >
-      <img
-        src={src}
-        alt={alt}
-        onClick={e => e.stopPropagation()}
-        style={{
-          maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain',
-          borderRadius: 12,
-          transform: open ? 'scale(1)' : 'scale(0.8)',
-          opacity: open ? 1 : 0,
-          transition: 'transform 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.3s ease',
-        }}
-      />
+      {!imgError && (
+        <img
+          className="iz-zoom-img"
+          src={src}
+          alt={alt}
+          onError={() => setImgError(true)}
+          onClick={e => e.stopPropagation()}
+        />
+      )}
+
+      {imgError && (
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'rgba(255,255,255,0.8)', fontSize: 14, textAlign: 'center' }}>
+          <p style={{ fontSize: 48, margin: '0 0 12px' }}>🖼️</p>
+          <p style={{ margin: 0, fontWeight: 600 }}>No se pudo cargar la imagen</p>
+        </div>
+      )}
+
       <button
-        onClick={close}
+        onClick={e => { e.stopPropagation(); close(); }}
         style={{
-          position: 'absolute', top: 16, right: 16,
-          width: 40, height: 40, borderRadius: '50%', border: 'none',
-          background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 20,
+          position: 'absolute', top: 20, right: 20,
+          width: 44, height: 44, borderRadius: '50%', border: 'none',
+          background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 22,
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           backdropFilter: 'blur(8px)',
+          WebkitTapHighlightColor: 'transparent',
         }}
       >
         ✕
       </button>
-    </div>
+
+      <style>{`
+        .iz-zoom-img {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          max-width: 90vw;
+          max-height: 80vh;
+          object-fit: contain;
+          border-radius: 12px;
+        }
+        @media (max-width: 480px) {
+          .iz-zoom-img {
+            max-height: 75vh !important;
+          }
+        }
+      `}</style>
+    </div>,
+    document.body
   );
 }

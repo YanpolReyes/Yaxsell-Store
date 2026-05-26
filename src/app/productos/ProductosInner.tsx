@@ -52,8 +52,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     ? products.filter(p => p.CATEGORYID === lockCategoryId).length
     : products.length;
 
-  const handleCardImageClick = (p: Product, e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleCardImageClick = (p: Product) => {
     const imgSrc = p.IMAGEURL;
     if (imgSrc) {
       setZoomImage({ src: imgSrc, alt: p.NAME });
@@ -487,11 +486,11 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                   const disc = pricing.discountPercent;
                   const fav = isFavorite(p.$id);
                   return (
-                    <div key={p.$id} className="pk-card" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '0 0 22px 22px', overflow: 'hidden', border: '1px solid rgba(255,237,213,0.95)', transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)' }}>
-                      <Link href={`/productos/${p.$id}`} className="pk-card-media-link" onClick={e => handleCardImageClick(p, e)} style={{ display: 'block', position: 'relative' }}>
+                    <div key={p.$id} className="pk-card" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '0 0 22px 22px', overflow: 'hidden', border: '1px solid rgba(255,237,213,0.95)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)' }}>
+                      <div className="pk-card-media-link" onClick={() => handleCardImageClick(p)} style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
                         <div className="pk-card-image" style={{ position: 'relative', aspectRatio: '1/1', background: 'linear-gradient(135deg,#fdf2f8,#fff)', overflow: 'hidden' }}>
                           {p.IMAGEURL ? (
-                            <Image src={p.IMAGEURL} alt={p.NAME} fill className="pk-card-img" style={{ objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.16,1,0.3,1)' }} sizes="(max-width: 768px) 50vw, 25vw" />
+                            <Image src={p.IMAGEURL} alt={p.NAME} fill className="pk-card-img" style={{ objectFit: 'cover', pointerEvents: 'none' }} sizes="(max-width: 768px) 50vw, 25vw" />
                           ) : (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 48, color: '#fbcfe8' }}>📦</div>
                           )}
@@ -522,7 +521,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                             </div>
                           )}
                           {/* Hover overlay buttons */}
-                          <div className="pk-card-actions pk-card-actions--desktop" style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%) translateY(20px)', opacity: 0, display: 'flex', gap: 6, zIndex: 4, transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)' }}>
+                          <div className="pk-card-actions pk-card-actions--desktop" style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%) translateY(20px)', opacity: 0, display: 'flex', gap: 6, zIndex: 4, transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', pointerEvents: 'none' }}>
                             <button onClick={e => { e.preventDefault(); e.stopPropagation(); setPreviewProduct(p); }}
                               title="Vista rápida"
                               style={{ width: 36, height: 36, borderRadius: '50%', background: '#fff', border: 'none', color: '#e396bf', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,0.12)', transition: 'all 0.2s' }}>
@@ -541,7 +540,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                             </button>
                           </div>
                         </div>
-                      </Link>
+                      </div>
                       <div className="pk-card-body" style={{ padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
                         <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 36, lineHeight: 1.4, transition: 'color 0.2s' }}>
@@ -577,10 +576,10 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                   const fav = isFavorite(p.$id);
                   return (
                     <div key={p.$id} className="pk-card-list" style={{ background: '#fff', borderRadius: 18, border: '1px solid #fce7f3', display: 'flex', gap: 16, padding: 12, transition: 'all 0.2s', alignItems: 'center' }}>
-                      <Link href={`/productos/${p.$id}`} className="pk-card-list-media" onClick={e => handleCardImageClick(p, e)} style={{ position: 'relative', width: 110, height: 110, borderRadius: 14, overflow: 'hidden', background: '#fdf2f8', flexShrink: 0 }}>
+                      <div className="pk-card-list-media" onClick={() => handleCardImageClick(p)} style={{ position: 'relative', width: 110, height: 110, borderRadius: 14, overflow: 'hidden', background: '#fdf2f8', flexShrink: 0, cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
                         {p.IMAGEURL ? <Image src={p.IMAGEURL} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="110px" /> : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 36 }}>📦</div>}
                         {hasDisc && <div style={{ position: 'absolute', top: 6, left: 6, zIndex: 3 }}><AperturaDiscountBadge percent={disc} size="sm" /></div>}
-                      </Link>
+                      </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{p.NAME}</p>
@@ -695,9 +694,8 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
         }
         .pk-card-fav { display: flex; align-items: center; justify-content: center; }
 
-        @media (hover: hover) and (pointer: fine) {
-          .pk-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(227,150,191,0.15); border-color: #fbcfe8; }
-          .pk-card:hover .pk-card-img { transform: scale(1.06); }
+        @media (hover: hover) and (pointer: fine) and (min-width: 769px) {
+          .pk-card:hover { box-shadow: 0 16px 40px rgba(227,150,191,0.15); border-color: #fbcfe8; }
           .pk-card:hover .pk-card-actions { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
           .pk-card-list:hover { border-color: #fbcfe8; box-shadow: 0 8px 24px rgba(227,150,191,0.1); }
         }

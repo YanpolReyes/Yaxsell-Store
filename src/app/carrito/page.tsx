@@ -124,9 +124,9 @@ export default function CarritoPage() {
                   </h1>
                 </div>
 
-                {items.map(item => (
+                {items.map((item, idx) => (
                   <CartLineRow
-                    key={item.product.$id}
+                    key={`${item.product.$id}_${idx}`}
                     item={item}
                     onUpdateQty={updateQuantity}
                     onRemove={removeItem}

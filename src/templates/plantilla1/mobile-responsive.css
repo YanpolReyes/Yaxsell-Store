@@ -870,6 +870,13 @@
     transform: none !important;
     box-shadow: 0 8px 28px rgba(227,150,191,0.08) !important;
   }
+  .pk-page .pk-card:hover .pk-card-img {
+    transform: none !important;
+    transition: none !important;
+  }
+  .pk-page .pk-card-list:hover {
+    transform: none !important;
+  }
 }
 
 /* PÃ¡ginas con maxWidth y padding (productos, login, pedido-confirmado) */

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { X, Minus, Plus } from 'lucide-react';
 import type { CartItem } from '@/types';
@@ -21,6 +22,15 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
   const { unitPrice, pricing } = useCartItemPrice(item);
   const lineTotal = unitPrice * item.quantity;
   const [zoomSrc, setZoomSrc] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    if (!zoomSrc) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [zoomSrc]);
 
   return (
     <>
@@ -89,14 +99,13 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
         </div>
       </div>
 
-      {/* Zoom modal — no black frame, with "Ver más detalle" button */}
-      {zoomSrc && (
+      {/* Zoom modal — rendered via portal so PageTransition transform doesn't break fixed positioning */}
+      {mounted && zoomSrc && createPortal(
         <div
           onClick={() => setZoomSrc(null)}
           style={{
-            position: 'fixed', inset: 0, zIndex: 10000,
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000,
             background: 'rgba(0,0,0,0.85)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             cursor: 'zoom-out',
           }}
         >
@@ -105,11 +114,20 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
             alt={p.NAME}
             onClick={e => e.stopPropagation()}
             style={{
-              maxWidth: '90vw', maxHeight: '75vh', objectFit: 'contain',
+              position: 'absolute', top: '50%', left: '50%',
+              transform: 'translate(-50%, calc(-50% - 40px))',
+              maxWidth: '90vw', maxHeight: '70vh', objectFit: 'contain',
               borderRadius: 12, boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
             }}
           />
-          <div style={{ display: 'flex', gap: 10, marginTop: 16 }} onClick={e => e.stopPropagation()}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'absolute', left: '50%', bottom: '8%',
+              transform: 'translateX(-50%)',
+              display: 'flex', gap: 10,
+            }}
+          >
             <Link
               href={`/productos/${p.$id}`}
               onClick={() => setZoomSrc(null)}
@@ -134,7 +152,8 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
               Cerrar
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
