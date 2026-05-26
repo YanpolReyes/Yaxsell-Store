@@ -5,7 +5,7 @@ import * as XLSX from 'xlsx';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Product, Category } from '@/types/admin';
-import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff } from 'lucide-react';
 import ImageUploadField from '@/components/admin/ImageUploadField';
 import { generateProductTitle, generateProductDescription } from '@/lib/aiAdmin';
 import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures } from '@/lib/product-features';
@@ -56,6 +56,10 @@ export default function ProductsPage() {
   const [yexyMessages, setYexyMessages] = useState<{role: string; content: string}[]>([]);
   const [yexyInput, setYexyInput] = useState('');
   const [yexyLoading, setYexyLoading] = useState(false);
+  const [brokenImages, setBrokenImages] = useState<Record<string, string[]>>({});
+  const [brokenOnly, setBrokenOnly] = useState(false);
+  const [syncingImages, setSyncingImages] = useState(false);
+  const [syncProgress, setSyncProgress] = useState({ checked: 0, broken: 0 });
 
   const applyBulkStock = async () => {
     const v = parseInt(stockAdj.value, 10);
@@ -483,6 +487,51 @@ export default function ProductsPage() {
   const toggleSort = (key: typeof sort.key) =>
     setSort(s => s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' });
 
+  const syncBrokenImages = async () => {
+    if (products.length === 0) return;
+    setSyncingImages(true);
+    setBrokenImages({});
+    setSyncProgress({ checked: 0, broken: 0 });
+    const result: Record<string, string[]> = {};
+    let checked = 0;
+    let broken = 0;
+    const BATCH = 10;
+    const allImages = products.flatMap(p =>
+      [p.IMAGEURL, p.IMAGEURL2, p.IMAGEURL3]
+        .filter(Boolean)
+        .map(url => ({ productId: p.$id, url: url! }))
+    );
+    for (let i = 0; i < allImages.length; i += BATCH) {
+      const batch = allImages.slice(i, i + BATCH);
+      await Promise.all(batch.map(async ({ productId, url }) => {
+        try {
+          const res = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+          // no-cors always returns opaque, so we need a different approach
+          // Use img tag loading via promise
+          return new Promise<void>((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve();
+            img.onerror = () => {
+              if (!result[productId]) result[productId] = [];
+              result[productId].push(url);
+              broken++;
+              resolve();
+            };
+            img.src = url;
+          });
+        } catch {
+          if (!result[productId]) result[productId] = [];
+          result[productId].push(url);
+          broken++;
+        }
+      }));
+      checked += batch.length;
+      setSyncProgress({ checked, broken });
+      setBrokenImages({ ...result });
+    }
+    setSyncingImages(false);
+  };
+
   const filtered = products.filter(p => {
     const q = search.toLowerCase();
     const matchSearch = !search || (
@@ -499,7 +548,8 @@ export default function ProductsPage() {
       : stockFilter === 'out' ? (p.STOCK ?? 0) === 0
       : (p.STOCK ?? 0) > 0 && (p.STOCK ?? 0) <= 10;
     const matchNoImage = !noImageOnly || !p.IMAGEURL;
-    return matchSearch && matchCat && matchStock && matchNoImage;
+    const matchBroken = !brokenOnly || brokenImages[p.$id]?.length;
+    return matchSearch && matchCat && matchStock && matchNoImage && matchBroken;
   }).sort((a, b) => {
     let av: number | string, bv: number | string;
     if (sort.key === 'MARGIN') {
@@ -850,6 +900,16 @@ export default function ProductsPage() {
           <button onClick={load} disabled={isLoading} className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition text-gray-600">
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
+          <button onClick={syncBrokenImages} disabled={syncingImages || products.length === 0}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition disabled:opacity-50 ${
+              syncingImages ? 'bg-amber-50 border border-amber-200 text-amber-700' :
+              Object.keys(brokenImages).length > 0 ? 'bg-red-50 border border-red-200 text-red-700 hover:bg-red-100' :
+              'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+            }`} title="Verificar imágenes rotas">
+            {syncingImages ? <><Loader2 className="w-4 h-4 animate-spin" />{syncProgress.checked}/{products.flatMap(p => [p.IMAGEURL, p.IMAGEURL2, p.IMAGEURL3].filter(Boolean)).length}</> :
+             Object.keys(brokenImages).length > 0 ? <><ImageOff className="w-4 h-4" />{Object.keys(brokenImages).length} rotas</> :
+             <><ImageOff className="w-4 h-4" />Verificar fotos</>}
+          </button>
           <button onClick={deleteAll} disabled={isDeletingAll || products.length === 0}
             title="Borrar todos los productos"
             className="flex items-center gap-1.5 px-3 py-2 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium hover:bg-red-100 transition disabled:opacity-50">
@@ -882,6 +942,16 @@ export default function ProductsPage() {
           }`}>
           Sin imagen
         </button>
+        {Object.keys(brokenImages).length > 0 && (
+          <button onClick={() => setBrokenOnly(v => !v)}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium transition ${
+              brokenOnly ? 'bg-red-600 text-white shadow-sm' : 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'
+            }`}>
+            <ImageOff className="w-3 h-3" />
+            Fotos rotas
+            <span className={`text-[10px] font-bold px-1 rounded-full ${brokenOnly ? 'bg-white/20 text-white' : 'bg-red-100 text-red-600'}`}>{Object.keys(brokenImages).length}</span>
+          </button>
+        )}
       </div>
 
       <div className="flex gap-3 flex-wrap">
@@ -956,6 +1026,11 @@ export default function ProductsPage() {
                         <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden">
                           {p.IMAGEURL ? <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" /> : <Package className="w-5 h-5 text-gray-400 m-auto mt-2.5" />}
                         </div>
+                        {brokenImages[p.$id]?.length && (
+                          <div className="absolute -top-1 -left-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center" title={`${brokenImages[p.$id].length} imagen(es) rota(s)`}>
+                            <ImageOff className="w-2.5 h-2.5 text-white" />
+                          </div>
+                        )}
                         <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <Pencil className="w-3 h-3 text-white" />
                         </div>
