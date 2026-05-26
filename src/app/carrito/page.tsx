@@ -115,10 +115,10 @@ export default function CarritoPage() {
         .cart-summary-col > div:nth-child(3) { animation-delay: .16s; }
 
         @media (max-width: 768px) {
-          .cart-page-wrap { padding: 12px 12px calc(80px + env(safe-area-inset-bottom, 0px)) !important; }
-          .cart-layout { flex-direction: column !important; gap: 12px !important; }
-          .cart-items-col { min-width: 0 !important; width: 100% !important; }
-          .cart-summary-col { width: 100% !important; max-width: none !important; position: sticky !important; bottom: 68px !important; z-index: 5 !important; }
+          .cart-page-wrap { padding: 12px 12px calc(72px + env(safe-area-inset-bottom, 0px)) !important; }
+          .cart-layout { flex-direction: column !important; gap: 8px !important; height: calc(100vh - 72px - env(safe-area-inset-bottom, 0px)) !important; overflow: hidden !important; }
+          .cart-items-col { min-width: 0 !important; width: 100% !important; flex: 7 !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; }
+          .cart-summary-col { width: 100% !important; max-width: none !important; flex: 3 !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; position: relative !important; bottom: auto !important; }
           .cart-shipping-banner { padding: 10px 14px !important; font-size: 13px !important; border-radius: 14px !important; }
           .cart-items-box { padding: 0 14px !important; border-radius: 18px !important; }
           .cart-items-box h1 { font-size: 17px !important; }
@@ -126,10 +126,10 @@ export default function CarritoPage() {
           .cart-item > a { width: 72px !important; height: 72px !important; border-radius: 12px !important; }
           .cart-item > div:nth-child(2) p:first-child { font-size: 13px !important; }
           .cart-item > div:last-child { display: none !important; }
-          .cart-summary-card { padding: 16px 16px !important; border-radius: 18px !important; }
-          .cart-summary-card h2 { font-size: 16px !important; }
-          .cart-summary-card .cart-total-row span:last-child { font-size: 20px !important; }
-          .cart-coupon-card { padding: 14px 16px !important; border-radius: 18px !important; }
+          .cart-summary-card { padding: 12px 14px !important; border-radius: 16px !important; }
+          .cart-summary-card h2 { font-size: 15px !important; margin: 0 0 8px !important; }
+          .cart-summary-card .cart-total-row span:last-child { font-size: 18px !important; }
+          .cart-coupon-card { padding: 10px 14px !important; border-radius: 16px !important; }
         }
       `}</style>
       <div style={{ minHeight: '100vh', background: '#fafafa', fontFamily: FF }}>
