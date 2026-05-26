@@ -1,16 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { ShoppingCart, Tag, Truck, Shield, ChevronRight, Clock, ArrowLeft, Sparkles } from 'lucide-react';
+import { ShoppingCart, Truck, Shield, ChevronRight, ArrowLeft, Sparkles } from 'lucide-react';
 import LottieCart from '@/components/LottieCart';
 import { useCart } from '@/context/CartContext';
 import { formatPrice } from '@/lib/appwrite';
 import RecentlyViewed from '@/components/RecentlyViewed';
 import CartLineRow from '@/components/CartLineRow';
-import { getServices, getAppwriteConfig, COUPONS_COLLECTION } from '@/lib/appwrite';
-import { Coupon } from '@/types';
 import { MINIMUM_ORDER_CLP, isBelowMinimumOrder, minimumOrderMessage } from '@/lib/order-rules';
 
 const PINK = '#e396bf';
@@ -18,37 +14,8 @@ const FF = '"DM Sans",system-ui,sans-serif';
 
 export default function CarritoPage() {
   const { items, removeItem, updateQuantity, subtotal, totalItems, aperturaSavings } = useCart();
-  const [couponCode, setCouponCode] = useState('');
-  const [couponData, setCouponData] = useState<Coupon | null>(null);
-  const [couponError, setCouponError] = useState('');
-  const [loadingCoupon, setLoadingCoupon] = useState(false);
 
-  const discount = couponData
-    ? (couponData.type === 'percentage' || couponData.type === 'percent')
-      ? (subtotal * couponData.value) / 100
-      : couponData.value
-    : 0;
-  const total = Math.max(0, subtotal - discount);
   const belowMinimum = isBelowMinimumOrder(subtotal);
-
-  async function applyCoupon() {
-    if (!couponCode.trim()) return;
-    setLoadingCoupon(true); setCouponError('');
-    try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-      const { Query } = await import('appwrite');
-      const res = await databases.listDocuments(databaseId, COUPONS_COLLECTION, [
-        Query.equal('code', couponCode.toUpperCase()), Query.limit(1),
-      ]);
-      if (res.total === 0) { setCouponError('Cupón no válido'); return; }
-      const c = res.documents[0] as unknown as Coupon;
-      if (!c.isActive) { setCouponError('Cupón inactivo'); return; }
-      if (c.maxUses && (c.usedCount || 0) >= c.maxUses) { setCouponError('Cupón agotado'); return; }
-      setCouponData(c);
-    } catch { setCouponError('Error al validar cupón'); }
-    finally { setLoadingCoupon(false); }
-  }
 
   /* ── EMPTY STATE ── */
   if (totalItems === 0) return (
@@ -186,26 +153,14 @@ export default function CarritoPage() {
                   </div>
                 )}
 
-                {discount > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 14 }}>
-                    <span style={{ color: '#16a34a' }}>Descuento cupón</span>
-                    <span style={{ color: '#16a34a', fontWeight: 700 }}>-{formatPrice(discount)}</span>
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14, fontSize: 13, color: '#9ca3af' }}>
-                  <span>Envío</span>
-                  <span>A calcular</span>
-                </div>
-
-                <div className="cart-total-row" style={{ borderTop: '2px solid #f3f4f6', paddingTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
+                <div style={{ borderTop: '2px solid #f3f4f6', paddingTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
                   <span style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>Total</span>
-                  <span style={{ fontSize: 26, fontWeight: 800, color: PINK, letterSpacing: '-0.02em' }}>{formatPrice(total)}</span>
+                  <span style={{ fontSize: 26, fontWeight: 800, color: PINK, letterSpacing: '-0.02em' }}>{formatPrice(subtotal)}</span>
                 </div>
 
                 {belowMinimum && (
                   <p style={{ margin: '0 0 12px', fontSize: 12, color: '#b91c1c', background: '#fef2f2', padding: '10px 12px', borderRadius: 10, border: '1px solid #fecaca', lineHeight: 1.45 }}>
-                    ⚠ {minimumOrderMessage(subtotal, total)}
+                    ⚠ {minimumOrderMessage(subtotal, subtotal)}
                   </p>
                 )}
 
@@ -216,7 +171,7 @@ export default function CarritoPage() {
                     Mínimo {formatPrice(MINIMUM_ORDER_CLP)}
                   </span>
                 ) : (
-                  <Link href={`/checkout${couponData ? `?coupon=${couponData.$id}&discount=${discount}` : ''}`}
+                  <Link href="/checkout"
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '15px 0', background: `linear-gradient(135deg,${PINK},#c0547a)`, color: '#fff', textAlign: 'center', borderRadius: 12, fontSize: 16, fontWeight: 700, textDecoration: 'none', boxSizing: 'border-box', boxShadow: '0 6px 20px rgba(227,150,191,0.35)', transition: 'all 0.2s' }}
                     onMouseEnter={e => ((e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)')}
                     onMouseLeave={e => ((e.currentTarget as HTMLElement).style.transform = 'translateY(0)')}
@@ -231,23 +186,6 @@ export default function CarritoPage() {
                 </div>
               </div>
 
-              <div className="cart-coupon-card" style={{ background: '#fff', borderRadius: 18, padding: '16px 18px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-                <p style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 700, color: '#1a1a1a', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Tag size={14} color={PINK} /> ¿Tienes un cupón?
-                </p>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <input value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())}
-                    placeholder="Ej: DESCUENTO10"
-                    onKeyDown={e => e.key === 'Enter' && applyCoupon()}
-                    style={{ flex: 1, padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: 10, fontSize: 13, outline: 'none', color: '#1a1a1a', background: '#fafafa', fontFamily: FF, transition: 'border-color .15s' }} />
-                  <button onClick={applyCoupon} disabled={loadingCoupon}
-                    style={{ padding: '10px 16px', background: '#fdf2f8', color: PINK, border: '1px solid rgba(227,150,191,0.2)', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', flexShrink: 0, opacity: loadingCoupon ? 0.6 : 1, fontFamily: FF, transition: 'background .15s' }}>
-                    {loadingCoupon ? '...' : 'Aplicar'}
-                  </button>
-                </div>
-                {couponError && <p style={{ margin: '8px 0 0', fontSize: 12, color: '#ef4444' }}>{couponError}</p>}
-                {couponData && <p style={{ margin: '8px 0 0', fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✓ Cupón aplicado: -{(couponData.type === 'percentage' || couponData.type === 'percent') ? `${couponData.value}%` : formatPrice(couponData.value)}</p>}
-              </div>
 
               <Link href="/productos" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, color: PINK, textDecoration: 'none', padding: '8px 0', fontWeight: 600 }}>
                 <ArrowLeft size={14} /> Seguir comprando

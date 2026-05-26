@@ -673,7 +673,7 @@ function CheckoutInner() {
                         <div key={item.product.$id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 10px', borderRadius: 12, background: '#fefcfe', border: '1px solid #fdf2f8', transition: 'all .15s' }}>
                           <div style={{ position: 'relative', width: 48, height: 48, background: 'linear-gradient(135deg, #fdf2f8, #fff)', borderRadius: 12, overflow: 'visible', flexShrink: 0, border: '1px solid #fce7f3' }}>
                             {item.product.IMAGEURL
-                              ? <Image src={item.product.IMAGEURL} alt={item.product.NAME} fill style={{ objectFit: 'cover', padding: 2 }} />
+                              ? <img src={item.product.IMAGEURL} alt={item.product.NAME} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', padding: 2 }} />
                               : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📦</span>}
                             <span style={{ position: 'absolute', top: -3, right: -3, background: `linear-gradient(135deg, ${PINK}, #c0547a)`, color: '#fff', fontSize: 8, fontWeight: 800, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(227,150,191,0.3)' }}>{item.quantity}</span>
                           </div>

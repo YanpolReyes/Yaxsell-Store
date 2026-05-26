@@ -2,12 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Trash2, Minus, Plus } from 'lucide-react';
+import { X, Minus, Plus } from 'lucide-react';
 import type { CartItem } from '@/types';
 import { formatPrice } from '@/lib/appwrite';
 import { useCartItemPrice } from '@/hooks/useCartItemPrice';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
-import ImageZoomModal from '@/components/ImageZoomModal';
 
 const PINK = '#e396bf';
 
@@ -25,7 +24,22 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
 
   return (
     <>
-      <div className="cart-item" style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f3f4f6' }}>
+      <div className="cart-item" style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid #f3f4f6', position: 'relative' }}>
+        {/* Remove X button — top right */}
+        <button
+          type="button"
+          onClick={() => onRemove(p.$id)}
+          style={{
+            position: 'absolute', top: 6, right: 0,
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: '#d1d5db', padding: 2, lineHeight: 1, transition: 'color .15s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+          onMouseLeave={e => (e.currentTarget.style.color = '#d1d5db')}
+        >
+          <X size={14} />
+        </button>
+
         {/* Image — click to zoom */}
         <div
           onClick={() => p.IMAGEURL && setZoomSrc(p.IMAGEURL)}
@@ -41,27 +55,23 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
           )}
         </div>
 
-        {/* Name + Price — click goes to product detail */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
-            <p style={{ margin: '0 0 2px', fontSize: 13, color: '#1a1a1a', fontWeight: 600, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.NAME}</p>
-          </Link>
-          <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-              {pricing.hasDiscount && pricing.originalPrice != null && (
-                <span style={{ fontSize: 11, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</span>
-              )}
-              <span style={{ fontSize: 15, fontWeight: 700, color: pricing.fromApertura ? PINK : '#1a1a1a' }}>{formatPrice(unitPrice)}</span>
-              {pricing.hasDiscount && !pricing.fromApertura && (
-                <span style={{ fontSize: 10, fontWeight: 700, color: '#16a34a', background: '#f0fdf4', padding: '1px 5px', borderRadius: 5 }}>{pricing.discountPercent}% OFF</span>
-              )}
-              {pricing.fromApertura && (
-                <span style={{ fontSize: 9, fontWeight: 700, color: '#be185d', background: '#fdf2f8', padding: '1px 5px', borderRadius: 5 }}>Promo</span>
-              )}
-            </div>
-          </Link>
+        {/* Name + Price — NO navigation */}
+        <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
+          <p style={{ margin: '0 0 2px', fontSize: 13, color: '#1a1a1a', fontWeight: 600, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.NAME}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+            {pricing.hasDiscount && pricing.originalPrice != null && (
+              <span style={{ fontSize: 11, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</span>
+            )}
+            <span style={{ fontSize: 15, fontWeight: 700, color: pricing.fromApertura ? PINK : '#1a1a1a' }}>{formatPrice(unitPrice)}</span>
+            {pricing.hasDiscount && !pricing.fromApertura && (
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#16a34a', background: '#f0fdf4', padding: '1px 5px', borderRadius: 5 }}>{pricing.discountPercent}% OFF</span>
+            )}
+            {pricing.fromApertura && (
+              <span style={{ fontSize: 9, fontWeight: 700, color: '#be185d', background: '#fdf2f8', padding: '1px 5px', borderRadius: 5 }}>Promo</span>
+            )}
+          </div>
 
-          {/* Qty + Remove + Line total */}
+          {/* Qty + Line total */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', background: '#fafafa', borderRadius: 8, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
               <button type="button" onClick={() => onUpdateQty(p.$id, item.quantity - 1)} style={{ width: 28, height: 28, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
@@ -72,17 +82,58 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
                 <Plus size={12} />
               </button>
             </div>
-            <button type="button" onClick={() => onRemove(p.$id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 11, padding: '2px 0', fontWeight: 500 }}>
-              <Trash2 size={11} /> Quitar
-            </button>
             <span style={{ marginLeft: 'auto', fontSize: 14, fontWeight: 700, color: '#1a1a1a' }}>{formatPrice(lineTotal)}</span>
           </div>
         </div>
       </div>
 
-      {/* Zoom modal */}
-      {zoomSrc && <ImageZoomModal src={zoomSrc} alt={p.NAME} onClose={() => setZoomSrc(null)} />}
+      {/* Zoom modal — no black frame, with "Ver más detalle" button */}
+      {zoomSrc && (
+        <div
+          onClick={() => setZoomSrc(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 10000,
+            background: 'rgba(0,0,0,0.85)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            cursor: 'zoom-out',
+          }}
+        >
+          <img
+            src={zoomSrc}
+            alt={p.NAME}
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: '90vw', maxHeight: '75vh', objectFit: 'contain',
+              borderRadius: 12, boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+            }}
+          />
+          <div style={{ display: 'flex', gap: 10, marginTop: 16 }} onClick={e => e.stopPropagation()}>
+            <Link
+              href={`/productos/${p.$id}`}
+              onClick={() => setZoomSrc(null)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                padding: '10px 24px', background: `linear-gradient(135deg, ${PINK}, #c0547a)`,
+                color: '#fff', borderRadius: 10, fontSize: 13, fontWeight: 700,
+                textDecoration: 'none', boxShadow: '0 4px 16px rgba(227,150,191,0.4)',
+              }}
+            >
+              Ver más detalle del producto
+            </Link>
+            <button
+              onClick={() => setZoomSrc(null)}
+              style={{
+                padding: '10px 20px', background: 'rgba(255,255,255,0.12)',
+                color: '#fff', border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                backdropFilter: 'blur(8px)',
+              }}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
