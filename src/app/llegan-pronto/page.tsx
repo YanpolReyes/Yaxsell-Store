@@ -458,7 +458,7 @@ function LleganProntoCard({ product, apertura, index = 0, categories, onZoom }: 
 
             {/* PRICES */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {product.PACKQTY && product.PACKQTY > 0 && product.PRICE && product.PRICE > 0 && (
+              {(product.PACKQTY ?? 0) > 0 && (product.PRICE ?? 0) > 0 && (
                 <div className="lp-price-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderRadius: 12, background: 'rgba(22,163,74,0.06)', border: '1.5px solid rgba(22,163,74,0.15)' }}>
                   <span className="price-label" style={{ fontSize: 14, fontWeight: 800, color: '#16a34a', letterSpacing: '2px', textTransform: 'uppercase' }}>Precio por Embalaje</span>
                   <span className="price-val-sm" style={{ fontSize: 32, fontWeight: 900, color: '#16a34a', fontFamily: '"Playfair Display", serif', letterSpacing: '-0.5px' }}>
@@ -484,7 +484,7 @@ function LleganProntoCard({ product, apertura, index = 0, categories, onZoom }: 
               )}
             </div>
 
-            {product.PACKQTY && product.PACKQTY > 0 && (
+            {(product.PACKQTY ?? 0) > 0 && (
               <div className="lp-pack-badge" style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 10, background: 'rgba(22,163,74,0.08)', border: '1.5px solid rgba(22,163,74,0.18)' }}>
                 <Package size={15} color="#16a34a" />
                 <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>
