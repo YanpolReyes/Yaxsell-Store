@@ -579,7 +579,7 @@ function CheckoutInner() {
               {/* Shipping agencies */}
               <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #fce7f3', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)', position: 'relative', zIndex: 50 }}>
                 <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 10, fontFamily: FF }}>
-                  <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, #c0547a)`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>1</span>
+                  <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, ${PINK_LIGHT})`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>1</span>
                   Agencia de envío
                 </h2>
                 <div style={{ position: 'relative', zIndex: 10 }}>
@@ -637,7 +637,7 @@ function CheckoutInner() {
               {savedAddresses.length > 0 && !showingNewAddress && (
                 <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #fce7f3', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)' }}>
                   <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 10, fontFamily: FF }}>
-                    <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, #c0547a)`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>2</span>
+                    <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, ${PINK_LIGHT})`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>2</span>
                     Dirección de envío
                   </h2>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 10, marginBottom: 12 }}>
@@ -672,7 +672,7 @@ function CheckoutInner() {
               {/* Personal data */}
               <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 18, padding: '22px 24px', border: '1px solid #fce7f3', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)', position: 'relative', zIndex: 1 }}>
                 <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 10, fontFamily: FF }}>
-                  <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, #c0547a)`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>3</span>
+                  <span style={{ width: 28, height: 28, borderRadius: 10, background: `linear-gradient(135deg, ${PINK}, ${PINK_LIGHT})`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>3</span>
                   Datos personales
                 </h2>
                 <div style={{ margin: '0 0 14px', padding: '8px 12px', borderRadius: 10, background: '#eff6ff', border: '1px solid #dbeafe', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: '#3b82f6', fontFamily: FF, fontWeight: 600 }}>
