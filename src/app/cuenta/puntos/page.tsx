@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import CuentaPageShell from '@/components/cuenta/CuentaPageShell';
 import { useCuentaBg } from '../CuentaBgContext';
 import { PointsStoreService, type PointsStoreItem } from '@/services/pointsStoreService';
+import { resolveStorageImageUrl } from '@/lib/product-images';
 import { getLevelMeta } from '@/lib/loyalty-levels';
 
 const PINK = '#e396bf';
@@ -196,7 +197,7 @@ export default function PuntosPage() {
               >
                 <div style={{ height: 120, background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                   {item.IMAGEURL ? (
-                    <img src={item.IMAGEURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={resolveStorageImageUrl(item.IMAGEURL)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     <Icon size={48} color={PINK} strokeWidth={1.5} />
                   )}

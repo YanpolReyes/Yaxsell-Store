@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { X, Minus, Plus } from 'lucide-react';
 import type { CartItem } from '@/types';
 import { formatPrice } from '@/lib/appwrite';
+import { resolveStorageImageUrl } from '@/lib/product-images';
 import { useCartItemPrice } from '@/hooks/useCartItemPrice';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 
@@ -54,11 +55,11 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
 
         {/* Image — click to zoom */}
         <div
-          onClick={e => { e.stopPropagation(); if (p.IMAGEURL) setZoomSrc(p.IMAGEURL); }}
+          onClick={e => { e.stopPropagation(); if (p.IMAGEURL) setZoomSrc(resolveStorageImageUrl(p.IMAGEURL)); }}
           style={{ flexShrink: 0, position: 'relative', width: 60, height: 60, background: '#fafafa', borderRadius: 12, overflow: 'hidden', cursor: p.IMAGEURL ? 'zoom-in' : 'default', border: '1px solid #f0f0f0' }}
         >
           {p.IMAGEURL
-            ? <img src={p.IMAGEURL} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 4, position: 'absolute', inset: 0 }} />
+            ? <img src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 4, position: 'absolute', inset: 0 }} />
             : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>📦</span>}
           {pricing.hasDiscount && pricing.fromApertura && (
             <span style={{ position: 'absolute', top: 2, left: 2, zIndex: 2 }}>

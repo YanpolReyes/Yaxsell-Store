@@ -9,6 +9,7 @@ import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPrice } from '@/lib/appwrite';
+import { resolveStorageImageUrl } from '@/lib/product-images';
 import { Product } from '@/types';
 import RecentlyViewed from '@/components/RecentlyViewed';
 import { useCuentaBg } from '../CuentaBgContext';
@@ -122,7 +123,7 @@ export default function FavoritosPage() {
                   <Link href={`/productos/${p.$id}`} style={{ display: 'block', position: 'relative' }}>
                     <div style={{ height: 160, background: '#fafafa', overflow: 'hidden' }}>
                       {p.IMAGEURL
-                        ? <img src={p.IMAGEURL} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 10 }} />
+                        ? <img src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 10 }} />
                         : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AnimHeart filled={false} size={36} /></div>
                       }
                     </div>

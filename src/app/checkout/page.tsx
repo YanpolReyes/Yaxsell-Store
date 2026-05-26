@@ -10,6 +10,7 @@ import { ADDRESSES_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { CHILE_REGIONES } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPrice } from '@/lib/appwrite';
+import { resolveStorageImageUrl } from '@/lib/product-images';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { Query, ID } from 'appwrite';
@@ -356,7 +357,7 @@ function CheckoutInner() {
       const expiresAt = now + 3 * 60 * 60 * 1000;
       const itemsData = items.map(i => {
         const price = resolveProductDisplayPrice(i.product, apertura).displayPrice;
-        return { id: i.product.$id, name: i.product.NAME, price, originalPrice: i.product.PRICE !== price ? i.product.PRICE : null, qty: i.quantity, img: i.product.IMAGEURL, total: price * i.quantity };
+        return { id: i.product.$id, name: i.product.NAME, price, originalPrice: i.product.PRICE !== price ? i.product.PRICE : null, qty: i.quantity, img: resolveStorageImageUrl(i.product.IMAGEURL), total: price * i.quantity };
       });
       const docId = await databases.createDocument(databaseId, ORDERS_COLLECTION_ID, ID.unique(), {
         USERID: user?.id || 'guest', ITEMS: JSON.stringify(itemsData),
@@ -787,7 +788,7 @@ function CheckoutInner() {
                         <div key={item.product.$id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 10px', borderRadius: 12, background: '#fefcfe', border: '1px solid #fdf2f8', transition: 'all .15s' }}>
                           <div style={{ position: 'relative', width: 48, height: 48, background: 'linear-gradient(135deg, #fdf2f8, #fff)', borderRadius: 12, overflow: 'visible', flexShrink: 0, border: '1px solid #fce7f3' }}>
                             {item.product.IMAGEURL
-                              ? <img src={item.product.IMAGEURL} alt={item.product.NAME} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', padding: 2 }} />
+                              ? <img src={resolveStorageImageUrl(item.product.IMAGEURL)} alt={item.product.NAME} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', padding: 2 }} />
                               : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📦</span>}
                             <span style={{ position: 'absolute', top: -3, right: -3, background: `linear-gradient(135deg, ${PINK}, #c0547a)`, color: '#fff', fontSize: 8, fontWeight: 800, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(227,150,191,0.3)' }}>{item.quantity}</span>
                           </div>

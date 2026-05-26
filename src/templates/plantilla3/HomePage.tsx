@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingCart, ChevronRight, Truck, Shield, Star, ChevronDown } from 'lucide-react';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, TIMED_OFFERS_COLLECTION, formatPrice } from '@/lib/appwrite';
+import { resolveStorageImageUrl } from '@/lib/product-images';
 import { Query } from 'appwrite';
 import { Product, Category, TimedOffer } from '@/types';
 import { useCart } from '@/context/CartContext';
@@ -153,7 +154,7 @@ export default function HomePage3() {
                     <Link href={`/productos/${product.$id}`}>
                       <div className="relative h-36 bg-gray-50">
                         {product.IMAGEURL
-                          ? <Image src={product.IMAGEURL} alt={product.NAME} fill className="object-contain p-2" />
+                          ? <Image src={resolveStorageImageUrl(product.IMAGEURL)} alt={product.NAME} fill className="object-contain p-2" />
                           : <div className="flex items-center justify-center h-full text-4xl">📦</div>}
                         {hasDisc && (
                           <span className="absolute top-1 right-1 bg-[#F96302] text-white text-[10px] font-bold px-1.5 py-0.5 rounded">-{disc}%</span>

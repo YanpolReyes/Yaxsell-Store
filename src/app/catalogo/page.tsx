@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { Search, Package, ArrowRight, Heart, Bell, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getServices, getAppwriteConfig, INVENTORY_PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
-import { normalizeProductImages } from '@/lib/product-images';
+import { normalizeProductImages, resolveStorageImageUrl } from '@/lib/product-images';
 import { cached, TTL } from '@/lib/cache';
 import { Query } from 'appwrite';
 import { Product, Category, Subcategory } from '@/types';
@@ -465,7 +465,7 @@ export default function CatalogoPage() {
 function CatalogoProductCard({ product, apertura, index = 0, categories, isLoggedIn, requestedIds, requestingId, onRequest }: { product: Product; apertura: any; index?: number; categories: Category[]; isLoggedIn: boolean; requestedIds: Set<string>; requestingId: string | null; onRequest: (id: string, name: string, img: string) => void }) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { displayPrice, hasDiscount, discountPercent } = resolveProductDisplayPrice(product, apertura);
-  const img = product.IMAGEURL || product.IMAGEURL2;
+  const img = resolveStorageImageUrl(product.IMAGEURL) || resolveStorageImageUrl(product.IMAGEURL2);
   const isReversed = index % 2 !== 0;
   const catName = categories.find(c => c.$id === product.CATEGORYID)?.name || '';
   const alreadyRequested = requestedIds.has(product.$id);
