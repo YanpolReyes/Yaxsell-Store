@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyAPU7MGRQWFHHA1NhWD0rTfcVGOCVGOQok';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyBFSkLS9QYq66R7rD9Tyhz1sU3yuMSdaUo';
 
 export async function POST(req: NextRequest) {
   try {
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    const models = ['gemini-2.0-flash-exp', 'gemini-2.0-flash-preview-image-generation'];
+    const models = ['gemini-2.0-flash-exp-image-generation', 'gemini-2.5-flash-preview-image-generation', 'gemini-2.5-flash-image'];
     let res;
     let lastErrText = '';
 
