@@ -257,8 +257,8 @@ export default function CatalogoPage() {
         .cat-pill:hover { transform: translateY(-2px); }
         @media (max-width: 768px) {
           .cat-card-wrap { flex-direction: column !important; min-height: auto !important; border-radius: 14px !important; }
-          .cat-card-img-side { width: 100% !important; min-width: 0 !important; height: auto !important; min-height: 220px !important; max-height: 280px !important; }
-          .cat-card-img-side .cat-card-img { object-fit: contain !important; }
+          .cat-card-img-side { width: 100% !important; min-width: 0 !important; height: auto !important; min-height: 280px !important; }
+          .cat-card-img-side .cat-card-img { object-fit: cover !important; }
           .cat-card-info { padding: 16px 18px !important; }
           .cat-card-info h3 { font-size: 17px !important; margin: 4px 0 10px !important; }
           .cat-card-info .price-label { font-size: 11px !important; letter-spacing: 1px !important; }
