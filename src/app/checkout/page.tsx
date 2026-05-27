@@ -106,32 +106,22 @@ function CheckoutInner() {
   useEffect(() => {
     (async () => {
       try {
-        // Try with 'isActive' first, if no results try 'ISACTIVE'
-        let res = await serverListDocuments(COUPONS_COLLECTION_ID, [
-          'equal("isActive", [true])',
-          'limit(50)',
-        ]);
-        let docs = (res.documents as any[]) || [];
-        // If no results with lowercase, try uppercase field name
-        if (docs.length === 0) {
-          try {
-            res = await serverListDocuments(COUPONS_COLLECTION_ID, [
-              'equal("ISACTIVE", [true])',
-              'limit(50)',
-            ]);
-            docs = (res.documents as any[]) || [];
-          } catch {}
-        }
-        // If still no results, fetch all and filter client-side
-        if (docs.length === 0) {
-          res = await serverListDocuments(COUPONS_COLLECTION_ID, ['limit(50)']);
-          docs = (res.documents as any[]) || [];
-        }
+        // Fetch all coupons and filter client-side to avoid query syntax issues
+        const res = await serverListDocuments(COUPONS_COLLECTION_ID, ['limit(100)']);
+        const docs = (res.documents as any[]) || [];
         const active = docs.filter((c: any) => {
           const isActive = c.isActive ?? c.ISACTIVE ?? c.ACTIVE ?? true;
           if (!isActive) return false;
-          const expiresAt = c.expiresAt || c.EXPIRESAT || (c.endAt ? new Date(c.endAt * 1000).toISOString() : null) || (c.ENDAT ? new Date(c.ENDAT * 1000).toISOString() : null);
-          if (expiresAt && new Date(expiresAt) < new Date()) return false;
+          const rawExpires = c.expiresAt || c.EXPIRESAT || c.endAt || c.ENDAT || null;
+          if (rawExpires) {
+            let expDate: Date | null = null;
+            if (typeof rawExpires === 'number') {
+              expDate = new Date(rawExpires < 1e12 ? rawExpires * 1000 : rawExpires);
+            } else {
+              expDate = new Date(rawExpires);
+            }
+            if (expDate && expDate < new Date()) return false;
+          }
           const maxUses = c.maxUses || c.MAXUSES || 0;
           const usedCount = c.usedCount || c.USEDCOUNT || 0;
           if (maxUses && usedCount >= maxUses) return false;
@@ -258,10 +248,19 @@ function CheckoutInner() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const res = await databases.listDocuments(databaseId, COUPONS_COLLECTION_ID, [
+      // Try lowercase 'code' first, then uppercase 'CODE'
+      let res = await databases.listDocuments(databaseId, COUPONS_COLLECTION_ID, [
         Query.equal('code', code),
         Query.limit(1),
       ]);
+      if (res.documents.length === 0) {
+        try {
+          res = await databases.listDocuments(databaseId, COUPONS_COLLECTION_ID, [
+            Query.equal('CODE', code),
+            Query.limit(1),
+          ]);
+        } catch {}
+      }
       if (res.documents.length === 0) {
         setCouponError('Cupón no encontrado');
         setCouponLoading(false);
@@ -269,40 +268,54 @@ function CheckoutInner() {
       }
       const coupon = res.documents[0] as any;
 
-      // Validate active (ISACTIVE or ACTIVE for backwards compat)
-      const isActive = coupon.ISACTIVE ?? coupon.ACTIVE ?? true;
+      // Validate active (try both lowercase and uppercase field names)
+      const isActive = coupon.isActive ?? coupon.ISACTIVE ?? coupon.ACTIVE ?? true;
       if (!isActive) {
         setCouponError('Este cupón ya no está vigente');
         setCouponLoading(false);
         return;
       }
-      // Validate expiry (EXPIRESAT is ISO string, ENDAT is epoch seconds for backwards compat)
-      const expiresAt = coupon.EXPIRESAT || (coupon.ENDAT ? new Date(coupon.ENDAT * 1000).toISOString() : null);
-      if (expiresAt && new Date(expiresAt) < new Date()) {
+      // Validate expiry (try both lowercase and uppercase)
+      // expiresAt can be epoch seconds (number) or ISO string
+      const rawExpires = coupon.expiresAt || coupon.EXPIRESAT || coupon.endAt || coupon.ENDAT || null;
+      let expiresAt: Date | null = null;
+      if (rawExpires) {
+        if (typeof rawExpires === 'number') {
+          // epoch seconds — if < 1e12 it's seconds, otherwise milliseconds
+          expiresAt = new Date(rawExpires < 1e12 ? rawExpires * 1000 : rawExpires);
+        } else {
+          expiresAt = new Date(rawExpires);
+        }
+      }
+      if (expiresAt && expiresAt < new Date()) {
         setCouponError('Este cupón ha expirado');
         setCouponLoading(false);
         return;
       }
       // Validate max uses
-      if (coupon.MAXUSES && (coupon.USEDCOUNT || 0) >= coupon.MAXUSES) {
+      const maxUses = coupon.maxUses ?? coupon.MAXUSES ?? 0;
+      const usedCount = coupon.usedCount ?? coupon.USEDCOUNT ?? 0;
+      if (maxUses && usedCount >= maxUses) {
         setCouponError('Este cupón ha alcanzado su límite de usos');
         setCouponLoading(false);
         return;
       }
       // Validate min purchase
-      if (coupon.MINORDERAMOUNT && subtotal < coupon.MINORDERAMOUNT) {
-        setCouponError(`Compra mínima: ${formatPrice(coupon.MINORDERAMOUNT)}`);
+      const minOrderAmount = coupon.minOrderAmount ?? coupon.MINORDERAMOUNT ?? 0;
+      if (minOrderAmount && subtotal < minOrderAmount) {
+        setCouponError(`Compra mínima: ${formatPrice(minOrderAmount)}`);
         setCouponLoading(false);
         return;
       }
 
       // Calculate discount
       let discount = 0;
-      const couponValue = coupon.DISCOUNTVALUE ?? (coupon.VALUE || 0);
-      const couponType = coupon.DISCOUNTTYPE ?? (coupon.TYPE || 'percent');
+      const couponValue = coupon.value ?? coupon.discountValue ?? coupon.DISCOUNTVALUE ?? coupon.VALUE ?? 0;
+      const couponType = coupon.type ?? coupon.discountType ?? coupon.DISCOUNTTYPE ?? coupon.TYPE ?? 'percent';
       if (couponType === 'percent' || couponType === 'percentage') {
         discount = Math.round(subtotal * couponValue / 100);
-        if (coupon.MAXDISCOUNT && discount > coupon.MAXDISCOUNT) discount = coupon.MAXDISCOUNT;
+        const maxDiscount = coupon.maxDiscount ?? coupon.MAXDISCOUNT ?? 0;
+        if (maxDiscount && discount > maxDiscount) discount = maxDiscount;
       } else {
         discount = couponValue;
       }
@@ -389,9 +402,12 @@ function CheckoutInner() {
       if (couponDocId) {
         try {
           const couponDoc = await databases.getDocument(databaseId, COUPONS_COLLECTION_ID, couponDocId);
+          const currentCount = (couponDoc as any).usedCount ?? (couponDoc as any).USEDCOUNT ?? 0;
           await databases.updateDocument(databaseId, COUPONS_COLLECTION_ID, couponDocId, {
-            ACTIVE: false,
-            USEDCOUNT: ((couponDoc as any).USEDCOUNT || 0) + 1,
+            isActive: false,
+            ISACTIVE: false,
+            usedCount: currentCount + 1,
+            USEDCOUNT: currentCount + 1,
           });
         } catch {}
       }
@@ -781,11 +797,11 @@ function CheckoutInner() {
                 {/* Items */}
                 <div style={{ padding: '14px 22px', maxHeight: 240, overflowY: 'auto' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {items.map(item => {
+                    {items.map((item, idx) => {
                       const pricing = resolveProductDisplayPrice(item.product, apertura);
                       const price = pricing.displayPrice;
                       return (
-                        <div key={item.product.$id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 10px', borderRadius: 12, background: '#fefcfe', border: '1px solid #fdf2f8', transition: 'all .15s' }}>
+                        <div key={`${item.product.$id}-${idx}`} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 10px', borderRadius: 12, background: '#fefcfe', border: '1px solid #fdf2f8', transition: 'all .15s' }}>
                           <div style={{ position: 'relative', width: 48, height: 48, background: 'linear-gradient(135deg, #fdf2f8, #fff)', borderRadius: 12, overflow: 'visible', flexShrink: 0, border: '1px solid #fce7f3' }}>
                             {item.product.IMAGEURL
                               ? <img src={resolveStorageImageUrl(item.product.IMAGEURL)} alt={item.product.NAME} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', padding: 2 }} />
