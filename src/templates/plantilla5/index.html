@@ -63,6 +63,110 @@
     "./assets/img/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/mask-heart-v2w0uw.svg": `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" zoomAndPan="magnify" viewBox="0 0 810 809.999993" height="1080" preserveAspectRatio="xMidYMid meet" version="1.0"><defs><clipPath id="2562313174"><path d="M 810 245.015625 C 804.628906 94.238281 716.179688 0 600.464844 0 C 512.578125 0.00390625 431.136719 63.285156 397.046875 153.007812 C 364.265625 63.289062 285.972656 0 201.464844 0 C 90.199219 0 5.167969 94.238281 0 245.015625 C 0 558.207031 200.8125 711.84375 397.046875 810 C 601.152344 711.84375 810 558.246094 810 245.015625 Z M 810 245.015625 " clip-rule="nonzero"/></clipPath><clipPath id="45484b89e1"><path d="M 0 0 L 810 0 L 810 810 L 0 810 Z M 0 0 " clip-rule="nonzero"/></clipPath><clipPath id="6e9b432f46"><path d="M 810 245.015625 C 804.628906 94.238281 716.179688 0 600.464844 0 C 512.578125 0.00390625 431.136719 63.285156 397.046875 153.007812 C 364.265625 63.289062 285.972656 0 201.464844 0 C 90.199219 0 5.167969 94.238281 0 245.015625 C 0 558.207031 200.8125 711.84375 397.046875 810 C 601.152344 711.84375 810 558.246094 810 245.015625 Z M 810 245.015625 " clip-rule="nonzero"/></clipPath><clipPath id="ee94ed24c1"><rect x="0" width="810" y="0" height="810"/></clipPath></defs><g clip-path="url(#2562313174)"><g transform="matrix(1, 0, 0, 1, 0, 0.000000000000039746)"><g clip-path="url(#ee94ed24c1)"><g clip-path="url(#45484b89e1)"><g clip-path="url(#6e9b432f46)"><rect x="-178.2" width="1166.4" fill="#000000" height="1166.39999" y="-178.199998" fill-opacity="1"/></g></g></g></g></g></svg>`
     };
   </script>
+
+  <!-- HEADER SCROLL & STICKY STYLING -->
+  <style>
+    #header-group {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      height: 200px;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    /* Explicit offline stacked layouts for the header elements */
+    #shopify-section-sections--27149147209801__utility-bar {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 40px !important;
+      z-index: 1010 !important;
+      display: block !important;
+    }
+    
+    #shopify-section-sections--27149147209801__announcement-bar {
+      position: absolute !important;
+      top: 40px !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 40px !important;
+      z-index: 1010 !important;
+      display: block !important;
+    }
+    
+    custom-header {
+      position: absolute !important;
+      top: 80px !important;
+      left: 0 !important;
+      width: 100% !important;
+      z-index: 1005 !important;
+      display: flex !important;
+    }
+    
+    /* Ensure text colors in utility bar are visible and dark */
+    #shopify-section-sections--27149147209801__utility-bar,
+    #shopify-section-sections--27149147209801__utility-bar a,
+    #shopify-section-sections--27149147209801__utility-bar span,
+    #shopify-section-sections--27149147209801__utility-bar svg {
+      color: #2a2120 !important;
+      fill: #2a2120 !important;
+      stroke: #2a2120 !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+    
+    /* Ensure text in announcement bar is visible and dark */
+    #shopify-section-sections--27149147209801__announcement-bar,
+    #shopify-section-sections--27149147209801__announcement-bar span {
+      color: #2a2120 !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+    
+    /* Hero Title Glow Highlight Color matching the screenshots */
+    .highlighted-text {
+      color: #dfe146 !important;
+      font-weight: bold !important;
+    }
+    
+    /* When scrolling down, slide up the entire header group */
+    #header-group.is-hidden {
+      transform: translateY(-100%) !important;
+    }
+    
+    /* When scrolling up, fix the header group to the top */
+    #header-group.is-sticky {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      box-shadow: 0 4px 25px rgba(0, 0, 0, 0.08) !important;
+      background: linear-gradient(209deg, rgba(255, 236, 231, 0.96) 3%, rgba(253, 230, 239, 0.96) 100%) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+    }
+    
+    /* Compact mode when sticky: hide utility and announcement bar to look cleaner */
+    #header-group.is-sticky #shopify-section-sections--27149147209801__utility-bar,
+    #header-group.is-sticky #shopify-section-sections--27149147209801__announcement-bar {
+      display: none !important;
+    }
+    
+    /* Adjust top offset of header inside sticky group since yellow/pink bars are hidden */
+    #header-group.is-sticky custom-header {
+      position: relative !important;
+      top: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    
+    #header-group.is-sticky custom-header [data-scroll="false"] {
+      --header-color-text: 42,33,32 !important;
+      --color-links: 42,33,32 !important;
+    }
+  </style>
 </head>
 <body class="overflow-x-hidden color-scheme-1" data-load="true" style="--product-compare-bottom-sheet: 0px;">
 
@@ -116,7 +220,8 @@
       Skip to content
     </a>
 
-    <!-- BEGIN sections: top-group -->
+    <div id="header-group">
+  <!-- BEGIN sections: top-group -->
 <div id="shopify-section-sections--27149147209801__utility-bar" class="shopify-section section-top"><link href="./assets/css/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/utility-bar-3jt6uz.css" rel="stylesheet" type="text/css" media="all">
 
 <style>.utility-bar[data-id="sections--27149147209801__utility-bar"]{
@@ -203,7 +308,7 @@
 
             </div>
 
-            <div class="announcement__content px-[50px] duration-300 ease-in-out transition-transform group w-full flex items-center gap-5" data-hidden="true" inert="">
+            <div class="announcement__content px-[50px] duration-300 ease-in-out transition-transform group w-full flex items-center gap-5" data-hidden="false">
 
                 <div class="body-text leading-normal break-words hyphens-auto"><span>🌸 Formulated in Seoul · sourced direct from trusted makers</span></div>
 
@@ -1365,6 +1470,7 @@
 
 </div>
 <!-- END sections: header-group -->
+</div>
 
     <main id="main" role="main" tabindex="-1" style="--utility-bar-gap: 40px; --announcement-bar-gap: 40px; --visible-header-height: 0px; --header-height: 171px; --header-gap: 0px;">
       <div id="shopify-section-template--27149146783817__slideshow_FBfKC8" class="shopify-section"><link href="./assets/css/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/slideshow-l0jbjs.css" rel="stylesheet" type="text/css" media="all">
@@ -9781,5 +9887,49 @@
   });
 })();
 </script>
+
+  <!-- HEADER SCROLL MANAGER -->
+  <script>
+    (function() {
+      var headerGroup = document.getElementById('header-group');
+      if (!headerGroup) return;
+      
+      var lastScrollY = window.scrollY;
+      var threshold = 120; // threshold past which header behaves dynamically
+      
+      window.addEventListener('scroll', function() {
+        var currentScrollY = window.scrollY;
+        
+        if (currentScrollY > threshold) {
+          // Scrolled down past threshold
+          if (currentScrollY > lastScrollY) {
+            // SCROLLING DOWN: Hide header group completely
+            headerGroup.classList.add('is-hidden');
+          } else {
+            // SCROLLING UP: Show compact sticky header group
+            headerGroup.classList.remove('is-hidden');
+            headerGroup.classList.add('is-sticky');
+            
+            // Let the custom-header element know we are in scroll/sticky mode
+            var customHeader = headerGroup.querySelector('custom-header');
+            if (customHeader) {
+              customHeader.setAttribute('data-scroll', 'true');
+              customHeader.setAttribute('data-scroll-top', 'false');
+            }
+          }
+        } else {
+          // Near the very top of the page: restore original layout
+          headerGroup.classList.remove('is-hidden', 'is-sticky');
+          var customHeader = headerGroup.querySelector('custom-header');
+          if (customHeader) {
+            customHeader.setAttribute('data-scroll', 'false');
+            customHeader.setAttribute('data-scroll-top', 'true');
+          }
+        }
+        
+        lastScrollY = currentScrollY;
+      }, { passive: true });
+    })();
+  </script>
 </body>
 </html>

@@ -44,13 +44,32 @@ export default function MisPedidosPage() {
       try {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
-        const res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
-          Query.equal('CUSTOMEREMAIL', user.email),
+        // Try USERID first (more likely indexed), fallback to CUSTOMEREMAIL
+        let res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
+          Query.equal('USERID', user.id),
           Query.orderDesc('$createdAt'),
           Query.limit(50),
         ]);
+        if (res.documents.length === 0) {
+          try {
+            res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
+              Query.equal('CUSTOMEREMAIL', user.email),
+              Query.orderDesc('$createdAt'),
+              Query.limit(50),
+            ]);
+          } catch {}
+        }
+        if (res.documents.length === 0) {
+          try {
+            res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
+              Query.equal('userId', user.id),
+              Query.orderDesc('$createdAt'),
+              Query.limit(50),
+            ]);
+          } catch {}
+        }
         setOrders(res.documents);
-      } catch (e) { console.error(e); }
+      } catch (e) { console.error('Error fetching orders:', e); }
       finally { setLoading(false); }
     })();
   }, [isLoggedIn, user]);
