@@ -38,9 +38,9 @@ export function buildStockAlertData(input: {
   status?: string;
 }): Record<string, unknown> {
   return {
-    PRODUCTID: input.productId,
-    USERID: input.userId,
-    CREATEDAT: Date.now(),
+    productId: input.productId,
+    userId: input.userId,
+    createdAt: Date.now(),
     PRODUCTNAME: input.productName ?? '',
     PRODUCTIMAGE: input.productImage ?? '',
     USERNAME: input.userName || input.email || '',
