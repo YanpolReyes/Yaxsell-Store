@@ -69,6 +69,7 @@ export default function ImageZoom({ src, alt, width = 480, height = 480 }: Props
         src={src}
         alt={alt}
         fill
+        unoptimized
         style={{
           objectFit: 'contain',
           padding: 16,
