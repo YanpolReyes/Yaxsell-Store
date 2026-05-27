@@ -102,8 +102,42 @@ async function saveAddressesDB(userId: string, list: Address[]) {
     console.error('Failed to save addresses to DB:', e);
   }
 }
+const AGENCY_SEARCH_TERMS = ['Chilexpress', 'Starken', 'Correos de Chile', 'Blue Express', 'DHL'];
+
 function loadAgencies(): Agency[] {
   try { return JSON.parse(localStorage.getItem('shippingAgencies') || '[]').filter((a: any) => a.active !== false); } catch { return []; }
+}
+
+async function searchNearbyAgencies(map: any, lat: number, lng: number): Promise<Agency[]> {
+  const results: Agency[] = [];
+  const seen = new Set<string>();
+  const service = new window.google.maps.places.PlacesService(map);
+  for (const term of AGENCY_SEARCH_TERMS) {
+    try {
+      const resp = await new Promise<any[]>((resolve, reject) => {
+        service.nearbySearch(
+          { location: { lat, lng }, radius: 10000, keyword: term },
+          (res: any[], status: string) => {
+            if (status === window.google.maps.places.PlacesServiceStatus.OK) resolve(res);
+            else resolve([]);
+          }
+        );
+      });
+      for (const place of resp) {
+        const name = place.name || term;
+        const key = `${name}-${place.geometry?.location?.lat()}-${place.geometry?.location?.lng()}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        results.push({
+          name,
+          address: place.vicinity || '',
+          lat: place.geometry?.location?.lat(),
+          lng: place.geometry?.location?.lng(),
+        });
+      }
+    } catch {}
+  }
+  return results;
 }
 
 function streetViewUrl(lat: number, lng: number) {
@@ -359,23 +393,35 @@ export default function DireccionesPage() {
   }
 
   /* ── Agency markers ── */
+  const [agencyLoading, setAgencyLoading] = useState(false);
+
   useEffect(() => {
     if (!showAgencies || !mapInstanceRef.current || !mapReady) return;
-    const list = loadAgencies();
+    const map = mapInstanceRef.current;
+    const center = map.getCenter();
+    if (!center) return;
+    const lat = center.lat();
+    const lng = center.lng();
+
+    setAgencyLoading(true);
     agencyMarkersRef.current.forEach(m => m.setMap(null));
     agencyMarkersRef.current = [];
-    list.forEach(ag => {
-      if (!ag.lat || !ag.lng) return;
-      const m = new window.google.maps.Marker({
-        position: { lat: ag.lat, lng: ag.lng },
-        map: mapInstanceRef.current,
-        title: ag.name,
-        icon: { url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png' },
+
+    searchNearbyAgencies(map, lat, lng).then(agencies => {
+      agencies.forEach(ag => {
+        if (!ag.lat || !ag.lng) return;
+        const m = new window.google.maps.Marker({
+          position: { lat: ag.lat, lng: ag.lng },
+          map,
+          title: ag.name,
+          icon: { url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png' },
+        });
+        const iw = new window.google.maps.InfoWindow({ content: `<div style="font-family:sans-serif;font-size:13px;"><strong>${ag.name}</strong><br/>${ag.address}</div>` });
+        m.addListener('click', () => iw.open(map, m));
+        agencyMarkersRef.current.push(m);
       });
-      const iw = new window.google.maps.InfoWindow({ content: `<div style="font-family:sans-serif;font-size:13px;"><strong>${ag.name}</strong><br/>${ag.address}</div>` });
-      m.addListener('click', () => iw.open(mapInstanceRef.current, m));
-      agencyMarkersRef.current.push(m);
-    });
+      setAgencyLoading(false);
+    }).catch(() => setAgencyLoading(false));
   }, [showAgencies, mapReady]);
 
   useEffect(() => {
@@ -534,18 +580,6 @@ export default function DireccionesPage() {
                   </div>
                 </div>
 
-                {/* Name */}
-                <div style={{ marginBottom: 16 }}>
-                  <label style={lbl}>Nombre de contacto</label>
-                  <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} style={inp} placeholder="Ej: Juan Pérez" />
-                </div>
-
-                {/* Phone */}
-                <div style={{ marginBottom: 24 }}>
-                  <label style={lbl}>Teléfono</label>
-                  <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} style={inp} placeholder="+56 9 1234 5678" />
-                </div>
-
                 <button onClick={handleSave} disabled={!form.fullAddress || geocoding}
                   style={{ width: '100%', padding: '14px 0', background: !form.fullAddress || geocoding ? '#fce7f3' : 'linear-gradient(135deg,#e396bf,#c0547a)', color: !form.fullAddress || geocoding ? '#f5a8cf' : '#fff', border: 'none', borderRadius: 12, fontWeight: 700, fontSize: 15, cursor: !form.fullAddress || geocoding ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: !form.fullAddress || geocoding ? 'none' : '0 6px 20px rgba(227,150,191,0.25)', transition: 'all .2s' }}>
                   <Check size={18} /> {editing ? 'Guardar cambios' : 'Confirmar ubicación'}
@@ -571,7 +605,7 @@ export default function DireccionesPage() {
 
                 <button onClick={() => setShowAgencies(v => !v)}
                   style={{ height: 40, padding: '0 14px', borderRadius: 12, background: showAgencies ? PINK : '#fff', border: showAgencies ? 'none' : '1px solid #fce7f3', boxShadow: '0 2px 8px rgba(227,150,191,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 700, fontSize: 13, color: showAgencies ? '#fff' : PINK, whiteSpace: 'nowrap' }}>
-                  <Truck size={15} color={showAgencies ? '#fff' : PINK} /> Agencias
+                  {agencyLoading ? <Loader2 size={15} color={showAgencies ? '#fff' : PINK} style={{ animation: 'spin 1s linear infinite' }} /> : <Truck size={15} color={showAgencies ? '#fff' : PINK} />} {agencyLoading ? '...' : 'Agencias'}
                 </button>
               </div>
 
@@ -586,7 +620,7 @@ export default function DireccionesPage() {
 
                 <button onClick={() => setShowAgencies(v => !v)}
                   style={{ height: 44, padding: '0 18px', borderRadius: 12, background: showAgencies ? PINK : '#fff', border: showAgencies ? 'none' : '1.5px solid #fce7f3', boxShadow: '0 2px 6px rgba(227,150,191,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 14, color: showAgencies ? '#fff' : PINK }}>
-                  <Truck size={16} color={showAgencies ? '#fff' : PINK} /> Ver agencias cercanas
+                  {agencyLoading ? <Loader2 size={16} color={showAgencies ? '#fff' : PINK} style={{ animation: 'spin 1s linear infinite' }} /> : <Truck size={16} color={showAgencies ? '#fff' : PINK} />} {agencyLoading ? 'Buscando...' : 'Agencias cercanas'}
                 </button>
 
                 <button onClick={getCurrentLocation} disabled={locating}
@@ -631,17 +665,6 @@ export default function DireccionesPage() {
                       {o.icon} {o.key}
                     </button>
                   ))}
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-                  <div>
-                    <label style={lbl}>Nombre</label>
-                    <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} style={inp} placeholder="Tu nombre" />
-                  </div>
-                  <div>
-                    <label style={lbl}>Teléfono</label>
-                    <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} style={inp} placeholder="+56 9..." />
-                  </div>
                 </div>
 
                 <button onClick={handleSave} disabled={!form.fullAddress || geocoding}
