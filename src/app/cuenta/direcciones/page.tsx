@@ -102,7 +102,7 @@ async function saveAddressesDB(userId: string, list: Address[]) {
     console.error('Failed to save addresses to DB:', e);
   }
 }
-const AGENCY_SEARCH_TERMS = ['Chilexpress', 'Starken', 'Correos de Chile', 'Blue Express', 'DHL'];
+const AGENCY_SEARCH_TERMS = ['Starken', 'Pulman Cargo', 'Varmontt', 'Mena', 'Tramar', 'CGS', 'CYC', 'Villa Pratt', 'Chevalier', 'Blue Express', 'CACEM', 'Cinco Sur', 'Cruz del Sur', 'Correos de Chile'];
 
 function loadAgencies(): Agency[] {
   try { return JSON.parse(localStorage.getItem('shippingAgencies') || '[]').filter((a: any) => a.active !== false); } catch { return []; }
@@ -747,6 +747,8 @@ export default function DireccionesPage() {
           border-radius: 20px 20px 0 0;
           box-shadow: 0 -4px 20px rgba(0,0,0,.15);
           padding: 16px 16px 24px;
+          max-height: 50vh;
+          overflow-y: auto;
         }
 
         /* ═══ DESKTOP (768px+) ═══ */

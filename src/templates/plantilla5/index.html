@@ -105,43 +105,57 @@
   <!-- HEADER SCROLL & STICKY STYLING -->
   <style>
     #header-group {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      z-index: 1000;
-      height: 200px;
-      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    
-    /* Explicit offline stacked layouts for the header elements */
-    #shopify-section-sections--27149147209801__utility-bar {
       position: absolute !important;
       top: 0 !important;
       left: 0 !important;
       width: 100% !important;
-      height: 40px !important;
-      z-index: 1010 !important;
-      display: block !important;
-    }
-    
-    #shopify-section-sections--27149147209801__announcement-bar {
-      position: absolute !important;
-      top: 40px !important;
-      left: 0 !important;
-      width: 100% !important;
-      height: 40px !important;
-      z-index: 1010 !important;
-      display: block !important;
-    }
-    
-    custom-header {
-      position: absolute !important;
-      top: 80px !important;
-      left: 0 !important;
-      width: 100% !important;
-      z-index: 1005 !important;
+      z-index: 1000 !important;
       display: flex !important;
+      flex-direction: column !important;
+      height: auto !important;
+      background: transparent !important;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    /* Flow header parts naturally in a stacked flex layout */
+    #shopify-section-sections--27149147209801__utility-bar,
+    #shopify-section-sections--27149147209801__announcement-bar,
+    #shopify-section-sections--27149147144265__header {
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
+      width: 100% !important;
+      display: block !important;
+      z-index: auto !important;
+      transform: none !important;
+    }
+    
+    utility-bar,
+    announcement-bar,
+    custom-header {
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
+      display: flex !important;
+      width: 100% !important;
+      transform: none !important;
+    }
+    
+    utility-bar {
+      height: 40px !important;
+    }
+    announcement-bar {
+      height: 40px !important;
+    }
+    
+    /* Force main to have NO top gap/margin to let split-hero overlay seamlessly */
+    main,
+    #main,
+    .main {
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+      --utility-bar-gap: 0px !important;
+      --announcement-bar-gap: 0px !important;
     }
     
     /* Ensure text colors in utility bar are visible and dark */
@@ -164,10 +178,30 @@
       visibility: visible !important;
     }
     
-    /* Hero Title Glow Highlight Color matching the screenshots */
-    .highlighted-text {
+    /* Premium visual styling for the giant headings (The Glow Edit) matching Image 1 */
+    .giant-heading-block giant-heading > .custom-theme-block.giant-heading span:not(.highlighted-text) {
+      font-size: clamp(3.5rem, 8vw, 7.5rem) !important;
+      font-weight: 800 !important;
+      line-height: 1 !important;
+      color: #ffffff !important;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+    }
+    .giant-heading-block giant-heading > .custom-theme-block.giant-heading .highlighted-text {
+      font-size: clamp(3.5rem, 8vw, 7.5rem) !important;
+      font-weight: 800 !important;
+      line-height: 1 !important;
       color: #dfe146 !important;
-      font-weight: bold !important;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+    }
+    
+    /* Body text/description below the title in the slideshow */
+    .slideshow__content .body-text,
+    .slideshow__content p {
+      color: #ffffff !important;
+      font-size: clamp(1.1rem, 1.5vw, 1.4rem) !important;
+      opacity: 0.95 !important;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2) !important;
+      font-weight: 500 !important;
     }
     
     /* When scrolling down, slide up the entire header group */
