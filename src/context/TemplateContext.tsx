@@ -53,9 +53,10 @@ export function TemplateProvider({ children }: { children: ReactNode }) {
       2: '#ebebeb',
       3: '#f5f5f5',
       4: '#ffffff',
+      5: '#fdfbf7', // Agnes/Seoul Boutique Cream background
     };
     document.body.style.backgroundColor = bgMap[template] || '#f8f9fa';
-    document.body.style.color = template === 2 ? '#333333' : template === 4 ? '#1F1F1F' : '#111827';
+    document.body.style.color = template === 2 ? '#333333' : template === 4 ? '#1F1F1F' : template === 5 ? '#2a2120' : '#111827';
   }, [template]);
 
   return (

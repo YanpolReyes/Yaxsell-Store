@@ -4,6 +4,7 @@ import HomePage1 from '@/templates/plantilla1/HomePage';
 import HomePage2 from '@/templates/plantilla2/HomePage';
 import HomePage3 from '@/templates/plantilla3/HomePage';
 import HomePage4 from '@/templates/plantilla4/HomePage';
+import HomePage5 from '@/templates/plantilla5/HomePage';
 
 export default function DynamicHomePage({ children }: { children: React.ReactNode }) {
   const { template, isLoading } = useTemplate();
@@ -19,5 +20,6 @@ export default function DynamicHomePage({ children }: { children: React.ReactNod
   if (template === 2) return <HomePage2 />;
   if (template === 3) return <HomePage3 />;
   if (template === 4) return <HomePage4 />;
+  if (template === 5) return <HomePage5 />;
   return <>{children}</>;
 }

@@ -52,6 +52,14 @@ const TEMPLATES: Template[] = [
     tags: ['Landing', 'Premium', 'Naranja'],
     accent: '#F97316', accentDark: '#EA6C0A', bg: '#FAFAFA', navBg: '#1A1A1A',
   },
+  {
+    id: 5,
+    name: 'Seoul/Agnes',
+    description: 'Estilo boutique de cosméticos de alta gama con héroe animado, transiciones de scroll ultra fluidas y diseño sumamente estético. Ideal para skincare y maquillaje.',
+    emoji: '✨',
+    tags: ['Estética', 'Cosméticos', 'GSAP'],
+    accent: '#dfe146', accentDark: '#2a2120', bg: '#fde6ef', navBg: '#ffece7',
+  },
 ];
 
 function TemplatePreview({ t, isActive }: { t: Template; isActive: boolean }) {

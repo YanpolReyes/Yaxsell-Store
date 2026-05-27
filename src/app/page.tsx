@@ -153,7 +153,7 @@ export default function HomePage() {
 
         {activeBanner ? (
           <div className="absolute inset-0">
-            <Image src={activeBanner.IMAGEURL} alt="" fill className="object-cover opacity-30" />
+            <Image src={activeBanner.IMAGEURL} alt="" fill sizes="100vw" className="object-cover opacity-30" />
             <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-transparent" />
           </div>
         ) : null}
@@ -226,7 +226,7 @@ export default function HomePage() {
                 className="glass rounded-2xl px-6 py-4 flex flex-col items-center gap-2 min-w-[120px] hover:bg-white/10 transition-colors card-hover text-center">
                 {cat.iconUrl && (
                   <div className="relative w-10 h-10 rounded-full overflow-hidden">
-                    <Image src={cat.iconUrl} alt={cat.name || ''} fill className="object-cover" />
+                    <Image src={cat.iconUrl} alt={cat.name || ''} fill sizes="100vw" className="object-cover" />
                   </div>
                 )}
                 <span className="text-sm font-medium whitespace-nowrap">{cat.name}</span>
@@ -260,6 +260,7 @@ export default function HomePage() {
                       src={offer.customImagePath}
                       alt={offer.productName}
                       fill
+                      sizes="100vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-700"
                     />
                   ) : (
@@ -319,7 +320,7 @@ export default function HomePage() {
                   <Link href={`/productos/${p.$id}`}>
                     <div className="relative h-48 bg-white/5">
                       {p.IMAGEURL ? (
-                        <Image src={p.IMAGEURL} alt={p.NAME} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                        <Image src={p.IMAGEURL} alt={p.NAME} fill sizes="100vw" className="object-cover group-hover:scale-105 transition-transform duration-300" />
                       ) : (
                         <div className="flex items-center justify-center h-full text-white/20 text-4xl">📦</div>
                       )}
