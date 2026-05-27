@@ -28,6 +28,8 @@ const FIXES: Record<string, AttrDef[]> = {
     { key: 'STATUS', type: 'string', size: 32, required: false, default: 'pending' },
     { key: 'PRODUCTIMAGE', type: 'string', size: 2048, required: false },
     { key: 'USERNAME', type: 'string', size: 128, required: false },
+    { key: 'EMAIL', type: 'string', size: 256, required: false },
+    { key: 'NOTIFIED', type: 'boolean', required: false, default: false },
   ],
 };
 

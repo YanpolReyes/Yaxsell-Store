@@ -645,10 +645,17 @@ export default function Navbar1() {
           <div className="tpl1-nav-links">
             {NAV_LINKS.map(link => {
               const IconComp = (link as any).icon;
+              const isHomeLink = link.href === '/';
               return (
-                <Link key={link.href} href={link.href} className={pathname === link.href ? 'active' : ''}>
-                  {IconComp && <IconComp />}{link.label}
-                </Link>
+                isHomeLink ? (
+                  <a key={link.href} href="/" onClick={(e) => { e.preventDefault(); window.location.href = '/'; }} className={pathname === link.href ? 'active' : ''}>
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link key={link.href} href={link.href} className={pathname === link.href ? 'active' : ''}>
+                    {IconComp && <IconComp />}{link.label}
+                  </Link>
+                )
               );
             })}
           </div>
@@ -758,9 +765,15 @@ export default function Navbar1() {
             </div>
           )}
           {NAV_LINKS.map(link => (
-            <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)}>
-              {link.label}
-            </Link>
+            link.href === '/' ? (
+              <a key={link.href} href="/" onClick={(e) => { e.preventDefault(); setMenuOpen(false); window.location.href = '/'; }}>
+                {link.label}
+              </a>
+            ) : (
+              <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)}>
+                {link.label}
+              </Link>
+            )
           ))}
           <div className="tpl1-nav-divider" />
           <Link href="/cuenta/direcciones" onClick={() => setMenuOpen(false)}><MapPin size={16} /> Direcciones</Link>

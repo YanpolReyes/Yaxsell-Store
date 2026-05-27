@@ -15,6 +15,7 @@ import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useAuth } from '@/hooks/useAuth';
 import ImageZoomModal from '@/components/ImageZoomModal';
+import { buildStockAlertData, normalizeStockAlert } from '@/lib/stock-alerts';
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 
@@ -47,10 +48,10 @@ export default function CatalogoPage() {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
         const res = await databases.listDocuments(databaseId, STOCK_ALERTS_COLLECTION, [
-          Query.equal('USERID', user.id),
+          Query.equal('userId', user.id),
           Query.limit(500),
         ]);
-        setRequestedIds(new Set(res.documents.map((d: any) => d.PRODUCTID)));
+        setRequestedIds(new Set(res.documents.map((d: any) => normalizeStockAlert(d).productId)));
       } catch {}
     };
     loadRequested();
@@ -66,17 +67,19 @@ export default function CatalogoPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      await databases.createDocument(databaseId, STOCK_ALERTS_COLLECTION, ID.unique(), {
-        PRODUCTID: productId,
-        PRODUCTNAME: productName,
-        PRODUCTIMAGE: productImage || '',
-        USERID: user!.id,
-        USERNAME: user!.name || '',
-        EMAIL: user!.email || '',
-        STATUS: 'pending',
-        CREATEDAT: Date.now(),
-        NOTIFIED: false,
-      });
+      await databases.createDocument(
+        databaseId,
+        STOCK_ALERTS_COLLECTION,
+        ID.unique(),
+        buildStockAlertData({
+          productId,
+          userId: user!.id,
+          productName,
+          productImage,
+          userName: user!.name || '',
+          email: user!.email || '',
+        }),
+      );
       setRequestedIds(prev => new Set([...prev, productId]));
     } catch (e: any) {
       alert('Error al consultar disponibilidad: ' + (e.message || e));
@@ -258,7 +261,7 @@ export default function CatalogoPage() {
         @media (max-width: 768px) {
           .cat-card-wrap { flex-direction: column !important; min-height: auto !important; border-radius: 14px !important; }
           .cat-card-img-side { width: 100% !important; min-width: 0 !important; height: auto !important; min-height: 280px !important; }
-          .cat-card-img-side .cat-card-img { object-fit: cover !important; }
+          .cat-card-img-side .cat-card-img { object-fit: contain !important; }
           .cat-card-info { padding: 16px 18px !important; }
           .cat-card-info h3 { font-size: 17px !important; margin: 4px 0 10px !important; }
           .cat-card-info .price-label { font-size: 11px !important; letter-spacing: 1px !important; }
@@ -537,9 +540,9 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#ccc' }}><Package size={64} /></div>
           )}
           {/* A PEDIDO badge */}
-          <div className="cat-a-pedido-badge" style={{ position: 'absolute', top: 16, left: 16, padding: '5px 12px', borderRadius: 6, background: 'rgba(254,215,170,0.9)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#e396bf' }} />
-            <span style={{ fontSize: 10, fontWeight: 800, color: '#e396bf', letterSpacing: '1.5px', textTransform: 'uppercase' }}>A Pedido</span>
+          <div className="cat-a-pedido-badge" style={{ position: 'absolute', top: 16, left: 16, padding: '5px 12px', borderRadius: 6, background: '#e396bf', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#fff' }} />
+            <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '1.5px', textTransform: 'uppercase' }}>A Pedido</span>
           </div>
           {/* Discount badge */}
           {hasDiscount && discountPercent > 0 && (

@@ -24,7 +24,7 @@ const noStoreHeaders = {
  */
 export async function GET() {
   try {
-    const url = `${APPWRITE_ENDPOINT}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents?queries[]=${encodeURIComponent(`equal("key", ["${TEMPLATE_KEY}"])`)}&queries[]=${encodeURIComponent('limit(1)')}`;
+    const url = `${APPWRITE_ENDPOINT}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents?query=${encodeURIComponent(`equal("key", "${TEMPLATE_KEY}")`)}&query=${encodeURIComponent('limit(1)')}`;
 
     const res = await fetch(url, { method: 'GET', headers, cache: 'no-store' });
 
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Buscar documento existente
-    const listUrl = `${APPWRITE_ENDPOINT}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents?queries[]=${encodeURIComponent(`equal("key", ["${TEMPLATE_KEY}"])`)}&queries[]=${encodeURIComponent('limit(1)')}`;
+    const listUrl = `${APPWRITE_ENDPOINT}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents?query=${encodeURIComponent(`equal("key", "${TEMPLATE_KEY}")`)}&query=${encodeURIComponent('limit(1)')}`;
     const listRes = await fetch(listUrl, { method: 'GET', headers, cache: 'no-store' });
 
     if (!listRes.ok) {

@@ -317,6 +317,16 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
         {/* Hero header */}
         <div className="pk-hero-header" style={{ marginBottom: 24, borderRadius: 28, border: '1px solid rgba(255,237,213,0.9)', boxShadow: '0 18px 50px rgba(227,150,191,0.12)', overflow: 'hidden', background: '#fff' }}>
           <div className="pk-hero-banner" style={{ position: 'relative' }}>
+            {/* Bubble particles */}
+            <div className="pk-bubbles" style={{ position: 'absolute', inset: 0, zIndex: 3, overflow: 'hidden', pointerEvents: 'none' }}>
+              {[{w:28,h:28,l:'5%',d:'6s',dl:'0s',b:'25%',sw:18},{w:16,h:16,l:'18%',d:'7.5s',dl:'1.2s',b:'55%',sw:10},{w:36,h:36,l:'32%',d:'8s',dl:'0.5s',b:'15%',sw:22},{w:12,h:12,l:'45%',d:'5.5s',dl:'2s',b:'65%',sw:8},{w:26,h:26,l:'58%',d:'7s',dl:'0.8s',b:'30%',sw:16},{w:20,h:20,l:'72%',d:'9s',dl:'1.5s',b:'45%',sw:12},{w:10,h:10,l:'12%',d:'5s',dl:'3s',b:'60%',sw:6},{w:22,h:22,l:'52%',d:'8.5s',dl:'2.5s',b:'20%',sw:14},{w:32,h:32,l:'65%',d:'7.2s',dl:'0.3s',b:'35%',sw:20},{w:14,h:14,l:'82%',d:'6.5s',dl:'1.8s',b:'50%',sw:9},{w:8,h:8,l:'25%',d:'4.8s',dl:'3.5s',b:'70%',sw:5},{w:18,h:18,l:'88%',d:'6.8s',dl:'2.8s',b:'22%',sw:11},{w:40,h:40,l:'20%',d:'10s',dl:'0.2s',b:'10%',sw:24},{w:6,h:6,l:'38%',d:'4.2s',dl:'4s',b:'75%',sw:4},{w:24,h:24,l:'75%',d:'8.2s',dl:'1s',b:'28%',sw:15},{w:34,h:34,l:'48%',d:'9.5s',dl:'0.7s',b:'12%',sw:21},{w:11,h:11,l:'92%',d:'5.8s',dl:'2.2s',b:'58%',sw:7},{w:30,h:30,l:'8%',d:'8.8s',dl:'1.8s',b:'18%',sw:18}].map((b,i) => (
+                <div key={i} className="pk-bubble" style={{
+                  width: b.w, height: b.h, left: b.l, bottom: b.b,
+                  animation: `pkBubbleFloat ${b.d} ease-in-out ${b.dl} infinite, pkBubbleSway ${parseFloat(b.d)*1.3}s ease-in-out ${b.dl} infinite`,
+                  '--sway': b.sw + 'px',
+                } as React.CSSProperties} />
+              ))}
+            </div>
             {(!heroImgLoaded || (!lockedCategory?.iconUrl && !lockCategoryId && !catalogCover.image)) && <div className="pk-hero-banner-skeleton" style={{ position: 'absolute', inset: 0, zIndex: 1, opacity: heroImgLoaded ? 0 : 1, transition: 'opacity 0.4s ease' }} />}
             {lockedCategory?.iconUrl ? (
               <img className="pk-hero-banner-img" src={lockedCategory.iconUrl} alt={lockedCategory.name || 'Categoría'} onLoad={() => setHeroImgLoaded(true)} style={{ objectFit: 'contain', padding: 24, background: 'linear-gradient(135deg,#fdf2f8,#fff)', position: 'relative', zIndex: 2, opacity: heroImgLoaded ? 1 : 0, transition: 'opacity 0.4s ease' }} />
@@ -660,6 +670,40 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
         @keyframes pkBgFloat { 0%,100% { transform: scale(1.15) translateY(0); } 50% { transform: scale(1.18) translateY(-10px); } }
         @keyframes pkCoverFadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes pkDrawerUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes pkBubbleFloat {
+          0% { transform: translateY(30%) scale(0.5); opacity: 0; }
+          8% { opacity: 0.8; }
+          30% { opacity: 0.6; }
+          60% { opacity: 0.4; }
+          85% { opacity: 0.15; }
+          100% { transform: translateY(-90%) scale(1.1); opacity: 0; }
+        }
+        @keyframes pkBubbleSway {
+          0%, 100% { transform: translateX(0); }
+          20% { transform: translateX(var(--sway, 12px)); }
+          40% { transform: translateX(calc(var(--sway, 12px) * -0.6)); }
+          60% { transform: translateX(calc(var(--sway, 12px) * 0.8)); }
+          80% { transform: translateX(calc(var(--sway, 12px) * -1)); }
+        }
+        .pk-bubble {
+          position: absolute; border-radius: 50%;
+          background: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.4) 20%, rgba(227,150,191,0.08) 50%, rgba(192,84,122,0.12) 80%, rgba(227,150,191,0.2) 100%);
+          box-shadow: inset 0 -4px 8px rgba(227,150,191,0.12), inset 2px 2px 6px rgba(255,255,255,0.5), 0 0 8px rgba(227,150,191,0.08);
+          border: 1px solid rgba(255,255,255,0.35);
+          pointer-events: none; z-index: 3;
+        }
+        .pk-bubble::before {
+          content: ''; position: absolute; top: 15%; left: 20%; width: 35%; height: 25%;
+          border-radius: 50%;
+          background: radial-gradient(ellipse, rgba(255,255,255,0.9) 0%, transparent 70%);
+          transform: rotate(-30deg);
+        }
+        .pk-bubble::after {
+          content: ''; position: absolute; bottom: 20%; right: 18%; width: 18%; height: 12%;
+          border-radius: 50%;
+          background: radial-gradient(ellipse, rgba(255,255,255,0.5) 0%, transparent 70%);
+          transform: rotate(20deg);
+        }
 
         .pk-desktop-only { display: block; }
         .pk-mobile-only { display: none; }

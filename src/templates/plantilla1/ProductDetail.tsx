@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ShoppingCart, Check, ChevronRight, Truck, Shield, RefreshCw, Heart, Sparkles, Star } from 'lucide-react';
 import ShareButton from '@/components/ShareButton';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
+import { buildStockAlertData } from '@/lib/stock-alerts';
 import { normalizeProductImages, getProductImageUrl, resolveStorageImageUrl } from '@/lib/product-images';
 import { Query } from 'appwrite';
 import { Product } from '@/types';
@@ -306,10 +307,12 @@ export default function ProductDetailPlantilla1() {
             try {
               const { databases } = getServices();
               const { databaseId } = getAppwriteConfig();
-              await databases.createDocument(databaseId, STOCK_ALERTS_COLLECTION, ID.unique(), {
-                PRODUCTID: product.$id, PRODUCTNAME: product.NAME,
-                EMAIL: email.toLowerCase().trim(), CREATEDAT: Date.now(), NOTIFIED: false,
-              });
+              await databases.createDocument(databaseId, STOCK_ALERTS_COLLECTION, ID.unique(), buildStockAlertData({
+                productId: product.$id,
+                userId: email.toLowerCase().trim(),
+                productName: product.NAME,
+                email: email.toLowerCase().trim(),
+              }));
               alert('✅ Te avisaremos por email cuando haya stock disponible');
             } catch (err: unknown) {
               const msg = err instanceof Error ? err.message : '';
@@ -437,7 +440,7 @@ export default function ProductDetailPlantilla1() {
       {/* Breadcrumb */}
       <div className="pd-breadcrumb pd-h-scroll" style={{ background: '#fff', padding: '12px 2%', borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 76, zIndex: 999 }}>
         <div style={{ maxWidth: 1400, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-          <Link href="/" style={{ color: ORANGE_PRIMARY, textDecoration: 'none', fontWeight: 500 }}>Inicio</Link>
+          <a href="/" onClick={(e) => { e.preventDefault(); window.location.href = '/'; }} style={{ color: ORANGE_PRIMARY, textDecoration: 'none', fontWeight: 500, cursor: 'pointer' }}>Inicio</a>
           <ChevronRight size={12} color={PINK_LIGHT} />
           <Link href="/productos" style={{ color: ORANGE_PRIMARY, textDecoration: 'none', fontWeight: 500 }}>Productos</Link>
           {categoryName && <>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Query } from 'appwrite';
 import { getServices, getAppwriteConfig, STOCK_ALERTS_COLLECTION } from '@/lib/appwrite';
+import { normalizeStockAlert, type StockAlert } from '@/lib/stock-alerts';
 import { useAuth } from '@/hooks/useAuth';
 import { useCuentaBg } from '../CuentaBgContext';
 import { Bell, CheckCircle, XCircle, Clock, Package, ArrowLeft } from 'lucide-react';
@@ -12,18 +13,11 @@ const PINK = '#e396bf';
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 const BG_CONSULTAS = 'https://images.unsplash.com/photo-1556742049-0cfed4f6351a?w=800&q=80';
 
-interface StockAlert {
-  $id: string;
-  PRODUCTID: string;
-  PRODUCTNAME: string;
-  PRODUCTIMAGE: string;
-  STATUS: string;
-  CREATEDAT: number;
-}
+interface StockAlertView extends StockAlert {}
 
 export default function ConsultasPage() {
   const { user, isLoggedIn } = useAuth();
-  const [alerts, setAlerts] = useState<StockAlert[]>([]);
+  const [alerts, setAlerts] = useState<StockAlertView[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useCuentaBg(BG_CONSULTAS);
@@ -35,11 +29,11 @@ export default function ConsultasPage() {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
         const res = await databases.listDocuments(databaseId, STOCK_ALERTS_COLLECTION, [
-          Query.equal('USERID', user.id),
-          Query.orderDesc('CREATEDAT'),
+          Query.equal('userId', user.id),
+          Query.orderDesc('createdAt'),
           Query.limit(100),
         ]);
-        setAlerts(res.documents as unknown as StockAlert[]);
+        setAlerts(res.documents.map((d: any) => normalizeStockAlert(d)));
       } catch (e) { console.error(e); }
       finally { setIsLoading(false); }
     };
@@ -57,9 +51,9 @@ export default function ConsultasPage() {
     return `hace ${days}d`;
   };
 
-  const pending = alerts.filter(a => a.STATUS === 'pending');
-  const available = alerts.filter(a => a.STATUS === 'available');
-  const unavailable = alerts.filter(a => a.STATUS === 'unavailable');
+  const pending = alerts.filter(a => a.status === 'pending');
+  const available = alerts.filter(a => a.status === 'available');
+  const unavailable = alerts.filter(a => a.status === 'unavailable');
 
   if (!isLoggedIn) return (
     <div style={{ fontFamily: FF, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
@@ -115,45 +109,45 @@ export default function ConsultasPage() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {alerts.map(a => (
-            <Link key={a.$id} href={a.STATUS === 'available' ? `/producto/${a.PRODUCTID}` : '#'} style={{ textDecoration: 'none' }}>
+            <Link key={a.$id} href={a.status === 'available' ? `/producto/${a.productId}` : '#'} style={{ textDecoration: 'none' }}>
               <div style={{
-                background: a.STATUS === 'pending' ? '#fffbf5' : a.STATUS === 'available' ? '#f0fdf4' : '#fef2f2',
-                border: `1px solid ${a.STATUS === 'pending' ? '#fbcfe8' : a.STATUS === 'available' ? '#bbf7d0' : '#fecaca'}`,
+                background: a.status === 'pending' ? '#fffbf5' : a.status === 'available' ? '#f0fdf4' : '#fef2f2',
+                border: `1px solid ${a.status === 'pending' ? '#fbcfe8' : a.status === 'available' ? '#bbf7d0' : '#fecaca'}`,
                 borderRadius: 14, padding: 14, display: 'flex', gap: 12, alignItems: 'center',
                 transition: 'transform .15s, box-shadow .15s',
               }}
                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,.06)'; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
               >
-                {a.PRODUCTIMAGE ? (
-                  <img src={a.PRODUCTIMAGE} alt={a.PRODUCTNAME} style={{ width: 52, height: 52, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }} />
+                {a.productImage ? (
+                  <img src={a.productImage} alt={a.productName} style={{ width: 52, height: 52, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }} />
                 ) : (
                   <div style={{ width: 52, height: 52, borderRadius: 10, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Package size={22} color="#9ca3af" />
                   </div>
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: '#111', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.PRODUCTNAME}</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#111', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.productName}</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                    {a.STATUS === 'pending' && (
+                    {a.status === 'pending' && (
                       <span style={{ fontSize: 11, fontWeight: 600, color: '#c0547a', display: 'flex', alignItems: 'center', gap: 3 }}>
                         <Clock size={11} /> En revisión
                       </span>
                     )}
-                    {a.STATUS === 'available' && (
+                    {a.status === 'available' && (
                       <span style={{ fontSize: 11, fontWeight: 600, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 3 }}>
                         <CheckCircle size={11} /> ¡Disponible!
                       </span>
                     )}
-                    {a.STATUS === 'unavailable' && (
+                    {a.status === 'unavailable' && (
                       <span style={{ fontSize: 11, fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 3 }}>
                         <XCircle size={11} /> Sin stock
                       </span>
                     )}
-                    <span style={{ fontSize: 10, color: '#aaa' }}>· {timeAgo(a.CREATEDAT)}</span>
+                    <span style={{ fontSize: 10, color: '#aaa' }}>· {timeAgo(a.createdAt)}</span>
                   </div>
                 </div>
-                {a.STATUS === 'available' && (
+                {a.status === 'available' && (
                   <span style={{ fontSize: 11, fontWeight: 700, background: PINK, color: '#fff', padding: '5px 12px', borderRadius: 8, whiteSpace: 'nowrap' }}>Comprar</span>
                 )}
               </div>

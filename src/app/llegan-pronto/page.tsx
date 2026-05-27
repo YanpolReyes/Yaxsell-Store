@@ -179,7 +179,7 @@ export default function LleganProntoPage() {
         @media (max-width: 768px) {
           .lp-card-wrap { flex-direction: column !important; min-height: auto !important; border-radius: 14px !important; }
           .lp-card-img-side { width: 100% !important; min-width: 0 !important; height: auto !important; min-height: 280px !important; }
-          .lp-card-img-side .lp-card-img { object-fit: cover !important; }
+          .lp-card-img-side .lp-card-img { object-fit: contain !important; }
           .lp-card-info { padding: 16px 18px !important; }
           .lp-card-info h3 { font-size: 17px !important; margin: 4px 0 10px !important; }
           .lp-card-info .price-label { font-size: 11px !important; letter-spacing: 1px !important; }

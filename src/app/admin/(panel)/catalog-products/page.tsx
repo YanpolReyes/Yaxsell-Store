@@ -3,31 +3,21 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, STOCK_ALERTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { normalizeStockAlert, type StockAlert } from '@/lib/stock-alerts';
 import { Search, RefreshCw, Package, AlertTriangle, Users, Bell, CheckCircle, XCircle, User, ChevronRight, ArrowLeft, Clock } from 'lucide-react';
 
-interface StockAlert {
-  $id: string;
-  PRODUCTID: string;
-  PRODUCTNAME: string;
-  PRODUCTIMAGE: string;
-  USERID: string;
-  USERNAME: string;
-  EMAIL: string;
-  STATUS: string;
-  CREATEDAT: number;
-  NOTIFIED: boolean;
-}
+interface StockAlertView extends StockAlert {}
 
 interface GroupedUser {
   userId: string;
   userName: string;
   email: string;
-  requests: StockAlert[];
+  requests: StockAlertView[];
   pendingCount: number;
 }
 
 export default function CatalogProductsPage() {
-  const [alerts, setAlerts] = useState<StockAlert[]>([]);
+  const [alerts, setAlerts] = useState<StockAlertView[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
@@ -48,7 +38,7 @@ export default function CatalogProductsPage() {
         if (r.documents.length < 2000) break;
         offset += 2000;
       }
-      setAlerts(allDocs as unknown as StockAlert[]);
+      setAlerts(allDocs.map((d: any) => normalizeStockAlert(d)));
     } catch (e: any) { setError(e.message); }
     finally { setIsLoading(false); }
   }, []);
@@ -57,18 +47,18 @@ export default function CatalogProductsPage() {
 
   // Group alerts by user
   const groupedUsers: GroupedUser[] = (() => {
-    const map: Record<string, StockAlert[]> = {};
+    const map: Record<string, StockAlertView[]> = {};
     alerts.forEach(a => {
-      const key = a.USERID || a.EMAIL;
+      const key = a.userId || a.email;
       if (!map[key]) map[key] = [];
       map[key].push(a);
     });
     return Object.entries(map).map(([userId, reqs]) => ({
       userId,
-      userName: reqs[0].USERNAME || reqs[0].EMAIL.split('@')[0],
-      email: reqs[0].EMAIL,
-      requests: reqs.sort((a, b) => (b.CREATEDAT || 0) - (a.CREATEDAT || 0)),
-      pendingCount: reqs.filter(r => r.STATUS === 'pending').length,
+      userName: reqs[0].userName || reqs[0].email.split('@')[0],
+      email: reqs[0].email,
+      requests: reqs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
+      pendingCount: reqs.filter(r => r.status === 'pending').length,
     })).sort((a, b) => b.pendingCount - a.pendingCount);
   })();
 
@@ -78,11 +68,11 @@ export default function CatalogProductsPage() {
     return u.userName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
   });
 
-  const totalPending = alerts.filter(a => a.STATUS === 'pending').length;
-  const totalAvailable = alerts.filter(a => a.STATUS === 'available').length;
-  const totalUnavailable = alerts.filter(a => a.STATUS === 'unavailable').length;
+  const totalPending = alerts.filter(a => a.status === 'pending').length;
+  const totalAvailable = alerts.filter(a => a.status === 'available').length;
+  const totalUnavailable = alerts.filter(a => a.status === 'unavailable').length;
 
-  const handleMarkAvailable = async (req: StockAlert) => {
+  const handleMarkAvailable = async (req: StockAlertView) => {
     const stockVal = stockInput[req.$id];
     if (!stockVal || parseInt(stockVal) <= 0) {
       window.alert('Ingresa una cantidad de stock válida');
@@ -94,7 +84,7 @@ export default function CatalogProductsPage() {
       const { databaseId } = getAppwriteConfig();
 
       // Update inventory product stock
-      await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, req.PRODUCTID, {
+      await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, req.productId, {
         STOCK: parseInt(stockVal),
         ISACTIVE: true,
       });
@@ -102,22 +92,21 @@ export default function CatalogProductsPage() {
       // Update alert status
       await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, {
         STATUS: 'available',
-        NOTIFIED: true,
       });
 
       // Send notification to user
-      if (req.USERID) {
+      if (req.userId) {
         await databases.createDocument(databaseId, NOTIFICATIONS_COLLECTION_ID, ID.unique(), {
-          userId: req.USERID,
+          userId: req.userId,
           title: '¡Producto disponible!',
-          message: `El producto "${req.PRODUCTNAME}" que consultaste ya está disponible con stock. ¡Apúrate a comprarlo!`,
+          message: `El producto "${req.productName}" que consultaste ya está disponible con stock. ¡Apúrate a comprarlo!`,
           type: 'success',
           isRead: false,
-          linkUrl: `/producto/${req.PRODUCTID}`,
+          linkUrl: `/producto/${req.productId}`,
         });
       }
 
-      setAlerts(prev => prev.map(a => a.$id === req.$id ? { ...a, STATUS: 'available', NOTIFIED: true } : a));
+      setAlerts(prev => prev.map(a => a.$id === req.$id ? { ...a, status: 'available', notified: true } : a));
     } catch (e: any) {
       window.alert('Error: ' + e.message);
     } finally {
@@ -125,34 +114,33 @@ export default function CatalogProductsPage() {
     }
   };
 
-  const handleMarkUnavailable = async (req: StockAlert) => {
-    if (!confirm(`¿Eliminar "${req.PRODUCTNAME}" del inventario y notificar al cliente que no hay stock?`)) return;
+  const handleMarkUnavailable = async (req: StockAlertView) => {
+    if (!confirm(`¿Eliminar "${req.productName}" del inventario y notificar al cliente que no hay stock?`)) return;
     setProcessingId(req.$id);
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
       // Delete the inventory product
-      await databases.deleteDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, req.PRODUCTID);
+      await databases.deleteDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, req.productId);
 
       // Update alert status
       await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, {
         STATUS: 'unavailable',
-        NOTIFIED: true,
       });
 
       // Send notification to user (fake message: "te avisaremos cuando llegue")
-      if (req.USERID) {
+      if (req.userId) {
         await databases.createDocument(databaseId, NOTIFICATIONS_COLLECTION_ID, ID.unique(), {
-          userId: req.USERID,
+          userId: req.userId,
           title: 'Producto no disponible',
-          message: `Lamentamos informarte que "${req.PRODUCTNAME}" no tiene existencia en stock. Te avisaremos cuando esté disponible nuevamente.`,
+          message: `Lamentamos informarte que "${req.productName}" no tiene existencia en stock. Te avisaremos cuando esté disponible nuevamente.`,
           type: 'warning',
           isRead: false,
         });
       }
 
-      setAlerts(prev => prev.map(a => a.$id === req.$id ? { ...a, STATUS: 'unavailable', NOTIFIED: true } : a));
+      setAlerts(prev => prev.map(a => a.$id === req.$id ? { ...a, status: 'unavailable', notified: true } : a));
     } catch (e: any) {
       window.alert('Error: ' + e.message);
     } finally {
@@ -296,14 +284,14 @@ export default function CatalogProductsPage() {
               <div style={{ maxHeight: 600, overflowY: 'auto', padding: 12 }}>
                 {selectedUser.requests.map(a => (
                   <div key={a.$id} style={{
-                    background: a.STATUS === 'pending' ? '#fffbf5' : a.STATUS === 'available' ? '#f0fdf4' : '#fef2f2',
-                    border: `1px solid ${a.STATUS === 'pending' ? '#fbcfe8' : a.STATUS === 'available' ? '#bbf7d0' : '#fecaca'}`,
+                    background: a.status === 'pending' ? '#fffbf5' : a.status === 'available' ? '#f0fdf4' : '#fef2f2',
+                    border: `1px solid ${a.status === 'pending' ? '#fbcfe8' : a.status === 'available' ? '#bbf7d0' : '#fecaca'}`,
                     borderRadius: 10, padding: 14, marginBottom: 10,
                   }}>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                       {/* Product image */}
-                      {a.PRODUCTIMAGE ? (
-                        <img src={a.PRODUCTIMAGE} alt={a.PRODUCTNAME} style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+                      {a.productImage ? (
+                        <img src={a.productImage} alt={a.productName} style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
                       ) : (
                         <div style={{ width: 56, height: 56, borderRadius: 8, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                           <Package size={22} color="#9ca3af" />
@@ -312,30 +300,30 @@ export default function CatalogProductsPage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                           <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                            {a.PRODUCTNAME}
+                            {a.productName}
                           </p>
-                          {a.STATUS === 'pending' && (
+                          {a.status === 'pending' && (
                             <span style={{ fontSize: 10, fontWeight: 700, background: '#fdf2f8', color: '#c0547a', padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap', border: '1px solid #fbcfe8' }}>
                               Pendiente
                             </span>
                           )}
-                          {a.STATUS === 'available' && (
+                          {a.status === 'available' && (
                             <span style={{ fontSize: 10, fontWeight: 700, background: '#f0fdf4', color: '#16a34a', padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 3 }}>
                               <CheckCircle size={10} /> Con Stock
                             </span>
                           )}
-                          {a.STATUS === 'unavailable' && (
+                          {a.status === 'unavailable' && (
                             <span style={{ fontSize: 10, fontWeight: 700, background: '#fef2f2', color: '#dc2626', padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 3 }}>
                               <XCircle size={10} /> Sin Stock
                             </span>
                           )}
                         </div>
                         <div style={{ fontSize: 11, color: '#9ca3af', display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <Clock size={10} /> {timeAgo(a.CREATEDAT)}
+                          <Clock size={10} /> {timeAgo(a.createdAt)}
                         </div>
 
                         {/* Action buttons for pending */}
-                        {a.STATUS === 'pending' && (
+                        {a.status === 'pending' && (
                           <div style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                             <input
                               type="number"

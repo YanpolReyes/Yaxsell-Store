@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ShoppingCart, Check, ChevronRight, Truck, Shield, RefreshCw } from 'lucide-react';
 import ShareButton from '@/components/ShareButton';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
+import { buildStockAlertData } from '@/lib/stock-alerts';
 import { normalizeProductImages, getProductImageUrl, resolveStorageImageUrl } from '@/lib/product-images';
 import { Query } from 'appwrite';
 import { Product } from '@/types';
@@ -490,13 +491,12 @@ export default function ProductDetailPlantilla2() {
                   try {
                     const { databases } = getServices();
                     const { databaseId } = getAppwriteConfig();
-                    await databases.createDocument(databaseId, STOCK_ALERTS_COLLECTION, ID.unique(), {
-                      PRODUCTID: product.$id,
-                      PRODUCTNAME: product.NAME,
-                      EMAIL: email.toLowerCase().trim(),
-                      CREATEDAT: Date.now(),
-                      NOTIFIED: false,
-                    });
+                    await databases.createDocument(databaseId, STOCK_ALERTS_COLLECTION, ID.unique(), buildStockAlertData({
+                      productId: product.$id,
+                      userId: email.toLowerCase().trim(),
+                      productName: product.NAME,
+                      email: email.toLowerCase().trim(),
+                    }));
                     alert('✅ Te avisaremos por email cuando haya stock disponible');
                   } catch (err: any) {
                     if (err.message?.includes('already exists')) {

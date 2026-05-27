@@ -18,6 +18,7 @@ import { Query } from 'appwrite';
 import type { Product, TimedOffer, Category } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
+import { usePrimaryAddress } from '@/hooks/usePrimaryAddress';
 import { useNotifications } from '@/context/NotificationContext';
 import NotificationsOverlay from '@/components/NotificationsOverlay';
 import {
@@ -293,6 +294,14 @@ function collectionItemHref(item: CollectionItem): string {
 }
 
 export default function HomePage1() {
+  const { primaryAddress } = usePrimaryAddress();
+  // usePrimaryAddress calls useAuth internally — get user/isLoggedIn from there
+  const { user, isLoggedIn } = useAuth();
+  // Refs to use inside useEffect without adding to deps (avoids TDZ issues)
+  const primaryAddressRef = useRef(primaryAddress);
+  primaryAddressRef.current = primaryAddress;
+  const isLoggedInRef = useRef(isLoggedIn);
+  isLoggedInRef.current = isLoggedIn;
   const containerRef = useRef<HTMLDivElement>(null);
   const couponRootRef = useRef<Root | null>(null);
   const countdownMobileRootRef = useRef<Root | null>(null);
@@ -648,6 +657,9 @@ export default function HomePage1() {
         console.warn('[Plantilla1] dispatch DOMContentLoaded/load failed:', e);
       }
     })();
+
+    // Reset flag on unmount so scripts can reinitialize if component remounts (SPA navigation back to /)
+    return () => { (window as any).__tpl1ScriptsLoaded = false; };
   }, [bodyHtml]);
 
   /* ── is-sticky basic toggle (sin bloquear scrolling_down_header) ── */
@@ -712,6 +724,7 @@ export default function HomePage1() {
   }, [bodyHtml]);
 
   /* ── Fix Shopify navbar: ensure Catálogo link exists ── */
+
   useEffect(() => {
     if (!bodyHtml) return;
     const fixNavbar = () => {
@@ -750,12 +763,47 @@ export default function HomePage1() {
           navbar.querySelector('ul')?.appendChild(li);
         }
       }
+      // Remove "Inicio" link (irrelevant on homepage) from navbar and mobile drawer
+      document.querySelectorAll('.musk-navbar .nav_li a[aria-label="Inicio"], .musk-navbar .nav_li a[href="./index.html"], .musk-navbar .nav_li a[href="/"], .fusion-mobile-menu-drawer-container .link_menu_men a[aria-label="Inicio"], .fusion-mobile-menu-drawer-container .link_menu_men a[href="./index.html"]').forEach(el => {
+        el.closest('li')?.remove();
+      });
       // Replace "Contacto" with "Mis Pedidos"
       const contactoLink = (navbar.querySelector('.nav_li a[aria-label="Contacto"]') || navbar.querySelector('.nav_li a[href*="contact"]')) as HTMLAnchorElement | null;
       if (contactoLink) {
         contactoLink.href = '/cuenta/pedidos';
         contactoLink.setAttribute('aria-label', 'Mis Pedidos');
         contactoLink.textContent = 'Mis Pedidos';
+      }
+      // Mark active link based on current URL
+      const currentPath = window.location.pathname;
+      navbar.querySelectorAll('.nav_li a').forEach(a => {
+        a.classList.remove('active');
+        const href = a.getAttribute('href');
+        if (href === currentPath || (href !== '/' && currentPath.startsWith(href || ''))) {
+          a.classList.add('active');
+        }
+      });
+      // Add address pill in the middle of the navbar
+      if (!navbar.querySelector('.tpl1-shopify-addr')) {
+        const addrLi = document.createElement('li');
+        addrLi.className = 'nav_li tpl1-shopify-addr';
+        const addrA = document.createElement('a');
+        addrA.href = '/cuenta/direcciones';
+        addrA.className = 'tpl1-shopify-addr-link';
+        const addrText = primaryAddressRef.current || (isLoggedInRef.current ? 'Agregar ubicación' : 'Ingresa ubicación');
+        addrA.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span>${addrText}</span>`;
+        addrLi.appendChild(addrA);
+        const ul = navbar.querySelector('ul');
+        if (ul) {
+          const lis = ul.querySelectorAll('.nav_li');
+          const mid = Math.floor(lis.length / 2);
+          if (lis[mid]) lis[mid].before(addrLi);
+          else ul.appendChild(addrLi);
+        }
+      } else {
+        // Update address text if already exists
+        const addrSpan = navbar.querySelector('.tpl1-shopify-addr-link span');
+        if (addrSpan) addrSpan.textContent = primaryAddressRef.current || (isLoggedInRef.current ? 'Agregar ubicación' : 'Ingresa ubicación');
       }
     };
     fixNavbar();
@@ -766,7 +814,6 @@ export default function HomePage1() {
 
   /* ── Hacer funcionales los botones del navbar Shopify (search, user, cart) ── */
   const { totalItems, items, subtotal, removeItem, updateQuantity, addItem } = useCart();
-  const { user, isLoggedIn } = useAuth();
   const { unreadCount } = useNotifications();
   const [notifOpen, setNotifOpen] = useState(false);
 
@@ -1511,17 +1558,11 @@ export default function HomePage1() {
       const closeSearch = () => {
         if (!searchPopup?.classList || !searchToggle) return;
         searchToggle.setAttribute('aria-expanded', 'false');
-        gsap.to(searchPopup, {
-          clipPath: 'circle(0% at calc(100% - 50px) 30px)',
-          opacity: 0,
-          duration: 0.5,
-          ease: 'power3.in',
-          onComplete: () => {
-            searchPopup?.classList?.remove('show', 'tpl1-closing');
-            gsap.set(searchPopup, { clearProps: 'all' });
-          },
-        });
+        searchPopup.classList.remove('show');
         searchPopup.classList.add('tpl1-closing');
+        setTimeout(() => {
+          searchPopup?.classList?.remove('tpl1-closing');
+        }, 200);
       };
 
       searchToggle.addEventListener('click', (e) => {
@@ -1600,6 +1641,7 @@ export default function HomePage1() {
         }
       };
 
+      // Preload search results once on mount (not every time search opens)
       populateSearchResults();
     }
 
