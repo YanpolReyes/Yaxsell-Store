@@ -31,19 +31,10 @@ export function normalizeStockAlert(doc: RawStockAlert): StockAlert {
 export function buildStockAlertData(input: {
   productId: string;
   userId: string;
-  productName?: string;
-  productImage?: string;
-  userName?: string;
-  email?: string;
-  status?: string;
 }): Record<string, unknown> {
   return {
     productId: input.productId,
     userId: input.userId,
     createdAt: Date.now(),
-    PRODUCTNAME: input.productName ?? '',
-    PRODUCTIMAGE: input.productImage ?? '',
-    USERNAME: input.userName || input.email || '',
-    STATUS: input.status ?? 'pending',
   };
 }
