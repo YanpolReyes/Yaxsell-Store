@@ -177,31 +177,33 @@ export default function LleganProntoPage() {
         .lp-pill { transition: all .2s; }
         .lp-pill:hover { transform: translateY(-2px); }
         @media (max-width: 768px) {
-          .lp-card-wrap { flex-direction: column !important; min-height: auto !important; }
-          .lp-card-img-side { width: 100% !important; min-width: 0 !important; height: auto !important; min-height: 200px !important; }
+          .lp-card-wrap { flex-direction: column !important; min-height: auto !important; border-radius: 14px !important; }
+          .lp-card-img-side { width: 100% !important; min-width: 0 !important; height: auto !important; min-height: 220px !important; max-height: 280px !important; }
           .lp-card-img-side .lp-card-img { object-fit: contain !important; }
-          .lp-card-info { padding: 20px !important; }
-          .lp-card-info h3 { font-size: 18px !important; margin: 6px 0 12px !important; }
-          .lp-card-info .price-label { font-size: 13px !important; }
+          .lp-card-info { padding: 16px 18px !important; }
+          .lp-card-info h3 { font-size: 17px !important; margin: 4px 0 10px !important; }
+          .lp-card-info .price-label { font-size: 11px !important; letter-spacing: 1px !important; }
           .lp-card-info .price-val { font-size: 22px !important; }
           .lp-card-info .price-val-sm { font-size: 20px !important; }
-          .lp-hero-title { font-size: 36px !important; letter-spacing: -1px !important; }
-          .lp-hero-wrap { padding: 90px 16px 50px !important; }
-          .lp-hero-desc { font-size: 13px !important; }
+          .lp-hero-title { font-size: 28px !important; letter-spacing: -0.5px !important; }
+          .lp-hero-wrap { padding: 64px 16px 24px !important; }
+          .lp-hero-desc { font-size: 12px !important; }
           .lp-scroll-arrow { display: none !important; }
-          #lp-scroll { padding-left: 16px !important; padding-right: 16px !important; }
+          #lp-scroll { padding-left: 12px !important; padding-right: 12px !important; }
           .lp-skeleton { flex-direction: column !important; min-height: auto !important; }
-          .lp-skeleton-img { width: 100% !important; height: 220px !important; }
-          .lp-skeleton-info { padding: 20px !important; }
-          .lp-section-title { font-size: 20px !important; }
-          .lp-cta-btn { padding: 12px 0 !important; font-size: 11px !important; }
-          .lp-content-area { padding: 20px 16px 60px !important; }
-          .lp-pack-badge { font-size: 14px !important; padding: 8px 16px !important; }
-          .lp-pack-badge strong { font-size: 18px !important; }
-          .lp-price-card { padding: 14px 16px !important; border-width: 2px !important; }
-          .lp-price-card .price-label { font-size: 13px !important; }
-          .lp-price-card .price-val { font-size: 24px !important; }
-          .lp-price-card .price-val-sm { font-size: 22px !important; }
+          .lp-skeleton-img { width: 100% !important; height: 180px !important; }
+          .lp-skeleton-info { padding: 16px 18px !important; }
+          .lp-section-title { font-size: 18px !important; }
+          .lp-cta-btn { padding: 12px 0 !important; font-size: 11px !important; letter-spacing: 1px !important; }
+          .lp-content-area { padding: 16px 12px 60px !important; }
+          .lp-pack-badge { font-size: 12px !important; padding: 6px 12px !important; margin-top: 8px !important; }
+          .lp-pack-badge strong { font-size: 14px !important; }
+          .lp-price-card { padding: 8px 12px !important; border-radius: 10px !important; gap: 4px !important; }
+          .lp-price-card .price-label { font-size: 11px !important; letter-spacing: 1px !important; }
+          .lp-price-card .price-val { font-size: 20px !important; letter-spacing: -0.3px !important; }
+          .lp-price-card .price-val-sm { font-size: 18px !important; }
+          .lp-badge-lp { font-size: 9px !important; padding: 4px 9px !important; letter-spacing: 1.2px !important; }
+          .lp-disc-badge { top: 40px !important; left: 12px !important; }
         }
       `}</style>
 
@@ -434,12 +436,12 @@ function LleganProntoCard({ product, apertura, index = 0, categories, onZoom }: 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#ccc' }}><Package size={64} /></div>
           )}
           {/* LLEGAN PRONTO badge */}
-          <div style={{ position: 'absolute', top: 16, left: 16, padding: '5px 12px', borderRadius: 6, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(8px)', border: '1px solid rgba(227,150,191,0.15)', display: 'flex', alignItems: 'center', gap: 5 }}>
+          <div className="lp-badge-lp" style={{ position: 'absolute', top: 16, left: 16, padding: '5px 12px', borderRadius: 6, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(8px)', border: '1px solid rgba(227,150,191,0.15)', display: 'flex', alignItems: 'center', gap: 5 }}>
             <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#e396bf' }} />
             <span style={{ fontSize: 10, fontWeight: 800, color: '#e396bf', letterSpacing: '1.5px', textTransform: 'uppercase' }}>¡Llegan Pronto!</span>
           </div>
           {hasDiscount && discountPercent > 0 && (
-            <div style={{ position: 'absolute', top: 48, left: 16 }}>
+            <div className="lp-disc-badge" style={{ position: 'absolute', top: 48, left: 16 }}>
               <AperturaDiscountBadge percent={discountPercent} size="sm" />
             </div>
           )}

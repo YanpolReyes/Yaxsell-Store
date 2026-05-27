@@ -256,38 +256,38 @@ export default function CatalogoPage() {
         .cat-pill { transition: all .2s; }
         .cat-pill:hover { transform: translateY(-2px); }
         @media (max-width: 768px) {
-          .cat-card-wrap { flex-direction: row !important; min-height: auto !important; border-radius: 14px !important; }
-          .cat-card-img-side { width: 130px !important; min-width: 130px !important; height: auto !important; min-height: 130px !important; max-height: none !important; }
+          .cat-card-wrap { flex-direction: column !important; min-height: auto !important; border-radius: 14px !important; }
+          .cat-card-img-side { width: 100% !important; min-width: 0 !important; height: auto !important; min-height: 220px !important; max-height: 280px !important; }
           .cat-card-img-side .cat-card-img { object-fit: contain !important; }
-          .cat-card-info { padding: 12px 14px !important; }
-          .cat-card-info h3 { font-size: 14px !important; margin: 2px 0 6px !important; font-family: ${FF} !important; font-weight: 700 !important; }
-          .cat-card-info .price-label { font-size: 10px !important; letter-spacing: 0.8px !important; }
-          .cat-card-info .price-val { font-size: 18px !important; }
-          .cat-card-info .price-val-sm { font-size: 16px !important; }
-          .cat-hero-title { font-size: 26px !important; letter-spacing: -0.5px !important; }
+          .cat-card-info { padding: 16px 18px !important; }
+          .cat-card-info h3 { font-size: 17px !important; margin: 4px 0 10px !important; }
+          .cat-card-info .price-label { font-size: 11px !important; letter-spacing: 1px !important; }
+          .cat-card-info .price-val { font-size: 22px !important; }
+          .cat-card-info .price-val-sm { font-size: 20px !important; }
+          .cat-hero-title { font-size: 28px !important; letter-spacing: -0.5px !important; }
           .cat-hero-wrap { padding: 64px 16px 24px !important; }
           .cat-hero-desc { font-size: 12px !important; }
           .cat-hero-notice { padding: 8px 10px !important; margin-bottom: 14px !important; }
-          .cat-hero-notice p { font-size: 10px !important; line-height: 1.4 !important; }
+          .cat-hero-notice p { font-size: 10.5px !important; line-height: 1.45 !important; }
           .cat-scroll-arrow { display: none !important; }
           #cat-scroll { padding-left: 12px !important; padding-right: 12px !important; }
-          .cat-skeleton { flex-direction: row !important; min-height: auto !important; }
-          .cat-skeleton-img { width: 130px !important; height: 130px !important; min-width: 130px !important; }
-          .cat-skeleton-info { padding: 12px 14px !important; }
-          .cat-section-title { font-size: 16px !important; }
-          .cat-cta-btn { padding: 9px 0 !important; font-size: 10px !important; margin-top: 8px !important; letter-spacing: 0.8px !important; border-radius: 8px !important; }
-          .cat-content-area { padding: 12px 10px 60px !important; }
-          .cat-pack-badge { font-size: 11px !important; padding: 4px 8px !important; margin-top: 4px !important; }
-          .cat-pack-badge strong { font-size: 13px !important; }
-          .cat-price-card { padding: 6px 10px !important; border-radius: 8px !important; gap: 2px !important; flex-wrap: wrap !important; }
-          .cat-price-card .price-label { font-size: 10px !important; letter-spacing: 0.8px !important; }
-          .cat-price-card .price-val { font-size: 16px !important; letter-spacing: -0.3px !important; }
-          .cat-price-card .price-val-sm { font-size: 14px !important; }
-          .cat-red-rule { display: none !important; }
-          .cat-cat-tag { font-size: 9px !important; letter-spacing: 0.8px !important; }
-          .cat-card-list { gap: 10px !important; }
-          .cat-a-pedido-badge { font-size: 8px !important; padding: 3px 7px !important; letter-spacing: 1px !important; }
-          .cat-disc-badge { top: 34px !important; left: 8px !important; }
+          .cat-skeleton { flex-direction: column !important; min-height: auto !important; }
+          .cat-skeleton-img { width: 100% !important; height: 180px !important; }
+          .cat-skeleton-info { padding: 16px 18px !important; }
+          .cat-section-title { font-size: 18px !important; }
+          .cat-cta-btn { padding: 12px 0 !important; font-size: 11px !important; margin-top: 12px !important; letter-spacing: 1px !important; }
+          .cat-content-area { padding: 16px 12px 60px !important; }
+          .cat-pack-badge { font-size: 12px !important; padding: 6px 12px !important; margin-top: 8px !important; }
+          .cat-pack-badge strong { font-size: 14px !important; }
+          .cat-price-card { padding: 8px 12px !important; border-radius: 10px !important; gap: 4px !important; }
+          .cat-price-card .price-label { font-size: 11px !important; letter-spacing: 1px !important; }
+          .cat-price-card .price-val { font-size: 20px !important; letter-spacing: -0.3px !important; }
+          .cat-price-card .price-val-sm { font-size: 18px !important; }
+          .cat-red-rule { width: 40% !important; margin-bottom: 14px !important; }
+          .cat-cat-tag { font-size: 9px !important; letter-spacing: 1px !important; }
+          .cat-card-list { gap: 14px !important; }
+          .cat-a-pedido-badge { font-size: 9px !important; padding: 4px 9px !important; letter-spacing: 1.2px !important; }
+          .cat-disc-badge { top: 40px !important; left: 12px !important; }
         }
       `}</style>
       {/* ── HERO ── */}
