@@ -8,6 +8,49 @@
 
 <html class="js" lang="en">
 <head>
+
+  <!-- GLOBAL OFFLINE FETCH INTERCEPTOR -->
+  <script>
+    (function() {
+      if (window.location.protocol === 'file:') {
+        console.log("[Offline Interceptor] Active. Mocking all file:// fetch calls to bypass CORS policy.");
+        const originalFetch = window.fetch;
+        
+        window.fetch = function(url, options) {
+          const urlStr = String(url).split('?')[0];
+          
+          // Try to match preloaded SVG mask
+          let matchedSvgContent = null;
+          if (window.offlineMasks) {
+            for (const key in window.offlineMasks) {
+              if (urlStr === key || urlStr.endsWith(key.replace('./', ''))) {
+                matchedSvgContent = window.offlineMasks[key];
+                break;
+              }
+            }
+          }
+          
+          if (matchedSvgContent) {
+            console.log("[Offline Interceptor] Intercepted mask fetch. Loading from memory:", urlStr);
+            return Promise.resolve(new Response(matchedSvgContent, {
+              status: 200,
+              statusText: 'OK',
+              headers: { 'Content-Type': 'image/svg+xml' }
+            }));
+          }
+          
+          // For any other file fetch (like index.html or product-link), return a silent empty 200 OK
+          console.warn("[Offline Interceptor] Intercepted CORS-blocking fetch. Returning silent fallback:", urlStr);
+          return Promise.resolve(new Response('', {
+            status: 200,
+            statusText: 'OK',
+            headers: { 'Content-Type': 'text/html' }
+          }));
+        };
+      }
+    })();
+  </script>
+
   <!-- ═══════════════════════════════════════════
     YESBELLA - Plantilla 5 | Tema: Seoul/Agnes
     HTML estático limpio (sin analytics/tracking)
@@ -36,30 +79,25 @@
   <link rel="preload" as="font" href="./assets/fonts/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/fonts/montserrat/montserrat_n4.81949fa0ac9fd2021e16436151e8eaa539321637.woff2" type="font/woff2">
 
   <!-- JS CORE & ANIMATIONS -->
+  <!-- 1. Animations Core Libraries (Must load first!) -->
+  <script id="lib-gsap" src="./assets/js/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/gsap.min-6xz6d5.js"></script>
+  <script id="lib-scrollmagic" src="./assets/js/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/ScrollMagic.min-g1z252.js"></script>
+  <script id="lib-animation-gsap" src="./assets/js/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/animation.gsap.min-a9w94k.js"></script>
+  <script id="lib-morphsvg" src="./assets/js/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/MorphSVGPlugin.min-e879y6.js"></script>
+  <script id="lib-split-hero-section" src="./assets/js/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/split-hero-atfmu5.js"></script>
+  <script id="lib-morph-svg-section" src="./assets/js/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/morph-svg-t95u5n.js"></script>
+
+  <!-- 2. Theme Functional Scripts -->
   <script src="./assets/js/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/swiper-bundle.min-jdzevs.js" defer="defer"></script>
   <script src="./assets/js/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/functions-4men4o.js"></script>
   <script src="./assets/js/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/pubsub-xm1wr6.js" defer="defer"></script>
   <script src="./assets/js/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/script-1ukom4.js" defer="defer"></script>
   
-  <script id="lib-gsap" src="./assets/js/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/gsap.min-6xz6d5.js" defer="" data-loaded="true"></script>
-  <script src="./assets/js/maps.googleapis.com/maps/api/js-r1dap8.bin" async=""></script>
-  <script id="lib-scrollmagic" src="./assets/js/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/ScrollMagic.min-g1z252.js" defer="" data-loaded="true"></script>
-  <script id="lib-animation-gsap" src="./assets/js/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/animation.gsap.min-a9w94k.js" defer="" data-loaded="true"></script>
-  <script id="lib-morphsvg" src="./assets/js/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/MorphSVGPlugin.min-e879y6.js" defer="" data-loaded="true"></script>
-  <script id="lib-split-hero-section" src="./assets/js/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/split-hero-atfmu5.js" defer=""></script>
-  <script id="lib-morph-svg-section" src="./assets/js/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/morph-svg-t95u5n.js" defer=""></script>
-  <script type="text/javascript" charset="UTF-8" src="./assets/js/maps.googleapis.com/maps-api-v3/api/js/65/1c/intl/es_ALL/common.js"></script>
-  <script type="text/javascript" charset="UTF-8" src="./assets/js/maps.googleapis.com/maps-api-v3/api/js/65/1c/intl/es_ALL/util.js"></script>
-  <script type="text/javascript" charset="UTF-8" src="./assets/js/maps.googleapis.com/maps-api-v3/api/js/65/1c/intl/es_ALL/geocoder.js"></script>
-  <script type="text/javascript" charset="UTF-8" src="./assets/js/maps.googleapis.com/maps-api-v3/api/js/65/1c/intl/es_ALL/directions.js"></script>
-  <script type="text/javascript" charset="UTF-8" src="./assets/js/maps.googleapis.com/maps-api-v3/api/js/65/1c/intl/es_ALL/infowindow.js"></script>
-  <script type="text/javascript" charset="UTF-8" src="./assets/js/maps.googleapis.com/maps-api-v3/api/js/65/1c/intl/es_ALL/marker.js"></script>
-
   <!-- OFFLINE SVG MASKS PRELOAD -->
   <script>
     window.offlineMasks = {
     "./assets/img/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/mask-scoop-right-73n8fv.svg": `<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 1000 700"><path d="M 780 0 C 880 90 880 180 780 260 C 680 340 680 430 780 520 C 880 610 880 650 780 700 L 0 700 L 0 0 Z" fill="#000"/></svg>`,
-    "./assets/img/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/mask-sunburst-idv71k.svg": `<?xml version="1.0" encoding="UTF-8"?> <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080"> <path d="M 539.00 0.00 L 487.00 44.00 L 426.00 12.00 L 384.00 66.00 L 319.00 47.00 L 289.00 108.00 L 221.00 103.00 L 204.00 169.00 L 136.00 179.00 L 134.00 246.00 L 70.00 269.00 L 82.00 336.00 L 23.00 373.00 L 49.00 436.00 L 0.00 483.00 L 38.00 538.00 L 0.00 596.00 L 49.00 643.00 L 23.00 706.00 L 82.00 743.00 L 70.00 810.00 L 134.00 833.00 L 137.00 901.00 L 204.00 910.00 L 221.00 976.00 L 289.00 971.00 L 319.00 1032.00 L 384.00 1013.00 L 426.00 1067.00 L 487.00 1035.00 L 540.00 1079.00 L 592.00 1035.00 L 653.00 1067.00 L 695.00 1013.00 L 760.00 1032.00 L 790.00 971.00 L 858.00 976.00 L 875.00 910.00 L 943.00 900.00 L 945.00 833.00 L 1009.00 810.00 L 997.00 743.00 L 1055.00 707.00 L 1030.00 643.00 L 1079.00 595.00 L 1041.00 538.00 L 1079.00 483.00 L 1030.00 436.00 L 1056.00 373.00 L 997.00 336.00 L 1009.00 269.00 L 945.00 246.00 L 942.00 178.00 L 875.00 169.00 L 858.00 103.00 L 790.00 108.00 L 760.00 47.00 L 695.00 66.00 L 653.00 12.00 L 592.00 44.00 Z" fill="#000000" fill-rule="evenodd"/> </svg>`,
+    "./assets/img/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/mask-sunburst-idv71k.svg": `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080"> <path d="M 539.00 0.00 L 487.00 44.00 L 426.00 12.00 L 384.00 66.00 L 319.00 47.00 L 289.00 108.00 L 221.00 103.00 L 204.00 169.00 L 136.00 179.00 L 134.00 246.00 L 70.00 269.00 L 82.00 336.00 L 23.00 373.00 L 49.00 436.00 L 0.00 483.00 L 38.00 538.00 L 0.00 596.00 L 49.00 643.00 L 23.00 706.00 L 82.00 743.00 L 70.00 810.00 L 134.00 833.00 L 137.00 901.00 L 204.00 910.00 L 221.00 976.00 L 289.00 971.00 L 319.00 1032.00 L 384.00 1013.00 L 426.00 1067.00 L 487.00 1035.00 L 540.00 1079.00 L 592.00 1035.00 L 653.00 1067.00 L 695.00 1013.00 L 760.00 1032.00 L 790.00 971.00 L 858.00 976.00 L 875.00 910.00 L 943.00 900.00 L 945.00 833.00 L 1009.00 810.00 L 997.00 743.00 L 1055.00 707.00 L 1030.00 643.00 L 1079.00 595.00 L 1041.00 538.00 L 1079.00 483.00 L 1030.00 436.00 L 1056.00 373.00 L 997.00 336.00 L 1009.00 269.00 L 945.00 246.00 L 942.00 178.00 L 875.00 169.00 L 858.00 103.00 L 790.00 108.00 L 760.00 47.00 L 695.00 66.00 L 653.00 12.00 L 592.00 44.00 Z" fill="#000000" fill-rule="evenodd"/> </svg>`,
     "./assets/img/0wq643cy0nlo7vfe-97367883849.shopifypreview.com/cdn/shop/t/5/assets/mask-heart-v2w0uw.svg": `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" zoomAndPan="magnify" viewBox="0 0 810 809.999993" height="1080" preserveAspectRatio="xMidYMid meet" version="1.0"><defs><clipPath id="2562313174"><path d="M 810 245.015625 C 804.628906 94.238281 716.179688 0 600.464844 0 C 512.578125 0.00390625 431.136719 63.285156 397.046875 153.007812 C 364.265625 63.289062 285.972656 0 201.464844 0 C 90.199219 0 5.167969 94.238281 0 245.015625 C 0 558.207031 200.8125 711.84375 397.046875 810 C 601.152344 711.84375 810 558.246094 810 245.015625 Z M 810 245.015625 " clip-rule="nonzero"/></clipPath><clipPath id="45484b89e1"><path d="M 0 0 L 810 0 L 810 810 L 0 810 Z M 0 0 " clip-rule="nonzero"/></clipPath><clipPath id="6e9b432f46"><path d="M 810 245.015625 C 804.628906 94.238281 716.179688 0 600.464844 0 C 512.578125 0.00390625 431.136719 63.285156 397.046875 153.007812 C 364.265625 63.289062 285.972656 0 201.464844 0 C 90.199219 0 5.167969 94.238281 0 245.015625 C 0 558.207031 200.8125 711.84375 397.046875 810 C 601.152344 711.84375 810 558.246094 810 245.015625 Z M 810 245.015625 " clip-rule="nonzero"/></clipPath><clipPath id="ee94ed24c1"><rect x="0" width="810" y="0" height="810"/></clipPath></defs><g clip-path="url(#2562313174)"><g transform="matrix(1, 0, 0, 1, 0, 0.000000000000039746)"><g clip-path="url(#ee94ed24c1)"><g clip-path="url(#45484b89e1)"><g clip-path="url(#6e9b432f46)"><rect x="-178.2" width="1166.4" fill="#000000" height="1166.39999" y="-178.199998" fill-opacity="1"/></g></g></g></g></g></svg>`
     };
   </script>

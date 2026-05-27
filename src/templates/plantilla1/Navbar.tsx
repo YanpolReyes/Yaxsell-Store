@@ -623,10 +623,10 @@ export default function Navbar1() {
         <div className="tpl1-nav-inner">
           {/* Mobile center: address â€” solo visible con navbar expandida (scroll) */}
           {isMobile && scrolled && (
-            <div className="tpl1-nav-mobile-center" aria-live="polite">
+            <a href="/cuenta/direcciones" className="tpl1-nav-mobile-center" aria-live="polite" style={{ textDecoration: 'none' }}>
               <MapPin size={10} color={ORANGE_PRIMARY} />
               <span>{primaryAddress || (isLoggedIn ? 'Mi ubicación' : 'Ubicación')}</span>
-            </div>
+            </a>
           )}
           <a href="/" className="tpl1-nav-logo" onClick={(e) => { e.preventDefault(); window.location.href = '/'; }}>
             {navLogoUrl ? <img src={navLogoUrl} alt="Inicio" style={{ opacity: 0, transition: 'opacity 0.4s ease', animation: 'tpl1LogoFadeIn 0.4s ease forwards' }} /> : null}

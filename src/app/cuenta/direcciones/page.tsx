@@ -226,6 +226,23 @@ export default function DireccionesPage() {
 
     /* Load initial reverse geocode */
     reverseGeocode(center.lat, center.lng);
+
+    /* Auto-request GPS on mobile (like MercadoLibre) */
+    const isMobileView = window.innerWidth < 768;
+    if (isMobileView && !form.fullAddress && navigator.geolocation) {
+      setLocating(true);
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const { latitude: lat, longitude: lng } = pos.coords;
+          map.panTo({ lat, lng });
+          map.setZoom(17);
+          reverseGeocode(lat, lng);
+          setLocating(false);
+        },
+        () => { setLocating(false); },
+        { enableHighAccuracy: true, timeout: 15000 }
+      );
+    }
   }, [showMap, mapReady]);
 
   /* ── Reverse geocode ── */

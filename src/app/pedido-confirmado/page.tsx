@@ -21,29 +21,37 @@ interface BankField {
   icon: React.ReactNode;
 }
 
+const BANK_DEFAULTS = {
+  bankAccountHolder: 'YESBELLA LTDA.',
+  bankRut: '77.270.689-8',
+  bankName: 'BCI',
+  bankAccountType: 'Cuenta Corriente',
+  bankAccountNumber: '32590547',
+  bankEmail: 'kevincoco0819@gmail.com',
+};
+
 function loadBankDetails(): BankField[] {
   try {
     const stored = localStorage.getItem('store_bank_details');
-    if (stored) {
-      const p = JSON.parse(stored);
-      return [
-        { key: 'holder', label: 'Titular',         value: p.bankAccountHolder || 'No configurado', icon: <User size={14} /> },
-        { key: 'rut',    label: 'RUT',             value: p.bankRut           || 'No configurado', icon: <Hash size={14} /> },
-        { key: 'bank',   label: 'Banco',           value: p.bankName          || 'No configurado', icon: <Building2 size={14} /> },
-        { key: 'type',   label: 'Tipo de cuenta',  value: p.bankAccountType   || 'Cuenta Vista',   icon: <CreditCard size={14} /> },
-        { key: 'number', label: 'N° de cuenta',    value: p.bankAccountNumber || 'No configurado', icon: <Hash size={14} /> },
-        { key: 'email',  label: 'Email',           value: p.bankEmail         || 'No configurado', icon: <Mail size={14} /> },
-      ];
-    }
-  } catch {}
-  return [
-    { key: 'holder', label: 'Titular',        value: 'YESBELLA LTDA.',  icon: <User size={14} /> },
-    { key: 'rut',    label: 'RUT',            value: '77.270.689-8',   icon: <Hash size={14} /> },
-    { key: 'bank',   label: 'Banco',          value: 'BCI',            icon: <Building2 size={14} /> },
-    { key: 'type',   label: 'Tipo de cuenta', value: 'Cuenta Corriente', icon: <CreditCard size={14} /> },
-    { key: 'number', label: 'N° de cuenta',   value: '32590547',       icon: <Hash size={14} /> },
-    { key: 'email',  label: 'Email',          value: 'info@yaxsell.com', icon: <Mail size={14} /> },
-  ];
+    const p = stored ? { ...BANK_DEFAULTS, ...JSON.parse(stored) } : BANK_DEFAULTS;
+    return [
+      { key: 'holder', label: 'Titular',         value: p.bankAccountHolder || 'No configurado', icon: <User size={14} /> },
+      { key: 'rut',    label: 'RUT',             value: p.bankRut           || 'No configurado', icon: <Hash size={14} /> },
+      { key: 'bank',   label: 'Banco',           value: p.bankName          || 'No configurado', icon: <Building2 size={14} /> },
+      { key: 'type',   label: 'Tipo de cuenta',  value: p.bankAccountType   || 'Cuenta Vista',   icon: <CreditCard size={14} /> },
+      { key: 'number', label: 'N° de cuenta',    value: p.bankAccountNumber || 'No configurado', icon: <Hash size={14} /> },
+      { key: 'email',  label: 'Email',           value: p.bankEmail         || 'No configurado', icon: <Mail size={14} /> },
+    ];
+  } catch {
+    return [
+      { key: 'holder', label: 'Titular',        value: BANK_DEFAULTS.bankAccountHolder,  icon: <User size={14} /> },
+      { key: 'rut',    label: 'RUT',            value: BANK_DEFAULTS.bankRut,   icon: <Hash size={14} /> },
+      { key: 'bank',   label: 'Banco',          value: BANK_DEFAULTS.bankName,            icon: <Building2 size={14} /> },
+      { key: 'type',   label: 'Tipo de cuenta', value: BANK_DEFAULTS.bankAccountType, icon: <CreditCard size={14} /> },
+      { key: 'number', label: 'N° de cuenta',   value: BANK_DEFAULTS.bankAccountNumber,       icon: <Hash size={14} /> },
+      { key: 'email',  label: 'Email',          value: BANK_DEFAULTS.bankEmail, icon: <Mail size={14} /> },
+    ];
+  }
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string; border: string }> = {

@@ -9,29 +9,37 @@ import { ID } from '@/lib/appwrite';
 import { Order, OrderItem } from '@/types';
 import { generateOrderPdf } from '@/lib/generateOrderPdf';
 
+const BANK_DEFAULTS = {
+  bankAccountHolder: 'YESBELLA LTDA.',
+  bankRut: '77.270.689-8',
+  bankName: 'BCI',
+  bankAccountType: 'Cuenta Corriente',
+  bankAccountNumber: '32590547',
+  bankEmail: 'kevincoco0819@gmail.com',
+};
+
 function getBankDetails(): Record<string, string> {
   try {
     const stored = localStorage.getItem('store_bank_details');
-    if (stored) {
-      const p = JSON.parse(stored);
-      return {
-        'Titular': p.bankAccountHolder || 'No configurado',
-        'RUT': p.bankRut || 'No configurado',
-        'Banco': p.bankName || 'No configurado',
-        'Tipo de cuenta': p.bankAccountType || 'Cuenta Vista',
-        'N° de cuenta': p.bankAccountNumber || 'No configurado',
-        'Email': p.bankEmail || 'No configurado',
-      };
-    }
-  } catch {}
-  return {
-    'Titular': 'Configura en Admin',
-    'RUT': 'No configurado',
-    'Banco': 'No configurado',
-    'Tipo de cuenta': 'Cuenta Vista',
-    'N° de cuenta': 'No configurado',
-    'Email': 'No configurado',
-  };
+    const p = stored ? { ...BANK_DEFAULTS, ...JSON.parse(stored) } : BANK_DEFAULTS;
+    return {
+      'Titular': p.bankAccountHolder || 'No configurado',
+      'RUT': p.bankRut || 'No configurado',
+      'Banco': p.bankName || 'No configurado',
+      'Tipo de cuenta': p.bankAccountType || 'Cuenta Vista',
+      'N° de cuenta': p.bankAccountNumber || 'No configurado',
+      'Email': p.bankEmail || 'No configurado',
+    };
+  } catch {
+    return {
+      'Titular': BANK_DEFAULTS.bankAccountHolder,
+      'RUT': BANK_DEFAULTS.bankRut,
+      'Banco': BANK_DEFAULTS.bankName,
+      'Tipo de cuenta': BANK_DEFAULTS.bankAccountType,
+      'N° de cuenta': BANK_DEFAULTS.bankAccountNumber,
+      'Email': BANK_DEFAULTS.bankEmail,
+    };
+  }
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
