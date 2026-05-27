@@ -2113,10 +2113,7 @@
         const loadScriptOnce = (src, id) => new Promise((resolve, reject) => {
             const existing = id ? document.getElementById(id) : null;
             if (existing) {
-                if (existing.dataset.loaded === "true") return resolve();
-                existing.addEventListener("load", () => resolve(), { once: true });
-                existing.addEventListener("error", reject, { once: true });
-                return;
+                return resolve();
             }
 
             const s = document.createElement("script");
@@ -2921,10 +2918,7 @@
         const loadScriptOnce = (src, id) => new Promise((resolve, reject) => {
             const existing = id ? document.getElementById(id) : null;
             if (existing) {
-                if (existing.dataset.loaded === "true") return resolve();
-                existing.addEventListener("load", () => resolve(), { once: true });
-                existing.addEventListener("error", reject, { once: true });
-                return;
+                return resolve();
             }
 
             const s = document.createElement("script");

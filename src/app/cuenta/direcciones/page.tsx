@@ -173,6 +173,8 @@ export default function DireccionesPage() {
           clearInterval(checkInterval);
         }
       }, 100);
+      // Fallback timeout
+      setTimeout(() => { clearInterval(checkInterval); }, 10000);
       return () => clearInterval(checkInterval);
     }
     // Add script only if it doesn't exist
@@ -180,6 +182,16 @@ export default function DireccionesPage() {
     const s = document.createElement('script');
     s.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&libraries=places&callback=initGMap`;
     s.async = true; s.defer = true;
+    s.onerror = () => {
+      console.error('Failed to load Google Maps API');
+      // Retry once after 2 seconds
+      setTimeout(() => {
+        const s2 = document.createElement('script');
+        s2.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&libraries=places&callback=initGMap`;
+        s2.async = true; s2.defer = true;
+        document.head.appendChild(s2);
+      }, 2000);
+    };
     document.head.appendChild(s);
     return () => { delete (window as any).initGMap; };
   }, []);
@@ -585,7 +597,7 @@ export default function DireccionesPage() {
               </div>
 
               {/* Map container */}
-              <div ref={mapRef} style={{ flex: 1, width: '100%', height: '100%' }} />
+              <div ref={mapRef} style={{ flex: 1, width: '100%', minHeight: 300, height: '100%' }} />
 
               {/* Center pin */}
               <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -100%)', zIndex: 15, pointerEvents: 'none' }}>
