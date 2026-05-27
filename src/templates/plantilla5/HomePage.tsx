@@ -426,10 +426,20 @@ export default function HomePage5() {
         </section>
 
         {/* ═══════════════════════════════════
-            5. SPLIT HERO
+            5. SPLIT HERO (with SVG scoop-right mask)
         ═══════════════════════════════════ */}
+        {/* SVG clipPath definition — scoop-right mask from original index.html */}
+        <svg style={{ position: 'fixed', top: 0, left: 0, width: 1, height: 1, pointerEvents: 'none', opacity: 0.001, overflow: 'hidden' }}>
+          <defs>
+            <clipPath id="clip-split-hero-scoop" clipPathUnits="objectBoundingBox">
+              {/* Normalized version of: M 780 0 C 880 90 880 180 780 260 C 680 340 680 430 780 520 C 880 610 880 650 780 700 L 0 700 L 0 0 Z
+                  viewBox 0 0 1000 700 → divide x by 1000, y by 700 */}
+              <path fillRule="evenodd" clipRule="evenodd" d="M0.78 0 C0.88 0.1286 0.88 0.2571 0.78 0.3714 C0.68 0.4857 0.68 0.6143 0.78 0.7429 C0.88 0.8714 0.88 0.9286 0.78 1 L0 1 L0 0 Z" />
+            </clipPath>
+          </defs>
+        </svg>
         <section className="tpl5-split">
-          <div className="tpl5-split-media">
+          <div className="tpl5-split-media" style={{ clipPath: 'url(#clip-split-hero-scoop)' }}>
             <img src="https://images.unsplash.com/photo-1556228524-1e76c5f8b6c0?q=80&w=800&auto=format&fit=crop" alt="In Focus" loading="lazy" />
           </div>
           <div className="tpl5-split-content">
