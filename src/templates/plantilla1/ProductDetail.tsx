@@ -590,7 +590,6 @@ export default function ProductDetailPlantilla1() {
                   )
                 )}
               </div>
-              <button onClick={() => setPaymentModalOpen(true)} style={{ margin: '6px 0 0', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: ORANGE_PRIMARY, fontWeight: 600, textDecoration: 'underline', textDecorationStyle: 'dotted', display: 'block', textAlign: 'left' }}>Ver los medios de pago</button>
               {isWholesaleQty && <p style={{ margin: '6px 0 0', fontSize: 12, color: '#10b981', fontWeight: 600 }}>✓ Precio mayorista aplicado</p>}
               {hasWholesale && !isWholesaleQty && (
                 <p style={{ margin: '8px 0 0', fontSize: 12, color: ORANGE_PRIMARY, background: '#f9fafb', padding: '6px 10px', borderRadius: 6, border: `1px solid ${PINK_BG_DARK}` }}>
@@ -623,6 +622,8 @@ export default function ProductDetailPlantilla1() {
                 <p style={{ margin: 0, fontSize: 13, color: TEXT_MUTED, lineHeight: 1.6, whiteSpace: 'pre-line', display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{product.DESCRIPTION}</p>
               </div>
             )}
+
+            <button onClick={() => setPaymentModalOpen(true)} style={{ margin: '16px 0 0', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: ORANGE_PRIMARY, fontWeight: 600, textDecoration: 'underline', textDecorationStyle: 'dotted', display: 'block', textAlign: 'left' }}>Ver los medios de pago</button>
           </div>
 
           {buyBoxContent('pd-buy-box pd-buy-box--mobile-inline')}
