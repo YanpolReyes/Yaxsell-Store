@@ -774,7 +774,7 @@ export default function ProductDetailPlantilla1() {
                 <div style={{ background: '#f9fafb', border: '1px solid #f0f0f0', borderRadius: 12, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: TEXT_DARK }}>¿Cómo realizar la transferencia?</p>
                   {[
-                    { step: '1', text: 'Agrega los productos al carrito y ve al checkout.' },
+                    { step: '1', text: 'Agrega los productos al carrito y completa el proceso de pago (checkout).' },
                     { step: '2', text: 'Selecciona "Transferencia bancaria" como medio de pago.' },
                     { step: '3', text: 'Te mostraremos los datos de la cuenta para transferir.' },
                     { step: '4', text: 'Transfiere el monto exacto e indica tu nombre y número de orden como referencia.' },
