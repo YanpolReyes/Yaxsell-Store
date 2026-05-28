@@ -21,7 +21,11 @@ interface CartContextType {
   aperturaSavings: number;
 }
 
+// Legacy per-item collection (kept for admin backward compat on read)
 const CART_ITEMS_COLLECTION = 'cart_items';
+// New: single-document snapshot per user for admin visibility
+const CART_SNAPSHOTS_COLLECTION = 'cart_snapshots';
+
 const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -30,7 +34,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { settings: apertura } = useAperturaPromotion();
   const { user, isLoggedIn } = useAuth();
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const serverLoadedRef = useRef(false);
+  const snapshotDocIdRef = useRef<string | null>(null);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -40,70 +44,65 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, []);
 
-  // Reset server load flag when user logs out
-  useEffect(() => {
-    if (!isLoggedIn) serverLoadedRef.current = false;
-  }, [isLoggedIn]);
-
-  // Load cart from Appwrite ONCE when user first logs in
+  // Find existing snapshot doc ID on login
   useEffect(() => {
     if (!isLoggedIn || !user) return;
-    if (serverLoadedRef.current) return;
-    serverLoadedRef.current = true;
     (async () => {
       try {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
-        const res = await databases.listDocuments(databaseId, CART_ITEMS_COLLECTION, [
-          Query.equal('userId', user.id), Query.limit(100),
+        const res = await databases.listDocuments(databaseId, CART_SNAPSHOTS_COLLECTION, [
+          Query.equal('userId', user.id), Query.limit(1),
         ]);
         if (res.documents.length > 0) {
-          const serverItems: CartItem[] = [];
-          for (const doc of res.documents as any[]) {
+          snapshotDocIdRef.current = res.documents[0].$id;
+          // Load cart from snapshot if localStorage is empty
+          const stored = localStorage.getItem('yaxsel_cart');
+          if (!stored || JSON.parse(stored).length === 0) {
             try {
-              const p = await databases.getDocument(databaseId, 'products', doc.productId);
-              serverItems.push({ product: p as unknown as Product, quantity: doc.quantity || 1 });
+              const snap = JSON.parse((res.documents[0] as any).itemsJson || '[]');
+              if (snap.length > 0) setItems(snap);
             } catch {}
-          }
-          if (serverItems.length > 0) {
-            setItems(serverItems);
           }
         }
       } catch {}
     })();
   }, [isLoggedIn, user?.id]);
 
-  // Save to localStorage + sync to Appwrite
+  // Save to localStorage + debounced snapshot to Appwrite (admin-only, no lag for client)
   useEffect(() => {
     localStorage.setItem('yaxsel_cart', JSON.stringify(items));
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('yaxsel:cart-updated'));
     }
-    // Debounced sync to Appwrite
+    // Debounced snapshot sync — long debounce, single write, no per-item operations
     if (!isLoggedIn || !user) return;
     if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
     syncTimeoutRef.current = setTimeout(async () => {
       try {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
-        // Delete all existing cart items for this user
-        const existing = await databases.listDocuments(databaseId, CART_ITEMS_COLLECTION, [
-          Query.equal('userId', user.id), Query.limit(100),
-        ]);
-        for (const doc of existing.documents) {
-          await databases.deleteDocument(databaseId, CART_ITEMS_COLLECTION, doc.$id);
-        }
-        // Create new cart items
-        for (const item of items) {
-          await databases.createDocument(databaseId, CART_ITEMS_COLLECTION, ID.unique(), {
-            userId: user.id,
-            productId: item.product.$id,
-            quantity: item.quantity,
-            addedAt: Math.floor(Date.now() / 1000),
-          });
+        // Lightweight snapshot: just productId + qty per item
+        const snapshot = items.map(i => ({
+          id: i.product.$id,
+          name: i.product.NAME,
+          qty: i.quantity,
+          price: i.product.PRICE,
+        }));
+        const data = {
+          userId: user.id,
+          itemsJson: JSON.stringify(snapshot),
+          itemCount: items.reduce((s, i) => s + i.quantity, 0),
+          updatedAt: Math.floor(Date.now() / 1000),
+        };
+        if (snapshotDocIdRef.current) {
+          await databases.updateDocument(databaseId, CART_SNAPSHOTS_COLLECTION, snapshotDocIdRef.current, data);
+        } else {
+          const doc = await databases.createDocument(databaseId, CART_SNAPSHOTS_COLLECTION, ID.unique(), data);
+          snapshotDocIdRef.current = doc.$id;
         }
       } catch {}
-    }, 2000);
+    }, 10000); // 10s debounce — no rush, admin just needs to see it eventually
     return () => { if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current); };
   }, [items, isLoggedIn, user?.id]);
 
@@ -133,23 +132,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const removeItem = (productId: string) => {
     setItems(prev => prev.filter(i => i.product.$id !== productId));
-    // Immediately delete from Appwrite so server stays in sync
-    if (isLoggedIn && user) {
-      (async () => {
-        try {
-          const { databases } = getServices();
-          const { databaseId } = getAppwriteConfig();
-          const res = await databases.listDocuments(databaseId, CART_ITEMS_COLLECTION, [
-            Query.equal('userId', user.id),
-            Query.equal('productId', productId),
-            Query.limit(1),
-          ]);
-          for (const doc of res.documents) {
-            await databases.deleteDocument(databaseId, CART_ITEMS_COLLECTION, doc.$id);
-          }
-        } catch {}
-      })();
-    }
   };
 
   const updateQuantity = (productId: string, qty: number) => {
@@ -162,21 +144,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => {
     setItems([]);
-    // Immediately delete all from Appwrite
-    if (isLoggedIn && user) {
-      (async () => {
-        try {
-          const { databases } = getServices();
-          const { databaseId } = getAppwriteConfig();
-          const res = await databases.listDocuments(databaseId, CART_ITEMS_COLLECTION, [
-            Query.equal('userId', user.id), Query.limit(100),
-          ]);
-          for (const doc of res.documents) {
-            await databases.deleteDocument(databaseId, CART_ITEMS_COLLECTION, doc.$id);
-          }
-        } catch {}
-      })();
-    }
   };
 
   const totalItems = items.reduce((s, i) => s + i.quantity, 0);

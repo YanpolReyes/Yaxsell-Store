@@ -11,7 +11,7 @@ import {
   AlertTriangle, ExternalLink, Image as ImageIcon, MessageSquare, Calendar, DollarSign,
   Printer, Send, Ban, StickyNote, MapPinned, Receipt, Tag, XCircle,
 } from 'lucide-react';
-import { getWarehouseLocationFromFeatures, type ProductWarehouseLocation } from '@/lib/product-features';
+import { getWarehouseLocationFromFeatures, getSkuFromFeatures, type ProductWarehouseLocation } from '@/lib/product-features';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; dot: string; icon: string }> = {
   pending:    { label: 'Pendiente de pago', bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400',   icon: '🕐' },
@@ -50,6 +50,7 @@ export default function OrderDetailPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [productStocks, setProductStocks] = useState<Record<string, number>>({});
   const [productLocations, setProductLocations] = useState<Record<string, ProductWarehouseLocation>>({});
+  const [productSkus, setProductSkus] = useState<Record<string, string>>({});
   const [proofOpen, setProofOpen] = useState(false);
   const prevStatusRef = useRef<string | null>(null);
 
@@ -80,16 +81,19 @@ export default function OrderDetailPage() {
       if (productIds.length > 0) {
         const stocks: Record<string, number> = {};
         const locs: Record<string, ProductWarehouseLocation> = {};
+        const skus: Record<string, string> = {};
         await Promise.all(productIds.map(async (pid) => {
           try {
             const product = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, pid);
-            const doc = product as { STOCK?: number; FEATURES?: string };
+            const doc = product as { STOCK?: number; FEATURES?: string; TAGS?: string; jumpseller_id?: string; sku?: string; section?: number };
             stocks[pid] = doc.STOCK || 0;
-            locs[pid] = getWarehouseLocationFromFeatures(doc.FEATURES);
+            locs[pid] = getWarehouseLocationFromFeatures(doc.FEATURES, doc.section);
+            skus[pid] = getSkuFromFeatures(doc.FEATURES, doc.TAGS, doc.jumpseller_id, doc.sku);
           } catch {}
         }));
         setProductStocks(stocks);
         setProductLocations(locs);
+        setProductSkus(skus);
       } else {
         setProductLocations({});
       }
@@ -222,11 +226,19 @@ export default function OrderDetailPage() {
       {/* Print styles */}
       <style>{`
         @media print {
-          body * { visibility: hidden; }
-          .print-area, .print-area * { visibility: visible; }
-          .print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
           .no-print { display: none !important; }
-          .print-break { page-break-inside: avoid; }
+          .print-break { page-break-inside: avoid; break-inside: avoid; }
+          body { background: #fff !important; }
+          /* Single column layout for print */
+          .print-area { width: 100% !important; padding: 0 !important; margin: 0 !important; }
+          .print-area .lg\:grid-cols-3 { grid-template-columns: 1fr !important; }
+          .print-area .lg\:col-span-2 { grid-column: span 1 !important; }
+          /* No forced page breaks - let content flow naturally */
+          .print-info-block { page-break-after: auto; }
+          .print-products-block { page-break-before: auto; }
+          /* Remove shadows/borders for cleaner print */
+          .print-area .shadow-sm { box-shadow: none !important; }
+          .print-area .divide-y > div { page-break-inside: avoid; break-inside: avoid; }
         }
       `}</style>
 
@@ -279,7 +291,7 @@ export default function OrderDetailPage() {
       </div>
 
       {/* Summary cards (mobile-friendly) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+      <div className="no-print grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 p-3 sm:p-4 text-center shadow-sm">
           <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide font-medium">Total</p>
           <p className="text-lg sm:text-xl font-bold text-gray-900 mt-0.5">{fmt(order.TOTAL)}</p>
@@ -300,7 +312,7 @@ export default function OrderDetailPage() {
 
       {/* Status Stepper */}
       {!isCancelled ? (
-        <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm p-3 sm:p-5 print-break">
+        <div className="no-print bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm p-3 sm:p-5">
           <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <span className="text-base sm:text-lg">{sc.icon}</span>
@@ -345,7 +357,7 @@ export default function OrderDetailPage() {
         </div>
       ) : (
         /* Cancelled banner */
-        <div className="rounded-xl sm:rounded-2xl border border-red-200 bg-red-50 p-3 sm:p-5 flex items-center justify-between flex-wrap gap-3 sm:gap-4">
+        <div className="no-print rounded-xl sm:rounded-2xl border border-red-200 bg-red-50 p-3 sm:p-5 flex items-center justify-between flex-wrap gap-3 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-red-100 border border-red-200 flex items-center justify-center flex-shrink-0">
               <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
@@ -367,100 +379,42 @@ export default function OrderDetailPage() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-5">
-        {/* Left column */}
-        <div className="lg:col-span-2 space-y-3 sm:space-y-5">
-          {/* Products */}
+        {/* ── PAGE 1: Info block (header + customer + shipping + totals) ── */}
+        <div className="print-info-block lg:col-span-2 space-y-3 sm:space-y-5">
+          {/* Order header */}
           <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden print-break">
             <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Package className="w-4 h-4 text-indigo-500" />
-                <p className="font-semibold text-gray-900 text-xs sm:text-sm">Productos ({items.length})</p>
+                <p className="font-semibold text-gray-900 text-xs sm:text-sm">Pedido {order.ORDERCODE || '#' + order.$id.slice(-6)}</p>
               </div>
-              <p className="text-[10px] sm:text-xs text-gray-400">{totalItems} unidades</p>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {items.map((it, i) => {
-                const currentStock = it.id ? (productStocks[it.id] ?? 0) : 0;
-                const remainingStock = order.STATUS === 'pending' ? currentStock - it.qty : currentStock;
-                const loc = it.id ? productLocations[it.id] : null;
-                return (
-                  <div key={i} className="flex items-center gap-2.5 sm:gap-4 px-3 sm:px-5 py-2.5 sm:py-3.5 hover:bg-gray-50/50 transition">
-                    <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                      {it.img
-                        ? <img src={it.img} alt="" className="w-full h-full object-contain p-0.5 sm:p-1" />
-                        : <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">{it.name}</p>
-                      <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5">
-                        <span className="text-[10px] sm:text-xs text-gray-500">{fmt(it.price)} c/u</span>
-                        <span className="text-gray-300">×</span>
-                        <span className="text-[10px] sm:text-xs font-semibold text-gray-700">{it.qty}</span>
-                        {it.originalPrice && it.originalPrice !== it.price && (
-                          <span className="text-[9px] sm:text-[10px] line-through text-gray-300">{fmt(it.originalPrice)}</span>
-                        )}
-                      </div>
-                      {loc?.label && (
-                        <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 text-[10px] sm:text-xs font-bold print:bg-indigo-50 print:border print:border-indigo-200">
-                          <MapPin className="w-3 h-3 shrink-0" />
-                          {loc.label}
-                        </span>
-                      )}
-                      {it.id && (
-                        <div className="flex items-center gap-1 sm:gap-1.5 mt-1 flex-wrap no-print">
-                          <span className={`text-[9px] sm:text-[10px] font-semibold px-1 sm:px-1.5 py-0.5 rounded ${remainingStock <= 0 ? 'bg-red-100 text-red-600' : remainingStock <= 5 ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-500'}`}>
-                            Stock: {currentStock}
-                          </span>
-                          {order.STATUS === 'pending' && (
-                            <span className={`text-[9px] sm:text-[10px] font-semibold px-1 sm:px-1.5 py-0.5 rounded ${remainingStock <= 0 ? 'bg-red-100 text-red-600' : remainingStock <= 5 ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                              → {remainingStock}
-                            </span>
-                          )}
-                          {order.STATUS !== 'pending' && (
-                            <span className="text-[9px] sm:text-[10px] font-semibold px-1 sm:px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-600">
-                              {remainingStock} disp
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-xs sm:text-sm font-bold text-gray-900 flex-shrink-0">{fmt(it.total || it.price * it.qty)}</p>
-                  </div>
-                );
-              })}
-            </div>
-            {/* Totals */}
-            <div className="px-3 sm:px-5 py-3 sm:py-4 bg-gradient-to-r from-gray-50 to-white border-t border-gray-100 space-y-1.5 sm:space-y-2">
-              <div className="flex justify-between text-xs sm:text-sm">
-                <span className="text-gray-500">Subtotal</span>
-                <span className="text-gray-700">{fmt(order.SUBTOTAL || order.TOTAL)}</span>
-              </div>
-              {order.SHIPPINGCOST > 0 ? (
-                <div className="flex justify-between text-xs sm:text-sm">
-                  <span className="text-gray-500 flex items-center gap-1"><Truck className="w-3 h-3" /> Envío</span>
-                  <span className="text-gray-700">{fmt(order.SHIPPINGCOST)}</span>
-                </div>
-              ) : (
-                <div className="flex justify-between text-xs sm:text-sm">
-                  <span className="text-gray-500 flex items-center gap-1"><Truck className="w-3 h-3" /> Envío</span>
-                  <span className="text-emerald-600 text-[10px] sm:text-xs font-medium">A coordinar</span>
-                </div>
-              )}
-              {order.DISCOUNTAMOUNT && order.DISCOUNTAMOUNT > 0 && (
-                <div className="flex justify-between text-xs sm:text-sm">
-                  <span className="text-emerald-600 flex items-center gap-1"><Tag className="w-3 h-3" /> Descuento {order.COUPONCODE && <span className="font-mono text-[10px] sm:text-xs">({order.COUPONCODE})</span>}</span>
-                  <span className="text-emerald-600 font-medium">-{fmt(order.DISCOUNTAMOUNT)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-base sm:text-lg font-bold pt-1.5 sm:pt-2 border-t border-gray-200">
-                <span className="text-gray-900">Total</span>
-                <span className="text-gray-900">{fmt(order.TOTAL)}</span>
-              </div>
+              <p className="text-[10px] sm:text-xs text-gray-400">{fmtDate(date.getTime())} · {fmtTime(date.getTime())}</p>
             </div>
           </div>
 
+          {/* Location Map */}
+          {order.ADDRESS && (
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-2">
+                <MapPinned className="w-4 h-4 text-indigo-500" />
+                <p className="font-semibold text-gray-900 text-xs sm:text-sm">Ubicación de entrega</p>
+              </div>
+              <div className="aspect-[21/9] w-full">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(`${order.ADDRESS}, ${order.COMUNA}, ${order.REGION}, Chile`)}`}>
+                </iframe>
+              </div>
+            </div>
+          )}
+
           {/* Notes & Timeline */}
-          <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden print-break">
+          <div className="no-print bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-2">
               <StickyNote className="w-4 h-4 text-indigo-500" />
               <p className="font-semibold text-gray-900 text-xs sm:text-sm">Notas y seguimiento</p>
@@ -509,7 +463,7 @@ export default function OrderDetailPage() {
           </div>
         </div>
 
-        {/* Right column */}
+        {/* Right column — Customer + Shipping (visible in print) */}
         <div className="space-y-3 sm:space-y-5">
           {/* Customer */}
           <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden print-break">
@@ -530,11 +484,11 @@ export default function OrderDetailPage() {
             <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-2">
               <MapPinned className="w-4 h-4 text-indigo-500" />
               <p className="font-semibold text-gray-900 text-xs sm:text-sm">Envío</p>
-              {order.SHIPPINGAGENCY && (
-                <span className="ml-auto text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 bg-violet-100 text-violet-700 rounded-full">{order.SHIPPINGAGENCY}</span>
-              )}
             </div>
             <div className="p-3 sm:p-5 space-y-1.5 sm:space-y-2">
+              {order.SHIPPINGAGENCY && (
+                <p className="text-sm sm:text-base font-bold text-violet-700 print:text-black">{order.SHIPPINGAGENCY}</p>
+              )}
               <p className="text-xs sm:text-sm font-medium text-gray-900">{order.ADDRESS || 'Sin dirección'}</p>
               <p className="text-[10px] sm:text-xs text-gray-500">{order.COMUNA}{order.COMUNA && order.REGION ? ', ' : ''}{order.REGION}</p>
               {order.ADDITIONALINFO && (
@@ -552,7 +506,7 @@ export default function OrderDetailPage() {
           </div>
 
           {/* Payment */}
-          <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden print-break">
+          <div className="no-print bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-2">
               <Receipt className="w-4 h-4 text-indigo-500" />
               <p className="font-semibold text-gray-900 text-xs sm:text-sm">Pago</p>
@@ -610,6 +564,104 @@ export default function OrderDetailPage() {
                 <Ban className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Cancelar pedido
               </button>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── PAGE 2+: Products block ── */}
+      <div className="print-products-block bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Package className="w-4 h-4 text-indigo-500" />
+            <p className="font-semibold text-gray-900 text-xs sm:text-sm">Productos ({items.length})</p>
+          </div>
+          <p className="text-[10px] sm:text-xs text-gray-400">{totalItems} unidades</p>
+        </div>
+        <div className="divide-y divide-gray-50">
+          {items.map((it, i) => {
+            const currentStock = it.id ? (productStocks[it.id] ?? 0) : 0;
+            const remainingStock = order.STATUS === 'pending' ? currentStock - it.qty : currentStock;
+            const loc = it.id ? productLocations[it.id] : null;
+            const sku = it.id ? productSkus[it.id] : '';
+            return (
+              <div key={i} className="flex items-center gap-2.5 sm:gap-4 px-3 sm:px-5 py-2.5 sm:py-3.5 hover:bg-gray-50/50 transition">
+                <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                  {it.img
+                    ? <img src={it.img} alt="" className="w-full h-full object-contain p-0.5 sm:p-1" />
+                    : <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">{it.name}</p>
+                  <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5">
+                    <span className="text-[10px] sm:text-xs text-gray-500">{fmt(it.price)} c/u</span>
+                    <span className="text-gray-300">×</span>
+                    <span className="text-[10px] sm:text-xs font-semibold text-gray-700">{it.qty}</span>
+                    {it.originalPrice && it.originalPrice !== it.price && (
+                      <span className="text-[9px] sm:text-[10px] line-through text-gray-300">{fmt(it.originalPrice)}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                    {sku && (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-800 text-[10px] sm:text-xs font-bold print:bg-violet-50 print:border print:border-violet-200">
+                        <Hash className="w-3 h-3 shrink-0" />{sku}
+                      </span>
+                    )}
+                    {loc?.label && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 text-[10px] sm:text-xs font-bold print:bg-indigo-50 print:border print:border-indigo-200">
+                        <MapPin className="w-3 h-3 shrink-0" />
+                        {loc.label}
+                      </span>
+                    )}
+                  </div>
+                  {it.id && (
+                    <div className="flex items-center gap-1 sm:gap-1.5 mt-1 flex-wrap no-print">
+                      <span className={`text-[9px] sm:text-[10px] font-semibold px-1 sm:px-1.5 py-0.5 rounded ${remainingStock <= 0 ? 'bg-red-100 text-red-600' : remainingStock <= 5 ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-500'}`}>
+                        Stock: {currentStock}
+                      </span>
+                      {order.STATUS === 'pending' && (
+                        <span className={`text-[9px] sm:text-[10px] font-semibold px-1 sm:px-1.5 py-0.5 rounded ${remainingStock <= 0 ? 'bg-red-100 text-red-600' : remainingStock <= 5 ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                          → {remainingStock}
+                        </span>
+                      )}
+                      {order.STATUS !== 'pending' && (
+                        <span className="text-[9px] sm:text-[10px] font-semibold px-1 sm:px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-600">
+                          {remainingStock} disp
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs sm:text-sm font-bold text-gray-900 flex-shrink-0">{fmt(it.total || it.price * it.qty)}</p>
+              </div>
+            );
+          })}
+        </div>
+        {/* Totals at the end */}
+        <div className="px-3 sm:px-5 py-3 sm:py-4 bg-gradient-to-r from-gray-50 to-white border-t border-gray-100 space-y-1.5 sm:space-y-2">
+          <div className="flex justify-between text-xs sm:text-sm">
+            <span className="text-gray-500">Subtotal</span>
+            <span className="text-gray-700">{fmt(order.SUBTOTAL || order.TOTAL)}</span>
+          </div>
+          {order.SHIPPINGCOST > 0 ? (
+            <div className="flex justify-between text-xs sm:text-sm">
+              <span className="text-gray-500 flex items-center gap-1"><Truck className="w-3 h-3" /> Envío</span>
+              <span className="text-gray-700">{fmt(order.SHIPPINGCOST)}</span>
+            </div>
+          ) : (
+            <div className="flex justify-between text-xs sm:text-sm">
+              <span className="text-gray-500 flex items-center gap-1"><Truck className="w-3 h-3" /> Envío</span>
+              <span className="text-emerald-600 text-[10px] sm:text-xs font-medium">Pago contraentrega</span>
+            </div>
+          )}
+          {order.DISCOUNTAMOUNT && order.DISCOUNTAMOUNT > 0 && (
+            <div className="flex justify-between text-xs sm:text-sm">
+              <span className="text-emerald-600 flex items-center gap-1"><Tag className="w-3 h-3" /> Descuento {order.COUPONCODE && <span className="font-mono text-[10px] sm:text-xs">({order.COUPONCODE})</span>}</span>
+              <span className="text-emerald-600 font-medium">-{fmt(order.DISCOUNTAMOUNT)}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-base sm:text-lg font-bold pt-1.5 sm:pt-2 border-t border-gray-200">
+            <span className="text-gray-900">Total</span>
+            <span className="text-gray-900">{fmt(order.TOTAL)}</span>
           </div>
         </div>
       </div>

@@ -1,0 +1,498 @@
+:root,
+     
+    .color-scheme-1 { 
+        --gradient-color: linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(135, 116, 94, 1) 100%);
+        --color-background: rgba(255 255 255 / 1.0);
+        --color-secondary-background: rgba(239 230 223 / 1.0); 
+        --color-heading: rgba(135 116 94 / 1.0); 
+        --color-secondary-heading: rgba(0 0 0 / 1.0);
+        --color-text: rgba(0 0 0 / 1.0); 
+        --color-secondary-text: rgba(0 0 0 / 1.0);
+        --color-link: rgba(135 116 94 / 1.0);
+        --color-link-hover: rgba(0 0 0 / 1.0);
+        --color-border: rgba(70 70 70 / 1.0);
+        --color-shadow: rgba(0 0 0 / 0.68);
+        --color-primary-button-background: rgba(135 116 94 / 1.0);
+        --color-primary-button-text: rgba(255 255 255 / 1.0);
+        --color-primary-button-border: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-background: rgba(239 230 223 / 1.0);
+        --color-primary-button-hover-text: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-border: rgba(239 230 223 / 1.0);
+        --color-secondary-button-background: rgba(255 255 255 / 1.0);
+        --color-secondary-button-text: rgba(135 116 94 / 1.0);
+        --color-secondary-button-border: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-background: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-text: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-border: rgba(135 116 94 / 1.0);
+        --color-disbled-button-background: rgba(201 201 201 / 1.0);
+        --color-disabled-button-text: rgba(0 0 0 / 1.0);
+        --color-input-background: rgba(249 246 242 / 1.0);
+        --color-input-text: rgba(0 0 0 / 1.0);
+        --color-input-border: rgba();
+        --color-highlight: rgba(255 255 255 / 1.0);
+        --color-arrows-bg: rgba(135 116 94 / 1.0);
+        --color-arrows: rgba(255 255 255 / 1.0);
+        --op-bg: rgba(135 116 94 / 1.0);
+        --op-text: rgba(255 255 255 / 1.0);
+        --op-border: rgba(135 116 94 / 1.0);
+        --op-bg-secondary: rgba(255 255 255 / 1.0);
+        --op-text-secondary: rgba(135 116 94 / 1.0);
+        --op-border-secondary: rgba(135 116 94 / 1.0);
+      }
+  
+     
+    .color-scheme-2 { 
+        --gradient-color: linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(135, 116, 94, 1) 100%);
+        --color-background: rgba(135 116 94 / 1.0);
+        --color-secondary-background: rgba(193 174 153 / 1.0); 
+        --color-heading: rgba(255 255 255 / 1.0); 
+        --color-secondary-heading: rgba(193 174 153 / 1.0);
+        --color-text: rgba(255 255 255 / 1.0); 
+        --color-secondary-text: rgba(255 255 255 / 1.0);
+        --color-link: rgba(255 255 255 / 1.0);
+        --color-link-hover: rgba(0 0 0 / 1.0);
+        --color-border: rgba(255 255 255 / 1.0);
+        --color-shadow: rgba(0 0 0 / 0.54);
+        --color-primary-button-background: rgba(135 116 94 / 1.0);
+        --color-primary-button-text: rgba(255 255 255 / 1.0);
+        --color-primary-button-border: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-background: rgba(239 230 223 / 1.0);
+        --color-primary-button-hover-text: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-border: rgba(239 230 223 / 1.0);
+        --color-secondary-button-background: rgba(255 255 255 / 1.0);
+        --color-secondary-button-text: rgba(135 116 94 / 1.0);
+        --color-secondary-button-border: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-background: rgba(193 174 153 / 1.0);
+        --color-secondary-button-hover-text: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-border: rgba(193 174 153 / 1.0);
+        --color-disbled-button-background: rgba(201 201 201 / 1.0);
+        --color-disabled-button-text: rgba(0 0 0 / 1.0);
+        --color-input-background: rgba(247 247 247 / 1.0);
+        --color-input-text: rgba(0 0 0 / 1.0);
+        --color-input-border: rgba();
+        --color-highlight: rgba(255 255 255 / 1.0);
+        --color-arrows-bg: rgba(255 255 255 / 1.0);
+        --color-arrows: rgba(135 116 94 / 1.0);
+        --op-bg: rgba(193 174 153 / 1.0);
+        --op-text: rgba(255 255 255 / 1.0);
+        --op-border: rgba(193 174 153 / 1.0);
+        --op-bg-secondary: rgba(255 255 255 / 1.0);
+        --op-text-secondary: rgba(193 174 153 / 1.0);
+        --op-border-secondary: rgba(135 116 94 / 1.0);
+      }
+  
+     
+    .color-scheme-2d1b4e71-b108-4c32-9448-9b8545727293 { 
+        --gradient-color: linear-gradient(90deg, rgba(135, 116, 94, 1) 25.96%, rgba(233, 226, 218, 1) 100%);
+        --color-background: rgba(255 255 255 / 1.0);
+        --color-secondary-background: rgba(239 230 223 / 1.0); 
+        --color-heading: rgba(135 116 94 / 1.0); 
+        --color-secondary-heading: rgba(255 255 255 / 1.0);
+        --color-text: rgba(135 116 94 / 1.0); 
+        --color-secondary-text: rgba(255 255 255 / 1.0);
+        --color-link: rgba(135 116 94 / 1.0);
+        --color-link-hover: rgba(0 0 0 / 1.0);
+        --color-border: rgba(70 70 70 / 1.0);
+        --color-shadow: rgba(0 0 0 / 0.54);
+        --color-primary-button-background: rgba(135 116 94 / 1.0);
+        --color-primary-button-text: rgba(255 255 255 / 1.0);
+        --color-primary-button-border: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-background: rgba(239 230 223 / 1.0);
+        --color-primary-button-hover-text: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-border: rgba(239 230 223 / 1.0);
+        --color-secondary-button-background: rgba(255 255 255 / 1.0);
+        --color-secondary-button-text: rgba(135 116 94 / 1.0);
+        --color-secondary-button-border: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-background: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-text: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-border: rgba(255 255 255 / 1.0);
+        --color-disbled-button-background: rgba(201 201 201 / 1.0);
+        --color-disabled-button-text: rgba(0 0 0 / 1.0);
+        --color-input-background: rgba(247 247 247 / 1.0);
+        --color-input-text: rgba(0 0 0 / 1.0);
+        --color-input-border: rgba();
+        --color-highlight: rgba(255 255 255 / 1.0);
+        --color-arrows-bg: rgba(255 255 255 / 1.0);
+        --color-arrows: rgba(135 116 94 / 1.0);
+        --op-bg: rgba(135 116 94 / 1.0);
+        --op-text: rgba(255 255 255 / 1.0);
+        --op-border: rgba(135 116 94 / 1.0);
+        --op-bg-secondary: rgba(255 255 255 / 1.0);
+        --op-text-secondary: rgba(135 116 94 / 1.0);
+        --op-border-secondary: rgba(135 116 94 / 1.0);
+      }
+  
+     
+    .color-scheme-b973f024-6d84-40e5-a6a2-d5e6e7397368 { 
+        --gradient-color: linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(135, 116, 94, 1) 100%);
+        --color-background: rgba(255 255 255 / 1.0);
+        --color-secondary-background: rgba(135 116 94 / 1.0); 
+        --color-heading: rgba(135 116 94 / 1.0); 
+        --color-secondary-heading: rgba(255 255 255 / 1.0);
+        --color-text: rgba(70 70 70 / 1.0); 
+        --color-secondary-text: rgba(255 255 255 / 1.0);
+        --color-link: rgba(135 116 94 / 1.0);
+        --color-link-hover: rgba(0 0 0 / 1.0);
+        --color-border: rgba(70 70 70 / 1.0);
+        --color-shadow: rgba(0 0 0 / 0.54);
+        --color-primary-button-background: rgba(135 116 94 / 1.0);
+        --color-primary-button-text: rgba(255 255 255 / 1.0);
+        --color-primary-button-border: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-background: rgba(239 230 223 / 1.0);
+        --color-primary-button-hover-text: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-border: rgba(239 230 223 / 1.0);
+        --color-secondary-button-background: rgba(255 255 255 / 1.0);
+        --color-secondary-button-text: rgba(135 116 94 / 1.0);
+        --color-secondary-button-border: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-background: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-text: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-border: rgba(135 116 94 / 1.0);
+        --color-disbled-button-background: rgba(201 201 201 / 1.0);
+        --color-disabled-button-text: rgba(0 0 0 / 1.0);
+        --color-input-background: rgba(247 247 247 / 1.0);
+        --color-input-text: rgba(0 0 0 / 1.0);
+        --color-input-border: rgba();
+        --color-highlight: rgba(255 255 255 / 1.0);
+        --color-arrows-bg: rgba(255 255 255 / 1.0);
+        --color-arrows: rgba(135 116 94 / 1.0);
+        --op-bg: rgba(135 116 94 / 1.0);
+        --op-text: rgba(255 255 255 / 1.0);
+        --op-border: rgba(135 116 94 / 1.0);
+        --op-bg-secondary: rgba(255 255 255 / 1.0);
+        --op-text-secondary: rgba(135 116 94 / 1.0);
+        --op-border-secondary: rgba(135 116 94 / 1.0);
+      }
+  
+     
+    .color-scheme-84c8329e-4eb5-472a-8cd7-bbc17f47a32f { 
+        --gradient-color: linear-gradient(90deg, rgba(135, 116, 94, 1) 25.96%, rgba(233, 226, 218, 1) 100%);
+        --color-background: rgba(255 255 255 / 1.0);
+        --color-secondary-background: rgba(239 230 223 / 1.0); 
+        --color-heading: rgba(255 255 255 / 1.0); 
+        --color-secondary-heading: rgba(135 116 94 / 1.0);
+        --color-text: rgba(255 255 255 / 1.0); 
+        --color-secondary-text: rgba(70 70 70 / 1.0);
+        --color-link: rgba(135 116 94 / 1.0);
+        --color-link-hover: rgba(0 0 0 / 1.0);
+        --color-border: rgba(70 70 70 / 1.0);
+        --color-shadow: rgba(0 0 0 / 0.54);
+        --color-primary-button-background: rgba(193 174 153 / 1.0);
+        --color-primary-button-text: rgba(255 255 255 / 1.0);
+        --color-primary-button-border: rgba(193 174 153 / 1.0);
+        --color-primary-button-hover-background: rgba(239 230 223 / 1.0);
+        --color-primary-button-hover-text: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-border: rgba(239 230 223 / 1.0);
+        --color-secondary-button-background: rgba(255 255 255 / 1.0);
+        --color-secondary-button-text: rgba(135 116 94 / 1.0);
+        --color-secondary-button-border: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-background: rgba(193 174 153 / 1.0);
+        --color-secondary-button-hover-text: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-border: rgba(193 174 153 / 1.0);
+        --color-disbled-button-background: rgba(201 201 201 / 1.0);
+        --color-disabled-button-text: rgba(0 0 0 / 1.0);
+        --color-input-background: rgba(247 247 247 / 1.0);
+        --color-input-text: rgba(0 0 0 / 1.0);
+        --color-input-border: rgba();
+        --color-highlight: rgba(255 255 255 / 1.0);
+        --color-arrows-bg: rgba(255 255 255 / 1.0);
+        --color-arrows: rgba(135 116 94 / 1.0);
+        --op-bg: rgba(193 174 153 / 1.0);
+        --op-text: rgba(255 255 255 / 1.0);
+        --op-border: rgba(193 174 153 / 1.0);
+        --op-bg-secondary: rgba(255 255 255 / 1.0);
+        --op-text-secondary: rgba(193 174 153 / 1.0);
+        --op-border-secondary: rgba(135 116 94 / 1.0);
+      }
+  
+     
+    .color-scheme-da630a43-2bcc-4e62-a091-029f98b05b7d { 
+        --gradient-color: linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(135, 116, 94, 1) 100%);
+        --color-background: rgba(135 116 94 / 1.0);
+        --color-secondary-background: rgba(239 230 223 / 1.0); 
+        --color-heading: rgba(255 255 255 / 1.0); 
+        --color-secondary-heading: rgba(255 255 255 / 1.0);
+        --color-text: rgba(255 255 255 / 1.0); 
+        --color-secondary-text: rgba(255 255 255 / 1.0);
+        --color-link: rgba(135 116 94 / 1.0);
+        --color-link-hover: rgba(0 0 0 / 1.0);
+        --color-border: rgba(70 70 70 / 1.0);
+        --color-shadow: rgba(0 0 0 / 0.54);
+        --color-primary-button-background: rgba(135 116 94 / 1.0);
+        --color-primary-button-text: rgba(255 255 255 / 1.0);
+        --color-primary-button-border: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-background: rgba(239 230 223 / 1.0);
+        --color-primary-button-hover-text: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-border: rgba(239 230 223 / 1.0);
+        --color-secondary-button-background: rgba(255 255 255 / 1.0);
+        --color-secondary-button-text: rgba(135 116 94 / 1.0);
+        --color-secondary-button-border: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-background: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-text: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-border: rgba(135 116 94 / 1.0);
+        --color-disbled-button-background: rgba(201 201 201 / 1.0);
+        --color-disabled-button-text: rgba(0 0 0 / 1.0);
+        --color-input-background: rgba(247 247 247 / 1.0);
+        --color-input-text: rgba(0 0 0 / 1.0);
+        --color-input-border: rgba();
+        --color-highlight: rgba(255 255 255 / 1.0);
+        --color-arrows-bg: rgba(255 255 255 / 1.0);
+        --color-arrows: rgba(135 116 94 / 1.0);
+        --op-bg: rgba(135 116 94 / 1.0);
+        --op-text: rgba(255 255 255 / 1.0);
+        --op-border: rgba(135 116 94 / 1.0);
+        --op-bg-secondary: rgba(255 255 255 / 1.0);
+        --op-text-secondary: rgba(135 116 94 / 1.0);
+        --op-border-secondary: rgba(135 116 94 / 1.0);
+      }
+  
+     
+    .color-scheme-ae685a78-7dc1-4951-a447-a297c9d753bf { 
+        --gradient-color: linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(135, 116, 94, 1) 100%);
+        --color-background: rgba(239 230 223 / 1.0);
+        --color-secondary-background: rgba(239 230 223 / 1.0); 
+        --color-heading: rgba(135 116 94 / 1.0); 
+        --color-secondary-heading: rgba(0 0 0 / 1.0);
+        --color-text: rgba(0 0 0 / 1.0); 
+        --color-secondary-text: rgba(0 0 0 / 1.0);
+        --color-link: rgba(135 116 94 / 1.0);
+        --color-link-hover: rgba(0 0 0 / 1.0);
+        --color-border: rgba(135 116 94 / 1.0);
+        --color-shadow: rgba(0 0 0 / 0.68);
+        --color-primary-button-background: rgba(135 116 94 / 1.0);
+        --color-primary-button-text: rgba(255 255 255 / 1.0);
+        --color-primary-button-border: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-background: rgba(239 230 223 / 1.0);
+        --color-primary-button-hover-text: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-border: rgba(239 230 223 / 1.0);
+        --color-secondary-button-background: rgba(255 255 255 / 1.0);
+        --color-secondary-button-text: rgba(135 116 94 / 1.0);
+        --color-secondary-button-border: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-background: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-text: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-border: rgba(135 116 94 / 1.0);
+        --color-disbled-button-background: rgba(201 201 201 / 1.0);
+        --color-disabled-button-text: rgba(0 0 0 / 1.0);
+        --color-input-background: rgba(249 246 242 / 1.0);
+        --color-input-text: rgba(0 0 0 / 1.0);
+        --color-input-border: rgba();
+        --color-highlight: rgba(255 255 255 / 1.0);
+        --color-arrows-bg: rgba(135 116 94 / 1.0);
+        --color-arrows: rgba(255 255 255 / 1.0);
+        --op-bg: rgba(135 116 94 / 1.0);
+        --op-text: rgba(255 255 255 / 1.0);
+        --op-border: rgba(135 116 94 / 1.0);
+        --op-bg-secondary: rgba(255 255 255 / 1.0);
+        --op-text-secondary: rgba(135 116 94 / 1.0);
+        --op-border-secondary: rgba(135 116 94 / 1.0);
+      }
+  
+     
+    .color-scheme-dc9cba78-6319-4050-ab23-1211096fa0c4 { 
+        --gradient-color: linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(135, 116, 94, 1) 100%);
+        --color-background: rgba(193 174 153 / 1.0);
+        --color-secondary-background: rgba(239 230 223 / 1.0); 
+        --color-heading: rgba(255 255 255 / 1.0); 
+        --color-secondary-heading: rgba(255 255 255 / 1.0);
+        --color-text: rgba(70 70 70 / 1.0); 
+        --color-secondary-text: rgba(0 0 0 / 1.0);
+        --color-link: rgba(135 116 94 / 1.0);
+        --color-link-hover: rgba(0 0 0 / 1.0);
+        --color-border: rgba(70 70 70 / 1.0);
+        --color-shadow: rgba(0 0 0 / 0.68);
+        --color-primary-button-background: rgba(135 116 94 / 1.0);
+        --color-primary-button-text: rgba(255 255 255 / 1.0);
+        --color-primary-button-border: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-background: rgba(239 230 223 / 1.0);
+        --color-primary-button-hover-text: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-border: rgba(239 230 223 / 1.0);
+        --color-secondary-button-background: rgba(255 255 255 / 1.0);
+        --color-secondary-button-text: rgba(135 116 94 / 1.0);
+        --color-secondary-button-border: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-background: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-text: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-border: rgba(135 116 94 / 1.0);
+        --color-disbled-button-background: rgba(201 201 201 / 1.0);
+        --color-disabled-button-text: rgba(0 0 0 / 1.0);
+        --color-input-background: rgba(249 246 242 / 1.0);
+        --color-input-text: rgba(0 0 0 / 1.0);
+        --color-input-border: rgba();
+        --color-highlight: rgba(255 255 255 / 1.0);
+        --color-arrows-bg: rgba(255 255 255 / 1.0);
+        --color-arrows: rgba(135 116 94 / 1.0);
+        --op-bg: rgba(135 116 94 / 1.0);
+        --op-text: rgba(255 255 255 / 1.0);
+        --op-border: rgba(135 116 94 / 1.0);
+        --op-bg-secondary: rgba(255 255 255 / 1.0);
+        --op-text-secondary: rgba(135 116 94 / 1.0);
+        --op-border-secondary: rgba(135 116 94 / 1.0);
+      }
+  
+     
+    .color-scheme-47bcfa67-7cf1-4833-9106-56edbe076d5d { 
+        --gradient-color: linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(135, 116, 94, 1) 100%);
+        --color-background: rgba(0 0 0 / 0.79);
+        --color-secondary-background: rgba(239 230 223 / 1.0); 
+        --color-heading: rgba(255 255 255 / 1.0); 
+        --color-secondary-heading: rgba(0 0 0 / 1.0);
+        --color-text: rgba(255 255 255 / 1.0); 
+        --color-secondary-text: rgba(0 0 0 / 1.0);
+        --color-link: rgba(255 255 255 / 1.0);
+        --color-link-hover: rgba(0 0 0 / 1.0);
+        --color-border: rgba(70 70 70 / 1.0);
+        --color-shadow: rgba(0 0 0 / 0.68);
+        --color-primary-button-background: rgba(135 116 94 / 1.0);
+        --color-primary-button-text: rgba(255 255 255 / 1.0);
+        --color-primary-button-border: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-background: rgba(239 230 223 / 1.0);
+        --color-primary-button-hover-text: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-border: rgba(239 230 223 / 1.0);
+        --color-secondary-button-background: rgba(255 255 255 / 1.0);
+        --color-secondary-button-text: rgba(135 116 94 / 1.0);
+        --color-secondary-button-border: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-background: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-text: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-border: rgba(135 116 94 / 1.0);
+        --color-disbled-button-background: rgba(201 201 201 / 1.0);
+        --color-disabled-button-text: rgba(0 0 0 / 1.0);
+        --color-input-background: rgba(249 246 242 / 1.0);
+        --color-input-text: rgba(0 0 0 / 1.0);
+        --color-input-border: rgba();
+        --color-highlight: rgba(255 255 255 / 1.0);
+        --color-arrows-bg: rgba(255 255 255 / 1.0);
+        --color-arrows: rgba(135 116 94 / 1.0);
+        --op-bg: rgba(135 116 94 / 1.0);
+        --op-text: rgba(255 255 255 / 1.0);
+        --op-border: rgba(135 116 94 / 1.0);
+        --op-bg-secondary: rgba(255 255 255 / 1.0);
+        --op-text-secondary: rgba(135 116 94 / 1.0);
+        --op-border-secondary: rgba(135 116 94 / 1.0);
+      }
+  
+     
+    .color-scheme-15b2c182-689c-4a0f-80b6-6e4267d4808a { 
+        --gradient-color: linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(135, 116, 94, 1) 100%);
+        --color-background: rgba(255 255 255 / 1.0);
+        --color-secondary-background: rgba(239 230 223 / 1.0); 
+        --color-heading: rgba(0 0 0 / 1.0); 
+        --color-secondary-heading: rgba(255 255 255 / 1.0);
+        --color-text: rgba(0 0 0 / 1.0); 
+        --color-secondary-text: rgba(255 255 255 / 1.0);
+        --color-link: rgba(135 116 94 / 1.0);
+        --color-link-hover: rgba(0 0 0 / 1.0);
+        --color-border: rgba(70 70 70 / 1.0);
+        --color-shadow: rgba(0 0 0 / 0.68);
+        --color-primary-button-background: rgba(135 116 94 / 1.0);
+        --color-primary-button-text: rgba(255 255 255 / 1.0);
+        --color-primary-button-border: rgba(255 255 255 / 1.0);
+        --color-primary-button-hover-background: rgba(239 230 223 / 1.0);
+        --color-primary-button-hover-text: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-border: rgba(239 230 223 / 1.0);
+        --color-secondary-button-background: rgba(255 255 255 / 1.0);
+        --color-secondary-button-text: rgba(135 116 94 / 1.0);
+        --color-secondary-button-border: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-background: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-text: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-border: rgba(135 116 94 / 1.0);
+        --color-disbled-button-background: rgba(201 201 201 / 1.0);
+        --color-disabled-button-text: rgba(0 0 0 / 1.0);
+        --color-input-background: rgba(249 246 242 / 1.0);
+        --color-input-text: rgba(0 0 0 / 1.0);
+        --color-input-border: rgba();
+        --color-highlight: rgba(255 255 255 / 1.0);
+        --color-arrows-bg: rgba(135 116 94 / 1.0);
+        --color-arrows: rgba(255 255 255 / 1.0);
+        --op-bg: rgba(135 116 94 / 1.0);
+        --op-text: rgba(255 255 255 / 1.0);
+        --op-border: rgba(135 116 94 / 1.0);
+        --op-bg-secondary: rgba(255 255 255 / 1.0);
+        --op-text-secondary: rgba(135 116 94 / 1.0);
+        --op-border-secondary: rgba(135 116 94 / 1.0);
+      }
+  
+     
+    .color-scheme-0f5a8859-402a-4ada-bf6c-71496d2b0304 { 
+        --gradient-color: linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(135, 116, 94, 1) 100%);
+        --color-background: rgba(255 255 255 / 1.0);
+        --color-secondary-background: rgba(239 230 223 / 1.0); 
+        --color-heading: rgba(255 255 255 / 1.0); 
+        --color-secondary-heading: rgba(0 0 0 / 1.0);
+        --color-text: rgba(70 70 70 / 1.0); 
+        --color-secondary-text: rgba(0 0 0 / 1.0);
+        --color-link: rgba(135 116 94 / 1.0);
+        --color-link-hover: rgba(0 0 0 / 1.0);
+        --color-border: rgba(70 70 70 / 1.0);
+        --color-shadow: rgba(0 0 0 / 0.68);
+        --color-primary-button-background: rgba(255 255 255 / 1.0);
+        --color-primary-button-text: rgba(135 116 94 / 1.0);
+        --color-primary-button-border: rgba(255 255 255 / 1.0);
+        --color-primary-button-hover-background: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-text: rgba(255 255 255 / 1.0);
+        --color-primary-button-hover-border: rgba(255 255 255 / 1.0);
+        --color-secondary-button-background: rgba(255 255 255 / 1.0);
+        --color-secondary-button-text: rgba(135 116 94 / 1.0);
+        --color-secondary-button-border: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-background: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-text: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-border: rgba(135 116 94 / 1.0);
+        --color-disbled-button-background: rgba(201 201 201 / 1.0);
+        --color-disabled-button-text: rgba(0 0 0 / 1.0);
+        --color-input-background: rgba(249 246 242 / 1.0);
+        --color-input-text: rgba(0 0 0 / 1.0);
+        --color-input-border: rgba();
+        --color-highlight: rgba(255 255 255 / 1.0);
+        --color-arrows-bg: rgba(135 116 94 / 1.0);
+        --color-arrows: rgba(255 255 255 / 1.0);
+        --op-bg: rgba(135 116 94 / 1.0);
+        --op-text: rgba(255 255 255 / 1.0);
+        --op-border: rgba(135 116 94 / 1.0);
+        --op-bg-secondary: rgba(255 255 255 / 1.0);
+        --op-text-secondary: rgba(135 116 94 / 1.0);
+        --op-border-secondary: rgba(135 116 94 / 1.0);
+      }
+  
+     
+    .color-scheme-8100cc39-6342-4017-a612-68b384c5afb1 { 
+        --gradient-color: linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(135, 116, 94, 1) 100%);
+        --color-background: rgba(255 255 255 / 1.0);
+        --color-secondary-background: rgba(239 230 223 / 1.0); 
+        --color-heading: rgba(135 116 94 / 1.0); 
+        --color-secondary-heading: rgba(0 0 0 / 1.0);
+        --color-text: rgba(0 0 0 / 1.0); 
+        --color-secondary-text: rgba(255 255 255 / 1.0);
+        --color-link: rgba(135 116 94 / 1.0);
+        --color-link-hover: rgba(0 0 0 / 1.0);
+        --color-border: rgba(70 70 70 / 1.0);
+        --color-shadow: rgba(0 0 0 / 0.68);
+        --color-primary-button-background: rgba(135 116 94 / 1.0);
+        --color-primary-button-text: rgba(255 255 255 / 1.0);
+        --color-primary-button-border: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-background: rgba(239 230 223 / 1.0);
+        --color-primary-button-hover-text: rgba(135 116 94 / 1.0);
+        --color-primary-button-hover-border: rgba(239 230 223 / 1.0);
+        --color-secondary-button-background: rgba(255 255 255 / 1.0);
+        --color-secondary-button-text: rgba(135 116 94 / 1.0);
+        --color-secondary-button-border: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-background: rgba(135 116 94 / 1.0);
+        --color-secondary-button-hover-text: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-border: rgba(135 116 94 / 1.0);
+        --color-disbled-button-background: rgba(201 201 201 / 1.0);
+        --color-disabled-button-text: rgba(0 0 0 / 1.0);
+        --color-input-background: rgba(249 246 242 / 1.0);
+        --color-input-text: rgba(0 0 0 / 1.0);
+        --color-input-border: rgba();
+        --color-highlight: rgba(255 255 255 / 1.0);
+        --color-arrows-bg: rgba(135 116 94 / 1.0);
+        --color-arrows: rgba(255 255 255 / 1.0);
+        --op-bg: rgba(135 116 94 / 1.0);
+        --op-text: rgba(255 255 255 / 1.0);
+        --op-border: rgba(135 116 94 / 1.0);
+        --op-bg-secondary: rgba(255 255 255 / 1.0);
+        --op-text-secondary: rgba(135 116 94 / 1.0);
+        --op-border-secondary: rgba(135 116 94 / 1.0);
+      }
+  
+
+  body, .color-scheme-1, .color-scheme-2, .color-scheme-2d1b4e71-b108-4c32-9448-9b8545727293, .color-scheme-b973f024-6d84-40e5-a6a2-d5e6e7397368, .color-scheme-84c8329e-4eb5-472a-8cd7-bbc17f47a32f, .color-scheme-da630a43-2bcc-4e62-a091-029f98b05b7d, .color-scheme-ae685a78-7dc1-4951-a447-a297c9d753bf, .color-scheme-dc9cba78-6319-4050-ab23-1211096fa0c4, .color-scheme-47bcfa67-7cf1-4833-9106-56edbe076d5d, .color-scheme-15b2c182-689c-4a0f-80b6-6e4267d4808a, .color-scheme-0f5a8859-402a-4ada-bf6c-71496d2b0304, .color-scheme-8100cc39-6342-4017-a612-68b384c5afb1 {
+    color: var(--color-text);
+    background-color: var(--color-background);
+  }

@@ -19,12 +19,18 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: 'Cancelado',
 };
 
+export interface ProductExtraInfo {
+  sku?: string;
+  location?: ProductWarehouseLocation | null;
+}
+
 export function generateOrderPdf(
   order: Order,
   items: OrderItem[],
-  productLocations?: Record<string, ProductWarehouseLocation | null | undefined>,
+  productExtraInfo?: Record<string, ProductExtraInfo>,
 ) {
-  const hasLocations = productLocations && items.some(i => i.id && productLocations[i.id]?.label);
+  const hasSku = productExtraInfo && items.some(i => i.id && productExtraInfo[i.id]?.sku);
+  const hasLocations = productExtraInfo && items.some(i => i.id && productExtraInfo[i.id]?.location?.label);
   const statusLabel = STATUS_LABELS[order.STATUS] || order.STATUS;
   const date = formatDate(order.CREATEDAT);
   const subtotal = order.SUBTOTAL || items.reduce((s, i) => s + (i.total || i.price * i.qty), 0);
@@ -32,10 +38,13 @@ export function generateOrderPdf(
   const discount = order.DISCOUNT || (subtotal - total > 0 ? subtotal - total : 0);
 
   const itemsHtml = items.map(i => {
-    const loc = i.id ? productLocations?.[i.id]?.label : null;
+    const extra = i.id ? productExtraInfo?.[i.id] : null;
+    const loc = extra?.location?.label || null;
+    const sku = extra?.sku || '';
     return `
-    <tr>
+    <tr style="page-break-inside:avoid;break-inside:avoid;">
       <td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#333;">${i.name}</td>
+      ${hasSku ? `<td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#7c3aed;text-align:center;font-weight:600;font-family:monospace;">${sku || '—'}</td>` : ''}
       ${hasLocations ? `<td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#4338ca;text-align:center;font-weight:600;">${loc || '—'}</td>` : ''}
       <td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#666;text-align:center;">${i.qty}</td>
       <td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#666;text-align:right;">${formatPrice(i.price)}</td>
@@ -52,7 +61,12 @@ export function generateOrderPdf(
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #fff; color: #333; padding: 40px; max-width: 700px; margin: 0 auto; }
-    @media print { body { padding: 20px; } .no-print { display: none !important; } }
+    @media print {
+      body { padding: 20px; max-width: none; }
+      .no-print { display: none !important; }
+      thead { display: table-header-group; }
+      tr { page-break-inside: avoid; break-inside: avoid; }
+    }
   </style>
 </head>
 <body>
@@ -90,7 +104,8 @@ export function generateOrderPdf(
     <thead>
       <tr style="background:#f8f9fa;">
         <th style="padding:10px 6px;text-align:left;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">Producto</th>
-        ${hasLocations ? '<th style="padding:10px 6px;text-align:center;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">Ubicación</th>' : ''}
+        ${hasSku ? '<th style="padding:10px 6px;text-align:center;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">SKU</th>' : ''}
+        ${hasLocations ? '<th style="padding:10px 6px;text-align:center;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">Sección</th>' : ''}
         <th style="padding:10px 6px;text-align:center;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">Cant.</th>
         <th style="padding:10px 6px;text-align:right;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">P. Unit.</th>
         <th style="padding:10px 6px;text-align:right;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">Total</th>
@@ -112,7 +127,7 @@ export function generateOrderPdf(
     </div>` : ''}
     <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px;">
       <span style="color:#666;">Envío</span>
-      <span style="color:#00a650;font-size:12px;">A coordinar</span>
+      <span style="color:#00a650;font-size:12px;">Pago contraentrega</span>
     </div>
     <div style="display:flex;justify-content:space-between;padding:12px 0 0;margin-top:8px;border-top:2px solid #333;font-size:18px;font-weight:700;">
       <span>Total</span>

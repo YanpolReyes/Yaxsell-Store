@@ -88,6 +88,7 @@ export const WHOLESALE_REQUESTS_COLLECTION_ID = 'wholesale_requests';
 export const REVIEWS_COLLECTION_ID = 'reviews';
 export const FAVORITES_COLLECTION_ID = 'favorites';
 export const CART_ITEMS_COLLECTION_ID = 'cart_items';
+export const CART_SNAPSHOTS_COLLECTION_ID = 'cart_snapshots';
 export const ADMIN_CHAT_COLLECTION_ID = 'admin_chat';
 export const CLIPS_COLLECTION_ID = 'clips';
 export const RAFFLES_COLLECTION_ID = 'live_raffles';

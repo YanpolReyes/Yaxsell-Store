@@ -1,0 +1,56 @@
+{
+  "plantilla": 12,
+  "sourceUrl": "https://k-me-store-2.myshopify.com",
+  "capturedAt": "2026-05-28T08:41:09.230Z",
+  "elapsedSeconds": "10.2",
+  "files": {
+    "html": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\public\\shopify\\plantilla12\\index.html",
+    "bodyClean": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\public\\shopify\\plantilla12\\body-clean.html",
+    "manifest": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\public\\shopify\\plantilla12\\manifest.json",
+    "tsx": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\src\\templates\\plantilla12\\HomePage.tsx"
+  },
+  "stats": {
+    "cssTotal": 44,
+    "jsTotal": 44,
+    "fontsTotal": 10,
+    "imagesTotal": 386,
+    "inlineCssKB": 76,
+    "bodyCleanKB": 1347,
+    "downloaded": {
+      "css": {
+        "ok": 44,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      },
+      "js": {
+        "ok": 44,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      },
+      "fonts": {
+        "ok": 10,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      },
+      "images": {
+        "ok": 64,
+        "skip": 16,
+        "fail": 0,
+        "errors": []
+      }
+    }
+  },
+  "errors": [],
+  "nextSteps": [
+    "1. Revisar HomePage.tsx — puede necesitar ajustes de orden CSS/JS",
+    "2. Verificar que los CSS críticos estén en el orden correcto (inline → core → secciones)",
+    "3. Verificar que los JS no incluyan scripts de Shopify (perf-kit, account.js)",
+    "4. Registrar plantilla 12 en src/app/preview/plantilla/[id]/page.tsx",
+    "5. Registrar plantilla 12 en src/components/DynamicHomePage.tsx",
+    "6. Probar en http://localhost:3000/preview/plantilla/12",
+    "7. Si hay errores de JS, revisar orden de carga y dependencias"
+  ]
+}

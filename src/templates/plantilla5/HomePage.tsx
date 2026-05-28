@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
   Star, ArrowRight, Plus, ChevronDown,
@@ -13,6 +13,18 @@ import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import type { Product } from '@/types';
 
+/* GSAP + ScrollTrigger for scroll-driven animations */
+let gsapPkg: any = null;
+let scrollTriggerPkg: any = null;
+async function loadGSAP() {
+  if (gsapPkg) return;
+  const g = await import('gsap');
+  gsapPkg = g.gsap || g.default || g;
+  const st = await import('gsap/ScrollTrigger');
+  scrollTriggerPkg = st.ScrollTrigger || st.default;
+  gsapPkg.registerPlugin(scrollTriggerPkg);
+}
+
 /* ═══════════════════════════════════════════
    YESBELLA — Plantilla 5 (Seoul/Agnes Theme)
    Full React rewrite from Shopify HTML export
@@ -23,6 +35,7 @@ const YELLOW = '#dfe146';
 const CREAM = '#fdfbf7';
 const DARK = '#2a2120';
 const FF = "'Montserrat', 'Nunito Sans', system-ui, sans-serif";
+const FALLBACK_IMG = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRyh0wnR27x3AV3mz4OcADzUWXPPhvZZ0eRPg&s';
 
 /* ── Data ── */
 const SLIDES = [
@@ -132,6 +145,91 @@ export default function HomePage5() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [testimIdx, setTestimIdx] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const splitRef = useRef<HTMLElement>(null);
+  const mwtRef = useRef<HTMLElement>(null);
+
+  /* GSAP scroll animations: morph clip-path + parallax + fade-in */
+  useEffect(() => {
+    let ctx: any;
+    loadGSAP().then(() => {
+      if (!gsapPkg || !scrollTriggerPkg) return;
+      const gsap = gsapPkg;
+      const ScrollTrigger = scrollTriggerPkg;
+
+      ctx = gsap.context(() => {
+        /* ── Split Hero: morph clip-path from rect → scoop-right on scroll ── */
+        const splitPath = document.querySelector('#clip-split-hero-scoop path');
+        if (splitPath && splitRef.current) {
+          // Start as rectangle
+          const rectD = 'M1 0 L1 1 L0 1 L0 0 Z';
+          const scoopD = 'M0.78 0 C0.88 0.1286 0.88 0.2571 0.78 0.3714 C0.68 0.4857 0.68 0.6143 0.78 0.7429 C0.88 0.8714 0.88 0.9286 0.78 1 L0 1 L0 0 Z';
+          splitPath.setAttribute('d', rectD);
+
+          gsap.fromTo(splitPath, { attr: { d: rectD } }, {
+            attr: { d: scoopD },
+            ease: 'power2.inOut',
+            scrollTrigger: {
+              trigger: splitRef.current,
+              start: 'top 80%',
+              end: 'center center',
+              scrub: 1,
+            },
+          });
+
+          // Parallax: content slides up
+          const splitContent = splitRef.current.querySelector('.tpl5-split-content');
+          if (splitContent) {
+            gsap.from(splitContent, {
+              y: 60,
+              opacity: 0,
+              duration: 1,
+              ease: 'power3.out',
+              scrollTrigger: {
+                trigger: splitRef.current,
+                start: 'top 75%',
+                toggleActions: 'play none none reverse',
+              },
+            });
+          }
+        }
+
+        /* ── Media with Text: morph clip-path with sunburst mask ── */
+        const mwtPath = document.querySelector('#clip-mwt-sunburst path');
+        if (mwtPath && mwtRef.current) {
+          const circleD = 'M0.5 0 C0.776 0 1 0.224 1 0.5 C1 0.776 0.776 1 0.5 1 C0.224 1 0 0.776 0 0.5 C0 0.224 0.224 0 0.5 0 Z';
+          const sunburstD = 'M0.499 0 L0.451 0.041 L0.394 0.011 L0.356 0.06 L0.296 0.043 L0.268 0.103 L0.205 0.096 L0.189 0.156 L0.126 0.166 L0.124 0.229 L0.065 0.25 L0.076 0.314 L0.021 0.349 L0.045 0.407 L0 0.45 L0.035 0.498 L0 0.548 L0.045 0.591 L0.021 0.651 L0.076 0.688 L0.065 0.752 L0.124 0.774 L0.127 0.835 L0.189 0.843 L0.205 0.904 L0.268 0.899 L0.296 0.96 L0.356 0.942 L0.394 0.992 L0.451 0.962 L0.5 1 L0.548 0.962 L0.605 0.992 L0.644 0.942 L0.704 0.96 L0.732 0.899 L0.794 0.904 L0.811 0.843 L0.873 0.833 L0.875 0.774 L0.935 0.752 L0.923 0.688 L0.978 0.655 L0.954 0.591 L1 0.548 L0.963 0.498 L1 0.45 L0.954 0.407 L0.978 0.349 L0.923 0.314 L0.935 0.25 L0.875 0.229 L0.872 0.165 L0.811 0.156 L0.794 0.096 L0.732 0.103 L0.704 0.043 L0.644 0.06 L0.605 0.011 L0.548 0.041 Z';
+          mwtPath.setAttribute('d', circleD);
+
+          gsap.fromTo(mwtPath, { attr: { d: circleD } }, {
+            attr: { d: sunburstD },
+            ease: 'power2.inOut',
+            scrollTrigger: {
+              trigger: mwtRef.current,
+              start: 'top 80%',
+              end: 'center center',
+              scrub: 1,
+            },
+          });
+        }
+
+        /* ── Fade-in on scroll for all .tpl5-anim elements ── */
+        gsap.utils.toArray('.tpl5-anim').forEach((el: any) => {
+          gsap.from(el, {
+            y: 30,
+            opacity: 0,
+            duration: 0.8,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: el,
+              start: 'top 85%',
+              toggleActions: 'play none none reverse',
+            },
+          });
+        });
+      });
+    });
+    return () => { if (ctx) ctx.revert(); };
+  }, []);
 
   /* Fetch products */
   useEffect(() => {
@@ -288,7 +386,7 @@ export default function HomePage5() {
         /* ── Utility ── */
         .tpl5-container { max-width: 1400px; margin: 0 auto; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .tpl5-anim { animation: fadeInUp .6s ease both; }
+        .tpl5-anim { } /* GSAP controls animation */
       `}</style>
 
       <div className="tpl5">
@@ -300,7 +398,7 @@ export default function HomePage5() {
           {SLIDES.map((s, i) => (
             <div key={i} className={`tpl5-slide ${i === activeSlide ? 'active' : ''}`}>
               <div className="tpl5-slide-bg" style={{
-                backgroundImage: `url(https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=1400&auto=format&fit=crop)`,
+                backgroundImage: `url(${FALLBACK_IMG})`,
               }} />
               <div className="tpl5-slide-overlay" style={{
                 ...(s.align === 'right' ? { background: 'linear-gradient(to left, rgba(0,0,0,0.55) 30%, rgba(0,0,0,0.15))' } : {}),
@@ -333,8 +431,8 @@ export default function HomePage5() {
         ═══════════════════════════════════ */}
         <section className="tpl5-cats">
           <div className="tpl5-container">
-            <h2 className="tpl5-sec-title">Shop by Category</h2>
-            <p className="tpl5-sec-sub">Find your perfect routine — from gentle cleansers to powerful serums.</p>
+            <h2 className="tpl5-sec-title tpl5-anim">Shop by Category</h2>
+            <p className="tpl5-sec-sub tpl5-anim">Find your perfect routine — from gentle cleansers to powerful serums.</p>
           </div>
           <div className="tpl5-cats-track">
             {CATEGORIES.map((c, i) => (
@@ -350,8 +448,8 @@ export default function HomePage5() {
             3. MULTIMEDIA COLLAGE
         ═══════════════════════════════════ */}
         <section className="tpl5-collage">
-          <h2 className="tpl5-sec-title">The Edit</h2>
-          <p className="tpl5-sec-sub">Curated moments of beauty — from morning rituals to evening repair.</p>
+          <h2 className="tpl5-sec-title tpl5-anim">The Edit</h2>
+          <p className="tpl5-sec-sub tpl5-anim">Curated moments of beauty — from morning rituals to evening repair.</p>
           <div className="tpl5-collage-grid">
             <div className="tpl5-collage-item wide">
               <img src="https://images.unsplash.com/photo-1596755094514-fc8036281e7e?q=80&w=900&auto=format&fit=crop" alt="Skincare routine" loading="lazy" />
@@ -388,8 +486,8 @@ export default function HomePage5() {
             4. FEATURED COLLECTION
         ═══════════════════════════════════ */}
         <section className="tpl5-products">
-          <h2 className="tpl5-sec-title">Best Sellers</h2>
-          <p className="tpl5-sec-sub">Customer favorites that deliver real results — tried, tested, and loved.</p>
+          <h2 className="tpl5-sec-title tpl5-anim">Best Sellers</h2>
+          <p className="tpl5-sec-sub tpl5-anim">Customer favorites that deliver real results — tried, tested, and loved.</p>
           {loading ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 20 }}>
               {[...Array(4)].map((_, i) => (
@@ -404,7 +502,7 @@ export default function HomePage5() {
                 return (
                   <Link href={`/producto/${p.$id}`} key={p.$id} className="tpl5-product-card" style={{ animationDelay: `${i * .08}s` }}>
                     <div className="tpl5-product-img">
-                      <img src={img || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=400&auto=format&fit=crop'} alt={p.NAME} loading="lazy" />
+                      <img src={img || FALLBACK_IMG} alt={p.NAME} loading="lazy" />
                       <button className="tpl5-product-add" onClick={(e) => handleAddToCart(p, e)}>
                         <Plus size={18} />
                       </button>
@@ -432,13 +530,14 @@ export default function HomePage5() {
         <svg style={{ position: 'fixed', top: 0, left: 0, width: 1, height: 1, pointerEvents: 'none', opacity: 0.001, overflow: 'hidden' }}>
           <defs>
             <clipPath id="clip-split-hero-scoop" clipPathUnits="objectBoundingBox">
-              {/* Normalized version of: M 780 0 C 880 90 880 180 780 260 C 680 340 680 430 780 520 C 880 610 880 650 780 700 L 0 700 L 0 0 Z
-                  viewBox 0 0 1000 700 → divide x by 1000, y by 700 */}
               <path fillRule="evenodd" clipRule="evenodd" d="M0.78 0 C0.88 0.1286 0.88 0.2571 0.78 0.3714 C0.68 0.4857 0.68 0.6143 0.78 0.7429 C0.88 0.8714 0.88 0.9286 0.78 1 L0 1 L0 0 Z" />
+            </clipPath>
+            <clipPath id="clip-mwt-sunburst" clipPathUnits="objectBoundingBox">
+              <path fillRule="evenodd" clipRule="evenodd" d="M0.5 0 C0.776 0 1 0.224 1 0.5 C1 0.776 0.776 1 0.5 1 C0.224 1 0 0.776 0 0.5 C0 0.224 0.224 0 0.5 0 Z" />
             </clipPath>
           </defs>
         </svg>
-        <section className="tpl5-split">
+        <section className="tpl5-split" ref={splitRef}>
           <div className="tpl5-split-media" style={{ clipPath: 'url(#clip-split-hero-scoop)' }}>
             <img src="https://images.unsplash.com/photo-1556228524-1e76c5f8b6c0?q=80&w=800&auto=format&fit=crop" alt="In Focus" loading="lazy" />
           </div>
@@ -458,10 +557,10 @@ export default function HomePage5() {
         {/* ═══════════════════════════════════
             6. MEDIA WITH TEXT
         ═══════════════════════════════════ */}
-        <section className="tpl5-mwt">
+        <section className="tpl5-mwt" ref={mwtRef}>
           <div className="tpl5-mwt-content" style={{ background: '#f5ebe4' }}>
-            <h2 className="tpl5-split-title" style={{ textAlign: 'left' }}>Crafted for Every Glow.</h2>
-            <p className="tpl5-split-text" style={{ textAlign: 'left', marginLeft: 0 }}>
+            <h2 className="tpl5-split-title tpl5-anim" style={{ textAlign: 'left' }}>Crafted for Every Glow.</h2>
+            <p className="tpl5-split-text tpl5-anim" style={{ textAlign: 'left', marginLeft: 0 }}>
               Our formulations blend time-honored Korean botanicals with modern dermatological science. Each product is designed to work in harmony — layer by layer, step by step.
             </p>
             <div style={{ display: 'flex', gap: 24, marginTop: 20, flexWrap: 'wrap' }}>
@@ -470,13 +569,13 @@ export default function HomePage5() {
                 { icon: <Droplets size={20} color={ACCENT} />, label: 'Deep Hydration' },
                 { icon: <Sun size={20} color={ACCENT} />, label: 'SPF Protection' },
               ].map((f, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600, color: DARK }}>
+                <div key={i} className="tpl5-anim" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600, color: DARK }}>
                   {f.icon} {f.label}
                 </div>
               ))}
             </div>
           </div>
-          <div className="tpl5-mwt-media">
+          <div className="tpl5-mwt-media" style={{ clipPath: 'url(#clip-mwt-sunburst)' }}>
             <img src="https://images.unsplash.com/photo-1598440947671-68966991a8b0?q=80&w=800&auto=format&fit=crop" alt="Ingredients" loading="lazy" />
           </div>
         </section>
@@ -486,8 +585,8 @@ export default function HomePage5() {
         ═══════════════════════════════════ */}
         {moreProducts.length > 0 && (
           <section className="tpl5-products" style={{ background: '#fff' }}>
-            <h2 className="tpl5-sec-title">You Might Also Love</h2>
-            <p className="tpl5-sec-sub">Hand-picked recommendations based on what our community can't stop buying.</p>
+            <h2 className="tpl5-sec-title tpl5-anim">You Might Also Love</h2>
+            <p className="tpl5-sec-sub tpl5-anim">Hand-picked recommendations based on what our community can't stop buying.</p>
             <div className="tpl5-products-grid">
               {moreProducts.map((p, i) => {
                 const pricing = resolveProductDisplayPrice(p, apertura);
@@ -495,7 +594,7 @@ export default function HomePage5() {
                 return (
                   <Link href={`/producto/${p.$id}`} key={p.$id} className="tpl5-product-card">
                     <div className="tpl5-product-img">
-                      <img src={img || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=400&auto=format&fit=crop'} alt={p.NAME} loading="lazy" />
+                      <img src={img || FALLBACK_IMG} alt={p.NAME} loading="lazy" />
                       <button className="tpl5-product-add" onClick={(e) => handleAddToCart(p, e)}>
                         <Plus size={18} />
                       </button>
@@ -529,8 +628,8 @@ export default function HomePage5() {
             9. TESTIMONIALS
         ═══════════════════════════════════ */}
         <section className="tpl5-testimonials">
-          <h2 className="tpl5-sec-title">Real Routines, Real Results</h2>
-          <p className="tpl5-sec-sub">Honest words from customers who discovered new favorites, built better routines, and found products their skin truly enjoys.</p>
+          <h2 className="tpl5-sec-title tpl5-anim">Real Routines, Real Results</h2>
+          <p className="tpl5-sec-sub tpl5-anim">Honest words from customers who discovered new favorites, built better routines, and found products their skin truly enjoys.</p>
           <div className="tpl5-testim-track" style={{ transform: `translateX(-${testimIdx * (window.innerWidth < 768 ? 100 : 50)}%)`, transition: 'transform .5s ease' }}>
             {TESTIMONIALS.map((t, i) => (
               <div key={i} className="tpl5-testim-card">
@@ -557,8 +656,8 @@ export default function HomePage5() {
             10. FAQ
         ═══════════════════════════════════ */}
         <section className="tpl5-faq" id="faq">
-          <h2 className="tpl5-sec-title">Questions? We've Got Answers</h2>
-          <p className="tpl5-sec-sub">Everything you need to know about our products, shipping, and skincare routines.</p>
+          <h2 className="tpl5-sec-title tpl5-anim">Questions? We've Got Answers</h2>
+          <p className="tpl5-sec-sub tpl5-anim">Everything you need to know about our products, shipping, and skincare routines.</p>
           <div className="tpl5-faq-grid">
             {FAQ_ITEMS.map((f, i) => (
               <div key={i} className="tpl5-faq-item" onClick={() => setOpenFaq(openFaq === i ? null : i)}>

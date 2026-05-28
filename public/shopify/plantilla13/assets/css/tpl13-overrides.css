@@ -1,0 +1,212 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Plantilla 13 – Split-Hero & general stability overrides
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Global resets ── */
+main { overflow: visible !important; }
+[style*="blur(0"] { filter: none !important; }
+
+.page-loader {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+page-transition { display: none !important; }
+
+/* ── CSS variable defaults ──
+   The original split-hero.css uses calc(100vh - var(--header-gap)) for
+   min-height/max-height. If --header-gap is undefined the layout collapses. */
+:root {
+  --header-gap: 0px !important;
+  --header-height: 80px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SPLIT-HERO – visibility, sizing & pin-spacer
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Container must be a visible block with valid height */
+split-hero,
+.split-hero {
+  display: block !important;
+  position: relative !important;
+  min-height: 100vh !important;
+  max-height: none !important;          /* allow ScrollMagic to size freely */
+  overflow: visible !important;         /* don't clip pinned children */
+  will-change: transform, height;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* ScrollMagic pin spacer must be visible and properly sized */
+.scrollmagic-pin-spacer {
+  display: block !important;
+  position: relative !important;
+  visibility: visible !important;
+  overflow: visible !important;
+}
+
+/* The flex wrapper inside split-hero */
+split-hero > div,
+.split-hero > div {
+  display: flex !important;
+  min-height: 100vh;
+}
+
+/* ── Media column (left side: full-width video) ── */
+.split-hero .split-hero-column.split-hero-column__media {
+  position: relative !important;
+  min-width: 100vw !important;
+  max-width: 100vw !important;
+  min-height: 100vh !important;
+  max-height: 100vh !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 5 !important;
+  overflow: hidden !important;
+  transition: min-width 1.2s cubic-bezier(.4, 0, .2, 1),
+              max-width 1.2s cubic-bezier(.4, 0, .2, 1) !important;
+}
+
+/* ── Collapsed state: media shrinks to 50 vw revealing content ── */
+.split-hero .split-hero-column__media.is-collapsed {
+  min-width: 50vw !important;
+  max-width: 50vw !important;
+}
+
+/* ── Content column (right side: text/CTA) ── */
+.split-hero .split-hero-column.split-hero-column__content {
+  position: relative !important;
+  z-index: 6 !important;
+  max-width: 50% !important;
+  width: 100% !important;
+  min-width: 50vw !important;
+}
+
+/* ── Media-media (the actual video/image container) ── */
+.split-hero .split-hero-column__media-media {
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background-color: #f6f3ee !important;
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+  z-index: 2 !important;
+}
+
+/* Force media column inner content container to be transparent so the video is visible underneath */
+.split-hero .split-hero-column__media .split-hero-column-inner {
+  background: transparent !important;
+  background-color: transparent !important;
+  z-index: 10 !important;
+  position: relative !important;
+}
+
+/* Videos inside the media wrapper */
+.split-hero .split-hero-column__media-media video {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 20 !important;
+  object-fit: cover !important;
+}
+.split-hero .split-hero-column__media-media video.loaded {
+  position: absolute !important;
+  z-index: 20 !important;
+}
+
+/* Responsive video display rules */
+@media (min-width: 1024px) {
+  .split-hero .split-hero-column__media-media video.hidden.lg\:block {
+    display: block !important;
+  }
+  .split-hero .split-hero-column__media-media video.block.lg\:hidden {
+    display: none !important;
+  }
+}
+@media (max-width: 1023.98px) {
+  .split-hero .split-hero-column__media-media video.hidden.lg\:block {
+    display: none !important;
+  }
+  .split-hero .split-hero-column__media-media video.block.lg\:hidden {
+    display: block !important;
+  }
+}
+
+/* Fallback image */
+.split-hero .split-hero-column__media-media .tpl13-split-fallback {
+  opacity: 1 !important;
+  z-index: 15 !important;
+}
+
+/* Overlay must be invisible */
+.split-hero .split-hero-column__media .overlay {
+  background: transparent !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ANIMATIONS – force visibility for split-hero animation-elements
+   ═══════════════════════════════════════════════════════════════════════
+   The original animation.css uses `.animation-wrapper .fade-in{opacity:0}`
+   which means elements need an .animation-wrapper ancestor to start hidden
+   and then get revealed via .in-view. The split-hero is NOT wrapped in
+   .animation-wrapper, so its .animation-element.fade-in children never
+   get the opacity:0 rule from animation.css — they're visible by default.
+   Our override ensures they stay visible regardless. */
+
+.split-hero .animation-element {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none;
+}
+.split-hero .animation-element.fade-in {
+  opacity: 1 !important;
+}
+.split-hero .animation-element.fade-in.in-view {
+  opacity: 1 !important;
+  animation: none !important;
+}
+
+/* ── Inner column content padding ── */
+.split-hero .split-hero-column__content .split-hero-column-inner {
+  padding-top: var(--header-height) !important;
+}
+.split-hero .split-hero-column__media .split-hero-column__media-content {
+  padding-top: var(--header-height) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE – split-hero stacks vertically
+   ═══════════════════════════════════════════════════════════════════════ */
+@media screen and (max-width: 48rem) {
+  split-hero > div,
+  .split-hero > div {
+    flex-direction: column !important;
+  }
+  .split-hero .split-hero-column__media.is-collapsed {
+    min-width: 100vw !important;
+    max-width: 100vw !important;
+  }
+  .split-hero .split-hero-column__media .split-hero-column-inner {
+    height: 100vh;
+  }
+  .split-hero .split-hero-column.split-hero-column__content {
+    max-width: unset !important;
+    min-width: unset !important;
+    z-index: 10 !important;
+  }
+  .split-hero .split-hero-column__content .split-hero-column-inner {
+    padding-top: 0 !important;
+  }
+  split-hero,
+  .split-hero {
+    min-height: unset !important;
+    max-height: unset !important;
+  }
+}

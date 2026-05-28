@@ -5,6 +5,13 @@ import HomePage2 from '@/templates/plantilla2/HomePage';
 import HomePage3 from '@/templates/plantilla3/HomePage';
 import HomePage4 from '@/templates/plantilla4/HomePage';
 import HomePage5 from '@/templates/plantilla5/HomePage';
+import HomePage6 from '@/templates/plantilla6/HomePage';
+import HomePage7 from '@/templates/plantilla7/HomePage';
+import HomePage8 from '@/templates/plantilla8/HomePage';
+import HomePage10 from '@/templates/plantilla10/HomePage';
+import HomePage11 from '@/templates/plantilla11/HomePage';
+import HomePage12 from '@/templates/plantilla12/HomePage';
+import HomePage13 from '@/templates/plantilla13/HomePage';
 
 export default function DynamicHomePage({ children }: { children: React.ReactNode }) {
   const { template, isLoading } = useTemplate();
@@ -21,5 +28,12 @@ export default function DynamicHomePage({ children }: { children: React.ReactNod
   if (template === 3) return <HomePage3 />;
   if (template === 4) return <HomePage4 />;
   if (template === 5) return <HomePage5 />;
+  if (template === 6) return <HomePage6 />;
+  if (template === 7) return <HomePage7 />;
+  if (template === 8) return <HomePage8 />;
+  if (template === 10) return <HomePage10 />;
+  if (template === 11) return <HomePage11 />;
+  if (template === 12) return <HomePage12 />;
+  if (template === 13) return <HomePage13 />;
   return <>{children}</>;
 }

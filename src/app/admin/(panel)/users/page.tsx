@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Query, ID } from 'appwrite';
-import { getServices, getAppwriteConfig, USERS_COLLECTION_ID, FAVORITES_COLLECTION_ID, PRODUCTS_COLLECTION_ID, CART_ITEMS_COLLECTION_ID, ADMIN_CHAT_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, USERS_COLLECTION_ID, FAVORITES_COLLECTION_ID, PRODUCTS_COLLECTION_ID, CART_ITEMS_COLLECTION_ID, ADMIN_CHAT_COLLECTION_ID, CART_SNAPSHOTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { formatPrice } from '@/lib/appwrite';
 import type { AdminCustomerRow } from '@/lib/admin-customers';
 import { getLevelMeta } from '@/lib/loyalty-levels';
@@ -384,15 +384,20 @@ function UsersPageInner() {
                           try {
                             const { databases } = getServices();
                             const { databaseId } = getAppwriteConfig();
-                            const cartRes = await databases.listDocuments(databaseId, CART_ITEMS_COLLECTION_ID, [
-                              Query.equal('userId', u.userId), Query.limit(100),
+                            // Read from cart_snapshots (single document)
+                            const snapRes = await databases.listDocuments(databaseId, CART_SNAPSHOTS_COLLECTION_ID, [
+                              Query.equal('userId', u.userId), Query.limit(1),
                             ]);
-                            if (cartRes.documents.length === 0) { setCartProducts([]); setCartLoading(false); return; }
+                            if (snapRes.documents.length === 0) { setCartProducts([]); setCartLoading(false); return; }
+                            const snap = snapRes.documents[0] as any;
+                            const items = JSON.parse(snap.itemsJson || '[]');
+                            if (items.length === 0) { setCartProducts([]); setCartLoading(false); return; }
+                            // Fetch product details for each item
                             const prods: any[] = [];
-                            for (const doc of cartRes.documents as any[]) {
+                            for (const item of items) {
                               try {
-                                const p = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, doc.productId);
-                                prods.push({ ...p, _cartQty: doc.quantity || 1 });
+                                const p = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id);
+                                prods.push({ ...p, _cartQty: item.qty || 1 });
                               } catch {}
                             }
                             setCartProducts(prods);

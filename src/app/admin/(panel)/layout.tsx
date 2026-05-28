@@ -272,6 +272,53 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => clearInterval(id);
   }, [isLoading, isLoggedIn, user?.email, router, fetchBadges, logout]);
 
+  /* ── Fix overflow for multi-page printing ── */
+  useEffect(() => {
+    const mainEl = document.querySelector('.admin-main-scroll') as HTMLElement | null;
+    const bodyWrap = document.querySelector('.admin-body-wrap') as HTMLElement | null;
+    const contentWrap = document.querySelector('.admin-content-wrap') as HTMLElement | null;
+
+    // Save original styles
+    const originalStyles = {
+      main: mainEl ? { height: mainEl.style.height, overflow: mainEl.style.overflow, maxHeight: mainEl.style.maxHeight } : null,
+      bodyWrap: bodyWrap ? { overflow: bodyWrap.style.overflow, height: bodyWrap.style.height } : null,
+      contentWrap: contentWrap ? { overflow: contentWrap.style.overflow, height: contentWrap.style.height } : null,
+      html: { height: document.documentElement.style.height, overflow: document.documentElement.style.overflow }
+    };
+
+    const beforePrint = () => {
+      if (mainEl) { mainEl.style.height = 'auto'; mainEl.style.overflow = 'visible'; mainEl.style.maxHeight = 'none'; }
+      if (bodyWrap) { bodyWrap.style.overflow = 'visible'; bodyWrap.style.height = 'auto'; }
+      if (contentWrap) { contentWrap.style.overflow = 'visible'; contentWrap.style.height = 'auto'; }
+      document.documentElement.style.height = 'auto';
+      document.documentElement.style.overflow = 'visible';
+    };
+    const afterPrint = () => {
+      // Restore original styles
+      if (mainEl && originalStyles.main) { 
+        mainEl.style.height = originalStyles.main.height; 
+        mainEl.style.overflow = originalStyles.main.overflow; 
+        mainEl.style.maxHeight = originalStyles.main.maxHeight; 
+      }
+      if (bodyWrap && originalStyles.bodyWrap) { 
+        bodyWrap.style.overflow = originalStyles.bodyWrap.overflow; 
+        bodyWrap.style.height = originalStyles.bodyWrap.height; 
+      }
+      if (contentWrap && originalStyles.contentWrap) { 
+        contentWrap.style.overflow = originalStyles.contentWrap.overflow; 
+        contentWrap.style.height = originalStyles.contentWrap.height; 
+      }
+      document.documentElement.style.height = originalStyles.html.height;
+      document.documentElement.style.overflow = originalStyles.html.overflow;
+    };
+    window.addEventListener('beforeprint', beforePrint);
+    window.addEventListener('afterprint', afterPrint);
+    return () => {
+      window.removeEventListener('beforeprint', beforePrint);
+      window.removeEventListener('afterprint', afterPrint);
+    };
+  }, []);
+
   /* ── GSAP page transition on route change ── */
   const contentRef = useRef<HTMLDivElement>(null);
   const prevPathRef = useRef(pathname);
@@ -540,6 +587,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .admin-sidebar { box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important; top: 60px !important; }
       .admin-search-wrap { margin: 0 4px !important; }
     }
+    /* ── Print: hide admin chrome, show only content ── */
+    @media print {
+      .admin-topbar, .admin-sidebar, .sf-topbar-shine, .sf-sidebar-shine,
+      .admin-search-wrap { display: none !important; }
+      .admin-body-wrap { overflow: visible !important; height: auto !important; display: block !important; }
+      .admin-content-wrap { border: none !important; border-radius: 0 !important; background: #fff !important; overflow: visible !important; position: static !important; }
+      .admin-content-wrap::before { display: none !important; }
+      .admin-main-scroll { height: auto !important; overflow: visible !important; padding: 0 !important; }
+      .admin-main-content { padding: 0 !important; border-radius: 0 !important; background: #fff !important; height: auto !important; overflow: visible !important; position: static !important; }
+      body, html { background: #fff !important; height: auto !important; overflow: visible !important; }
+      body > div, body > div > div { height: auto !important; overflow: visible !important; }
+    }
     /* ── Global mobile fixes for all admin pages ── */
     @media (max-width: 768px) {
       /* Headings & titles */
@@ -775,14 +834,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </header>
 
       {/* ═══ Body: sidebar + content ═══ */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', background: '#1a1a1a' }}>
+      <div className="admin-body-wrap" style={{ display: 'flex', flex: 1, overflow: 'hidden', background: '#1a1a1a' }}>
         {sidebarOpen && <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 20 }} className="lg:hidden" onClick={() => setSidebarOpen(false)} />}
         {sidebarJsx}
         {/* Main content area — clean, centered */}
         <div className="admin-content-wrap" style={{
           flex: 1, position: 'relative', overflow: 'hidden', background: '#ffffff',
         }}>
-          <main ref={contentRef} className="admin-main-content" style={{
+          <main ref={contentRef} className="admin-main-content admin-main-scroll" style={{
             position: 'relative', zIndex: 1, height: '100%',
             overflowY: 'auto', overflowX: 'hidden',
             padding: '16px 12px 32px', background: '#ffffff',

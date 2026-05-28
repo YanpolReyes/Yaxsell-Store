@@ -60,6 +60,22 @@ const TEMPLATES: Template[] = [
     tags: ['Estética', 'Cosméticos', 'GSAP'],
     accent: '#dfe146', accentDark: '#2a2120', bg: '#fde6ef', navBg: '#ffece7',
   },
+  {
+    id: 6,
+    name: 'Horizon Premium',
+    description: 'Tema premium de Shopify con split-hero animado, máscaras SVG dinámicas, scroll suave y diseño minimalista de alta gama. Animaciones GSAP/ScrollMagic.',
+    emoji: '🚀',
+    tags: ['Premium', 'Shopify', 'GSAP', 'Split-Hero'],
+    accent: '#2563eb', accentDark: '#1e40af', bg: '#f8fafc', navBg: '#0f172a',
+  },
+  {
+    id: 7,
+    name: 'Noble Premium',
+    description: 'Tema premium de Shopify Noble con secciones de grids dinámicos, animaciones fluidas, menús optimizados y diseño estético de última generación.',
+    emoji: '💎',
+    tags: ['Elegante', 'Shopify', 'Grids', 'Noble'],
+    accent: '#059669', accentDark: '#047857', bg: '#fafafa', navBg: '#111827',
+  },
 ];
 
 function TemplatePreview({ t, isActive }: { t: Template; isActive: boolean }) {
@@ -280,49 +296,72 @@ export default function PlantillasPage() {
                         <div key={i} title={c} style={{ width: 16, height: 16, borderRadius: '50%', background: c, border: '2px solid #f3f4f6', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }} />
                       ))}
                     </div>
-                    {!t.locked && isActive && (
-                      <button
-                        onClick={() => router.push(`/admin/theme-editor?t=${t.id}`)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 5,
-                          fontSize: 12, fontWeight: 600,
-                          padding: '7px 14px', borderRadius: 8,
-                          background: '#f3f4f6', color: '#374151',
-                          border: '1px solid #e5e7eb', cursor: 'pointer',
-                          transition: 'all 0.15s',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#e5e7eb'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = '#f3f4f6'; }}
-                      >
-                        <Pencil size={12} /> Editar
-                      </button>
-                    )}
-                    {t.locked ? (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>
-                        <Lock size={11} /> Bloqueada
-                      </span>
-                    ) : isActive ? (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#059669', fontWeight: 700 }}>
-                        <Check size={13} /> En uso
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => activateTemplate(t.id)}
-                        disabled={saving}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 6,
-                          fontSize: 12, fontWeight: 700,
-                          padding: '7px 16px', borderRadius: 8,
-                          background: isHov ? t.accent : '#111827',
-                          color: '#fff', border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
-                          opacity: saving ? 0.6 : 1,
-                          transition: 'background 0.15s',
-                        }}
-                      >
-                        {saving ? <Loader size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Zap size={12} />}
-                        Activar
-                      </button>
-                    )}
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      {/* Botón Previsualizar — siempre visible si no está bloqueada */}
+                      {!t.locked && (
+                        <a
+                          href={`/preview/plantilla/${t.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 4,
+                            fontSize: 11, fontWeight: 600,
+                            padding: '6px 10px', borderRadius: 7,
+                            background: '#eff6ff', color: '#2563eb',
+                            border: '1px solid #bfdbfe', cursor: 'pointer',
+                            textDecoration: 'none',
+                            transition: 'all 0.15s',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#dbeafe'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = '#eff6ff'; }}
+                        >
+                          <Eye size={11} /> Preview
+                        </a>
+                      )}
+                      {!t.locked && isActive && (
+                        <button
+                          onClick={() => router.push(`/admin/theme-editor?t=${t.id}`)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            fontSize: 12, fontWeight: 600,
+                            padding: '7px 14px', borderRadius: 8,
+                            background: '#f3f4f6', color: '#374151',
+                            border: '1px solid #e5e7eb', cursor: 'pointer',
+                            transition: 'all 0.15s',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#e5e7eb'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = '#f3f4f6'; }}
+                        >
+                          <Pencil size={12} /> Editar
+                        </button>
+                      )}
+                      {t.locked ? (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>
+                          <Lock size={11} /> Bloqueada
+                        </span>
+                      ) : isActive ? (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#059669', fontWeight: 700 }}>
+                          <Check size={13} /> En uso
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => activateTemplate(t.id)}
+                          disabled={saving}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            fontSize: 12, fontWeight: 700,
+                            padding: '7px 16px', borderRadius: 8,
+                            background: isHov ? t.accent : '#111827',
+                            color: '#fff', border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
+                            opacity: saving ? 0.6 : 1,
+                            transition: 'background 0.15s',
+                          }}
+                        >
+                          {saving ? <Loader size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Zap size={12} />}
+                          Activar
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

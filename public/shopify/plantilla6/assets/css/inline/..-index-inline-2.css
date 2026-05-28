@@ -1,0 +1,170 @@
+:root,
+     
+    .color-scheme-1 { 
+        --gradient-color: linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(135, 116, 94, 1) 100%);
+        --color-background: rgba(255 255 255 / 1.0);
+        --color-secondary-background: rgba(239 230 223 / 1.0); 
+        --color-heading: rgba(128 110 89 / 1.0); 
+        --color-secondary-heading: rgba(0 0 0 / 1.0);
+        --color-text: rgba(70 70 70 / 1.0); 
+        --color-secondary-text: rgba(0 0 0 / 1.0);
+        --color-link: rgba(128 110 89 / 1.0);
+        --color-link-hover: rgba(0 0 0 / 1.0);
+        --color-border: rgba(70 70 70 / 1.0);
+        --color-shadow: rgba(0 0 0 / 0.68);
+        --color-primary-button-background: rgba(128 110 89 / 1.0);
+        --color-primary-button-text: rgba(255 255 255 / 1.0);
+        --color-primary-button-border: rgba(128 110 89 / 1.0);
+        --color-primary-button-hover-background: rgba(239 230 223 / 1.0);
+        --color-primary-button-hover-text: rgba(128 110 89 / 1.0);
+        --color-primary-button-hover-border: rgba(239 230 223 / 1.0);
+        --color-secondary-button-background: rgba(255 255 255 / 1.0);
+        --color-secondary-button-text: rgba(128 110 89 / 1.0);
+        --color-secondary-button-border: rgba(128 110 89 / 1.0);
+        --color-secondary-button-hover-background: rgba(128 110 89 / 1.0);
+        --color-secondary-button-hover-text: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-border: rgba(128 110 89 / 1.0);
+        --color-disbled-button-background: rgba(201 201 201 / 1.0);
+        --color-disabled-button-text: rgba(0 0 0 / 1.0);
+        --color-input-background: rgba(249 246 242 / 1.0);
+        --color-input-text: rgba(0 0 0 / 1.0);
+        --color-input-border: rgba();
+        --color-highlight: rgba(255 255 255 / 1.0);
+        --color-arrows-bg: rgba(128 110 89 / 1.0);
+        --color-arrows: rgba(255 255 255 / 1.0);
+        --op-bg: rgba(128 110 89 / 1.0);
+        --op-text: rgba(255 255 255 / 1.0);
+        --op-border: rgba(128 110 89 / 1.0);
+        --op-bg-secondary: rgba(255 255 255 / 1.0);
+        --op-text-secondary: rgba(128 110 89 / 1.0);
+        --op-border-secondary: rgba(128 110 89 / 1.0);
+      }
+  
+     
+    .color-scheme-2 { 
+        --gradient-color: linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(135, 116, 94, 1) 100%);
+        --color-background: rgba(128 110 89 / 1.0);
+        --color-secondary-background: rgba(255 255 255 / 1.0); 
+        --color-heading: rgba(255 255 255 / 1.0); 
+        --color-secondary-heading: rgba(193 174 153 / 1.0);
+        --color-text: rgba(255 255 255 / 1.0); 
+        --color-secondary-text: rgba(128 110 89 / 1.0);
+        --color-link: rgba(255 255 255 / 1.0);
+        --color-link-hover: rgba(0 0 0 / 1.0);
+        --color-border: rgba(255 255 255 / 1.0);
+        --color-shadow: rgba(0 0 0 / 0.54);
+        --color-primary-button-background: rgba(128 110 89 / 1.0);
+        --color-primary-button-text: rgba(255 255 255 / 1.0);
+        --color-primary-button-border: rgba(128 110 89 / 1.0);
+        --color-primary-button-hover-background: rgba(239 230 223 / 1.0);
+        --color-primary-button-hover-text: rgba(128 110 89 / 1.0);
+        --color-primary-button-hover-border: rgba(239 230 223 / 1.0);
+        --color-secondary-button-background: rgba(255 255 255 / 1.0);
+        --color-secondary-button-text: rgba(128 110 89 / 1.0);
+        --color-secondary-button-border: rgba(128 110 89 / 1.0);
+        --color-secondary-button-hover-background: rgba(0 0 0 / 1.0);
+        --color-secondary-button-hover-text: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-border: rgba(0 0 0 / 1.0);
+        --color-disbled-button-background: rgba(201 201 201 / 1.0);
+        --color-disabled-button-text: rgba(0 0 0 / 1.0);
+        --color-input-background: rgba(247 247 247 / 1.0);
+        --color-input-text: rgba(0 0 0 / 1.0);
+        --color-input-border: rgba();
+        --color-highlight: rgba(255 255 255 / 1.0);
+        --color-arrows-bg: rgba(255 255 255 / 1.0);
+        --color-arrows: rgba(128 110 89 / 1.0);
+        --op-bg: rgba(128 110 89 / 1.0);
+        --op-text: rgba(255 255 255 / 1.0);
+        --op-border: rgba(128 110 89 / 1.0);
+        --op-bg-secondary: rgba(255 255 255 / 1.0);
+        --op-text-secondary: rgba(128 110 89 / 1.0);
+        --op-border-secondary: rgba(128 110 89 / 1.0);
+      }
+  
+     
+    .color-scheme-3 { 
+        --gradient-color: linear-gradient(90deg, rgba(135, 116, 94, 1) 25.96%, rgba(233, 226, 218, 1) 100%);
+        --color-background: rgba(255 255 255 / 1.0);
+        --color-secondary-background: rgba(239 230 223 / 1.0); 
+        --color-heading: rgba(128 110 89 / 1.0); 
+        --color-secondary-heading: rgba(255 255 255 / 1.0);
+        --color-text: rgba(128 110 89 / 1.0); 
+        --color-secondary-text: rgba(255 255 255 / 1.0);
+        --color-link: rgba(128 110 89 / 1.0);
+        --color-link-hover: rgba(0 0 0 / 1.0);
+        --color-border: rgba(70 70 70 / 1.0);
+        --color-shadow: rgba(0 0 0 / 0.54);
+        --color-primary-button-background: rgba(128 110 89 / 1.0);
+        --color-primary-button-text: rgba(255 255 255 / 1.0);
+        --color-primary-button-border: rgba(128 110 89 / 1.0);
+        --color-primary-button-hover-background: rgba(239 230 223 / 1.0);
+        --color-primary-button-hover-text: rgba(128 110 89 / 1.0);
+        --color-primary-button-hover-border: rgba(239 230 223 / 1.0);
+        --color-secondary-button-background: rgba(255 255 255 / 1.0);
+        --color-secondary-button-text: rgba(128 110 89 / 1.0);
+        --color-secondary-button-border: rgba(128 110 89 / 1.0);
+        --color-secondary-button-hover-background: rgba(128 110 89 / 1.0);
+        --color-secondary-button-hover-text: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-border: rgba(128 110 89 / 1.0);
+        --color-disbled-button-background: rgba(201 201 201 / 1.0);
+        --color-disabled-button-text: rgba(0 0 0 / 1.0);
+        --color-input-background: rgba(247 247 247 / 1.0);
+        --color-input-text: rgba(0 0 0 / 1.0);
+        --color-input-border: rgba();
+        --color-highlight: rgba(255 255 255 / 1.0);
+        --color-arrows-bg: rgba(255 255 255 / 1.0);
+        --color-arrows: rgba(128 110 89 / 1.0);
+        --op-bg: rgba(128 110 89 / 1.0);
+        --op-text: rgba(255 255 255 / 1.0);
+        --op-border: rgba(128 110 89 / 1.0);
+        --op-bg-secondary: rgba(255 255 255 / 1.0);
+        --op-text-secondary: rgba(128 110 89 / 1.0);
+        --op-border-secondary: rgba(128 110 89 / 1.0);
+      }
+  
+     
+    .color-scheme-4 { 
+        --gradient-color: linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(135, 116, 94, 1) 100%);
+        --color-background: rgba(239 230 223 / 1.0);
+        --color-secondary-background: rgba(239 230 223 / 1.0); 
+        --color-heading: rgba(128 110 89 / 1.0); 
+        --color-secondary-heading: rgba(0 0 0 / 1.0);
+        --color-text: rgba(128 110 89 / 1.0); 
+        --color-secondary-text: rgba(0 0 0 / 1.0);
+        --color-link: rgba(128 110 89 / 1.0);
+        --color-link-hover: rgba(0 0 0 / 1.0);
+        --color-border: rgba(128 110 89 / 1.0);
+        --color-shadow: rgba(0 0 0 / 0.68);
+        --color-primary-button-background: rgba(128 110 89 / 1.0);
+        --color-primary-button-text: rgba(255 255 255 / 1.0);
+        --color-primary-button-border: rgba(128 110 89 / 1.0);
+        --color-primary-button-hover-background: rgba(239 230 223 / 1.0);
+        --color-primary-button-hover-text: rgba(128 110 89 / 1.0);
+        --color-primary-button-hover-border: rgba(239 230 223 / 1.0);
+        --color-secondary-button-background: rgba(255 255 255 / 1.0);
+        --color-secondary-button-text: rgba(128 110 89 / 1.0);
+        --color-secondary-button-border: rgba(128 110 89 / 1.0);
+        --color-secondary-button-hover-background: rgba(128 110 89 / 1.0);
+        --color-secondary-button-hover-text: rgba(255 255 255 / 1.0);
+        --color-secondary-button-hover-border: rgba(128 110 89 / 1.0);
+        --color-disbled-button-background: rgba(201 201 201 / 1.0);
+        --color-disabled-button-text: rgba(0 0 0 / 1.0);
+        --color-input-background: rgba(249 246 242 / 1.0);
+        --color-input-text: rgba(0 0 0 / 1.0);
+        --color-input-border: rgba();
+        --color-highlight: rgba(255 255 255 / 1.0);
+        --color-arrows-bg: rgba(128 110 89 / 1.0);
+        --color-arrows: rgba(255 255 255 / 1.0);
+        --op-bg: rgba(128 110 89 / 1.0);
+        --op-text: rgba(255 255 255 / 1.0);
+        --op-border: rgba(128 110 89 / 1.0);
+        --op-bg-secondary: rgba(255 255 255 / 1.0);
+        --op-text-secondary: rgba(128 110 89 / 1.0);
+        --op-border-secondary: rgba(128 110 89 / 1.0);
+      }
+  
+
+  body, .color-scheme-1, .color-scheme-2, .color-scheme-3, .color-scheme-4 {
+    color: var(--color-text);
+    background-color: var(--color-background);
+  }
