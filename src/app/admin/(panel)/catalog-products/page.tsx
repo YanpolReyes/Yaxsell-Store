@@ -133,6 +133,7 @@ export default function CatalogProductsPage() {
         } catch (e) {
           console.error('Error loading products (catalog) chunk', e);
         }
+      }
 
       // 2. Fetch Users
       const userMap: Record<string, { name: string; email: string }> = {};
