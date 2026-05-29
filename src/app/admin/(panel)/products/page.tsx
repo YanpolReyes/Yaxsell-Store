@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { Query, ID } from 'appwrite';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { Product, Category } from '@/types/admin';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { Product, Category, Subcategory } from '@/types/admin';
 import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff } from 'lucide-react';
 import ImageUploadField from '@/components/admin/ImageUploadField';
 import { generateProductTitle, generateProductDescription } from '@/lib/aiAdmin';
@@ -61,6 +61,17 @@ export default function ProductsPage() {
   const [syncingImages, setSyncingImages] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ checked: 0, broken: 0 });
 
+  // AI Categorization states
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [aiCategorizeModal, setAiCategorizeModal] = useState(false);
+  const [aiCategorizeMode, setAiCategorizeMode] = useState<'uncategorized' | 'all'>('uncategorized');
+  const [aiCategorizing, setAiCategorizing] = useState(false);
+  const [aiCategorizeSuggestions, setAiCategorizeSuggestions] = useState<any[]>([]);
+  const [aiCategorizeProgress, setAiCategorizeProgress] = useState({ current: 0, total: 0 });
+  const [approvedSuggestions, setApprovedSuggestions] = useState<Record<string, boolean>>({});
+  const [applyingCategorization, setApplyingCategorization] = useState(false);
+  const [applyingProgress, setApplyingProgress] = useState({ current: 0, total: 0 });
+
   const applyBulkStock = async () => {
     const v = parseInt(stockAdj.value, 10);
     if (isNaN(v)) { alert('Ingresa un valor válido'); return; }
@@ -114,6 +125,121 @@ export default function ProductsPage() {
     finally { setApplyingPrice(false); }
   };
 
+  const startAiCategorization = async () => {
+    // 1. Filter products based on mode
+    let targets = products;
+    if (aiCategorizeMode === 'uncategorized') {
+      targets = products.filter(p => !p.CATEGORYID || p.CATEGORYID.trim() === '');
+    }
+
+    if (targets.length === 0) {
+      alert(aiCategorizeMode === 'uncategorized' 
+        ? 'No hay productos sin categoría asignada.' 
+        : 'No hay productos para procesar.'
+      );
+      return;
+    }
+
+    setAiCategorizing(true);
+    setAiCategorizeSuggestions([]);
+    setAiCategorizeProgress({ current: 0, total: targets.length });
+
+    const batchSize = 50;
+    const suggestionsList: any[] = [];
+    const defaultApproved: Record<string, boolean> = {};
+
+    try {
+      for (let i = 0; i < targets.length; i += batchSize) {
+        const batch = targets.slice(i, i + batchSize);
+        setAiCategorizeProgress({ current: i, total: targets.length });
+
+        const res = await fetch('/api/ai-categorize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            products: batch.map(p => ({ $id: p.$id, NAME: p.NAME, DESCRIPTION: p.DESCRIPTION })),
+            categories: categories.map(c => ({ $id: c.$id, name: c.name })),
+            subcategories: subcategories.map(s => ({ $id: s.$id, name: s.name, categoryId: s.categoryId })),
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error(await res.text());
+        }
+
+        const data = await res.ok ? await res.json() : { success: false, error: 'Request failed' };
+        if (data.success && data.suggestions) {
+          data.suggestions.forEach((s: any) => {
+            // Find matched product from targets
+            const p = targets.find(t => t.$id === s.productId);
+            if (p) {
+              suggestionsList.push({
+                productId: s.productId,
+                productName: p.NAME,
+                currentCategoryId: p.CATEGORYID,
+                suggestedCategoryId: s.categoryId,
+                suggestedSubcategoryId: s.subcategoryId,
+                reason: s.reason,
+              });
+              // Approve suggestions that actually find a category
+              if (s.categoryId) {
+                defaultApproved[s.productId] = true;
+              }
+            }
+          });
+          setAiCategorizeSuggestions([...suggestionsList]);
+          setApprovedSuggestions({ ...defaultApproved });
+        }
+      }
+      setAiCategorizeProgress({ current: targets.length, total: targets.length });
+    } catch (e: any) {
+      alert('Error durante el análisis: ' + e.message);
+    } finally {
+      setAiCategorizing(false);
+    }
+  };
+
+  const applyAiCategorization = async () => {
+    const toApply = aiCategorizeSuggestions.filter(s => approvedSuggestions[s.productId]);
+    if (toApply.length === 0) {
+      alert('No hay sugerencias aprobadas para aplicar.');
+      return;
+    }
+
+    setApplyingCategorization(true);
+    setApplyingProgress({ current: 0, total: toApply.length });
+
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      for (let i = 0; i < toApply.length; i++) {
+        const item = toApply[i];
+        setApplyingProgress({ current: i, total: toApply.length });
+
+        const payload: any = {};
+        if (item.suggestedCategoryId) payload.CATEGORYID = item.suggestedCategoryId;
+        if (item.suggestedSubcategoryId) payload.SUBCATEGORYID = item.suggestedSubcategoryId;
+
+        if (Object.keys(payload).length > 0) {
+          await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, item.productId, payload);
+        }
+      }
+
+      setApplyingProgress({ current: toApply.length, total: toApply.length });
+      invalidateProductCache();
+      alert(`¡Se categorizaron exitosamente ${toApply.length} producto(s)!`);
+      setAiCategorizeModal(false);
+      setAiCategorizeSuggestions([]);
+      setApprovedSuggestions({});
+      load();
+    } catch (e: any) {
+      alert('Error al aplicar categorizaciones: ' + e.message);
+    } finally {
+      setApplyingCategorization(false);
+    }
+  };
+
   const load = useCallback(async () => {
     setIsLoading(true); setError('');
     try {
@@ -133,9 +259,13 @@ export default function ProductsPage() {
         cursor = docs[docs.length - 1].$id;
       }
       allProducts.sort((a, b) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime());
-      const cr = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]);
+      const [cr, subRes] = await Promise.all([
+        databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]),
+        databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.limit(500)]),
+      ]);
       setProducts(allProducts);
       setCategories(cr.documents as unknown as Category[]);
+      setSubcategories(subRes.documents as unknown as Subcategory[]);
     } catch (e: any) { setError(e.message); }
     finally { setIsLoading(false); }
   }, []);
@@ -903,6 +1033,9 @@ export default function ProductsPage() {
           <button onClick={exportXLSX} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm font-medium hover:bg-green-100 transition disabled:opacity-50">
             <Download className="w-4 h-4" />XLSX
           </button>
+          <button onClick={() => setAiCategorizeModal(true)} className="flex items-center gap-1.5 px-3 py-2 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-700 transition shadow-sm" title="Categorizar productos usando IA">
+            <Sparkles className="w-4 h-4" /> Categorizar con Yexy
+          </button>
           <button onClick={load} disabled={isLoading} className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition text-gray-600">
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
@@ -1242,6 +1375,218 @@ export default function ProductsPage() {
             <div className="flex justify-end gap-3 p-5 border-t border-gray-100">
               <button onClick={() => setImageUrlModal(null)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
               <button onClick={saveImageUrl} className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition">Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Categorization Modal (Yexy) */}
+      {aiCategorizeModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[85vh]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-gradient-to-r from-violet-50 to-indigo-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+                  <Sparkles className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900 text-base">Categorización Inteligente con Yexy</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Organiza tu catálogo de forma automática usando Inteligencia Artificial</p>
+                </div>
+              </div>
+              <button onClick={() => {
+                if (aiCategorizing || applyingCategorization) return;
+                setAiCategorizeModal(false);
+                setAiCategorizeSuggestions([]);
+              }} disabled={aiCategorizing || applyingCategorization} className="p-1.5 rounded-lg hover:bg-gray-200/60 text-gray-400 hover:text-gray-600 transition disabled:opacity-50">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto flex-1 bg-gray-50/50">
+              {/* State 1: Configuration */}
+              {aiCategorizeSuggestions.length === 0 && !aiCategorizing && (
+                <div className="space-y-6 max-w-lg mx-auto py-4">
+                  <div className="bg-violet-50 border border-violet-100 rounded-2xl p-4 flex gap-3 text-sm text-violet-800">
+                    <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-violet-600" />
+                    <div>
+                      <p className="font-semibold">¿Cómo funciona?</p>
+                      <p className="text-violet-700/95 mt-1 leading-relaxed text-xs">
+                        Yexy analizará el título y la descripción de tus productos para recomendarte la categoría y la subcategoría que mejor se ajusten de entre las que tienes registradas. Luego podrás revisar las propuestas antes de aplicarlas.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">¿Qué productos quieres categorizar?</label>
+                    <div className="grid grid-cols-1 gap-3">
+                      <label className={`border rounded-xl p-4 flex items-start gap-3 cursor-pointer transition ${aiCategorizeMode === 'uncategorized' ? 'border-violet-600 bg-violet-50/40 ring-2 ring-violet-100' : 'border-gray-200 hover:bg-gray-50 bg-white'}`}>
+                        <input type="radio" name="ai-mode" checked={aiCategorizeMode === 'uncategorized'} onChange={() => setAiCategorizeMode('uncategorized')} className="mt-1 text-violet-600 focus:ring-violet-500" />
+                        <div>
+                          <p className="font-semibold text-sm text-gray-900">Solo productos sin categoría</p>
+                          <p className="text-xs text-gray-500 mt-1">Recomendado. Procesará únicamente los productos que no tienen ninguna categoría asignada ({products.filter(p => !p.CATEGORYID || p.CATEGORYID.trim() === '').length} encontrados).</p>
+                        </div>
+                      </label>
+
+                      <label className={`border rounded-xl p-4 flex items-start gap-3 cursor-pointer transition ${aiCategorizeMode === 'all' ? 'border-violet-600 bg-violet-50/40 ring-2 ring-violet-100' : 'border-gray-200 hover:bg-gray-50 bg-white'}`}>
+                        <input type="radio" name="ai-mode" checked={aiCategorizeMode === 'all'} onChange={() => setAiCategorizeMode('all')} className="mt-1 text-violet-600 focus:ring-violet-500" />
+                        <div>
+                          <p className="font-semibold text-sm text-gray-900">Todos los productos</p>
+                          <p className="text-xs text-gray-500 mt-1">Procesará la totalidad de tu catálogo de productos ({products.length} productos) para re-evaluarlos.</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 flex justify-center">
+                    <button onClick={startAiCategorization} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold shadow-lg shadow-violet-100 transition duration-150">
+                      <Sparkles className="w-5 h-5" /> Comenzar Análisis
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* State 2: Categorizing (Progress) */}
+              {aiCategorizing && (
+                <div className="flex flex-col items-center justify-center py-16 space-y-6 max-w-md mx-auto">
+                  <div className="w-16 h-16 rounded-full border-4 border-violet-100 border-t-violet-600 animate-spin" />
+                  <div className="text-center">
+                    <p className="font-bold text-gray-800 text-lg">Yexy está analizando tu catálogo...</p>
+                    <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                      Este proceso se realiza en lotes eficientes de 10 productos para garantizar la máxima precisión. Por favor, no cierres esta ventana.
+                    </p>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden shadow-inner">
+                    <div className="bg-gradient-to-r from-violet-500 to-indigo-600 h-full rounded-full transition-all duration-300" style={{ width: `${(aiCategorizeProgress.current / aiCategorizeProgress.total) * 100}%` }} />
+                  </div>
+                  <span className="text-xs font-semibold text-violet-700 bg-violet-50 px-3 py-1 rounded-full">
+                    {aiCategorizeProgress.current} de {aiCategorizeProgress.total} productos procesados
+                  </span>
+                </div>
+              )}
+
+              {/* State 3: Suggestion Review */}
+              {aiCategorizeSuggestions.length > 0 && !aiCategorizing && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2 mb-2 bg-violet-50 border border-violet-100 rounded-xl p-3.5">
+                    <div className="flex items-center gap-2 text-violet-800">
+                      <Sparkles className="w-4 h-4 shrink-0 text-violet-600" />
+                      <span className="text-xs font-semibold">Se encontraron {aiCategorizeSuggestions.length} sugerencias. Desmarca las que no quieras aplicar.</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => {
+                        const next: Record<string, boolean> = {};
+                        aiCategorizeSuggestions.forEach(s => { next[s.productId] = true; });
+                        setApprovedSuggestions(next);
+                      }} className="text-[11px] font-bold text-violet-700 hover:text-violet-800 bg-white border border-violet-200 px-2.5 py-1 rounded-lg transition">Marcar todo</button>
+                      <button onClick={() => setApprovedSuggestions({})} className="text-[11px] font-bold text-gray-500 hover:text-gray-700 bg-white border border-gray-200 px-2.5 py-1 rounded-lg transition">Desmarcar todo</button>
+                    </div>
+                  </div>
+
+                  <div className="border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                    <div className="overflow-x-auto max-h-[45vh]">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-600 uppercase tracking-wider">
+                            <th className="p-4 w-12 text-center">OK</th>
+                            <th className="p-4">Producto</th>
+                            <th className="p-4">Categoría Sugerida</th>
+                            <th className="p-4">Subcategoría Sugerida</th>
+                            <th className="p-4">Justificación de Yexy</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 text-sm">
+                          {aiCategorizeSuggestions.map(s => {
+                            const cat = categories.find(c => c.$id === s.suggestedCategoryId);
+                            const sub = subcategories.find(sub => sub.$id === s.suggestedSubcategoryId);
+                            return (
+                              <tr key={s.productId} className={`hover:bg-gray-50/50 transition ${approvedSuggestions[s.productId] ? '' : 'opacity-60 bg-gray-50/20'}`}>
+                                <td className="p-4 text-center">
+                                  <input type="checkbox" checked={approvedSuggestions[s.productId] || false} onChange={e => setApprovedSuggestions(prev => ({ ...prev, [s.productId]: e.target.checked }))} className="rounded text-violet-600 focus:ring-violet-500" />
+                                </td>
+                                <td className="p-4 font-medium text-gray-900 max-w-[200px] truncate" title={s.productName}>{s.productName}</td>
+                                <td className="p-4">
+                                  {cat ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                      {cat.name}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-gray-400 italic">No identificada</span>
+                                  )}
+                                </td>
+                                <td className="p-4">
+                                  {sub ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-50 text-violet-700 border border-violet-100">
+                                      {sub.name}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-gray-400 italic">Sin subcategoría</span>
+                                  )}
+                                </td>
+                                <td className="p-4 text-xs text-gray-500 leading-relaxed max-w-[250px] truncate" title={s.reason}>{s.reason || '-'}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* State 4: Applying (Saving) */}
+              {applyingCategorization && (
+                <div className="flex flex-col items-center justify-center py-16 space-y-6 max-w-md mx-auto">
+                  <div className="w-16 h-16 rounded-full border-4 border-violet-100 border-t-indigo-600 animate-spin" />
+                  <div className="text-center">
+                    <p className="font-bold text-gray-800 text-lg">Guardando categorizaciones...</p>
+                    <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                      Actualizando tu catálogo de productos en la base de datos de Appwrite. Por favor, no cierres esta ventana.
+                    </p>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden shadow-inner">
+                    <div className="bg-gradient-to-r from-violet-500 to-indigo-600 h-full rounded-full transition-all duration-300" style={{ width: `${(applyingProgress.current / applyingProgress.total) * 100}%` }} />
+                  </div>
+                  <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full animate-pulse">
+                    Actualizando: {applyingProgress.current} de {applyingProgress.total} productos
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-between items-center p-5 border-t border-gray-100 bg-gray-50">
+              <div>
+                {aiCategorizeSuggestions.length > 0 && !aiCategorizing && !applyingCategorization && (
+                  <span className="text-xs font-medium text-gray-500">
+                    Aprobados: <span className="font-bold text-violet-700">{aiCategorizeSuggestions.filter(s => approvedSuggestions[s.productId]).length}</span> de {aiCategorizeSuggestions.length} sugerencias
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  disabled={aiCategorizing || applyingCategorization}
+                  onClick={() => {
+                    setAiCategorizeModal(false);
+                    setAiCategorizeSuggestions([]);
+                    setApprovedSuggestions({});
+                  }}
+                  className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-100 transition disabled:opacity-50"
+                >
+                  {aiCategorizeSuggestions.length > 0 ? 'Descartar todo' : 'Cerrar'}
+                </button>
+
+                {aiCategorizeSuggestions.length > 0 && !aiCategorizing && !applyingCategorization && (
+                  <button
+                    onClick={applyAiCategorization}
+                    className="flex items-center gap-2 px-5 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 shadow-md shadow-violet-100 transition"
+                  >
+                    <Sparkles className="w-4 h-4" /> Aplicar Categorizaciones
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

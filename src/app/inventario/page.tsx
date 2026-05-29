@@ -178,6 +178,13 @@ export default function InventarioPage() {
   const [translateProgress, setTranslateProgress] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const q = new URLSearchParams(window.location.search).get('search');
+      if (q) setSearch(q);
+    }
+  }, []);
   const [filterStatus, setFilterStatus] = useState<'all' | 'matched' | 'new' | 'unmatched'>('all');
   const [products, setProducts] = useState<Product[]>([]); // inventory_products
   const [publishedSkus, setPublishedSkus] = useState<Set<string>>(new Set()); // SKUs ya en products (catálogo)

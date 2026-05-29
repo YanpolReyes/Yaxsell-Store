@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Query } from 'appwrite';
-import { getServices, getAppwriteConfig, STOCK_ALERTS_COLLECTION } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, STOCK_ALERTS_COLLECTION, INVENTORY_PRODUCTS_COLLECTION } from '@/lib/appwrite';
 import { normalizeStockAlert, type StockAlert } from '@/lib/stock-alerts';
 import { useAuth } from '@/hooks/useAuth';
 import { useCuentaBg } from '../CuentaBgContext';
@@ -42,7 +42,7 @@ export default function ConsultasPage() {
         
         if (uniqueProductIds.length > 0) {
           try {
-            const prodRes = await databases.listDocuments(databaseId, 'products', [
+            const prodRes = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION, [
               Query.equal('$id', uniqueProductIds),
               Query.limit(100),
             ]);
@@ -55,8 +55,8 @@ export default function ConsultasPage() {
                 } catch {
                   if (typeof p.IMAGES === 'string') img = p.IMAGES;
                 }
-              } else if (p.IMAGE_URL) {
-                img = p.IMAGE_URL;
+              } else {
+                img = p.IMAGEURL || p.IMAGEURL2 || p.IMAGE_URL || p.imageUrl || '';
               }
               productMap[p.$id] = {
                 name: p.NAME || p.name || 'Producto sin nombre',

@@ -19,6 +19,7 @@ const TEMPLATE_COMPONENTS: Record<number, any> = {
   11: dynamic(() => import('@/templates/plantilla11/HomePage'), { ssr: false }),
   12: dynamic(() => import('@/templates/plantilla12/HomePage'), { ssr: false }),
   13: dynamic(() => import('@/templates/plantilla13/HomePage'), { ssr: false }),
+  23: dynamic(() => import('@/templates/plantilla23/HomePage'), { ssr: false }),
 };
 
 const TEMPLATE_NAMES: Record<number, string> = {
@@ -34,6 +35,7 @@ const TEMPLATE_NAMES: Record<number, string> = {
   11: 'K-Me Store (old)',
   12: 'K-Me Store',
   13: 'K-Me Store V2',
+  23: 'Plantilla 23',
 };
 
 

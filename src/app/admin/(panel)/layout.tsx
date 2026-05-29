@@ -1,4 +1,4 @@
-'use client';
+ 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -49,7 +49,7 @@ const Ico = {
 /* Shopify-dark sidebar — no accent colors needed */
 
 /* ─────────────────────────── nav structure ─────────────────────────── */
-interface NavItem { href: string; label: string; icon: React.ReactNode; badge?: 'orders'|'notifs'|'wholesale'; children?: NavItem[]; }
+interface NavItem { href: string; label: string; icon: React.ReactNode; badge?: 'orders'|'notifs'|'wholesale'|'requests'; children?: NavItem[]; }
 interface NavGroup { label: string; items: NavItem[]; defaultOpen?: boolean; }
 
 const NAV_GROUPS: NavGroup[] = [
@@ -67,7 +67,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/products/stock-editor', label: 'Editor de Stock', icon: Ico.Inventario },
       { href: '/admin/products/pack-qty', label: 'Cant. por Paquete', icon: Ico.Inventario },
     ]},
-    { href: '/admin/catalog-products', label: 'Productos a Pedido', icon: Ico.Catalogo },
+    { href: '/admin/catalog-products', label: 'Productos a Pedido', icon: Ico.Catalogo, badge: 'requests' },
     { href: '/admin/product-votes', label: 'Productos que Llegan', icon: Ico.Ofertas },
     { href: '/admin/store-settings', label: 'Mi Tienda', icon: Ico.Config },
     { href: '/admin/orders',    label: 'Pedidos', icon: Ico.Pedidos, badge: 'orders' },
@@ -210,6 +210,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [pendingOrders,    setPendingOrders]    = useState(0);
   const [unreadNotifs,     setUnreadNotifs]     = useState(0);
   const [pendingWholesale, setPendingWholesale] = useState(0);
+  const [pendingRequests,  setPendingRequests]  = useState(0);
 
   const closeUserMenu = () => {
     setUserMenuClosing(true);
@@ -252,7 +253,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const res = await fetch('/api/admin/badges');
       if (res.ok) {
         const data = await res.json();
-        setPendingOrders(data.pendingOrders); setUnreadNotifs(data.unreadNotifs); setPendingWholesale(data.pendingWholesale);
+        setPendingOrders(data.pendingOrders);
+        setUnreadNotifs(data.unreadNotifs);
+        setPendingWholesale(data.pendingWholesale);
+        setPendingRequests(data.pendingRequests || 0);
       }
     } catch { /* silent */ }
   }, []);
@@ -344,8 +348,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleLogout = async () => { await logout(); router.replace('/admin/login'); };
 
-  const badgeCount = (b?: string) => b === 'orders' ? pendingOrders : b === 'notifs' ? unreadNotifs : b === 'wholesale' ? pendingWholesale : 0;
-  const badgeColor = (b?: string) => b === 'orders' ? '#f59e0b' : b === 'notifs' ? '#6366f1' : '#8b5cf6';
+  const badgeCount = (b?: string) => b === 'orders' ? pendingOrders : b === 'notifs' ? unreadNotifs : b === 'wholesale' ? pendingWholesale : b === 'requests' ? pendingRequests : 0;
+  const badgeColor = (b?: string) => b === 'orders' ? '#f59e0b' : b === 'notifs' ? '#6366f1' : b === 'wholesale' ? '#8b5cf6' : '#f97316';
 
   const isActive = (href: string) => href && (pathname === href || (href.length > 10 && pathname.startsWith(href)));
   const anyChildActive = (ch: NavItem[]) => ch.some(c => isActive(c.href));
