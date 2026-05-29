@@ -13,6 +13,7 @@ interface StockAlertView extends StockAlert {
   section?: number | null;
   gondola?: string | null;
   currentStock?: number;
+  inCatalog?: boolean;
 }
 
 interface GroupedUser {
@@ -60,13 +61,27 @@ export default function CatalogProductsPage() {
       const uniqueProductIds = Array.from(new Set(rawAlerts.map(a => a.productId).filter(Boolean)));
       const uniqueUserIds = Array.from(new Set(rawAlerts.map(a => a.userId).filter(id => id && !id.includes('@'))));
       
-      // 1. Fetch Products in chunks of 100
-      const productMap: Record<string, { name: string; image: string; sku?: string; section?: number | null; gondola?: string; stock?: number }> = {};
+      // 1. Fetch Products — try INVENTORY_PRODUCTS first, then PRODUCTS (catalog) as fallback
+      const productMap: Record<string, { name: string; image: string; sku?: string; section?: number | null; gondola?: string; stock?: number; inCatalog?: boolean }> = {};
       const productChunks: string[][] = [];
       for (let i = 0; i < uniqueProductIds.length; i += 100) {
         productChunks.push(uniqueProductIds.slice(i, i + 100));
       }
-      
+
+      // Helper to extract image from a document
+      const extractImage = (p: any): string => {
+        if (p.IMAGES) {
+          try {
+            const parsed = JSON.parse(p.IMAGES);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+          } catch {
+            if (typeof p.IMAGES === 'string' && p.IMAGES.startsWith('http')) return p.IMAGES;
+          }
+        }
+        return p.IMAGEURL || p.IMAGEURL2 || p.IMAGE_URL || p.imageUrl || p.image || p.IMAGE || '';
+      };
+
+      // Pass 1: search in inventory_products
       for (const chunk of productChunks) {
         try {
           const res = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, [
@@ -74,33 +89,51 @@ export default function CatalogProductsPage() {
             Query.limit(100),
           ]);
           res.documents.forEach((p: any) => {
-            let img = '';
-            if (p.IMAGES && p.IMAGES.length > 0) {
-              try {
-                const parsed = JSON.parse(p.IMAGES);
-                if (parsed && parsed.length > 0) img = parsed[0];
-              } catch {
-                if (typeof p.IMAGES === 'string') img = p.IMAGES;
-              }
-            } else {
-              img = p.IMAGEURL || p.IMAGEURL2 || p.IMAGE_URL || p.imageUrl || '';
-            }
             const skuVal = getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
             const locVal = getWarehouseLocationFromFeatures(p.FEATURES, p.section ?? null);
             productMap[p.$id] = {
-              name: p.NAME || p.name || 'Producto sin nombre',
-              image: img,
+              name: p.NAME || p.name || '',
+              image: extractImage(p),
               sku: skuVal || '',
               section: locVal.section,
               gondola: locVal.gondola || '?',
               stock: p.STOCK ?? 0,
+              inCatalog: false,
             };
           });
         } catch (e) {
-          console.error('Error loading products chunk', e);
+          console.error('Error loading inventory_products chunk', e);
         }
       }
-      
+
+      // Pass 2: for IDs still missing a name, try PRODUCTS_COLLECTION_ID (catalog)
+      const missingIds = uniqueProductIds.filter(id => !productMap[id] || !productMap[id].name);
+      const missingChunks: string[][] = [];
+      for (let i = 0; i < missingIds.length; i += 100) {
+        missingChunks.push(missingIds.slice(i, i + 100));
+      }
+      for (const chunk of missingChunks) {
+        try {
+          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+            Query.equal('$id', chunk),
+            Query.limit(100),
+          ]);
+          res.documents.forEach((p: any) => {
+            const existing = productMap[p.$id] || {};
+            productMap[p.$id] = {
+              name: p.name || p.NAME || p.title || p.TITLE || existing.name || '',
+              image: existing.image || extractImage(p),
+              sku: existing.sku || p.sku || p.SKU || '',
+              section: existing.section ?? null,
+              gondola: existing.gondola || '?',
+              stock: existing.stock ?? p.stock ?? p.STOCK ?? 0,
+              inCatalog: true, // This product exists in the published catalog
+            };
+          });
+        } catch (e) {
+          console.error('Error loading products (catalog) chunk', e);
+        }
+
       // 2. Fetch Users
       const userMap: Record<string, { name: string; email: string }> = {};
       const userChunks: string[][] = [];
@@ -143,12 +176,14 @@ export default function CatalogProductsPage() {
         
         return {
           ...a,
-          productName: pInfo?.name || a.productName || 'Producto sin nombre',
+          // Use pInfo name if found, then fall back to what the alert itself stored, then placeholder
+          productName: (pInfo?.name && pInfo.name.trim()) ? pInfo.name : (a.productName && a.productName !== 'Producto sin nombre' ? a.productName : (pInfo ? 'Producto en catálogo' : 'Producto sin nombre')),
           productImage: pInfo?.image || a.productImage || '',
           sku: pInfo?.sku || '',
           section: pInfo?.section,
           gondola: pInfo?.gondola,
           currentStock: pInfo?.stock ?? 0,
+          inCatalog: pInfo?.inCatalog ?? false,
           email: email || 'Invitado',
           userName: userName || email?.split('@')[0] || 'Cliente sin nombre',
         };
@@ -483,6 +518,28 @@ export default function CatalogProductsPage() {
                               <span style={{ fontSize: 11, fontWeight: 600, color: '#0369a1', background: '#e0f2fe', padding: '2px 5px', borderRadius: 4 }}>
                                 📍 Sec: {a.section} · Gónd: {a.gondola || '?'}
                               </span>
+                            )}
+                            {/* Badge: producto ya publicado en el catálogo */}
+                            {a.inCatalog && (
+                              <span style={{
+                                fontSize: 10, fontWeight: 700, color: '#065f46',
+                                background: '#d1fae5', border: '1px solid #6ee7b7',
+                                padding: '2px 7px', borderRadius: 10,
+                                display: 'flex', alignItems: 'center', gap: 3,
+                                whiteSpace: 'nowrap',
+                              }}>
+                                <CheckCircle size={10} /> Ya en catálogo
+                              </span>
+                            )}
+                            {/* Link directo al producto en el catálogo */}
+                            {a.inCatalog && a.productId && (
+                              <Link
+                                href={`/producto/${a.productId}`}
+                                target="_blank"
+                                style={{ fontSize: 10, fontWeight: 600, color: '#6366f1', display: 'flex', alignItems: 'center', gap: 2, textDecoration: 'none' }}
+                              >
+                                <ExternalLink size={10} /> Ver producto
+                              </Link>
                             )}
                           </div>
 
