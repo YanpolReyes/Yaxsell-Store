@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Query, ID } from 'appwrite';
-import { getServices, getAppwriteConfig, STOCK_ALERTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, STOCK_ALERTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, PRODUCTS_COLLECTION_ID, USERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { normalizeStockAlert, type StockAlert } from '@/lib/stock-alerts';
 import { Search, RefreshCw, Package, AlertTriangle, Users, Bell, CheckCircle, XCircle, User, ChevronRight, ArrowLeft, Clock } from 'lucide-react';
 
@@ -38,7 +38,98 @@ export default function CatalogProductsPage() {
         if (r.documents.length < 2000) break;
         offset += 2000;
       }
-      setAlerts(allDocs.map((d: any) => normalizeStockAlert(d)));
+      
+      const rawAlerts = allDocs.map((d: any) => normalizeStockAlert(d));
+      
+      // Resolve Product Details and User Details in memory
+      const uniqueProductIds = Array.from(new Set(rawAlerts.map(a => a.productId).filter(Boolean)));
+      const uniqueUserIds = Array.from(new Set(rawAlerts.map(a => a.userId).filter(id => id && !id.includes('@'))));
+      
+      // 1. Fetch Products in chunks of 100
+      const productMap: Record<string, { name: string; image: string }> = {};
+      const productChunks: string[][] = [];
+      for (let i = 0; i < uniqueProductIds.length; i += 100) {
+        productChunks.push(uniqueProductIds.slice(i, i + 100));
+      }
+      
+      for (const chunk of productChunks) {
+        try {
+          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+            Query.equal('$id', chunk),
+            Query.limit(100),
+          ]);
+          res.documents.forEach((p: any) => {
+            let img = '';
+            if (p.IMAGES && p.IMAGES.length > 0) {
+              try {
+                const parsed = JSON.parse(p.IMAGES);
+                if (parsed && parsed.length > 0) img = parsed[0];
+              } catch {
+                if (typeof p.IMAGES === 'string') img = p.IMAGES;
+              }
+            } else if (p.IMAGE_URL) {
+              img = p.IMAGE_URL;
+            }
+            productMap[p.$id] = {
+              name: p.NAME || p.name || 'Producto sin nombre',
+              image: img,
+            };
+          });
+        } catch (e) {
+          console.error('Error loading products chunk', e);
+        }
+      }
+      
+      // 2. Fetch Users from USERS_COLLECTION_ID in chunks of 100
+      const userMap: Record<string, { name: string; email: string }> = {};
+      const userChunks: string[][] = [];
+      for (let i = 0; i < uniqueUserIds.length; i += 100) {
+        userChunks.push(uniqueUserIds.slice(i, i + 100));
+      }
+      
+      for (const chunk of userChunks) {
+        try {
+          const res = await databases.listDocuments(databaseId, USERS_COLLECTION_ID, [
+            Query.equal('userId', chunk),
+            Query.limit(100),
+          ]);
+          res.documents.forEach((u: any) => {
+            userMap[u.userId] = {
+              name: u.name || u.NAME || 'Usuario sin nombre',
+              email: u.email || u.EMAIL || '',
+            };
+          });
+        } catch (e) {
+          console.error('Error loading users chunk', e);
+        }
+      }
+      
+      // 3. Map alerts with resolved info
+      const resolvedAlerts = rawAlerts.map(a => {
+        const pInfo = productMap[a.productId];
+        const uInfo = userMap[a.userId];
+        
+        let email = a.email;
+        let userName = a.userName;
+        
+        if (a.userId && a.userId.includes('@')) {
+          email = a.userId;
+          userName = a.userId.split('@')[0];
+        } else if (uInfo) {
+          email = uInfo.email;
+          userName = uInfo.name;
+        }
+        
+        return {
+          ...a,
+          productName: pInfo?.name || a.productName || 'Producto sin nombre',
+          productImage: pInfo?.image || a.productImage || '',
+          email: email || 'Invitado',
+          userName: userName || email?.split('@')[0] || 'Cliente sin nombre',
+        };
+      });
+      
+      setAlerts(resolvedAlerts);
     } catch (e: any) { setError(e.message); }
     finally { setIsLoading(false); }
   }, []);

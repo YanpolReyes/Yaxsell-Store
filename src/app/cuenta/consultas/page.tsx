@@ -33,7 +33,48 @@ export default function ConsultasPage() {
           Query.orderDesc('createdAt'),
           Query.limit(100),
         ]);
-        setAlerts(res.documents.map((d: any) => normalizeStockAlert(d)));
+        
+        const rawAlerts = res.documents.map((d: any) => normalizeStockAlert(d));
+        
+        // Resolve Products Details in memory
+        const uniqueProductIds = Array.from(new Set(rawAlerts.map(a => a.productId).filter(Boolean)));
+        const productMap: Record<string, { name: string; image: string }> = {};
+        
+        if (uniqueProductIds.length > 0) {
+          try {
+            const prodRes = await databases.listDocuments(databaseId, 'products', [
+              Query.equal('$id', uniqueProductIds),
+              Query.limit(100),
+            ]);
+            prodRes.documents.forEach((p: any) => {
+              let img = '';
+              if (p.IMAGES && p.IMAGES.length > 0) {
+                try {
+                  const parsed = JSON.parse(p.IMAGES);
+                  if (parsed && parsed.length > 0) img = parsed[0];
+                } catch {
+                  if (typeof p.IMAGES === 'string') img = p.IMAGES;
+                }
+              } else if (p.IMAGE_URL) {
+                img = p.IMAGE_URL;
+              }
+              productMap[p.$id] = {
+                name: p.NAME || p.name || 'Producto sin nombre',
+                image: img,
+              };
+            });
+          } catch (e) {
+            console.error('Error fetching products for account queries', e);
+          }
+        }
+        
+        const resolvedAlerts = rawAlerts.map(a => ({
+          ...a,
+          productName: productMap[a.productId]?.name || a.productName || 'Producto sin nombre',
+          productImage: productMap[a.productId]?.image || a.productImage || '',
+        }));
+        
+        setAlerts(resolvedAlerts);
       } catch (e) { console.error(e); }
       finally { setIsLoading(false); }
     };
