@@ -104,7 +104,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           const subDocs = await cached(`subcategories:${cid}`, TTL.categories, async () => {
             const r = await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [
               Query.equal('categoryId', cid),
-              Query.orderAsc('ORDER'),
+              Query.orderAsc('$createdAt'),
               Query.limit(50),
             ]);
             return r.documents;

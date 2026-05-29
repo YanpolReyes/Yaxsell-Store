@@ -99,13 +99,13 @@ export default function LleganProntoPage() {
         let subDocs: any[] = [];
         try {
           const r = await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [
-            Query.equal('categoryId', selectedCat), Query.orderAsc('ORDER'), Query.limit(50),
+            Query.equal('categoryId', selectedCat), Query.orderAsc('$createdAt'), Query.limit(50),
           ]);
           subDocs = r.documents;
         } catch {
           try {
             const r = await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [
-              Query.equal('CATEGORYID', selectedCat), Query.orderAsc('ORDER'), Query.limit(50),
+              Query.equal('CATEGORYID', selectedCat), Query.orderAsc('$createdAt'), Query.limit(50),
             ]);
             subDocs = r.documents;
           } catch {

@@ -153,7 +153,7 @@ export default function CatalogoPage() {
         try {
           const r = await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [
             Query.equal('categoryId', selectedCat),
-            Query.orderAsc('ORDER'),
+            Query.orderAsc('$createdAt'),
             Query.limit(50),
           ]);
           subDocs = r.documents;
@@ -161,7 +161,7 @@ export default function CatalogoPage() {
           try {
             const r = await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [
               Query.equal('CATEGORYID', selectedCat),
-              Query.orderAsc('ORDER'),
+              Query.orderAsc('$createdAt'),
               Query.limit(50),
             ]);
             subDocs = r.documents;

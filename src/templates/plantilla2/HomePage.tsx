@@ -924,7 +924,7 @@ export default function HomePage2() {
         const cats = cRes.documents as unknown as Category[];
         setCategories(cats.filter(c => c.name && c.$id));
         // Load subcategories
-        databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [Query.orderAsc('ORDER'), Query.limit(50)])
+        databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [Query.orderAsc('$createdAt'), Query.limit(50)])
           .then(subRes => setSubcategories(subRes.documents as unknown as Subcategory[]))
           .catch(() => setSubcategories([]));
         const loadedBanners = bRes.documents as unknown as Banner[];

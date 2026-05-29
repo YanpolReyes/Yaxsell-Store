@@ -50,7 +50,7 @@ export default function SubcategoriesPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       const [subRes, catRes, prodRes] = await Promise.all([
-        databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.orderAsc('ORDER'), Query.limit(100)]),
+        databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.orderAsc('$createdAt'), Query.limit(100)]),
         databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.orderAsc('$createdAt'), Query.limit(50)]),
         databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(500)]),
       ]);
@@ -85,7 +85,6 @@ export default function SubcategoriesPage() {
       const payload: any = { 
         name: d.name, 
         categoryId: d.categoryId, 
-        ORDER: Number(d.order) || 0,
       };
       if (d.ICON_URL) payload.ICON_URL = d.ICON_URL;
       if (d.BACKGROUND_IMAGE_URL) payload.BACKGROUND_IMAGE_URL = d.BACKGROUND_IMAGE_URL;
@@ -118,8 +117,8 @@ export default function SubcategoriesPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       await Promise.all([
-        databases.updateDocument(databaseId, SUBCATEGORIES_COLLECTION_ID, a.$id, { ORDER: a.order }),
-        databases.updateDocument(databaseId, SUBCATEGORIES_COLLECTION_ID, b.$id, { ORDER: b.order }),
+        databases.updateDocument(databaseId, SUBCATEGORIES_COLLECTION_ID, a.$id, { name: a.name, categoryId: a.categoryId }),
+        databases.updateDocument(databaseId, SUBCATEGORIES_COLLECTION_ID, b.$id, { name: b.name, categoryId: b.categoryId }),
       ]);
     } catch (e: any) { alert('Error al reordenar: ' + e.message); load(); }
     finally { setReordering(null); }
