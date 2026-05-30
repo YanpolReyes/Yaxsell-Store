@@ -379,6 +379,8 @@ export default function ProductDetailPlantilla1() {
               await databases.createDocument(databaseId, STOCK_ALERTS_COLLECTION, ID.unique(), buildStockAlertData({
                 productId: product.$id,
                 userId: email.toLowerCase().trim(),
+                productName: product.NAME || '',
+                productImage: getProductImageUrl(product) || '',
               }));
               alert('✅ Te avisaremos por email cuando haya stock disponible');
             } catch (err: unknown) {

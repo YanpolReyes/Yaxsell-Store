@@ -200,12 +200,13 @@ export default function CatalogProductsPage() {
         console.error('Error loading catalog_products catalog', e);
       }
 
-      // Build lookup maps of catalog products by normalized SKU, jumpseller_id, barcode
+      // Build lookup maps of catalog products by normalized SKU, jumpseller_id, barcode, and name
       const norm = (s: string) => (s || '').trim().replace(/[\.\-]/g, '').toLowerCase();
       const activeCatalogBySku = new Map<string, any>();
       const catalogById = new Map<string, any>();
       const catalogByJumpsellerId = new Map<string, any>();
       const catalogByBarcode = new Map<string, any>();
+      const catalogByName = new Map<string, any>();
       allCatalog.forEach((p: any) => {
         catalogById.set(p.$id, p);
         if (p.ISACTIVE !== false) {
@@ -215,23 +216,33 @@ export default function CatalogProductsPage() {
           if (jid) catalogByJumpsellerId.set(jid, p);
           const bc = norm(p.barcode || '');
           if (bc) catalogByBarcode.set(bc, p);
+          const nm = norm(p.NAME || p.name || p.TITLE || p.title || '');
+          if (nm) catalogByName.set(nm, p);
         }
       });
 
       // Update productMap with catalog info — match by $id, SKU, jumpseller_id, or barcode
+      // Also use alert's stored sku/jumpsellerId as fallback when inventory doc is gone
       for (const id of uniqueProductIds) {
         const existing = productMap[id] || {};
-        const skuToLookFor = norm(existing.sku || '');
-        const jidToLookFor = (existing.jumpsellerId || '').trim();
-        const bcToLookFor = norm(existing.barcode || '');
+        // Find the raw alert for this productId to get stored sku/jumpsellerId
+        const rawAlert = rawAlerts.find(a => a.productId === id);
+        const alertSku = rawAlert?.sku || '';
+        const alertJid = rawAlert?.jumpsellerId || '';
         
-        // Try matching by: 1) $id, 2) SKU, 3) jumpseller_id, 4) barcode
+        const skuToLookFor = norm(existing.sku || alertSku || '');
+        const jidToLookFor = (existing.jumpsellerId || alertJid || '').trim();
+        const bcToLookFor = norm(existing.barcode || '');
+        const nameToLookFor = norm(rawAlert?.productName || '');
+        
+        // Try matching by: 1) $id, 2) SKU, 3) jumpseller_id, 4) barcode, 5) name
         const catDocById = catalogById.get(id);
         const catDocBySku = skuToLookFor ? activeCatalogBySku.get(skuToLookFor) : undefined;
         const catDocByJid = jidToLookFor ? catalogByJumpsellerId.get(jidToLookFor) : undefined;
         const catDocByBc = bcToLookFor ? catalogByBarcode.get(bcToLookFor) : undefined;
+        const catDocByName = nameToLookFor ? catalogByName.get(nameToLookFor) : undefined;
         
-        const catDoc = catDocById || catDocBySku || catDocByJid || catDocByBc;
+        const catDoc = catDocById || catDocBySku || catDocByJid || catDocByBc || catDocByName;
         
         if (catDoc) {
           const isInProducts = catDoc._collection === 'products';
@@ -293,10 +304,10 @@ export default function CatalogProductsPage() {
         
         return {
           ...a,
-          // Use pInfo name if found, then fall back to what the alert itself stored, then placeholder
-          productName: (pInfo?.name && pInfo.name.trim()) ? pInfo.name : (a.productName && a.productName !== 'Producto sin nombre' ? a.productName : (pInfo ? 'Producto en catálogo' : 'Producto sin nombre')),
+          // Use pInfo name if found, then fall back to alert's stored name, then placeholder
+          productName: (pInfo?.name && pInfo.name.trim()) ? pInfo.name : (a.productName && a.productName.trim() ? a.productName : (pInfo ? 'Producto en catálogo' : 'Producto sin nombre')),
           productImage: pInfo?.image || a.productImage || '',
-          sku: pInfo?.sku || '',
+          sku: pInfo?.sku || a.sku || '',
           section: pInfo?.section,
           gondola: pInfo?.gondola,
           currentStock: pInfo?.stock ?? 0,

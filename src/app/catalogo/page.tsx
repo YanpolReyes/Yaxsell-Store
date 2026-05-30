@@ -74,6 +74,8 @@ export default function CatalogoPage() {
         buildStockAlertData({
           productId,
           userId: user!.id,
+          productName,
+          productImage,
         }),
       );
       setRequestedIds(prev => new Set([...prev, productId]));
