@@ -374,12 +374,14 @@ export default function CatalogProductsPage() {
       try {
         await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { STATUS: 'available' });
       } catch (err: any) {
-        if (err?.message?.includes('Unknown attribute') || err?.message?.includes('unknown attribute')) {
+        try {
           await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { status: 'available' });
-        } else throw err;
+        } catch (err2: any) {
+          console.warn('No se pudo actualizar estado del alerta:', err2?.message);
+        }
       }
 
-      // ── Rich notification con imagen, nombre y link al producto ──
+      // ── Notification to user ──
       if (req.userId) {
         const notifData: any = {
           userId: req.userId,
@@ -388,11 +390,11 @@ export default function CatalogProductsPage() {
           type: 'success',
           isRead: false,
         };
-        // Añadir imagen si está disponible
-        if (req.productImage) {
-          notifData.imageUrl = req.productImage;
+        try {
+          await databases.createDocument(databaseId, NOTIFICATIONS_COLLECTION_ID, ID.unique(), notifData);
+        } catch (notifErr: any) {
+          console.warn('No se pudo crear notificación:', notifErr?.message);
         }
-        await databases.createDocument(databaseId, NOTIFICATIONS_COLLECTION_ID, ID.unique(), notifData);
       }
 
       setAlerts(prev => prev.map(a => a.$id === req.$id ? { ...a, status: 'available', notified: true } : a));
@@ -412,11 +414,13 @@ export default function CatalogProductsPage() {
 
       // 1. Mark alert as unavailable
       try {
-        await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { STATUS: 'unavailable' } as any);
+        await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { STATUS: 'unavailable' });
       } catch (err: any) {
-        if (err?.message?.includes('Unknown attribute') || err?.message?.includes('unknown attribute')) {
-          await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { status: 'unavailable' } as any);
-        } else throw err;
+        try {
+          await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { status: 'unavailable' });
+        } catch (err2: any) {
+          console.warn('No se pudo actualizar estado del alerta:', err2?.message);
+        }
       }
 
       // 2. Delete from catalog_products (by productId matching $id)
@@ -438,7 +442,7 @@ export default function CatalogProductsPage() {
         console.warn('No se pudo eliminar de inventory_products:', e);
       }
 
-      // 4. Rich notification con imagen, nombre y link al producto
+      // 4. Notification to user
       if (req.userId) {
         const notifData: any = {
           userId: req.userId,
@@ -447,10 +451,11 @@ export default function CatalogProductsPage() {
           type: 'warning',
           isRead: false,
         };
-        if (req.productImage) {
-          notifData.imageUrl = req.productImage;
+        try {
+          await databases.createDocument(databaseId, NOTIFICATIONS_COLLECTION_ID, ID.unique(), notifData);
+        } catch (notifErr: any) {
+          console.warn('No se pudo crear notificación:', notifErr?.message);
         }
-        await databases.createDocument(databaseId, NOTIFICATIONS_COLLECTION_ID, ID.unique(), notifData);
       }
 
       setAlerts(prev => prev.map(a => a.$id === req.$id ? { ...a, status: 'unavailable', notified: true } : a));
