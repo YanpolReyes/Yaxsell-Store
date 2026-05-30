@@ -317,21 +317,41 @@ export default function CatalogProductsPage() {
   };
 
   const handleMarkUnavailable = async (req: StockAlertView) => {
-    if (!confirm(`¿Marcar "${req.productName}" como sin stock y notificar al cliente?`)) return;
+    if (!confirm(`¿Eliminar "${req.productName}" del catálogo e inventario, y notificar al cliente?`)) return;
     setProcessingId(req.$id);
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
+      // 1. Mark alert as unavailable
       try {
-        await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { STATUS: 'unavailable' });
+        await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { STATUS: 'unavailable' } as any);
       } catch (err: any) {
         if (err?.message?.includes('Unknown attribute') || err?.message?.includes('unknown attribute')) {
-          await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { status: 'unavailable' });
+          await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { status: 'unavailable' } as any);
         } else throw err;
       }
 
-      // ── Rich notification con imagen, nombre y link al producto ──
+      // 2. Delete from catalog_products (by productId matching $id)
+      try {
+        const catRes = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, [
+          Query.equal('$id', req.productId), Query.limit(1),
+        ]);
+        if (catRes.documents.length > 0) {
+          await databases.deleteDocument(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, catRes.documents[0].$id);
+        }
+      } catch (e) {
+        console.warn('No se pudo eliminar de catalog_products:', e);
+      }
+
+      // 3. Delete from inventory_products
+      try {
+        await databases.deleteDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, req.productId);
+      } catch (e) {
+        console.warn('No se pudo eliminar de inventory_products:', e);
+      }
+
+      // 4. Rich notification con imagen, nombre y link al producto
       if (req.userId) {
         const notifData: any = {
           userId: req.userId,
@@ -341,7 +361,6 @@ export default function CatalogProductsPage() {
           isRead: false,
           linkUrl: `/producto/${req.productId}`,
         };
-        // Añadir imagen si está disponible
         if (req.productImage) {
           notifData.imageUrl = req.productImage;
         }
