@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Query, ID } from 'appwrite';
 import Link from 'next/link';
-import { getServices, getAppwriteConfig, STOCK_ALERTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, PRODUCTS_COLLECTION_ID, USERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, STOCK_ALERTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, PRODUCTS_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, USERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { normalizeStockAlert, type StockAlert } from '@/lib/stock-alerts';
 import { getSkuFromFeatures, getWarehouseLocationFromFeatures } from '@/lib/product-features';
 import { Search, RefreshCw, Package, AlertTriangle, Users, Bell, CheckCircle, XCircle, User, ChevronRight, ArrowLeft, Clock, Eye, Sparkles, ExternalLink, Lock, Copy, Printer } from 'lucide-react';
@@ -108,7 +108,7 @@ export default function CatalogProductsPage() {
         }
       }
 
-      // Pass 2: Fetch ALL PRODUCTS_COLLECTION_ID (catalog) to accurately determine visibility (inCatalog) by SKU
+      // Pass 2: Fetch ALL PRODUCTS_COLLECTION_ID and CATALOG_PRODUCTS_COLLECTION_ID (catalog) to accurately determine visibility (inCatalog) by SKU
       // This solves the issue where an alert points to an old $id but the product was re-imported with a new $id.
       const allCatalog: any[] = [];
       try {
@@ -117,12 +117,26 @@ export default function CatalogProductsPage() {
           const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
             Query.limit(100), Query.offset(offsetCat)
           ]);
-          allCatalog.push(...res.documents);
+          allCatalog.push(...res.documents.map((d: any) => ({ ...d, _collection: 'products' })));
           if (res.documents.length < 100) break;
           offsetCat += 100;
         }
       } catch (e) {
-        console.error('Error loading full catalog', e);
+        console.error('Error loading products catalog', e);
+      }
+
+      try {
+        let offsetCat = 0;
+        while (true) {
+          const res = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, [
+            Query.limit(100), Query.offset(offsetCat)
+          ]);
+          allCatalog.push(...res.documents.map((d: any) => ({ ...d, _collection: 'catalog_products' })));
+          if (res.documents.length < 100) break;
+          offsetCat += 100;
+        }
+      } catch (e) {
+        console.error('Error loading catalog_products catalog', e);
       }
 
       // Build a map of catalog products by normalized SKU
