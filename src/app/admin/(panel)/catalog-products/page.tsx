@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { getServices, getAppwriteConfig, STOCK_ALERTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, PRODUCTS_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, USERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { normalizeStockAlert, type StockAlert } from '@/lib/stock-alerts';
 import { getSkuFromFeatures, getWarehouseLocationFromFeatures } from '@/lib/product-features';
-import { Search, RefreshCw, Package, AlertTriangle, Users, Bell, CheckCircle, XCircle, User, ChevronRight, ArrowLeft, Clock, Eye, Sparkles, ExternalLink, Lock, Copy, Printer } from 'lucide-react';
+import { Search, RefreshCw, Package, AlertTriangle, Users, Bell, CheckCircle, XCircle, User, ChevronRight, ArrowLeft, Clock, Eye, Sparkles, ExternalLink, Lock, Copy, Printer, Trash2 } from 'lucide-react';
 
 interface StockAlertView extends StockAlert {
   sku?: string;
@@ -387,7 +387,6 @@ export default function CatalogProductsPage() {
           message: `¡Buenas noticias! "${req.productName}" que tenías en tu lista de espera ya está disponible. Hay ${req.currentStock} unidad(es) en stock. ¡No te quedes sin él!`,
           type: 'success',
           isRead: false,
-          linkUrl: `/producto/${req.productId}`,
         };
         // Añadir imagen si está disponible
         if (req.productImage) {
@@ -455,6 +454,21 @@ export default function CatalogProductsPage() {
       }
 
       setAlerts(prev => prev.map(a => a.$id === req.$id ? { ...a, status: 'unavailable', notified: true } : a));
+    } catch (e: any) {
+      window.alert('Error: ' + e.message);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDeleteAlert = async (req: StockAlertView) => {
+    if (!confirm(`¿Eliminar la consulta de "${req.productName}"?`)) return;
+    setProcessingId(req.$id);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      await databases.deleteDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id);
+      setAlerts(prev => prev.filter(a => a.$id !== req.$id));
     } catch (e: any) {
       window.alert('Error: ' + e.message);
     } finally {
@@ -929,6 +943,20 @@ export default function CatalogProductsPage() {
                                 }}
                               >
                                 <XCircle size={12} /> No Hay
+                              </button>
+
+                              {/* Eliminar consulta */}
+                              <button
+                                onClick={() => handleDeleteAlert(a)}
+                                disabled={processingId === a.$id}
+                                style={{
+                                  padding: isMobile ? '7px 10px' : '7px 12px', border: '1px solid #e5e7eb', borderRadius: 6,
+                                  fontSize: isMobile ? 11 : 12, fontWeight: 700,
+                                  background: '#fff', color: '#6b7280', cursor: processingId === a.$id ? 'wait' : 'pointer',
+                                  display: 'flex', alignItems: 'center', gap: 4,
+                                }}
+                              >
+                                <Trash2 size={12} /> Eliminar
                               </button>
                             </div>
                           )}
