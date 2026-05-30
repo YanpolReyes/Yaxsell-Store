@@ -58,6 +58,7 @@ const NAV_GROUPS: NavGroup[] = [
     { href: '', label: 'Productos', icon: Ico.Productos, children: [
       { href: '/admin/products',       label: 'Productos',       icon: Ico.Productos },
       { href: '/admin/catalog-visibility', label: 'CATÁLOGO', icon: Ico.Catalogo },
+      { href: '/admin/catalog-migration', label: 'Migrar A Pedido', icon: Ico.Catalogo },
       { href: '/admin/wholesale-products', label: 'Productos Mayoristas', icon: Ico.Mayoristas },
       { href: '/admin/inventory',      label: 'Inventario',      icon: Ico.Inventario },
       { href: '/admin/categories',     label: 'Categorías',      icon: Ico.Categorias },

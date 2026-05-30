@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { Search, Package, ArrowRight, Heart, Bell, Check, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, CATALOG_PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
 import { normalizeProductImages, resolveStorageImageUrl, getProductImageUrl } from '@/lib/product-images';
 import { cached, TTL } from '@/lib/cache';
 import { Query } from 'appwrite';
@@ -99,7 +99,7 @@ export default function CatalogoPage() {
           const allDocs: any[] = [];
           let offset = 0;
           while (true) {
-            const r = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+            const r = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION, [
               Query.equal('ISACTIVE', true),
               Query.limit(2000), 
               Query.offset(offset)
@@ -183,11 +183,10 @@ export default function CatalogoPage() {
 
   const filtered = useMemo(() => {
     return products.filter(p => {
-      // Only show products with image and NO stock (catalog = a pedido)
+      // catalog_products only contains zero-stock items (a pedido)
       // Exclude COMING_SOON products (they show in /llegan-pronto)
       if (p.COMING_SOON) return false;
       if (!p.IMAGEURL || !p.IMAGEURL.trim()) return false;
-      if (p.STOCK && p.STOCK > 0) return false;
       if (selectedCat && p.CATEGORYID !== selectedCat) return false;
       if (selectedSub && p.SUBCATEGORYID !== selectedSub) return false;
       if (!search) return true;

@@ -69,6 +69,7 @@ export function getServices() {
 // Collection IDs (same across all clients)
 export const PRODUCTS_COLLECTION_ID = 'products';
 export const INVENTORY_PRODUCTS_COLLECTION_ID = 'inventory_products';
+export const CATALOG_PRODUCTS_COLLECTION_ID = 'catalog_products';
 export const CATEGORIES_COLLECTION_ID = 'categories';
 export const SUBCATEGORIES_COLLECTION_ID = 'subcategories';
 export const BANNERS_COLLECTION_ID = 'banners';

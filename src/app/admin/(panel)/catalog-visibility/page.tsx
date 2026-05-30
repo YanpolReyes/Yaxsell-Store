@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Query, ID } from 'appwrite';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Eye, AlertTriangle, CheckCircle } from 'lucide-react';
 
 interface Report {
@@ -152,7 +152,7 @@ export default function CatalogVisibilityPage() {
         offsetInv += 100;
       }
       
-      // 2. Fetch Catalog
+      // 2. Fetch Catalog (products WITH stock)
       const allCatalog: any[] = [];
       let offsetCat = 0;
       while (true) {
@@ -162,6 +162,23 @@ export default function CatalogVisibilityPage() {
         allCatalog.push(...res.documents);
         if (res.documents.length < 100) break;
         offsetCat += 100;
+      }
+
+      // 2b. Fetch Catalog Products (products WITHOUT stock = a pedido)
+      const allCatalogProducts: any[] = [];
+      let offsetCP = 0;
+      while (true) {
+        try {
+          const res = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, [
+            Query.limit(100), Query.offset(offsetCP)
+          ]);
+          allCatalogProducts.push(...res.documents);
+          if (res.documents.length < 100) break;
+          offsetCP += 100;
+        } catch {
+          // catalog_products may not exist yet
+          break;
+        }
       }
 
       // 3. Map SKUs
@@ -174,7 +191,11 @@ export default function CatalogVisibilityPage() {
       const catMap = new Map<string, any>();
       allCatalog.forEach(d => {
         const s = norm(d.sku || d.SKU);
-        if (s) catMap.set(s, d);
+        if (s) catMap.set(s, { ...d, _collection: 'products' });
+      });
+      allCatalogProducts.forEach(d => {
+        const s = norm(d.sku || d.SKU);
+        if (s) catMap.set(s, { ...d, _collection: 'catalog_products' });
       });
 
       // 4. Analyze
@@ -258,8 +279,9 @@ export default function CatalogVisibilityPage() {
       
       // 2. Activate
       for (const catDoc of syncData.toActivate) {
+        const collectionId = catDoc._collection === 'catalog_products' ? CATALOG_PRODUCTS_COLLECTION_ID : PRODUCTS_COLLECTION_ID;
         if (catDoc.ISACTIVE !== true) {
-          await executeWithRetry(() => databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, catDoc.$id, { ISACTIVE: true }));
+          await executeWithRetry(() => databases.updateDocument(databaseId, collectionId, catDoc.$id, { ISACTIVE: true }));
         }
         activated++;
         done++;
@@ -269,8 +291,9 @@ export default function CatalogVisibilityPage() {
       
       // 3. Hide
       for (const catDoc of syncData.toHide) {
+        const collectionId = catDoc._collection === 'catalog_products' ? CATALOG_PRODUCTS_COLLECTION_ID : PRODUCTS_COLLECTION_ID;
         if (catDoc.ISACTIVE !== false) {
-          await executeWithRetry(() => databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, catDoc.$id, { ISACTIVE: false }));
+          await executeWithRetry(() => databases.updateDocument(databaseId, collectionId, catDoc.$id, { ISACTIVE: false }));
         }
         deactivated++;
         done++;

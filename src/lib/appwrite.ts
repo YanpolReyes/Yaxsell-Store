@@ -45,6 +45,7 @@ export function getServices() {
 
 export const PRODUCTS_COLLECTION    = 'products';
 export const INVENTORY_PRODUCTS_COLLECTION = 'inventory_products';
+export const CATALOG_PRODUCTS_COLLECTION = 'catalog_products';
 export const CATEGORIES_COLLECTION  = 'categories';
 export const BANNERS_COLLECTION     = 'banners';
 export const ORDERS_COLLECTION      = 'orders';

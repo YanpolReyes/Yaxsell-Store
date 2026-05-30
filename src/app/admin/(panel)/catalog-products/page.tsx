@@ -140,7 +140,7 @@ export default function CatalogProductsPage() {
       // Update productMap with catalog info
       for (const id of uniqueProductIds) {
         const existing = productMap[id] || {};
-        const skuToLookFor = norm(existing.sku);
+        const skuToLookFor = norm(existing.sku || '');
         
         // Product is in catalog if its ID is in catalog AND active, OR its SKU is in catalog AND active
         const catDocById = catalogById.get(id);
