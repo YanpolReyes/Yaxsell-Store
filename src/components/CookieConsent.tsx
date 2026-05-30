@@ -8,11 +8,8 @@ export default function CookieConsent() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    const accepted = localStorage.getItem(STORAGE_KEY);
-    if (!accepted) {
-      const timer = setTimeout(() => setShow(true), 1500);
-      return () => clearTimeout(timer);
-    }
+    // Auto-accept cookies — never show the banner
+    localStorage.setItem(STORAGE_KEY, 'true');
   }, []);
 
   function accept() {

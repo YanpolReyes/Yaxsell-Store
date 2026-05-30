@@ -115,22 +115,13 @@
     /* already rendered in HTML — nothing to do */
   }
 
-  /* ── Cookie banner dismiss ───────────────────────────────── */
+  /* ── Cookie banner auto-dismiss ─────────────────────────── */
   function initCookieBanner() {
     var banner = document.querySelector('.cookie-consent-banner-opt-out');
     if (!banner) return;
-    var acceptBtn = banner.querySelector('[data-testid="action:understood-button"]');
-    if (acceptBtn) {
-      acceptBtn.addEventListener('click', function () {
-        banner.style.display = 'none';
-      });
-    }
-    var customizeBtn = banner.querySelector('[data-testid="action:customize-button"]');
-    if (customizeBtn) {
-      customizeBtn.addEventListener('click', function () {
-        banner.style.display = 'none';
-      });
-    }
+    banner.style.display = 'none';
+    var snackbar = document.querySelector('.cookie-consent-snackbar');
+    if (snackbar) snackbar.style.display = 'none';
   }
 
   /* ── Init ────────────────────────────────────────────────── */

@@ -1,0 +1,476 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Query, ID } from 'appwrite';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { Eye, AlertTriangle, CheckCircle } from 'lucide-react';
+
+interface Report {
+  totalPasted: number;
+  matchedCount: number;
+  notFoundSkus: string[];
+  toImportCount: number;
+  toActivateCount: number;
+  toHideCount: number;
+}
+
+interface SyncData {
+  toImport: any[];
+  toActivate: any[];
+  toHide: any[];
+}
+
+const norm = (s: string) => (s || '').trim().replace(/[\.\-]/g, '').toLowerCase();
+
+const ALLOWED_PRODUCT_KEYS = [
+  'NAME', 'DESCRIPTION', 'PRICE', 'CURRENTPRICE', 'COST', 'STOCK',
+  'SOLDQUANTITY', 'CATEGORYID', 'SUBCATEGORYID', 'IMAGEURL', 'IMAGEURL2', 'IMAGEURL3',
+  'RATING', 'NUMREVIEWS', 'WHOLESALEPRICE', 'WHOLESALEMINQUANTITY', 'ISFEATURED',
+  'ISACTIVE', 'PACKQTY', 'RESTOCKTHRESHOLD', 'jumpseller_id', 'section',
+  'sku', 'barcode', 'COMING_SOON', 'DATE_ADDED'
+];
+
+const executeWithRetry = async (fn: () => Promise<any>, maxRetries = 5, initialDelay = 1500) => {
+  let retries = 0;
+  let delay = initialDelay;
+  while (true) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      if (err.code === 429 && retries < maxRetries) {
+        console.warn(`Rate limit hit (429). Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        retries++;
+        delay *= 2; // Exponential backoff
+      } else {
+        throw err; // throw if it's not a rate limit or we exceeded retries
+      }
+    }
+  }
+};
+
+export default function CatalogVisibilityPage() {
+  const [skuText, setSkuText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState<{ total: number, done: number, activated: number, deactivated: number } | null>(null);
+  const [report, setReport] = useState<Report | null>(null);
+  const [syncData, setSyncData] = useState<SyncData | null>(null);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [totalCatalogProducts, setTotalCatalogProducts] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchTotal = async () => {
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(1)]);
+        setTotalCatalogProducts(res.total);
+      } catch (err) {
+        console.error('Error fetching total products', err);
+      }
+    };
+    fetchTotal();
+  }, []);
+
+  const handleDownloadInventory = async () => {
+    setIsProcessing(true);
+    setError('');
+    setSuccess(false);
+    setProgress({ total: 0, done: 0, activated: 0, deactivated: 0 });
+
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const allInventory: any[] = [];
+      let offsetInv = 0;
+      
+      while (true) {
+        const res = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, [
+          Query.limit(100), Query.offset(offsetInv)
+        ]);
+        allInventory.push(...res.documents);
+        setProgress({ total: res.total, done: allInventory.length, activated: 0, deactivated: 0 });
+        if (res.documents.length < 100) break;
+        offsetInv += 100;
+      }
+      
+      const header = ['SKU', 'Nombre', 'Precio', 'Stock'].join(',');
+      const rows = allInventory.map(p => {
+        const sku = `"${(p.sku || p.SKU || '').replace(/"/g, '""')}"`;
+        const name = `"${(p.NAME || '').replace(/"/g, '""')}"`;
+        const price = p.PRICE || 0;
+        const stock = p.STOCK || 0;
+        return [sku, name, price, stock].join(',');
+      });
+      
+      const csv = [header, ...rows].join('\n');
+      const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' }); // BOM for Excel
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `inventario_bodegapp_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      setSuccess(true);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setIsProcessing(false);
+      setProgress(null);
+    }
+  };
+
+  const handleAnalyze = async () => {
+    if (!skuText.trim()) return;
+    
+    setIsProcessing(true);
+    setError('');
+    setSuccess(false);
+    setProgress(null);
+    setReport(null);
+    setSyncData(null);
+    
+    try {
+      const skusArray = Array.from(new Set(skuText.split('\n').map(s => s.trim()).filter(Boolean)));
+      
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      
+      // 1. Fetch Inventory
+      const allInventory: any[] = [];
+      let offsetInv = 0;
+      while (true) {
+        const res = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, [
+          Query.limit(100), Query.offset(offsetInv)
+        ]);
+        allInventory.push(...res.documents);
+        if (res.documents.length < 100) break;
+        offsetInv += 100;
+      }
+      
+      // 2. Fetch Catalog
+      const allCatalog: any[] = [];
+      let offsetCat = 0;
+      while (true) {
+        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+          Query.limit(100), Query.offset(offsetCat)
+        ]);
+        allCatalog.push(...res.documents);
+        if (res.documents.length < 100) break;
+        offsetCat += 100;
+      }
+
+      // 3. Map SKUs
+      const invMap = new Map<string, any>();
+      allInventory.forEach(d => {
+        const s = norm(d.sku || d.SKU);
+        if (s) invMap.set(s, d);
+      });
+      
+      const catMap = new Map<string, any>();
+      allCatalog.forEach(d => {
+        const s = norm(d.sku || d.SKU);
+        if (s) catMap.set(s, d);
+      });
+
+      // 4. Analyze
+      const toImport: any[] = [];
+      const toActivate: any[] = [];
+      const notFoundSkus: string[] = [];
+      const pastedNormSkus = new Set<string>();
+
+      skusArray.forEach(originalSku => {
+        const ns = norm(originalSku);
+        if (!ns) return;
+        pastedNormSkus.add(ns);
+        
+        if (invMap.has(ns)) {
+          if (catMap.has(ns)) {
+            toActivate.push(catMap.get(ns));
+          } else {
+            toImport.push(invMap.get(ns));
+          }
+        } else {
+          notFoundSkus.push(originalSku);
+        }
+      });
+      
+      const toHide: any[] = [];
+      catMap.forEach((doc, ns) => {
+        if (!pastedNormSkus.has(ns)) {
+          toHide.push(doc);
+        }
+      });
+      
+      setSyncData({ toImport, toActivate, toHide });
+      setReport({
+        totalPasted: skusArray.length,
+        matchedCount: toActivate.length + toImport.length,
+        notFoundSkus,
+        toActivateCount: toActivate.length,
+        toImportCount: toImport.length,
+        toHideCount: toHide.length
+      });
+      
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!syncData) return;
+    
+    setIsProcessing(true);
+    setError('');
+    setSuccess(false);
+
+    const totalOps = syncData.toImport.length + syncData.toActivate.length + syncData.toHide.length;
+    setProgress({ total: totalOps, done: 0, activated: 0, deactivated: 0 });
+
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      
+      let done = 0;
+      let activated = 0;
+      let deactivated = 0;
+
+      // 1. Import
+      for (const invDoc of syncData.toImport) {
+        const productData: any = { ISACTIVE: true };
+        for (const key of ALLOWED_PRODUCT_KEYS) {
+          if (invDoc[key] !== undefined && invDoc[key] !== null) {
+            productData[key] = invDoc[key];
+          }
+        }
+        await executeWithRetry(() => databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), productData));
+        activated++;
+        done++;
+        setProgress(p => ({ ...p!, done, activated, deactivated }));
+        await new Promise(r => setTimeout(r, 100));
+      }
+      
+      // 2. Activate
+      for (const catDoc of syncData.toActivate) {
+        if (catDoc.ISACTIVE !== true) {
+          await executeWithRetry(() => databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, catDoc.$id, { ISACTIVE: true }));
+        }
+        activated++;
+        done++;
+        setProgress(p => ({ ...p!, done, activated, deactivated }));
+        await new Promise(r => setTimeout(r, 100));
+      }
+      
+      // 3. Hide
+      for (const catDoc of syncData.toHide) {
+        if (catDoc.ISACTIVE !== false) {
+          await executeWithRetry(() => databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, catDoc.$id, { ISACTIVE: false }));
+        }
+        deactivated++;
+        done++;
+        setProgress(p => ({ ...p!, done, activated, deactivated }));
+        await new Promise(r => setTimeout(r, 100));
+      }
+
+      setSuccess(true);
+      // Refresh total count
+      setTotalCatalogProducts(prev => (prev || 0) + syncData.toImport.length);
+      setSyncData(null);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleShowAll = async () => {
+    if (!confirm('¿Seguro que quieres hacer TODOS los productos visibles en el catálogo?')) return;
+    
+    setIsProcessing(true);
+    setError('');
+    setSuccess(false);
+    setProgress({ total: 0, done: 0, activated: 0, deactivated: 0 });
+
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const allCatalog: any[] = [];
+      let offset = 0;
+      while (true) {
+        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+          Query.limit(100), Query.offset(offset)
+        ]);
+        allCatalog.push(...res.documents);
+        if (res.documents.length < 100) break;
+        offset += 100;
+      }
+
+      const hiddenDocs = allCatalog.filter(d => d.ISACTIVE === false);
+      setProgress(p => ({ ...p!, total: hiddenDocs.length }));
+
+      let activated = 0;
+      let done = 0;
+
+      for (let i = 0; i < hiddenDocs.length; i++) {
+        const doc = hiddenDocs[i];
+        await executeWithRetry(() => databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, doc.$id, {
+          ISACTIVE: true
+        }));
+        activated++;
+        done++;
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        if (done % 10 === 0 || done === hiddenDocs.length) {
+          setProgress(p => ({ ...p!, done, activated, deactivated: 0 }));
+        }
+      }
+
+      setSuccess(true);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <div className="admin-main-content" style={{ padding: '24px', maxWidth: 900, margin: '0 auto' }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Eye size={24} color="#6366f1" /> Control de Visibilidad del Catálogo
+        </h1>
+        <p style={{ fontSize: 14, color: '#6b7280', margin: '6px 0 0' }}>
+          Pega una lista de SKUs. La herramienta los buscará en tu <strong>Inventario</strong>, importará los que falten y ocultará los demás del catálogo público.
+        </p>
+      </div>
+
+      <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+        
+        {error && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: 16, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <AlertTriangle color="#ef4444" size={20} />
+            <span style={{ color: '#991b1b', fontSize: 14 }}>{error}</span>
+          </div>
+        )}
+
+        {success && (
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: 16, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <CheckCircle color="#16a34a" size={20} />
+            <span style={{ color: '#166534', fontSize: 14 }}>
+              ¡Actualización completa! Catálogo sincronizado con éxito.
+            </span>
+          </div>
+        )}
+
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 8 }}>
+            Lista de SKUs (uno por línea)
+          </label>
+          <textarea
+            value={skuText}
+            onChange={e => { setSkuText(e.target.value); setReport(null); setSuccess(false); setProgress(null); setSyncData(null); }}
+            disabled={isProcessing}
+            placeholder="Ejemplo:&#10;SKU-001&#10;SKU-002&#10;SKU-003"
+            style={{
+              width: '100%', height: 200, padding: 12, borderRadius: 8, border: '1px solid #d1d5db',
+              fontFamily: 'monospace', fontSize: 13, resize: 'vertical', outline: 'none'
+            }}
+            onFocus={e => e.currentTarget.style.borderColor = '#6366f1'}
+            onBlur={e => e.currentTarget.style.borderColor = '#d1d5db'}
+          />
+        </div>
+
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
+          <button
+            onClick={handleAnalyze}
+            disabled={isProcessing || !skuText.trim()}
+            style={{
+              background: '#6366f1', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px',
+              fontSize: 14, fontWeight: 600, cursor: isProcessing || !skuText.trim() ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', gap: 8, opacity: isProcessing || !skuText.trim() ? 0.7 : 1
+            }}
+          >
+            <Eye size={16} /> Analizar SKUs
+          </button>
+
+          <button
+            onClick={handleShowAll}
+            disabled={isProcessing}
+            style={{
+              background: '#fff', color: '#4b5563', border: '1px solid #d1d5db', borderRadius: 8, padding: '10px 20px',
+              fontSize: 14, fontWeight: 600, cursor: isProcessing ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', gap: 8, opacity: isProcessing ? 0.7 : 1
+            }}
+          >
+            Mostrar Todos {totalCatalogProducts !== null ? `(${totalCatalogProducts})` : ''}
+          </button>
+
+          <button
+            onClick={handleDownloadInventory}
+            disabled={isProcessing}
+            style={{
+              background: '#fff', color: '#16a34a', border: '1px solid #16a34a', borderRadius: 8, padding: '10px 20px',
+              fontSize: 14, fontWeight: 600, cursor: isProcessing ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', gap: 8, opacity: isProcessing ? 0.7 : 1, marginLeft: 'auto'
+            }}
+          >
+            Descargar Todo Inventario (CSV)
+          </button>
+        </div>
+
+        {report && syncData && (
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 20, marginBottom: 20 }}>
+            <h3 style={{ margin: '0 0 14px', fontSize: 15, color: '#0f172a', fontWeight: 700 }}>Resultados de la Sincronización:</h3>
+            <ul style={{ margin: '0 0 16px 0', paddingLeft: 20, fontSize: 14, color: '#334155', lineHeight: 1.6 }}>
+              <li>Total SKUs únicos ingresados: <strong>{report.totalPasted}</strong></li>
+              <li>A importar desde Inventario (Nuevos): <strong style={{ color: report.toImportCount > 0 ? '#3b82f6' : '#16a34a' }}>{report.toImportCount}</strong></li>
+              <li>A activar (Ya estaban en Catálogo): <strong style={{ color: '#16a34a' }}>{report.toActivateCount}</strong></li>
+              <li>A ocultar del Catálogo público: <strong>{report.toHideCount}</strong></li>
+              <li>No encontrados en el Inventario: <strong style={{ color: report.notFoundSkus.length > 0 ? '#dc2626' : '#16a34a' }}>{report.notFoundSkus.length}</strong></li>
+            </ul>
+            
+            {report.notFoundSkus.length > 0 && (
+              <div style={{ marginTop: 12, marginBottom: 16 }}>
+                <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: '#ef4444' }}>SKUs que NO existen en BodegApp:</p>
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: 10, borderRadius: 6, maxHeight: 120, overflowY: 'auto', fontSize: 12, fontFamily: 'monospace', color: '#991b1b', lineHeight: 1.5 }}>
+                  {report.notFoundSkus.join(', ')}
+                </div>
+              </div>
+            )}
+            
+            <button
+              onClick={handleUpdate}
+              disabled={isProcessing}
+              style={{
+                background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 24px',
+                fontSize: 14, fontWeight: 700, cursor: isProcessing ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', gap: 8, opacity: isProcessing ? 0.7 : 1, width: '100%', justifyContent: 'center'
+              }}
+            >
+              <CheckCircle size={18} /> Confirmar Importación y Actualización
+            </button>
+          </div>
+        )}
+
+        {isProcessing && progress && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#4b5563', marginBottom: 6 }}>
+              <span>Procesando operaciones...</span>
+              <span>{progress.done} / {progress.total} operaciones</span>
+            </div>
+            <div style={{ height: 8, background: '#e5e7eb', borderRadius: 4, overflow: 'hidden' }}>
+              <div style={{ height: '100%', background: '#6366f1', width: `${progress.total > 0 ? (progress.done / progress.total) * 100 : 0}%`, transition: 'width 0.2s' }} />
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { getServices, getAppwriteConfig, STOCK_ALERTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, PRODUCTS_COLLECTION_ID, USERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { normalizeStockAlert, type StockAlert } from '@/lib/stock-alerts';
 import { getSkuFromFeatures, getWarehouseLocationFromFeatures } from '@/lib/product-features';
-import { Search, RefreshCw, Package, AlertTriangle, Users, Bell, CheckCircle, XCircle, User, ChevronRight, ArrowLeft, Clock, Eye, Sparkles, ExternalLink, Lock } from 'lucide-react';
+import { Search, RefreshCw, Package, AlertTriangle, Users, Bell, CheckCircle, XCircle, User, ChevronRight, ArrowLeft, Clock, Eye, Sparkles, ExternalLink, Lock, Copy, Printer } from 'lucide-react';
 
 interface StockAlertView extends StockAlert {
   sku?: string;
@@ -22,6 +22,8 @@ interface GroupedUser {
   email: string;
   requests: StockAlertView[];
   pendingCount: number;
+  foundCount: number;
+  missingCount: number;
 }
 
 export default function CatalogProductsPage() {
@@ -106,32 +108,56 @@ export default function CatalogProductsPage() {
         }
       }
 
-      // Pass 2: for IDs still missing a name, try PRODUCTS_COLLECTION_ID (catalog)
-      const missingIds = uniqueProductIds.filter(id => !productMap[id] || !productMap[id].name);
-      const missingChunks: string[][] = [];
-      for (let i = 0; i < missingIds.length; i += 100) {
-        missingChunks.push(missingIds.slice(i, i + 100));
-      }
-      for (const chunk of missingChunks) {
-        try {
+      // Pass 2: Fetch ALL PRODUCTS_COLLECTION_ID (catalog) to accurately determine visibility (inCatalog) by SKU
+      // This solves the issue where an alert points to an old $id but the product was re-imported with a new $id.
+      const allCatalog: any[] = [];
+      try {
+        let offsetCat = 0;
+        while (true) {
           const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-            Query.equal('$id', chunk),
-            Query.limit(100),
+            Query.limit(100), Query.offset(offsetCat)
           ]);
-          res.documents.forEach((p: any) => {
-            const existing = productMap[p.$id] || {};
-            productMap[p.$id] = {
-              name: p.name || p.NAME || p.title || p.TITLE || existing.name || '',
-              image: existing.image || extractImage(p),
-              sku: existing.sku || p.sku || p.SKU || '',
-              section: existing.section ?? null,
-              gondola: existing.gondola || '?',
-              stock: existing.stock ?? p.stock ?? p.STOCK ?? 0,
-              inCatalog: true, // This product exists in the published catalog
-            };
-          });
-        } catch (e) {
-          console.error('Error loading products (catalog) chunk', e);
+          allCatalog.push(...res.documents);
+          if (res.documents.length < 100) break;
+          offsetCat += 100;
+        }
+      } catch (e) {
+        console.error('Error loading full catalog', e);
+      }
+
+      // Build a map of catalog products by normalized SKU
+      const norm = (s: string) => (s || '').trim().replace(/[\.\-]/g, '').toLowerCase();
+      const activeCatalogBySku = new Map<string, any>();
+      const catalogById = new Map<string, any>();
+      allCatalog.forEach((p: any) => {
+        catalogById.set(p.$id, p);
+        if (p.ISACTIVE !== false) {
+          const s = norm(p.sku || p.SKU);
+          if (s) activeCatalogBySku.set(s, p);
+        }
+      });
+
+      // Update productMap with catalog info
+      for (const id of uniqueProductIds) {
+        const existing = productMap[id] || {};
+        const skuToLookFor = norm(existing.sku);
+        
+        // Product is in catalog if its ID is in catalog AND active, OR its SKU is in catalog AND active
+        const catDocById = catalogById.get(id);
+        const catDocBySku = skuToLookFor ? activeCatalogBySku.get(skuToLookFor) : undefined;
+        
+        const catDoc = catDocById || catDocBySku;
+        
+        if (catDoc) {
+          productMap[id] = {
+            name: existing.name || catDoc.name || catDoc.NAME || catDoc.title || catDoc.TITLE || '',
+            image: existing.image || extractImage(catDoc),
+            sku: existing.sku || catDoc.sku || catDoc.SKU || '',
+            section: existing.section ?? null,
+            gondola: existing.gondola || '?',
+            stock: existing.stock ?? catDoc.stock ?? catDoc.STOCK ?? 0,
+            inCatalog: catDoc.ISACTIVE !== false,
+          };
         }
       }
 
@@ -205,13 +231,22 @@ export default function CatalogProductsPage() {
       if (!map[key]) map[key] = [];
       map[key].push(a);
     });
-    return Object.entries(map).map(([userId, reqs]) => ({
-      userId,
-      userName: reqs[0].userName || reqs[0].email.split('@')[0],
-      email: reqs[0].email,
-      requests: reqs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
-      pendingCount: reqs.filter(r => r.status === 'pending').length,
-    })).sort((a, b) => b.pendingCount - a.pendingCount);
+    return Object.entries(map).map(([userId, reqs]) => {
+      reqs.sort((a, b) => {
+        if (a.inCatalog && !b.inCatalog) return -1;
+        if (!a.inCatalog && b.inCatalog) return 1;
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      });
+      return {
+        userId,
+        userName: reqs[0].userName || reqs[0].email.split('@')[0],
+        email: reqs[0].email,
+        requests: reqs,
+        pendingCount: reqs.filter(r => r.status === 'pending').length,
+        foundCount: reqs.filter(r => r.inCatalog).length,
+        missingCount: reqs.filter(r => !r.inCatalog).length,
+      };
+    }).sort((a, b) => b.pendingCount - a.pendingCount);
   })();
 
   const filteredUsers = groupedUsers.filter(u => {
@@ -318,6 +353,22 @@ export default function CatalogProductsPage() {
     return `hace ${days}d`;
   };
 
+  const handleCopySkus = () => {
+    if (!selectedUser) return;
+    const skus = selectedUser.requests.map(r => r.sku).filter(Boolean);
+    if (skus.length === 0) {
+      alert('No hay SKUs para copiar en estas consultas.');
+      return;
+    }
+    const text = skus.join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      alert(`Se copiaron ${skus.length} SKUs al portapapeles.`);
+    }).catch(err => {
+      console.error('Error al copiar al portapapeles', err);
+      alert('Error copiando SKUs');
+    });
+  };
+
   if (isLoading) return (
     <div className="admin-main-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
       <RefreshCw size={32} className="animate-spin" style={{ color: '#6366f1' }} />
@@ -336,6 +387,129 @@ export default function CatalogProductsPage() {
   // ── En mobile, si hay un usuario seleccionado mostramos solo el panel de detalle ──
   const showUserList = !isMobile || !selectedUser;
   const showUserDetail = !isMobile || !!selectedUser;
+
+  const handlePrintPDF = (mode: 'full' | 'available' | 'gallery' = 'full') => {
+    if (!selectedUser) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const found = selectedUser.requests.filter(a => a.inCatalog);
+    const missing = selectedUser.requests.filter(a => !a.inCatalog);
+
+    let contentHtml = '';
+
+    if (mode === 'gallery') {
+      contentHtml = `
+        <div class="gallery-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-top: 30px;">
+          ${found.length > 0 ? found.map(f => `
+            <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; text-align: center; page-break-inside: avoid;">
+              ${f.productImage 
+                ? `<img src="${f.productImage}" alt="Foto" style="width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; margin-bottom: 12px;" />` 
+                : `<div style="width: 100%; aspect-ratio: 1; background: #f3f4f6; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #9ca3af; margin-bottom: 12px;">Sin foto</div>`
+              }
+              <div style="font-family: monospace; font-weight: 700; color: #4b5563; font-size: 13px; margin-bottom: 4px;">${f.sku || '-'}</div>
+              <div style="font-size: 14px; font-weight: 600; color: #111827; line-height: 1.3;">${f.productName}</div>
+              <div style="font-size: 12px; color: #6b7280; margin-top: 6px; background: #f0fdf4; color: #166534; padding: 4px; border-radius: 4px; display: inline-block;">
+                S:${f.section || '?'} / G:${f.gondola || '?'}
+              </div>
+            </div>
+          `).join('') : '<p>No hay productos con stock para mostrar.</p>'}
+        </div>
+      `;
+    } else {
+      contentHtml = `
+        <div class="found-section">
+          <h2>Productos Disponibles (${found.length})</h2>
+          ${found.length > 0 ? `
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 60px;">Foto</th>
+                <th style="width: 100px;">SKU</th>
+                <th>Producto</th>
+                <th style="width: 100px;">Ubicación</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${found.map(f => `
+                <tr>
+                  <td>${f.productImage ? `<img src="${f.productImage}" alt="Foto" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" />` : `<div style="width: 40px; height: 40px; background: #f3f4f6; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #9ca3af;">-</div>`}</td>
+                  <td class="sku">${f.sku || '-'}</td>
+                  <td>${f.productName}</td>
+                  <td>S:${f.section || '?'} / G:${f.gondola || '?'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          ` : '<p>No se encontraron productos disponibles.</p>'}
+        </div>
+
+        ${mode === 'full' ? `
+        <div class="missing-section">
+          <h2>Productos Agotados / No Disponibles (${missing.length})</h2>
+          ${missing.length > 0 ? `
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 60px;">Foto</th>
+                <th style="width: 100px;">SKU</th>
+                <th>Producto</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${missing.map(m => `
+                <tr>
+                  <td>${m.productImage ? `<img src="${m.productImage}" alt="Foto" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" />` : `<div style="width: 40px; height: 40px; background: #f3f4f6; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #9ca3af;">-</div>`}</td>
+                  <td class="sku">${m.sku || '-'}</td>
+                  <td>${m.productName}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          ` : '<p>No hay productos faltantes.</p>'}
+        </div>
+        ` : ''}
+      `;
+    }
+
+    const html = `
+      <html>
+        <head>
+          <title>Reporte de Disponibilidad - ${selectedUser.userName}</title>
+          <style>
+            body { font-family: 'Inter', system-ui, sans-serif; color: #111827; padding: 40px; margin: 0; }
+            h1 { font-size: 24px; font-weight: 800; margin: 0 0 5px 0; }
+            h2 { font-size: 18px; font-weight: 700; margin: 30px 0 10px 0; padding-bottom: 5px; border-bottom: 2px solid #e5e7eb; }
+            p { color: #6b7280; font-size: 14px; margin: 0 0 20px 0; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; }
+            th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e5e7eb; }
+            th { background: #f9fafb; font-weight: 600; color: #374151; }
+            .found-section h2 { color: #16a34a; border-color: #bbf7d0; }
+            .found-section th { background: #f0fdf4; }
+            .missing-section h2 { color: #dc2626; border-color: #fecaca; }
+            .missing-section th { background: #fef2f2; }
+            .sku { font-family: monospace; font-weight: 600; color: #4b5563; }
+            @media print {
+              body { padding: 0; }
+              @page { margin: 2cm; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Reporte de Disponibilidad ${mode === 'gallery' ? '(Galería)' : ''}</h1>
+          <p>Cliente: <strong>${selectedUser.userName}</strong> (${selectedUser.email})<br/>Fecha: ${new Date().toLocaleDateString()}</p>
+          ${contentHtml}
+          <script>
+            window.onload = () => {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
 
   return (
     <div className="admin-main-content" style={{ padding: isMobile ? '16px 12px' : '24px' }}>
@@ -420,11 +594,10 @@ export default function CatalogProductsPage() {
                     <p style={{ fontSize: 11, color: '#6b7280', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</p>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
-                    {u.pendingCount > 0 && (
-                      <span style={{ fontSize: 10, fontWeight: 700, background: '#fdf2f8', color: '#c0547a', padding: '2px 7px', borderRadius: 10, border: '1px solid #fbcfe8' }}>
-                        {u.pendingCount} pend.
-                      </span>
-                    )}
+                    <span style={{ fontSize: 10, fontWeight: 700, background: '#fdf2f8', color: '#c0547a', padding: '2px 7px', borderRadius: 10, border: '1px solid #fbcfe8', textAlign: 'right' }}>
+                      {u.pendingCount} pendiente{u.pendingCount !== 1 ? 's' : ''}<br/>
+                      <span style={{ color: '#16a34a' }}>{u.foundCount} encontrada{u.foundCount !== 1 ? 's' : ''}</span> · <span style={{ color: '#dc2626' }}>{u.missingCount} no existe{u.missingCount !== 1 ? 'n' : ''}</span>
+                    </span>
                     <span style={{ fontSize: 10, color: '#9ca3af' }}>{u.requests.length} total</span>
                   </div>
                   <ChevronRight size={14} color="#d1d5db" />
@@ -457,15 +630,28 @@ export default function CatalogProductsPage() {
                   <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: '#6366f1', background: '#eef2ff', padding: '3px 9px', borderRadius: 10 }}>
                     {selectedUser.requests.length} consulta{selectedUser.requests.length !== 1 ? 's' : ''}
                   </span>
+                  <button onClick={() => handlePrintPDF('full')} title="Imprimir o Guardar PDF Completo" style={{ flexShrink: 0, background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', color: '#475569', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }} onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}>
+                    <Printer size={13} /> PDF
+                  </button>
+                  <button onClick={() => handlePrintPDF('available')} title="Imprimir o Guardar PDF solo con lo disponible" style={{ flexShrink: 0, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', color: '#166534', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = '#dcfce7'; e.currentTarget.style.borderColor = '#86efac'; }} onMouseLeave={e => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.borderColor = '#bbf7d0'; }}>
+                    <Printer size={13} color="#16a34a" /> Solo Disp.
+                  </button>
+                  <button onClick={() => handlePrintPDF('gallery')} title="Imprimir o Guardar Catálogo Visual" style={{ flexShrink: 0, background: '#fdf4ff', border: '1px solid #fbcfe8', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', color: '#86198f', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = '#fae8ff'; e.currentTarget.style.borderColor = '#f9a8d4'; }} onMouseLeave={e => { e.currentTarget.style.background = '#fdf4ff'; e.currentTarget.style.borderColor = '#fbcfe8'; }}>
+                    <Eye size={13} color="#c026d3" /> Galería
+                  </button>
+                  <button onClick={handleCopySkus} title="Copiar SKUs a Excel" style={{ flexShrink: 0, background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', color: '#475569', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }} onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}>
+                    <Copy size={13} /> SKUs
+                  </button>
                 </div>
 
                 {/* Requests list */}
                 <div style={{ maxHeight: isMobile ? 'none' : 600, overflowY: 'auto', padding: isMobile ? 10 : 12 }}>
                   {selectedUser.requests.map(a => (
                     <div key={a.$id} style={{
-                      background: a.status === 'pending' ? '#fffbf5' : a.status === 'available' ? '#f0fdf4' : '#fef2f2',
-                      border: `1px solid ${a.status === 'pending' ? '#fbcfe8' : a.status === 'available' ? '#bbf7d0' : '#fecaca'}`,
+                      background: a.inCatalog ? '#f0fdf4' : (a.status === 'pending' ? '#fffbf5' : a.status === 'available' ? '#f0fdf4' : '#fef2f2'),
+                      border: `1px solid ${a.inCatalog ? '#22c55e' : (a.status === 'pending' ? '#fbcfe8' : a.status === 'available' ? '#bbf7d0' : '#fecaca')}`,
                       borderRadius: 10, padding: isMobile ? 11 : 14, marginBottom: 10,
+                      boxShadow: a.inCatalog ? '0 0 0 1px #22c55e' : 'none',
                     }}>
                       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                         {/* Product image */}

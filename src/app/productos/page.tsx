@@ -4,14 +4,14 @@ import { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, Grid3x3, List, ShoppingCart, X, SlidersHorizontal, Sparkles, ChevronDown } from 'lucide-react';
+import { Search, Grid3x3, List, ShoppingCart, X, SlidersHorizontal, Sparkles, ChevronDown, Clock } from 'lucide-react';
 import AnimHeart from '@/components/AnimHeart';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, formatPrice } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, TIMED_OFFERS_COLLECTION, formatPrice } from '@/lib/appwrite';
 import { getSectionConfigAsync, getSectionConfig, type SectionConfig } from '@/lib/section-config';
 import { normalizeProductImages, getProductImageUrl } from '@/lib/product-images';
 import { cached, TTL } from '@/lib/cache';
 import { Query } from 'appwrite';
-import { Product, Category, Subcategory } from '@/types';
+import { Product, Category, Subcategory, TimedOffer } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import ProductCardPreview from '@/components/ProductCardPreview';
@@ -20,8 +20,22 @@ import ProductBadges from '@/components/ProductBadges';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
+import CountdownTimer from '@/components/CountdownTimer';
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
+
+function getExpiresAtEpochSeconds(offer: TimedOffer): number | null {
+  if (offer.timeType === 'endDateTime' && offer.endDateTime) {
+    return Math.floor(new Date(offer.endDateTime).getTime() / 1000);
+  }
+  if (offer.timeType === 'duration' && offer.durationHours) {
+    const start = offer.activatedAt || (offer as any).$createdAt;
+    if (start) {
+      return Math.floor((new Date(start).getTime() + offer.durationHours * 3600000) / 1000);
+    }
+  }
+  return null;
+}
 
 function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
   const searchParams = useSearchParams();
@@ -32,6 +46,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
   const [search, setSearch] = useState(qParam);
   const [selectedCat, setSelectedCat] = useState(lockCategoryId || '');
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [timedOffersMap, setTimedOffersMap] = useState<Record<string, TimedOffer>>({});
   const [selectedSubcat, setSelectedSubcat] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [view, setView] = useState<'grid' | 'list'>('grid');
@@ -119,6 +134,37 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
       });
       setProducts((prodDocs as unknown as Product[]).map((p) => normalizeProductImages(p)));
 
+      // 1.5 Cargar ofertas por tiempo limitado activas
+      try {
+        const offersRes = await databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
+          Query.equal('isActive', true),
+          Query.equal('status', 'active'),
+          Query.limit(100),
+        ]);
+        const activeOffers = (offersRes.documents as unknown as TimedOffer[]).filter(o => {
+          if (!o.isActive || o.status !== 'active') return false;
+          if (o.timeType === 'endDateTime' && o.endDateTime) {
+            return new Date(o.endDateTime) > new Date();
+          }
+          if (o.timeType === 'duration' && o.durationHours) {
+            const start = o.activatedAt || (o as any).$createdAt;
+            if (start) {
+              return (new Date(start).getTime() + o.durationHours * 3600000) > Date.now();
+            }
+          }
+          return true;
+        });
+        const map: Record<string, TimedOffer> = {};
+        activeOffers.forEach(o => {
+          if (o.targetId) {
+            map[o.targetId] = o;
+          }
+        });
+        setTimedOffersMap(map);
+      } catch (err) {
+        console.error('Error loading timed offers', err);
+      }
+
       // 4. Cargar subcategorías para la categoría seleccionada (caché 30 min)
       if (catIdToUse || selectedCat) {
         try {
@@ -131,7 +177,11 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
             ]);
             return r.documents;
           });
-          setSubcategories(subDocs as unknown as Subcategory[]);
+          const customSubcats = [
+            { $id: 'ofertas-temporales', name: '🔥 Ofertas Temporales', categoryId: cid } as Subcategory,
+            ...(subDocs as unknown as Subcategory[]),
+          ];
+          setSubcategories(customSubcats);
         } catch { setSubcategories([]); }
       } else {
         setSubcategories([]);
@@ -161,10 +211,18 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
   }, [products, apertura]);
 
   const filtered = products.filter(p => {
+    // Visibility filter (hide if ISACTIVE is explicitly false)
+    if (p.ISACTIVE === false) return false;
     // Category filter (client-side)
     if (selectedCat && p.CATEGORYID !== selectedCat) return false;
     // Subcategory filter (client-side)
-    if (selectedSubcat && p.SUBCATEGORYID !== selectedSubcat) return false;
+    if (selectedSubcat) {
+      if (selectedSubcat === 'ofertas-temporales') {
+        if (!timedOffersMap[p.$id]) return false;
+      } else if (p.SUBCATEGORYID !== selectedSubcat) {
+        return false;
+      }
+    }
     // Tag filter
     if (selectedTag) {
       const pTags = !p.TAGS ? [] : typeof p.TAGS === 'string' ? (p.TAGS as string).split(',').map(t => t.trim()) : (p.TAGS as string[]);
@@ -243,10 +301,16 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
       <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px solid #fce7f3' }}>
         <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>Categorías</p>
         <button onClick={() => { setSelectedCat(''); setSelectedSubcat(''); }}
-          style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: !selectedCat ? 700 : 500, color: !selectedCat ? '#e396bf' : '#6b7280', background: !selectedCat ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 4, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: !selectedCat ? '#e396bf' : '#d1d5db', flexShrink: 0 }} />
+          style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: !selectedCat && !selectedSubcat ? 700 : 500, color: !selectedCat && !selectedSubcat ? '#e396bf' : '#6b7280', background: !selectedCat && !selectedSubcat ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 4, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: !selectedCat && !selectedSubcat ? '#e396bf' : '#d1d5db', flexShrink: 0 }} />
           <span style={{ flex: 1 }}>Todas</span>
           <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{products.length}</span>
+        </button>
+        <button onClick={() => { setSelectedCat(''); setSelectedSubcat('ofertas-temporales'); }}
+          style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: selectedSubcat === 'ofertas-temporales' && !selectedCat ? 700 : 500, color: selectedSubcat === 'ofertas-temporales' && !selectedCat ? '#e396bf' : '#6b7280', background: selectedSubcat === 'ofertas-temporales' && !selectedCat ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 4, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 14 }}>🔥</span>
+          <span style={{ flex: 1 }}>Ofertas Temporales</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: selectedSubcat === 'ofertas-temporales' && !selectedCat ? '#fce7f3' : '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{products.filter(p => timedOffersMap[p.$id]).length}</span>
         </button>
         {categories.map(c => {
           const count = catCountMap[c.$id] || 0;
@@ -513,7 +577,14 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
             ) : view === 'grid' ? (
               <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
                 {visibleProducts.map(p => {
-                  const pricing = resolveProductDisplayPrice(p, apertura);
+                  const activeOffer = timedOffersMap[p.$id];
+                  const pricing = activeOffer ? {
+                    displayPrice: activeOffer.discountPrice,
+                    originalPrice: activeOffer.originalPrice,
+                    hasDiscount: true,
+                    discountPercent: activeOffer.discountPercentage,
+                    fromApertura: false
+                  } : resolveProductDisplayPrice(p, apertura);
                   const price = pricing.displayPrice;
                   const hasDisc = pricing.hasDiscount;
                   const disc = pricing.discountPercent;
@@ -565,7 +636,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
                               style={{ width: 36, height: 36, borderRadius: '50%', background: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,0.12)', transition: 'all 0.2s' }}>
                               <AnimHeart filled={fav} size={24} />
                             </button>
-                            <button onClick={e => { e.preventDefault(); e.stopPropagation(); if (p.STOCK !== 0) addItem(p); }}
+                            <button onClick={e => { e.preventDefault(); e.stopPropagation(); if (p.STOCK !== 0) addItem(p, 1, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined); }}
                               disabled={p.STOCK === 0}
                               title="Agregar al carrito"
                               style={{ width: 36, height: 36, borderRadius: '50%', background: p.STOCK === 0 ? '#e5e7eb' : 'linear-gradient(135deg,#e396bf,#c0547a)', border: 'none', color: '#fff', cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(227,150,191,0.35)', transition: 'all 0.2s' }}>
@@ -590,10 +661,30 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
                             <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>
                           )}
                         </div>
-                        <button onClick={() => p.STOCK !== 0 && addItem(p)} disabled={p.STOCK === 0} className="pk-add-btn"
+                        <button onClick={() => p.STOCK !== 0 && addItem(p, 1, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined)} disabled={p.STOCK === 0} className="pk-add-btn"
                           style={{ marginTop: 10, padding: '9px 12px', borderRadius: 12, border: 'none', background: p.STOCK === 0 ? '#f3f4f6' : 'linear-gradient(135deg,#e396bf,#f5a8cf)', color: p.STOCK === 0 ? '#9ca3af' : '#fff', fontSize: 12, fontWeight: 700, cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.2s', boxShadow: p.STOCK === 0 ? 'none' : '0 4px 14px rgba(227,150,191,0.25)', fontFamily: 'inherit' }}>
                           <ShoppingCart size={13} /> {p.STOCK === 0 ? 'Sin stock' : 'Agregar'}
                         </button>
+                        {activeOffer && (
+                          <div style={{
+                            marginTop: 8,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 4,
+                            background: '#fff5f5',
+                            border: '1px solid #fee2e2',
+                            borderRadius: 8,
+                            padding: '4px 8px',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: '#ef4444'
+                          }}>
+                            <Clock size={11} className="animate-pulse" />
+                            <span style={{ fontSize: 9.5 }}>Oferta termina: </span>
+                            <CountdownTimer expiresAt={getExpiresAtEpochSeconds(activeOffer) || 0} compact />
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -602,7 +693,14 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {visibleProducts.map(p => {
-                  const pricing = resolveProductDisplayPrice(p, apertura);
+                  const activeOffer = timedOffersMap[p.$id];
+                  const pricing = activeOffer ? {
+                    displayPrice: activeOffer.discountPrice,
+                    originalPrice: activeOffer.originalPrice,
+                    hasDiscount: true,
+                    discountPercent: activeOffer.discountPercentage,
+                    fromApertura: false
+                  } : resolveProductDisplayPrice(p, apertura);
                   const price = pricing.displayPrice;
                   const hasDisc = pricing.hasDiscount;
                   const disc = pricing.discountPercent;
@@ -628,6 +726,25 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
                             <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>
                           )}
                         </div>
+                        {activeOffer && (
+                          <div style={{
+                            marginTop: 8,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            background: '#fff5f5',
+                            border: '1px solid #fee2e2',
+                            borderRadius: 8,
+                            padding: '4px 8px',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: '#ef4444'
+                          }}>
+                            <Clock size={11} className="animate-pulse" />
+                            <span style={{ fontSize: 9.5 }}>Oferta termina: </span>
+                            <CountdownTimer expiresAt={getExpiresAtEpochSeconds(activeOffer) || 0} compact />
+                          </div>
+                        )}
                       </div>
                       <div className="pk-card-list-actions" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         <button onClick={() => setPreviewProduct(p)} title="Vista rápida"
@@ -638,7 +755,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
                           style={{ width: 40, height: 40, borderRadius: '50%', background: '#fdf2f8', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <AnimHeart filled={fav} size={24} />
                         </button>
-                        <button onClick={() => p.STOCK !== 0 && addItem(p)} disabled={p.STOCK === 0} title="Agregar al carrito"
+                        <button onClick={() => p.STOCK !== 0 && addItem(p, 1, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined)} disabled={p.STOCK === 0} title="Agregar al carrito"
                           style={{ width: 40, height: 40, borderRadius: '50%', background: p.STOCK === 0 ? '#e5e7eb' : 'linear-gradient(135deg,#e396bf,#c0547a)', border: 'none', color: '#fff', cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: p.STOCK === 0 ? 'none' : '0 4px 14px rgba(227,150,191,0.3)' }}>
                           <ShoppingCart size={16} />
                         </button>

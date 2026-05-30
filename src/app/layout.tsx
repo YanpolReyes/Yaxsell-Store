@@ -10,7 +10,6 @@ import ChatBot from '@/components/ChatBot';
 import BackToTop from '@/components/BackToTop';
 import { ToastProvider } from '@/components/Toast';
 import { NotificationProvider } from '@/context/NotificationContext';
-import CookieConsent from '@/components/CookieConsent';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import ScrollToTop from '@/components/ScrollToTop';
 import HomeOnlyWidgets from '@/components/HomeOnlyWidgets';
@@ -34,7 +33,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <StoreShell>{children}</StoreShell>
                     <HomeOnlyWidgets />
                     <BackToTop />
-                    <CookieConsent />
                     <ScrollToTop />
                     <PageViewTracker />
                   </TemplateProvider>

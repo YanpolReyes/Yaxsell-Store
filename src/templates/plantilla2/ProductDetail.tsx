@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingCart, Check, ChevronRight, Truck, Shield, RefreshCw } from 'lucide-react';
+import { ShoppingCart, Check, ChevronRight, Truck, Shield, RefreshCw, Clock } from 'lucide-react';
 import ShareButton from '@/components/ShareButton';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, TIMED_OFFERS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
 import { buildStockAlertData } from '@/lib/stock-alerts';
 import { normalizeProductImages, getProductImageUrl, resolveStorageImageUrl } from '@/lib/product-images';
 import { Query } from 'appwrite';
-import { Product } from '@/types';
+import { Product, TimedOffer } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
 import ReviewSection from '@/components/ReviewSection';
@@ -24,6 +24,20 @@ import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import AperturaPromoBanner from '@/components/AperturaPromoBanner';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
+import CountdownTimer from '@/components/CountdownTimer';
+
+function getExpiresAtEpochSeconds(offer: TimedOffer): number | null {
+  if (offer.timeType === 'endDateTime' && offer.endDateTime) {
+    return Math.floor(new Date(offer.endDateTime).getTime() / 1000);
+  }
+  if (offer.timeType === 'duration' && offer.durationHours) {
+    const start = offer.activatedAt || (offer as any).$createdAt;
+    if (start) {
+      return Math.floor((new Date(start).getTime() + offer.durationHours * 3600000) / 1000);
+    }
+  }
+  return null;
+}
 
 export default function ProductDetailPlantilla2() {
   const { id } = useParams<{ id: string }>();
@@ -41,6 +55,7 @@ export default function ProductDetailPlantilla2() {
   const [selectedImg, setSelectedImg] = useState(0);
   const [added, setAdded] = useState(false);
   const { addItem } = useCart();
+  const [activeOffer, setActiveOffer] = useState<TimedOffer | null>(null);
   const { settings: apertura, isActive: aperturaActive, discountPercent: aperturaPct } = useAperturaPromotion();
 
   // Keyboard navigation for image gallery
@@ -65,6 +80,35 @@ export default function ProductDetailPlantilla2() {
         const p = normalizeProductImages(doc as unknown as Product);
         setProduct(p);
         trackView(p.$id);
+
+        // Fetch timed offers for this product
+        try {
+          const offerRes = await databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
+            Query.equal('targetId', p.$id),
+            Query.equal('isActive', true),
+            Query.equal('status', 'active'),
+            Query.limit(1),
+          ]);
+          const active = (offerRes.documents as unknown as TimedOffer[]).filter(o => {
+            if (!o.isActive || o.status !== 'active') return false;
+            if (o.timeType === 'endDateTime' && o.endDateTime) {
+              return new Date(o.endDateTime) > new Date();
+            }
+            if (o.timeType === 'duration' && o.durationHours) {
+              const start = o.activatedAt || (o as any).$createdAt;
+              if (start) {
+                return (new Date(start).getTime() + o.durationHours * 3600000) > Date.now();
+              }
+            }
+            return true;
+          });
+          if (active.length > 0) {
+            setActiveOffer(active[0]);
+          }
+        } catch (offerErr) {
+          console.error('Error fetching timed offer:', offerErr);
+        }
+
         if (p.CATEGORYID) {
           try {
             const [catDoc, relRes] = await Promise.all([
@@ -157,7 +201,13 @@ export default function ProductDetailPlantilla2() {
   if (!product) return null;
 
   const images = [product.IMAGEURL, product.IMAGEURL2, product.IMAGEURL3, product.IMAGEURL4, product.IMAGEURL5].filter(Boolean).map(v => resolveStorageImageUrl(v)) as string[];
-  const priceResolved = resolveProductDisplayPrice(product, apertura);
+  const priceResolved = activeOffer ? {
+    displayPrice: activeOffer.discountPrice,
+    originalPrice: activeOffer.originalPrice,
+    hasDiscount: true,
+    discountPercent: activeOffer.discountPercentage,
+    fromApertura: false
+  } : resolveProductDisplayPrice(product, apertura);
   const displayPrice = priceResolved.displayPrice;
   const hasDisc = priceResolved.hasDiscount;
   const discPct = priceResolved.discountPercent;
@@ -177,7 +227,7 @@ export default function ProductDetailPlantilla2() {
   const hasOffer = hasDisc && discPct >= 10;
 
   function handleAdd() {
-    addItem(product!, qty, undefined, undefined, isWholesaleQty && isWholesaleUser ? product?.WHOLESALEPRICE : undefined);
+    addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty && isWholesaleUser ? product?.WHOLESALEPRICE : undefined);
     setAdded(true);
     setTimeout(() => setAdded(false), 2500);
   }
@@ -371,6 +421,26 @@ export default function ProductDetailPlantilla2() {
                   ))}
                 </div>
                 {numReviews > 0 && <span style={{ fontSize: 13, color: '#3483fa', textDecoration: 'underline' }}>({numReviews} {numReviews === 1 ? 'opinión' : 'opiniones'})</span>}
+              </div>
+            )}
+
+            {activeOffer && (
+              <div style={{
+                marginBottom: 16,
+                padding: '12px 14px',
+                background: '#fff5f5',
+                border: '1.5px solid #fee2e2',
+                borderRadius: 8,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 6,
+              }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#f73737', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Clock size={14} className="animate-pulse" /> ¡Este producto está en oferta por tiempo limitado!
+                </p>
+                <div style={{ marginTop: 2 }}>
+                  <CountdownTimer expiresAt={getExpiresAtEpochSeconds(activeOffer) || 0} />
+                </div>
               </div>
             )}
 

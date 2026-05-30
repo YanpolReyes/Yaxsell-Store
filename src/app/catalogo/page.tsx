@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { Search, Package, ArrowRight, Heart, Bell, Check, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getServices, getAppwriteConfig, INVENTORY_PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
 import { normalizeProductImages, resolveStorageImageUrl, getProductImageUrl } from '@/lib/product-images';
 import { cached, TTL } from '@/lib/cache';
 import { Query } from 'appwrite';
@@ -95,11 +95,15 @@ export default function CatalogoPage() {
           const r = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [Query.orderAsc('$createdAt'), Query.limit(30)]);
           return r.documents;
         }),
-        cached('inventory_products:catalogo', TTL.products, async () => {
+        cached('products:catalogo', TTL.products, async () => {
           const allDocs: any[] = [];
           let offset = 0;
           while (true) {
-            const r = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION, [Query.limit(2000), Query.offset(offset)]);
+            const r = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+              Query.equal('ISACTIVE', true),
+              Query.limit(2000), 
+              Query.offset(offset)
+            ]);
             allDocs.push(...r.documents);
             if (r.documents.length < 2000) break;
             offset += 2000;

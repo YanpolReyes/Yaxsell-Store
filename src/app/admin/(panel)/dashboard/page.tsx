@@ -1335,11 +1335,10 @@ export default function DashboardPage() {
       {/* ═══ Panel Estadístico Empresarial ═══ */}
       <div className="db-card db-stats-panel" style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', padding: '24px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', marginBottom: 24 }}>
         {/* KPIs compactos en fila */}
-        <div className="db-kpi-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${newUsers > 0 ? 8 : 7}, 1fr)`, gap: 0, marginBottom: 20, borderBottom: '1px solid #f1f5f9', paddingBottom: 20 }}>
+        <div className="db-kpi-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${newUsers > 0 ? 7 : 6}, 1fr)`, gap: 0, marginBottom: 20, borderBottom: '1px solid #f1f5f9', paddingBottom: 20 }}>
           {[
             { label: 'Ingresos totales', value: fmt(stats.totalRevenue), icon: <DollarSign size={14} color="#6366f1" />, color: '#6366f1', bg: '#eef2ff', trend: dateRange !== 'all' && prevRevenue > 0 ? ((stats.totalRevenue - prevRevenue) / prevRevenue) * 100 : undefined },
-            { label: 'Pedidos', value: String(stats.totalOrders), icon: <ShoppingCart size={14} color="#0891b2" />, color: '#0891b2', bg: '#ecfeff', trend: dateRange !== 'all' && prevOrders > 0 ? ((stats.totalOrders - prevOrders) / prevOrders) * 100 : undefined },
-            { label: 'Hoy', value: String(stats.todayOrders), icon: <Zap size={14} color="#059669" />, color: '#059669', bg: '#ecfdf5' },
+            { label: 'Pedidos Hoy', value: String(stats.todayOrders), icon: <ShoppingCart size={14} color="#0891b2" />, color: '#0891b2', bg: '#ecfeff' },
             { label: 'Ticket promedio', value: fmt(stats.avgTicket), icon: <TrendingUp size={14} color="#d97706" />, color: '#d97706', bg: '#fffbeb' },
             { label: 'Productos', value: String(stats.totalProducts), icon: <Package size={14} color="#7c3aed" />, color: '#7c3aed', bg: '#f5f3ff' },
             { label: 'Visitas hoy', value: String(pageViews.todayViews), icon: <Eye size={14} color="#0d9488" />, color: '#0d9488', bg: '#f0fdfa' },

@@ -48,7 +48,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         ]),
         Query.limit(100),
       ]);
-      const count = res.documents.filter((d) =>
+
+      // Filter out notifications dismissed locally
+      let dismissedList: string[] = [];
+      try {
+        const stored = localStorage.getItem('dismissed_notifications');
+        if (stored) dismissedList = JSON.parse(stored);
+      } catch {}
+
+      const activeDocs = res.documents.filter((d) => !dismissedList.includes(d.$id));
+      const count = activeDocs.filter((d) =>
         isNotificationUnread(d as unknown as Record<string, unknown>)
       ).length;
       notifCacheCount = count;

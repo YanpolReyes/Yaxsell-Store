@@ -308,18 +308,27 @@ function CheckoutInner() {
         return;
       }
 
+      // Calculate eligible subtotal for coupon (excluding active timed offer products)
+      const now = Date.now();
+      const eligibleSubtotal = items.reduce((acc, i) => {
+        const isOfferActive = i.timedOfferPrice && i.timedOfferExpiresAt && now < i.timedOfferExpiresAt;
+        if (isOfferActive) return acc;
+        const itemPrice = i.wholesalePrice || resolveProductDisplayPrice(i.product, apertura).displayPrice;
+        return acc + itemPrice * i.quantity;
+      }, 0);
+
       // Calculate discount
       let discount = 0;
       const couponValue = coupon.value ?? coupon.discountValue ?? coupon.DISCOUNTVALUE ?? coupon.VALUE ?? 0;
       const couponType = coupon.type ?? coupon.discountType ?? coupon.DISCOUNTTYPE ?? coupon.TYPE ?? 'percent';
       if (couponType === 'percent' || couponType === 'percentage') {
-        discount = Math.round(subtotal * couponValue / 100);
+        discount = Math.round(eligibleSubtotal * couponValue / 100);
         const maxDiscount = coupon.maxDiscount ?? coupon.MAXDISCOUNT ?? 0;
         if (maxDiscount && discount > maxDiscount) discount = maxDiscount;
       } else {
         discount = couponValue;
       }
-      discount = Math.min(discount, subtotal);
+      discount = Math.min(discount, eligibleSubtotal);
 
       setCouponDiscount(discount);
       setCouponApplied(code);
@@ -369,8 +378,10 @@ function CheckoutInner() {
       const now = Date.now();
       const expiresAt = now + 3 * 60 * 60 * 1000;
       const itemsData = items.map(i => {
-        const price = resolveProductDisplayPrice(i.product, apertura).displayPrice;
-        return { id: i.product.$id, name: i.product.NAME, price, originalPrice: i.product.PRICE !== price ? i.product.PRICE : null, qty: i.quantity, img: resolveStorageImageUrl(i.product.IMAGEURL), total: price * i.quantity };
+        const hasActiveOffer = i.timedOfferPrice && i.timedOfferExpiresAt && now < i.timedOfferExpiresAt;
+        const price = hasActiveOffer ? i.timedOfferPrice! : (i.wholesalePrice || resolveProductDisplayPrice(i.product, apertura).displayPrice);
+        const originalPrice = i.product.PRICE !== price ? i.product.PRICE : null;
+        return { id: i.product.$id, name: i.product.NAME, price, originalPrice, qty: i.quantity, img: resolveStorageImageUrl(i.product.IMAGEURL), total: price * i.quantity };
       });
       const docId = await databases.createDocument(databaseId, ORDERS_COLLECTION_ID, ID.unique(), {
         USERID: user?.id || 'guest', ITEMS: JSON.stringify(itemsData),

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Bell, Info, AlertTriangle, CheckCircle, Tag, ShoppingBag, Loader2, X, Gift, Package,
+  Bell, Info, AlertTriangle, CheckCircle, Tag, ShoppingBag, Loader2, X, Gift, Package, Trash2
 } from 'lucide-react';
 import { getServices, getAppwriteConfig } from '@/lib/appwrite';
 import { useAuth } from '@/hooks/useAuth';
@@ -66,13 +66,92 @@ export default function NotificationsOverlay({ onClose }: Props) {
         Query.orderDesc('$createdAt'),
         Query.limit(50),
       ]);
-      setNotifs(res.documents as unknown as Record<string, unknown>[]);
+      
+      // Filter out dismissed ones locally
+      let dismissedList: string[] = [];
+      try {
+        const stored = localStorage.getItem('dismissed_notifications');
+        if (stored) dismissedList = JSON.parse(stored);
+      } catch {}
+      
+      const filtered = (res.documents as unknown as Record<string, unknown>[]).filter(
+        d => !dismissedList.includes(d.$id as string)
+      );
+      
+      setNotifs(filtered);
     } catch {
       setNotifs([]);
     } finally {
       setLoading(false);
     }
   }, [isLoggedIn, user]);
+
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
+  const [swipingId, setSwipingId] = useState<string | null>(null);
+  const [swipeStartX, setSwipeStartX] = useState<number>(0);
+  const [swipeOffset, setSwipeOffset] = useState<number>(0);
+
+  const handleDismiss = async (id: string, userId: string) => {
+    // 1. Trigger slide-out / height shrink animation
+    setDismissedIds((prev) => [...prev, id]);
+
+    // 2. Wait 300ms for CSS transition
+    setTimeout(async () => {
+      // 3. Remove from the local rendering state list
+      setNotifs((prev) => prev.filter((n) => n.$id !== id));
+
+      // 4. Save to localStorage dismissed list (for broadcast fallback / 'all')
+      try {
+        const stored = localStorage.getItem('dismissed_notifications');
+        const list = stored ? JSON.parse(stored) : [];
+        if (!list.includes(id)) {
+          list.push(id);
+          localStorage.setItem('dismissed_notifications', JSON.stringify(list));
+        }
+      } catch {}
+
+      // 5. If it's a personal notification (userId !== 'all'), we can delete from DB
+      if (userId !== 'all') {
+        try {
+          const { databases } = getServices();
+          const { databaseId } = getAppwriteConfig();
+          await databases.deleteDocument(databaseId, NOTIF_COLLECTION, id);
+        } catch (err) {
+          console.error('Failed to delete personal notification:', err);
+        }
+      }
+
+      // 6. Refresh the notification badge count
+      refreshCount();
+    }, 300);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent, id: string) => {
+    setSwipingId(id);
+    setSwipeStartX(e.touches[0].clientX);
+    setSwipeOffset(0);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent, id: string) => {
+    if (swipingId !== id) return;
+    const currentX = e.touches[0].clientX;
+    const diffX = swipeStartX - currentX;
+    // Only allow left swiping (diffX > 0)
+    if (diffX > 0) {
+      setSwipeOffset(diffX);
+    } else {
+      setSwipeOffset(0);
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent, id: string, userId: string) => {
+    if (swipingId !== id) return;
+    if (swipeOffset > 100) {
+      handleDismiss(id, userId);
+    }
+    setSwipingId(null);
+    setSwipeOffset(0);
+  };
 
   useEffect(() => {
     load();
@@ -160,27 +239,113 @@ export default function NotificationsOverlay({ onClose }: Props) {
               <p style={{ margin: '8px 0 0', fontSize: 14, color: '#9ca3af' }}>Tus avisos y promociones aparecerán aquí</p>
             </div>
           ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {notifs.map((n) => {
+                const id = n.$id as string;
                 const type = (n.type || n.TYPE || 'info') as string;
                 const ts = TYPE_STYLE[type] || TYPE_STYLE.info;
                 const Icon = ts.icon;
                 const title = (n.title || n.TITLE || 'Notificación') as string;
                 const body = (n.body || n.message || n.MESSAGE || n.BODY || '') as string;
                 const read = !isNotificationUnread(n);
+                const isDismissed = dismissedIds.includes(id);
+
                 return (
-                  <button
-                    key={n.$id as string}
-                    type="button"
-                    onClick={() => handleOpen(n)}
+                  <div
+                    key={id}
                     style={{
-                      display: 'flex', gap: 12, padding: 14, borderRadius: 14, border: '1px solid #f0f0f0',
-                      background: read ? '#fff' : 'linear-gradient(135deg,#fdf2f8,#fff)',
-                      borderLeft: read ? '1px solid #f0f0f0' : `3px solid ${PINK}`,
-                      cursor: 'pointer', textAlign: 'left', width: '100%',
+                      position: 'relative',
+                      width: '100%',
+                      overflow: 'hidden',
+                      maxHeight: isDismissed ? 0 : 500,
+                      opacity: isDismissed ? 0 : 1,
+                      margin: isDismissed ? 0 : '0px 0px',
+                      padding: isDismissed ? 0 : '0px 0px',
+                      transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                      borderRadius: 14,
                     }}
                   >
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: ts.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon size={20} color={ts.color} /></div><div style={{ flex: 1, minWidth: 0 }}><div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}><p style={{ margin: 0, fontWeight: 700, fontSize: 15, color: '#1a1a1a' }}>{title}</p><span style={{ fontSize: 12, color: '#9ca3af', flexShrink: 0 }}>{timeAgo((n.$createdAt as string) || '')}</span></div>{body && <p style={{ margin: 0, fontSize: 14, color: '#6b7280', lineHeight: 1.5 }}>{body}</p>}</div></button>
+                    {/* Red swipe-to-delete background */}
+                    <div style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: '#ef4444',
+                      borderRadius: 14,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'flex-end',
+                      paddingRight: 20,
+                      color: '#fff',
+                      zIndex: 1,
+                    }}>
+                      <Trash2
+                        size={22}
+                        style={{
+                          transform: swipingId === id && swipeOffset > 100 ? 'scale(1.15)' : 'scale(1)',
+                          transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                        }}
+                      />
+                    </div>
+
+                    {/* Actual notification card */}
+                    <button
+                      type="button"
+                      onClick={() => handleOpen(n)}
+                      onTouchStart={(e) => handleTouchStart(e, id)}
+                      onTouchMove={(e) => handleTouchMove(e, id)}
+                      onTouchEnd={(e) => handleTouchEnd(e, id, (n.userId || n.USERID || '') as string)}
+                      style={{
+                        display: 'flex', gap: 12, padding: 14, borderRadius: 14, border: '1px solid #f0f0f0',
+                        background: read ? '#fff' : 'linear-gradient(135deg,#fdf2f8,#fff)',
+                        borderLeft: read ? '1px solid #f0f0f0' : `3px solid ${PINK}`,
+                        cursor: 'pointer', textAlign: 'left', width: '100%',
+                        position: 'relative',
+                        zIndex: 2,
+                        transform: swipingId === id ? `translateX(-${swipeOffset}px)` : 'translateX(0)',
+                        transition: swipingId === id ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                      }}
+                    >
+                      {/* Left Icon */}
+                      <div style={{ width: 44, height: 44, borderRadius: 12, background: ts.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Icon size={20} color={ts.color} />
+                      </div>
+
+                      {/* Right Details */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
+                          <p style={{ margin: 0, fontWeight: 700, fontSize: 15, color: '#1a1a1a' }}>{title}</p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                            <span style={{ fontSize: 12, color: '#9ca3af' }}>{timeAgo((n.$createdAt as string) || '')}</span>
+                            {/* Fast Dismiss X Button for PC */}
+                            <button
+                              type="button"
+                              title="Eliminar notificación"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDismiss(id, (n.userId || n.USERID || '') as string);
+                              }}
+                              style={{
+                                border: 'none',
+                                background: 'none',
+                                padding: 2,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: 4,
+                                transition: 'background 0.2s',
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = '#f3f4f6'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
+                            >
+                              <X size={14} color="#9ca3af" />
+                            </button>
+                          </div>
+                        </div>
+                        {body && <p style={{ margin: 0, fontSize: 14, color: '#6b7280', lineHeight: 1.5 }}>{body}</p>}
+                      </div>
+                    </button>
+                  </div>
                 );
               })}
             </div>

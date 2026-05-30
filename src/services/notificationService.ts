@@ -187,16 +187,18 @@ export async function notifyTimedOfferActivated(offer: {
   title?: string;
   productName?: string;
   discountPercentage?: number;
+  discountPrice?: number;
 }): Promise<void> {
   const refKey = `offer:${offer.$id}:active`;
   if (await existsByRefKey(refKey)) return;
 
   const name = offer.productName || offer.title || 'producto';
-  const pct = offer.discountPercentage ? ` con ${offer.discountPercentage}% OFF` : '';
+  const pct = offer.discountPercentage ? ` (${offer.discountPercentage}% OFF)` : '';
+  const priceVal = offer.discountPrice ? ` a sólo $${new Intl.NumberFormat('es-CL').format(offer.discountPrice)}` : '';
 
   await createNotificationServer({
     title: '¡Nueva oferta disponible!',
-    message: `Aprovecha la oferta en ${name}${pct}.`,
+    message: `Aprovecha la oferta en ${name}${priceVal}${pct}.`,
     type: 'promo',
     broadcast: true,
     userId: 'all',

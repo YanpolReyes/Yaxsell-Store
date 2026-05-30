@@ -57,6 +57,7 @@ const NAV_GROUPS: NavGroup[] = [
     { href: '/admin/dashboard', label: 'Inicio', icon: Ico.Dashboard },
     { href: '', label: 'Productos', icon: Ico.Productos, children: [
       { href: '/admin/products',       label: 'Productos',       icon: Ico.Productos },
+      { href: '/admin/catalog-visibility', label: 'CATÁLOGO', icon: Ico.Catalogo },
       { href: '/admin/wholesale-products', label: 'Productos Mayoristas', icon: Ico.Mayoristas },
       { href: '/admin/inventory',      label: 'Inventario',      icon: Ico.Inventario },
       { href: '/admin/categories',     label: 'Categorías',      icon: Ico.Categorias },
@@ -75,7 +76,7 @@ const NAV_GROUPS: NavGroup[] = [
     { href: '/admin/analytics', label: 'Analytics',    icon: Ico.Analytics },
     { href: '', label: 'Marketing', icon: Ico.OfertasDia, children: [
       { href: '/admin/coupons',       label: 'Cupones',        icon: Ico.Cupones },
-      { href: '/admin/timed-offers',  label: 'Ofertas',        icon: Ico.Ofertas },
+      { href: '/admin/timed-offers',  label: 'Ofertas Temporales', icon: Ico.Ofertas },
       { href: '/admin/apertura',      label: 'Apertura',       icon: Ico.Sparkles },
       { href: '/admin/vip',           label: 'VIP',            icon: Ico.Usuarios },
       { href: '/admin/points-store',  label: 'Tienda de puntos', icon: Ico.Sorteos },

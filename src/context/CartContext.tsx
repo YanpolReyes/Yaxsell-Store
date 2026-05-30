@@ -51,18 +51,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
       try {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
-        const res = await databases.listDocuments(databaseId, CART_SNAPSHOTS_COLLECTION, [
-          Query.equal('userId', user.id), Query.limit(1),
-        ]);
-        if (res.documents.length > 0) {
-          snapshotDocIdRef.current = res.documents[0].$id;
-          // Load cart from snapshot if localStorage is empty
-          const stored = localStorage.getItem('yaxsel_cart');
-          if (!stored || JSON.parse(stored).length === 0) {
-            try {
-              const snap = JSON.parse((res.documents[0] as any).itemsJson || '[]');
-              if (snap.length > 0) setItems(snap);
-            } catch {}
+        try {
+          const res = await databases.listDocuments(databaseId, CART_SNAPSHOTS_COLLECTION, [
+            Query.equal('userId', user.id), Query.limit(1),
+          ]);
+          if (res.documents.length > 0) {
+            snapshotDocIdRef.current = res.documents[0].$id;
+            // Load cart from snapshot if localStorage is empty
+            const stored = localStorage.getItem('yaxsel_cart');
+            if (!stored || JSON.parse(stored).length === 0) {
+              try {
+                const snap = JSON.parse((res.documents[0] as any).itemsJson || '[]');
+                if (snap.length > 0) setItems(snap);
+              } catch {}
+            }
+          }
+        } catch (e: any) {
+          if (e.code !== 404) {
+            console.warn('Error reading cart_snapshots:', e);
           }
         }
       } catch {}
