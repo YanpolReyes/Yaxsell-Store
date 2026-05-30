@@ -64,7 +64,7 @@ export default function CatalogProductsPage() {
       const uniqueProductIds = Array.from(new Set(rawAlerts.map(a => a.productId).filter(Boolean)));
       const uniqueUserIds = Array.from(new Set(rawAlerts.map(a => a.userId).filter(id => id && !id.includes('@'))));
       
-      // 1. Fetch Products — try INVENTORY_PRODUCTS first, then PRODUCTS (catalog) as fallback
+      // 1. Fetch Products — try PRODUCTS and CATALOG_PRODUCTS first (by $id), then INVENTORY_PRODUCTS as fallback
       const productMap: Record<string, { name: string; image: string; sku?: string; jumpsellerId?: string; barcode?: string; section?: number | null; gondola?: string; stock?: number; inCatalog?: boolean; hasStock?: boolean }> = {};
       const productChunks: string[][] = [];
       for (let i = 0; i < uniqueProductIds.length; i += 100) {
@@ -84,8 +84,65 @@ export default function CatalogProductsPage() {
         return p.IMAGEURL || p.IMAGEURL2 || p.IMAGE_URL || p.imageUrl || p.image || p.IMAGE || '';
       };
 
-      // Pass 1: search in inventory_products
+      // Pass 1: Search in PRODUCTS and CATALOG_PRODUCTS by $id (direct match)
       for (const chunk of productChunks) {
+        try {
+          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+            Query.equal('$id', chunk),
+            Query.limit(100),
+          ]);
+          res.documents.forEach((p: any) => {
+            const skuVal = getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
+            const locVal = getWarehouseLocationFromFeatures(p.FEATURES, p.section ?? null);
+            productMap[p.$id] = {
+              name: p.NAME || p.name || '',
+              image: extractImage(p),
+              sku: skuVal || '',
+              jumpsellerId: p.jumpseller_id || '',
+              barcode: p.barcode || (p.FEATURES ? (p.FEATURES.match(/Barcode:\s*([^,\n]+)/i) || [])[1] : '') || '',
+              section: locVal.section,
+              gondola: locVal.gondola || '?',
+              stock: p.STOCK ?? 0,
+              inCatalog: true,
+              hasStock: (p.STOCK ?? 0) > 0,
+            };
+          });
+        } catch (e) {
+          console.error('Error loading products chunk', e);
+        }
+      }
+
+      for (const chunk of productChunks) {
+        try {
+          const res = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, [
+            Query.equal('$id', chunk),
+            Query.limit(100),
+          ]);
+          res.documents.forEach((p: any) => {
+            const skuVal = getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
+            const locVal = getWarehouseLocationFromFeatures(p.FEATURES, p.section ?? null);
+            productMap[p.$id] = {
+              name: p.NAME || p.name || '',
+              image: extractImage(p),
+              sku: skuVal || '',
+              jumpsellerId: p.jumpseller_id || '',
+              barcode: p.barcode || (p.FEATURES ? (p.FEATURES.match(/Barcode:\s*([^,\n]+)/i) || [])[1] : '') || '',
+              section: locVal.section,
+              gondola: locVal.gondola || '?',
+              stock: p.STOCK ?? 0,
+              inCatalog: true,
+              hasStock: false,
+            };
+          });
+        } catch (e) {
+          console.error('Error loading catalog_products chunk', e);
+        }
+      }
+
+      // Pass 2: Fallback to INVENTORY_PRODUCTS for products not found in catalog
+      const missingIds = uniqueProductIds.filter(id => !productMap[id]);
+      for (let i = 0; i < missingIds.length; i += 100) {
+        const chunk = missingIds.slice(i, i + 100);
         try {
           const res = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, [
             Query.equal('$id', chunk),
@@ -105,14 +162,14 @@ export default function CatalogProductsPage() {
               stock: p.STOCK ?? 0,
               inCatalog: false,
               hasStock: false,
-              };
+            };
           });
         } catch (e) {
           console.error('Error loading inventory_products chunk', e);
         }
       }
 
-      // Pass 2: Fetch ALL PRODUCTS_COLLECTION_ID and CATALOG_PRODUCTS_COLLECTION_ID (catalog) to accurately determine visibility (inCatalog) by SKU
+      // Pass 3: Fetch ALL PRODUCTS_COLLECTION_ID and CATALOG_PRODUCTS_COLLECTION_ID for SKU/jumpseller_id/barcode matching
       // This solves the issue where an alert points to an old $id but the product was re-imported with a new $id.
       const allCatalog: any[] = [];
       try {
