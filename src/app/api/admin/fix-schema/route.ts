@@ -30,6 +30,8 @@ const FIXES: Record<string, AttrDef[]> = {
     { key: 'USERNAME', type: 'string', size: 128, required: false },
     { key: 'EMAIL', type: 'string', size: 256, required: false },
     { key: 'NOTIFIED', type: 'boolean', required: false, default: false },
+    { key: 'sku', type: 'string', size: 128, required: false },
+    { key: 'jumpsellerId', type: 'string', size: 64, required: false },
   ],
   cart_snapshots: [
     { key: 'userId', type: 'string', size: 128, required: true },

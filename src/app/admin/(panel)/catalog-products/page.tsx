@@ -371,15 +371,7 @@ export default function CatalogProductsPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      try {
-        await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { STATUS: 'available' });
-      } catch (err: any) {
-        try {
-          await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { status: 'available' });
-        } catch (err2: any) {
-          console.warn('No se pudo actualizar estado del alerta:', err2?.message);
-        }
-      }
+      await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { status: 'available' });
 
       // ── Notification to user ──
       if (req.userId) {
@@ -413,15 +405,7 @@ export default function CatalogProductsPage() {
       const { databaseId } = getAppwriteConfig();
 
       // 1. Mark alert as unavailable
-      try {
-        await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { STATUS: 'unavailable' });
-      } catch (err: any) {
-        try {
-          await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { status: 'unavailable' });
-        } catch (err2: any) {
-          console.warn('No se pudo actualizar estado del alerta:', err2?.message);
-        }
-      }
+      await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { status: 'unavailable' });
 
       // 2. Delete from catalog_products (by productId matching $id)
       try {

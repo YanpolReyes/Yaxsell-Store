@@ -18,17 +18,17 @@ type RawStockAlert = Record<string, unknown>;
 export function normalizeStockAlert(doc: RawStockAlert): StockAlert {
   return {
     $id: String(doc.$id ?? ''),
-    productId: String(doc.productId ?? doc.PRODUCTID ?? ''),
-    productName: String(doc.PRODUCTNAME ?? ''),
-    productImage: String(doc.PRODUCTIMAGE ?? ''),
-    userId: String(doc.userId ?? doc.USERID ?? ''),
-    userName: String(doc.USERNAME ?? ''),
-    email: String(doc.EMAIL ?? ''),
-    status: String(doc.STATUS ?? 'pending'),
-    createdAt: Number(doc.createdAt ?? doc.CREATEDAT ?? 0),
-    notified: Boolean(doc.NOTIFIED ?? false),
-    sku: String(doc.SKU ?? doc.sku ?? ''),
-    jumpsellerId: String(doc.JUMPSELLERID ?? doc.jumpsellerId ?? ''),
+    productId: String(doc.productId ?? ''),
+    productName: String(doc.productName ?? doc.PRODUCTNAME ?? ''),
+    productImage: String(doc.productImage ?? doc.PRODUCTIMAGE ?? ''),
+    userId: String(doc.userId ?? ''),
+    userName: String(doc.userName ?? doc.USERNAME ?? ''),
+    email: String(doc.email ?? doc.EMAIL ?? ''),
+    status: String(doc.status ?? doc.STATUS ?? 'pending'),
+    createdAt: Number(doc.createdAt ?? 0),
+    notified: Boolean(doc.notified ?? doc.NOTIFIED ?? false),
+    sku: String(doc.sku ?? doc.SKU ?? ''),
+    jumpsellerId: String(doc.jumpsellerId ?? doc.JUMPSELLERID ?? ''),
   };
 }
 
@@ -45,9 +45,9 @@ export function buildStockAlertData(input: {
     userId: input.userId,
     createdAt: Date.now(),
   };
-  if (input.productName) data.PRODUCTNAME = input.productName;
-  if (input.productImage) data.PRODUCTIMAGE = input.productImage;
-  if (input.sku) data.SKU = input.sku;
-  if (input.jumpsellerId) data.JUMPSELLERID = input.jumpsellerId;
+  if (input.productName) data.productName = input.productName;
+  if (input.productImage) data.productImage = input.productImage;
+  if (input.sku) data.sku = input.sku;
+  if (input.jumpsellerId) data.jumpsellerId = input.jumpsellerId;
   return data;
 }
