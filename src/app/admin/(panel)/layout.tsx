@@ -273,9 +273,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       logout().finally(() => router.replace('/admin/login'));
       return;
     }
-    fetchBadges();
-    const id = setInterval(fetchBadges, 60_000);
-    return () => clearInterval(id);
+    
+    // Ejecutar solo si la pestaña está visible
+    const fetchVisibleBadges = () => {
+      if (document.visibilityState === 'visible') {
+        fetchBadges();
+      }
+    };
+
+    fetchVisibleBadges();
+    
+    // Polling cada 3 minutos (antes era cada 1 minuto) para reducir requests en 66%
+    const id = setInterval(fetchVisibleBadges, 180_000);
+    
+    document.addEventListener('visibilitychange', fetchVisibleBadges);
+
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', fetchVisibleBadges);
+    };
   }, [isLoading, isLoggedIn, user?.email, router, fetchBadges, logout]);
 
   /* ── Fix overflow for multi-page printing ── */

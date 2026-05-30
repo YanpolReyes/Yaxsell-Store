@@ -86,7 +86,15 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     }
   }, [isLoggedIn, user]);
 
-  useEffect(() => { loadFavorites(); }, [loadFavorites]);
+  // Evitar loops: cargar favoritos solo cuando cambia el ID de usuario o login
+  useEffect(() => {
+    if (isLoggedIn && user?.id) {
+      loadFavorites();
+    } else if (!isLoggedIn) {
+      setFavorites([]);
+      setFavoriteProducts([]);
+    }
+  }, [isLoggedIn, user?.id]);
 
   const isFavorite = (productId: string) => favorites.includes(productId);
 

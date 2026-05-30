@@ -101,10 +101,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [isLoggedIn, user?.id]);
 
   // 🔥 Polling cada 10 minutos (antes 5 min = 288 reads/día)
-  // Ahora: 144 reads/día/usuario (2x menos)
+  // Ahora: 144 reads/día/usuario (2x menos) - Solo corre si la pestaña está activa
   useEffect(() => {
     if (!isLoggedIn) return;
-    const id = setInterval(() => { notifCacheTimestamp = 0; refreshCount(); }, 10 * 60 * 1000);
+    const id = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        notifCacheTimestamp = 0;
+        refreshCount();
+      }
+    }, 10 * 60 * 1000);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn]);
