@@ -476,6 +476,25 @@ export default function CatalogProductsPage() {
     }
   };
 
+  const handleDeleteAllUserAlerts = async () => {
+    if (!selectedUser) return;
+    const count = selectedUser.requests.length;
+    if (!confirm(`¿Eliminar las ${count} consulta${count !== 1 ? 's' : ''} de ${selectedUser.userName}?`)) return;
+    setProcessingId('bulk');
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const ids = selectedUser.requests.map(r => r.$id);
+      await Promise.all(ids.map(id => databases.deleteDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, id)));
+      setAlerts(prev => prev.filter(a => !ids.includes(a.$id)));
+      setSelectedUser(null);
+    } catch (e: any) {
+      window.alert('Error: ' + e.message);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const timeAgo = (ts: number) => {
     if (!ts) return '';
     const diff = Date.now() - ts;
@@ -775,6 +794,9 @@ export default function CatalogProductsPage() {
                   </button>
                   <button onClick={handleCopySkus} title="Copiar SKUs a Excel" style={{ flexShrink: 0, background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', color: '#475569', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }} onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}>
                     <Copy size={13} /> SKUs
+                  </button>
+                  <button onClick={handleDeleteAllUserAlerts} disabled={processingId === 'bulk'} title="Eliminar todas las consultas de este cliente" style={{ flexShrink: 0, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5, cursor: processingId === 'bulk' ? 'wait' : 'pointer', color: '#dc2626', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.borderColor = '#fca5a5'; }} onMouseLeave={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#fecaca'; }}>
+                    <Trash2 size={13} /> Eliminar Todo
                   </button>
                 </div>
 
