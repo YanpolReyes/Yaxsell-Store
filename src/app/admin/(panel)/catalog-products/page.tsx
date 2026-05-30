@@ -65,7 +65,7 @@ export default function CatalogProductsPage() {
       const uniqueUserIds = Array.from(new Set(rawAlerts.map(a => a.userId).filter(id => id && !id.includes('@'))));
       
       // 1. Fetch Products — try INVENTORY_PRODUCTS first, then PRODUCTS (catalog) as fallback
-      const productMap: Record<string, { name: string; image: string; sku?: string; section?: number | null; gondola?: string; stock?: number; inCatalog?: boolean; hasStock?: boolean }> = {};
+      const productMap: Record<string, { name: string; image: string; sku?: string; jumpsellerId?: string; barcode?: string; section?: number | null; gondola?: string; stock?: number; inCatalog?: boolean; hasStock?: boolean }> = {};
       const productChunks: string[][] = [];
       for (let i = 0; i < uniqueProductIds.length; i += 100) {
         productChunks.push(uniqueProductIds.slice(i, i + 100));
@@ -98,12 +98,14 @@ export default function CatalogProductsPage() {
               name: p.NAME || p.name || '',
               image: extractImage(p),
               sku: skuVal || '',
+              jumpsellerId: p.jumpseller_id || '',
+              barcode: p.barcode || (p.FEATURES ? (p.FEATURES.match(/Barcode:\s*([^,\n]+)/i) || [])[1] : '') || '',
               section: locVal.section,
               gondola: locVal.gondola || '?',
               stock: p.STOCK ?? 0,
               inCatalog: false,
               hasStock: false,
-            };
+              };
           });
         } catch (e) {
           console.error('Error loading inventory_products chunk', e);
@@ -141,28 +143,38 @@ export default function CatalogProductsPage() {
         console.error('Error loading catalog_products catalog', e);
       }
 
-      // Build a map of catalog products by normalized SKU
+      // Build lookup maps of catalog products by normalized SKU, jumpseller_id, barcode
       const norm = (s: string) => (s || '').trim().replace(/[\.\-]/g, '').toLowerCase();
       const activeCatalogBySku = new Map<string, any>();
       const catalogById = new Map<string, any>();
+      const catalogByJumpsellerId = new Map<string, any>();
+      const catalogByBarcode = new Map<string, any>();
       allCatalog.forEach((p: any) => {
         catalogById.set(p.$id, p);
         if (p.ISACTIVE !== false) {
           const s = norm(p.sku || p.SKU);
           if (s) activeCatalogBySku.set(s, p);
+          const jid = (p.jumpseller_id || '').trim();
+          if (jid) catalogByJumpsellerId.set(jid, p);
+          const bc = norm(p.barcode || '');
+          if (bc) catalogByBarcode.set(bc, p);
         }
       });
 
-      // Update productMap with catalog info
+      // Update productMap with catalog info — match by $id, SKU, jumpseller_id, or barcode
       for (const id of uniqueProductIds) {
         const existing = productMap[id] || {};
         const skuToLookFor = norm(existing.sku || '');
+        const jidToLookFor = (existing.jumpsellerId || '').trim();
+        const bcToLookFor = norm(existing.barcode || '');
         
-        // Product is in catalog if its ID is in catalog AND active, OR its SKU is in catalog AND active
+        // Try matching by: 1) $id, 2) SKU, 3) jumpseller_id, 4) barcode
         const catDocById = catalogById.get(id);
         const catDocBySku = skuToLookFor ? activeCatalogBySku.get(skuToLookFor) : undefined;
+        const catDocByJid = jidToLookFor ? catalogByJumpsellerId.get(jidToLookFor) : undefined;
+        const catDocByBc = bcToLookFor ? catalogByBarcode.get(bcToLookFor) : undefined;
         
-        const catDoc = catDocById || catDocBySku;
+        const catDoc = catDocById || catDocBySku || catDocByJid || catDocByBc;
         
         if (catDoc) {
           const isInProducts = catDoc._collection === 'products';
@@ -171,11 +183,13 @@ export default function CatalogProductsPage() {
             name: existing.name || catDoc.name || catDoc.NAME || catDoc.title || catDoc.TITLE || '',
             image: existing.image || extractImage(catDoc),
             sku: existing.sku || catDoc.sku || catDoc.SKU || '',
+            jumpsellerId: existing.jumpsellerId || catDoc.jumpseller_id || '',
+            barcode: existing.barcode || catDoc.barcode || '',
             section: existing.section ?? null,
             gondola: existing.gondola || '?',
-            stock: docStock,
+            stock: isInProducts ? (catDoc.STOCK ?? docStock) : docStock,
             inCatalog: catDoc.ISACTIVE !== false,
-            hasStock: isInProducts && docStock > 0,
+            hasStock: isInProducts && (catDoc.STOCK ?? 0) > 0,
           };
         }
       }
