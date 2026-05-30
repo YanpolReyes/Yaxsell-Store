@@ -281,7 +281,7 @@ export default function CatalogVisibilityPage() {
       for (const catDoc of syncData.toActivate) {
         const collectionId = catDoc._collection === 'catalog_products' ? CATALOG_PRODUCTS_COLLECTION_ID : PRODUCTS_COLLECTION_ID;
         if (catDoc.ISACTIVE !== true) {
-          await executeWithRetry(() => databases.updateDocument(databaseId, collectionId, catDoc.$id, { ISACTIVE: true }));
+          await executeWithRetry(() => databases.updateDocument(databaseId, collectionId, catDoc.$id, { ISACTIVE: true } as any));
         }
         activated++;
         done++;
@@ -293,7 +293,7 @@ export default function CatalogVisibilityPage() {
       for (const catDoc of syncData.toHide) {
         const collectionId = catDoc._collection === 'catalog_products' ? CATALOG_PRODUCTS_COLLECTION_ID : PRODUCTS_COLLECTION_ID;
         if (catDoc.ISACTIVE !== false) {
-          await executeWithRetry(() => databases.updateDocument(databaseId, collectionId, catDoc.$id, { ISACTIVE: false }));
+          await executeWithRetry(() => databases.updateDocument(databaseId, collectionId, catDoc.$id, { ISACTIVE: false } as any));
         }
         deactivated++;
         done++;
@@ -344,7 +344,7 @@ export default function CatalogVisibilityPage() {
         const doc = hiddenDocs[i];
         await executeWithRetry(() => databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, doc.$id, {
           ISACTIVE: true
-        }));
+        } as any));
         activated++;
         done++;
         await new Promise(resolve => setTimeout(resolve, 100));
