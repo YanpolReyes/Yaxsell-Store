@@ -605,16 +605,16 @@ export default function HomePage23() {
         transition: opacity 0.8s ease-in-out !important;
       }
 
-      /* Header glassmorphism — only on scrolled/sticky state (data-scroll-top="false") */
-      custom-header.header-element[data-scroll-top="true"] {
-        background-color: transparent !important;
+      /* Header glassmorphism — only on scrolled/sticky state (data-scroll="true") */
+      custom-header.header-element[data-scroll="false"] {
+        background: transparent !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
         border-bottom: none !important;
         box-shadow: none !important;
       }
-      custom-header.header-element[data-scroll-top="false"] {
-        background-color: rgba(253, 242, 248, 0.72) !important; /* Mantiene la tonalidad rosa claro original del theme con transparencia */
+      custom-header.header-element[data-scroll="true"] {
+        background: rgba(253, 242, 248, 0.72) !important; /* Mantiene la tonalidad rosa claro original del theme con transparencia */
         backdrop-filter: blur(10px) saturate(140%) !important;
         -webkit-backdrop-filter: blur(10px) saturate(140%) !important;
         border-bottom: 1px solid rgba(253, 242, 248, 0.4) !important;
