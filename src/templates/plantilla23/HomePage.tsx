@@ -189,7 +189,20 @@ export default function HomePage23() {
     styleEl.id = 'tpl23-fontfaces';
     styleEl.textContent = FONT_FACE_CSS;
     document.head.appendChild(styleEl);
-    return () => { styleEl.remove(); };
+
+    // Precargar la imagen del hero para que aparezca instantáneamente
+    const preloadLink = document.createElement('link');
+    preloadLink.rel = 'preload';
+    preloadLink.as = 'image';
+    preloadLink.href = 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1780217268437-pegada-1780217265432.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=TdPW8vMKPhDThgPmmNF2TdJYG1iOwivDYab8KeGT%2FNzpWC1n80SyZzyIja6HkQvCsmBSrUPjuNvihdlenuceFq3cC77z3xs6GDJi7qZHq6XRuS%2FtbqNCxrCObclJUsCQSWqDPe61r9W2z1niE4C7d63p8X4bfuigW7mcRZP8ONP4TimOHcUzGr9u7k9XeIcGORNCA3NzFjdX9MXoPCktyVMTbOHTXfBGL%2Bh9ELxzjfLdutF1mDE3K%2B41M7H3O2Wxpx6HkIy%2BaJdE6LQprehqq3usipuOnwT8q3ajqP4YtHj0dpqqbB%2Fzs%2Bcj66xM%2Fzr52EiJOmWhXmg851qOPsj4Yw%3D%3D';
+    preloadLink.id = 'tpl23-preload-hero';
+    if (!document.getElementById('tpl23-preload-hero')) document.head.appendChild(preloadLink);
+
+    return () => { 
+      styleEl.remove(); 
+      const pl = document.getElementById('tpl23-preload-hero');
+      if (pl) pl.remove();
+    };
   }, []);
 
   /* ── Load CSS files dynamically + split-hero overrides ── */
@@ -364,7 +377,7 @@ export default function HomePage23() {
         color: #000000 !important;
       }
 
-      /* ═══ Responsive nav: prevent menu items crowding at medium screens ═══ */
+      /* ═══ Responsive nav & elements: prevent menu items crowding at medium/small laptops (e.g. 1366x768) ═══ */
 
       /* CRITICAL: Force nav to stay on ONE LINE — no wrapping allowed.
          The ul has Tailwind "flex-wrap" class which causes items to drop
@@ -374,8 +387,9 @@ export default function HomePage23() {
         overflow: hidden !important;
       }
 
-      /* ~1280px — reduce spacing slightly */
-      @media (max-width: 1280px) {
+      /* [MODIFICACION YAXSEL]: Ajustes para pantallas laptops pequeñas (como 1366x768) hasta 1400px */
+      @media (max-width: 1400px) {
+        /* Reducir espaciado del menú de navegación */
         .menu-wrapper ul[data-tier="1"] > li > a,
         .menu-wrapper ul[data-tier="1"] > li > button {
           font-size: 12px !important;
@@ -388,7 +402,8 @@ export default function HomePage23() {
           padding-left: 2px !important;
           padding-right: 2px !important;
         }
-        /* Slightly smaller logo */
+        
+        /* Reducir tamaño del logo para liberar espacio vertical y horizontal */
         .header a.logo-wrapper {
           width: 200px !important;
           min-width: 200px !important;
@@ -399,10 +414,44 @@ export default function HomePage23() {
           min-width: 200px !important;
           max-width: 200px !important;
         }
+        
+        /* Reducir tamaño de las acciones Buscar y Carrito en el header */
+        .header .search-icon,
+        .header .cart-icon {
+          font-size: 12px !important;
+        }
+
+        /* --- Ajustes específicos de Hero Banner 1 --- */
+        
+        /* Reducir el tamaño de las letras del título gigante (La Selección Glow) */
+        .slideshow .giant-heading,
+        .slideshow .giant-heading span,
+        .slideshow .giant-heading .highlighted-text {
+          font-size: clamp(2rem, 3.8vw, 3.4rem) !important;
+        }
+        
+        /* Reducir tamaño del texto descriptivo */
+        .slideshow .body-text p,
+        .slideshow .body-text span p {
+          font-size: 0.95rem !important;
+          line-height: 1.4 !important;
+        }
+        
+        /* Reducir el padding vertical del contenedor del contenido del slideshow */
+        .slideshow__content .custom-container {
+          padding-top: 1rem !important;
+          padding-bottom: 2rem !important;
+        }
+        
+        /* Reducir paddings de espaciado del botón del slideshow para compactar verticalmente */
+        .slideshow-block-button .custom-theme-block,
+        .slideshow__content .button-block .custom-theme-block {
+          --padding-bottom: 15px !important;
+        }
       }
 
-      /* ~1150px — more compact */
-      @media (max-width: 1150px) {
+      /* [MODIFICACION YAXSEL]: Ajustes para pantallas medianamente pequeñas hasta 1200px */
+      @media (max-width: 1200px) {
         .menu-wrapper ul[data-tier="1"] > li > a,
         .menu-wrapper ul[data-tier="1"] > li > button {
           font-size: 11px !important;
@@ -430,7 +479,7 @@ export default function HomePage23() {
         }
       }
 
-      /* ~1024px — minimum desktop before hamburger */
+      /* [MODIFICACION YAXSEL]: Ajustes extremos antes de pasar a la vista móvil */
       @media (max-width: 1024px) {
         .menu-wrapper ul[data-tier="1"] > li > a,
         .menu-wrapper ul[data-tier="1"] > li > button {
