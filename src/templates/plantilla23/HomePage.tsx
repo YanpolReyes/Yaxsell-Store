@@ -604,6 +604,22 @@ export default function HomePage23() {
         opacity: 1 !important;
         transition: opacity 0.8s ease-in-out !important;
       }
+
+      /* Header glassmorphism — only on scrolled/sticky state (data-scroll-top="false") */
+      custom-header.header-element[data-scroll-top="true"] {
+        background-color: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border-bottom: none !important;
+        box-shadow: none !important;
+      }
+      custom-header.header-element[data-scroll-top="false"] {
+        background-color: rgba(253, 242, 248, 0.72) !important; /* Mantiene la tonalidad rosa claro original del theme con transparencia */
+        backdrop-filter: blur(10px) saturate(140%) !important;
+        -webkit-backdrop-filter: blur(10px) saturate(140%) !important;
+        border-bottom: 1px solid rgba(253, 242, 248, 0.4) !important;
+        box-shadow: 0 4px 20px -2px rgba(227, 150, 191, 0.12) !important;
+      }
     `;
     document.head.appendChild(overrideStyle);
   }, []);
