@@ -136,7 +136,7 @@ function ConfirmadoInner() {
     try {
       const { storage, databases } = getServices();
       const { databaseId, endpoint, projectId } = getAppwriteConfig();
-      const fileId = MEDIA_PREFIXES.comprobantes + ID.unique();
+      const fileId = ID.unique();
       const up = await storage.createFile(MEDIA_BUCKET_ID, fileId, file);
       const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}`;
       await databases.updateDocument(databaseId, ORDERS_COLLECTION, orderId, { PAYMENTPROOFURL: url, STATUS: 'processing' });

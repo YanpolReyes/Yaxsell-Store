@@ -225,7 +225,7 @@ export default function OrderDetailPage() {
     try {
       const { storage, databases } = getServices();
       const { databaseId, endpoint, projectId } = getAppwriteConfig();
-      const fileId = MEDIA_PREFIXES.comprobantes + ID.unique();
+      const fileId = ID.unique();
       await storage.createFile(MEDIA_BUCKET_ID, fileId, file);
       const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}`;
       await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, {
