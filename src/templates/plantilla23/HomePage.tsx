@@ -194,7 +194,7 @@ export default function HomePage23() {
     const preloadLink = document.createElement('link');
     preloadLink.rel = 'preload';
     preloadLink.as = 'image';
-    preloadLink.href = 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1780217268437-pegada-1780217265432.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=TdPW8vMKPhDThgPmmNF2TdJYG1iOwivDYab8KeGT%2FNzpWC1n80SyZzyIja6HkQvCsmBSrUPjuNvihdlenuceFq3cC77z3xs6GDJi7qZHq6XRuS%2FtbqNCxrCObclJUsCQSWqDPe61r9W2z1niE4C7d63p8X4bfuigW7mcRZP8ONP4TimOHcUzGr9u7k9XeIcGORNCA3NzFjdX9MXoPCktyVMTbOHTXfBGL%2Bh9ELxzjfLdutF1mDE3K%2B41M7H3O2Wxpx6HkIy%2BaJdE6LQprehqq3usipuOnwT8q3ajqP4YtHj0dpqqbB%2Fzs%2Bcj66xM%2Fzr52EiJOmWhXmg851qOPsj4Yw%3D%3D';
+    preloadLink.href = 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/1780173022333-pegada-1780173016432.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=Sa3yaIOBQLI7MIR1zG81iSWWMToOKHSAOeEhhjZjS3KZIOtkOZWDvV4imyKt3Xg%2BZvUI7DfAxYvGYPZJsVuEJSgTW8PrcSO9gNNwoy%2BEUq9MxaYw0PVkw%2BQXoEJPCXyZKPOK%2F7Nwnk3mUsZFp0uqFJQ0FB8Zqg%2BeOkHzWOIngMIh96BkQRVqnS3ecsnGqPYZqDEqsidg9v3YIl%2FM7z71qwI3MGjfOL7TKfn45vcNV1vb4MgQr%2FhjOTL2OAzawTtlB2IQTbehko3RL2T7JIdkMQWtS9Gm2MsefoCeOexwuwv3nHOTluGGUHIj6ff3yLJ7Ec4RJJMoHZ7TJA1h%2FC9XDQ%3D%3D';
     preloadLink.id = 'tpl23-preload-hero';
     if (!document.getElementById('tpl23-preload-hero')) document.head.appendChild(preloadLink);
 
@@ -598,6 +598,12 @@ export default function HomePage23() {
           border-radius: 12px !important;
         }
       }
+
+      /* Bulletproof Fallback Image Visibility */
+      #hero1-image-desktop, #hero1-image-mobile {
+        opacity: 1 !important;
+        transition: opacity 0.8s ease-in-out !important;
+      }
     `;
     document.head.appendChild(overrideStyle);
   }, []);
@@ -701,10 +707,33 @@ export default function HomePage23() {
       });
     }, { threshold: 0.1 });
     root.querySelectorAll('video').forEach(video => {
-      // Remove autoplay so we control playback via observer
+      // Exclude slideshow/hero and split-hero videos from preload="none" and disabling autoplay
+      const isHeroVideo = video.closest('.slideshow') || video.closest('split-hero') || video.closest('.split-hero');
+      if (isHeroVideo) {
+        video.preload = 'auto';
+        video.setAttribute('autoplay', 'autoplay');
+        return;
+      }
+      // Remove autoplay so we control playback via observer for secondary videos
       video.removeAttribute('autoplay');
       video.preload = 'none';
       videoObserver.observe(video);
+    });
+
+    // Sweep slideshow videos and add robust listener to hide fallback images when they play
+    root.querySelectorAll('.slideshow video, split-hero video, .split-hero video').forEach(vid => {
+      const video = vid as HTMLVideoElement;
+      const hideFallback = () => {
+        const desktopImg = root.querySelector('#hero1-image-desktop') as HTMLElement;
+        const mobileImg = root.querySelector('#hero1-image-mobile') as HTMLElement;
+        if (desktopImg) desktopImg.style.setProperty('display', 'none', 'important');
+        if (mobileImg) mobileImg.style.setProperty('display', 'none', 'important');
+        video.style.setProperty('z-index', '6', 'important');
+      };
+      video.addEventListener('playing', hideFallback);
+      if (video.currentTime > 0 && !video.paused) {
+        hideFallback();
+      }
     });
 
     // ═══ Pause hero video when nav menu dropdown is open ═══
@@ -754,7 +783,7 @@ export default function HomePage23() {
     setTimeout(() => {
       const firstSlide = root.querySelector('.swiper-slide');
       if (firstSlide) {
-        firstSlide.querySelectorAll('video.reveal-on-play').forEach(vid => {
+        firstSlide.querySelectorAll('video').forEach(vid => {
           const v = vid as HTMLVideoElement;
           // Force the video to start invisible and without transition
           v.style.setProperty('opacity', '0', 'important');
@@ -846,13 +875,6 @@ export default function HomePage23() {
 
       setTimeout(() => {
         forceInView();
-
-        // Pre-load reverse video to enable seamless source swapping
-        const preloadLink = document.createElement('link');
-        preloadLink.rel = 'preload';
-        preloadLink.as = 'video';
-        preloadLink.href = "https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/rever.mp4?alt=media&token=e563d34d-d5c4-4379-a11d-47901d2d01a6";
-        document.head.appendChild(preloadLink);
 
         // ═══ Stacked Seamless Video Alternator & Hover Hunter ═══
         const collageVideoInterval = setInterval(() => {
