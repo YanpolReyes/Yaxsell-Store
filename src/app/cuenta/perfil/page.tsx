@@ -74,14 +74,14 @@ export default function PerfilPage() {
       const acc = await account.get();
       const prefs = (acc as any).prefs || {};
       if (avatarFile) {
-        const fileId = MEDIA_PREFIXES.thumbnails + 'unique-avatar-' + Date.now();
+        const fileId = 'avatar-' + Date.now();
         const file = await storage.createFile(MEDIA_BUCKET_ID, fileId, avatarFile);
-        prefs.avatarFileId = 'unique-avatar-' + Date.now();
+        prefs.avatarFileId = fileId;
       }
       if (coverFile) {
-        const fileId = MEDIA_PREFIXES.thumbnails + 'unique-cover-' + Date.now();
+        const fileId = 'cover-' + Date.now();
         const file = await storage.createFile(MEDIA_BUCKET_ID, fileId, coverFile);
-        prefs.coverFileId = 'unique-cover-' + Date.now();
+        prefs.coverFileId = fileId;
       }
       if (avatarFile || coverFile) {
         await account.updatePrefs(prefs);

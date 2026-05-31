@@ -23,7 +23,7 @@ export default function ImageUploadField({ label, value, onChange, bucketId, pla
     try {
       const { storage } = getServices();
       const { endpoint, projectId } = getAppwriteConfig();
-      const fileId = MEDIA_PREFIXES[prefix] + ID.unique();
+      const fileId = ID.unique();
       await storage.createFile(bucketId, fileId, file);
       const url = `${endpoint}/storage/buckets/${bucketId}/files/${fileId}/view?project=${projectId}`;
       onChange(url);
