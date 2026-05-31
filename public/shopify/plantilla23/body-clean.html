@@ -4962,9 +4962,20 @@
     <div class="slideshow__background w-full h-full img-blur animation-element fade-in relative overflow-hidden" style="background-color: #FBCAC9;">
         
 
-    <video   playsinline="true" autoplay="autoplay" muted="muted" poster="/shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/preview_images/aabc15baa4984915ad6486ee139b15ce.thumbnail.0000000000.jpg" class="object-cover w-full h-full hidden lg:block pointer-events-none smooth-reveal reveal-on-play" preload="metadata"><source src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2Faea.mp4?alt=media&token=bcda0b8c-2a9a-4dda-b81c-ec2066d3dd23" type="video/mp4"><img src="//k-me-store-2.myshopify.com/cdn/shop/files/preview_images/aabc15baa4984915ad6486ee139b15ce.thumbnail.0000000000_100x.jpg?v=1778617843"></video>
+    <!-- [MODIFICACION YAXSEL]: Hero Banner 1 progresivo.
+         La imagen entra con animación de 1.5s. El video carga invisible de fondo y, apenas puede reproducirse (onplaying),
+         se pone encima sin ninguna animación de entrada, cortando de golpe la foto. -->
+    
+    <!-- DESKTOP -->
+    <img id="hero1-image-desktop" src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1780173022333-pegada-1780173016432.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=Sa3yaIOBQLI7MIR1zG81iSWWMToOKHSAOeEhhjZjS3KZIOtkOZWDvV4imyKt3Xg%2BZvUI7DfAxYvGYPZJsVuEJSgTW8PrcSO9gNNwoy%2BEUq9MxaYw0PVkw%2BQXoEJPCXyZKPOK%2F7Nwnk3mUsZFp0uqFJQ0FB8Zqg%2BeOkHzWOIngMIh96BkQRVqnS3ecsnGqPYZqDEqsidg9v3YIl%2FM7z71qwI3MGjfOL7TKfn45vcNV1vb4MgQr%2FhjOTL2OAzawTtlB2IQTbehko3RL2T7JIdkMQWtS9Gm2MsefoCeOexwuwv3nHOTluGGUHIj6ff3yLJ7Ec4RJJMoHZ7TJA1h%2FC9XDQ%3D%3D" class="object-cover w-full h-full hidden lg:block pointer-events-none smooth-reveal absolute top-0 left-0 z-[5]" style="opacity: 0;" onload="this.style.transition = 'opacity 1.5s ease-out'; this.style.opacity = '1';" />
+    
+    <video playsinline="true" autoplay="autoplay" muted="muted" poster="/shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/preview_images/aabc15baa4984915ad6486ee139b15ce.thumbnail.0000000000.jpg" class="object-cover w-full h-full hidden lg:block pointer-events-none absolute top-0 left-0 z-[4]" preload="metadata" onplaying="document.getElementById('hero1-image-desktop').style.display='none'; this.style.zIndex='6';"><source src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/IADESIGN/2026/05%2Faabc15baa4984915ad6486ee139b15ce.HD-1080p-7.2Mbps-83967798.realesrgan.mp4?alt=media&token=e0bcfc30-edeb-4429-87a9-eb97230fef68" type="video/mp4"></video>
 
-    <video playsinline="true" autoplay="autoplay" muted="muted" poster="/shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/preview_images/aabc15baa4984915ad6486ee139b15ce.thumbnail.0000000000.jpg" class="object-cover w-full h-full block lg:hidden pointer-events-none smooth-reveal reveal-on-play" preload="metadata"><source src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2Faea.mp4?alt=media&token=bcda0b8c-2a9a-4dda-b81c-ec2066d3dd23" type="video/mp4"><img src="//k-me-store-2.myshopify.com/cdn/shop/files/preview_images/aabc15baa4984915ad6486ee139b15ce.thumbnail.0000000000_100x.jpg?v=1778617843"></video>
+    <!-- MOBILE -->
+    <img id="hero1-image-mobile" src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1780173022333-pegada-1780173016432.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=Sa3yaIOBQLI7MIR1zG81iSWWMToOKHSAOeEhhjZjS3KZIOtkOZWDvV4imyKt3Xg%2BZvUI7DfAxYvGYPZJsVuEJSgTW8PrcSO9gNNwoy%2BEUq9MxaYw0PVkw%2BQXoEJPCXyZKPOK%2F7Nwnk3mUsZFp0uqFJQ0FB8Zqg%2BeOkHzWOIngMIh96BkQRVqnS3ecsnGqPYZqDEqsidg9v3YIl%2FM7z71qwI3MGjfOL7TKfn45vcNV1vb4MgQr%2FhjOTL2OAzawTtlB2IQTbehko3RL2T7JIdkMQWtS9Gm2MsefoCeOexwuwv3nHOTluGGUHIj6ff3yLJ7Ec4RJJMoHZ7TJA1h%2FC9XDQ%3D%3D" class="object-cover w-full h-full block lg:hidden pointer-events-none smooth-reveal absolute top-0 left-0 z-[5]" style="opacity: 0;" onload="this.style.transition = 'opacity 1.5s ease-out'; this.style.opacity = '1';" />
+    
+    <video playsinline="true" autoplay="autoplay" muted="muted" poster="/shopify/plantilla23/assets/img/k-me-store-2.myshopify.com/cdn/shop/files/preview_images/aabc15baa4984915ad6486ee139b15ce.thumbnail.0000000000.jpg" class="object-cover w-full h-full block lg:hidden pointer-events-none absolute top-0 left-0 z-[4]" preload="metadata" onplaying="document.getElementById('hero1-image-mobile').style.display='none'; this.style.zIndex='6';"><source src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/IADESIGN/2026/05%2Faabc15baa4984915ad6486ee139b15ce.HD-1080p-7.2Mbps-83967798.realesrgan.mp4?alt=media&token=e0bcfc30-edeb-4429-87a9-eb97230fef68" type="video/mp4"></video>
+
 
     </div>
 
@@ -5366,7 +5377,7 @@
     
 >
     
-        <a href="https://kevincocochile.cl/productos/6a0b636f001732353402" role="button" class="custom-button button--secondary w-full" >
+        <a href="https://IADESIGN/2026/05chile.cl/productos/6a0b636f001732353402" role="button" class="custom-button button--secondary w-full" >
             <span class="visible-text z-10">
                 <span class="link-hover-animation">Comprar Ahora</span>
             </span>
@@ -5382,7 +5393,7 @@
 
 
 <!-- PRICE BADGE (BOTTOM RIGHT OF THE VIDEO, IN FRONT) -->
-<a href="https://kevincocochile.cl/productos/6a0b636f001732353402" class="hero2-price-badge group">
+<a href="https://IADESIGN/2026/05chile.cl/productos/6a0b636f001732353402" class="hero2-price-badge group">
     $1.100
 </a>
 
@@ -26131,7 +26142,7 @@
     
 >
         
-        <img src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/1780039508105-pegada-1780039506178.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&amp;Expires=16730334000&amp;Signature=UzpnTSVgS3Cw6A1f5rqC0fWx43KyOAjb07J%2FiEK9oHitj5sqFLOdgWA33C1AS7x0gpQ6hhTDMLrWfj3u7Q3Wwe205EoK84%2B7sdQzTxo50sc4270UjmbzXt%2B0XnPU5Euy4so7bdDwpPS7eJxOtXpfsqBAx07sisfzCA6WO7otmCyfo7CQdzB52UauEja5%2FDM2oYJHogtePxUCFwX6k5LJzZPiJh1Rv%2Fx6amu%2FzD4c7gTQ1zIbU5auzXWWoKTenAnS6CxHHPcVn3vXuLBc%2BoZs2na0FQng3jZ32Y9NHThv9YyyHxgEjTXxlrkjMsjS6yyMSL%2BlxuqrL00ampJqLVa3Hg%3D%3D" width="1802" height="1014" loading="lazy" sizes="100%" class="object-cover w-full h-full object-center float-animation">
+        <img src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1780217268437-pegada-1780217265432.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&amp;Expires=16730334000&amp;Signature=UzpnTSVgS3Cw6A1f5rqC0fWx43KyOAjb07J%2FiEK9oHitj5sqFLOdgWA33C1AS7x0gpQ6hhTDMLrWfj3u7Q3Wwe205EoK84%2B7sdQzTxo50sc4270UjmbzXt%2B0XnPU5Euy4so7bdDwpPS7eJxOtXpfsqBAx07sisfzCA6WO7otmCyfo7CQdzB52UauEja5%2FDM2oYJHogtePxUCFwX6k5LJzZPiJh1Rv%2Fx6amu%2FzD4c7gTQ1zIbU5auzXWWoKTenAnS6CxHHPcVn3vXuLBc%2BoZs2na0FQng3jZ32Y9NHThv9YyyHxgEjTXxlrkjMsjS6yyMSL%2BlxuqrL00ampJqLVa3Hg%3D%3D" width="1802" height="1014" loading="lazy" sizes="100%" class="object-cover w-full h-full object-center float-animation">
     </div>
 
 </div>
