@@ -4,12 +4,13 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { MEDIA_BUCKET_ID, MEDIA_PREFIXES, ID } from '@/lib/appwrite';
 import { Order, OrderStatus } from '@/types/admin';
 import {
   ArrowLeft, Package, User, MapPin, CreditCard, Truck, Clock, FileText,
   Phone, Mail, Hash, ChevronDown, Save, CheckCircle, Copy, Check,
   AlertTriangle, ExternalLink, Image as ImageIcon, MessageSquare, Calendar, DollarSign,
-  Printer, Send, Ban, StickyNote, MapPinned, Receipt, Tag, XCircle,
+  Printer, Send, Ban, StickyNote, MapPinned, Receipt, Tag, XCircle, Upload,
 } from 'lucide-react';
 import { getWarehouseLocationFromFeatures, getSkuFromFeatures, type ProductWarehouseLocation } from '@/lib/product-features';
 
@@ -52,6 +53,7 @@ export default function OrderDetailPage() {
   const [productLocations, setProductLocations] = useState<Record<string, ProductWarehouseLocation>>({});
   const [productSkus, setProductSkus] = useState<Record<string, string>>({});
   const [proofOpen, setProofOpen] = useState(false);
+  const [uploadingProof, setUploadingProof] = useState(false);
   const prevStatusRef = useRef<string | null>(null);
 
   // Auto-print when status changes to 'paid'
@@ -214,6 +216,28 @@ export default function OrderDetailPage() {
   const handleStatusChange = (newStatus: string) => {
     if (newStatus === 'cancelled' && !confirm('¿Cancelar este pedido? El stock será devuelto.')) return;
     updateStatus(newStatus);
+  };
+
+  const handleAdminUploadProof = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !order) return;
+    setUploadingProof(true);
+    try {
+      const { storage, databases } = getServices();
+      const { databaseId, endpoint, projectId } = getAppwriteConfig();
+      const fileId = MEDIA_PREFIXES.comprobantes + ID.unique();
+      await storage.createFile(MEDIA_BUCKET_ID, fileId, file);
+      const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}`;
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, {
+        PAYMENTPROOFURL: url,
+        STATUS: order.STATUS === 'pending' ? 'processing' : order.STATUS,
+      });
+      await load();
+    } catch (err: any) {
+      alert('Error al subir comprobante: ' + (err?.message || err));
+    } finally {
+      setUploadingProof(false);
+    }
   };
 
   const totalItems = items.reduce((s, it) => s + it.qty, 0);
@@ -533,11 +557,21 @@ export default function OrderDetailPage() {
                   </div>
                   <ExternalLink className="w-3 h-3 text-emerald-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
                 </button>
-              ) : order.STATUS === 'pending' ? (
-                <div className="flex items-center gap-2 p-2.5 sm:p-3 bg-amber-50 border border-amber-200 rounded-lg sm:rounded-xl">
-                  <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 flex-shrink-0" />
-                  <p className="text-[10px] sm:text-xs text-amber-700 font-medium">Sin comprobante</p>
-                </div>
+              ) : order.STATUS === 'pending' || order.STATUS === 'processing' ? (
+                <label className="flex items-center gap-2 p-2.5 sm:p-3 bg-amber-50 border border-amber-200 rounded-lg sm:rounded-xl cursor-pointer hover:bg-amber-100 transition group">
+                  <input type="file" accept="image/*,.pdf" onChange={handleAdminUploadProof} className="hidden" disabled={uploadingProof} />
+                  {uploadingProof ? (
+                    <>
+                      <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                      <p className="text-[10px] sm:text-xs text-amber-700 font-medium">Subiendo...</p>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 flex-shrink-0 group-hover:text-amber-600" />
+                      <p className="text-[10px] sm:text-xs text-amber-700 font-medium">Subir comprobante</p>
+                    </>
+                  )}
+                </label>
               ) : null}
             </div>
           </div>
