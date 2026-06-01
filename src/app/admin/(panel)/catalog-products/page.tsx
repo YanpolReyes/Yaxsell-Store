@@ -857,10 +857,10 @@ export default function CatalogProductsPage() {
                 <div style={{ maxHeight: isMobile ? 'none' : 600, overflowY: 'auto', padding: isMobile ? 10 : 12 }}>
                   {selectedUser.requests.map(a => (
                     <div key={a.$id} style={{
-                      background: a.source === 'products' ? '#eff6ff' : a.source === 'catalog_products' ? '#eff6ff' : a.source === 'inventory_products' ? '#fffbeb' : (a.status === 'available' ? '#dbeafe' : (a.status === 'pending' ? '#fffbf5' : '#fef2f2')),
-                      border: `1px solid ${a.source === 'products' ? '#3b82f6' : a.source === 'catalog_products' ? '#93c5fd' : a.source === 'inventory_products' ? '#fbbf24' : (a.status === 'available' ? '#93c5fd' : (a.status === 'pending' ? '#fbcfe8' : '#fecaca'))}`,
+                      background: a.source === 'products' ? '#eff6ff' : a.source === 'catalog_products' ? '#f5f3ff' : a.source === 'inventory_products' ? '#fffbeb' : (a.status === 'available' ? '#dbeafe' : (a.status === 'pending' ? '#fffbf5' : '#fef2f2')),
+                      border: `1px solid ${a.source === 'products' ? '#3b82f6' : a.source === 'catalog_products' ? '#a78bfa' : a.source === 'inventory_products' ? '#fbbf24' : (a.status === 'available' ? '#93c5fd' : (a.status === 'pending' ? '#fbcfe8' : '#fecaca'))}`,
                       borderRadius: 10, padding: isMobile ? 11 : 14, marginBottom: 10,
-                      boxShadow: (a.source === 'products' || a.source === 'catalog_products') ? '0 0 0 1px #93c5fd' : a.source === 'inventory_products' ? '0 0 0 1px #fbbf24' : (a.status === 'available' ? '0 0 0 1px #93c5fd' : 'none'),
+                      boxShadow: a.source === 'products' ? '0 0 0 1px #3b82f6' : a.source === 'catalog_products' ? '0 0 0 1px #a78bfa' : a.source === 'inventory_products' ? '0 0 0 1px #fbbf24' : (a.status === 'available' ? '0 0 0 1px #93c5fd' : 'none'),
                     }}>
                       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                         {/* Product image */}
@@ -890,8 +890,8 @@ export default function CatalogProductsPage() {
                               {a.productName}
                             </p>
                             {a.status === 'pending' && a.source && (
-                              <span style={{ fontSize: 10, fontWeight: 700, background: a.source === 'inventory_products' ? '#fef3c7' : '#dbeafe', color: a.source === 'inventory_products' ? '#92400e' : '#1e40af', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 3, border: `1px solid ${a.source === 'inventory_products' ? '#fbbf24' : '#93c5fd'}`, flexShrink: 0 }}>
-                                {a.source === 'inventory_products' ? <><AlertTriangle size={10} /> En Bodega</> : <><CheckCircle size={10} /> Encontrado</>}
+                              <span style={{ fontSize: 10, fontWeight: 700, background: a.source === 'inventory_products' ? '#fef3c7' : a.source === 'catalog_products' ? '#ede9fe' : '#dbeafe', color: a.source === 'inventory_products' ? '#92400e' : a.source === 'catalog_products' ? '#6d28d9' : '#1e40af', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 3, border: `1px solid ${a.source === 'inventory_products' ? '#fbbf24' : a.source === 'catalog_products' ? '#a78bfa' : '#93c5fd'}`, flexShrink: 0 }}>
+                                {a.source === 'inventory_products' ? <><AlertTriangle size={10} /> En Bodega</> : a.source === 'catalog_products' ? <><Eye size={10} /> En Catálogo</> : <><CheckCircle size={10} /> En Tienda</>}
                               </span>
                             )}
                             {a.status === 'pending' && !a.source && (
@@ -938,13 +938,13 @@ export default function CatalogProductsPage() {
                             {/* Badge: producto en catalog_products (a pedido) */}
                             {a.source === 'catalog_products' && (
                               <span style={{
-                                fontSize: 10, fontWeight: 700, color: '#1e40af',
-                                background: '#dbeafe', border: '1px solid #93c5fd',
+                                fontSize: 10, fontWeight: 700, color: '#6d28d9',
+                                background: '#ede9fe', border: '1px solid #a78bfa',
                                 padding: '2px 7px', borderRadius: 10,
                                 display: 'flex', alignItems: 'center', gap: 3,
                                 whiteSpace: 'nowrap',
                               }}>
-                                <ShoppingCart size={10} /> En Tienda · A Pedido
+                                <Eye size={10} /> En Catálogo · A Pedido
                               </span>
                             )}
                             {/* Badge: producto solo en inventory_products */}
@@ -1001,7 +1001,7 @@ export default function CatalogProductsPage() {
                               </Link>
 
                               {/* En Tienda - Notificar y llevar al cliente */}
-                              {(a.source === 'products' || a.source === 'catalog_products') ? (
+                              {a.source === 'products' ? (
                                 <button
                                   onClick={() => handleMarkAvailable(a)}
                                   disabled={processingId === a.$id}
@@ -1013,7 +1013,21 @@ export default function CatalogProductsPage() {
                                     boxShadow: 'rgba(37, 99, 235, 0.3) 0px 2px 8px',
                                   }}
                                 >
-                                  <ShoppingCart size={12} /> {isMobile ? 'Llevar al cliente' : `Llevar al cliente (${a.source === 'products' ? `${a.currentStock ?? 0} uds` : 'A Pedido'})`}
+                                  <ShoppingCart size={12} /> {isMobile ? 'Llevar al cliente' : `Llevar al cliente (${a.currentStock ?? 0} uds)`}
+                                </button>
+                              ) : a.source === 'catalog_products' ? (
+                                <button
+                                  onClick={() => handleMarkAvailable(a)}
+                                  disabled={processingId === a.$id}
+                                  style={{
+                                    padding: isMobile ? '7px 10px' : '7px 12px', border: 'none', borderRadius: 6,
+                                    fontSize: isMobile ? 11 : 12, fontWeight: 700,
+                                    background: '#7c3aed', color: '#fff', cursor: processingId === a.$id ? 'wait' : 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: 5,
+                                    boxShadow: 'rgba(124, 58, 237, 0.3) 0px 2px 8px',
+                                  }}
+                                >
+                                  <Eye size={12} /> {isMobile ? 'Notificar A Pedido' : 'Llevar al cliente (A Pedido)'}
                                 </button>
                               ) : a.source === 'inventory_products' ? (
                                 <button
