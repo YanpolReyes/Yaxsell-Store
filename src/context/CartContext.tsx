@@ -44,7 +44,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, []);
 
-  // Find existing snapshot doc ID on login
+  // Find existing snapshot doc ID on login & merge auto-added items
   useEffect(() => {
     if (!isLoggedIn || !user) return;
     (async () => {
@@ -57,14 +57,40 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ]);
           if (res.documents.length > 0) {
             snapshotDocIdRef.current = res.documents[0].$id;
-            // Load cart from snapshot if localStorage is empty
-            const stored = localStorage.getItem('yaxsel_cart');
-            if (!stored || JSON.parse(stored).length === 0) {
-              try {
-                const snap = JSON.parse((res.documents[0] as any).itemsJson || '[]');
-                if (snap.length > 0) setItems(snap);
-              } catch {}
-            }
+            try {
+              const snapItems: { id: string; name: string; qty: number; price: number }[] = JSON.parse((res.documents[0] as any).itemsJson || '[]');
+              if (snapItems.length > 0) {
+                const stored = localStorage.getItem('yaxsel_cart');
+                let localItems: CartItem[] = [];
+                try { localItems = stored ? JSON.parse(stored) : []; } catch {}
+                // Merge: add snapshot items not already in local cart
+                const localIds = new Set(localItems.map(i => i.product.$id));
+                const newFromSnap = snapItems.filter(si => !localIds.has(si.id));
+                if (newFromSnap.length > 0) {
+                  // Fetch product data for auto-added items
+                  try {
+                    const { databases: db2 } = getServices();
+                    const prodRes = await db2.listDocuments(databaseId, 'products', [
+                      Query.equal('$id', newFromSnap.map(si => si.id)),
+                      Query.limit(100),
+                    ]);
+                    const prodMap = new Map(prodRes.documents.map((p: any) => [p.$id, p as unknown as Product]));
+                    const newCartItems: CartItem[] = newFromSnap.map(si => {
+                      const prod = prodMap.get(si.id);
+                      if (prod) return { product: prod, quantity: si.qty };
+                      // Fallback: construct minimal product from snapshot data
+                      return {
+                        product: { $id: si.id, NAME: si.name, PRICE: si.price, STOCK: si.qty, CATEGORYID: '', DESCRIPTION: '', IMAGEURL: '', IMAGEURL2: '', IMAGEURL3: '', COST: 0, WHOLESALEPRICE: 0, WHOLESALEMINQUANTITY: 0, PACKQTY: 0, SOLDQUANTITY: 0 } as unknown as Product,
+                        quantity: si.qty,
+                      };
+                    }).filter(Boolean);
+                    if (newCartItems.length > 0) {
+                      setItems(prev => [...prev, ...newCartItems]);
+                    }
+                  } catch {}
+                }
+              }
+            } catch {}
           }
         } catch (e: any) {
           if (e.code !== 404) {

@@ -614,25 +614,29 @@ async function createCollectionWithAttrs(coll: CollectionDef) {
           DATABASE_ID, coll.id, key,
           attr.size || 256,
           attr.required,
-          attr.default ?? null
+          attr.default !== undefined ? attr.default : undefined
         );
       } else if (attr.type === 'integer') {
         await db.createIntegerAttribute(
           DATABASE_ID, coll.id, key,
           attr.required,
-          attr.default ?? null
+          undefined, // min
+          undefined, // max
+          attr.default !== undefined ? attr.default : undefined
         );
       } else if (attr.type === 'double') {
         await db.createFloatAttribute(
           DATABASE_ID, coll.id, key,
           attr.required,
-          attr.default ?? null
+          undefined, // min
+          undefined, // max
+          attr.default !== undefined ? attr.default : undefined
         );
       } else if (attr.type === 'boolean') {
         await db.createBooleanAttribute(
           DATABASE_ID, coll.id, key,
           attr.required,
-          attr.default ?? null
+          attr.default !== undefined ? attr.default : undefined
         );
       }
       console.log(`  ✅ ${key} (${attr.type})`);
@@ -806,9 +810,10 @@ async function main() {
   }
 
   if (mode === 'full' || mode === 'data') {
-    console.log('\n📋 FASE 2: Migrar datos del proyecto antiguo');
-    // Solo migrar colecciones con datos
-    const collectionsWithData = ['inventory_products', 'sequences'];
+    // 🛑 FASE 2 DESACTIVADA POR DEFECTO PARA CLONACIÓN LIMPIA
+    // Si necesitas migrar datos antiguos, agrega los IDs aquí.
+    console.log('\n📋 FASE 2: Migrar datos del proyecto antiguo (Omitido para clonación limpia)');
+    const collectionsWithData: string[] = []; // Vacío para no traer productos del cliente anterior
     for (const collId of collectionsWithData) {
       await migrateData(collId);
     }

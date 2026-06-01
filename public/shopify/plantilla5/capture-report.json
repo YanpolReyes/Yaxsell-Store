@@ -1,0 +1,71 @@
+{
+  "plantilla": 5,
+  "sourceUrl": "https://pebble-little.myshopify.com/products/logo-polo-red",
+  "capturedAt": "2026-06-01T05:15:24.980Z",
+  "elapsedSeconds": "19.1",
+  "files": {
+    "html": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\public\\shopify\\plantilla5\\index.html",
+    "bodyClean": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\public\\shopify\\plantilla5\\product-clean.html",
+    "manifest": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\public\\shopify\\plantilla5\\manifest.json",
+    "tsx": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\src\\templates\\plantilla5\\ProductDetail.tsx"
+  },
+  "stats": {
+    "cssTotal": 13,
+    "jsTotal": 53,
+    "fontsTotal": 4,
+    "imagesTotal": 722,
+    "videosTotal": 5,
+    "svgMasksTotal": 0,
+    "inlineAnimScripts": 3,
+    "inlineCssKB": 60,
+    "bodyCleanKB": 999,
+    "downloaded": {
+      "css": {
+        "ok": 0,
+        "skip": 13,
+        "fail": 0,
+        "errors": []
+      },
+      "js": {
+        "ok": 0,
+        "skip": 53,
+        "fail": 0,
+        "errors": []
+      },
+      "fonts": {
+        "ok": 0,
+        "skip": 4,
+        "fail": 0,
+        "errors": []
+      },
+      "images": {
+        "ok": 63,
+        "skip": 659,
+        "fail": 0,
+        "errors": []
+      },
+      "videos": {
+        "ok": 0,
+        "skip": 5,
+        "fail": 0,
+        "errors": []
+      },
+      "svgMasks": {
+        "ok": 0,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      }
+    }
+  },
+  "errors": [],
+  "nextSteps": [
+    "1. Revisar HomePage.tsx — puede necesitar ajustes de orden CSS/JS",
+    "2. Verificar que los CSS críticos estén en el orden correcto (inline → core → secciones)",
+    "3. Verificar que los JS no incluyan scripts de Shopify (perf-kit, account.js)",
+    "4. Registrar plantilla 5 en src/app/preview/plantilla/[id]/page.tsx",
+    "5. Registrar plantilla 5 en src/components/DynamicHomePage.tsx",
+    "6. Probar en http://localhost:3000/preview/plantilla/5",
+    "7. Si hay errores de JS, revisar orden de carga y dependencias"
+  ]
+}

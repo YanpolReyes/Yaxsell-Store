@@ -1,0 +1,71 @@
+{
+  "plantilla": 24,
+  "sourceUrl": "https://noble-preview.myshopify.com",
+  "capturedAt": "2026-05-31T10:53:51.050Z",
+  "elapsedSeconds": "22.3",
+  "files": {
+    "html": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\public\\shopify\\plantilla24\\index.html",
+    "bodyClean": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\public\\shopify\\plantilla24\\body-clean.html",
+    "manifest": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\public\\shopify\\plantilla24\\manifest.json",
+    "tsx": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\src\\templates\\plantilla24\\HomePage.tsx"
+  },
+  "stats": {
+    "cssTotal": 33,
+    "jsTotal": 9,
+    "fontsTotal": 10,
+    "imagesTotal": 367,
+    "videosTotal": 3,
+    "svgMasksTotal": 0,
+    "inlineAnimScripts": 8,
+    "inlineCssKB": 49,
+    "bodyCleanKB": 798,
+    "downloaded": {
+      "css": {
+        "ok": 33,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      },
+      "js": {
+        "ok": 9,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      },
+      "fonts": {
+        "ok": 10,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      },
+      "images": {
+        "ok": 159,
+        "skip": 41,
+        "fail": 0,
+        "errors": []
+      },
+      "videos": {
+        "ok": 3,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      },
+      "svgMasks": {
+        "ok": 0,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      }
+    }
+  },
+  "errors": [],
+  "nextSteps": [
+    "1. Revisar HomePage.tsx — puede necesitar ajustes de orden CSS/JS",
+    "2. Verificar que los CSS críticos estén en el orden correcto (inline → core → secciones)",
+    "3. Verificar que los JS no incluyan scripts de Shopify (perf-kit, account.js)",
+    "4. Registrar plantilla 24 en src/app/preview/plantilla/[id]/page.tsx",
+    "5. Registrar plantilla 24 en src/components/DynamicHomePage.tsx",
+    "6. Probar en http://localhost:3000/preview/plantilla/24",
+    "7. Si hay errores de JS, revisar orden de carga y dependencias"
+  ]
+}

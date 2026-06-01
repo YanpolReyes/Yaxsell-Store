@@ -476,32 +476,25 @@ export default function ProductsPage() {
         }
       }
       
-      // Send stock alerts if product was restocked
+      // Auto-add to cart & notify users who requested this product
       if (stockRestocked && (d as Product).$id) {
         try {
-          const alertsRes = await databases.listDocuments(databaseId, STOCK_ALERTS_COLLECTION_ID, [
-            Query.equal('productId', (d as Product).$id),
-          ]);
-          
-          for (const alert of alertsRes.documents) {
-            // Create notification for the user
-            await databases.createDocument(databaseId, NOTIFICATIONS_COLLECTION_ID, ID.unique(), {
-              userId: alert.userId,
-              type: 'stock',
-              title: '¡Stock disponible!',
-              message: `El producto "${d.NAME}" ya tiene stock disponible. ¡Compra ahora!`,
-              isRead: false,
-            });
-            
-            // Mark alert as notified
-            await databases.deleteDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, alert.$id);
-          }
-          
-          if (alertsRes.documents.length > 0) {
-            console.log(`Se notificó a ${alertsRes.documents.length} usuarios sobre stock de "${d.NAME}"`);
+          const res = await fetch('/api/stock-alerts/auto-cart', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              productId: (d as Product).$id,
+              productName: d.NAME,
+              productImage: d.IMAGEURL || '',
+              productPrice: d.PRICE || 0,
+            }),
+          });
+          const data = await res.json();
+          if (data.autoAdded > 0) {
+            console.log(`✅ Auto-agregado al carrito de ${data.autoAdded} usuarios, producto "${d.NAME}"`);
           }
         } catch (alertErr) {
-          console.error('Error sending stock alerts:', alertErr);
+          console.error('Error auto-adding to cart:', alertErr);
         }
       }
       

@@ -1,0 +1,115 @@
+{
+  "plantilla": 24,
+  "sourceUrl": "https://noble-preview.myshopify.com",
+  "shopifyHost": "noble-preview.myshopify.com",
+  "themeId": "148",
+  "capturedAt": "2026-05-31T10:53:51.048Z",
+  "css": [
+    "/shopify/plantilla24/assets/css/inline/index-inline-1.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/lenis.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/swiper.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/header-search.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/styles.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/hero-banner.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/product-card.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/global-drawer.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shopifycloud/portable-wallets/latest/accelerated-checkout-backwards-compat.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/main-product.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/featured-product.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/header.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/collection-list.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/horizontal-scroller.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/featured-collection.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/countdown-timer.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/after-before.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/product-steps.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/collection-tab.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/image-with-text.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/image-gallery.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/product-feature.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/trending-collection.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/customer-insights.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/product-slider-hotspot.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/featured-blog.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/brand-logo-list.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/instafeed.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/icon-text-columns.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/footer.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/quick-view.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/cart-drawer.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/localization-dropdown.css",
+    "/shopify/plantilla24/assets/css/noble-preview.myshopify.com/cdn/shop/t/148/assets/fancybox.css"
+  ],
+  "js": [
+    "/shopify/plantilla24/assets/js/noble-preview.myshopify.com/cdn/shop/t/148/assets/swiper.js",
+    "/shopify/plantilla24/assets/js/noble-preview.myshopify.com/cdn/shop/t/148/assets/lenis.js",
+    "/shopify/plantilla24/assets/js/noble-preview.myshopify.com/cdn/shop/t/148/assets/critical.js",
+    "/shopify/plantilla24/assets/js/noble-preview.myshopify.com/cdn/shop/t/148/assets/quick-view.js",
+    "/shopify/plantilla24/assets/js/noble-preview.myshopify.com/cdn/shop/t/148/assets/header-search.js",
+    "/shopify/plantilla24/assets/js/noble-preview.myshopify.com/cdn/shop/t/148/assets/localization-form.js",
+    "/shopify/plantilla24/assets/js/noble-preview.myshopify.com/cdn/shop/t/148/assets/animations.js",
+    "/shopify/plantilla24/assets/js/noble-preview.myshopify.com/cdn/shop/t/148/assets/fancybox.js",
+    "/shopify/plantilla24/assets/js/noble-preview.myshopify.com/cdn/shop/t/148/assets/non-critical.js"
+  ],
+  "fonts": [
+    "/shopify/plantilla24/assets/fonts/noble-preview.myshopify.com/cdn/fonts/jost/jost_n4.d47a1b6347ce4a4c9f437608011273009d91f2b7.woff2",
+    "/shopify/plantilla24/assets/fonts/noble-preview.myshopify.com/cdn/fonts/jost/jost_n4.791c46290e672b3f85c3d1c651ef2efa3819eadd.woff",
+    "/shopify/plantilla24/assets/fonts/noble-preview.myshopify.com/cdn/fonts/jost/jost_n7.921dc18c13fa0b0c94c5e2517ffe06139c3615a3.woff2",
+    "/shopify/plantilla24/assets/fonts/noble-preview.myshopify.com/cdn/fonts/jost/jost_n7.cbfc16c98c1e195f46c536e775e4e959c5f2f22b.woff",
+    "/shopify/plantilla24/assets/fonts/noble-preview.myshopify.com/cdn/fonts/jost/jost_i4.b690098389649750ada222b9763d55796c5283a5.woff2",
+    "/shopify/plantilla24/assets/fonts/noble-preview.myshopify.com/cdn/fonts/jost/jost_i4.fd766415a47e50b9e391ae7ec04e2ae25e7e28b0.woff",
+    "/shopify/plantilla24/assets/fonts/noble-preview.myshopify.com/cdn/fonts/jost/jost_i7.d8201b854e41e19d7ed9b1a31fe4fe71deea6d3f.woff2",
+    "/shopify/plantilla24/assets/fonts/noble-preview.myshopify.com/cdn/fonts/jost/jost_i7.eae515c34e26b6c853efddc3fc0c552e0de63757.woff",
+    "/shopify/plantilla24/assets/fonts/noble-preview.myshopify.com/cdn/fonts/jost/jost_n5.7c8497861ffd15f4e1284cd221f14658b0e95d61.woff2",
+    "/shopify/plantilla24/assets/fonts/noble-preview.myshopify.com/cdn/fonts/jost/jost_n5.fb6a06896db583cc2df5ba1b30d9c04383119dd9.woff"
+  ],
+  "stats": {
+    "cssTotal": 33,
+    "jsTotal": 9,
+    "fontsTotal": 10,
+    "imagesTotal": 367,
+    "videosTotal": 3,
+    "svgMasksTotal": 0,
+    "inlineAnimScripts": 8,
+    "inlineCssKB": 49,
+    "bodyCleanKB": 798,
+    "downloaded": {
+      "css": {
+        "ok": 33,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      },
+      "js": {
+        "ok": 9,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      },
+      "fonts": {
+        "ok": 10,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      },
+      "images": {
+        "ok": 159,
+        "skip": 41,
+        "fail": 0,
+        "errors": []
+      },
+      "videos": {
+        "ok": 3,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      },
+      "svgMasks": {
+        "ok": 0,
+        "skip": 0,
+        "fail": 0,
+        "errors": []
+      }
+    }
+  }
+}

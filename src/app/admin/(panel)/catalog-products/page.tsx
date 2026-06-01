@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { getServices, getAppwriteConfig, STOCK_ALERTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, PRODUCTS_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, USERS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { normalizeStockAlert, type StockAlert } from '@/lib/stock-alerts';
 import { getSkuFromFeatures, getWarehouseLocationFromFeatures } from '@/lib/product-features';
-import { Search, RefreshCw, Package, AlertTriangle, Users, Bell, CheckCircle, XCircle, User, ChevronRight, ArrowLeft, Clock, Eye, Sparkles, ExternalLink, Lock, Copy, Printer, Trash2 } from 'lucide-react';
+import { Search, RefreshCw, Package, AlertTriangle, Users, Bell, CheckCircle, XCircle, User, ChevronRight, ArrowLeft, Clock, Eye, Sparkles, ExternalLink, Lock, Copy, Printer, Trash2, X } from 'lucide-react';
 
 interface StockAlertView extends StockAlert {
   sku?: string;
@@ -36,6 +36,7 @@ export default function CatalogProductsPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [stockInput, setStockInput] = useState<Record<string, string>>({});
   const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null);
+  const [imageUrlModal, setImageUrlModal] = useState<{ productId: string; currentUrl: string; newUrl: string } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -371,14 +372,31 @@ export default function CatalogProductsPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { status: 'available' });
+      // Auto-add to user's cart & notify via API
+      try {
+        await fetch('/api/stock-alerts/auto-cart', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            productId: req.productId,
+            productName: req.productName,
+            productImage: req.productImage,
+            productPrice: 0,
+            singleUserId: req.userId,
+            singleQty: req.quantity || 1,
+            singleAlertId: req.$id,
+          }),
+        });
+      } catch (cartErr) {
+        console.warn('Error auto-adding to cart:', cartErr);
+      }
 
       // ── Notification to user ──
       if (req.userId) {
         const notifData: any = {
           userId: req.userId,
           title: '🎉 ¡Tu producto ya tiene stock!',
-          message: `¡Buenas noticias! "${req.productName}" que tenías en tu lista de espera ya está disponible. Hay ${req.currentStock} unidad(es) en stock. ¡No te quedes sin él!`,
+          message: `¡Buenas noticias! "${req.productName}" que consultaste ya está disponible y fue agregado a tu carrito (${req.quantity || 1} und). ¡No te quedes sin él!`,
           type: 'success',
           isRead: false,
         };
@@ -389,7 +407,8 @@ export default function CatalogProductsPage() {
         }
       }
 
-      setAlerts(prev => prev.map(a => a.$id === req.$id ? { ...a, status: 'available', notified: true } : a));
+      // Remove from list (alert was deleted by API)
+      setAlerts(prev => prev.filter(a => a.$id !== req.$id));
     } catch (e: any) {
       window.alert('Error: ' + e.message);
     } finally {
@@ -801,7 +820,10 @@ export default function CatalogProductsPage() {
                       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                         {/* Product image */}
                         {a.productImage ? (
-                          <div style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }} onClick={() => setZoomImageUrl(a.productImage)} title="Click para ampliar">
+                          <div style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}
+                            onClick={() => setImageUrlModal({ productId: a.productId, currentUrl: a.productImage, newUrl: a.productImage })}
+                            onDoubleClick={() => setZoomImageUrl(a.productImage)}
+                            title="Click: cambiar imagen · Doble click: ampliar">
                             <img src={a.productImage} alt={a.productName} style={{ width: isMobile ? 52 : 64, height: isMobile ? 52 : 64, borderRadius: 8, objectFit: 'cover' }} />
                             <div style={{
                               position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', borderRadius: 8,
@@ -987,6 +1009,62 @@ export default function CatalogProductsPage() {
           </div>
         )}
       </div>
+
+      {/* Image URL replacement modal */}
+      {imageUrlModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setImageUrlModal(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <p className="font-bold text-gray-900">Cambiar imagen</p>
+              <button onClick={() => setImageUrlModal(null)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={16} /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              {imageUrlModal.currentUrl && (
+                <div className="w-full h-32 rounded-xl bg-gray-100 overflow-hidden">
+                  <img src={imageUrlModal.currentUrl} alt="Actual" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">URL de la nueva imagen</label>
+                <input type="url" value={imageUrlModal.newUrl} onChange={e => setImageUrlModal(m => m ? { ...m, newUrl: e.target.value } : null)}
+                  placeholder="https://ejemplo.com/imagen.jpg"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-5 border-t border-gray-100">
+              <button onClick={() => setImageUrlModal(null)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
+              <button onClick={async () => {
+                if (!imageUrlModal) return;
+                try {
+                  const { databases } = getServices();
+                  const { databaseId } = getAppwriteConfig();
+                  
+                  // Try to find and update in PRODUCTS first
+                  try {
+                    await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, imageUrlModal.productId, { IMAGEURL: imageUrlModal.newUrl });
+                  } catch (e: any) {
+                    // If not in PRODUCTS, try CATALOG_PRODUCTS
+                    try {
+                      await databases.updateDocument(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, imageUrlModal.productId, { IMAGEURL: imageUrlModal.newUrl });
+                    } catch (e2: any) {
+                      // If not in CATALOG_PRODUCTS, try INVENTORY_PRODUCTS
+                      try {
+                        await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, imageUrlModal.productId, { IMAGEURL: imageUrlModal.newUrl });
+                      } catch (e3: any) {
+                        throw new Error('Producto no encontrado en ninguna colección');
+                      }
+                    }
+                  }
+                  
+                  // Update local state immediately to show new image
+                  setAlerts(prev => prev.map(a => a.productId === imageUrlModal.productId ? { ...a, productImage: imageUrlModal.newUrl } : a));
+                  setImageUrlModal(null);
+                } catch (e: any) { alert('Error: ' + e.message); }
+              }} className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition">Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Image Zoom Lightbox */}
       {zoomImageUrl && (

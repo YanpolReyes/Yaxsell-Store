@@ -9,6 +9,7 @@ export interface StockAlert {
   status: string;
   createdAt: number;
   notified: boolean;
+  quantity: number;
   sku?: string;
   jumpsellerId?: string;
 }
@@ -27,6 +28,7 @@ export function normalizeStockAlert(doc: RawStockAlert): StockAlert {
     status: String(doc.status ?? doc.STATUS ?? 'pending'),
     createdAt: Number(doc.createdAt ?? 0),
     notified: Boolean(doc.notified ?? doc.NOTIFIED ?? false),
+    quantity: Number(doc.quantity ?? doc.QUANTITY ?? 1),
     sku: String(doc.sku ?? doc.SKU ?? ''),
     jumpsellerId: String(doc.jumpsellerId ?? doc.JUMPSELLERID ?? ''),
   };
@@ -37,12 +39,14 @@ export function buildStockAlertData(input: {
   userId: string;
   productName?: string;
   productImage?: string;
+  quantity?: number;
   sku?: string;
   jumpsellerId?: string;
 }): Record<string, unknown> {
   const data: Record<string, unknown> = {
     productId: input.productId,
     userId: input.userId,
+    quantity: input.quantity ?? 1,
     createdAt: Date.now(),
   };
   if (input.productName) data.productName = input.productName;

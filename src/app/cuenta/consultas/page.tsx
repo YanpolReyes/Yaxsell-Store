@@ -186,6 +186,7 @@ export default function ConsultasPage() {
                       </span>
                     )}
                     <span style={{ fontSize: 10, color: '#aaa' }}>· {timeAgo(a.createdAt)}</span>
+                    {(a.quantity ?? 1) > 1 && <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', background: '#f3f4f6', padding: '1px 5px', borderRadius: 4 }}>x{a.quantity}</span>}
                   </div>
                 </div>
                 {a.status === 'available' && (

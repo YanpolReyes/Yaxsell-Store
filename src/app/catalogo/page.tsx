@@ -36,6 +36,7 @@ export default function CatalogoPage() {
   const { settings: apertura } = useAperturaPromotion();
   const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
   const [requestingId, setRequestingId] = useState<string | null>(null);
+  const [requestQty, setRequestQty] = useState<Record<string, number>>({});
   const [zoomImage, setZoomImage] = useState<{ src: string; alt: string } | null>(null);
   const [visibleCount, setVisibleCount] = useState(30);
   const PAGE_SIZE = 30;
@@ -57,7 +58,7 @@ export default function CatalogoPage() {
     loadRequested();
   }, [isLoggedIn, user]);
 
-  const handleRequestAvailability = async (productId: string, productName: string, productImage: string) => {
+  const handleRequestAvailability = async (productId: string, productName: string, productImage: string, qty: number = 1) => {
     if (!isLoggedIn) {
       window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
       return;
@@ -76,6 +77,7 @@ export default function CatalogoPage() {
           userId: user!.id,
           productName,
           productImage,
+          quantity: qty,
         }),
       );
       setRequestedIds(prev => new Set([...prev, productId]));
@@ -474,7 +476,7 @@ export default function CatalogoPage() {
               )}
             </div>
             <div className="cat-card-list" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              {filtered.slice(0, visibleCount).map((p, i) => <CatalogoProductCard key={p.$id} product={p} apertura={apertura} index={i} categories={categories} isLoggedIn={isLoggedIn} requestedIds={requestedIds} requestingId={requestingId} onRequest={handleRequestAvailability} onZoom={() => { const src = getProductImageUrl(p); if (src) setZoomImage({ src, alt: p.NAME }); }} />)}
+              {filtered.slice(0, visibleCount).map((p, i) => <CatalogoProductCard key={p.$id} product={p} apertura={apertura} index={i} categories={categories} isLoggedIn={isLoggedIn} requestedIds={requestedIds} requestingId={requestingId} requestQty={requestQty} onRequest={handleRequestAvailability} onZoom={() => { const src = getProductImageUrl(p); if (src) setZoomImage({ src, alt: p.NAME }); }} onQtyChange={(id, q) => setRequestQty(prev => ({ ...prev, [id]: q }))} />)}
             </div>
             {filtered.length > visibleCount && (
               <div style={{ textAlign: 'center', marginTop: 32 }}>
@@ -498,7 +500,9 @@ export default function CatalogoPage() {
   );
 }
 
-function CatalogoProductCard({ product, apertura, index = 0, categories, isLoggedIn, requestedIds, requestingId, onRequest, onZoom }: { product: Product; apertura: any; index?: number; categories: Category[]; isLoggedIn: boolean; requestedIds: Set<string>; requestingId: string | null; onRequest: (id: string, name: string, img: string) => void; onZoom: () => void }) {
+const PINK = '#e396bf';
+
+function CatalogoProductCard({ product, apertura, index = 0, categories, isLoggedIn, requestedIds, requestingId, requestQty, onRequest, onZoom, onQtyChange }: { product: Product; apertura: any; index?: number; categories: Category[]; isLoggedIn: boolean; requestedIds: Set<string>; requestingId: string | null; requestQty: Record<string, number>; onRequest: (id: string, name: string, img: string, qty: number) => void; onZoom: () => void; onQtyChange: (id: string, qty: number) => void }) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { displayPrice, hasDiscount, discountPercent } = resolveProductDisplayPrice(product, apertura);
   const img = resolveStorageImageUrl(product.IMAGEURL) || resolveStorageImageUrl(product.IMAGEURL2);
@@ -507,6 +511,7 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
   const alreadyRequested = requestedIds.has(product.$id);
   const isRequesting = requestingId === product.$id;
   const [imgLoaded, setImgLoaded] = useState(false);
+  const qty = requestQty[product.$id] || 1;
 
   return (
     <Link href={`/producto/${product.$id}`} style={{ textDecoration: 'none', display: 'block' }}>
@@ -609,22 +614,34 @@ function CatalogoProductCard({ product, apertura, index = 0, categories, isLogge
           </div>
 
           {/* CTA */}
-          <button className="cat-cta-btn" onClick={e => { e.preventDefault(); e.stopPropagation(); onRequest(product.$id, product.NAME, img || ''); }} disabled={alreadyRequested || isRequesting} style={{
-            marginTop: 24, padding: '15px 0', border: 'none', borderRadius: 12,
-            background: alreadyRequested ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : isRequesting ? '#ccc' : 'linear-gradient(135deg, #e396bf 0%, #e396bf 100%)',
-            color: '#fff', fontSize: 13, fontWeight: 800, cursor: alreadyRequested || isRequesting ? 'default' : 'pointer',
-            letterSpacing: '2px', textTransform: 'uppercase',
-            boxShadow: alreadyRequested ? '0 6px 24px rgba(22,163,74,0.3)' : isRequesting ? 'none' : '0 6px 24px rgba(227,150,191,0.3)',
-            position: 'relative', overflow: 'hidden', fontFamily: FF,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          }}>
-            {alreadyRequested ? <><Check size={16} /> Consultado</> : isRequesting ? 'Enviando...' : <><Bell size={16} /> Consultar Disponibilidad</>}
-            {!alreadyRequested && !isRequesting && <span style={{
-              position: 'absolute', top: 0, left: '-100%', width: '200%', height: '100%',
-              background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 25%, transparent 50%)',
-              animation: 'cat-shimmer 2.5s infinite linear',
-            }} />}
-          </button>
+          <div style={{ marginTop: 24 }}>
+            {!alreadyRequested && !isRequesting && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }} onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', whiteSpace: 'nowrap' }}>Cantidad:</label>
+                <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #fce7f3', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
+                  <button type="button" onClick={e => { e.preventDefault(); e.stopPropagation(); onQtyChange(product.$id, Math.max(1, qty - 1)); }} style={{ width: 34, height: 34, border: 'none', background: '#fdf2f8', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: PINK, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
+                  <input type="text" inputMode="numeric" pattern="[0-9]*" value={qty} onChange={e => { e.preventDefault(); e.stopPropagation(); const v = parseInt(e.target.value.replace(/\D/g, '')) || 0; onQtyChange(product.$id, v < 1 ? 1 : Math.min(999, v)); }} style={{ width: 44, height: 34, border: 'none', borderLeft: '1px solid #fce7f3', borderRight: '1px solid #fce7f3', textAlign: 'center', fontSize: 15, fontWeight: 700, color: '#111', outline: 'none', background: '#fff', padding: 0, lineHeight: '34px' }} onClick={e => { e.preventDefault(); e.stopPropagation(); }} />
+                  <button type="button" onClick={e => { e.preventDefault(); e.stopPropagation(); onQtyChange(product.$id, Math.min(999, qty + 1)); }} style={{ width: 34, height: 34, border: 'none', background: '#fdf2f8', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: PINK, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
+                </div>
+              </div>
+            )}
+            <button className="cat-cta-btn" onClick={e => { e.preventDefault(); e.stopPropagation(); if (qty < 1) return; onRequest(product.$id, product.NAME, img || '', qty); }} disabled={alreadyRequested || isRequesting || qty < 1} style={{
+              width: '100%', padding: '15px 0', border: 'none', borderRadius: 12,
+              background: alreadyRequested ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : isRequesting || qty < 1 ? '#ccc' : 'linear-gradient(135deg, #e396bf 0%, #e396bf 100%)',
+              color: '#fff', fontSize: 13, fontWeight: 800, cursor: alreadyRequested || isRequesting || qty < 1 ? 'default' : 'pointer',
+              letterSpacing: '2px', textTransform: 'uppercase',
+              boxShadow: alreadyRequested ? '0 6px 24px rgba(22,163,74,0.3)' : isRequesting || qty < 1 ? 'none' : '0 6px 24px rgba(227,150,191,0.3)',
+              position: 'relative', overflow: 'hidden', fontFamily: FF,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}>
+              {alreadyRequested ? <><Check size={16} /> Consultado ({qty})</> : isRequesting ? 'Enviando...' : <><Bell size={16} /> Consultar Disponibilidad</>}
+              {!alreadyRequested && !isRequesting && qty >= 1 && <span style={{
+                position: 'absolute', top: 0, left: '-100%', width: '200%', height: '100%',
+                background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 25%, transparent 50%)',
+                animation: 'cat-shimmer 2.5s infinite linear',
+              }} />}
+            </button>
+          </div>
         </div>
       </div>
     </Link>
