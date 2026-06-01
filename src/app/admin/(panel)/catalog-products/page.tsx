@@ -15,6 +15,8 @@ interface StockAlertView extends StockAlert {
   currentStock?: number;
   inCatalog?: boolean;
   hasStock?: boolean; // true if product is in 'products' collection with STOCK > 0
+  inInventory?: boolean; // true if product is only in inventory_products (not yet published)
+  source?: 'products' | 'catalog_products' | 'inventory_products';
 }
 
 interface GroupedUser {
@@ -66,7 +68,7 @@ export default function CatalogProductsPage() {
       const uniqueUserIds = Array.from(new Set(rawAlerts.map(a => a.userId).filter(id => id && !id.includes('@'))));
       
       // 1. Fetch Products — try PRODUCTS and CATALOG_PRODUCTS first (by $id), then INVENTORY_PRODUCTS as fallback
-      const productMap: Record<string, { name: string; image: string; sku?: string; jumpsellerId?: string; barcode?: string; section?: number | null; gondola?: string; stock?: number; inCatalog?: boolean; hasStock?: boolean }> = {};
+      const productMap: Record<string, { name: string; image: string; sku?: string; jumpsellerId?: string; barcode?: string; section?: number | null; gondola?: string; stock?: number; inCatalog?: boolean; hasStock?: boolean; inInventory?: boolean; source?: 'products' | 'catalog_products' | 'inventory_products' }> = {};
       const productChunks: string[][] = [];
       for (let i = 0; i < uniqueProductIds.length; i += 100) {
         productChunks.push(uniqueProductIds.slice(i, i + 100));
@@ -133,6 +135,8 @@ export default function CatalogProductsPage() {
               stock: p.STOCK ?? 0,
               inCatalog: true,
               hasStock: false,
+              inInventory: false,
+              source: 'catalog_products',
             };
           });
         } catch (e) {
@@ -163,6 +167,8 @@ export default function CatalogProductsPage() {
               stock: p.STOCK ?? 0,
               inCatalog: false,
               hasStock: false,
+              inInventory: true,
+              source: 'inventory_products',
             };
           });
         } catch (e) {
@@ -259,6 +265,8 @@ export default function CatalogProductsPage() {
             stock: isInProducts ? (catDoc.STOCK ?? docStock) : docStock,
             inCatalog: catDoc.ISACTIVE !== false,
             hasStock: isInProducts && (catDoc.STOCK ?? 0) > 0,
+            inInventory: existing.inInventory ?? false,
+            source: isInProducts ? 'products' : ((catDoc._collection as 'products' | 'catalog_products' | 'inventory_products') || existing.source),
           };
         }
       }
@@ -314,6 +322,8 @@ export default function CatalogProductsPage() {
           currentStock: pInfo?.stock ?? 0,
           inCatalog: pInfo?.inCatalog ?? false,
           hasStock: pInfo?.hasStock ?? false,
+          inInventory: pInfo?.inInventory ?? false,
+          source: pInfo?.source,
           email: email || 'Invitado',
           userName: userName || email?.split('@')[0] || 'Cliente sin nombre',
         };
@@ -336,8 +346,8 @@ export default function CatalogProductsPage() {
     });
     return Object.entries(map).map(([userId, reqs]) => {
       reqs.sort((a, b) => {
-        if (a.inCatalog && !b.inCatalog) return -1;
-        if (!a.inCatalog && b.inCatalog) return 1;
+        if (a.source && !b.source) return -1;
+        if (!a.source && b.source) return 1;
         return (b.createdAt || 0) - (a.createdAt || 0);
       });
       return {
@@ -346,8 +356,8 @@ export default function CatalogProductsPage() {
         email: reqs[0].email,
         requests: reqs,
         pendingCount: reqs.filter(r => r.status === 'pending').length,
-        foundCount: reqs.filter(r => r.inCatalog || r.hasStock).length,
-        missingCount: reqs.filter(r => !r.inCatalog && !r.hasStock).length,
+        foundCount: reqs.filter(r => r.source).length,
+        missingCount: reqs.filter(r => !r.source).length,
       };
     }).sort((a, b) => b.pendingCount - a.pendingCount);
   })();
@@ -363,8 +373,8 @@ export default function CatalogProductsPage() {
   const totalUnavailable = alerts.filter(a => a.status === 'unavailable').length;
 
   const handleMarkAvailable = async (req: StockAlertView) => {
-    // Only block if product is NOT in tienda (no stock and not in catalog)
-    if (!req.hasStock && !req.inCatalog && (!req.currentStock || req.currentStock <= 0)) {
+    // Only block if product is NOT in tienda or inventory (completely unknown)
+    if (req.source !== 'products' && req.source !== 'catalog_products' && req.source !== 'inventory_products' && (!req.currentStock || req.currentStock <= 0)) {
       window.alert('No hay stock registrado en el inventario para este producto. Agrégalo primero.');
       return;
     }
@@ -394,12 +404,15 @@ export default function CatalogProductsPage() {
 
       // ── Notification to user ──
       if (req.userId) {
-        const isInStore = req.hasStock || req.inCatalog;
+        const isInStore = req.source === 'products' || req.source === 'catalog_products';
+        const isInventory = req.source === 'inventory_products';
         const notifData: any = {
           userId: req.userId,
-          title: isInStore ? '🛒 ¡Tu producto ya está en la tienda!' : '🎉 ¡Tu producto ya tiene stock!',
+          title: isInStore ? '🛒 ¡Tu producto ya está en la tienda!' : isInventory ? '📦 ¡Producto encontrado en bodega!' : '🎉 ¡Tu producto ya tiene stock!',
           message: isInStore
             ? `¡Buenas noticias! "${req.productName}" que consultaste ya está disponible en la tienda y fue agregado a tu carrito (${req.quantity || 1} und). ¡No te quedes sin él!`
+            : isInventory
+            ? `¡Buenas noticias! "${req.productName}" que consultaste fue encontrado en nuestra bodega y fue agregado a tu carrito (${req.quantity || 1} und). ¡No te quedes sin él!`
             : `¡Buenas noticias! "${req.productName}" que consultaste ya está disponible y fue agregado a tu carrito (${req.quantity || 1} und). ¡No te quedes sin él!`,
           type: 'success',
           isRead: false,
@@ -428,7 +441,7 @@ export default function CatalogProductsPage() {
 
   const handleNotifyAllFound = async () => {
     if (!selectedUser) return;
-    const foundReqs = selectedUser.requests.filter(a => (a.hasStock || a.inCatalog) && a.status === 'pending');
+    const foundReqs = selectedUser.requests.filter(a => a.source && a.status === 'pending');
     if (foundReqs.length === 0) {
       window.alert('No hay productos encontrados para notificar.');
       return;
@@ -844,10 +857,10 @@ export default function CatalogProductsPage() {
                 <div style={{ maxHeight: isMobile ? 'none' : 600, overflowY: 'auto', padding: isMobile ? 10 : 12 }}>
                   {selectedUser.requests.map(a => (
                     <div key={a.$id} style={{
-                      background: (a.hasStock || a.inCatalog) ? '#eff6ff' : (a.status === 'available' ? '#dbeafe' : (a.status === 'pending' ? '#fffbf5' : '#fef2f2')),
-                      border: `1px solid ${(a.hasStock || a.inCatalog) ? '#93c5fd' : (a.status === 'available' ? '#93c5fd' : (a.status === 'pending' ? '#fbcfe8' : '#fecaca'))}`,
+                      background: a.source === 'products' ? '#eff6ff' : a.source === 'catalog_products' ? '#eff6ff' : a.source === 'inventory_products' ? '#fffbeb' : (a.status === 'available' ? '#dbeafe' : (a.status === 'pending' ? '#fffbf5' : '#fef2f2')),
+                      border: `1px solid ${a.source === 'products' ? '#3b82f6' : a.source === 'catalog_products' ? '#93c5fd' : a.source === 'inventory_products' ? '#fbbf24' : (a.status === 'available' ? '#93c5fd' : (a.status === 'pending' ? '#fbcfe8' : '#fecaca'))}`,
                       borderRadius: 10, padding: isMobile ? 11 : 14, marginBottom: 10,
-                      boxShadow: (a.hasStock || a.inCatalog) ? '0 0 0 1px #93c5fd' : (a.status === 'available' ? '0 0 0 1px #93c5fd' : 'none'),
+                      boxShadow: (a.source === 'products' || a.source === 'catalog_products') ? '0 0 0 1px #93c5fd' : a.source === 'inventory_products' ? '0 0 0 1px #fbbf24' : (a.status === 'available' ? '0 0 0 1px #93c5fd' : 'none'),
                     }}>
                       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                         {/* Product image */}
@@ -876,12 +889,12 @@ export default function CatalogProductsPage() {
                             <p style={{ fontSize: isMobile ? 13 : 14, fontWeight: 700, color: '#111827', margin: 0, flex: 1, minWidth: 0 }}>
                               {a.productName}
                             </p>
-                            {a.status === 'pending' && (a.hasStock || a.inCatalog) && (
-                              <span style={{ fontSize: 10, fontWeight: 700, background: '#dbeafe', color: '#1e40af', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 3, border: '1px solid #93c5fd', flexShrink: 0 }}>
-                                <CheckCircle size={10} /> Encontrado
+                            {a.status === 'pending' && a.source && (
+                              <span style={{ fontSize: 10, fontWeight: 700, background: a.source === 'inventory_products' ? '#fef3c7' : '#dbeafe', color: a.source === 'inventory_products' ? '#92400e' : '#1e40af', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 3, border: `1px solid ${a.source === 'inventory_products' ? '#fbbf24' : '#93c5fd'}`, flexShrink: 0 }}>
+                                {a.source === 'inventory_products' ? <><AlertTriangle size={10} /> En Bodega</> : <><CheckCircle size={10} /> Encontrado</>}
                               </span>
                             )}
-                            {a.status === 'pending' && !a.hasStock && !a.inCatalog && (
+                            {a.status === 'pending' && !a.source && (
                               <span style={{ fontSize: 10, fontWeight: 700, background: '#fdf2f8', color: '#c0547a', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap', border: '1px solid #fbcfe8', flexShrink: 0 }}>
                                 Pendiente
                               </span>
@@ -910,8 +923,8 @@ export default function CatalogProductsPage() {
                                 📍 Sec: {a.section} · Gónd: {a.gondola || '?'}
                               </span>
                             )}
-                            {/* Badge: producto en tienda con stock */}
-                            {a.hasStock && (
+                            {/* Badge: producto en products con stock */}
+                            {a.source === 'products' && (
                               <span style={{
                                 fontSize: 10, fontWeight: 700, color: '#1e40af',
                                 background: '#dbeafe', border: '1px solid #93c5fd',
@@ -922,8 +935,8 @@ export default function CatalogProductsPage() {
                                 <ShoppingCart size={10} /> En Tienda · {a.currentStock ?? 0} uds
                               </span>
                             )}
-                            {/* Badge: producto en catálogo (a pedido) */}
-                            {a.inCatalog && !a.hasStock && (
+                            {/* Badge: producto en catalog_products (a pedido) */}
+                            {a.source === 'catalog_products' && (
                               <span style={{
                                 fontSize: 10, fontWeight: 700, color: '#1e40af',
                                 background: '#dbeafe', border: '1px solid #93c5fd',
@@ -934,8 +947,20 @@ export default function CatalogProductsPage() {
                                 <ShoppingCart size={10} /> En Tienda · A Pedido
                               </span>
                             )}
+                            {/* Badge: producto solo en inventory_products */}
+                            {a.source === 'inventory_products' && (
+                              <span style={{
+                                fontSize: 10, fontWeight: 700, color: '#92400e',
+                                background: '#fef3c7', border: '1px solid #fbbf24',
+                                padding: '2px 7px', borderRadius: 10,
+                                display: 'flex', alignItems: 'center', gap: 3,
+                                whiteSpace: 'nowrap',
+                              }}>
+                                <AlertTriangle size={10} /> En Verificación de Bodega
+                              </span>
+                            )}
                             {/* Link directo al producto en el catálogo */}
-                            {(a.inCatalog || a.hasStock) && a.productId && (
+                            {(a.source === 'products' || a.source === 'catalog_products') && a.productId && (
                               <Link
                                 href={`/producto/${a.productId}`}
                                 target="_blank"
@@ -976,7 +1001,7 @@ export default function CatalogProductsPage() {
                               </Link>
 
                               {/* En Tienda - Notificar y llevar al cliente */}
-                              {(a.hasStock || a.inCatalog) ? (
+                              {(a.source === 'products' || a.source === 'catalog_products') ? (
                                 <button
                                   onClick={() => handleMarkAvailable(a)}
                                   disabled={processingId === a.$id}
@@ -988,7 +1013,21 @@ export default function CatalogProductsPage() {
                                     boxShadow: 'rgba(37, 99, 235, 0.3) 0px 2px 8px',
                                   }}
                                 >
-                                  <ShoppingCart size={12} /> {isMobile ? 'Llevar al cliente' : `Llevar al cliente (${a.hasStock ? `${a.currentStock ?? 0} uds` : 'A Pedido'})`}
+                                  <ShoppingCart size={12} /> {isMobile ? 'Llevar al cliente' : `Llevar al cliente (${a.source === 'products' ? `${a.currentStock ?? 0} uds` : 'A Pedido'})`}
+                                </button>
+                              ) : a.source === 'inventory_products' ? (
+                                <button
+                                  onClick={() => handleMarkAvailable(a)}
+                                  disabled={processingId === a.$id}
+                                  style={{
+                                    padding: isMobile ? '7px 10px' : '7px 12px', border: 'none', borderRadius: 6,
+                                    fontSize: isMobile ? 11 : 12, fontWeight: 700,
+                                    background: '#d97706', color: '#fff', cursor: processingId === a.$id ? 'wait' : 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: 5,
+                                    boxShadow: 'rgba(217, 119, 6, 0.3) 0px 2px 8px',
+                                  }}
+                                >
+                                  <AlertTriangle size={12} /> {isMobile ? 'Verificar' : 'Verificar Bodega'}
                                 </button>
                               ) : a.currentStock && a.currentStock > 0 ? (
                                 <button

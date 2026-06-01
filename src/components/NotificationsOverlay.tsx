@@ -253,10 +253,13 @@ export default function NotificationsOverlay({ onClose }: Props) {
                 // Parse image from data JSON field
                 let notifImage: string | null = null;
                 try {
-                  const dataStr = (n.data || n.DATA) as string;
-                  if (dataStr) {
-                    const parsed = JSON.parse(dataStr);
+                  const dataVal = n.data || n.DATA;
+                  if (typeof dataVal === 'string' && dataVal) {
+                    const parsed = JSON.parse(dataVal);
                     if (parsed.image) notifImage = parsed.image;
+                  } else if (typeof dataVal === 'object' && dataVal) {
+                    // Appwrite might return already parsed object
+                    notifImage = (dataVal as any).image || null;
                   }
                 } catch {}
 
