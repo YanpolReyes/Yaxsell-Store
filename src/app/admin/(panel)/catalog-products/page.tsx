@@ -176,23 +176,10 @@ export default function CatalogProductsPage() {
         }
       }
 
-      // Pass 3: Fetch ALL PRODUCTS_COLLECTION_ID and CATALOG_PRODUCTS_COLLECTION_ID for SKU/jumpseller_id/barcode matching
+      // Pass 3: Fetch ALL CATALOG_PRODUCTS_COLLECTION_ID and PRODUCTS_COLLECTION_ID for SKU/jumpseller_id/barcode matching
       // This solves the issue where an alert points to an old $id but the product was re-imported with a new $id.
+      // IMPORTANT: catalog_products is added FIRST, then products OVERWRITES it, so products (with stock) takes priority in lookup maps.
       const allCatalog: any[] = [];
-      try {
-        let offsetCat = 0;
-        while (true) {
-          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-            Query.limit(100), Query.offset(offsetCat)
-          ]);
-          allCatalog.push(...res.documents.map((d: any) => ({ ...d, _collection: 'products' })));
-          if (res.documents.length < 100) break;
-          offsetCat += 100;
-        }
-      } catch (e) {
-        console.error('Error loading products catalog', e);
-      }
-
       try {
         let offsetCat = 0;
         while (true) {
@@ -205,6 +192,20 @@ export default function CatalogProductsPage() {
         }
       } catch (e) {
         console.error('Error loading catalog_products catalog', e);
+      }
+
+      try {
+        let offsetCat = 0;
+        while (true) {
+          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+            Query.limit(100), Query.offset(offsetCat)
+          ]);
+          allCatalog.push(...res.documents.map((d: any) => ({ ...d, _collection: 'products' })));
+          if (res.documents.length < 100) break;
+          offsetCat += 100;
+        }
+      } catch (e) {
+        console.error('Error loading products catalog', e);
       }
 
       // Build lookup maps of catalog products by normalized SKU, jumpseller_id, barcode, and name
@@ -743,9 +744,9 @@ export default function CatalogProductsPage() {
           <div style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '.5px' }}>Sin Stock</div>
           <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, color: '#b91c1c', marginTop: 2 }}>{totalUnavailable}</div>
         </div>
-        <div style={{ background: '#dbeafe', border: '1px solid #93c5fd', borderRadius: 10, padding: isMobile ? 12 : 16 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '.5px' }}>Subido a Stock</div>
-          <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, color: '#1e3a8a', marginTop: 2 }}>{totalAvailable}</div>
+        <div style={{ background: '#ecfdf5', border: '1px solid #34d399', borderRadius: 10, padding: isMobile ? 12 : 16 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#065f46', textTransform: 'uppercase', letterSpacing: '.5px' }}>En Tienda · Con Stock</div>
+          <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, color: '#047857', marginTop: 2 }}>{totalAvailable}</div>
         </div>
         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: isMobile ? 12 : 16 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '.5px' }}>Clientes</div>
@@ -857,10 +858,10 @@ export default function CatalogProductsPage() {
                 <div style={{ maxHeight: isMobile ? 'none' : 600, overflowY: 'auto', padding: isMobile ? 10 : 12 }}>
                   {selectedUser.requests.map(a => (
                     <div key={a.$id} style={{
-                      background: a.source === 'products' ? '#eff6ff' : a.source === 'catalog_products' ? '#f5f3ff' : a.source === 'inventory_products' ? '#fffbeb' : (a.status === 'available' ? '#dbeafe' : (a.status === 'pending' ? '#fffbf5' : '#fef2f2')),
-                      border: `1px solid ${a.source === 'products' ? '#3b82f6' : a.source === 'catalog_products' ? '#a78bfa' : a.source === 'inventory_products' ? '#fbbf24' : (a.status === 'available' ? '#93c5fd' : (a.status === 'pending' ? '#fbcfe8' : '#fecaca'))}`,
+                      background: a.status === 'available' ? '#ecfdf5' : a.source === 'products' ? '#eff6ff' : a.source === 'catalog_products' ? '#f5f3ff' : a.source === 'inventory_products' ? '#fffbeb' : (a.status === 'pending' ? '#fffbf5' : '#fef2f2'),
+                      border: `1px solid ${a.status === 'available' ? '#34d399' : a.source === 'products' ? '#3b82f6' : a.source === 'catalog_products' ? '#a78bfa' : a.source === 'inventory_products' ? '#fbbf24' : (a.status === 'pending' ? '#fbcfe8' : '#fecaca')}`,
                       borderRadius: 10, padding: isMobile ? 11 : 14, marginBottom: 10,
-                      boxShadow: a.source === 'products' ? '0 0 0 1px #3b82f6' : a.source === 'catalog_products' ? '0 0 0 1px #a78bfa' : a.source === 'inventory_products' ? '0 0 0 1px #fbbf24' : (a.status === 'available' ? '0 0 0 1px #93c5fd' : 'none'),
+                      boxShadow: a.status === 'available' ? '0 0 0 1px #34d399' : a.source === 'products' ? '0 0 0 1px #3b82f6' : a.source === 'catalog_products' ? '0 0 0 1px #a78bfa' : a.source === 'inventory_products' ? '0 0 0 1px #fbbf24' : 'none',
                     }}>
                       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                         {/* Product image */}
@@ -900,8 +901,8 @@ export default function CatalogProductsPage() {
                               </span>
                             )}
                             {a.status === 'available' && (
-                              <span style={{ fontSize: 10, fontWeight: 700, background: '#dbeafe', color: '#1e40af', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 3, border: '1px solid #93c5fd', flexShrink: 0 }}>
-                                <ShoppingCart size={10} /> Subido a Stock
+                              <span style={{ fontSize: 10, fontWeight: 700, background: '#d1fae5', color: '#065f46', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 3, border: '1px solid #34d399', flexShrink: 0 }}>
+                                <ShoppingCart size={10} /> En Tienda · Con Stock
                               </span>
                             )}
                             {a.status === 'unavailable' && (
@@ -923,8 +924,8 @@ export default function CatalogProductsPage() {
                                 📍 Sec: {a.section} · Gónd: {a.gondola || '?'}
                               </span>
                             )}
-                            {/* Badge: producto en products con stock */}
-                            {a.source === 'products' && (
+                            {/* Badge: producto en products con stock (only when pending) */}
+                            {a.source === 'products' && a.status !== 'available' && (
                               <span style={{
                                 fontSize: 10, fontWeight: 700, color: '#1e40af',
                                 background: '#dbeafe', border: '1px solid #93c5fd',
@@ -935,8 +936,8 @@ export default function CatalogProductsPage() {
                                 <ShoppingCart size={10} /> En Tienda · {a.currentStock ?? 0} uds
                               </span>
                             )}
-                            {/* Badge: producto en catalog_products (a pedido) */}
-                            {a.source === 'catalog_products' && (
+                            {/* Badge: producto en catalog_products (a pedido, only when pending) */}
+                            {a.source === 'catalog_products' && a.status !== 'available' && (
                               <span style={{
                                 fontSize: 10, fontWeight: 700, color: '#6d28d9',
                                 background: '#ede9fe', border: '1px solid #a78bfa',
