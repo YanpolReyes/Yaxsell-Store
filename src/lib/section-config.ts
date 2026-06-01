@@ -474,6 +474,26 @@ export interface SectionConfig {
 
 export const SECTION_DEFAULTS: SectionConfig[] = [
   {
+    id: 'global_brand',
+    label: 'Configuración Global (Marca)',
+    description: 'Información de tu negocio que se replica automáticamente en TODAS las plantillas (Logo, Teléfonos, Redes).',
+    icon: '🌍',
+    enabled: true,
+    order: -99,
+    locked: true,
+    settings: {
+      companyName: 'Mi Tienda',
+      companyDescription: 'Descripción de mi negocio',
+      email: 'contacto@mitienda.com',
+      phone: '+56900000000',
+      whatsapp: '+56900000000',
+      instagram: '',
+      facebook: '',
+      tiktok: '',
+      logoUrl: '',
+    }
+  },
+  {
     id: 'navbar',
     label: 'Barra de Navegación',
     description: 'Header principal con logo, búsqueda, menú y carrito',
@@ -1488,6 +1508,23 @@ function mergeWithDefaults(parsed: SectionConfig[]): SectionConfig[] {
     // Saved section not in defaults — keep as-is
     return saved;
   });
+  
+  // APLICAR CONFIGURACIÓN GLOBAL (Replicar una sola vez a todas las plantillas)
+  const globalBrand = result.find(s => s.id === 'global_brand')?.settings || {};
+  result.forEach(s => {
+    if (s.id !== 'global_brand') {
+       if (globalBrand.companyName) s.settings.companyName = s.settings.companyName || globalBrand.companyName;
+       if (globalBrand.companyDescription) s.settings.companyDescription = s.settings.companyDescription || globalBrand.companyDescription;
+       if (globalBrand.email) s.settings.email = s.settings.email || globalBrand.email;
+       if (globalBrand.phone) s.settings.phone = s.settings.phone || globalBrand.phone;
+       if (globalBrand.whatsapp) s.settings.whatsapp = s.settings.whatsapp || globalBrand.whatsapp;
+       if (globalBrand.instagram) s.settings.instagram = s.settings.instagram || globalBrand.instagram;
+       if (globalBrand.facebook) s.settings.facebook = s.settings.facebook || globalBrand.facebook;
+       if (globalBrand.tiktok) s.settings.tiktok = s.settings.tiktok || globalBrand.tiktok;
+       if (globalBrand.logoUrl) s.settings.logoUrl = s.settings.logoUrl || globalBrand.logoUrl;
+    }
+  });
+
   return result.sort((a, b) => a.order - b.order);
 }
 

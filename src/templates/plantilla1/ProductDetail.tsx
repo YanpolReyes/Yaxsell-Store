@@ -47,8 +47,9 @@ const PINK_BG_DARK = '#fce7f3';
 const TEXT_DARK = '#374151';
 const TEXT_MUTED = '#6b7280';
 
-export default function ProductDetailPlantilla1() {
-  const { id } = useParams<{ id: string }>();
+export default function ProductDetail({ previewProductId }: { previewProductId?: string }) {
+  const params = useParams<{ id: string; productId?: string }>();
+  const id = previewProductId || params.productId || params.id;
   const router = useRouter();
   const { user } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
@@ -344,13 +345,11 @@ export default function ProductDetailPlantilla1() {
             </div>
             {qty > 1 && <p style={{ margin: '8px 0 0', fontSize: 12, color: TEXT_MUTED }}>Total: <strong style={{ color: ORANGE_PRIMARY, fontSize: 14 }}>{formatPrice(lineTotal)}</strong></p>}
           </div>
-          <button type="button" onClick={handleAdd} className="pd-buy-btn" style={{ width: '100%', padding: '13px 18px', background: `linear-gradient(135deg, ${ORANGE_PRIMARY} 0%, ${PINK_LIGHT} 100%)`, color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 16px rgba(227,150,191,0.3)', marginBottom: 8, position: 'relative', overflow: 'hidden' }}>
-            <span style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-              <span className="pd-orb" /><span className="pd-orb" /><span className="pd-orb" /><span className="pd-orb" /><span className="pd-orb" /><span className="pd-orb" /><span className="pd-orb" />
-              <span className="pd-sparkle" /><span className="pd-sparkle" /><span className="pd-sparkle" /><span className="pd-sparkle" /><span className="pd-sparkle" />
-            </span>
-            <span className="pd-shimmer-line" />
-            <span style={{ position: 'relative', zIndex: 2 }}>Comprar ahora</span>
+          <button type="button" onClick={() => {
+            addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty && isWholesaleUser ? product?.WHOLESALEPRICE : undefined);
+            router.push('/cart');
+          }} style={{ width: '100%', padding: '12px 18px', background: '#f9fafb', color: ORANGE_PRIMARY, border: `1.5px solid ${PINK_LIGHT}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
+            Comprar ahora
           </button>
           <button type="button" onClick={handleAdd} style={{ width: '100%', padding: '12px 18px', background: added ? '#ecfdf5' : '#f9fafb', color: added ? '#10b981' : ORANGE_PRIMARY, border: `1.5px solid ${added ? '#10b981' : PINK_LIGHT}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             {added ? <><Check size={15} /> Agregado</> : <><ShoppingCart size={15} /> Agregar al carrito</>}
@@ -821,7 +820,10 @@ export default function ProductDetailPlantilla1() {
               <ShoppingCart size={16} />
               {added ? 'Listo' : 'Carrito'}
             </button>
-            <button type="button" className="pd-mbar-buy" onClick={handleAdd}>Comprar</button>
+            <button type="button" className="pd-mbar-cart" onClick={() => {
+              addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty && isWholesaleUser ? product?.WHOLESALEPRICE : undefined);
+              router.push('/cart');
+            }}>Comprar</button>
           </div>
         </div>
       )}

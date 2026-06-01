@@ -21,25 +21,13 @@ import { isBelowMinimumOrder, minimumOrderMessage } from '@/lib/order-rules';
 interface AgencyOption { name: string; color: string; bg: string; desc: string; logo: string; active?: boolean; }
 interface SavedAddress { id: string; alias: string; name: string; phone: string; fullAddress: string; commune: string; region: string; lat: number; lng: number; }
 
-const AGENCY_PALETTE = [
-  { color: '#1a7f37', bg: '#e6f4ea' },
-  { color: '#1558b0', bg: '#e8f0fe' },
-  { color: '#c62828', bg: '#fce8e6' },
-  { color: '#e65c00', bg: '#fff3e0' },
-  { color: '#7c3aed', bg: '#ede9fe' },
-  { color: '#0891b2', bg: '#ecfeff' },
+// Fallback agencies if API fails
+const FALLBACK_AGENCIES: AgencyOption[] = [
+  { name: 'STARKEN', color: '#1a7f37', bg: '#e6f4ea', desc: 'Envío a coordinar tras confirmar', logo: '', active: true },
+  { name: 'BLUEXPRESS', color: '#1558b0', bg: '#e8f0fe', desc: 'Envío a coordinar tras confirmar', logo: '', active: true },
+  { name: 'VARMONTT', color: '#c62828', bg: '#fce8e6', desc: 'Envío a coordinar tras confirmar', logo: '', active: true },
+  { name: 'RETIRO EN TIENDA', color: '#e65c00', bg: '#fff3e0', desc: 'Retira en nuestra sucursal', logo: '', active: true },
 ];
-
-const CHECKOUT_AGENCY_NAMES = [
-  'STARKEN', 'PULMAN CARGO', 'VARMONTT', 'MENA', 'TRAMAR', 'CGS', 'CYC',
-  'VILLA PRATT', 'ATE', 'CARGO BARRIOS', 'TVP', 'FENIX', 'CHEVALIER',
-  'CACEM', 'CINCO SUR', 'CRUZ DEL SUR',
-] as const;
-
-const CHECKOUT_AGENCIES: AgencyOption[] = CHECKOUT_AGENCY_NAMES.map((name, i) => {
-  const p = AGENCY_PALETTE[i % AGENCY_PALETTE.length];
-  return { name, color: p.color, bg: p.bg, desc: 'Envío a coordinar tras confirmar', logo: '', active: true };
-});
 
 const PINK = '#e396bf'; const PINK_LIGHT = '#f5a8cf'; const PINK_BG = '#fdf2f8'; const FF = '"DM Sans", system-ui, sans-serif';
 const inp: React.CSSProperties = { width: '100%', padding: '12px 14px', border: '1.5px solid #fce7f3', borderRadius: 12, fontSize: 14, outline: 'none', color: '#111', background: '#fff', boxSizing: 'border-box', transition: 'all .2s', fontFamily: FF };
@@ -61,7 +49,7 @@ function CheckoutInner() {
   });
   const [customerNote, setCustomerNote] = useState('');
   const [isGift, setIsGift] = useState(false);
-  const [agencies, setAgencies] = useState<AgencyOption[]>(CHECKOUT_AGENCIES);
+  const [agencies, setAgencies] = useState<AgencyOption[]>(FALLBACK_AGENCIES);
   const [agency, setAgency] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -98,8 +86,18 @@ function CheckoutInner() {
   }, [authLoading, isLoggedIn, router]);
 
   useEffect(() => {
-    setAgencies(CHECKOUT_AGENCIES);
-    // Don't auto-select agency — user must choose
+    // Fetch agencies from API (managed in admin)
+    (async () => {
+      try {
+        const res = await fetch('/api/agencies');
+        const data = await res.json();
+        if (data.agencies && data.agencies.length > 0) {
+          setAgencies(data.agencies);
+        }
+      } catch {
+        // Keep fallback agencies
+      }
+    })();
   }, []);
 
   // Fetch public coupons (using server SDK with API key to bypass read permissions)

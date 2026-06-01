@@ -996,25 +996,33 @@ export default function HomePage2() {
     if (typeof window === 'undefined') return;
     const ctx = gsap.context(() => {
       // Hero card entrance - clear transform after so hover works freely
-      gsap.from('.offer-hero-card', {
-        scrollTrigger: { trigger: '.offer-hero-card', start: 'top 85%', toggleActions: 'play none none none' },
-        y: 60, opacity: 0, duration: 0.8, ease: 'power3.out', clearProps: 'transform',
-      });
+      if (document.querySelector('.offer-hero-card')) {
+        gsap.from('.offer-hero-card', {
+          scrollTrigger: { trigger: '.offer-hero-card', start: 'top 85%', toggleActions: 'play none none none' },
+          y: 60, opacity: 0, duration: 0.8, ease: 'power3.out', clearProps: 'transform',
+        });
+      }
       // Badges stagger
-      gsap.from('.offer-flash-badge, .offer-disc-badge', {
-        scrollTrigger: { trigger: '.offer-hero-card', start: 'top 80%', toggleActions: 'play none none none' },
-        scale: 0, opacity: 0, duration: 0.5, stagger: 0.15, ease: 'back.out(1.7)', delay: 0.3, clearProps: 'transform',
-      });
+      if (document.querySelector('.offer-hero-card') && document.querySelector('.offer-flash-badge, .offer-disc-badge')) {
+        gsap.from('.offer-flash-badge, .offer-disc-badge', {
+          scrollTrigger: { trigger: '.offer-hero-card', start: 'top 80%', toggleActions: 'play none none none' },
+          scale: 0, opacity: 0, duration: 0.5, stagger: 0.15, ease: 'back.out(1.7)', delay: 0.3, clearProps: 'transform',
+        });
+      }
       // Side products stagger
-      gsap.from('.offer-side-card', {
-        scrollTrigger: { trigger: '.offer-side-card', start: 'top 90%', toggleActions: 'play none none none' },
-        y: 40, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out', clearProps: 'transform',
-      });
+      if (document.querySelector('.offer-side-card')) {
+        gsap.from('.offer-side-card', {
+          scrollTrigger: { trigger: '.offer-side-card', start: 'top 90%', toggleActions: 'play none none none' },
+          y: 40, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out', clearProps: 'transform',
+        });
+      }
       // Particles entrance
-      gsap.from('.offer-particle', {
-        scrollTrigger: { trigger: '.offer-hero-card', start: 'top 80%', toggleActions: 'play none none none' },
-        scale: 0, opacity: 0, duration: 0.6, stagger: 0.08, ease: 'elastic.out(1, 0.5)', delay: 0.5, clearProps: 'transform',
-      });
+      if (document.querySelector('.offer-hero-card') && document.querySelector('.offer-particle')) {
+        gsap.from('.offer-particle', {
+          scrollTrigger: { trigger: '.offer-hero-card', start: 'top 80%', toggleActions: 'play none none none' },
+          scale: 0, opacity: 0, duration: 0.6, stagger: 0.08, ease: 'elastic.out(1, 0.5)', delay: 0.5, clearProps: 'transform',
+        });
+      }
     });
     return () => ctx.revert();
   }, [offers, products]);
@@ -1024,26 +1032,34 @@ export default function HomePage2() {
     if (typeof window === 'undefined' || !panels.length) return;
     const ctx = gsap.context(() => {
       // Staggered cell reveal with clipPath wipe
-      gsap.from('.collage-cell', {
-        scrollTrigger: { trigger: '.collage-grid', start: 'top 85%', toggleActions: 'play none none none' },
-        clipPath: 'inset(100% 0 0 0)', opacity: 0, duration: 0.8, stagger: 0.12, ease: 'power4.out',
-        clearProps: 'clipPath,opacity',
-      });
+      if (document.querySelector('.collage-grid') && document.querySelector('.collage-cell')) {
+        gsap.from('.collage-cell', {
+          scrollTrigger: { trigger: '.collage-grid', start: 'top 85%', toggleActions: 'play none none none' },
+          clipPath: 'inset(100% 0 0 0)', opacity: 0, duration: 0.8, stagger: 0.12, ease: 'power4.out',
+          clearProps: 'clipPath,opacity',
+        });
+      }
       // Image parallax zoom on scroll
-      gsap.fromTo('.collage-cell-img', { scale: 1.15 }, {
-        scrollTrigger: { trigger: '.collage-grid', start: 'top 90%', end: 'bottom 20%', scrub: 1.2 },
-        scale: 1, ease: 'none',
-      });
+      if (document.querySelector('.collage-grid') && document.querySelector('.collage-cell-img')) {
+        gsap.fromTo('.collage-cell-img', { scale: 1.15 }, {
+          scrollTrigger: { trigger: '.collage-grid', start: 'top 90%', end: 'bottom 20%', scrub: 1.2 },
+          scale: 1, ease: 'none',
+        });
+      }
       // Title overlay slide up
-      gsap.from('.collage-title-overlay', {
-        scrollTrigger: { trigger: '.collage-grid', start: 'top 80%', toggleActions: 'play none none none' },
-        y: 30, opacity: 0, duration: 0.6, stagger: 0.1, delay: 0.4, ease: 'power3.out', clearProps: 'transform,opacity',
-      });
+      if (document.querySelector('.collage-grid') && document.querySelector('.collage-title-overlay')) {
+        gsap.from('.collage-title-overlay', {
+          scrollTrigger: { trigger: '.collage-grid', start: 'top 80%', toggleActions: 'play none none none' },
+          y: 30, opacity: 0, duration: 0.6, stagger: 0.1, delay: 0.4, ease: 'power3.out', clearProps: 'transform,opacity',
+        });
+      }
       // Hotspot entrance — pop in with elastic
-      gsap.from('.hs-wrap', {
-        scrollTrigger: { trigger: '.collage-grid', start: 'top 75%', toggleActions: 'play none none none' },
-        scale: 0, opacity: 0, duration: 0.8, stagger: 0.15, delay: 0.5, ease: 'elastic.out(1, 0.4)',
-      });
+      if (document.querySelector('.collage-grid') && document.querySelector('.hs-wrap')) {
+        gsap.from('.hs-wrap', {
+          scrollTrigger: { trigger: '.collage-grid', start: 'top 75%', toggleActions: 'play none none none' },
+          scale: 0, opacity: 0, duration: 0.8, stagger: 0.15, delay: 0.5, ease: 'elastic.out(1, 0.4)',
+        });
+      }
     });
     return () => ctx.revert();
   }, [panels, panelHotspots]);
@@ -1053,53 +1069,69 @@ export default function HomePage2() {
     if (typeof window === 'undefined') return;
     const ctx = gsap.context(() => {
       /* Categories section — cards stagger */
-      gsap.from('[data-section-id="categories"] .category-card', {
-        scrollTrigger: { trigger: '[data-section-id="categories"]', start: 'top 85%', toggleActions: 'play none none none' },
-        y: 40, opacity: 0, scale: 0.92, duration: 0.55, stagger: 0.06, ease: 'power3.out', clearProps: 'transform,opacity',
-      });
+      if (document.querySelector('[data-section-id="categories"]') && document.querySelector('[data-section-id="categories"] .category-card')) {
+        gsap.from('[data-section-id="categories"] .category-card', {
+          scrollTrigger: { trigger: '[data-section-id="categories"]', start: 'top 85%', toggleActions: 'play none none none' },
+          y: 40, opacity: 0, scale: 0.92, duration: 0.55, stagger: 0.06, ease: 'power3.out', clearProps: 'transform,opacity',
+        });
+      }
 
       /* Recommended section — slide up */
-      gsap.from('[data-section-id="recommended"]', {
-        scrollTrigger: { trigger: '[data-section-id="recommended"]', start: 'top 88%', toggleActions: 'play none none none' },
-        y: 50, opacity: 0, duration: 0.7, ease: 'power3.out', clearProps: 'transform,opacity',
-      });
+      if (document.querySelector('[data-section-id="recommended"]')) {
+        gsap.from('[data-section-id="recommended"]', {
+          scrollTrigger: { trigger: '[data-section-id="recommended"]', start: 'top 88%', toggleActions: 'play none none none' },
+          y: 50, opacity: 0, duration: 0.7, ease: 'power3.out', clearProps: 'transform,opacity',
+        });
+      }
 
       /* Featured section — slide up */
-      gsap.from('[data-section-id="featured"]', {
-        scrollTrigger: { trigger: '[data-section-id="featured"]', start: 'top 88%', toggleActions: 'play none none none' },
-        y: 50, opacity: 0, duration: 0.7, ease: 'power3.out', clearProps: 'transform,opacity',
-      });
+      if (document.querySelector('[data-section-id="featured"]')) {
+        gsap.from('[data-section-id="featured"]', {
+          scrollTrigger: { trigger: '[data-section-id="featured"]', start: 'top 88%', toggleActions: 'play none none none' },
+          y: 50, opacity: 0, duration: 0.7, ease: 'power3.out', clearProps: 'transform,opacity',
+        });
+      }
 
       /* Product cards inside recommended/featured — stagger */
-      gsap.from('[data-section-id="recommended"] [data-reveal]', {
-        scrollTrigger: { trigger: '[data-section-id="recommended"]', start: 'top 82%', toggleActions: 'play none none none' },
-        y: 30, opacity: 0, duration: 0.45, stagger: 0.05, ease: 'power2.out', clearProps: 'transform,opacity',
-      });
-      gsap.from('[data-section-id="featured"] [data-reveal]', {
-        scrollTrigger: { trigger: '[data-section-id="featured"]', start: 'top 82%', toggleActions: 'play none none none' },
-        y: 30, opacity: 0, duration: 0.45, stagger: 0.05, ease: 'power2.out', clearProps: 'transform,opacity',
-      });
+      if (document.querySelector('[data-section-id="recommended"]') && document.querySelector('[data-section-id="recommended"] [data-reveal]')) {
+        gsap.from('[data-section-id="recommended"] [data-reveal]', {
+          scrollTrigger: { trigger: '[data-section-id="recommended"]', start: 'top 82%', toggleActions: 'play none none none' },
+          y: 30, opacity: 0, duration: 0.45, stagger: 0.05, ease: 'power2.out', clearProps: 'transform,opacity',
+        });
+      }
+      if (document.querySelector('[data-section-id="featured"]') && document.querySelector('[data-section-id="featured"] [data-reveal]')) {
+        gsap.from('[data-section-id="featured"] [data-reveal]', {
+          scrollTrigger: { trigger: '[data-section-id="featured"]', start: 'top 82%', toggleActions: 'play none none none' },
+          y: 30, opacity: 0, duration: 0.45, stagger: 0.05, ease: 'power2.out', clearProps: 'transform,opacity',
+        });
+      }
 
       /* Hero carousel — parallax scrub on banner images */
-      gsap.fromTo('[data-section-id="hero_carousel"] .te-hero-img', { yPercent: -3 }, {
-        yPercent: 5,
-        ease: 'none',
-        scrollTrigger: { trigger: '[data-section-id="hero_carousel"]', start: 'top top', end: 'bottom top', scrub: 1.2 },
-      });
+      if (document.querySelector('[data-section-id="hero_carousel"]') && document.querySelector('[data-section-id="hero_carousel"] .te-hero-img')) {
+        gsap.fromTo('[data-section-id="hero_carousel"] .te-hero-img', { yPercent: -3 }, {
+          yPercent: 5,
+          ease: 'none',
+          scrollTrigger: { trigger: '[data-section-id="hero_carousel"]', start: 'top top', end: 'bottom top', scrub: 1.2 },
+        });
+      }
 
       /* Coupon banner — slide in from left */
-      gsap.from('[data-section-id="coupon_banner"]', {
-        scrollTrigger: { trigger: '[data-section-id="coupon_banner"]', start: 'top 90%', toggleActions: 'play none none none' },
-        x: -60, opacity: 0, duration: 0.7, ease: 'power3.out', clearProps: 'transform,opacity',
-      });
+      if (document.querySelector('[data-section-id="coupon_banner"]')) {
+        gsap.from('[data-section-id="coupon_banner"]', {
+          scrollTrigger: { trigger: '[data-section-id="coupon_banner"]', start: 'top 90%', toggleActions: 'play none none none' },
+          x: -60, opacity: 0, duration: 0.7, ease: 'power3.out', clearProps: 'transform,opacity',
+        });
+      }
 
       /* Section headings — clip reveal */
       document.querySelectorAll('[data-section-id] h2').forEach(h2 => {
-        gsap.from(h2, {
-          scrollTrigger: { trigger: h2, start: 'top 92%', toggleActions: 'play none none none' },
-          clipPath: 'inset(0 100% 0 0)', opacity: 0, duration: 0.6, ease: 'power4.out',
-          clearProps: 'clipPath,opacity',
-        });
+        if (h2) {
+          gsap.from(h2, {
+            scrollTrigger: { trigger: h2, start: 'top 92%', toggleActions: 'play none none none' },
+            clipPath: 'inset(0 100% 0 0)', opacity: 0, duration: 0.6, ease: 'power4.out',
+            clearProps: 'clipPath,opacity',
+          });
+        }
       });
 
       /* Footer — fade up */
@@ -1145,6 +1177,7 @@ export default function HomePage2() {
     });
   }, [sectionCfg]);
 
+  /*
   if (configError) return (
     <div style={{ maxWidth: 480, margin: '80px auto', padding: '0 24px', textAlign: 'center', fontFamily: '"Proxima Nova",Arial,sans-serif' }}>
       <p style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Tienda no configurada</p>
@@ -1154,6 +1187,7 @@ export default function HomePage2() {
       </Link>
     </div>
   );
+  */
 
   // No early skeleton return — hero handles its own skeleton overlay with fade transition
 

@@ -80,30 +80,15 @@ export default function HomePage() {
         return;
       }
       try {
-        const { databases } = getServices();
-        // 💾 Caché con TTL para reducir lecturas en navegación entre páginas
-        const [prodDocs, catDocs, banDocs, offDocs] = await Promise.all([
-          cached('products:home', TTL.products, async () => {
-            const r = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.orderDesc('$createdAt'), Query.limit(8)]);
-            return r.documents;
-          }),
-          cached('categories:all', TTL.categories, async () => {
-            const r = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [Query.orderDesc('$createdAt'), Query.limit(20)]);
-            return r.documents;
-          }),
-          cached('banners:home', TTL.banners, async () => {
-            const r = await databases.listDocuments(databaseId, BANNERS_COLLECTION, [Query.orderDesc('$createdAt'), Query.limit(5)]);
-            return r.documents;
-          }),
-          cached('offers:home', TTL.offers, async () => {
-            const r = await databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [Query.equal('isActive', true), Query.equal('status', 'active'), Query.limit(4)]);
-            return r.documents;
-          }),
-        ]);
-        setProducts((prodDocs as unknown as Product[]).filter(p => (p.STOCK || 0) > 0));
-        setCategories(catDocs as unknown as Category[]);
-        setBanners(banDocs as unknown as Banner[]);
-        setOffers((offDocs as unknown as TimedOffer[]).filter(isOfferActive));
+        // Fetch all home data from cached Next.js API route to save Appwrite quotas
+        const res = await fetch('/api/public-data/home');
+        if (!res.ok) throw new Error('API Error');
+        const data = await res.json();
+        
+        setProducts((data.products as Product[]).filter(p => (p.STOCK || 0) > 0));
+        setCategories(data.categories as Category[]);
+        setBanners(data.banners as Banner[]);
+        setOffers((data.offers as TimedOffer[]).filter(isOfferActive));
       } catch (e) {
         console.error('Appwrite error:', e);
         setConfigError(true);

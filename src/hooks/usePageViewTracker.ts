@@ -54,6 +54,10 @@ export function usePageViewTracker() {
       const page = window.location.pathname || '/';
       if (!shouldTrack(page)) return;
 
+      // Prevent Appwrite spam: check if we already tracked this page in this session
+      const sessionKey = `tracked_page_${page}`;
+      if (sessionStorage.getItem(sessionKey)) return;
+
       try {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
@@ -62,6 +66,9 @@ export function usePageViewTracker() {
         // Obtener geo info
         const geo = await getGeoInfo();
         const ipHash = simpleHash(geo.ip + date);
+        
+        // Mark as tracked in sessionStorage to avoid spamming the DB on re-renders
+        sessionStorage.setItem(sessionKey, '1');
 
         // Nombre del usuario si está logueado
         const userName = user?.name || '';
@@ -103,7 +110,7 @@ export function usePageViewTracker() {
           Permission.write(Role.any()),
         ]);
       } catch (e: any) {
-        console.error('[page-view-tracker] Error:', e?.message || e);
+        console.warn('[page-view-tracker] Warning (handled gracefully):', e?.message || e);
       }
     };
 

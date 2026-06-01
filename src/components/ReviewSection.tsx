@@ -83,7 +83,7 @@ export default function ReviewSection({ productId, rating, numReviews }: Props) 
         if (mine) setUserReview(mine);
       }
     } catch (e) {
-      console.error('Error loading reviews:', e);
+      console.warn('Error loading reviews (handled gracefully):', e);
     } finally {
       setLoading(false);
     }

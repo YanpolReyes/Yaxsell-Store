@@ -177,6 +177,7 @@ export default function InventarioPage() {
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateProgress, setTranslateProgress] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveProgress, setSaveProgress] = useState(0);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -198,7 +199,7 @@ export default function InventarioPage() {
   const [publishResults, setPublishResults] = useState<{ published: number; errors: number } | null>(null);
   const [isCreatingCats, setIsCreatingCats] = useState(false);
   const [catResults, setCatResults] = useState<{ cats: number; subs: number; errors: number } | null>(null);
-  const [saveResults, setSaveResults] = useState<{ updated: number; created: number; errors: number } | null>(null);
+  const [saveResults, setSaveResults] = useState<{ skipped: number; patched: number; created: number; errors: number } | null>(null);
   const [previewImg, setPreviewImg] = useState<string | null>(null);
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrateProgress, setMigrateProgress] = useState(0);
@@ -1051,34 +1052,101 @@ export default function InventarioPage() {
     const existing = selected.filter(r => r.matched && r.productId);
     const newOnes = selected.filter(r => r.isNew);
 
-    if (!confirm(`¿Procesar ${existing.length} existentes y crear ${newOnes.length} nuevos?`)) return;
+    if (existing.length === 0 && newOnes.length === 0) { alert('No hay productos para procesar.'); return; }
+
+    // Para existentes: calcular cuántos necesitan actualización (tienen datos faltantes)
+    const existingNeedingUpdate = existing.filter(row => {
+      const product = products.find(p => p.$id === row.productId);
+      if (!product) return false;
+      const hasName = !!(product.NAME && product.NAME.trim());
+      const hasBarcode = !!(getBarcodeFromProduct(product) || (product as any).barcode);
+      const hasCategory = !!(product.CATEGORYID && product.CATEGORYID.trim());
+      const hasSubcategory = !!(product.SUBCATEGORYID && product.SUBCATEGORYID.trim());
+      const hasPriceRetail = !!(product.PRICE && product.PRICE > 0);
+      const hasPriceWholesale = !!((product as any).WHOLESALEPRICE && (product as any).WHOLESALEPRICE > 0);
+      // Necesita actualización si falta algún dato Y el Excel lo tiene
+      const needsName = !hasName && (row.nameEs || row.nameTranslated || row.nameCn);
+      const needsBarcode = !hasBarcode && row.barcode;
+      const needsCategory = !hasCategory && row.categoryEs;
+      const needsSubcategory = !hasSubcategory && row.subcategory;
+      const needsPriceRetail = !hasPriceRetail && row.priceRetail;
+      const needsPriceWholesale = !hasPriceWholesale && row.priceWholesale;
+      return needsName || needsBarcode || needsCategory || needsSubcategory || needsPriceRetail || needsPriceWholesale;
+    });
+    const existingComplete = existing.length - existingNeedingUpdate.length;
+
+    if (!confirm(`Se crearán ${newOnes.length} nuevos, se completarán datos faltantes en ${existingNeedingUpdate.length} existentes, y se omitirán ${existingComplete} que ya tienen todo. ¿Continuar?`)) return;
 
     setIsSaving(true);
     setSaveResults(null);
-    let updated = 0, created = 0, errors = 0;
+    setSaveProgress(0);
+    let skipped = existingComplete, patched = 0, created = 0, errors = 0;
+    const totalToProcess = existingNeedingUpdate.length + newOnes.length;
 
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      // Productos existentes en inventory_products: actualizar campos (sin tocar stock — eso es manual)
-      for (let i = 0; i < existing.length; i++) {
-        const row = existing[i];
+      // Productos existentes: solo rellenar datos faltantes (nunca sobreescribir)
+      for (let i = 0; i < existingNeedingUpdate.length; i++) {
+        const row = existingNeedingUpdate[i];
         try {
+          const product = products.find(p => p.$id === row.productId);
+          if (!product) { errors++; continue; }
+
           const payload: any = {};
-          if (row.priceRetail) payload.PRICE = row.priceRetail;
-          if (row.priceWholesale) payload.WHOLESALEPRICE = row.priceWholesale;
-          if (row.imageUrl) payload.IMAGEURL = row.imageUrl;
-          if (row.dateAdded) payload.DATE_ADDED = row.dateAdded;
-          const { catId, subId } = resolveCategoryIds(row.categoryEs, row.subcategory);
-          if (catId) payload.CATEGORYID = catId;
-          if (subId) payload.SUBCATEGORYID = subId;
-          // NOTA: NUNCA actualizamos STOCK ni ISACTIVE desde el Excel.
-          // El stock se asigna manualmente desde la página de inventario.
-          await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, row.productId!, payload);
-          updated++;
-          setRows(prev => prev.map(r => r.productId === row.productId ? { ...r, currentStock: r.currentStock } : r));
-          // Rate limit: pausa entre requests, pausa larga cada 50 docs
+
+          // Nombre: solo si el producto no tiene nombre y el Excel sí
+          const hasName = !!(product.NAME && product.NAME.trim());
+          if (!hasName && (row.nameEs || row.nameTranslated || row.nameCn)) {
+            payload.NAME = row.nameEs || row.nameTranslated || row.nameCn;
+          }
+
+          // Barcode: solo si no tiene y el Excel sí
+          const hasBarcode = !!(getBarcodeFromProduct(product) || (product as any).barcode);
+          if (!hasBarcode && row.barcode) {
+            payload.barcode = row.barcode;
+            // También agregar a FEATURES como fallback
+            const features = productFeaturesText(product);
+            payload.FEATURES = features ? `${features}\nBarcode: ${row.barcode}` : `Barcode: ${row.barcode}`;
+          }
+
+          // Categoría: solo si no tiene y el Excel sí
+          const hasCategory = !!(product.CATEGORYID && product.CATEGORYID.trim());
+          if (!hasCategory && row.categoryEs) {
+            const { catId } = resolveCategoryIds(row.categoryEs, row.subcategory);
+            if (catId) payload.CATEGORYID = catId;
+          }
+
+          // Subcategoría: solo si no tiene y el Excel sí
+          const hasSubcategory = !!(product.SUBCATEGORYID && product.SUBCATEGORYID.trim());
+          if (!hasSubcategory && row.subcategory) {
+            const { subId } = resolveCategoryIds(row.categoryEs, row.subcategory);
+            if (subId) payload.SUBCATEGORYID = subId;
+          }
+
+          // Precio retail: solo si no tiene y el Excel sí
+          const hasPriceRetail = !!(product.PRICE && product.PRICE > 0);
+          if (!hasPriceRetail && row.priceRetail) {
+            payload.PRICE = row.priceRetail;
+          }
+
+          // Precio wholesale: solo si no tiene y el Excel sí
+          const hasPriceWholesale = !!((product as any).WHOLESALEPRICE && (product as any).WHOLESALEPRICE > 0);
+          if (!hasPriceWholesale && row.priceWholesale) {
+            payload.WHOLESALEPRICE = row.priceWholesale;
+          }
+
+          // Solo hacer update si hay algo que actualizar
+          if (Object.keys(payload).length > 0) {
+            // NOTA: NUNCA actualizamos STOCK ni ISACTIVE desde el Excel.
+            await databases.updateDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, row.productId!, payload);
+            patched++;
+          } else {
+            skipped++;
+          }
+          setSaveProgress(Math.round(((i + 1) / totalToProcess) * 100));
+          // Rate limit
           await new Promise(r => setTimeout(r, 350));
           if ((i + 1) % 50 === 0) await new Promise(r => setTimeout(r, 3000));
         } catch (e: any) {
@@ -1132,6 +1200,7 @@ export default function InventarioPage() {
           setRows(prev => prev.map(r => r.sku === row.sku ? {
             ...r, productId: (doc as any).$id, matched: true, isNew: false, currentStock: 0,
           } : r));
+          setSaveProgress(Math.round(((existingNeedingUpdate.length + i + 1) / totalToProcess) * 100));
           // Rate limit: pausa entre requests, pausa larga cada 50 docs
           await new Promise(r => setTimeout(r, 350));
           if ((i + 1) % 50 === 0) await new Promise(r => setTimeout(r, 3000));
@@ -1143,7 +1212,8 @@ export default function InventarioPage() {
         }
       }
 
-      setSaveResults({ updated, created, errors });
+      setSaveProgress(100);
+      setSaveResults({ skipped, patched, created, errors });
       loadProducts();
     } catch (e: any) { alert('Error: ' + e.message); }
     finally { setIsSaving(false); }
@@ -2660,11 +2730,23 @@ export default function InventarioPage() {
           </div>
         )}
 
+        {isSaving && (
+          <div className="bg-white rounded-xl border border-emerald-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-emerald-700">Guardando productos...</p>
+              <p className="text-sm font-bold text-emerald-600">{saveProgress}%</p>
+            </div>
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-400 rounded-full transition-all duration-300" style={{ width: `${saveProgress}%` }} />
+            </div>
+          </div>
+        )}
+
         {saveResults && (
           <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             <p className="text-sm text-emerald-700">
-              {saveResults.updated} actualizados · {saveResults.created} productos creados
+              {saveResults.skipped} omitidos (ya completos) · {saveResults.patched} completados · {saveResults.created} nuevos creados
               {saveResults.errors > 0 && ` · ${saveResults.errors} error(es)`}
             </p>
           </div>

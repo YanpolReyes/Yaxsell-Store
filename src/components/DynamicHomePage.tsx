@@ -12,9 +12,12 @@ import HomePage10 from '@/templates/plantilla10/HomePage';
 import HomePage11 from '@/templates/plantilla11/HomePage';
 import HomePage12 from '@/templates/plantilla12/HomePage';
 import HomePage13 from '@/templates/plantilla13/HomePage';
+import HomePage24 from '@/templates/plantilla24/HomePage';
+import HomePage25 from '@/templates/plantilla25/HomePage';
+import HomePage23 from '@/templates/plantilla23/HomePage';
 
 export default function DynamicHomePage({ children }: { children: React.ReactNode }) {
-  const { template, isLoading } = useTemplate();
+  const { isLoading, getSectionTemplate } = useTemplate();
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -23,6 +26,7 @@ export default function DynamicHomePage({ children }: { children: React.ReactNod
       </div>
     );
   }
+  const template = getSectionTemplate('landing');
   if (template === 1) return <HomePage1 />;
   if (template === 2) return <HomePage2 />;
   if (template === 3) return <HomePage3 />;
@@ -35,5 +39,8 @@ export default function DynamicHomePage({ children }: { children: React.ReactNod
   if (template === 11) return <HomePage11 />;
   if (template === 12) return <HomePage12 />;
   if (template === 13) return <HomePage13 />;
+  if (template === 24) return <HomePage24 />;
+  if (template === 23) return <HomePage23 />;
+  if (template === 25) return <HomePage25 />;
   return <>{children}</>;
 }

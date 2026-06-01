@@ -97,6 +97,7 @@ export const RAFFLE_PARTICIPANTS_COLLECTION_ID = 'raffle_participants';
 export const STOCK_ALERTS_COLLECTION_ID = 'stock_alerts';
 export const ADDRESSES_COLLECTION_ID = 'addresses';
 export const APERTURA_SETTINGS_COLLECTION_ID = 'apertura_settings';
+export const AGENCIES_COLLECTION_ID = 'shipping_agencies';
 
 // Backward-compatible exports (reads config at call time for SSR safety)
 export const DATABASE_ID = typeof window !== 'undefined'

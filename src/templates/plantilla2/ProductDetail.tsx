@@ -39,8 +39,9 @@ function getExpiresAtEpochSeconds(offer: TimedOffer): number | null {
   return null;
 }
 
-export default function ProductDetailPlantilla2() {
-  const { id } = useParams<{ id: string }>();
+export default function ProductDetailPlantilla2({ previewProductId }: { previewProductId?: string }) {
+  const params = useParams<{ id: string; productId?: string }>();
+  const id = previewProductId || params.productId || params.id;
   const router = useRouter();
   const { user } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);

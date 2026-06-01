@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Query } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, ORDERS_COLLECTION_ID, WHOLESALE_REQUESTS_COLLECTION_ID, SUPPORT_TICKETS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { dedupeUserDocuments, isRegisteredUserProfile, listAllUserProfiles, type UserProfileDoc } from '@/lib/users-db';
@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { getPageViewStats } from '@/hooks/usePageViewTracker';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import SANTIAGO_COMUNAS from './santiago_comunas.json';
 
 if (typeof window !== 'undefined') gsap.registerPlugin(ScrollTrigger);
 
@@ -48,13 +49,13 @@ function AreaChart({ data, color = '#6366f1', height = 120 }: { data: number[]; 
 /* ─── Donut chart ─── */
 function DonutChart({ segments, size = 100 }: { segments: { value: number; color: string; label: string }[]; size?: number }) {
   const total = segments.reduce((s, x) => s + x.value, 0);
-  if (total === 0) return <div style={{ width: size, height: size, borderRadius: '50%', background: '#f3f4f6' }} />;
+  if (total === 0) return <div style={{ width: size, height: size, borderRadius: '50%', background: '#fdf2f8' }} />;
   const r = 34; const cx = 50; const cy = 50;
   const circumference = 2 * Math.PI * r;
   let offset = 0;
   return (
     <svg width={size} height={size} viewBox="0 0 100 100">
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f3f4f6" strokeWidth="12" />
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#1f2937" strokeWidth="12" />
       {segments.map((seg, i) => {
         const pct = seg.value / total;
         const dash = pct * circumference;
@@ -71,7 +72,7 @@ function DonutChart({ segments, size = 100 }: { segments: { value: number; color
         offset += pct;
         return el;
       })}
-      <text x="50" y="47" textAnchor="middle" style={{ fontSize: 14, fontWeight: 700, fill: '#111827' }}>{total}</text>
+      <text x="50" y="47" textAnchor="middle" style={{ fontSize: 14, fontWeight: 700, fill: '#f9fafb' }}>{total}</text>
       <text x="50" y="61" textAnchor="middle" style={{ fontSize: 8, fill: '#9ca3af' }}>pedidos</text>
     </svg>
   );
@@ -97,8 +98,8 @@ function KpiCard({ label, value, sub, trend, sparkData, color, icon, iconBg }: {
   const trendUp = (trend ?? 0) >= 0;
   return (
     <div style={{
-      background: '#fff', borderRadius: 16, padding: '18px 20px',
-      border: '1px solid #e5e7eb', position: 'relative', overflow: 'hidden',
+      background: '#ecfeff', borderRadius: 16, padding: '18px 20px',
+      border: '1px solid #1f2937', position: 'relative', overflow: 'hidden',
       boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
     }}>
       <div style={{ position: 'absolute', top: 0, right: 0, width: 80, height: 80, borderRadius: '0 16px 0 80px', background: iconBg, opacity: 0.12 }} />
@@ -109,7 +110,7 @@ function KpiCard({ label, value, sub, trend, sparkData, color, icon, iconBg }: {
         {sparkData && sparkData.length > 1 && <Sparkline data={sparkData} color={color} />}
       </div>
       <p style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500, margin: '0 0 3px' }}>{label}</p>
-      <p style={{ fontSize: 24, fontWeight: 800, color: '#111827', margin: 0, lineHeight: 1.1 }}>{value}</p>
+      <p style={{ fontSize: 24, fontWeight: 800, color: '#f9fafb', margin: 0, lineHeight: 1.1 }}>{value}</p>
       {sub && <p style={{ fontSize: 11, color: '#9ca3af', margin: '4px 0 0' }}>{sub}</p>}
       {trend !== undefined && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 6 }}>
@@ -173,11 +174,76 @@ function ChileMap({ regionCounts }: { regionCounts: Record<string, number> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dataRef = useRef(regionCounts);
   dataRef.current = regionCounts;
+  
+  const [selectedRegion, setSelectedRegion] = useState<string | null>('Metropolitana de Santiago');
+  const selectedRef = useRef<string | null>('Metropolitana de Santiago');
+  selectedRef.current = selectedRegion;
+
   const panRef = useRef({ offsetY: 0, dragging: false, startY: 0 });
   const hoverRef = useRef<string | null>(null);
   const liftRef = useRef<Record<string, number>>({});
-  const mouseRef = useRef({ x: 0, y: 0 });
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const bgCache = useRef<CanvasGradient | null>(null);
+  const gradientCache = useRef<Record<string, { norm: CanvasGradient, hov: CanvasGradient }>>({});
+
+  const W = 320, H = 640;
+
+  // 1. PRECOMPUTE GEOMETRY ONCE (O(N) executed once instead of O(N) at 60fps)
+  const precomputedRegions = useMemo(() => {
+    const rotRad = (-14 * Math.PI) / 180;
+    const cosR = Math.cos(rotRad), sinR = Math.sin(rotRad);
+    const centerX = 95, centerY = 200;
+    
+    const tx = (x: number, y: number) => W / 2 + 15 + ((x - centerX) * cosR - (y - centerY) * sinR) * 2.1;
+    const ty = (x: number, y: number) => H / 2 - 30 + ((x - centerX) * sinR + (y - centerY) * cosR) * 2.1;
+
+    return VISIBLE_REGIONS.map(r => {
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      
+      const polys = r.paths.map(p => {
+        const pts: [number, number][] = [];
+        const re = /([ML])([\d.\-]+),([\d.\-]+)/g;
+        let m;
+        while ((m = re.exec(p)) !== null) {
+           const px = tx(parseFloat(m[2]), parseFloat(m[3]));
+           const py = ty(parseFloat(m[2]), parseFloat(m[3]));
+           pts.push([px, py]);
+           if (px < minX) minX = px; if (px > maxX) maxX = px;
+           if (py < minY) minY = py; if (py > maxY) maxY = py;
+        }
+        return pts;
+      });
+
+      // Browser native C++ Path2D engine handles drawing instantly
+      const fullPath = new Path2D();
+      polys.forEach(pts => {
+        pts.forEach(([x, y], i) => i === 0 ? fullPath.moveTo(x, y) : fullPath.lineTo(x, y));
+        fullPath.closePath();
+      });
+      
+      const innerGlowPath = new Path2D();
+      polys.forEach(pts => {
+        pts.forEach(([x, y], i) => i === 0 ? innerGlowPath.moveTo(x+1, y+1) : innerGlowPath.lineTo(x+1, y+1));
+        innerGlowPath.closePath();
+      });
+
+      return {
+        key: r.key, roman: r.roman, lx: tx(r.lx, r.ly), ly: ty(r.lx, r.ly),
+        fullPath, innerGlowPath, bounds: { minX, maxX, minY, maxY }
+      };
+    });
+  }, []);
+
+  const precomputedSantiago = useMemo(() => {
+    const rotRad = (-14 * Math.PI) / 180;
+    const cosR = Math.cos(rotRad), sinR = Math.sin(rotRad);
+    const centerX = 95, centerY = 200;
+    const x = 85, y = 240;
+    return {
+      sx: W / 2 + 15 + ((x - centerX) * cosR - (y - centerY) * sinR) * 2.1,
+      sy: H / 2 - 30 + ((x - centerX) * sinR + (y - centerY) * cosR) * 2.1
+    };
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -185,313 +251,201 @@ function ChileMap({ regionCounts }: { regionCounts: Record<string, number> }) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const dpr = window.devicePixelRatio || 1;
-    const W = 320, H = 640;
     canvas.width = W * dpr; canvas.height = H * dpr;
     canvas.style.width = '100%'; canvas.style.height = '100%';
     canvas.style.minHeight = '640px';
     canvas.style.objectFit = 'contain';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const zoom = 1.8;
-    const centerX = 95, centerY = 200;
-    const rotRad = (-14 * Math.PI) / 180; // -14 degrees left tilt to stand vertically upright
-    const cosR = Math.cos(rotRad), sinR = Math.sin(rotRad);
-
-    const tx = (x: number, y: number) => {
-      const dx = x - centerX, dy = y - centerY;
-      return W / 2 + 15 + (dx * cosR - dy * sinR) * 2.1;
-    };
-    const ty = (x: number, y: number) => {
-      const dx = x - centerX, dy = y - centerY;
-      return H / 2 - 30 + (dx * sinR + dy * cosR) * 2.1 + panRef.current.offsetY;
-    };
-
-    function parsePath(d: string): [number, number][] {
-      const pts: [number, number][] = [];
-      const re = /([ML])([\d.\-]+),([\d.\-]+)/g;
-      let m;
-      while ((m = re.exec(d)) !== null) pts.push([parseFloat(m[2]), parseFloat(m[3])]);
-      return pts;
+    if (Object.keys(gradientCache.current).length === 0) {
+      precomputedRegions.forEach(reg => {
+        const { minX, minY, maxX, maxY } = reg.bounds;
+        const norm = ctx.createLinearGradient(minX, minY, maxX, maxY);
+        norm.addColorStop(0, '#ffffff');
+        norm.addColorStop(1, '#f1f5f9');
+        
+        const hov = ctx.createLinearGradient(minX, minY, maxX, maxY);
+        hov.addColorStop(0, '#38bdf8'); // Sky 400
+        hov.addColorStop(1, '#818cf8'); // Indigo 400
+        gradientCache.current[reg.key] = { norm, hov };
+      });
     }
-    function drawPath(pts: [number, number][]) {
-      ctx!.beginPath();
-      pts.forEach(([x, y], i) => i === 0 ? ctx!.moveTo(tx(x, y), ty(x, y)) : ctx!.lineTo(tx(x, y), ty(x, y)));
-      ctx!.closePath();
-    }
-
-    function pointInPoly(px: number, py: number, pts: [number, number][]): boolean {
-      let inside = false;
-      for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
-        const xi = tx(pts[i][0], pts[i][1]), yi = ty(pts[i][0], pts[i][1]);
-        const xj = tx(pts[j][0], pts[j][1]), yj = ty(pts[j][0], pts[j][1]);
-        if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) inside = !inside;
-      }
-      return inside;
-    }
-
-    // Rounded rect helper
-    function roundRect(x: number, y: number, w: number, h: number, r: number) {
-      ctx!.beginPath();
-      ctx!.moveTo(x + r, y); ctx!.lineTo(x + w - r, y);
-      ctx!.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx!.lineTo(x + w, y + h - r);
-      ctx!.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx!.lineTo(x + r, y + h);
-      ctx!.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx!.lineTo(x, y + r);
-      ctx!.quadraticCurveTo(x, y, x + r, y);
-      ctx!.closePath();
-    }
-
-    const regionPolys = VISIBLE_REGIONS.map(r => ({
-      key: r.key, roman: r.roman, lx: r.lx, ly: r.ly,
-      polys: r.paths.map(p => parsePath(p)),
-    }));
 
     let frame = 0, animId: number;
+    const palette = ['#6366f1','#e396bf','#10b981','#f59e0b','#8b5cf6','#ef4444','#14b8a6','#eab308','#a855f7','#f43f5e','#06b6d4','#84cc16','#d946ef','#f97316','#0ea5e9','#22c55e'];
+
     function draw() {
       frame++;
       const counts = dataRef.current;
       const maxC = Math.max(...Object.values(counts), 1);
       const hov = hoverRef.current;
 
-      // Animate lift values smoothly
-      for (const r of VISIBLE_REGIONS) {
-        const key = r.key;
-        const target = hov === key ? 1 : 0;
-        const cur = liftRef.current[key] || 0;
-        liftRef.current[key] = cur + (target - cur) * 0.12; // ease factor
+      for (const reg of precomputedRegions) {
+        const target = hov === reg.key ? 1 : 0;
+        const cur = liftRef.current[reg.key] || 0;
+        liftRef.current[reg.key] = cur + (target - cur) * 0.12;
       }
 
-      // 1. Unified Background Gradient (Celeste to White)
-      const bgG = ctx!.createLinearGradient(0, 0, W, 0);
-      bgG.addColorStop(0, '#0ea5e9');      // Celeste vibrante
-      bgG.addColorStop(0.55, '#e0f2fe');   // Soft white/cyan blend
-      bgG.addColorStop(0.70, '#f9f8f4');   // Argentina Ivory
-      bgG.addColorStop(1, '#f9f8f4');
-      ctx!.fillStyle = bgG;
+      ctx!.clearRect(0, 0, W, H);
+
+      // Grid Background
+      ctx!.fillStyle = '#ffffff';
       ctx!.fillRect(0, 0, W, H);
+      ctx!.fillStyle = '#e2e8f0'; // Slate 200 dots
+      for(let x = 0; x < W; x += 16) {
+        for(let y = 0; y < H; y += 16) {
+          ctx!.beginPath(); ctx!.arc(x, y, 1.2, 0, Math.PI * 2); ctx!.fill();
+        }
+      }
 
-      // --- Animated REAL WATER effects (Soft clean shimmers) ---
+      // Pan Translation for Map Elements
       ctx!.save();
-      ctx!.beginPath(); ctx!.rect(0, 0, W * 0.55, H); ctx!.clip(); 
-      const t = frame * 0.003;
-      for (let i = 0; i < 5; i++) {
-        const cx = W * 0.15 + Math.sin(t + i * 1.3) * W * 0.12;
-        const cy = H * (0.15 + i * 0.14) + Math.cos(t * 0.6 + i) * 60;
-        const r = 120 + i * 30;
-        const g = ctx!.createRadialGradient(cx, cy, 0, cx, cy, r);
-        g.addColorStop(0, `rgba(255, 255, 255, ${0.15 + (i % 3) * 0.05})`);
-        g.addColorStop(1, 'rgba(255, 255, 255, 0)');
-        ctx!.fillStyle = g;
-        ctx!.fillRect(0, 0, W * 0.6, H);
-      }
-      ctx!.restore();
+      ctx!.translate(0, panRef.current.offsetY);
 
-      // ═══ 3D RELIEF REGIONS (Vibrant Distinct Hover Colors) ═══
-      const palette = [
-        '#6366f1', '#e396bf', '#10b981', '#f59e0b', 
-        '#8b5cf6', '#ef4444', '#14b8a6', '#eab308', 
-        '#a855f7', '#f43f5e', '#06b6d4', '#84cc16', 
-        '#d946ef', '#f97316', '#0ea5e9', '#22c55e'
-      ];
-      const emptyFill = '#cbd5e1';
-
-      // Pass 1: Conditional Drop shadow (animated with lift)
+      // Pass 1: Drop Shadow
       ctx!.save();
-      for (let i = 0; i < regionPolys.length; i++) {
-        const reg = regionPolys[i];
+      for (const reg of precomputedRegions) {
         const lift = liftRef.current[reg.key] || 0;
-        if (lift < 0.01) continue; // No shadow if barely lifted
-
-        for (const pts of reg.polys) {
-          ctx!.beginPath();
-          pts.forEach(([rx, ry], idx) => {
-            const x = tx(rx, ry) + 8 * lift, y = ty(rx, ry) + 10 * lift;
-            idx === 0 ? ctx!.moveTo(x, y) : ctx!.lineTo(x, y);
-          });
-          ctx!.closePath();
-          ctx!.globalAlpha = lift * 0.35;
-          ctx!.fillStyle = 'rgba(0, 5, 20, 1)'; ctx!.fill();
-        }
-      }
-      ctx!.restore();
-
-      // Pass 2: Main region fill + 3D categorical bevel
-      for (let i = 0; i < regionPolys.length; i++) {
-        const reg = regionPolys[i];
-        const isHov = hov === reg.key;
-        const lift = liftRef.current[reg.key] || 0;
-        const off = -lift * 4; // Animated lift offset (0 to -4)
-        // Minimalist Pure White base, pop with Grayscale only on hover
-        const baseFill = isHov ? palette[i % palette.length] : '#ffffff';
-
-        for (const pts of reg.polys) {
-          const bounds = pts.reduce((b, [x, y]) => ({
-            minX: Math.min(b.minX, tx(x, y)), maxX: Math.max(b.maxX, tx(x, y)),
-            minY: Math.min(b.minY, ty(x, y)), maxY: Math.max(b.maxY, ty(x, y)),
-          }), { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity });
-
-          // Main region drawing with lift offset
-          ctx!.save();
-          ctx!.translate(off, off);
-
-          drawPath(pts);
-          ctx!.fillStyle = baseFill;
-          ctx!.fill();
-
-          // --- Sparkles/Brillitos Layer (Inside Regions) ---
-          ctx!.save(); drawPath(pts); ctx!.clip();
-          for (let pi = 0; pi < 15; pi++) {
-            const px = ((pi * 79.5) % (bounds.maxX - bounds.minX) + bounds.minX + Math.sin(frame * 0.02 + pi) * 10);
-            const py = ((pi * 113.2) % (bounds.maxY - bounds.minY) + bounds.minY + frame * 0.06) % (bounds.maxY - bounds.minY) + bounds.minY;
-            const op = 0.05 + Math.sin(frame * 0.04 + pi) * 0.12;
-            ctx!.fillStyle = `rgba(167, 139, 250, ${op})`; // Semi-transparent purple sparkle
-            ctx!.beginPath(); ctx!.arc(px, py, 0.7, 0, Math.PI * 2); ctx!.fill();
-            ctx!.fillStyle = `rgba(255, 255, 255, ${op * 0.6})`; // White core
-            ctx!.beginPath(); ctx!.arc(px, py, 0.4, 0, Math.PI * 2); ctx!.fill();
-          }
-          ctx!.restore();
-
-          // 3D bevel: top-left highlight
-          ctx!.save(); drawPath(pts); ctx!.clip();
-          const hlG = ctx!.createLinearGradient(bounds.minX, bounds.minY, bounds.maxX, bounds.maxY);
-          hlG.addColorStop(0, isHov ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.28)');
-          hlG.addColorStop(0.3, 'rgba(255,255,255,0.08)');
-          hlG.addColorStop(0.55, 'rgba(0,0,0,0)');
-          hlG.addColorStop(1, isHov ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.22)');
-          drawPath(pts); ctx!.fillStyle = hlG; ctx!.fill();
-          ctx!.restore();
-
-          // Ridge border (Chrome White/Gray)
-          drawPath(pts);
-          ctx!.strokeStyle = isHov ? '#ffffff' : 'rgba(0, 0, 0, 0.2)';
-          ctx!.lineWidth = isHov ? 2.5 : 1.2;
-          ctx!.stroke();
-
-          // Sublte Inner glow edge
-          if (!isHov) {
-            ctx!.save(); drawPath(pts); ctx!.clip();
-            ctx!.beginPath();
-            pts.forEach(([x, y], i) => {
-              const px = tx(x, y) + 1, py = ty(x, y) + 1;
-              i === 0 ? ctx!.moveTo(px, py) : ctx!.lineTo(px, py);
-            });
-            ctx!.closePath();
-            ctx!.strokeStyle = 'rgba(255,255,255,0.08)'; ctx!.lineWidth = 1.5; ctx!.stroke();
-            ctx!.restore();
-          }
-          ctx!.restore(); // End context translation (off, off)
-        }
-
-        // Hover: elevated color-coded glow
-        if (isHov) {
-          ctx!.save(); ctx!.globalAlpha = 0.12;
-          for (const pts of reg.polys) {
-            drawPath(pts);
-            ctx!.shadowColor = baseFill; ctx!.shadowBlur = 15;
-            ctx!.fillStyle = baseFill; ctx!.fill();
-          }
-          ctx!.restore();
-        }
-      }
-
-      // ═══ REGION LABELS (with pill background) ═══
-      for (const reg of regionPolys) {
-        const c = counts[reg.key] || 0;
-        const isHov = hov === reg.key;
-        const t = c / maxC;
+        if (lift < 0.01) continue;
         ctx!.save();
-        const fontSize = isHov ? 11 : Math.max(7, 7 + t * 2.5);
-        ctx!.font = `800 ${fontSize}px system-ui, -apple-system, sans-serif`;
+        ctx!.translate(4 * lift, 8 * lift);
+        ctx!.globalAlpha = lift * 0.6;
+        ctx!.fillStyle = '#cbd5e1'; // Solid isometric shadow
+        ctx!.fill(reg.fullPath);
+        ctx!.restore();
+      }
+      ctx!.restore();
+
+      // Pass 2: Main Map Elements (Regions, Neon Borders, Heatmap)
+      const selected = selectedRef.current;
+      for (let i = 0; i < precomputedRegions.length; i++) {
+        const reg = precomputedRegions[i];
+        const isSelected = selected === reg.key;
+        const isHov = hov === reg.key;
+        const highlight = isHov || isSelected;
+        const lift = liftRef.current[reg.key] || 0;
+        const off = -lift * 4;
+
+        ctx!.save();
+        ctx!.translate(off, off);
+
+        // Base Gradient
+        ctx!.fillStyle = gradientCache.current[reg.key].norm;
+        ctx!.fill(reg.fullPath);
+
+        // Heatmap / Hover / Selection Highlight
+        if (highlight) {
+          ctx!.fillStyle = isHov ? gradientCache.current[reg.key].hov : 'rgba(56, 189, 248, 0.2)'; // Sky soft highlight for selection
+          ctx!.fill(reg.fullPath);
+        }
+
+        // Professional Clean Border
+        ctx!.strokeStyle = isHov ? '#818cf8' : (isSelected ? '#60a5fa' : '#cbd5e1');
+        ctx!.lineWidth = isHov ? 2 : (isSelected ? 1.5 : 1.2);
+        if (isHov) {
+          ctx!.shadowColor = 'rgba(129, 140, 248, 0.4)';
+          ctx!.shadowBlur = 8;
+        } else {
+          ctx!.shadowBlur = 0;
+        }
+        ctx!.stroke(reg.fullPath);
+
+        ctx!.restore(); // End offset translation
+      }
+
+      // ═══ REGION LABELS (Cyberpunk Minimal) ═══
+      for (const reg of precomputedRegions) {
+        const isSelected = selected === reg.key;
+        const isHov = hov === reg.key;
+        if (!isHov && !isSelected) continue; // Only show text for hovered or selected regions
+        
+        ctx!.save();
+        ctx!.font = `600 ${isHov ? 10 : 8}px 'Inter', sans-serif`;
         ctx!.textAlign = 'center'; ctx!.textBaseline = 'middle';
         
-        const lx = tx(reg.lx, reg.ly), ly = ty(reg.lx, reg.ly);
-        
-        // Small pill background behind the label
-        const tw = ctx!.measureText(reg.roman).width + 8;
-        const th = fontSize + 4;
-        ctx!.fillStyle = isHov ? 'rgba(30,41,59,0.7)' : 'rgba(0,0,0,0.25)';
-        ctx!.beginPath();
-        ctx!.roundRect(lx - tw/2, ly - th/2, tw, th, 3);
-        ctx!.fill();
-        
-        ctx!.fillStyle = '#ffffff';
-        ctx!.fillText(reg.roman, lx, ly);
+        ctx!.fillStyle = isHov ? '#4f46e5' : '#1e3a8a'; // Indigo 600 or Blue 900
+        if (isHov) {
+          ctx!.shadowColor = 'rgba(199, 210, 254, 0.6)';
+          ctx!.shadowBlur = 4;
+        } else {
+          ctx!.shadowBlur = 0;
+        }
+        ctx!.fillText(reg.roman, reg.lx, reg.ly);
         ctx!.restore();
       }
 
-      // ═══ SANTIAGO PIN (Chrome Gray) ═══
-      const sX = tx(85, 240), sY = ty(85, 240);
-      const pulseA = 0.08 + Math.sin(frame * 0.03) * 0.04;
-      ctx!.save(); ctx!.globalAlpha = pulseA;
-      ctx!.beginPath(); ctx!.arc(sX, sY, 12, 0, Math.PI * 2);
-      ctx!.fillStyle = '#475569'; ctx!.fill(); ctx!.restore(); // Gray pulse
-      // Pin body with shadow
+      // ═══ SANTIAGO PIN (Neon Pulse) ═══
+      const { sx, sy } = precomputedSantiago;
+      const pT = frame * 0.05;
+      const pulseSize = 3 + Math.abs(Math.sin(pT)) * 4;
+      const pulseAlpha = 0.8 - Math.abs(Math.sin(pT)) * 0.8;
+      
       ctx!.save();
-      ctx!.shadowColor = 'rgba(0,0,0,0.2)'; ctx!.shadowBlur = 4; ctx!.shadowOffsetY = 2;
-      ctx!.beginPath(); ctx!.arc(sX, sY, 5, 0, Math.PI * 2);
-      ctx!.fillStyle = '#334155'; ctx!.fill(); // Slate Gray pin
-      ctx!.restore();
-      ctx!.beginPath(); ctx!.arc(sX, sY, 2, 0, Math.PI * 2);
-      ctx!.fillStyle = '#cbd5e1'; ctx!.fill(); // Silver core
-      // Label with dark background pill
-      ctx!.save();
-      ctx!.font = '700 9px system-ui';
-      const stw = ctx!.measureText('Santiago').width + 10;
-      ctx!.fillStyle = 'rgba(30,41,59,0.75)';
-      ctx!.beginPath();
-      ctx!.roundRect(sX + 8, sY - 7, stw, 14, 3);
+      // Outer glow pulse
+      ctx!.beginPath(); ctx!.arc(sx, sy, pulseSize, 0, Math.PI * 2);
+      ctx!.fillStyle = `rgba(59, 130, 246, ${pulseAlpha})`; // Blue 500
+      ctx!.fill(); 
+      // Core dot
+      ctx!.beginPath(); ctx!.arc(sx, sy, 2.5, 0, Math.PI * 2);
+      ctx!.fillStyle = '#3b82f6'; // Blue 500
+      ctx!.shadowColor = 'rgba(59, 130, 246, 0.5)'; ctx!.shadowBlur = 6;
       ctx!.fill();
-      ctx!.fillStyle = '#ffffff';
-      ctx!.textAlign = 'left'; ctx!.textBaseline = 'middle';
-      ctx!.fillText('Santiago', sX + 13, sY + 1);
+      // Thin Tooltip text
+      ctx!.font = '500 9px "Inter", sans-serif';
+      ctx!.fillStyle = '#1e3a8a'; // Blue 900
+      ctx!.shadowBlur = 0;
+      ctx!.fillText('STGO', sx + 8, sy + 3);
       ctx!.restore();
 
-      // ═══ GEOGRAPHIC LABELS ═══
-      ctx!.save(); ctx!.textAlign = 'center';
-      ctx!.font = 'italic 600 12px Georgia, serif';
-      ctx!.fillStyle = 'rgba(255, 255, 255, 0.45)'; // White for the teal ocean
-      ctx!.fillText('O C É A N O', W * 0.3, H * 0.38);
-      ctx!.fillText('P A C Í F I C O', W * 0.3, H * 0.38 + 16);
-      ctx!.font = 'italic 600 10px Georgia, serif';
-      ctx!.fillStyle = 'rgba(71, 85, 105, 0.4)';
-      ctx!.save(); ctx!.translate(W * 0.85 + 10, H * 0.35); ctx!.rotate(Math.PI / 2);
-      ctx!.fillText('A R G E N T I N A', 0, 0); ctx!.restore();
-      ctx!.restore();
-
-      // Tooltip is rendered as HTML overlay (see tooltipRef)
+      ctx!.restore(); // END PAN TRANSLATION
 
       animId = requestAnimationFrame(draw);
     }
     draw();
 
-    // ── HOVER detection ──
+    // ── NATIVE RAYCASTING FOR HOVER ──
     const onHover = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
-      const scaleX = W / rect.width, scaleY = H / rect.height;
-      const mx = (e.clientX - rect.left) * scaleX, my = (e.clientY - rect.top) * scaleY;
-      mouseRef.current = { x: mx, y: my };
+      const canvasRatio = W / H;
+      const rectRatio = rect.width / rect.height;
+      let actualW = rect.width;
+      let actualH = rect.height;
+      let offsetX = 0;
+      let offsetY = 0;
+      
+      if (rectRatio > canvasRatio) { // Pillarbox (ultrawide)
+        actualW = rect.height * canvasRatio;
+        offsetX = (rect.width - actualW) / 2;
+      } else { // Letterbox
+        actualH = rect.width / canvasRatio;
+        offsetY = (rect.height - actualH) / 2;
+      }
+      
+      const scaleX = W / actualW;
+      const scaleY = H / actualH;
+      const mx = (e.clientX - rect.left - offsetX) * scaleX;
+      // Adjust mouse Y coordinate by current pan offset for correct native collision
+      const myPan = ((e.clientY - rect.top - offsetY) * scaleY) - panRef.current.offsetY; 
+      
       let found: string | null = null;
-      for (const reg of regionPolys) {
-        for (const pts of reg.polys) {
-          if (pointInPoly(mx, my, pts)) { found = reg.key; break; }
+      for (const reg of precomputedRegions) {
+        // C++ native hit detection - instant O(1) performance
+        if (ctx!.isPointInPath(reg.fullPath, mx, myPan)) { 
+          found = reg.key; break; 
         }
-        if (found) break;
       }
       hoverRef.current = found;
       canvas.style.cursor = found ? 'pointer' : (panRef.current.dragging ? 'grabbing' : 'grab');
-      // Update HTML tooltip
+      
       const tip = tooltipRef.current;
       if (tip) {
         if (found) {
           const c = dataRef.current[found] || 0;
           const line2 = c > 0 ? `${c} pedido${c > 1 ? 's' : ''}` : 'Sin pedidos';
-          tip.innerHTML = `<div style="font-weight:700;font-size:12px;color:#0f172a">${found}</div><div style="font-size:11px;font-weight:600;color:${c > 0 ? '#4f46e5' : '#94a3b8'}">${line2}</div>`;
+          tip.innerHTML = `<div style="font-weight:700;font-size:12px;color:#1e293b;letter-spacing:0.02em;">${found}</div><div style="font-size:11px;font-weight:600;color:${c > 0 ? '#4f46e5' : '#64748b'};margin-top:2px;">${line2}</div>`;
           tip.style.display = 'block';
           const cssX = e.clientX - rect.left;
           const cssY = e.clientY - rect.top;
-          // flip left if near right edge
           const tipW = tip.offsetWidth || 140;
           const left = cssX + tipW + 20 > rect.width ? cssX - tipW - 8 : cssX + 14;
           tip.style.left = left + 'px';
@@ -511,33 +465,581 @@ function ChileMap({ regionCounts }: { regionCounts: Record<string, number> }) {
     const up = () => { panRef.current.dragging = false; };
     const tdown = (e: TouchEvent) => { panRef.current.dragging = true; panRef.current.startY = e.touches[0].clientY; };
     const tmove = (e: TouchEvent) => { if (!panRef.current.dragging) return; panRef.current.offsetY += (e.touches[0].clientY - panRef.current.startY); panRef.current.startY = e.touches[0].clientY; };
+    
+    const onClick = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const canvasRatio = W / H;
+      const rectRatio = rect.width / rect.height;
+      let actualW = rect.width;
+      let actualH = rect.height;
+      let offsetX = 0;
+      let offsetY = 0;
+      
+      if (rectRatio > canvasRatio) { // Pillarbox (ultrawide)
+        actualW = rect.height * canvasRatio;
+        offsetX = (rect.width - actualW) / 2;
+      } else { // Letterbox
+        actualH = rect.width / canvasRatio;
+        offsetY = (rect.height - actualH) / 2;
+      }
+      
+      const scaleX = W / actualW;
+      const scaleY = H / actualH;
+      const mx = (e.clientX - rect.left - offsetX) * scaleX;
+      const myPan = ((e.clientY - rect.top - offsetY) * scaleY) - panRef.current.offsetY; 
+      
+      let found: string | null = null;
+      for (const reg of precomputedRegions) {
+        if (ctx!.isPointInPath(reg.fullPath, mx, myPan)) { 
+          found = reg.key; 
+          break; 
+        }
+      }
+      
+      if (found) {
+        setSelectedRegion(found);
+      }
+    };
+
     canvas.addEventListener('mousedown', down); window.addEventListener('mousemove', move); window.addEventListener('mouseup', up);
     canvas.addEventListener('touchstart', tdown, { passive: true }); window.addEventListener('touchmove', tmove, { passive: true }); window.addEventListener('touchend', up);
+    canvas.addEventListener('click', onClick);
     return () => { cancelAnimationFrame(animId);
       canvas.removeEventListener('mousedown', down); window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up);
       canvas.removeEventListener('touchstart', tdown); window.removeEventListener('touchmove', tmove); window.removeEventListener('touchend', up);
+      canvas.removeEventListener('click', onClick);
     };
-  }, []);
+  }, [precomputedRegions, precomputedSantiago]);
 
   return (
-    <div style={{ borderRadius: 14, background: '#f9f8f4', position: 'relative', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+    <div style={{ borderRadius: 14, background: '#ffffff', position: 'relative', overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: 'inset 0 0 40px rgba(0,0,0,0.02)' }}>
       <canvas ref={canvasRef} style={{ display: 'block', width: '100%', cursor: 'grab', borderRadius: 14 }} />
-      <div ref={tooltipRef} style={{ display: 'none', position: 'absolute', top: 0, left: 0, pointerEvents: 'none', zIndex: 20, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', borderRadius: 10, padding: '8px 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', border: '1px solid rgba(0,0,0,0.06)', whiteSpace: 'nowrap', minWidth: 80 }} />
-      <div style={{ position: 'absolute', top: 8, left: 10, display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.92)', borderRadius: 8, padding: '4px 10px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.04)' }}>
-        <span style={{ fontSize: 11 }}>☰</span>
-        <span style={{ fontSize: 9, color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>Arrastra para mover</span>
+      <div ref={tooltipRef} style={{ display: 'none', position: 'absolute', top: 0, left: 0, pointerEvents: 'none', zIndex: 20, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', borderRadius: 8, padding: '8px 12px', boxShadow: '0 4px 14px rgba(0,0,0,0.08)', border: '1px solid #e2e8f0', whiteSpace: 'nowrap', minWidth: 80 }} />
+      <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(4px)', borderRadius: 20, padding: '4px 12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
+        <span style={{ fontSize: 11, color: '#94a3b8' }}>☰</span>
+        <span style={{ fontSize: 9, color: '#64748b', fontWeight: 600, letterSpacing: '0.05em' }}>ARRASTRA PARA MOVER</span>
+      </div>
+    </div>
+  );
+}
+
+function normalizeName(name: string): string {
+  if (!name) return '';
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function SantiagoMap({ comunaCounts }: { comunaCounts: Record<string, number> }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const dataRef = useRef(comunaCounts);
+  dataRef.current = comunaCounts;
+  
+  const [selectedComuna, setSelectedComuna] = useState<string | null>('Santiago');
+  const selectedRef = useRef<string | null>('Santiago');
+  selectedRef.current = selectedComuna;
+
+  const panRef = useRef({ offsetX: -36, offsetY: 54, dragging: false, startX: 0, startY: 0 });
+  const hoverRef = useRef<string | null>(null);
+  const liftRef = useRef<Record<string, number>>({});
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const gradientCache = useRef<Record<string, { norm: CanvasGradient, hov: CanvasGradient, active: CanvasGradient }>>({});
+
+  const [zoom, setZoom] = useState(1.8);
+  const zoomRef = useRef(1.8);
+  zoomRef.current = zoom;
+
+  const W = 400, H = 400;
+
+  const precomputedComunas = useMemo(() => {
+    return SANTIAGO_COMUNAS.map(c => {
+      const fullPath = new Path2D();
+      const pts: [number, number][] = [];
+      const matches = c.paths[0].matchAll(/([ML])([\d.\-]+),([\d.\-]+)/g);
+      for (const match of matches) {
+        pts.push([parseFloat(match[2]), parseFloat(match[3])]);
+      }
+      
+      pts.forEach(([px, py], idx) => {
+        if (idx === 0) fullPath.moveTo(px, py);
+        else fullPath.lineTo(px, py);
+      });
+      fullPath.closePath();
+
+      return {
+        key: c.key,
+        provincia: c.provincia,
+        code: c.code,
+        lx: c.lx,
+        ly: c.ly,
+        fullPath,
+        normKey: normalizeName(c.key)
+      };
+    });
+  }, []);
+
+  const topCommuneInfo = useMemo(() => {
+    let topName = '';
+    let topVal = -1;
+    let lx = W / 2;
+    let ly = H / 2;
+    
+    precomputedComunas.forEach(c => {
+      const count = dataRef.current[c.normKey] || 0;
+      if (count > topVal && count > 0) {
+        topVal = count;
+        topName = c.key;
+        lx = c.lx;
+        ly = c.ly;
+      }
+    });
+    
+    return topName ? { name: topName, lx, ly } : null;
+  }, [comunaCounts, precomputedComunas]);
+
+  const handleZoomIn = () => {
+    setZoom(prev => Math.min(6, prev + 0.3));
+  };
+
+  const handleZoomOut = () => {
+    setZoom(prev => Math.max(0.6, prev - 0.3));
+  };
+
+  const handleZoomReset = () => {
+    setZoom(1.8);
+    panRef.current.offsetX = -36;
+    panRef.current.offsetY = 54;
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.minHeight = '400px';
+    canvas.style.objectFit = 'contain';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    precomputedComunas.forEach(c => {
+      if (!gradientCache.current[c.key]) {
+        const lx = c.lx;
+        const ly = c.ly;
+        
+        const norm = ctx.createLinearGradient(lx - 20, ly - 20, lx + 20, ly + 20);
+        norm.addColorStop(0, '#ffffff');
+        norm.addColorStop(1, '#f8fafc');
+        
+        const active = ctx.createLinearGradient(lx - 20, ly - 20, lx + 20, ly + 20);
+        active.addColorStop(0, '#bae6fd');
+        active.addColorStop(1, '#7dd3fc');
+        
+        const hov = ctx.createLinearGradient(lx - 20, ly - 20, lx + 20, ly + 20);
+        hov.addColorStop(0, '#38bdf8');
+        hov.addColorStop(1, '#818cf8');
+        
+        gradientCache.current[c.key] = { norm, active, hov };
+      }
+    });
+
+    let frame = 0, animId: number;
+
+    function draw() {
+      frame++;
+      const counts = dataRef.current;
+      const hov = hoverRef.current;
+      const curZoom = zoomRef.current;
+
+      for (const c of precomputedComunas) {
+        const target = hov === c.key ? 1 : 0;
+        const cur = liftRef.current[c.key] || 0;
+        liftRef.current[c.key] = cur + (target - cur) * 0.15;
+      }
+
+      ctx!.clearRect(0, 0, W, H);
+
+      ctx!.fillStyle = '#ffffff';
+      ctx!.fillRect(0, 0, W, H);
+      ctx!.fillStyle = '#e2e8f0';
+      for(let x = 0; x < W; x += 16) {
+        for(let y = 0; y < H; y += 16) {
+          ctx!.beginPath(); ctx!.arc(x, y, 1.2, 0, Math.PI * 2); ctx!.fill();
+        }
+      }
+
+      ctx!.save();
+      ctx!.translate(W / 2 + panRef.current.offsetX, H / 2 + panRef.current.offsetY);
+      ctx!.scale(curZoom, curZoom);
+      ctx!.translate(-W / 2, -H / 2);
+
+      ctx!.save();
+      for (const c of precomputedComunas) {
+        const lift = liftRef.current[c.key] || 0;
+        if (lift < 0.01) continue;
+        ctx!.save();
+        ctx!.translate(3 * lift, 6 * lift);
+        ctx!.globalAlpha = lift * 0.5;
+        ctx!.fillStyle = '#cbd5e1';
+        ctx!.fill(c.fullPath);
+        ctx!.restore();
+      }
+      ctx!.restore();
+
+      const selected = selectedRef.current;
+      for (const c of precomputedComunas) {
+        const isSelected = selected === c.key;
+        const isHov = hov === c.key;
+        const highlight = isHov || isSelected;
+        const lift = liftRef.current[c.key] || 0;
+        const off = -lift * 3;
+
+        ctx!.save();
+        ctx!.translate(off, off);
+
+        const gradients = gradientCache.current[c.key];
+        if (isHov) {
+          ctx!.fillStyle = gradients.hov;
+        } else if (isSelected) {
+          ctx!.fillStyle = gradients.active;
+        } else {
+          ctx!.fillStyle = gradients.norm;
+        }
+        
+        ctx!.fill(c.fullPath);
+
+        ctx!.strokeStyle = isHov ? '#818cf8' : (isSelected ? '#60a5fa' : '#cbd5e1');
+        ctx!.lineWidth = isHov ? 1.8 / curZoom : (isSelected ? 1.2 / curZoom : 0.8 / curZoom);
+        
+        if (isHov) {
+          ctx!.shadowColor = 'rgba(129, 140, 248, 0.4)';
+          ctx!.shadowBlur = 6 / curZoom;
+        } else {
+          ctx!.shadowBlur = 0;
+        }
+        ctx!.stroke(c.fullPath);
+
+        ctx!.restore();
+      }
+
+      const labelsToDraw = precomputedComunas.map(c => {
+        const isSelected = selected === c.key;
+        const isHov = hov === c.key;
+        const count = counts[c.normKey] || 0;
+        return { c, isHov, isSelected, count };
+      });
+
+      labelsToDraw.sort((a, b) => {
+        if (a.isHov) return -1;
+        if (b.isHov) return 1;
+        if (a.isSelected) return -1;
+        if (b.isSelected) return 1;
+        return b.count - a.count;
+      });
+
+      const drawnRects: { x1: number; y1: number; x2: number; y2: number }[] = [];
+
+      for (const { c, isHov, isSelected, count } of labelsToDraw) {
+        const hasVisits = count > 0;
+        
+        if (isHov || isSelected || hasVisits || curZoom > 1.8) {
+          const lift = liftRef.current[c.key] || 0;
+          const off = -lift * 3;
+          
+          ctx!.save();
+          ctx!.translate(off, off);
+          
+          const fontSize = isHov ? 9 : (curZoom > 2.5 ? 6.5 : 7.5);
+          ctx!.font = `600 ${fontSize}px 'Inter', sans-serif`;
+          
+          const textWidth = ctx!.measureText(c.key).width;
+          const textHeight = fontSize;
+          
+          // Collision padding decreases as zoom increases, allowing denser labels zoomed-in
+          const paddingX = Math.max(2, 7 - curZoom * 1.8);
+          const paddingY = Math.max(1.5, 4.5 - curZoom);
+          
+          const x1 = c.lx - textWidth / 2 - paddingX;
+          const x2 = c.lx + textWidth / 2 + paddingX;
+          const y1 = c.ly - textHeight / 2 - paddingY;
+          const y2 = c.ly + textHeight / 2 + paddingY;
+          
+          const overlaps = drawnRects.some(rect => {
+            return !(x2 < rect.x1 || x1 > rect.x2 || y2 < rect.y1 || y1 > rect.y2);
+          });
+          
+          // Hovered label is ALWAYS rendered; others render only if they don't overlap
+          if (isHov || !overlaps) {
+            ctx!.textAlign = 'center';
+            ctx!.textBaseline = 'middle';
+            ctx!.fillStyle = isHov ? '#4f46e5' : (isSelected ? '#1e3a8a' : '#64748b');
+            
+            if (isHov) {
+              ctx!.shadowColor = 'rgba(199, 210, 254, 0.6)';
+              ctx!.shadowBlur = 4;
+            }
+            ctx!.fillText(c.key, c.lx, c.ly);
+            drawnRects.push({ x1, y1, x2, y2 });
+          }
+          ctx!.restore();
+        }
+      }
+
+      if (topCommuneInfo) {
+        const { lx, ly } = topCommuneInfo;
+        const pT = frame * 0.05;
+        const pulseSize = 4 + Math.abs(Math.sin(pT)) * 6;
+        const pulseAlpha = 0.8 - Math.abs(Math.sin(pT)) * 0.8;
+        
+        ctx!.save();
+        ctx!.beginPath();
+        ctx!.arc(lx, ly, pulseSize / curZoom, 0, Math.PI * 2);
+        ctx!.fillStyle = `rgba(59, 130, 246, ${pulseAlpha})`;
+        ctx!.fill();
+        
+        ctx!.beginPath();
+        ctx!.arc(lx, ly, 3.5 / curZoom, 0, Math.PI * 2);
+        ctx!.fillStyle = '#2563eb';
+        ctx!.shadowColor = 'rgba(37, 99, 235, 0.5)';
+        ctx!.shadowBlur = 4 / curZoom;
+        ctx!.fill();
+        ctx!.restore();
+      }
+
+      ctx!.restore();
+
+      animId = requestAnimationFrame(draw);
+    }
+    
+    draw();
+
+    const onHover = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const canvasRatio = W / H;
+      const rectRatio = rect.width / rect.height;
+      let actualW = rect.width;
+      let actualH = rect.height;
+      let offsetX = 0;
+      let offsetY = 0;
+      
+      if (rectRatio > canvasRatio) {
+        actualW = rect.height * canvasRatio;
+        offsetX = (rect.width - actualW) / 2;
+      } else {
+        actualH = rect.width / canvasRatio;
+        offsetY = (rect.height - actualH) / 2;
+      }
+      
+      const scaleX = W / actualW;
+      const scaleY = H / actualH;
+      
+      const mx = ((e.clientX - rect.left - offsetX) * scaleX);
+      const my = ((e.clientY - rect.top - offsetY) * scaleY);
+      
+      const mapX = ((mx - W / 2 - panRef.current.offsetX) / zoomRef.current) + W / 2;
+      const mapY = ((my - H / 2 - panRef.current.offsetY) / zoomRef.current) + H / 2;
+      
+      let found: typeof precomputedComunas[number] | null = null;
+      for (const c of precomputedComunas) {
+        if (ctx!.isPointInPath(c.fullPath, mapX, mapY)) {
+          found = c;
+          break;
+        }
+      }
+
+      hoverRef.current = found ? found.key : null;
+      canvas.style.cursor = found ? 'pointer' : (panRef.current.dragging ? 'grabbing' : 'grab');
+
+      const tip = tooltipRef.current;
+      if (tip) {
+        if (found) {
+          const count = dataRef.current[found.normKey] || 0;
+          tip.innerHTML = `
+            <div style="font-weight:700;font-size:11px;color:#1e293b;letter-spacing:0.02em;">${found.key}</div>
+            <div style="font-size:9px;color:#64748b;margin-top:1px;">Provincia: ${found.provincia}</div>
+            <div style="font-size:10px;font-weight:600;color:${count > 0 ? '#2563eb' : '#64748b'};margin-top:3px;">
+              ${count > 0 ? `${count} visita${count !== 1 ? 's' : ''}` : 'Sin visitas recientes'}
+            </div>
+          `;
+          tip.style.display = 'block';
+          const cssX = e.clientX - rect.left;
+          const cssY = e.clientY - rect.top;
+          const tipW = tip.offsetWidth || 140;
+          const left = cssX + tipW + 20 > rect.width ? cssX - tipW - 8 : cssX + 14;
+          tip.style.left = left + 'px';
+          tip.style.top = (cssY - 55) + 'px';
+        } else {
+          tip.style.display = 'none';
+        }
+      }
+    };
+
+    const down = (e: MouseEvent) => {
+      panRef.current.dragging = true;
+      panRef.current.startX = e.clientX;
+      panRef.current.startY = e.clientY;
+      canvas.style.cursor = 'grabbing';
+      canvas.dataset.startX = e.clientX.toString();
+      canvas.dataset.startY = e.clientY.toString();
+    };
+
+    const move = (e: MouseEvent) => {
+      onHover(e);
+      if (!panRef.current.dragging) return;
+      panRef.current.offsetX += (e.clientX - panRef.current.startX);
+      panRef.current.offsetY += (e.clientY - panRef.current.startY);
+      panRef.current.startX = e.clientX;
+      panRef.current.startY = e.clientY;
+    };
+
+    const up = () => {
+      panRef.current.dragging = false;
+    };
+
+    const tdown = (e: TouchEvent) => {
+      panRef.current.dragging = true;
+      panRef.current.startX = e.touches[0].clientX;
+      panRef.current.startY = e.touches[0].clientY;
+    };
+
+    const tmove = (e: TouchEvent) => {
+      if (!panRef.current.dragging) return;
+      panRef.current.offsetX += (e.touches[0].clientX - panRef.current.startX);
+      panRef.current.offsetY += (e.touches[0].clientY - panRef.current.startY);
+      panRef.current.startX = e.touches[0].clientX;
+      panRef.current.startY = e.touches[0].clientY;
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const zoomSpeed = 0.08;
+      const direction = e.deltaY < 0 ? 1 : -1;
+      setZoom(prev => {
+        let newZoom = prev + direction * zoomSpeed;
+        return Math.max(0.6, Math.min(6, newZoom));
+      });
+    };
+
+    const onClick = (e: MouseEvent) => {
+      const startX = parseInt(canvas.dataset.startX || '0');
+      const startY = parseInt(canvas.dataset.startY || '0');
+      const dx = Math.abs(e.clientX - startX);
+      const dy = Math.abs(e.clientY - startY);
+      if (dx > 5 || dy > 5) return; // Dragged, ignore selection click
+      
+      const rect = canvas.getBoundingClientRect();
+      const canvasRatio = W / H;
+      const rectRatio = rect.width / rect.height;
+      let actualW = rect.width;
+      let actualH = rect.height;
+      let offsetX = 0;
+      let offsetY = 0;
+      
+      if (rectRatio > canvasRatio) {
+        actualW = rect.height * canvasRatio;
+        offsetX = (rect.width - actualW) / 2;
+      } else {
+        actualH = rect.width / canvasRatio;
+        offsetY = (rect.height - actualH) / 2;
+      }
+      
+      const scaleX = W / actualW;
+      const scaleY = H / actualH;
+      
+      const mx = ((e.clientX - rect.left - offsetX) * scaleX);
+      const my = ((e.clientY - rect.top - offsetY) * scaleY);
+      
+      const mapX = ((mx - W / 2 - panRef.current.offsetX) / zoomRef.current) + W / 2;
+      const mapY = ((my - H / 2 - panRef.current.offsetY) / zoomRef.current) + H / 2;
+      
+      let found: typeof precomputedComunas[number] | null = null;
+      for (const c of precomputedComunas) {
+        if (ctx!.isPointInPath(c.fullPath, mapX, mapY)) {
+          found = c;
+          break;
+        }
+      }
+
+      if (found) {
+        setSelectedComuna(found.key);
+      }
+    };
+
+    canvas.addEventListener('mousedown', down);
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+    canvas.addEventListener('touchstart', tdown, { passive: true });
+    window.addEventListener('touchmove', tmove, { passive: true });
+    window.addEventListener('touchend', up);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    canvas.addEventListener('click', onClick);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      canvas.removeEventListener('mousedown', down);
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+      canvas.removeEventListener('touchstart', tdown);
+      window.removeEventListener('touchmove', tmove);
+      canvas.removeEventListener('touchend', up);
+      canvas.removeEventListener('wheel', onWheel);
+      canvas.removeEventListener('click', onClick);
+    };
+  }, [precomputedComunas, topCommuneInfo]);
+
+  return (
+    <div style={{ borderRadius: 14, background: '#ffffff', position: 'relative', overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: 'inset 0 0 40px rgba(0,0,0,0.02)', gridColumn: 'span 1' }}>
+      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', cursor: 'grab', borderRadius: 14 }} />
+      <div ref={tooltipRef} style={{ display: 'none', position: 'absolute', top: 0, left: 0, pointerEvents: 'none', zIndex: 20, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', borderRadius: 8, padding: '8px 12px', boxShadow: '0 4px 14px rgba(0,0,0,0.08)', border: '1px solid #e2e8f0', whiteSpace: 'nowrap', minWidth: 100 }} />
+      
+      <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(4px)', borderRadius: 20, padding: '4px 12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
+        <span style={{ fontSize: 11, color: '#3b82f6' }}>✥</span>
+        <span style={{ fontSize: 9, color: '#1e3a8a', fontWeight: 600, letterSpacing: '0.05em' }}>ARRASTRA Y GIRA RUEDA (ZOOM: {Math.round(zoom * 100)}%)</span>
+      </div>
+
+      <div style={{ position: 'absolute', bottom: 12, right: 12, display: 'flex', flexDirection: 'column', gap: 6, zIndex: 10 }}>
+        <button 
+          onClick={handleZoomIn}
+          style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: '700', color: '#1e3a8a', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', transition: 'all 0.2s', outline: 'none' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.borderColor = '#3b82f6'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.9)'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+        >
+          +
+        </button>
+        <button 
+          onClick={handleZoomOut}
+          style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: '700', color: '#1e3a8a', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', transition: 'all 0.2s', outline: 'none' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.borderColor = '#3b82f6'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.9)'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+        >
+          −
+        </button>
+        <button 
+          onClick={handleZoomReset}
+          style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: '800', color: '#64748b', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', transition: 'all 0.2s', outline: 'none' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#1e293b'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.9)'; e.currentTarget.style.color = '#64748b'; }}
+        >
+          RESET
+        </button>
       </div>
     </div>
   );
 }
 
 const STATUS_CONF: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  pending:    { label: 'Pendiente',  color: '#d97706', bg: '#fffbeb', dot: '#fbbf24' },
-  paid:       { label: 'Pagado',     color: '#059669', bg: '#ecfdf5', dot: '#34d399' },
-  processing: { label: 'Procesando', color: '#2563eb', bg: '#eff6ff', dot: '#60a5fa' },
-  shipped:    { label: 'Enviado',    color: '#7c3aed', bg: '#f5f3ff', dot: '#a78bfa' },
-  delivered:  { label: 'Entregado',  color: '#0891b2', bg: '#ecfeff', dot: '#22d3ee' },
-  cancelled:  { label: 'Cancelado',  color: '#dc2626', bg: '#fef2f2', dot: '#f87171' },
+  pending:    { label: 'Pendiente',  color: '#b45309', bg: '#fffbeb', dot: '#f59e0b' },
+  paid:       { label: 'Pagado',     color: '#047857', bg: '#ecfdf5', dot: '#10b981' },
+  processing: { label: 'Procesando', color: '#1d4ed8', bg: '#eff6ff', dot: '#3b82f6' },
+  shipped:    { label: 'Enviado',    color: '#6d28d9', bg: '#f5f3ff', dot: '#8b5cf6' },
+  delivered:  { label: 'Entregado',  color: '#0e7490', bg: '#ecfeff', dot: '#06b6d4' },
+  cancelled:  { label: 'Cancelado',  color: '#b91c1c', bg: '#fef2f2', dot: '#ef4444' },
 };
 
 type DateRange = '7d' | '30d' | '90d' | 'all';
@@ -796,9 +1298,9 @@ function AnimatedGlobe() {
 
       // Globe background
       const grad = oCtx.createRadialGradient(cx - radius * 0.2, cy - radius * 0.2, 0, cx, cy, radius * 1.1);
-      grad.addColorStop(0, '#f0f9ff');
-      grad.addColorStop(0.3, '#e0f2fe');
-      grad.addColorStop(1, '#bae6fd');
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.3, '#f8fafc');
+      grad.addColorStop(1, '#e2e8f0');
       oCtx.beginPath();
       oCtx.arc(cx, cy, radius, 0, Math.PI * 2);
       oCtx.fillStyle = grad;
@@ -821,8 +1323,8 @@ function AnimatedGlobe() {
 
       // Draw ALL dots with shadows (done only ONCE)
       oCtx.shadowBlur = 2 * z;
-      oCtx.shadowColor = 'rgba(0,0,0,0.1)';
-      oCtx.fillStyle = 'rgba(14, 165, 233, 0.55)';
+      oCtx.shadowColor = 'rgba(0,0,0,0.05)';
+      oCtx.fillStyle = 'rgba(148, 163, 184, 0.4)';
       for (let i = 0; i < dots.length; i++) {
         const d = dots[i];
         drawHexOn(oCtx, d.x, d.y, 2.1 * d.scale * z);
@@ -860,19 +1362,19 @@ function AnimatedGlobe() {
             const hx = d.x + (d.x - cx) * lift;
             const hy = d.y + (d.y - cy) * lift;
             const hexR = 2.1 * d.scale * z + intensity * 1.4 * d.scale * z;
-            ctx!.fillStyle = 'rgba(125, 211, 252, 1.0)';
+            ctx!.fillStyle = 'rgba(99, 102, 241, 1.0)';
             drawHexOn(ctx!, hx, hy, hexR);
           }
         }
       }
 
-      // Pings verdes (solo pulso animado, posiciones pre-calculadas)
+      // Pings azules (solo pulso animado, posiciones pre-calculadas)
       const activeCount = Math.max(1, liveVisitors);
       const pingR = 1.8 * z;
       const pingLw = 1.5 * z;
-      ctx!.shadowBlur = 10 * z;
-      ctx!.shadowColor = 'rgba(34, 197, 94, 0.6)';
-      ctx!.fillStyle = '#22c55e';
+      ctx!.shadowBlur = 8 * z;
+      ctx!.shadowColor = 'rgba(14, 165, 233, 0.4)';
+      ctx!.fillStyle = '#0ea5e9';
       for (let pi = 0; pi < activeCount; pi++) {
         const pos = pingPositions[pi % pingPositions.length];
         if (!pos) continue;
@@ -887,7 +1389,7 @@ function AnimatedGlobe() {
         // Second smaller inner ring for depth
         ctx!.shadowBlur = 0;
         ctx!.beginPath();
-        ctx!.strokeStyle = `rgba(34, 197, 94, ${(1 - eased) * 0.65})`;
+        ctx!.strokeStyle = `rgba(14, 165, 233, ${(1 - eased) * 0.65})`;
         ctx!.lineWidth = pingLw * 1.2;
         ctx!.arc(pos.pX, pos.pY, eased * 18 * z, 0, Math.PI * 2);
         ctx!.stroke();
@@ -895,12 +1397,12 @@ function AnimatedGlobe() {
         if (eased > 0.35) {
           const t2 = eased - 0.35;
           ctx!.beginPath();
-          ctx!.strokeStyle = `rgba(34, 197, 94, ${(1 - eased) * 0.3})`;
+          ctx!.strokeStyle = `rgba(14, 165, 233, ${(1 - eased) * 0.3})`;
           ctx!.lineWidth = 0.8 * z;
           ctx!.arc(pos.pX, pos.pY, t2 * 28 * z, 0, Math.PI * 2);
           ctx!.stroke();
         }
-        ctx!.shadowBlur = 10 * z;
+        ctx!.shadowBlur = 8 * z;
       }
       ctx!.shadowBlur = 0;
 
@@ -916,9 +1418,9 @@ function AnimatedGlobe() {
   return (
     <div style={{ width: '100%', maxWidth: '100%', aspectRatio: '1/1', position: 'relative', overflow: 'visible', userSelect: 'none' }}>
       <canvas ref={canvasRef} style={{ display: 'block', touchAction: 'none', width: '100%', height: '100%' }} />
-      <div style={{ pointerEvents: 'none', position: 'absolute', bottom: 12, right: 12, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.85)', padding: '4px 10px', borderRadius: 20, boxShadow: '0 2px 4px rgba(0,0,0,0.04)', zIndex: 10 }}>
+      <div style={{ pointerEvents: 'none', position: 'absolute', bottom: 12, right: 12, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(15,23,42,0.85)', padding: '4px 10px', borderRadius: 20, boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 10 }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#0ea5e9', display: 'inline-block', boxShadow: '0 0 4px #0ea5e9', animation: 'db-fade-up 1s infinite alternate' }} />
-        <span style={{ fontSize: 10, fontWeight: 700, color: '#0284c7' }}>{liveVisitors} visitante{liveVisitors === 1 ? '' : 's'} ahora</span>
+        <span style={{ fontSize: 10, fontWeight: 700, color: '#bae6fd' }}>{liveVisitors} visitante{liveVisitors === 1 ? '' : 's'} ahora</span>
       </div>
     </div>
   );
@@ -1193,9 +1695,9 @@ export default function DashboardPage() {
     (stats.pendingOrders > 0 || stats.lowStockCount > 0 || pendingWholesale > 0 || openSupport > 0) ? 'warning' :
     'ok';
   const svgCol = {
-    ok:       { bg: '#f0fdf4', border: '#bbf7d0', star: '#22c55e', d1: '#86efac', d2: '#4ade80' },
-    warning:  { bg: '#fffbeb', border: '#fde68a', star: '#f59e0b', d1: '#fcd34d', d2: '#fbbf24' },
-    critical: { bg: '#fef2f2', border: '#fecaca', star: '#ef4444', d1: '#fca5a5', d2: '#f87171' },
+    ok:       { bg: '#064e3b', border: '#059669', star: '#34d399', d1: '#10b981', d2: '#34d399' },
+    warning:  { bg: '#451a03', border: '#d97706', star: '#fbbf24', d1: '#f59e0b', d2: '#fcd34d' },
+    critical: { bg: '#450a0a', border: '#dc2626', star: '#f87171', d1: '#ef4444', d2: '#fca5a5' },
   }[dashStatus];
 
   return (
@@ -1225,9 +1727,9 @@ export default function DashboardPage() {
         .db-card:nth-child(1){animation-delay:.04s} .db-card:nth-child(2){animation-delay:.08s}
         .db-card:nth-child(3){animation-delay:.12s} .db-card:nth-child(4){animation-delay:.16s}
         .db-card:nth-child(5){animation-delay:.20s} .db-card:nth-child(6){animation-delay:.24s}
-        .db-row-link:hover { background:#f9fafb !important; }
+        .db-row-link:hover { background:#f8fafc !important; }
         .db-range-btn { border:none; cursor:pointer; transition:all .15s; }
-        .db-range-btn:hover { color:#a5b4fc !important; font-weight: 600 !important; }
+        .db-range-btn:hover { color:#111827 !important; font-weight: 600 !important; }
         .db-bar-col:hover .db-bar-tip { display:flex !important; }
         .db-kpi-grid > div { animation: db-fade-up 0.45s cubic-bezier(0.16,1,0.3,1) both; }
         .db-kpi-grid > div:nth-child(1){animation-delay:.05s} .db-kpi-grid > div:nth-child(2){animation-delay:.10s}
@@ -1240,24 +1742,19 @@ export default function DashboardPage() {
         <div>
           <h1 className="db-greeting" style={{ fontSize: 24, fontWeight: 800, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             {greeting}, {userName}
-            <svg
-              width="30" height="30" viewBox="0 0 30 30" fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              style={{ flexShrink: 0, transition: 'all 0.5s ease' }}
-              className={`db-icon db-icon-${dashStatus}`}
-            >
-              <circle cx="15" cy="15" r="14" fill={svgCol.bg} stroke={svgCol.border} strokeWidth="1.2"/>
-              <path d="M15 6 L16.8 12.2 L23 15 L16.8 17.8 L15 24 L13.2 17.8 L7 15 L13.2 12.2 Z" fill={svgCol.star}/>
-              <circle cx="22" cy="9" r="2" fill={svgCol.d1} opacity="0.8"/>
-              <circle cx="9" cy="8" r="1.3" fill={svgCol.d2} opacity="0.6"/>
-            </svg>
+            <img 
+              src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/Yaxsell%2Fyexyface.png?alt=media&token=11559be5-9d69-442f-b42b-25fb8dd663e9" 
+              alt="Yexy Alert" 
+              style={{ width: 48, height: 48, borderRadius: '50%', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.1)', objectFit: 'cover' }} 
+              className={`db-icon db-icon-${dashStatus}`} 
+            />
             {/* Alert bubble crítico */}
             {dashStatus === 'critical' && (
               <span className="db-alert-bubble" style={{
                 display: 'inline-flex', alignItems: 'center', gap: 7,
-                background: '#fef2f2', border: '1px solid #fecaca',
+                background: '#fef2f2', border: '1px solid #7f1d1d',
                 borderRadius: 20, padding: '4px 12px 4px 10px',
-                fontSize: 13, fontWeight: 500, color: '#b91c1c',
+                fontSize: 13, fontWeight: 500, color: '#fca5a5',
                 boxShadow: '0 1px 4px rgba(239,68,68,0.12)',
               }}>
                 <span style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
@@ -1273,7 +1770,7 @@ export default function DashboardPage() {
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5,
                 background: '#fffbeb', border: '1px solid #fde68a',
-                borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 600, color: '#b45309',
+                borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 700, color: '#92400e',
               }}>
                 ⚠ Hay cosas que revisar
               </span>
@@ -1284,23 +1781,23 @@ export default function DashboardPage() {
           </p>
           {/* Quick stats pills */}
           <div className="db-greeting-sub" style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 600, color: '#15803d' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#f0fdf4', border: '1px solid #065f46', borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 600, color: '#065f46' }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
               {stats.todayOrders} pedido{stats.todayOrders !== 1 ? 's' : ''} hoy
             </span>
             {stats.pendingOrders > 0 && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 600, color: '#b45309' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fffbeb', border: '1px solid #78350f', borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 600, color: '#78350f' }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} />
                 {stats.pendingOrders} pendiente{stats.pendingOrders !== 1 ? 's' : ''}
               </span>
             )}
             {stats.lowStockCount > 0 && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 600, color: '#b91c1c' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fef2f2', border: '1px solid #7f1d1d', borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 600, color: '#7f1d1d' }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
                 {stats.lowStockCount} stock bajo
               </span>
             )}
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 600, color: '#4338ca' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#eef2ff', border: '1px solid #3730a3', borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 600, color: '#3730a3' }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#6366f1', display: 'inline-block' }} />
               {stats.totalProducts} productos
             </span>
@@ -1311,8 +1808,8 @@ export default function DashboardPage() {
             {(Object.keys(RANGE_LABELS) as DateRange[]).map(r => (
               <button key={r} onClick={() => setDateRange(r)} className="db-range-btn" style={{
                 padding: '7px 14px', fontSize: 13, fontWeight: dateRange === r ? 700 : 500,
-                background: dateRange === r ? '#111827' : 'transparent',
-                color: dateRange === r ? '#fff' : '#6b7280',
+                background: dateRange === r ? '#e2e8f0' : 'transparent',
+                color: dateRange === r ? '#111827' : '#64748b',
               }}>{RANGE_LABELS[r]}</button>
             ))}
           </div>
@@ -1327,7 +1824,7 @@ export default function DashboardPage() {
       </div>
 
       {error && (
-        <div style={{ padding: '12px 16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, marginBottom: 20, display: 'flex', gap: 8, fontSize: 14, color: '#b91c1c' }}>
+        <div style={{ padding: '12px 16px', background: '#fef2f2', border: '1px solid #7f1d1d', borderRadius: 12, marginBottom: 20, display: 'flex', gap: 8, fontSize: 14, color: '#7f1d1d' }}>
           <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 1 }} /> {error}
         </div>
       )}
@@ -1337,15 +1834,15 @@ export default function DashboardPage() {
         {/* KPIs compactos en fila */}
         <div className="db-kpi-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${newUsers > 0 ? 7 : 6}, 1fr)`, gap: 0, marginBottom: 20, borderBottom: '1px solid #f1f5f9', paddingBottom: 20 }}>
           {[
-            { label: 'Ingresos totales', value: fmt(stats.totalRevenue), icon: <DollarSign size={14} color="#6366f1" />, color: '#6366f1', bg: '#eef2ff', trend: dateRange !== 'all' && prevRevenue > 0 ? ((stats.totalRevenue - prevRevenue) / prevRevenue) * 100 : undefined },
+            { label: 'Ingresos totales', value: fmt(stats.totalRevenue), icon: <DollarSign size={14} color="#4f46e5" />, color: '#4f46e5', bg: '#eef2ff', trend: dateRange !== 'all' && prevRevenue > 0 ? ((stats.totalRevenue - prevRevenue) / prevRevenue) * 100 : undefined },
             { label: 'Pedidos Hoy', value: String(stats.todayOrders), icon: <ShoppingCart size={14} color="#0891b2" />, color: '#0891b2', bg: '#ecfeff' },
-            { label: 'Ticket promedio', value: fmt(stats.avgTicket), icon: <TrendingUp size={14} color="#d97706" />, color: '#d97706', bg: '#fffbeb' },
-            { label: 'Productos', value: String(stats.totalProducts), icon: <Package size={14} color="#7c3aed" />, color: '#7c3aed', bg: '#f5f3ff' },
-            { label: 'Visitas hoy', value: String(pageViews.todayViews), icon: <Eye size={14} color="#0d9488" />, color: '#0d9488', bg: '#f0fdfa' },
-            { label: 'Visitas 30d', value: String(pageViews.totalViews), icon: <Globe size={14} color="#8b5cf6" />, color: '#8b5cf6', bg: '#f5f3ff' },
-            ...(newUsers > 0 ? [{ label: 'Nuevos usuarios', value: String(newUsers), icon: <Users size={14} color="#e396bf" />, color: '#e396bf', bg: '#fdf2f8' }] : []),
+            { label: 'Ticket promedio', value: fmt(stats.avgTicket), icon: <TrendingUp size={14} color="#b45309" />, color: '#b45309', bg: '#fffbeb' },
+            { label: 'Productos', value: String(stats.totalProducts), icon: <Package size={14} color="#6d28d9" />, color: '#6d28d9', bg: '#f5f3ff' },
+            { label: 'Visitas hoy', value: String(pageViews.todayViews), icon: <Eye size={14} color="#0f766e" />, color: '#0f766e', bg: '#f0fdf4' },
+            { label: 'Visitas 30d', value: String(pageViews.totalViews), icon: <Globe size={14} color="#7c3aed" />, color: '#7c3aed', bg: '#f5f3ff' },
+            ...(newUsers > 0 ? [{ label: 'Nuevos usuarios', value: String(newUsers), icon: <Users size={14} color="#db2777" />, color: '#db2777', bg: '#fdf2f8' }] : []),
           ].map((kpi, i, arr) => (
-            <div key={i} className="db-kpi-item" style={{ textAlign: 'center', borderRight: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none', padding: '0 12px' }}>
+            <div key={i} className="db-kpi-item" style={{ textAlign: 'center', borderRight: i < arr.length - 1 ? '1px solid #e2e8f0' : 'none', padding: '0 12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, marginBottom: 6 }}>
                 <span style={{ width: 24, height: 24, borderRadius: 6, background: kpi.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{kpi.icon}</span>
                 <span style={{ fontSize: 10, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{kpi.label}</span>
@@ -1364,7 +1861,7 @@ export default function DashboardPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <h3 style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0 }}>Rendimiento — últimos 14 días</h3>
           <div style={{ display: 'flex', gap: 16, fontSize: 11 }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 10, height: 3, borderRadius: 2, background: '#6366f1', display: 'inline-block' }} /> Ingresos</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 10, height: 3, borderRadius: 2, background: '#4f46e5', display: 'inline-block' }} /> Ingresos</span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 10, height: 3, borderRadius: 2, background: '#0891b2', display: 'inline-block' }} /> Pedidos</span>
           </div>
         </div>
@@ -1374,7 +1871,7 @@ export default function DashboardPage() {
             const y = 20 + i * 45;
             return <g key={`grid-${i}`}>
               <line x1="50" y1={y} x2="680" y2={y} stroke="#f1f5f9" strokeWidth="1" />
-              <text x="44" y={y + 4} textAnchor="end" style={{ fontSize: 9, fill: '#9ca3af' }}>
+              <text x="44" y={y + 4} textAnchor="end" style={{ fontSize: 9, fill: '#94a3b8' }}>
                 {maxRevDay > 0 ? (maxRevDay > 999 ? `$${Math.round((maxRevDay * (4 - i) / 4) / 1000)}k` : `$${Math.round(maxRevDay * (4 - i) / 4)}`) : '0'}
               </text>
             </g>;
@@ -1382,7 +1879,7 @@ export default function DashboardPage() {
           {/* Eje X - fechas */}
           {chartBuckets.map((b, i) => {
             const x = 50 + (i / 13) * 630;
-            return <text key={`xl-${i}`} x={x} y={210} textAnchor="middle" style={{ fontSize: 8, fill: '#9ca3af' }}>{i % 2 === 0 ? b.label : ''}</text>;
+            return <text key={`xl-${i}`} x={x} y={210} textAnchor="middle" style={{ fontSize: 8, fill: '#94a3b8' }}>{i % 2 === 0 ? b.label : ''}</text>;
           })}
           {/* Línea de ingresos (púrpura) con relleno */}
           {(() => {
@@ -1394,10 +1891,10 @@ export default function DashboardPage() {
             const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
             const area = `${line} L${pts[pts.length - 1].x},200 L${pts[0].x},200 Z`;
             return <>
-              <defs><linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6366f1" stopOpacity="0.15" /><stop offset="100%" stopColor="#6366f1" stopOpacity="0.01" /></linearGradient></defs>
+              <defs><linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#4f46e5" stopOpacity="0.1" /><stop offset="100%" stopColor="#4f46e5" stopOpacity="0.01" /></linearGradient></defs>
               <path className="db-chart-area" d={area} fill="url(#revGrad)" />
-              <path className="db-chart-line" d={line} fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-              {pts.map((p, i) => <circle className="db-chart-dot" key={`rd-${i}`} cx={p.x} cy={p.y} r={3.5} fill="#fff" stroke="#6366f1" strokeWidth="2" />)}
+              <path className="db-chart-line" d={line} fill="none" stroke="#4f46e5" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+              {pts.map((p, i) => <circle className="db-chart-dot" key={`rd-${i}`} cx={p.x} cy={p.y} r={3.5} fill="#ffffff" stroke="#4f46e5" strokeWidth="2" />)}
             </>;
           })()}
           {/* Línea de pedidos (cyan) */}
@@ -1410,7 +1907,7 @@ export default function DashboardPage() {
             const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
             return <>
               <path className="db-chart-line" d={line} fill="none" stroke="#0891b2" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="6 3" />
-              {pts.map((p, i) => <circle className="db-chart-dot" key={`od-${i}`} cx={p.x} cy={p.y} r={3} fill="#fff" stroke="#0891b2" strokeWidth="1.5" />)}
+              {pts.map((p, i) => <circle className="db-chart-dot" key={`od-${i}`} cx={p.x} cy={p.y} r={3} fill="#ffffff" stroke="#0891b2" strokeWidth="1.5" />)}
             </>;
           })()}
           {/* Eje Y derecho - escala de pedidos */}
@@ -1426,29 +1923,29 @@ export default function DashboardPage() {
 
       {/* ═══ Alerts ═══ */}
       {!isLoading && (stats.pendingOrders > 0 || stats.lowStockCount > 0 || pendingWholesale > 0 || openSupport > 0) && (
-        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 14, padding: '14px 16px', marginBottom: 24 }}>
+        <div style={{ background: '#fffbeb', border: '1px solid #fbbf24', borderRadius: 14, padding: '14px 16px', marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
             <AlertTriangle size={15} color="#d97706" />
             <span style={{ fontSize: 13, fontWeight: 700, color: '#92400e' }}>Requiere atención</span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {stats.pendingOrders > 0 && (
-              <Link href="/admin/orders?status=pending" style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 12px', borderRadius: 8, background: '#fff', border: '1px solid #fde68a', textDecoration: 'none', fontSize: 13, color: '#92400e', fontWeight: 500, transition: 'all .15s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#fef9c3'; }}
+              <Link href="/admin/orders?status=pending" style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 12px', borderRadius: 8, background: '#fff', border: '1px solid #d97706', textDecoration: 'none', fontSize: 13, color: '#92400e', fontWeight: 500, transition: 'all .15s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#fffbeb'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}>
                 <Clock size={13} /> {stats.pendingOrders} pedido{stats.pendingOrders !== 1 ? 's' : ''} pendiente{stats.pendingOrders !== 1 ? 's' : ''}
               </Link>
             )}
             {stats.lowStockCount > 0 && (
-              <Link href="/admin/inventory" style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 12px', borderRadius: 8, background: '#fff', border: '1px solid #fecaca', textDecoration: 'none', fontSize: 13, color: '#dc2626', fontWeight: 500, transition: 'all .15s' }}
+              <Link href="/admin/inventory" style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 12px', borderRadius: 8, background: '#fff', border: '1px solid #f87171', textDecoration: 'none', fontSize: 13, color: '#991b1b', fontWeight: 500, transition: 'all .15s' }}
                 onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}>
                 <Package size={13} /> {stats.lowStockCount} producto{stats.lowStockCount !== 1 ? 's' : ''} stock bajo
               </Link>
             )}
             {pendingWholesale > 0 && (
-              <Link href="/admin/wholesale" style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 12px', borderRadius: 8, background: '#fff', border: '1px solid #ddd6fe', textDecoration: 'none', fontSize: 13, color: '#7c3aed', fontWeight: 500, transition: 'all .15s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#f5f3ff'; }}
+              <Link href="/admin/wholesale" style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 12px', borderRadius: 8, background: '#fff', border: '1px solid #6366f1', textDecoration: 'none', fontSize: 13, color: '#4338ca', fontWeight: 500, transition: 'all .15s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#eef2ff'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}>
                 <Users size={13} /> {pendingWholesale} solicitud{pendingWholesale !== 1 ? 'es' : ''} mayorista
               </Link>
@@ -1487,14 +1984,14 @@ export default function DashboardPage() {
           {/* KPIs hoy */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
             <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 14px' }}>
-              <p style={{ fontSize: 10, fontWeight: 600, color: '#64748b', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ingresos hoy</p>
+              <p style={{ fontSize: 10, fontWeight: 600, color: '#9ca3af', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ingresos hoy</p>
               <div style={{ fontSize: 22, fontWeight: 800, color: '#111827' }}>{fmt(todayRevenue)}</div>
-              <p style={{ fontSize: 10, color: '#94a3b8', margin: '2px 0 0' }}>pedidos pagados</p>
+              <p style={{ fontSize: 10, color: '#6b7280', margin: '2px 0 0' }}>pedidos pagados</p>
             </div>
             <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 14px' }}>
-              <p style={{ fontSize: 10, fontWeight: 600, color: '#64748b', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pedidos hoy</p>
+              <p style={{ fontSize: 10, fontWeight: 600, color: '#9ca3af', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pedidos hoy</p>
               <div style={{ fontSize: 22, fontWeight: 800, color: '#111827' }}>{stats.todayOrders}</div>
-              <p style={{ fontSize: 10, color: '#94a3b8', margin: '2px 0 0' }}>en el rango activo</p>
+              <p style={{ fontSize: 10, color: '#6b7280', margin: '2px 0 0' }}>en el rango activo</p>
             </div>
             <div style={{ background: '#fffbeb', borderRadius: 12, padding: '12px 14px' }}>
               <p style={{ fontSize: 10, fontWeight: 600, color: '#92400e', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pendientes</p>
@@ -1573,7 +2070,7 @@ export default function DashboardPage() {
                   const pct = Math.round((count / allOrders.length) * 100);
                   return (
                     <div key={region} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', width: 14 }}>{i + 1}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', width: 14 }}>{i + 1}</span>
                       <span style={{ fontSize: 12, color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{region}</span>
                       <div style={{ width: 60, height: 4, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
                         <div style={{ width: `${pct}%`, height: '100%', background: '#6366f1', borderRadius: 4 }} />
@@ -1592,7 +2089,7 @@ export default function DashboardPage() {
               <ShoppingBag size={13} color="#64748b" /> Actividad reciente
             </p>
             {recentOrders.slice(0, 4).length === 0 ? (
-              <p style={{ fontSize: 12, color: '#94a3b8' }}>Sin pedidos recientes</p>
+              <p style={{ fontSize: 12, color: '#6b7280' }}>Sin pedidos recientes</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {recentOrders.slice(0, 4).map(o => {
@@ -1602,9 +2099,9 @@ export default function DashboardPage() {
                     <div key={o.$id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid #f8fafc' }}>
                       <span style={{ width: 7, height: 7, borderRadius: '50%', background: sc.dot, flexShrink: 0 }} />
                       <span style={{ fontSize: 11, fontWeight: 700, color: '#374151', flex: 1 }}>{o.ORDERCODE || o.$id.slice(-6)}</span>
-                      <span style={{ fontSize: 11, color: '#64748b' }}>{o.REGION || '—'}</span>
+                      <span style={{ fontSize: 11, color: '#9ca3af' }}>{o.REGION || '—'}</span>
                       <span style={{ fontSize: 11, fontWeight: 700, color: '#111827' }}>{fmt(o.TOTAL)}</span>
-                      <span style={{ fontSize: 10, color: '#94a3b8' }}>{ts}</span>
+                      <span style={{ fontSize: 10, color: '#6b7280' }}>{ts}</span>
                     </div>
                   );
                 })}
@@ -1662,7 +2159,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Bar chart below (order volume) */}
-          <div style={{ marginTop: 12, borderTop: '1px solid #f3f4f6', paddingTop: 12 }}>
+          <div style={{ marginTop: 12, borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
             <p style={{ fontSize: 11, color: '#9ca3af', margin: '0 0 8px' }}>Volumen de pedidos</p>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 40 }}>
               {chartBuckets.map((b, i) => {
@@ -1710,7 +2207,7 @@ export default function DashboardPage() {
                   onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
                   <span style={{ width: 8, height: 8, borderRadius: '50%', background: conf.dot, flexShrink: 0 }} />
                   <span style={{ flex: 1, fontSize: 12, color: '#374151', fontWeight: 500 }}>{conf.label}</span>
-                  <div style={{ height: 4, width: 60, background: '#f3f4f6', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ height: 4, width: 60, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${pct}%`, background: conf.dot, borderRadius: 4, transition: 'width .5s' }} />
                   </div>
                   <span style={{ fontSize: 12, fontWeight: 700, color: conf.color, minWidth: 24, textAlign: 'right' }}>{count}</span>
@@ -1726,7 +2223,7 @@ export default function DashboardPage() {
 
         {/* Recent Orders */}
         <div className="db-card" style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f3f4f6' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f1f5f9' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 30, height: 30, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <ShoppingCart size={15} color="#2563eb" />
@@ -1741,9 +2238,9 @@ export default function DashboardPage() {
             <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <div style={{ width: 55, height: 12, background: '#f3f4f6', borderRadius: 6, flexShrink: 0 }} />
-                  <div style={{ flex: 1, height: 12, background: '#f3f4f6', borderRadius: 6 }} />
-                  <div style={{ width: 65, height: 20, background: '#f3f4f6', borderRadius: 10, flexShrink: 0 }} />
+                  <div style={{ width: 55, height: 12, background: '#f1f5f9', borderRadius: 6, flexShrink: 0 }} />
+                  <div style={{ flex: 1, height: 12, background: '#f1f5f9', borderRadius: 6 }} />
+                  <div style={{ width: 65, height: 20, background: '#f1f5f9', borderRadius: 10, flexShrink: 0 }} />
                 </div>
               ))}
             </div>
@@ -1772,7 +2269,7 @@ export default function DashboardPage() {
 
         {/* Top products — most viewed */}
         <div className="db-card" style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f3f4f6' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f1f5f9' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 30, height: 30, borderRadius: 8, background: '#f0fdfa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Eye size={15} color="#0d9488" />
@@ -1799,7 +2296,7 @@ export default function DashboardPage() {
                         borderRadius: '50%', background: colors[i] || '#6b7280',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                       }}>{i + 1}</span>
-                      <div style={{ width: 34, height: 34, borderRadius: 8, background: '#f3f4f6', overflow: 'hidden', flexShrink: 0 }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 8, background: '#f1f5f9', overflow: 'hidden', flexShrink: 0 }}>
                         {p.IMAGEURL
                           ? <img src={p.IMAGEURL} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           : <Package size={14} style={{ margin: '10px auto', display: 'block', color: '#d1d5db' }} />}
@@ -1807,7 +2304,7 @@ export default function DashboardPage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.NAME}</p>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
-                          <div style={{ flex: 1, height: 5, background: '#f3f4f6', borderRadius: 4, overflow: 'hidden' }}>
+                          <div style={{ flex: 1, height: 5, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
                             <div className="db-progress-bar" style={{ height: '100%', width: `${pct}%`, background: colors[i] || '#6366f1', borderRadius: 4, transition: 'width .6s cubic-bezier(0.16,1,0.3,1)' }} />
                           </div>
                           <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', flexShrink: 0 }}>{p.SOLDQUANTITY ?? 0} vendidos</span>
@@ -1831,7 +2328,7 @@ export default function DashboardPage() {
                       borderRadius: '50%', background: colors[i] || '#6b7280',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                     }}>{i + 1}</span>
-                    <div style={{ width: 34, height: 34, borderRadius: 8, background: '#f3f4f6', overflow: 'hidden', flexShrink: 0 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 8, background: '#f1f5f9', overflow: 'hidden', flexShrink: 0 }}>
                       {p.IMAGEURL
                         ? <img src={p.IMAGEURL} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : <Package size={14} style={{ margin: '10px auto', display: 'block', color: '#d1d5db' }} />}
@@ -1839,7 +2336,7 @@ export default function DashboardPage() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.NAME}</p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
-                        <div style={{ flex: 1, height: 5, background: '#f3f4f6', borderRadius: 4, overflow: 'hidden' }}>
+                        <div style={{ flex: 1, height: 5, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
                           <div className="db-progress-bar" style={{ height: '100%', width: `${pct}%`, background: colors[i] || '#0d9488', borderRadius: 4, transition: 'width .6s cubic-bezier(0.16,1,0.3,1)' }} />
                         </div>
                         <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 2 }}><Eye size={10} />{p.viewCount}</span>
@@ -1908,7 +2405,7 @@ export default function DashboardPage() {
               const total = rangeOrders.length;
               const greenScale = ['#064e3b','#065f46','#047857','#059669','#10b981','#34d399','#6ee7b7'];
               if (sorted.length === 0) return (
-                <div style={{ background: '#f9fafb', borderRadius: 10, padding: 16, textAlign: 'center' }}>
+                <div style={{ background: '#f8fafc', borderRadius: 10, padding: 16, textAlign: 'center' }}>
                   <p style={{ fontSize: 13, color: '#9ca3af', margin: 0 }}>Sin datos de región en los pedidos</p>
                 </div>
               );
@@ -1952,7 +2449,7 @@ export default function DashboardPage() {
                     const sc = STATUS_CONF[o.STATUS] || STATUS_CONF.pending;
                     const ago = Math.round((Date.now() - new Date(o.CREATEDAT).getTime()) / 3600000);
                     return (
-                      <div key={o.$id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', borderRadius: 8, background: '#f9fafb', border: '1px solid #f3f4f6' }}>
+                      <div key={o.$id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', borderRadius: 8, background: '#f8fafc', border: '1px solid #f3f4f6' }}>
                         <span style={{ width: 7, height: 7, borderRadius: '50%', background: sc.dot, flexShrink: 0 }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 12, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -1989,7 +2486,7 @@ export default function DashboardPage() {
               const totalRev = sorted.reduce((s, [, v]) => s + v, 0);
 
               if (sorted.length === 0) return (
-                <div style={{ background: '#f9fafb', borderRadius: 10, padding: 16, textAlign: 'center' }}>
+                <div style={{ background: '#f8fafc', borderRadius: 10, padding: 16, textAlign: 'center' }}>
                   <p style={{ fontSize: 13, color: '#9ca3af', margin: 0 }}>Sin datos de ingresos por región</p>
                 </div>
               );
@@ -2033,7 +2530,7 @@ export default function DashboardPage() {
                               <div style={{ height: '100%', width: `${barPct}%`, background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius: 3 }} />
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <span style={{ fontSize: 10, color: '#94a3b8' }}>{cnt} pedido{cnt !== 1 ? 's' : ''} · avg {fmt(avg)}</span>
+                              <span style={{ fontSize: 10, color: '#6b7280' }}>{cnt} pedido{cnt !== 1 ? 's' : ''} · avg {fmt(avg)}</span>
                               <span style={{ fontSize: 10, fontWeight: 700, color: '#6366f1' }}>{share}%</span>
                             </div>
                           </div>
@@ -2069,6 +2566,140 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      </div>
+
+      {/* ═══ Comunas RM (Santiago) Row (Interactive Canvas Map) ═══ */}
+      <div style={{ marginBottom: 24 }}>
+        <div className="db-card" style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', padding: 0, boxShadow: '0 1px 4px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8, padding: '20px 24px 0' }}>
+            <div>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: 0 }}>📍 Mapa interactivo de comunas de Santiago (RM)</h2>
+              <p style={{ fontSize: 12, color: '#9ca3af', margin: '3px 0 0' }}>Visitas de clientes por comuna · Últimos 30 días</p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#3b82f6', boxShadow: '0 0 6px #3b82f6', display: 'inline-block', animation: 'db-fade-up 1.5s infinite alternate' }} />
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#1d4ed8', background: '#eff6ff', padding: '3px 10px', borderRadius: 20 }}>
+                {pageViews.topComunas.length} comunas con visitas
+              </span>
+            </div>
+          </div>
+          
+          <div className="db-map-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.4fr) 1fr 1fr', gap: 24, alignItems: 'stretch', padding: '0 24px 24px', flex: 1 }}>
+            
+            {/* Column 1: Interactive Canvas Map */}
+            <SantiagoMap comunaCounts={(() => {
+              const c: Record<string, number> = {};
+              pageViews.topComunas.forEach(tc => {
+                c[normalizeName(tc.comuna)] = tc.count;
+              });
+              return c;
+            })()} />
+            
+            {/* Column 2: Comunas Ranking & Quick Stats */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxHeight: 600, overflowY: 'auto' }}>
+              {(() => {
+                const totalVisits = pageViews.topComunas.reduce((s, c) => s + c.count, 0);
+                const sorted = [...pageViews.topComunas].sort((a, b) => b.count - a.count);
+                const topComuna = sorted[0];
+                const activeCount = sorted.length;
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                    <div style={{ background: '#f0f9ff', borderRadius: 10, padding: '10px 12px', border: '1px solid #bae6fd' }}>
+                      <div style={{ fontSize: 10, fontWeight: 600, color: '#0369a1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Comuna top</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: '#0c4a6e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{topComuna ? topComuna.comuna : '—'}</div>
+                      <div style={{ fontSize: 10, color: '#0284c7', marginTop: 2 }}>{topComuna ? `${topComuna.count} visitas` : 'Sin datos'}</div>
+                    </div>
+                    <div style={{ background: '#eff6ff', borderRadius: 10, padding: '10px 12px', border: '1px solid #bfdbfe' }}>
+                      <div style={{ fontSize: 10, fontWeight: 600, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Visitas</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: '#1e3a8a' }}>{totalVisits}</div>
+                      <div style={{ fontSize: 10, color: '#2563eb', marginTop: 2 }}>totales (30d)</div>
+                    </div>
+                    <div style={{ background: '#faf5ff', borderRadius: 10, padding: '10px 12px', border: '1px solid #e9d5ff' }}>
+                      <div style={{ fontSize: 10, fontWeight: 600, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Comunas</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: '#4c1d95' }}>{activeCount}<span style={{ fontSize: 11, fontWeight: 500, color: '#6b7280' }}>/52</span></div>
+                      <div style={{ fontSize: 10, color: '#7c3aed', marginTop: 2 }}>detectadas</div>
+                    </div>
+                  </div>
+                );
+              })()}
+              
+              {/* Ranking of communes */}
+              {(() => {
+                const sorted = [...pageViews.topComunas].sort((a, b) => b.count - a.count);
+                const maxC = sorted[0]?.count || 1;
+                const total = sorted.reduce((s, c) => s + c.count, 0);
+                const blueScale = ['#1e3a8a', '#1e40af', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'];
+                if (sorted.length === 0) return (
+                  <div style={{ background: '#f8fafc', borderRadius: 10, padding: 16, textAlign: 'center' }}>
+                    <p style={{ fontSize: 13, color: '#9ca3af', margin: 0 }}>Sin visitas registradas en Santiago</p>
+                  </div>
+                );
+                return (
+                  <div>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: '#1e3a8a', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>🏆 Ranking de comunas (Visitas)</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {sorted.slice(0, 7).map((tc, i) => {
+                        const pct = total > 0 ? ((tc.count / total) * 100) : 0;
+                        const barPct = (tc.count / maxC) * 100;
+                        const col = blueScale[i] || '#bfdbfe';
+                        const isTop3 = i < 3;
+                        return (
+                          <div key={tc.comuna} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px', borderRadius: 8, background: isTop3 ? '#f0f9ff' : 'transparent' }}>
+                            <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', width: 20, height: 20, borderRadius: '50%', background: col, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 2 }}>
+                                <span style={{ fontSize: 12, fontWeight: isTop3 ? 700 : 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tc.comuna}</span>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: col, flexShrink: 0, marginLeft: 6 }}>{tc.count} <span style={{ fontWeight: 400, fontSize: 9, color: '#9ca3af' }}>({pct.toFixed(0)}%)</span></span>
+                              </div>
+                              <div style={{ height: 4, background: '#f0f9ff', borderRadius: 3, overflow: 'hidden' }}>
+                                <div style={{ height: '100%', width: `${barPct}%`, borderRadius: 3, background: col, transition: 'width .8s cubic-bezier(0.16,1,0.3,1)' }} />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {sorted.length > 7 && <p style={{ fontSize: 10, color: '#6b7280', margin: '2px 0 0', fontStyle: 'italic' }}>+{sorted.length - 7} comunas más</p>}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+            
+            {/* Column 3: Recent Activity by Comuna */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#374151', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>👥 Clientes activos por Comuna</p>
+              {pageViews.visitorMarkers.length === 0 ? (
+                <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>Sin actividad de clientes en Santiago reciente</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 400, overflowY: 'auto' }}>
+                  {pageViews.visitorMarkers.slice(0, 5).map((m, idx) => {
+                    const hasUsers = m.users && m.users.length > 0;
+                    const name = hasUsers ? m.users[0] : 'Visitante Anónimo';
+                    const scale = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
+                    const col = scale[idx % scale.length];
+                    return (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: '#f8fafc', border: '1px solid #f3f4f6' }}>
+                        <div style={{ width: 24, height: 24, borderRadius: '50%', background: `${col}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <MapPin size={12} color={col} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {name}
+                          </div>
+                          <div style={{ fontSize: 9, color: '#6b7280' }}>
+                            {m.comuna} · RM · {m.count} página{m.count !== 1 ? 's' : ''}
+                          </div>
+                        </div>
+                        <span style={{ fontSize: 9, fontWeight: 600, color: '#4b5563', background: '#e5e7eb', padding: '1px 5px', borderRadius: 5, flexShrink: 0 }}>Activo</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            
+          </div>
+        </div>
       </div>
 
       {/* ═══ Quick actions ═══ */}

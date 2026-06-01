@@ -88,10 +88,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       try {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
-        // Minimal snapshot: only productId + qty (name/price fetched from products)
+        // Lightweight snapshot: just productId + qty per item
         const snapshot = items.map(i => ({
           id: i.product.$id,
+          name: i.product.NAME,
           qty: i.quantity,
+          price: i.product.PRICE,
         }));
         const data = {
           userId: user.id,

@@ -13,6 +13,9 @@
    - .in-view forzado en .animation-element tras carga
    ════════════════════════════════════════════════════════════════════ */
 import { useEffect, useRef, useState } from 'react';
+import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, PRODUCTS_COLLECTION, Query } from '@/lib/appwrite';
+import { Category, Subcategory, Product } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
 
 const SHOPIFY_BASE = '/shopify/plantilla23/assets';
 
@@ -176,6 +179,40 @@ export default function HomePage23() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [bodyHtml, setBodyHtml] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+
+  /* ── Fetch categories, subcategories & products from Appwrite ── */
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        const [cRes, scRes, pRes] = await Promise.all([
+          databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [
+            Query.orderAsc('order'),
+            Query.limit(100)
+          ]),
+          databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [
+            Query.limit(200)
+          ]),
+          databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+            Query.greaterThan('STOCK', 0),
+            Query.orderDesc('SOLDQUANTITY'),
+            Query.limit(500)
+          ])
+        ]);
+        setCategories(cRes.documents as unknown as Category[]);
+        setSubcategories(scRes.documents as unknown as Subcategory[]);
+        setProducts(pRes.documents as unknown as Product[]);
+      } catch (err) {
+        console.error('[Plantilla23] Error fetching categories/subcategories/products:', err);
+      }
+    };
+    fetchData();
+  }, []);
 
   /* ── Mark template attribute on document for CSS scoping ── */
   useEffect(() => {
@@ -212,7 +249,7 @@ export default function HomePage23() {
       if (existing) return;
       const link = document.createElement('link');
       link.rel = 'stylesheet';
-      link.href = href;
+      link.href = `${href}?v=${Date.now()}`;
       link.setAttribute('data-tpl23', href);
       document.head.appendChild(link);
     });
@@ -599,25 +636,103 @@ export default function HomePage23() {
         }
       }
 
-      /* Bulletproof Fallback Image Visibility */
-      #hero1-image-desktop, #hero1-image-mobile {
-        opacity: 1 !important;
-        transition: opacity 0.8s ease-in-out !important;
+      /* Animación suave de transición para todo el header al scrollear */
+      custom-header.header-element {
+        transition: background 0.4s ease-in-out, 
+                    background-color 0.4s ease-in-out, 
+                    backdrop-filter 0.4s ease-in-out, 
+                    -webkit-backdrop-filter 0.4s ease-in-out, 
+                    box-shadow 0.4s ease-in-out,
+                    transform 0.4s ease-in-out !important;
       }
 
-      /* Header glassmorphism — only on scrolled/sticky state (data-scroll="true") */
-      custom-header.header-element[data-scroll="false"] {
+      /* ── COMPACT HEADER & UTILITY BAR (MOVE NAVBAR HIGHER) ── */
+      /* Hacer la barra de utilidad (utility-bar) súper delgada */
+      utility-bar.header-element {
+        min-height: 24px !important;
+        --min-height: 24px !important;
+        padding-top: 0px !important;
+        padding-bottom: 0px !important;
+        font-size: 11px !important;
+      }
+      utility-bar.header-element .custom-container {
+        padding-top: 1px !important;
+        padding-bottom: 1px !important;
+      }
+      utility-bar.header-element localization-form {
+        margin-top: 0px !important;
+        margin-bottom: 0px !important;
+      }
+
+      /* Reducir paddings internos del header para subir la barra y compactarla al máximo */
+      custom-header.header-element {
+        --top: 24px !important; /* Fuerza al header a estar pegado al utility-bar súper arriba */
+        --utility-bar-gap: 0px !important;
+        --announcement-bar-gap: 0px !important;
+      }
+      custom-header.header-element .py-3,
+      custom-header.header-element .lg\:pt-5,
+      custom-header.header-element .lg\:pb-2 {
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+      }
+      custom-header.header-element .logo-wrapper {
+        padding-top: 1px !important;
+        padding-bottom: 1px !important;
+      }
+
+      /* Quitar la línea blanca de abajo de forma ultra agresiva en toda la sección del header */
+      .section-header,
+      .shopify-section,
+      custom-header.header-element,
+      custom-header.header-element *,
+      .header,
+      .header * {
+        border-bottom: none !important;
+        border-bottom-width: 0px !important;
+        border-top: none !important;
+        border-top-width: 0px !important;
+        border-color: transparent !important;
+        outline: none !important;
+      }
+
+      /* ── HERO BANNER CONTENT POSITION (LOWER IT) ── */
+      /* Bajar el título, descripción y botón del slideshow para que no queden pegados arriba */
+      @media (min-width: 1024px) {
+        .slideshow__content .custom-container {
+          padding-top: 140px !important; /* Desplaza el bloque hacia abajo en desktop */
+        }
+      }
+      @media (max-width: 1023px) {
+        .slideshow__content .custom-container {
+          padding-top: 90px !important; /* Desplaza el bloque hacia abajo en mobile */
+        }
+      }
+
+      /* ── HEADER THREE-STATE STYLING (GLASSMORPHISM ONLY ON SCROLLED STICKY) ── */
+      /* Estado 1: Inicial / Fijo arriba (data-scroll="false") - Transparente puro, sin blur ni fondos */
+      custom-header.header-element[data-scroll="false"],
+      .header[data-id="sections--27304712208665__header"][data-scroll="false"] {
         background: transparent !important;
+        background-color: transparent !important;
+        background-image: none !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
+        border: none !important;
         border-bottom: none !important;
         box-shadow: none !important;
       }
-      custom-header.header-element[data-scroll="true"] {
-        background: rgba(253, 242, 248, 0.72) !important; /* Mantiene la tonalidad rosa claro original del theme con transparencia */
-        backdrop-filter: blur(10px) saturate(140%) !important;
-        -webkit-backdrop-filter: blur(10px) saturate(140%) !important;
-        border-bottom: 1px solid rgba(253, 242, 248, 0.4) !important;
+
+      /* Estado 3: Navbar final scrolled (data-scroll="true") - Glassmorphism sutil y elegante, sin línea blanca abajo */
+      custom-header.header-element[data-scroll="true"],
+      .header[data-id="sections--27304712208665__header"][data-scroll="true"] {
+        background: rgba(253, 242, 248, 0.72) !important;
+        background-color: rgba(253, 242, 248, 0.72) !important;
+        background-image: none !important;
+        backdrop-filter: blur(12px) saturate(140%) !important;
+        -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
+        border: none !important;
+        border-bottom: none !important;
         box-shadow: 0 4px 20px -2px rgba(227, 150, 191, 0.12) !important;
       }
     `;
@@ -648,7 +763,59 @@ export default function HomePage23() {
   useEffect(() => {
     if (!bodyHtml || !containerRef.current) return;
     if (containerRef.current.dataset.htmlSet) return;
-    containerRef.current.innerHTML = bodyHtml;
+
+    // Parse HTML string to DOM nodes in memory
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = bodyHtml;
+
+    if (categories.length > 0) {
+      // Find Swiper wrapper inside collection-list
+      const swiperWrapper = tempDiv.querySelector('.collection-list .swiper-wrapper');
+      const swiperContainer = tempDiv.querySelector('.collection-list .swiper-container');
+      if (swiperWrapper) {
+        swiperWrapper.innerHTML = ''; // Clear hardcoded slides
+
+        categories.forEach((cat, index) => {
+          const slide = document.createElement('div');
+          slide.className = `swiper-slide w-full h-auto animation-delay-${(index + 1) * 100} animation-element fade-in`;
+
+          // Fallback image handling
+          const categoryImg = (cat as any).BACKGROUND_IMAGE_URL || cat.iconUrl || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';
+
+          slide.innerHTML = `
+  <div class="collection-card overflow-hidden h-full border-current relative w-full fade-in animation-element animation-delay-0">
+      <a href="/productos?categoria=${cat.$id}" aria-label="${cat.name}" title="${cat.name}" class="link link-image hover-only block">
+          <div class="collection-card__image-wrapper relative overflow-hidden hover-zoom-image-wrapper" data-ratio="square">
+              <div class="collection-card__image w-full h-full absolute top-0 left-0 transition-all duration-300 ease-in-out transform img-blur placeholder" style="background-color: #FBCAC9;">
+                  <hover-zoom-image class="w-full h-full">
+                      <img src="${categoryImg}" alt="${cat.name}" loading="lazy" sizes="100vw" class="object-cover w-full h-full pointer-events-none">
+                  </hover-zoom-image>
+              </div>
+              <div class="overlay absolute top-0 left-0 w-full h-full transition-opacity duration-300 ease-in-out"></div>
+          </div>
+      </a>
+      <div class="collection-card__content z-10">
+          <a href="/productos?categoria=${cat.$id}" title="${cat.name}" aria-label="${cat.name}" class="transition-all duration-300 ease-in-out h-full w-full link">
+              <div class="py-5 pr-2 relative">
+                  <h6 class="heading transition-all duration-100 ease-in-out">
+                      <span class="link-hover-animation">${cat.name}</span>
+                  </h6>
+              </div>
+          </a>
+      </div>
+  </div>
+          `;
+          swiperWrapper.appendChild(slide);
+        });
+      }
+
+      if (swiperContainer) {
+        // Synchronize Swiper total item count
+        swiperContainer.setAttribute('data-items-total', String(categories.length));
+      }
+    }
+
+    containerRef.current.innerHTML = tempDiv.innerHTML;
     containerRef.current.dataset.htmlSet = '1';
 
     // Remove leftover Shopify elements
@@ -817,7 +984,503 @@ export default function HomePage23() {
         });
       }
     }, 600);
-  }, [bodyHtml]);
+  }, [bodyHtml, categories]);
+
+  /* ── Wire "Iniciar Sesión" button to auth popup (same style as plantilla1) ── */
+  useEffect(() => {
+    if (!containerRef.current || !containerRef.current.dataset.htmlSet) return;
+
+    const root = containerRef.current;
+    const loginLink = root.querySelector('li[data-type="account"] a');
+    if (!loginLink || (loginLink as HTMLElement).dataset.authWired) return;
+    (loginLink as HTMLElement).dataset.authWired = '1';
+
+    // Ensure keyframes style
+    const ensureKeyframes = () => {
+      if (document.getElementById('tpl23-auth-keyframes')) return;
+      const ks = document.createElement('style');
+      ks.id = 'tpl23-auth-keyframes';
+      ks.textContent =
+        '@keyframes tpl1AuthIn{from{opacity:0;transform:translateY(-12px) scale(0.96)}to{opacity:1;transform:translateY(0) scale(1)}}' +
+        '@keyframes tpl1AuthSheetIn{from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)}}';
+      document.head.appendChild(ks);
+    };
+
+    const layoutPanel = (anchor: HTMLElement, popup: HTMLElement, panelWidth = 340) => {
+      const mobile = window.matchMedia('(max-width: 768px)').matches;
+      const pad = 12;
+      popup.classList.add('yaxsel-user-panel');
+      if (mobile) {
+        popup.style.top = 'auto';
+        popup.style.bottom = '0';
+        popup.style.left = `${pad}px`;
+        popup.style.right = `${pad}px`;
+        popup.style.width = 'auto';
+        popup.style.maxWidth = 'none';
+        popup.style.maxHeight = 'min(92dvh, calc(100vh - env(safe-area-inset-top, 0px) - 16px))';
+        popup.style.overflowY = 'auto';
+        popup.style.borderRadius = '20px 20px 0 0';
+        popup.style.transform = 'none';
+        popup.style.animation = 'tpl1AuthSheetIn .32s cubic-bezier(0.16,1,0.3,1)';
+        return;
+      }
+      popup.style.animation = 'tpl1AuthIn .3s cubic-bezier(0.16,1,0.3,1)';
+      popup.style.bottom = 'auto';
+      popup.style.width = `${panelWidth}px`;
+      popup.style.left = 'auto';
+      popup.style.maxHeight = `${window.innerHeight - pad * 2}px`;
+      popup.style.overflowY = 'auto';
+      popup.style.borderRadius = panelWidth >= 340 ? '24px' : '20px';
+      popup.style.transform = 'none';
+      const rect = anchor.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const gap = 14;
+      const place = () => {
+        const pw = popup.offsetWidth;
+        const top = Math.min(rect.bottom + gap, vh - pad - 80);
+        let right = Math.max(pad, vw - rect.right);
+        const left = vw - right - pw;
+        if (left < pad) right = Math.max(pad, vw - pw - pad);
+        popup.style.top = `${top}px`;
+        popup.style.right = `${right}px`;
+        popup.style.maxHeight = `${Math.max(160, vh - top - pad)}px`;
+      };
+      requestAnimationFrame(place);
+    };
+
+    let authPopupEl: HTMLDivElement | null = null;
+    let authOverlayEl: HTMLDivElement | null = null;
+    let authPopupJustOpened = false;
+
+    const closeAuthPopup = () => {
+      if (authPopupEl) { authPopupEl.remove(); authPopupEl = null; }
+      if (authOverlayEl) { authOverlayEl.style.opacity = '0'; authOverlayEl.style.pointerEvents = 'none'; }
+      document.body.classList.remove('cart-drawer-open', 'overflow-hidden');
+      document.body.style.overflow = '';
+      authPopupJustOpened = false;
+    };
+
+    const toggleAuthPopup = (anchor: HTMLElement) => {
+      if (authPopupEl) { closeAuthPopup(); return; }
+      authPopupJustOpened = true;
+
+      if (!authOverlayEl) {
+        authOverlayEl = document.createElement('div');
+        authOverlayEl.id = 'yaxsel-auth-overlay';
+        authOverlayEl.style.cssText = 'position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.25);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity 0.3s ease;';
+        document.body.appendChild(authOverlayEl);
+      }
+      authOverlayEl.style.opacity = '1';
+      authOverlayEl.style.pointerEvents = 'auto';
+      document.body.classList.add('cart-drawer-open', 'overflow-hidden');
+      document.body.style.overflow = 'hidden';
+
+      const popup = document.createElement('div');
+      popup.id = 'yaxsel-auth-popup';
+      popup.style.cssText = 'position:fixed;z-index:10002;width:340px;background:#fff;border-radius:24px;box-shadow:0 8px 30px rgba(0,0,0,0.08),0 2px 8px rgba(0,0,0,0.04);border:1px solid #f0f0f0;overflow:hidden;animation:tpl1AuthIn .3s cubic-bezier(0.16,1,0.3,1);font-family:"DM Sans",system-ui,sans-serif;';
+      popup.innerHTML = `
+        <button id="yaxsel-auth-close" type="button" aria-label="Cerrar" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:none;background:#f3f4f6;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#666;z-index:2;">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M11 3L3 11M3 3L11 11" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        </button>
+        <div style="padding:28px 24px 24px;text-align:center;">
+          <div style="width:56px;height:56px;margin:0 auto 14px;border-radius:50%;background:linear-gradient(135deg,#fef2f8,#fce7f3);display:flex;align-items:center;justify-content:center;color:#ec4899;box-shadow:0 4px 14px rgba(236,72,153,0.15);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <p style="font-size:18px;font-weight:800;color:#111;margin:0 0 8px;letter-spacing:-0.02em;">Inicia sesión o crea tu cuenta</p>
+          <p style="font-size:13px;color:#6b7280;margin:0 0 20px;line-height:1.45;">Para realizar pedidos necesitas iniciar sesión o registrarte.</p>
+          <a href="/login" id="yaxsel-auth-login-btn" style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;box-shadow:0 6px 20px rgba(236,72,153,0.3);margin-bottom:10px;">Iniciar sesión</a>
+          <a href="/login?tab=register" style="display:block;width:100%;padding:13px;background:#fff;color:#ec4899;border:2px solid #fce7f3;border-radius:14px;font-size:15px;font-weight:700;text-align:center;text-decoration:none;">Crear cuenta</a>
+        </div>
+      `;
+
+      document.body.appendChild(popup);
+      authPopupEl = popup;
+      ensureKeyframes();
+      layoutPanel(anchor, popup, 340);
+
+      const closeBtn = popup.querySelector('#yaxsel-auth-close') as HTMLElement | null;
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => { closeAuthPopup(); });
+        closeBtn.addEventListener('mouseenter', () => { closeBtn.style.background = '#fce7f3'; closeBtn.style.color = '#ec4899'; });
+        closeBtn.addEventListener('mouseleave', () => { closeBtn.style.background = '#f3f4f6'; closeBtn.style.color = '#666'; });
+      }
+
+      if (authOverlayEl) {
+        authOverlayEl.onclick = () => {
+          if (authPopupJustOpened) { authPopupJustOpened = false; return; }
+          closeAuthPopup();
+        };
+      }
+
+      const loginBtn = popup.querySelector('#yaxsel-auth-login-btn') as HTMLElement | null;
+      if (loginBtn) {
+        loginBtn.addEventListener('mouseenter', () => { loginBtn.style.transform = 'translateY(-2px)'; loginBtn.style.boxShadow = '0 8px 32px rgba(236,72,153,0.25)'; });
+        loginBtn.addEventListener('mouseleave', () => { loginBtn.style.transform = ''; loginBtn.style.boxShadow = '0 6px 24px rgba(236,72,153,0.15)'; });
+      }
+
+      if (!window.matchMedia('(max-width: 768px)').matches) {
+        const onOutside = (ev: MouseEvent) => {
+          if (!popup.contains(ev.target as Node) && !anchor.contains(ev.target as Node)) {
+            closeAuthPopup();
+            document.removeEventListener('mousedown', onOutside);
+          }
+        };
+        setTimeout(() => document.addEventListener('mousedown', onOutside), 0);
+      }
+    };
+
+    // Override the Shopify link behavior
+    loginLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleAuthPopup(loginLink as HTMLElement);
+    });
+  }, [bodyHtml, user]);
+
+  /* ── INJECT DYNAMIC CATEGORIES INTO NAVBAR MEGAMENU (separate effect) ── */
+  useEffect(() => {
+    if (!containerRef.current || !containerRef.current.dataset.htmlSet) return;
+    if (categories.length === 0 || subcategories.length === 0) return;
+    if (containerRef.current.dataset.navInjected) return;
+
+    const root = containerRef.current;
+
+    // ── Compute product counts per category and subcategory ──
+    const catProductCount: Record<string, number> = {};
+    const subProductCount: Record<string, number> = {};
+    const catProducts: Record<string, Product[]> = {};
+    const subProducts: Record<string, Product[]> = {};
+
+    products.forEach(p => {
+      const cid = p.CATEGORYID || '';
+      const sid = p.SUBCATEGORYID || '';
+      catProductCount[cid] = (catProductCount[cid] || 0) + 1;
+      if (sid) subProductCount[sid] = (subProductCount[sid] || 0) + 1;
+      if (!catProducts[cid]) catProducts[cid] = [];
+      catProducts[cid].push(p);
+      if (sid) {
+        if (!subProducts[sid]) subProducts[sid] = [];
+        subProducts[sid].push(p);
+      }
+    });
+
+    // Sort categories by product count (most products first) and pick top 4
+    const sortedCats = [...categories]
+      .filter(cat => (catProductCount[cat.$id] || 0) > 0)
+      .map(cat => ({
+        ...cat,
+        prodCount: catProductCount[cat.$id] || 0
+      }))
+      .sort((a, b) => b.prodCount - a.prodCount)
+      .slice(0, 4);
+
+    // ── Desktop menu ──
+    const desktopMenu = root.querySelector('ul.menu[data-tier="1"]:not(.menu--drawer)');
+    if (desktopMenu) {
+      desktopMenu.innerHTML = '';
+
+      sortedCats.forEach((cat, idx) => {
+        const megamenuId = `megamenu-dynamic-${idx}`;
+        const catProdCount = cat.prodCount;
+
+        // Sort subcategories by product count (most first)
+        const catSubs = subcategories
+          .filter(sc => sc.categoryId === cat.$id)
+          .map(sc => ({ ...sc, prodCount: subProductCount[sc.$id] || 0 }))
+          .filter(sc => sc.prodCount > 0)
+          .sort((a, b) => b.prodCount - a.prodCount);
+
+        const navLi = document.createElement('li');
+        navLi.className = 'inline-block group py-2 px-1 shrink-0 no-keyboard-focus';
+        navLi.innerHTML = `
+          <a href="javascript:void(0)" title="${cat.name}" aria-label="${cat.name}"
+              data-action="hover"
+              data-id="${megamenuId}"
+              class="flex items-center no-keyboard-focus"
+              data-menu-tier="1"
+          >
+              <span class="link-hover-animation">${cat.name} <span style="opacity:0.5;font-size:0.85em">(${catProdCount})</span></span>
+              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[18px]">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+</svg>
+          </a>
+        `;
+
+        // ── Megamenu <template> (must be SIBLING of <li>, not child) ──
+        const templateEl = document.createElement('template');
+        templateEl.id = megamenuId;
+
+        // Left column: subcategories with product counts
+        let subsHtml = '';
+        catSubs.forEach((sub, subIdx) => {
+          const subHandle = `cat${idx}-sub${subIdx}`;
+          const isActive = subIdx === 0 ? 'true' : 'false';
+          subsHtml += `
+            <li
+                data-active="${isActive}"
+                class="py-2 px-2 flex justify-between items-center link-hover cursor-pointer"
+                data-link-handle="${subHandle}"
+                tabindex="0"
+            >
+                <span class="link-hover-animation">${sub.name} <span style="opacity:0.5;font-size:0.85em">(${sub.prodCount})</span></span>
+                <span class="rotate-[270deg]"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[18px]">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+</svg></span>
+            </li>
+          `;
+        });
+
+        // Right column: product carousel per subcategory — show 4 products max
+        let grandchildHtml = '';
+        catSubs.forEach((sub, subIdx) => {
+          const subHandle = `cat${idx}-sub${subIdx}`;
+          const subLink = `/productos?categoria=${encodeURIComponent(cat.name)}&subcategoria=${encodeURIComponent(sub.name)}`;
+          const isHidden = subIdx === 0 ? 'false' : 'true';
+          const inertAttr = subIdx === 0 ? '' : 'inert';
+          const subProds = (subProducts[sub.$id] || []).slice(0, 4);
+
+          // Build product cards (no Swiper — simple flex row for 4 items)
+          let productCardsHtml = '';
+          subProds.forEach(p => {
+            const pLink = `/productos/${p.$id}`;
+            const pImg = p.IMAGEURL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';
+            const pName = p.NAME || 'Producto';
+            productCardsHtml += `
+              <a href="${pLink}" title="${pName}" aria-label="${pName}"
+                  class="flex group/image flex-col gap-2 items-start no-keyboard-focus relative"
+                  style="text-decoration:none !important;width:25% !important;min-width:0 !important;display:flex !important;flex-direction:column !important;box-sizing:border-box !important;padding:0 8px !important"
+                  data-type="standard"
+              >
+                  <span class="w-full aspect-square shrink-0 overflow-hidden rounded-[20px]" style="width:100% !important;aspect-ratio:1/1 !important;display:block !important">
+                      <hover-zoom-image class="w-full h-full" style="width:100% !important;height:100% !important;display:block !important">
+                          <img src="${pImg}" alt="${pName}" loading="lazy" sizes="100vw" class="object-cover pointer-events-none transition-transform duration-500 group-hover/image:scale-110" style="width:100% !important;height:100% !important;max-width:none !important;max-height:none !important;object-fit:cover !important">
+                      </hover-zoom-image>
+                  </span>
+                  <div class="menu__heading-content w-full mt-2">
+                      <h6 class="menu__heading-title" style="font-size:0.85em;line-height:1.2;font-weight:500;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;height:2.4em">
+                          <span class="link-hover-animation">${pName}</span>
+                      </h6>
+                  </div>
+              </a>
+            `;
+          });
+
+          grandchildHtml += `
+            <div class="menu menu--megamenu menu--megamenu-hover-split menu--megamenu-hover-split-grandchild flex-1 overflow-y-auto max-h-[400px]" data-tier="3" role="list"
+                data-hidden="${isHidden}"
+                ${inertAttr}
+                data-link-handle="${subHandle}"
+                style="
+                    --num-columns: 4;
+                    --image-border-radius: 20px;
+                    --image-border-width: 0px;
+                    --text-alignment: left;
+                    --vertical-alignment: center;
+                    --color-text: inherit;
+                    --color-background: transparent;
+                "
+            >
+                <div class="flex justify-between items-center mb-4">
+                    <a href="${subLink}" title="${sub.name}" aria-label="${sub.name}" class="font-bold max-w-max border-b-1 border-current/20 no-keyboard-focus">
+                        <span class="link-hover-animation">${sub.name} <span style="opacity:0.5;font-size:0.85em">(${sub.prodCount})</span></span>
+                    </a>
+                    <a href="${subLink}" class="text-xs font-medium transition-opacity rounded-full px-3 py-1 hover:opacity-90" style="font-size:0.75em;text-decoration:none;background-color:#FFB6C1;color:#fff">Ver todo</a>
+                </div>
+                <div class="megamenu-product-grid" style="display:flex !important;flex-wrap:nowrap !important;gap:12px !important;width:100% !important;overflow:hidden !important">
+                    ${productCardsHtml}
+                </div>
+            </div>
+          `;
+        });
+
+        templateEl.innerHTML = `
+          <div class="custom-container flex my-[3rem] scroll-area" data-menu-type="hover-split">
+              <ul class="custom-list menu menu--megamenu menu--megamenu-hover-split menu--megamenu-hover-split-child flex-1 max-w-[250px] w-max border-current/20 border-r-1 overflow-y-auto max-h-[400px]" data-tier="2" role="list">
+                  ${subsHtml}
+              </ul>
+              ${grandchildHtml}
+          </div>
+        `;
+
+        // Append <li> first, then <template> as SIBLING (matches original HTML structure)
+        desktopMenu.appendChild(navLi);
+        desktopMenu.appendChild(templateEl);
+      });
+
+      // ── Static links ──
+      const bestSellersLi = document.createElement('li');
+      bestSellersLi.className = 'inline-block group py-2 px-1 relative shrink-0 no-keyboard-focus';
+      bestSellersLi.innerHTML = `
+        <a href="/productos?tag=best-seller" title="Los Más Vendidos" aria-label="Los Más Vendidos"
+            data-action="static-link"
+            class="no-keyboard-focus"
+            data-menu-tier="1"
+        >
+            <span class="link-hover-animation">Los Más Vendidos</span>
+        </a>
+      `;
+      desktopMenu.appendChild(bestSellersLi);
+
+      const newArrivalsLi = document.createElement('li');
+      newArrivalsLi.className = 'inline-block group py-2 px-1 relative shrink-0 no-keyboard-focus';
+      newArrivalsLi.innerHTML = `
+        <a href="/productos?tag=new" title="Novedades" aria-label="Novedades"
+            data-action="static-link"
+            class="highlight no-keyboard-focus"
+            data-menu-tier="1"
+        >
+            <span class="link-hover-animation">Novedades</span>
+        </a>
+      `;
+      desktopMenu.appendChild(newArrivalsLi);
+    }
+
+    // ── Mobile drawer menu ──
+    const mobileMenu = root.querySelector('ul.menu--drawer[data-tier="1"]');
+    if (mobileMenu) {
+      mobileMenu.innerHTML = '';
+
+      sortedCats.forEach(cat => {
+        const catLink = `/productos?categoria=${encodeURIComponent(cat.name)}`;
+        const catSubs = subcategories
+          .filter(sc => sc.categoryId === cat.$id)
+          .map(sc => ({ ...sc, prodCount: subProductCount[sc.$id] || 0 }))
+          .filter(sc => sc.prodCount > 0)
+          .sort((a, b) => b.prodCount - a.prodCount);
+
+        const mobileLi = document.createElement('li');
+        mobileLi.className = 'group relative before:content-[\'\'] before:block before:absolute before:top-0 before:left-0 before:transition-all before:duration-500 before:ease-in-out before:h-full before:w-0 before:bg-black before:opacity-1';
+
+        let subMenuHtml = '';
+        if (catSubs.length > 0) {
+          subMenuHtml = `<div class="menu menu--drawer hidden" data-link-handle="${cat.$id}" data-tier="2"><ul class="custom-list">`;
+          subMenuHtml += `<li class="group relative"><a href="${catLink}" aria-label="Ver todo ${cat.name}" class="w-full flex p-7 justify-between cursor-pointer z-10 relative"><span class="px-3">Ver todo ${cat.name} (${cat.prodCount})</span></a></li>`;
+          catSubs.forEach(sub => {
+            const subLink = `/productos?categoria=${encodeURIComponent(cat.name)}&subcategoria=${encodeURIComponent(sub.name)}`;
+            subMenuHtml += `<li class="group relative"><a href="${subLink}" aria-label="${sub.name}" class="w-full flex p-7 justify-between cursor-pointer z-10 relative"><span class="px-3">${sub.name} (${sub.prodCount})</span></a></li>`;
+          });
+          subMenuHtml += `</ul></div>`;
+        }
+
+        mobileLi.innerHTML = `
+          <a href="${catLink}" aria-label="${cat.name}" title="${cat.name}" class="w-full flex p-7 justify-between cursor-pointer z-10 relative">
+              <span class="after:content-[\'\'] relative after:absolute after:top-full after:left-0 after:w-0 after:block after:h-0.5 after:bg-current after:transition-all after:duration-300 after:ease-in-out px-3">${cat.name} (${cat.prodCount})</span>
+          </a>
+          ${subMenuHtml}
+        `;
+        mobileMenu.appendChild(mobileLi);
+      });
+
+      ['Los Más Vendidos|/productos?tag=best-seller', 'Novedades|/productos?tag=new'].forEach(item => {
+        const [label, href] = item.split('|');
+        const li = document.createElement('li');
+        li.className = 'group relative before:content-[\'\'] before:block before:absolute before:top-0 before:left-0 before:transition-all before:duration-500 before:ease-in-out before:h-full before:w-0 before:bg-black before:opacity-1';
+        li.innerHTML = `<a href="${href}" aria-label="${label}" title="${label}" class="w-full flex p-7 justify-between cursor-pointer z-10 relative"><span class="px-3">${label}</span></a>`;
+        mobileMenu.appendChild(li);
+      });
+    }
+
+    // ── Watch megamenu-wrapper for content injection by header.js ──
+    // header.js clones <template> content into #megamenu-wrapper on hover.
+    // We observe it to apply our custom styling overrides after injection.
+    const megamenuWrapper = root.querySelector('#megamenu-wrapper');
+    if (megamenuWrapper) {
+      const observer = new MutationObserver(() => {
+        // Force our grandchild display overrides on the cloned content
+        megamenuWrapper.querySelectorAll('.menu--megamenu-hover-split-grandchild').forEach(el => {
+          const grandchild = el as HTMLElement;
+          if (grandchild.dataset.hidden === 'false') {
+            grandchild.style.setProperty('display', 'flex', 'important');
+            grandchild.style.setProperty('flex-direction', 'column', 'important');
+            grandchild.style.setProperty('width', '100%', 'important');
+            grandchild.style.setProperty('max-width', 'none', 'important');
+            grandchild.style.setProperty('padding-left', '2.5rem', 'important');
+            grandchild.style.setProperty('padding-right', '1.5rem', 'important');
+            grandchild.style.setProperty('overflow', 'hidden', 'important');
+          }
+        });
+        // Force product grid styling on cloned content
+        megamenuWrapper.querySelectorAll('.megamenu-product-grid').forEach(el => {
+          const grid = el as HTMLElement;
+          grid.style.setProperty('display', 'flex', 'important');
+          grid.style.setProperty('flex-wrap', 'nowrap', 'important');
+          grid.style.setProperty('gap', '12px', 'important');
+          grid.style.setProperty('width', '100%', 'important');
+          grid.style.setProperty('overflow', 'hidden', 'important');
+        });
+        // Force image sizing on cloned content
+        megamenuWrapper.querySelectorAll('.megamenu-product-grid img').forEach(img => {
+          const imgEl = img as HTMLImageElement;
+          imgEl.style.setProperty('width', '100%', 'important');
+          imgEl.style.setProperty('height', '100%', 'important');
+          imgEl.style.setProperty('max-width', 'none', 'important');
+          imgEl.style.setProperty('max-height', 'none', 'important');
+          imgEl.style.setProperty('object-fit', 'cover', 'important');
+        });
+        // Hide scrollbar on scroll-area inside megamenu
+        megamenuWrapper.querySelectorAll('.scroll-area').forEach(el => {
+          (el as HTMLElement).style.setProperty('overflow', 'hidden', 'important');
+        });
+      });
+      observer.observe(megamenuWrapper, { childList: true, subtree: true });
+    }
+
+    // ── Inject dynamic categories into collection-list section below hero banner ──
+    const collectionList = root.querySelector('collection-list.collection-list');
+    if (collectionList) {
+      const allCats = [...categories]
+        .map(cat => ({
+          ...cat,
+          prodCount: catProductCount[cat.$id] || 0
+        }))
+        .sort((a, b) => b.prodCount - a.prodCount);
+
+      const swiperContainer = collectionList.querySelector('.swiper-container');
+      const swiperWrapper = collectionList.querySelector('.swiper-wrapper');
+      if (swiperContainer && swiperWrapper) {
+        swiperWrapper.innerHTML = '';
+        swiperContainer.setAttribute('data-items-total', String(allCats.length));
+
+        allCats.forEach((cat, idx) => {
+          const catLink = `/productos?categoria=${encodeURIComponent(cat.name)}`;
+          // Use category iconUrl as card image
+          const catImg = cat.iconUrl || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';
+          const delay = (idx + 1) * 100;
+
+          const slide = document.createElement('div');
+          slide.className = 'swiper-slide w-full h-auto animation-element fade-in';
+          slide.setAttribute('style', `animation-delay: ${delay}ms`);
+          slide.innerHTML = `
+<div class="collection-card overflow-hidden h-full border-current relative w-full fade-in animation-element animation-delay-0">
+    <a href="${catLink}" aria-label="${cat.name}" title="${cat.name}" class="link link-image hover-only block">
+        <div class="collection-card__image-wrapper relative overflow-hidden hover-zoom-image-wrapper" data-ratio="square">
+            <div class="collection-card__image w-full h-full absolute top-0 left-0 transition-all duration-300 ease-in-out transform img-blur placeholder">
+                <hover-zoom-image class="w-full h-full">
+                    <img src="${catImg}" alt="${cat.name}" loading="lazy" sizes="100vw" class="object-cover w-full h-full pointer-events-none">
+                </hover-zoom-image>
+            </div>
+            <div class="overlay absolute top-0 left-0 w-full h-full transition-opacity duration-300 ease-in-out"></div>
+        </div>
+    </a>
+    <div class="collection-card__content z-10">
+        <a href="${catLink}" title="${cat.name}" aria-label="${cat.name}" class="transition-all duration-300 ease-in-out h-full w-full link">
+            <div class="py-5 pr-2 relative">
+                <h6 class="heading transition-all duration-100 ease-in-out">
+                    <span class="link-hover-animation">${cat.name} <span style="opacity:0.5;font-size:0.85em">(${cat.prodCount})</span></span>
+                </h6>
+            </div>
+        </a>
+    </div>
+</div>
+          `;
+          swiperWrapper.appendChild(slide);
+        });
+      }
+    }
+
+    root.dataset.navInjected = '1';
+  }, [categories, subcategories, products]);
 
   /* ── Inject window.Shopify stub BEFORE loading JS ── */
   useEffect(() => {
@@ -855,7 +1518,7 @@ export default function HomePage23() {
     const loadOne = (file: JsFile) => new Promise<void>((resolve) => {
       if (document.querySelector(`script[data-tpl23="${file.src}"]`)) { resolve(); return; }
       const s = document.createElement('script');
-      s.src = file.src;
+      s.src = `${file.src}?v=${Date.now()}`;
       if (file.module) s.type = 'module';
       else s.async = false;
       s.setAttribute('data-tpl23', file.src);
@@ -1054,7 +1717,7 @@ export default function HomePage23() {
     })();
 
     return () => { (window as any).__tpl23ScriptsLoaded = false; };
-  }, [bodyHtml]);
+  }, [bodyHtml, categories]);
 
   /* ── Loading/error states ── */
   if (loadError) {
@@ -1076,9 +1739,58 @@ export default function HomePage23() {
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="tpl23-shopify-root template-index"
-    />
+    <>
+      <style>{`
+        /* Scoped override for plantilla23 dynamic megamenu styling */
+        .tpl23-shopify-root .menu--megamenu-hover-split-grandchild {
+          display: none !important;
+        }
+        .tpl23-shopify-root .menu--megamenu-hover-split-grandchild[data-hidden="false"] {
+          display: flex !important;
+          flex-direction: column !important;
+          width: 100% !important;
+          max-width: none !important;
+          padding-left: 2.5rem !important;
+          padding-right: 1.5rem !important;
+          overflow: hidden !important;
+        }
+        /* Product grid: 4 cards in a row */
+        .tpl23-shopify-root .megamenu-product-grid {
+          display: flex !important;
+          flex-wrap: nowrap !important;
+          gap: 12px !important;
+          width: 100% !important;
+          overflow: hidden !important;
+        }
+        .tpl23-shopify-root .megamenu-product-grid a {
+          width: 25% !important;
+          min-width: 0 !important;
+          display: flex !important;
+          flex-direction: column !important;
+          box-sizing: border-box !important;
+          padding: 0 8px !important;
+        }
+        /* Force image sizing */
+        .tpl23-shopify-root .megamenu-product-grid img {
+          width: 100% !important;
+          height: 100% !important;
+          max-width: none !important;
+          max-height: none !important;
+          object-fit: cover !important;
+        }
+        /* Hide scrollbars inside megamenu */
+        .tpl23-shopify-root .scroll-area {
+          overflow: hidden !important;
+          scrollbar-width: none !important;
+        }
+        .tpl23-shopify-root .scroll-area::-webkit-scrollbar {
+          display: none !important;
+        }
+      `}</style>
+      <div
+        ref={containerRef}
+        className="tpl23-shopify-root template-index"
+      />
+    </>
   );
 }

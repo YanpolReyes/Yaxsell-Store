@@ -103,86 +103,45 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      // 1. Cargar categorías primero (caché 30 min)
-      const catDocs = await cached('categories:all', TTL.categories, async () => {
-        const r = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [Query.orderAsc('$createdAt'), Query.limit(30)]);
-        return r.documents;
-      });
-      const cats = catDocs as unknown as Category[];
-      setCategories(cats);
+      // Fetch categories & offers globally cached
+      const catOffRes = await fetch('/api/public-data/catalog');
+      if (catOffRes.ok) {
+        const data = await catOffRes.json();
+        setCategories(data.categories as Category[]);
+        
+        // Resolve category id
+        if (catParam && !selectedCat) {
+          const found = (data.categories as Category[]).find(c => c.$id === catParam || c.name?.toLowerCase() === catParam.toLowerCase());
+          if (found) setSelectedCat(found.$id);
+        }
 
-      // 2. Resolver nombre de categoría a ID
-      let catIdToUse = selectedCat;
-      if (catParam && !selectedCat) {
-        const found = cats.find(c =>
-          c.$id === catParam ||
-          c.name?.toLowerCase() === catParam.toLowerCase()
-        );
-        catIdToUse = found?.$id || '';
-        if (found) setSelectedCat(found.$id);
-      }
-
-      // 3. Cargar productos (filtrado client-side, caché 15 min por orden)
-      const queries: string[] = [Query.limit(2000), Query.greaterThan('STOCK', 0)];
-      if (sortBy === 'newest') queries.push(Query.orderDesc('$createdAt'));
-      else if (sortBy === 'price_asc') queries.push(Query.orderAsc('PRICE'));
-      else if (sortBy === 'price_desc') queries.push(Query.orderDesc('PRICE'));
-
-      const prodDocs = await cached(`products:list:${sortBy}`, TTL.products, async () => {
-        const r = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, queries);
-        return r.documents;
-      });
-      setProducts((prodDocs as unknown as Product[]).map((p) => normalizeProductImages(p)));
-
-      // 1.5 Cargar ofertas por tiempo limitado activas
-      try {
-        const offersRes = await databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
-          Query.equal('isActive', true),
-          Query.equal('status', 'active'),
-          Query.limit(100),
-        ]);
-        const activeOffers = (offersRes.documents as unknown as TimedOffer[]).filter(o => {
-          if (!o.isActive || o.status !== 'active') return false;
-          if (o.timeType === 'endDateTime' && o.endDateTime) {
-            return new Date(o.endDateTime) > new Date();
-          }
-          if (o.timeType === 'duration' && o.durationHours) {
-            const start = o.activatedAt || (o as any).$createdAt;
-            if (start) {
-              return (new Date(start).getTime() + o.durationHours * 3600000) > Date.now();
-            }
-          }
-          return true;
-        });
         const map: Record<string, TimedOffer> = {};
-        activeOffers.forEach(o => {
-          if (o.targetId) {
-            map[o.targetId] = o;
-          }
+        (data.offers as TimedOffer[]).forEach(o => {
+          if (o.targetId) map[o.targetId] = o;
         });
         setTimedOffersMap(map);
-      } catch (err) {
-        console.error('Error loading timed offers', err);
       }
 
-      // 4. Cargar subcategorías para la categoría seleccionada (caché 30 min)
-      if (catIdToUse || selectedCat) {
-        try {
-          const cid = catIdToUse || selectedCat;
-          const subDocs = await cached(`subcategories:${cid}`, TTL.categories, async () => {
-            const r = await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [
-              Query.equal('categoryId', cid),
-              Query.orderAsc('$createdAt'),
-              Query.limit(50),
-            ]);
-            return r.documents;
-          });
-          const customSubcats = [
-            { $id: 'ofertas-temporales', name: '🔥 Ofertas Temporales', categoryId: cid } as Subcategory,
-            ...(subDocs as unknown as Subcategory[]),
-          ];
-          setSubcategories(customSubcats);
-        } catch { setSubcategories([]); }
+      // Fetch products globally cached
+      const prodRes = await fetch(`/api/public-data/products?sortBy=${sortBy}`);
+      if (prodRes.ok) {
+        const prodData = await prodRes.json();
+        setProducts((prodData.products as Product[]).map((p) => normalizeProductImages(p)));
+      }
+
+      // Fetch subcategories
+      const cidToUse = lockCategoryId || selectedCat;
+      if (cidToUse) {
+        const subRes = await fetch(`/api/public-data/subcategories?categoryId=${cidToUse}`);
+        if (subRes.ok) {
+          const subData = await subRes.json();
+          setSubcategories([
+            { $id: 'ofertas-temporales', name: '🔥 Ofertas Temporales', categoryId: cidToUse } as Subcategory,
+            ...(subData.subcategories as Subcategory[])
+          ]);
+        } else {
+          setSubcategories([]);
+        }
       } else {
         setSubcategories([]);
       }

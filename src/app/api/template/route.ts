@@ -17,100 +17,116 @@ const noStoreHeaders = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
 };
 
+export const dynamic = 'force-dynamic';
+
+import { Client, Databases, Query } from 'node-appwrite';
+
+const client = new Client()
+  .setEndpoint(APPWRITE_ENDPOINT)
+  .setProject(PROJECT_ID)
+  .setKey(API_KEY);
+
+const databases = new Databases(client);
+
+/** Helper: read a single key from sequences collection */
+async function readKey(key: string): Promise<number> {
+  try {
+    const res = await databases.listDocuments(DATABASE_ID, COLLECTION_ID, [
+      Query.equal("key", key),
+      Query.limit(1)
+    ]);
+    if (res.documents && res.documents.length > 0) {
+      return Number(res.documents[0].value) || 0;
+    }
+  } catch (e) {
+    console.error('readKey error:', e);
+  }
+  return 0;
+}
+
+/** Helper: write a single key to sequences collection (upsert) */
+async function writeKey(key: string, value: number): Promise<boolean> {
+  try {
+    const listRes = await databases.listDocuments(DATABASE_ID, COLLECTION_ID, [
+      Query.equal("key", key),
+      Query.limit(1)
+    ]);
+
+    if (listRes.documents && listRes.documents.length > 0) {
+      const docId = listRes.documents[0].$id;
+      await databases.updateDocument(DATABASE_ID, COLLECTION_ID, docId, { value });
+      return true;
+    }
+
+    await databases.createDocument(DATABASE_ID, COLLECTION_ID, 'unique()', { key, value });
+    return true;
+  } catch (e) {
+    console.error('writeKey error:', e);
+    return false;
+  }
+}
+
 /**
  * GET /api/template
- * Returns the currently active store template id.
- * Reads from sequences collection using server API key (bypasses public read permission).
+ * Returns all section templates.
+ * Query param ?section=landing to get a specific section.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const url = `${APPWRITE_ENDPOINT}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents?query=${encodeURIComponent(`equal("key", "${TEMPLATE_KEY}")`)}&query=${encodeURIComponent('limit(1)')}`;
+    const section = req.nextUrl.searchParams.get('section');
 
-    const res = await fetch(url, { method: 'GET', headers, cache: 'no-store' });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error('[API template] Appwrite GET failed:', res.status, errorText);
-      return NextResponse.json({ template: 1, error: errorText }, { status: 200, headers: noStoreHeaders });
+    if (section) {
+      // Return a single section
+      const key = `${TEMPLATE_KEY}_${section}`;
+      let val = await readKey(key);
+      // Fallback to global template if section not configured
+      if (!val) val = await readKey(TEMPLATE_KEY) || 1;
+      return NextResponse.json({ template: val, section });
     }
 
-    const data = await res.json();
-    if (data.documents && data.documents.length > 0) {
-      const template = Number(data.documents[0].value) || 1;
-      return NextResponse.json({ template }, { headers: noStoreHeaders });
+    // Return all sections
+    const global = await readKey(TEMPLATE_KEY) || 1;
+    const sections = ['landing', 'productDetail', 'cart', 'checkout'] as const;
+    const result: Record<string, number> = { landing: global, productDetail: global, cart: global, checkout: global };
+
+    // Override with section-specific values if they exist
+    for (const sec of sections) {
+      const val = await readKey(`${TEMPLATE_KEY}_${sec}`);
+      if (val) result[sec] = val;
     }
 
-    return NextResponse.json({ template: 1 }, { headers: noStoreHeaders });
+    return NextResponse.json({ template: global, sections: result });
   } catch (error: any) {
     console.error('[API template] Exception:', error);
-    return NextResponse.json({ template: 1, error: error.message }, { status: 200, headers: noStoreHeaders });
+    return NextResponse.json({ template: 1, sections: { landing: 1, productDetail: 1, cart: 1, checkout: 1 }, error: error.message }, { status: 200 });
   }
 }
 
 /**
  * POST /api/template
- * Sets the active store template id.
- * Body: { template: number }
+ * Sets a template for a specific section or globally.
+ * Body: { template: number, section?: string }
+ * If section is provided, sets template for that section only.
+ * If section is omitted, sets the global/default template.
  */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const template = Number(body.template);
+    const section = body.section as string | undefined;
+
     if (!template || template < 1) {
       return NextResponse.json({ success: false, error: 'Invalid template id' }, { status: 400 });
     }
 
-    // Buscar documento existente
-    const listUrl = `${APPWRITE_ENDPOINT}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents?query=${encodeURIComponent(`equal("key", "${TEMPLATE_KEY}")`)}&query=${encodeURIComponent('limit(1)')}`;
-    const listRes = await fetch(listUrl, { method: 'GET', headers, cache: 'no-store' });
+    const key = section ? `${TEMPLATE_KEY}_${section}` : TEMPLATE_KEY;
+    const ok = await writeKey(key, template);
 
-    if (!listRes.ok) {
-      const errorText = await listRes.text();
-      console.error('[API template POST] list failed:', listRes.status, errorText);
-      return NextResponse.json({ success: false, error: errorText }, { status: 500 });
+    if (!ok) {
+      return NextResponse.json({ success: false, error: 'Failed to write template' }, { status: 500 });
     }
 
-    const listData = await listRes.json();
-
-    if (listData.documents && listData.documents.length > 0) {
-      // Update existing
-      const docId = listData.documents[0].$id;
-      const updateRes = await fetch(
-        `${APPWRITE_ENDPOINT}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents/${docId}`,
-        {
-          method: 'PATCH',
-          headers,
-          body: JSON.stringify({ data: { value: template } }),
-        }
-      );
-      if (!updateRes.ok) {
-        const errorText = await updateRes.text();
-        console.error('[API template POST] update failed:', updateRes.status, errorText);
-        return NextResponse.json({ success: false, error: errorText }, { status: 500 });
-      }
-      return NextResponse.json({ success: true, template }, { headers: noStoreHeaders });
-    }
-
-    // Create new
-    const createRes = await fetch(
-      `${APPWRITE_ENDPOINT}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents`,
-      {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          documentId: 'unique()',
-          data: { key: TEMPLATE_KEY, value: template },
-        }),
-      }
-    );
-
-    if (!createRes.ok) {
-      const errorText = await createRes.text();
-      console.error('[API template POST] create failed:', createRes.status, errorText);
-      return NextResponse.json({ success: false, error: errorText }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true, template }, { headers: noStoreHeaders });
+    return NextResponse.json({ success: true, template, section: section || null }, { headers: noStoreHeaders });
   } catch (error: any) {
     console.error('[API template POST] Exception:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, Lock, ExternalLink, Loader, Zap, Eye, Palette, Pencil } from 'lucide-react';
+import { Check, Lock, ExternalLink, Loader, Zap, Eye, Palette, Pencil, LayoutDashboard, Package, ShoppingCart, CreditCard } from 'lucide-react';
 
 interface Template {
   id: number;
@@ -16,103 +16,89 @@ interface Template {
   navBg: string;
   locked?: boolean;
   badge?: string;
+  sections?: string[];
 }
 
+interface SectionConfig {
+  key: string;
+  label: string;
+  icon: React.ReactNode;
+  previewPath: (tplId: number) => string;
+}
+
+const SECTIONS: SectionConfig[] = [
+  {
+    key: 'landing',
+    label: 'Landing / Página Principal',
+    icon: <LayoutDashboard size={16} />,
+    previewPath: (tplId) => `/preview/plantilla/${tplId}`,
+  },
+  {
+    key: 'productDetail',
+    label: 'Detalle de Producto',
+    icon: <Package size={16} />,
+    previewPath: (tplId) => `/preview/plantilla/${tplId}/producto/preview`,
+  },
+  {
+    key: 'cart',
+    label: 'Carrito de Compras',
+    icon: <ShoppingCart size={16} />,
+    previewPath: (tplId) => `/preview/plantilla/${tplId}`,
+  },
+  {
+    key: 'checkout',
+    label: 'Checkout / Pago',
+    icon: <CreditCard size={16} />,
+    previewPath: (tplId) => `/preview/plantilla/${tplId}`,
+  },
+];
+
 const TEMPLATES: Template[] = [
-  {
-    id: 1,
-    name: 'Moderna',
-    description: 'Diseño limpio y minimalista. Fondo blanco, tipografía grande, acentos en violeta. Ideal para marcas premium.',
-    emoji: '🛍️',
-    tags: ['Minimalista', 'Profesional', 'Violeta'],
-    accent: '#667eea', accentDark: '#764ba2', bg: '#f8f9fa', navBg: '#667eea',
-    badge: 'Popular',
-  },
-  {
-    id: 2,
-    name: 'Marketplace',
-    description: 'Estilo mercado masivo. Cabecera amarilla, búsqueda prominente, tarjetas compactas.',
-    emoji: '🏪',
-    tags: ['Masivo', 'Búsqueda', 'Amarillo'],
-    accent: '#3483fa', accentDark: '#2968c8', bg: '#ebebeb', navBg: '#fff159',
-  },
-  {
-    id: 3,
-    name: 'Retail',
-    description: 'Estilo tienda por departamentos. Cabecera naranja, sidebar de categorías, grid denso.',
-    emoji: '🟠',
-    tags: ['Departamentos', 'Sidebar', 'Naranja'],
-    accent: '#f96302', accentDark: '#c94d00', bg: '#f5f5f5', navBg: '#f96302',
-  },
-  {
-    id: 4,
-    name: 'Chinamart',
-    description: 'Landing page premium con hero cinematic, servicios, testimonios y contacto. Ideal para marcas e importadores.',
-    emoji: '🎨',
-    tags: ['Landing', 'Premium', 'Naranja'],
-    accent: '#F97316', accentDark: '#EA6C0A', bg: '#FAFAFA', navBg: '#1A1A1A',
-  },
-  {
-    id: 5,
-    name: 'Seoul/Agnes',
-    description: 'Estilo boutique de cosméticos de alta gama con héroe animado, transiciones de scroll ultra fluidas y diseño sumamente estético. Ideal para skincare y maquillaje.',
-    emoji: '✨',
-    tags: ['Estética', 'Cosméticos', 'GSAP'],
-    accent: '#dfe146', accentDark: '#2a2120', bg: '#fde6ef', navBg: '#ffece7',
-  },
-  {
-    id: 6,
-    name: 'Horizon Premium',
-    description: 'Tema premium de Shopify con split-hero animado, máscaras SVG dinámicas, scroll suave y diseño minimalista de alta gama. Animaciones GSAP/ScrollMagic.',
-    emoji: '🚀',
-    tags: ['Premium', 'Shopify', 'GSAP', 'Split-Hero'],
-    accent: '#2563eb', accentDark: '#1e40af', bg: '#f8fafc', navBg: '#0f172a',
-  },
-  {
-    id: 7,
-    name: 'Noble Premium',
-    description: 'Tema premium de Shopify Noble con secciones de grids dinámicos, animaciones fluidas, menús optimizados y diseño estético de última generación.',
-    emoji: '💎',
-    tags: ['Elegante', 'Shopify', 'Grids', 'Noble'],
-    accent: '#059669', accentDark: '#047857', bg: '#fafafa', navBg: '#111827',
-  },
+  { id: 1, name: 'Moderna', description: 'Diseño limpio y minimalista. Fondo blanco, tipografía grande, acentos en violeta. Ideal para marcas premium.', emoji: '🛍️', tags: ['Minimalista', 'Profesional', 'Violeta'], accent: '#667eea', accentDark: '#764ba2', bg: '#f8f9fa', navBg: '#667eea', badge: 'Popular', sections: ['landing', 'productDetail', 'cart', 'checkout'] },
+  { id: 2, name: 'Marketplace', description: 'Estilo mercado masivo. Cabecera amarilla, búsqueda prominente, tarjetas compactas.', emoji: '🏪', tags: ['Masivo', 'Búsqueda', 'Amarillo'], accent: '#3483fa', accentDark: '#2968c8', bg: '#ebebeb', navBg: '#fff159', sections: ['landing'] },
+  { id: 3, name: 'Retail', description: 'Estilo tienda por departamentos. Cabecera naranja, sidebar de categorías, grid denso.', emoji: '🟠', tags: ['Departamentos', 'Sidebar', 'Naranja'], accent: '#f96302', accentDark: '#c94d00', bg: '#f5f5f5', navBg: '#f96302', sections: ['landing'] },
+  { id: 4, name: 'Chinamart', description: 'Landing page premium con hero cinematic, servicios, testimonios y contacto. Ideal para marcas e importadores.', emoji: '🎨', tags: ['Landing', 'Premium', 'Naranja'], accent: '#F97316', accentDark: '#EA6C0A', bg: '#FAFAFA', navBg: '#1A1A1A', sections: ['landing'] },
+  { id: 5, name: 'Pebble Little', description: 'Estilo boutique de cosméticos de alta gama con héroe animado, transiciones de scroll ultra fluidas y diseño sumamente estético. Ideal para skincare y maquillaje.', emoji: '✨', tags: ['Estética', 'Cosméticos', 'GSAP'], accent: '#dfe146', accentDark: '#2a2120', bg: '#fde6ef', navBg: '#ffece7', sections: ['landing', 'productDetail'] },
+  { id: 6, name: 'Horizon Premium', description: 'Tema premium de Shopify con split-hero animado, máscaras SVG dinámicas, scroll suave y diseño minimalista de alta gama. Animaciones GSAP/ScrollMagic.', emoji: '🚀', tags: ['Premium', 'Shopify', 'GSAP', 'Split-Hero'], accent: '#2563eb', accentDark: '#1e40af', bg: '#f8fafc', navBg: '#0f172a', sections: ['landing'] },
+  { id: 7, name: 'Noble Premium', description: 'Tema premium de Shopify Noble con secciones de grids dinámicos, animaciones fluidas, menús optimizados y diseño estético de última generación.', emoji: '💎', tags: ['Elegante', 'Shopify', 'Grids', 'Noble'], accent: '#059669', accentDark: '#047857', bg: '#fafafa', navBg: '#111827', sections: ['landing'] },
+  { id: 8, name: 'Exito Premium', description: 'Tema premium estilo retail masivo moderno.', emoji: '🛒', tags: ['Retail', 'Masivo'], accent: '#fbbf24', accentDark: '#d97706', bg: '#fff', navBg: '#fbbf24', sections: ['landing'] },
+  { id: 10, name: 'Noble Beauty', description: 'Variante de diseño enfocada en belleza y cosmética.', emoji: '💅', tags: ['Beauty', 'Noble'], accent: '#ec4899', accentDark: '#be185d', bg: '#fdf2f8', navBg: '#fce7f3', sections: ['landing'] },
+  { id: 11, name: 'K-Me Store (old)', description: 'Versión original de K-Me store.', emoji: '🇰🇷', tags: ['K-Beauty', 'Antiguo'], accent: '#8b5cf6', accentDark: '#6d28d9', bg: '#f5f3ff', navBg: '#ede9fe', sections: ['landing'] },
+  { id: 12, name: 'K-Me Store', description: 'Tienda moderna para venta de K-Beauty.', emoji: '🌸', tags: ['K-Beauty', 'Moderna'], accent: '#d946ef', accentDark: '#a21caf', bg: '#fdf4ff', navBg: '#fae8ff', sections: ['landing'] },
+  { id: 13, name: 'K-Me Store V2', description: 'Segunda generación del diseño de K-Me.', emoji: '🌺', tags: ['K-Beauty', 'V2'], accent: '#c026d3', accentDark: '#86198f', bg: '#fdf4ff', navBg: '#f5d0fe', sections: ['landing'] },
+  { id: 23, name: 'Plantilla 23', description: 'Plantilla de alto impacto visual.', emoji: '📦', tags: ['Custom'], accent: '#14b8a6', accentDark: '#0f766e', bg: '#f0fdfa', navBg: '#ccfbf1', sections: ['landing'] },
+  { id: 24, name: 'Noble Preview', description: 'Vista previa avanzada de la serie Noble.', emoji: '👀', tags: ['Preview', 'Noble'], accent: '#6366f1', accentDark: '#4338ca', bg: '#eef2ff', navBg: '#e0e7ff', sections: ['landing'] },
+  { id: 25, name: 'Concept Theme Tech', description: 'Tema conceptual para productos tecnológicos.', emoji: '💻', tags: ['Tech', 'Concept'], accent: '#0ea5e9', accentDark: '#0369a1', bg: '#f0f9ff', navBg: '#e0f2fe', sections: ['landing'] },
 ];
 
 function TemplatePreview({ t, isActive }: { t: Template; isActive: boolean }) {
   return (
-    <div style={{ height: 160, background: t.bg, borderRadius: '12px 12px 0 0', overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
+    <div style={{ height: 120, background: t.bg, borderRadius: '10px 10px 0 0', overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
       {/* Navbar */}
-      <div style={{ height: 34, background: t.navBg, display: 'flex', alignItems: 'center', padding: '0 10px', gap: 8, boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}>
-        <div style={{ width: 52, height: 8, borderRadius: 4, background: t.id === 2 ? '#333' : 'rgba(255,255,255,0.7)' }} />
-        {t.id === 2 && <div style={{ flex: 1, height: 18, borderRadius: 4, background: '#fff', margin: '0 6px' }} />}
-        <div style={{ marginLeft: t.id === 2 ? 0 : 'auto', display: 'flex', gap: 4 }}>
-          <div style={{ width: 22, height: 6, borderRadius: 3, background: t.id === 2 ? '#999' : 'rgba(255,255,255,0.5)' }} />
-          <div style={{ width: 22, height: 6, borderRadius: 3, background: t.id === 2 ? '#999' : 'rgba(255,255,255,0.5)' }} />
+      <div style={{ height: 26, background: t.navBg, display: 'flex', alignItems: 'center', padding: '0 8px', gap: 6, boxShadow: '0 1px 3px rgba(0,0,0,0.12)' }}>
+        <div style={{ width: 40, height: 6, borderRadius: 3, background: t.id === 2 ? '#333' : 'rgba(255,255,255,0.7)' }} />
+        {t.id === 2 && <div style={{ flex: 1, height: 14, borderRadius: 3, background: '#fff', margin: '0 4px' }} />}
+        <div style={{ marginLeft: t.id === 2 ? 0 : 'auto', display: 'flex', gap: 3 }}>
+          <div style={{ width: 16, height: 5, borderRadius: 2, background: t.id === 2 ? '#999' : 'rgba(255,255,255,0.5)' }} />
+          <div style={{ width: 16, height: 5, borderRadius: 2, background: t.id === 2 ? '#999' : 'rgba(255,255,255,0.5)' }} />
         </div>
       </div>
 
-      {/* Hero banner */}
-      <div style={{ height: 30, background: `linear-gradient(90deg, ${t.accent}22, ${t.accentDark}11)`, borderBottom: `2px solid ${t.accent}30`, display: 'flex', alignItems: 'center', padding: '0 10px', gap: 8 }}>
-        <div style={{ width: 80, height: 6, borderRadius: 3, background: `${t.accent}80` }} />
-        <div style={{ width: 40, height: 14, borderRadius: 4, background: t.accent, marginLeft: 4 }} />
+      {/* Hero */}
+      <div style={{ height: 22, background: `linear-gradient(90deg, ${t.accent}22, ${t.accentDark}11)`, borderBottom: `2px solid ${t.accent}30`, display: 'flex', alignItems: 'center', padding: '0 8px', gap: 6 }}>
+        <div style={{ width: 60, height: 5, borderRadius: 2, background: `${t.accent}80` }} />
+        <div style={{ width: 30, height: 10, borderRadius: 3, background: t.accent, marginLeft: 3 }} />
       </div>
 
-      {/* Content area */}
-      <div style={{ display: 'flex', flex: 1, padding: 6, gap: 5 }}>
-        {t.id === 3 && (
-          <div style={{ width: 42, display: 'flex', flexDirection: 'column', gap: 3, paddingTop: 2 }}>
-            {[70, 90, 75, 85, 60].map((w, i) => (
-              <div key={i} style={{ height: 5, borderRadius: 2, background: '#ccc', width: `${w}%` }} />
-            ))}
-          </div>
-        )}
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: t.id === 1 ? '1fr 1fr' : '1fr 1fr 1fr', gap: 4 }}>
+      {/* Content */}
+      <div style={{ display: 'flex', flex: 1, padding: 4, gap: 4 }}>
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: t.id === 1 ? '1fr 1fr' : '1fr 1fr 1fr', gap: 3 }}>
           {[...Array(t.id === 1 ? 4 : 6)].map((_, i) => (
-            <div key={i} style={{ background: '#fff', borderRadius: 5, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-              <div style={{ height: 22, background: `linear-gradient(135deg, ${t.accent}25, ${t.accentDark}15)` }} />
-              <div style={{ padding: '3px 4px' }}>
-                <div style={{ height: 4, borderRadius: 2, background: '#e5e7eb', width: '75%', marginBottom: 2 }} />
-                <div style={{ height: 5, borderRadius: 2, background: t.accent, width: '50%' }} />
+            <div key={i} style={{ background: '#fff', borderRadius: 4, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+              <div style={{ height: 16, background: `linear-gradient(135deg, ${t.accent}25, ${t.accentDark}15)` }} />
+              <div style={{ padding: '2px 3px' }}>
+                <div style={{ height: 3, borderRadius: 1, background: '#e5e7eb', width: '75%', marginBottom: 1 }} />
+                <div style={{ height: 4, borderRadius: 1, background: t.accent, width: '50%' }} />
               </div>
             </div>
           ))}
@@ -122,16 +108,16 @@ function TemplatePreview({ t, isActive }: { t: Template; isActive: boolean }) {
       {/* Lock overlay */}
       {t.locked && (
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(249,250,251,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 10, padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.1)', fontSize: 11, color: '#6b7280', fontWeight: 600 }}>
-            <Lock size={12} /> Próximamente
+          <div style={{ background: '#fff', borderRadius: 8, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 5, boxShadow: '0 2px 6px rgba(0,0,0,0.1)', fontSize: 10, color: '#6b7280', fontWeight: 600 }}>
+            <Lock size={10} /> Próximamente
           </div>
         </div>
       )}
 
       {/* Active badge */}
       {isActive && (
-        <div style={{ position: 'absolute', top: 8, right: 8, background: '#10b981', color: '#fff', fontSize: 9, fontWeight: 700, padding: '3px 8px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 3, letterSpacing: '0.04em' }}>
-          <Check size={9} /> EN USO
+        <div style={{ position: 'absolute', top: 6, right: 6, background: '#10b981', color: '#fff', fontSize: 8, fontWeight: 700, padding: '2px 6px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 2, letterSpacing: '0.04em' }}>
+          <Check size={8} /> EN USO
         </div>
       )}
     </div>
@@ -139,11 +125,11 @@ function TemplatePreview({ t, isActive }: { t: Template; isActive: boolean }) {
 }
 
 export default function PlantillasPage() {
-  const [activeTemplate, setActiveTemplate] = useState<number>(1);
-  const [saving, setSaving] = useState(false);
+  const [sectionTemplates, setSectionTemplates] = useState<Record<string, number>>({ landing: 1, productDetail: 1, cart: 1, checkout: 1 });
+  const [saving, setSaving] = useState<string | null>(null); // section key being saved
   const [loading, setLoading] = useState(true);
-  const [saved, setSaved] = useState(false);
-  const [hovered, setHovered] = useState<number | null>(null);
+  const [savedSection, setSavedSection] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<`${number}-${string}` | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -152,10 +138,20 @@ export default function PlantillasPage() {
         const res = await fetch('/api/template', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
-          setActiveTemplate(Number(data.template) || 1);
+          const global = Number(data.template) || 1;
+          if (data.sections) {
+            setSectionTemplates({
+              landing: Number(data.sections.landing) || global,
+              productDetail: Number(data.sections.productDetail) || global,
+              cart: Number(data.sections.cart) || global,
+              checkout: Number(data.sections.checkout) || global,
+            });
+          } else {
+            setSectionTemplates({ landing: global, productDetail: global, cart: global, checkout: global });
+          }
         }
       } catch {
-        setActiveTemplate(1);
+        setSectionTemplates({ landing: 1, productDetail: 1, cart: 1, checkout: 1 });
       } finally {
         setLoading(false);
       }
@@ -163,18 +159,18 @@ export default function PlantillasPage() {
     load();
   }, []);
 
-  async function activateTemplate(id: number) {
-    setSaving(true);
+  async function activateTemplate(section: string, templateId: number) {
+    setSaving(section);
     try {
       const res = await fetch('/api/template', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ template: id }),
+        body: JSON.stringify({ template: templateId, section }),
       });
       if (res.ok) {
-        setActiveTemplate(id);
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+        setSectionTemplates(prev => ({ ...prev, [section]: templateId }));
+        setSavedSection(section);
+        setTimeout(() => setSavedSection(null), 3000);
       } else {
         const err = await res.json();
         alert('Error al guardar: ' + (err.error || 'desconocido'));
@@ -183,14 +179,12 @@ export default function PlantillasPage() {
       console.error(e);
       alert('Error al guardar la plantilla.');
     } finally {
-      setSaving(false);
+      setSaving(null);
     }
   }
 
-  const activeInfo = TEMPLATES.find(t => t.id === activeTemplate)!;
-
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '4px 0 32px' }}>
+    <div style={{ maxWidth: 960, margin: '0 auto', padding: '4px 0 32px' }}>
 
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, gap: 16 }}>
@@ -201,14 +195,9 @@ export default function PlantillasPage() {
             </div>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: '#111827', margin: 0 }}>Plantillas de Tienda</h1>
           </div>
-          <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Elige y activa el diseño visual de tu tienda web. Los cambios son inmediatos.</p>
+          <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Configura la plantilla para cada sección de tu tienda. Activa y previsualiza independientemente.</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-          {saved && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#059669', background: '#ecfdf5', border: '1px solid #6ee7b7', padding: '6px 14px', borderRadius: 20, fontWeight: 600 }}>
-              <Check size={13} /> ¡Plantilla activada!
-            </span>
-          )}
           <a
             href="http://localhost:3003"
             target="_blank"
@@ -220,162 +209,155 @@ export default function PlantillasPage() {
         </div>
       </div>
 
-      {/* ── Active banner ── */}
-      {!loading && (
-        <div style={{ background: `linear-gradient(135deg, ${activeInfo.accent}18, ${activeInfo.accentDark}08)`, border: `1.5px solid ${activeInfo.accent}40`, borderRadius: 14, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', flexShrink: 0 }}>
-            {activeInfo.emoji}
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>Plantilla activa: <span style={{ color: activeInfo.accent }}>{activeInfo.name}</span></div>
-            <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{activeInfo.description}</div>
-          </div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
-            {[activeInfo.accent, activeInfo.accentDark, activeInfo.bg].map((c, i) => (
-              <div key={i} style={{ width: 14, height: 14, borderRadius: '50%', background: c, border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Grid ── */}
+      {/* ── Sections ── */}
       {loading ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
           <Loader size={24} style={{ color: '#667eea', animation: 'spin 1s linear infinite' }} />
           <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          {TEMPLATES.map(t => {
-            const isActive = activeTemplate === t.id;
-            const isHov = hovered === t.id && !t.locked && !isActive;
-            return (
-              <div
-                key={t.id}
-                onMouseEnter={() => setHovered(t.id)}
-                onMouseLeave={() => setHovered(null)}
-                style={{
-                  background: '#fff',
-                  borderRadius: 16,
-                  border: isActive ? `2px solid ${t.accent}` : isHov ? '2px solid #d1d5db' : '2px solid #f3f4f6',
-                  boxShadow: isActive ? `0 4px 20px ${t.accent}25` : isHov ? '0 4px 16px rgba(0,0,0,0.08)' : '0 1px 4px rgba(0,0,0,0.04)',
-                  overflow: 'hidden',
-                  transition: 'all 0.18s ease',
-                  opacity: t.locked ? 0.65 : 1,
-                  cursor: t.locked ? 'default' : 'pointer',
-                }}
-              >
-                <TemplatePreview t={t} isActive={isActive} />
+        SECTIONS.map(section => {
+          const activeTplId = sectionTemplates[section.key] || 1;
+          const activeInfo = TEMPLATES.find(t => t.id === activeTplId);
+          const isSaving = saving === section.key;
+          const justSaved = savedSection === section.key;
 
-                <div style={{ padding: '14px 16px 16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Plantilla {t.id} — {t.name}</span>
-                        {t.badge && (
-                          <span style={{ fontSize: 9, fontWeight: 700, background: '#fef3c7', color: '#92400e', padding: '2px 6px', borderRadius: 20, letterSpacing: '0.04em' }}>
-                            {t.badge.toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <p style={{ fontSize: 12, color: '#6b7280', margin: 0, lineHeight: 1.5 }}>{t.description}</p>
-                    </div>
+          return (
+            <div key={section.key} style={{ marginBottom: 32 }}>
+              {/* Section header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, padding: '12px 16px', background: '#f9fafb', borderRadius: 12, border: '1px solid #f3f4f6' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: activeInfo ? activeInfo.accent : '#667eea', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {section.icon}
                   </div>
-
-                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 12 }}>
-                    {t.tags.map(tag => (
-                      <span key={tag} style={{ fontSize: 10, padding: '3px 8px', borderRadius: 20, background: '#f3f4f6', color: '#4b5563', fontWeight: 600 }}>
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', gap: 5 }}>
-                      {[t.accent, t.accentDark, t.navBg].map((c, i) => (
-                        <div key={i} title={c} style={{ width: 16, height: 16, borderRadius: '50%', background: c, border: '2px solid #f3f4f6', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }} />
-                      ))}
-                    </div>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                      {/* Botón Previsualizar — siempre visible si no está bloqueada */}
-                      {!t.locked && (
-                        <a
-                          href={`/preview/plantilla/${t.id}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 4,
-                            fontSize: 11, fontWeight: 600,
-                            padding: '6px 10px', borderRadius: 7,
-                            background: '#eff6ff', color: '#2563eb',
-                            border: '1px solid #bfdbfe', cursor: 'pointer',
-                            textDecoration: 'none',
-                            transition: 'all 0.15s',
-                          }}
-                          onMouseEnter={e => { e.currentTarget.style.background = '#dbeafe'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = '#eff6ff'; }}
-                        >
-                          <Eye size={11} /> Preview
-                        </a>
-                      )}
-                      {!t.locked && isActive && (
-                        <button
-                          onClick={() => router.push(`/admin/theme-editor?t=${t.id}`)}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 5,
-                            fontSize: 12, fontWeight: 600,
-                            padding: '7px 14px', borderRadius: 8,
-                            background: '#f3f4f6', color: '#374151',
-                            border: '1px solid #e5e7eb', cursor: 'pointer',
-                            transition: 'all 0.15s',
-                          }}
-                          onMouseEnter={e => { e.currentTarget.style.background = '#e5e7eb'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = '#f3f4f6'; }}
-                        >
-                          <Pencil size={12} /> Editar
-                        </button>
-                      )}
-                      {t.locked ? (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>
-                          <Lock size={11} /> Bloqueada
-                        </span>
-                      ) : isActive ? (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#059669', fontWeight: 700 }}>
-                          <Check size={13} /> En uso
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => activateTemplate(t.id)}
-                          disabled={saving}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 6,
-                            fontSize: 12, fontWeight: 700,
-                            padding: '7px 16px', borderRadius: 8,
-                            background: isHov ? t.accent : '#111827',
-                            color: '#fff', border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
-                            opacity: saving ? 0.6 : 1,
-                            transition: 'background 0.15s',
-                          }}
-                        >
-                          {saving ? <Loader size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Zap size={12} />}
-                          Activar
-                        </button>
-                      )}
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>{section.label}</div>
+                    <div style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }}>
+                      Activa: <span style={{ fontWeight: 600, color: activeInfo?.accent || '#667eea' }}>{activeInfo ? `Plantilla ${activeInfo.id} — ${activeInfo.name}` : 'Sin asignar'}</span>
                     </div>
                   </div>
                 </div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  {justSaved && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#059669', background: '#ecfdf5', border: '1px solid #6ee7b7', padding: '4px 10px', borderRadius: 20, fontWeight: 600 }}>
+                      <Check size={11} /> ¡Guardado!
+                    </span>
+                  )}
+                  <a
+                    href={section.previewPath(activeTplId)}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '5px 10px', borderRadius: 7, background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', cursor: 'pointer', textDecoration: 'none' }}
+                  >
+                    <Eye size={11} /> Preview
+                  </a>
+                </div>
               </div>
-            );
-          })}
-        </div>
+
+              {/* Template grid for this section */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                {TEMPLATES.filter(t => !t.sections || t.sections.includes(section.key)).map(t => {
+                  const isActive = activeTplId === t.id;
+                  const hoverKey = `${t.id}-${section.key}` as const;
+                  const isHov = hovered === hoverKey && !t.locked && !isActive;
+                  return (
+                    <div
+                      key={t.id}
+                      onMouseEnter={() => setHovered(hoverKey)}
+                      onMouseLeave={() => setHovered(null)}
+                      style={{
+                        background: '#fff',
+                        borderRadius: 12,
+                        border: isActive ? `2px solid ${t.accent}` : isHov ? '2px solid #d1d5db' : '2px solid #f3f4f6',
+                        boxShadow: isActive ? `0 3px 14px ${t.accent}20` : isHov ? '0 3px 10px rgba(0,0,0,0.06)' : '0 1px 3px rgba(0,0,0,0.03)',
+                        overflow: 'hidden',
+                        transition: 'all 0.15s ease',
+                        opacity: t.locked ? 0.6 : 1,
+                        cursor: t.locked ? 'default' : 'pointer',
+                      }}
+                    >
+                      <TemplatePreview t={t} isActive={isActive} />
+
+                      <div style={{ padding: '10px 12px 12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#111827' }}>{t.emoji} #{t.id} - {t.name}</span>
+                          {t.badge && (
+                            <span style={{ fontSize: 8, fontWeight: 700, background: '#fef3c7', color: '#92400e', padding: '1px 5px', borderRadius: 20, letterSpacing: '0.04em' }}>
+                              {t.badge.toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', marginBottom: 8 }}>
+                          {t.tags.map(tag => (
+                            <span key={tag} style={{ fontSize: 9, padding: '2px 6px', borderRadius: 20, background: '#f3f4f6', color: '#4b5563', fontWeight: 600 }}>
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', gap: 4 }}>
+                            {[t.accent, t.accentDark, t.navBg].map((c, i) => (
+                              <div key={i} title={c} style={{ width: 12, height: 12, borderRadius: '50%', background: c, border: '2px solid #f3f4f6', boxShadow: '0 1px 2px rgba(0,0,0,0.08)' }} />
+                            ))}
+                          </div>
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                            <a
+                              href={section.previewPath(t.id)}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Previsualizar"
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 7, background: '#f3f4f6', color: '#4b5563', transition: 'all 0.15s' }}
+                              onMouseEnter={e => e.currentTarget.style.background = '#e5e7eb'}
+                              onMouseLeave={e => e.currentTarget.style.background = '#f3f4f6'}
+                            >
+                              <Eye size={14} />
+                            </a>
+                            {t.locked ? (
+                              <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#9ca3af', fontWeight: 600 }}>
+                                <Lock size={10} /> Bloqueada
+                              </span>
+                            ) : isActive ? (
+                              <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#059669', fontWeight: 700 }}>
+                                <Check size={12} /> En uso
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => activateTemplate(section.key, t.id)}
+                                disabled={!!saving}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: 4,
+                                  fontSize: 11, fontWeight: 700,
+                                  padding: '5px 12px', borderRadius: 7,
+                                  background: isHov ? t.accent : '#111827',
+                                  color: '#fff', border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
+                                  opacity: saving ? 0.5 : 1,
+                                  transition: 'background 0.15s',
+                                }}
+                              >
+                                {isSaving ? <Loader size={10} style={{ animation: 'spin 1s linear infinite' }} /> : <Zap size={10} />}
+                                Activar
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })
       )}
 
       {/* ── Info ── */}
       <div style={{ marginTop: 20, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '12px 16px', fontSize: 13, color: '#92400e', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
         <span style={{ fontSize: 16, flexShrink: 0 }}>ℹ️</span>
         <div>
-          <strong>¿Cómo funciona?</strong> La plantilla seleccionada se guarda en Appwrite y la tienda la carga automáticamente.
-          Los cambios son inmediatos — basta con recargar{' '}
+          <strong>¿Cómo funciona?</strong> Cada sección de la tienda puede tener su propia plantilla independiente.
+          Al activar una plantilla para una sección, solo esa sección cambia. Los cambios son inmediatos — recarga{' '}
           <a href="http://localhost:3003" target="_blank" rel="noreferrer" style={{ color: '#b45309', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
             localhost:3003 <ExternalLink size={11} />
           </a>.

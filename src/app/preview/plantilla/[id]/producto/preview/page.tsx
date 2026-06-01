@@ -2,27 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import dynamic from 'next/dynamic';
 import { ArrowLeft } from 'lucide-react';
-
-// Mapear explícitamente los componentes importados dinámicamente con ssr desactivado
-const TEMPLATE_COMPONENTS: Record<number, any> = {
-  1: dynamic(() => import('@/templates/plantilla1/HomePage'), { ssr: false }),
-  2: dynamic(() => import('@/templates/plantilla2/HomePage'), { ssr: false }),
-  3: dynamic(() => import('@/templates/plantilla3/HomePage'), { ssr: false }),
-  4: dynamic(() => import('@/templates/plantilla4/HomePage'), { ssr: false }),
-  5: dynamic(() => import('@/templates/plantilla5/HomePage'), { ssr: false }),
-  6: dynamic(() => import('@/templates/plantilla6/HomePage'), { ssr: false }),
-  7: dynamic(() => import('@/templates/plantilla7/HomePage'), { ssr: false }),
-  8: dynamic(() => import('@/templates/plantilla8/HomePage'), { ssr: false }),
-  10: dynamic(() => import('@/templates/plantilla10/HomePage'), { ssr: false }),
-  11: dynamic(() => import('@/templates/plantilla11/HomePage'), { ssr: false }),
-  12: dynamic(() => import('@/templates/plantilla12/HomePage'), { ssr: false }),
-  13: dynamic(() => import('@/templates/plantilla13/HomePage'), { ssr: false }),
-  23: dynamic(() => import('@/templates/plantilla23/HomePage'), { ssr: false }),
-  24: dynamic(() => import('@/templates/plantilla24/HomePage'), { ssr: false }),
-  25: dynamic(() => import('@/templates/plantilla25/HomePage'), { ssr: false }),
-};
+import DynamicProductDetail from '@/components/DynamicProductDetail';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION } from '@/lib/appwrite';
+import { Query } from 'appwrite';
 
 const TEMPLATE_NAMES: Record<number, string> = {
   1: 'Moderna',
@@ -42,16 +25,28 @@ const TEMPLATE_NAMES: Record<number, string> = {
   25: 'Concept Theme Tech',
 };
 
-
-export default function PreviewPlantillaPage() {
+export default function PreviewProductDetailPage() {
   const params = useParams();
   const id = Number(params?.id);
   const [ready, setReady] = useState(false);
+  const [randomProductId, setRandomProductId] = useState<string | undefined>();
 
   useEffect(() => {
-    // Pequeño delay para que carguen los assets
-    const t = setTimeout(() => setReady(true), 300);
-    return () => clearTimeout(t);
+    async function fetchRandomProduct() {
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.limit(1)]);
+        if (res.documents && res.documents.length > 0) {
+          setRandomProductId(res.documents[0].$id);
+        }
+      } catch (err) {
+        console.warn('Could not fetch random product for preview', err);
+      } finally {
+        setTimeout(() => setReady(true), 300);
+      }
+    }
+    fetchRandomProduct();
   }, []);
 
   useEffect(() => {
@@ -83,7 +78,7 @@ export default function PreviewPlantillaPage() {
     return () => { style.remove(); };
   }, []);
 
-  if (!id || !TEMPLATE_COMPONENTS[id]) {
+  if (!id) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'system-ui, sans-serif' }}>
         <div style={{ textAlign: 'center' }}>
@@ -93,8 +88,6 @@ export default function PreviewPlantillaPage() {
       </div>
     );
   }
-
-  const TemplateComponent = TEMPLATE_COMPONENTS[id];
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff' }}>
@@ -108,7 +101,7 @@ export default function PreviewPlantillaPage() {
         background: 'rgba(15, 23, 42, 0.95)',
         backdropFilter: 'blur(8px)',
         color: '#fff',
-        display: 'none',
+        display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '8px 16px',
@@ -125,7 +118,7 @@ export default function PreviewPlantillaPage() {
           </a>
           <div style={{ width: 1, height: 20, background: '#334155' }} />
           <span style={{ fontWeight: 700, color: '#f1f5f9' }}>
-            👁️ Vista previa — Plantilla {id}: {TEMPLATE_NAMES[id]}
+            👁️ Vista previa (Detalle de Producto) — Plantilla {id}: {TEMPLATE_NAMES[id] || 'Plantilla ' + id}
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -138,9 +131,12 @@ export default function PreviewPlantillaPage() {
         </div>
       </div>
 
+      {/* Spacer para la barra de preview (es fixed) */}
+      <div style={{ height: 40 }} />
+
       {/* Contenido de la plantilla */}
       <div>
-        {ready && <TemplateComponent />}
+        {ready && <DynamicProductDetail />}
       </div>
     </div>
   );
