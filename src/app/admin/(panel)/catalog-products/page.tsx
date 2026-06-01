@@ -404,6 +404,7 @@ export default function CatalogProductsPage() {
             : `¡Buenas noticias! "${req.productName}" que consultaste ya está disponible y fue agregado a tu carrito (${req.quantity || 1} und). ¡No te quedes sin él!`,
           type: 'success',
           isRead: false,
+          productImage: req.productImage,
         };
         try {
           await databases.createDocument(databaseId, NOTIFICATIONS_COLLECTION_ID, ID.unique(), notifData);
@@ -484,6 +485,7 @@ export default function CatalogProductsPage() {
           message: `Lamentamos informarte que "${req.productName}" no tiene existencia actualmente. Lo vigilaremos de cerca y te avisaremos en cuanto vuelva a estar disponible. ¡Gracias por tu paciencia!`,
           type: 'warning',
           isRead: false,
+          productImage: req.productImage,
         };
         try {
           await databases.createDocument(databaseId, NOTIFICATIONS_COLLECTION_ID, ID.unique(), notifData);

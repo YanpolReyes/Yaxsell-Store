@@ -305,10 +305,18 @@ export default function NotificationsOverlay({ onClose }: Props) {
                         transition: swipingId === id ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                       }}
                     >
-                      {/* Left Icon */}
-                      <div style={{ width: 44, height: 44, borderRadius: 12, background: ts.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Icon size={20} color={ts.color} />
-                      </div>
+                      {/* Left Icon or Product Image */}
+                      {(n.productImage || n.PRODUCTIMAGE) ? (
+                        <img
+                          src={(n.productImage || n.PRODUCTIMAGE) as string}
+                          alt={title}
+                          style={{ width: 44, height: 44, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }}
+                        />
+                      ) : (
+                        <div style={{ width: 44, height: 44, borderRadius: 12, background: ts.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Icon size={20} color={ts.color} />
+                        </div>
+                      )}
 
                       {/* Right Details */}
                       <div style={{ flex: 1, minWidth: 0 }}>
