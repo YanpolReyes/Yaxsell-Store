@@ -108,6 +108,8 @@ export default function CatalogProductsPage() {
               stock: p.STOCK ?? 0,
               inCatalog: true,
               hasStock: (p.STOCK ?? 0) > 0,
+              inInventory: false,
+              source: 'products',
             };
           });
         } catch (e) {
@@ -266,7 +268,7 @@ export default function CatalogProductsPage() {
             stock: isInProducts ? (catDoc.STOCK ?? docStock) : docStock,
             inCatalog: catDoc.ISACTIVE !== false,
             hasStock: isInProducts && (catDoc.STOCK ?? 0) > 0,
-            inInventory: existing.inInventory ?? false,
+            inInventory: isInProducts ? false : (existing.inInventory ?? false),
             source: isInProducts ? 'products' : ((catDoc._collection as 'products' | 'catalog_products' | 'inventory_products') || existing.source),
           };
         }
