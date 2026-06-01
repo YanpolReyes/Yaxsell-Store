@@ -615,8 +615,8 @@ function CheckoutInner() {
                       const ag = agencies.find((a: AgencyOption) => a.name === agency);
                       return ag ? (
                         <>
-                          <div style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: ag.bg, borderRadius: 10, flexShrink: 0 }}>
-                            <Truck size={16} color={ag.color} />
+                          <div style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: ag.bg, borderRadius: 10, flexShrink: 0, overflow: 'hidden' }}>
+                            {ag.logo ? <img src={ag.logo} alt={ag.name} style={{ width: 28, height: 28, objectFit: 'contain' }} /> : <Truck size={16} color={ag.color} />}
                           </div>
                           <div style={{ flex: 1 }}>
                             <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: ag.color }}>{ag.name}</p>
@@ -634,12 +634,12 @@ function CheckoutInner() {
                       {agencies.map((ag: AgencyOption) => {
                         const sel = agency === ag.name;
                         return (
-                          <button type="button" key={ag.name} onClick={() => { setAgency(ag.name); setAgencyDropdownOpen(false); }}
+                          <button type="button" key={ag.name} onClick={() => { setAgency(ag.name); setAgencyDropdownOpen(false); if (ag.name === 'RETIRO EN TIENDA') { setForm(f => ({ ...f, region: 'Región Metropolitana', comuna: 'Santiago', address: 'Toesca 2537, Santiago Centro, Chile' })); setSelectedAddressId(null); setShowingNewAddress(true); } }}
                             style={{ width: '100%', padding: '12px 16px', border: 'none', background: sel ? PINK_BG : 'transparent', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid #fdf2f8', transition: 'background .15s' }}
                             onMouseEnter={e => { if (!sel) e.currentTarget.style.background = '#fefcfe'; }}
                             onMouseLeave={e => { if (!sel) e.currentTarget.style.background = 'transparent'; }}>
-                            <div style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', background: ag.bg, borderRadius: 9, flexShrink: 0 }}>
-                              <Truck size={15} color={ag.color} />
+                            <div style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', background: ag.bg, borderRadius: 9, flexShrink: 0, overflow: 'hidden' }}>
+                              {ag.logo ? <img src={ag.logo} alt={ag.name} style={{ width: 26, height: 26, objectFit: 'contain' }} /> : <Truck size={15} color={ag.color} />}
                             </div>
                             <div style={{ flex: 1 }}>
                               <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: sel ? ag.color : '#333' }}>{ag.name}</p>
