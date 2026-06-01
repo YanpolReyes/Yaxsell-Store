@@ -250,6 +250,16 @@ export default function NotificationsOverlay({ onClose }: Props) {
                 const read = !isNotificationUnread(n);
                 const isDismissed = dismissedIds.includes(id);
 
+                // Parse image from data JSON field
+                let notifImage: string | null = null;
+                try {
+                  const dataStr = (n.data || n.DATA) as string;
+                  if (dataStr) {
+                    const parsed = JSON.parse(dataStr);
+                    if (parsed.image) notifImage = parsed.image;
+                  }
+                } catch {}
+
                 return (
                   <div
                     key={id}
@@ -288,12 +298,14 @@ export default function NotificationsOverlay({ onClose }: Props) {
                     </div>
 
                     {/* Actual notification card */}
-                    <button
-                      type="button"
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleOpen(n)}
                       onTouchStart={(e) => handleTouchStart(e, id)}
                       onTouchMove={(e) => handleTouchMove(e, id)}
                       onTouchEnd={(e) => handleTouchEnd(e, id, (n.userId || n.USERID || '') as string)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleOpen(n); }}
                       style={{
                         display: 'flex', gap: 12, padding: 14, borderRadius: 14, border: '1px solid #f0f0f0',
                         background: read ? '#fff' : 'linear-gradient(135deg,#fdf2f8,#fff)',
@@ -306,9 +318,9 @@ export default function NotificationsOverlay({ onClose }: Props) {
                       }}
                     >
                       {/* Left Icon or Product Image */}
-                      {(n.productImage || n.PRODUCTIMAGE) ? (
+                      {notifImage ? (
                         <img
-                          src={(n.productImage || n.PRODUCTIMAGE) as string}
+                          src={notifImage}
                           alt={title}
                           style={{ width: 44, height: 44, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }}
                         />
@@ -352,7 +364,7 @@ export default function NotificationsOverlay({ onClose }: Props) {
                         </div>
                         {body && <p style={{ margin: 0, fontSize: 14, color: '#6b7280', lineHeight: 1.5 }}>{body}</p>}
                       </div>
-                    </button>
+                    </div>
                   </div>
                 );
               })}

@@ -361,7 +361,6 @@ export default function CatalogProductsPage() {
   const totalPending = alerts.filter(a => a.status === 'pending').length;
   const totalAvailable = alerts.filter(a => a.status === 'available').length;
   const totalUnavailable = alerts.filter(a => a.status === 'unavailable').length;
-  const totalSubidoAStock = alerts.filter(a => (a.status as string) === 'subido_a_stock').length;
 
   const handleMarkAvailable = async (req: StockAlertView) => {
     // Only block if product is NOT in tienda (no stock and not in catalog)
@@ -404,7 +403,7 @@ export default function CatalogProductsPage() {
             : `¡Buenas noticias! "${req.productName}" que consultaste ya está disponible y fue agregado a tu carrito (${req.quantity || 1} und). ¡No te quedes sin él!`,
           type: 'success',
           isRead: false,
-          productImage: req.productImage,
+          data: JSON.stringify({ image: req.productImage || '' }),
         };
         try {
           await databases.createDocument(databaseId, NOTIFICATIONS_COLLECTION_ID, ID.unique(), notifData);
@@ -413,13 +412,13 @@ export default function CatalogProductsPage() {
         }
       }
 
-      // Update alert status to 'subido_a_stock' in Appwrite and locally
+      // Update alert status to 'available' in Appwrite and locally
       try {
-        await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { status: 'subido_a_stock' });
+        await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { status: 'available' });
       } catch (updErr: any) {
         console.warn('No se pudo actualizar estado de alerta:', updErr?.message);
       }
-      setAlerts(prev => prev.map(a => a.$id === req.$id ? { ...a, status: 'subido_a_stock' as any } : a));
+      setAlerts(prev => prev.map(a => a.$id === req.$id ? { ...a, status: 'available' as any } : a));
     } catch (e: any) {
       window.alert('Error: ' + e.message);
     } finally {
@@ -485,7 +484,7 @@ export default function CatalogProductsPage() {
           message: `Lamentamos informarte que "${req.productName}" no tiene existencia actualmente. Lo vigilaremos de cerca y te avisaremos en cuanto vuelva a estar disponible. ¡Gracias por tu paciencia!`,
           type: 'warning',
           isRead: false,
-          productImage: req.productImage,
+          data: JSON.stringify({ image: req.productImage || '' }),
         };
         try {
           await databases.createDocument(databaseId, NOTIFICATIONS_COLLECTION_ID, ID.unique(), notifData);
@@ -727,17 +726,13 @@ export default function CatalogProductsPage() {
           <div style={{ fontSize: 10, fontWeight: 700, color: '#c0547a', textTransform: 'uppercase', letterSpacing: '.5px' }}>Pendientes</div>
           <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, color: '#be185d', marginTop: 2 }}>{totalPending}</div>
         </div>
-        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: isMobile ? 12 : 16 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '.5px' }}>Con Stock</div>
-          <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, color: '#15803d', marginTop: 2 }}>{totalAvailable}</div>
-        </div>
         <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: isMobile ? 12 : 16 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '.5px' }}>Sin Stock</div>
           <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, color: '#b91c1c', marginTop: 2 }}>{totalUnavailable}</div>
         </div>
         <div style={{ background: '#dbeafe', border: '1px solid #93c5fd', borderRadius: 10, padding: isMobile ? 12 : 16 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '.5px' }}>Subido a Stock</div>
-          <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, color: '#1e3a8a', marginTop: 2 }}>{totalSubidoAStock}</div>
+          <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, color: '#1e3a8a', marginTop: 2 }}>{totalAvailable}</div>
         </div>
         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: isMobile ? 12 : 16 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '.5px' }}>Clientes</div>
@@ -849,10 +844,10 @@ export default function CatalogProductsPage() {
                 <div style={{ maxHeight: isMobile ? 'none' : 600, overflowY: 'auto', padding: isMobile ? 10 : 12 }}>
                   {selectedUser.requests.map(a => (
                     <div key={a.$id} style={{
-                      background: (a.hasStock || a.inCatalog) ? '#eff6ff' : ((a.status as string) === 'subido_a_stock' ? '#dbeafe' : (a.status === 'pending' ? '#fffbf5' : a.status === 'available' ? '#f0fdf4' : '#fef2f2')),
-                      border: `1px solid ${(a.hasStock || a.inCatalog) ? '#93c5fd' : ((a.status as string) === 'subido_a_stock' ? '#93c5fd' : (a.status === 'pending' ? '#fbcfe8' : a.status === 'available' ? '#bbf7d0' : '#fecaca'))}`,
+                      background: (a.hasStock || a.inCatalog) ? '#eff6ff' : (a.status === 'available' ? '#dbeafe' : (a.status === 'pending' ? '#fffbf5' : '#fef2f2')),
+                      border: `1px solid ${(a.hasStock || a.inCatalog) ? '#93c5fd' : (a.status === 'available' ? '#93c5fd' : (a.status === 'pending' ? '#fbcfe8' : '#fecaca'))}`,
                       borderRadius: 10, padding: isMobile ? 11 : 14, marginBottom: 10,
-                      boxShadow: (a.hasStock || a.inCatalog) ? '0 0 0 1px #93c5fd' : ((a.status as string) === 'subido_a_stock' ? '0 0 0 1px #93c5fd' : 'none'),
+                      boxShadow: (a.hasStock || a.inCatalog) ? '0 0 0 1px #93c5fd' : (a.status === 'available' ? '0 0 0 1px #93c5fd' : 'none'),
                     }}>
                       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                         {/* Product image */}
@@ -892,11 +887,6 @@ export default function CatalogProductsPage() {
                               </span>
                             )}
                             {a.status === 'available' && (
-                              <span style={{ fontSize: 10, fontWeight: 700, background: '#f0fdf4', color: '#16a34a', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
-                                <CheckCircle size={10} /> Con Stock
-                              </span>
-                            )}
-                            {(a.status as string) === 'subido_a_stock' && (
                               <span style={{ fontSize: 10, fontWeight: 700, background: '#dbeafe', color: '#1e40af', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 3, border: '1px solid #93c5fd', flexShrink: 0 }}>
                                 <ShoppingCart size={10} /> Subido a Stock
                               </span>

@@ -64,8 +64,8 @@ export async function POST(req: NextRequest) {
           await databases.createDocument(DATABASE_ID, CART_SNAPSHOTS_COLLECTION, ID.unique(), snapData);
         }
 
-        // Update alert status to 'subido_a_stock' instead of deleting
-        await databases.updateDocument(DATABASE_ID, STOCK_ALERTS_COLLECTION, singleAlertId, { status: 'subido_a_stock' });
+        // Update alert status to 'available' (product was found and notified)
+        await databases.updateDocument(DATABASE_ID, STOCK_ALERTS_COLLECTION, singleAlertId, { status: 'available' });
 
         return NextResponse.json({ success: true, autoAdded: 1, notified: 0 });
       } catch (e: any) {
@@ -147,8 +147,8 @@ export async function POST(req: NextRequest) {
 
         notified++;
 
-        // 3. Update alert status to 'subido_a_stock' instead of deleting
-        await databases.updateDocument(DATABASE_ID, STOCK_ALERTS_COLLECTION, alert.$id, { status: 'subido_a_stock' });
+        // 3. Update alert status to 'available' (product was found and notified)
+        await databases.updateDocument(DATABASE_ID, STOCK_ALERTS_COLLECTION, alert.$id, { status: 'available' });
 
       } catch (userErr) {
         console.error(`Error processing alert for user ${userId}:`, userErr);
