@@ -64,8 +64,8 @@ export async function POST(req: NextRequest) {
           await databases.createDocument(DATABASE_ID, CART_SNAPSHOTS_COLLECTION, ID.unique(), snapData);
         }
 
-        // Delete the specific alert
-        await databases.deleteDocument(DATABASE_ID, STOCK_ALERTS_COLLECTION, singleAlertId);
+        // Update alert status to 'subido_a_stock' instead of deleting
+        await databases.updateDocument(DATABASE_ID, STOCK_ALERTS_COLLECTION, singleAlertId, { status: 'subido_a_stock' });
 
         return NextResponse.json({ success: true, autoAdded: 1, notified: 0 });
       } catch (e: any) {
@@ -147,8 +147,8 @@ export async function POST(req: NextRequest) {
 
         notified++;
 
-        // 3. Delete the stock alert (it's fulfilled)
-        await databases.deleteDocument(DATABASE_ID, STOCK_ALERTS_COLLECTION, alert.$id);
+        // 3. Update alert status to 'subido_a_stock' instead of deleting
+        await databases.updateDocument(DATABASE_ID, STOCK_ALERTS_COLLECTION, alert.$id, { status: 'subido_a_stock' });
 
       } catch (userErr) {
         console.error(`Error processing alert for user ${userId}:`, userErr);

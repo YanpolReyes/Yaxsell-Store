@@ -13,7 +13,7 @@ import { setBarcodeInFeatures, setSectionInFeatures } from '@/lib/product-featur
 import { Product, Category, Subcategory } from '@/types/admin';
 import {
   Upload, Search, Package, CheckCircle2, RefreshCw,
-  X, FileSpreadsheet, ArrowUpCircle, Plus, Eye, EyeOff, Sparkles, Languages, FolderTree, Camera, MapPin, ChevronDown, Download, ImageIcon, CalendarClock
+  X, FileSpreadsheet, ArrowUpCircle, Plus, Eye, EyeOff, Sparkles, Languages, FolderTree, Camera, MapPin, ChevronDown, Download, ImageIcon, CalendarClock, Trash2
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false });
@@ -233,6 +233,8 @@ export default function InventarioPage() {
   const scannedCodesRef = useRef<Set<string>>(new Set());
   const [duplicateScanWarning, setDuplicateScanWarning] = useState<{ code: string; product: Product } | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const sectionProductCounts = useMemo(() => {
     const counts: Record<number, number> = {};
@@ -1332,6 +1334,21 @@ export default function InventarioPage() {
    * - Solo permite publicar si tiene STOCK > 0
    * - Valida que el SKU/barcode no exista ya en el catálogo
    */
+  const deleteFromInventory = async (productId: string) => {
+    setDeletingId(productId);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      await databases.deleteDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, productId);
+      setProducts(prev => prev.filter(p => p.$id !== productId));
+      setDeleteConfirm(null);
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const publishToCatalog = async (productId: string): Promise<boolean> => {
     const p = products.find(x => x.$id === productId);
     if (!p) return false;
@@ -2496,6 +2513,16 @@ export default function InventarioPage() {
                                 <ArrowUpCircle className="w-3.5 h-3.5" />
                                 Publicar
                               </button>
+                              {/* 🗑️ Botón Eliminar del inventario */}
+                              <button
+                                onClick={() => setDeleteConfirm({ id: p.$id, name: p.NAME || 'Producto' })}
+                                disabled={deletingId === p.$id}
+                                className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-semibold rounded transition shadow-sm"
+                                title="Eliminar este producto del inventario"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Eliminar
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -2616,6 +2643,18 @@ export default function InventarioPage() {
                           >
                             <ArrowUpCircle className="w-4 h-4" />
                             Publicar al catálogo
+                          </button>
+                        </div>
+                        {/* 🗑️ Botón Eliminar del inventario (mobile) */}
+                        <div className="mt-2" onClick={e => e.stopPropagation()}>
+                          <button
+                            onClick={() => setDeleteConfirm({ id: p.$id, name: p.NAME || 'Producto' })}
+                            disabled={deletingId === p.$id}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold rounded-lg transition shadow-sm"
+                            title="Eliminar este producto del inventario"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Eliminar del inventario
                           </button>
                         </div>
                       </div>
@@ -3081,6 +3120,35 @@ export default function InventarioPage() {
         publishedCollectionId={PRODUCTS_COLLECTION_ID}
         onPublishedProductsUpdate={setPublishedProducts as any}
       />
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="font-bold text-gray-900">Eliminar del inventario</h3>
+            </div>
+            <p className="text-sm text-gray-600">
+              ¿Estás seguro de eliminar <span className="font-semibold text-gray-900">"{deleteConfirm.name}"</span> del inventario?
+              <br /><br />
+              Esta acción eliminará el producto de <strong>Inventory Products</strong>. No se puede deshacer.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setDeleteConfirm(null)}
+                className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+                Cancelar
+              </button>
+              <button onClick={() => deleteFromInventory(deleteConfirm.id)} disabled={deletingId === deleteConfirm.id}
+                className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition disabled:opacity-60">
+                {deletingId === deleteConfirm.id ? 'Eliminando...' : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

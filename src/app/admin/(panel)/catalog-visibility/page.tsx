@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { Eye, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Eye, AlertTriangle, CheckCircle, Search, RefreshCw, Package, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Report {
   totalPasted: number;
@@ -58,6 +58,86 @@ export default function CatalogVisibilityPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [totalCatalogProducts, setTotalCatalogProducts] = useState<number | null>(null);
+
+  // Product listing state
+  const [products, setProducts] = useState<any[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'visible' | 'hidden' | 'no-image' | 'broken-image'>('all');
+  const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
+  const [productPage, setProductPage] = useState(0);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const PRODUCT_PAGE_SIZE = 50;
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [imageUrlModal, setImageUrlModal] = useState<{ productId: string; currentUrl: string; newUrl: string; source: string } | null>(null);
+
+  const loadProducts = useCallback(async () => {
+    setIsLoadingProducts(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const all: any[] = [];
+
+      // Only load from catalog_products (a pedido / sin stock)
+      let offset = 0;
+      while (true) {
+        const queries: any[] = [Query.limit(500), Query.offset(offset)];
+        if (activeFilter === 'visible') queries.push(Query.equal('ISACTIVE', true));
+        if (activeFilter === 'hidden') queries.push(Query.equal('ISACTIVE', false));
+        if (productSearch) queries.push(Query.contains('NAME', productSearch));
+        try {
+          const res = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, queries);
+          all.push(...res.documents.map((d: any) => ({ ...d, _source: 'catalog_products', ISACTIVE: d.ISACTIVE ?? true })));
+          if (res.documents.length < 500) break;
+          offset += 500;
+        } catch { break; }
+      }
+
+      // Apply client-side image filters
+      let filtered = all;
+      if (activeFilter === 'no-image') {
+        filtered = all.filter(p => !p.IMAGEURL || p.IMAGEURL.trim() === '');
+      } else if (activeFilter === 'broken-image') {
+        filtered = all.filter(p => p.IMAGEURL && p.IMAGEURL.trim() !== '' && brokenImages.has(p.$id));
+      }
+
+      // Sort: visible first, then by name
+      filtered.sort((a, b) => {
+        const aActive = a.ISACTIVE ? 0 : 1;
+        const bActive = b.ISACTIVE ? 0 : 1;
+        if (aActive !== bActive) return aActive - bActive;
+        return (a.NAME || '').localeCompare(b.NAME || '');
+      });
+
+      setTotalProducts(filtered.length);
+      setProducts(filtered);
+      setProductPage(0);
+    } catch (e) {
+      console.error('Error loading products', e);
+    } finally {
+      setIsLoadingProducts(false);
+    }
+  }, [activeFilter, productSearch, brokenImages]);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  const toggleVisibility = async (product: any) => {
+    setTogglingId(product.$id);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const collectionId = product._source === 'catalog_products' ? CATALOG_PRODUCTS_COLLECTION_ID : PRODUCTS_COLLECTION_ID;
+      const newActive = !product.ISACTIVE;
+      await databases.updateDocument(databaseId, collectionId, product.$id, { ISACTIVE: newActive });
+      setProducts(prev => prev.map(p => p.$id === product.$id ? { ...p, ISACTIVE: newActive } : p));
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   useEffect(() => {
     const fetchTotal = async () => {
@@ -494,6 +574,181 @@ export default function CatalogVisibilityPage() {
         )}
 
       </div>
+
+      {/* Product Listing */}
+      <div style={{ marginTop: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: '#111827', margin: 0 }}>Productos del Catálogo</h2>
+          <button onClick={loadProducts} disabled={isLoadingProducts} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <RefreshCw size={14} color="#6b7280" style={{ animation: isLoadingProducts ? 'spin 1s linear infinite' : 'none' }} />
+          </button>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+
+        {/* Search & Filters */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+            <Search size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+            <input
+              type="text"
+              placeholder="Buscar por nombre..."
+              value={productSearch}
+              onChange={e => setProductSearch(e.target.value)}
+              style={{ width: '100%', padding: '8px 12px 8px 32px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 13, outline: 'none' }}
+            />
+          </div>
+          {(['all', 'visible', 'hidden', 'no-image', 'broken-image'] as const).map(f => (
+            <button key={f} onClick={() => setActiveFilter(f)} style={{
+              padding: '6px 14px', borderRadius: 8, border: `1px solid ${activeFilter === f ? '#6366f1' : '#e5e7eb'}`,
+              background: activeFilter === f ? '#eef2ff' : '#fff', color: activeFilter === f ? '#4f46e5' : '#6b7280',
+              fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all .15s',
+            }}>
+              {f === 'all' ? 'Todos' : f === 'visible' ? 'Visibles' : f === 'hidden' ? 'Ocultos' : f === 'no-image' ? 'Sin Imagen' : 'Imagen Rota'}
+            </button>
+          ))}
+          <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 600 }}>{totalProducts} productos</span>
+        </div>
+
+        {/* Table */}
+        {isLoadingProducts ? (
+          <div style={{ textAlign: 'center', padding: 40, color: '#9ca3af' }}>
+            <RefreshCw size={24} style={{ animation: 'spin 1s linear infinite' }} />
+            <p style={{ marginTop: 8, fontSize: 13 }}>Cargando productos...</p>
+          </div>
+        ) : products.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 40 }}>
+            <Package size={32} color="#d1d5db" />
+            <p style={{ color: '#9ca3af', fontSize: 13, marginTop: 8 }}>No se encontraron productos</p>
+          </div>
+        ) : (
+          <>
+            <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc' }}>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#6b7280', borderBottom: '1px solid #e5e7eb' }}>Imagen</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#6b7280', borderBottom: '1px solid #e5e7eb' }}>Nombre</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#6b7280', borderBottom: '1px solid #e5e7eb' }}>SKU</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: '#6b7280', borderBottom: '1px solid #e5e7eb' }}>Stock</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: '#6b7280', borderBottom: '1px solid #e5e7eb' }}>Visible</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.slice(productPage * PRODUCT_PAGE_SIZE, (productPage + 1) * PRODUCT_PAGE_SIZE).map(p => (
+                    <tr key={p.$id} style={{ borderBottom: '1px solid #f1f5f9', background: p.ISACTIVE ? '#fff' : '#fef2f2' }}>
+                      <td style={{ padding: '6px 12px' }}>
+                        <div style={{ cursor: 'pointer' }} onClick={() => setImageUrlModal({ productId: p.$id, currentUrl: p.IMAGEURL || '', newUrl: p.IMAGEURL || '', source: p._source })} title="Click para cambiar imagen">
+                        {p.IMAGEURL && !brokenImages.has(p.$id) ? (
+                          <img src={p.IMAGEURL} alt={p.NAME} style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover' }} onError={() => setBrokenImages(prev => new Set(prev).add(p.$id))} />
+                        ) : brokenImages.has(p.$id) ? (
+                          <div style={{ width: 36, height: 36, borderRadius: 6, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Imagen rota">
+                            <AlertTriangle size={14} color="#dc2626" />
+                          </div>
+                        ) : (
+                          <div style={{ width: 36, height: 36, borderRadius: 6, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Sin imagen">
+                            <Package size={14} color="#9ca3af" />
+                          </div>
+                        )}
+                        </div>
+                      </td>
+                      <td style={{ padding: '6px 12px', fontWeight: 600, color: '#111827', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {p.NAME || 'Sin nombre'}
+                      </td>
+                      <td style={{ padding: '6px 12px', fontFamily: 'monospace', fontSize: 11, color: '#6b7280' }}>
+                        {p.sku || p.SKU || '—'}
+                      </td>
+                      <td style={{ padding: '6px 12px', textAlign: 'center', fontWeight: 700, color: (p.STOCK ?? 0) > 0 ? '#16a34a' : '#dc2626' }}>
+                        {p.STOCK ?? 0}
+                      </td>
+                      <td style={{ padding: '6px 12px', textAlign: 'center' }}>
+                        <button
+                          onClick={() => toggleVisibility(p)}
+                          disabled={togglingId === p.$id}
+                          title={p.ISACTIVE ? 'Ocultar del catálogo' : 'Mostrar en catálogo'}
+                          style={{
+                            border: 'none', borderRadius: 8, padding: '5px 10px', cursor: togglingId === p.$id ? 'wait' : 'pointer',
+                            background: p.ISACTIVE ? '#f0fdf4' : '#fef2f2', color: p.ISACTIVE ? '#16a34a' : '#dc2626',
+                            display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, margin: '0 auto',
+                          }}
+                        >
+                          {togglingId === p.$id ? '...' : p.ISACTIVE ? <><Eye size={12} /> Sí</> : <><EyeOff size={12} /> No</>}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalProducts > PRODUCT_PAGE_SIZE && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 16 }}>
+                <button
+                  onClick={() => setProductPage(p => Math.max(0, p - 1))}
+                  disabled={productPage === 0}
+                  style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 12px', background: '#fff', cursor: productPage === 0 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280' }}
+                >
+                  <ChevronLeft size={14} /> Anterior
+                </button>
+                <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 600 }}>
+                  Página {productPage + 1} de {Math.ceil(totalProducts / PRODUCT_PAGE_SIZE)}
+                </span>
+                <button
+                  onClick={() => setProductPage(p => Math.min(Math.ceil(totalProducts / PRODUCT_PAGE_SIZE) - 1, p + 1))}
+                  disabled={productPage >= Math.ceil(totalProducts / PRODUCT_PAGE_SIZE) - 1}
+                  style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 12px', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280' }}
+                >
+                  Siguiente <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Image URL replacement modal */}
+      {imageUrlModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setImageUrlModal(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <p className="font-bold text-gray-900">Cambiar imagen</p>
+              <button onClick={() => setImageUrlModal(null)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">✕</button>
+            </div>
+            <div className="p-5 space-y-4">
+              {imageUrlModal.currentUrl && (
+                <div className="w-full h-32 rounded-xl bg-gray-100 overflow-hidden">
+                  <img src={imageUrlModal.currentUrl} alt="Actual" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">URL de la nueva imagen</label>
+                <input type="url" value={imageUrlModal.newUrl} onChange={e => setImageUrlModal(m => m ? { ...m, newUrl: e.target.value } : null)}
+                  placeholder="https://ejemplo.com/imagen.jpg"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-5 border-t border-gray-100">
+              <button onClick={() => setImageUrlModal(null)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
+              <button onClick={async () => {
+                if (!imageUrlModal) return;
+                try {
+                  const { databases } = getServices();
+                  const { databaseId } = getAppwriteConfig();
+                  const collectionId = imageUrlModal.source === 'catalog_products' ? CATALOG_PRODUCTS_COLLECTION_ID : PRODUCTS_COLLECTION_ID;
+                  await databases.updateDocument(databaseId, collectionId, imageUrlModal.productId, { IMAGEURL: imageUrlModal.newUrl });
+                  setProducts(prev => prev.map(p => p.$id === imageUrlModal.productId ? { ...p, IMAGEURL: imageUrlModal.newUrl } : p));
+                  setBrokenImages(prev => {
+                    const next = new Set(prev);
+                    next.delete(imageUrlModal.productId);
+                    return next;
+                  });
+                  setImageUrlModal(null);
+                } catch (e: any) { alert('Error: ' + e.message); }
+              }} className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition">Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

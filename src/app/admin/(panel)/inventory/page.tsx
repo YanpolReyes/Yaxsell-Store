@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Query } from 'appwrite';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Product } from '@/types/admin';
-import { RefreshCw, AlertTriangle, Package, Search, X, TrendingDown, DollarSign, Download, Check } from 'lucide-react';
+import { RefreshCw, AlertTriangle, Package, Search, X, TrendingDown, DollarSign, Download, Check, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 type StockLevel = 'all' | 'out' | 'critical' | 'low' | 'ok';
@@ -24,6 +24,8 @@ export default function InventoryPage() {
   const [bulkThresholdValue, setBulkThresholdValue] = useState('');
   const [applyingBulkThreshold, setApplyingBulkThreshold] = useState(false);
   const [sortBy, setSortBy] = useState<'name' | 'stock' | 'value' | 'sold'>('name');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
 
   const applyBulkThreshold = async () => {
     const val = bulkThresholdValue === '' ? null : parseInt(bulkThresholdValue, 10);
@@ -81,6 +83,24 @@ export default function InventoryPage() {
     } catch (e: any) { setError(e.message); }
     finally { setIsLoading(false); }
   }, []);
+
+  const deleteProduct = async (productId: string) => {
+    setDeletingId(productId);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      
+      // Only delete from inventory_products collection
+      await databases.deleteDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, productId);
+      
+      setProducts(prev => prev.filter(p => p.$id !== productId));
+      setDeleteConfirm(null);
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const saveStock = async (productId: string) => {
     if (!editingStock || editingStock.id !== productId) return;
@@ -393,7 +413,16 @@ export default function InventoryPage() {
                       <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>{cfg.label}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <Link href="/products" className="text-xs text-indigo-600 hover:text-indigo-700 font-medium">Editar</Link>
+                      <div className="flex items-center gap-2">
+                        <Link href="/products" className="text-xs text-indigo-600 hover:text-indigo-700 font-medium">Editar</Link>
+                        <button
+                          onClick={() => setDeleteConfirm({ id: p.$id, name: p.NAME || 'Producto' })}
+                          disabled={deletingId === p.$id}
+                          className="text-xs text-red-600 hover:text-red-700 font-medium disabled:opacity-50"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -453,6 +482,35 @@ export default function InventoryPage() {
               <button onClick={applyBulkThreshold} disabled={applyingBulkThreshold}
                 className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-60">
                 {applyingBulkThreshold ? 'Aplicando...' : 'Aplicar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="font-bold text-gray-900">Eliminar producto</h3>
+            </div>
+            <p className="text-sm text-gray-600">
+              ¿Estás seguro de eliminar <span className="font-semibold text-gray-900">"{deleteConfirm.name}"</span>?
+              <br /><br />
+              Esta acción eliminará el producto de <strong>Inventory Products</strong>. No se puede deshacer.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setDeleteConfirm(null)}
+                className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+                Cancelar
+              </button>
+              <button onClick={() => deleteProduct(deleteConfirm.id)} disabled={deletingId === deleteConfirm.id}
+                className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition disabled:opacity-60">
+                {deletingId === deleteConfirm.id ? 'Eliminando...' : 'Eliminar'}
               </button>
             </div>
           </div>
