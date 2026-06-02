@@ -239,21 +239,22 @@ export default function CatalogProductsPage() {
         const rawAlert = rawAlerts.find(a => a.productId === id);
         const alertSku = rawAlert?.sku || '';
         const alertJid = rawAlert?.jumpsellerId || '';
-        
+
         const skuToLookFor = norm(existing.sku || alertSku || '');
         const jidToLookFor = (existing.jumpsellerId || alertJid || '').trim();
         const bcToLookFor = norm(existing.barcode || '');
         const nameToLookFor = norm(rawAlert?.productName || '');
-        
-        // Try matching by: 1) $id, 2) SKU, 3) jumpseller_id, 4) barcode, 5) name
-        const catDocById = catalogById.get(id);
+
+        // Try matching by: 1) SKU in products (highest priority), 2) $id, 3) jumpseller_id, 4) barcode, 5) name
         const catDocBySku = skuToLookFor ? activeCatalogBySku.get(skuToLookFor) : undefined;
+        const catDocById = catalogById.get(id);
         const catDocByJid = jidToLookFor ? catalogByJumpsellerId.get(jidToLookFor) : undefined;
         const catDocByBc = bcToLookFor ? catalogByBarcode.get(bcToLookFor) : undefined;
         const catDocByName = nameToLookFor ? catalogByName.get(nameToLookFor) : undefined;
-        
-        const catDoc = catDocById || catDocBySku || catDocByJid || catDocByBc || catDocByName;
-        
+
+        // SKU match in products has highest priority (handles published products with new $id)
+        const catDoc = (catDocBySku && catDocBySku._collection === 'products') ? catDocBySku : (catDocById || catDocByJid || catDocByBc || catDocByName);
+
         if (catDoc) {
           const isInProducts = catDoc._collection === 'products';
           const docStock = existing.stock ?? catDoc.stock ?? catDoc.STOCK ?? 0;
