@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import * as XLSX from 'xlsx';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { invalidateProductCache } from '@/lib/cache';
 import { isAdminEmail } from '@/lib/admin-access';
 import { setBarcodeInFeatures, setSectionInFeatures } from '@/lib/product-features';
@@ -1378,9 +1378,11 @@ export default function InventarioPage() {
 
       // 1. Crear en catálogo (defensivo: ir eliminando campos opcionales uno por uno si fallan)
       const optionalFields = ['barcode', 'sku', 'jumpseller_id', 'PACKQTY', 'SUBCATEGORYID'];
+      let newProductsDocId: string = '';
       let createSuccess = false;
       try {
-        await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
+        const created = await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
+        newProductsDocId = created.$id;
         createSuccess = true;
       } catch (createErr: any) {
         if (!createErr?.message?.includes('Unknown attribute')) throw createErr;
@@ -1389,7 +1391,8 @@ export default function InventarioPage() {
         for (const field of optionalFields) {
           delete (retryPayload as any)[field];
           try {
-            await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), retryPayload);
+            const created = await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), retryPayload);
+            newProductsDocId = created.$id;
             createSuccess = true;
             break;
           } catch (retryErr: any) {
@@ -1400,7 +1403,8 @@ export default function InventarioPage() {
         if (!createSuccess) {
           // Último intento sin section tampoco
           delete (retryPayload as any).section;
-          await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), retryPayload);
+          const created = await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), retryPayload);
+          newProductsDocId = created.$id;
         }
       }
 
@@ -1422,6 +1426,43 @@ export default function InventarioPage() {
               await databases.deleteDocument(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, catRes.documents[0].$id);
             }
           } catch {}
+        }
+      }
+
+      // 4. Update stock alerts pointing to old productId with new products doc $id
+      if (newProductsDocId) {
+        try {
+          const alertRes = await databases.listDocuments(databaseId, STOCK_ALERTS_COLLECTION_ID, [
+            Query.equal('productId', productId), Query.limit(100),
+          ]);
+          await Promise.all(alertRes.documents.map((a: any) =>
+            databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, a.$id, {
+              productId: newProductsDocId,
+              productImage: p.IMAGEURL || p.IMAGEURL2 || p.IMAGE_URL || p.imageUrl || p.image || p.IMAGE || '',
+              productName: p.NAME || p.name || '',
+              sku: sku || '',
+            })
+          ));
+        } catch (e) {
+          console.warn('No se pudieron actualizar las alertas de stock:', e);
+        }
+        // Also update alerts that pointed to a catalog_products doc with same SKU
+        if (sku) {
+          try {
+            const catAlerts = await databases.listDocuments(databaseId, STOCK_ALERTS_COLLECTION_ID, [
+              Query.equal('sku', sku), Query.limit(100),
+            ]);
+            const toUpdate = catAlerts.documents.filter((a: any) => a.productId !== newProductsDocId);
+            await Promise.all(toUpdate.map((a: any) =>
+              databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, a.$id, {
+                productId: newProductsDocId,
+                productImage: p.IMAGEURL || p.IMAGEURL2 || p.IMAGE_URL || p.imageUrl || p.image || p.IMAGE || '',
+                productName: p.NAME || p.name || '',
+              })
+            ));
+          } catch (e) {
+            console.warn('No se pudieron actualizar las alertas por SKU:', e);
+          }
         }
       }
 
@@ -1483,8 +1524,10 @@ export default function InventarioPage() {
 
           const payload = buildCatalogPublishPayload(p);
 
+          let newDocId = '';
           try {
-            await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
+            const created = await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
+            newDocId = created.$id;
           } catch (createErr: any) {
             if (!createErr?.message?.includes('Unknown attribute')) throw createErr;
             const optionalFields = ['barcode', 'sku', 'jumpseller_id', 'PACKQTY', 'SUBCATEGORYID'];
@@ -1493,7 +1536,8 @@ export default function InventarioPage() {
             for (const field of optionalFields) {
               delete (retryPayload as any)[field];
               try {
-                await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), retryPayload);
+                const created = await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), retryPayload);
+                newDocId = created.$id;
                 retryOk = true;
                 break;
               } catch (retryErr: any) {
@@ -1503,10 +1547,28 @@ export default function InventarioPage() {
             }
             if (!retryOk) {
               delete (retryPayload as any).section;
-              await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), retryPayload);
+              const created = await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), retryPayload);
+              newDocId = created.$id;
             }
           }
           await databases.deleteDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, p.$id);
+
+          // Update stock alerts pointing to old productId
+          if (newDocId) {
+            try {
+              const alertRes = await databases.listDocuments(databaseId, STOCK_ALERTS_COLLECTION_ID, [
+                Query.equal('productId', p.$id), Query.limit(100),
+              ]);
+              await Promise.all(alertRes.documents.map((a: any) =>
+                databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, a.$id, {
+                  productId: newDocId,
+                  productImage: p.IMAGEURL || p.IMAGEURL2 || p.IMAGE_URL || p.imageUrl || p.image || p.IMAGE || '',
+                  productName: p.NAME || p.name || '',
+                  sku: sku || '',
+                })
+              ));
+            } catch {}
+          }
 
           if (sku) publishedSkus.add(sku);
           if (barcode) publishedBarcodes.add(barcode);
