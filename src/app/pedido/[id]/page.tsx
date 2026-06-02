@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package, Truck, Shield, FileText } from 'lucide-react';
+import { CheckCircle, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package, Truck, Shield, FileText, RefreshCw } from 'lucide-react';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION, MEDIA_BUCKET_ID, MEDIA_PREFIXES, formatPrice } from '@/lib/appwrite';
 import { ID } from '@/lib/appwrite';
 import { Order, OrderItem } from '@/types';
@@ -81,6 +81,10 @@ export default function PedidoPage() {
   const [items, setItems] = useState<OrderItem[]>([]);
   const [confirming, setConfirming] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [agencies, setAgencies] = useState<{ name: string }[]>([]);
+  const [showAgencyChange, setShowAgencyChange] = useState(false);
+  const [selectedAgency, setSelectedAgency] = useState('');
+  const [savingAgency, setSavingAgency] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -96,6 +100,36 @@ export default function PedidoPage() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Load agencies
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/agencies');
+        const data = await res.json();
+        if (data.agencies) setAgencies(data.agencies);
+      } catch {}
+    })();
+  }, []);
+
+  async function handleChangeAgency() {
+    if (!order || !selectedAgency || savingAgency) return;
+    setSavingAgency(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, {
+        SHIPPINGAGENCY: selectedAgency,
+        AGENCYCHANGED: true,
+      });
+      setOrder(prev => prev ? { ...prev, SHIPPINGAGENCY: selectedAgency, AGENCYCHANGED: true } : prev);
+      setShowAgencyChange(false);
+    } catch {
+      alert('Error al cambiar la agencia. Intenta de nuevo.');
+    } finally {
+      setSavingAgency(false);
+    }
+  }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -352,7 +386,40 @@ export default function PedidoPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
               <Truck size={13} color="#3483fa" />
               <span style={{ color: '#3483fa', fontWeight: 500 }}>{order.SHIPPINGAGENCY}</span>
+              {order.AGENCYCHANGED && (
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', background: '#fffbeb', color: '#b45309', borderRadius: 8, border: '1px solid #fef08a' }}>Modificada</span>
+              )}
             </div>
+            {/* Agency change: only if not paid and not changed before */}
+            {order.STATUS !== 'paid' && order.STATUS !== 'processing' && order.STATUS !== 'shipped' && order.STATUS !== 'delivered' && !order.AGENCYCHANGED && (
+              showAgencyChange ? (
+                <div style={{ marginTop: 10, padding: '12px 14px', background: '#f8f0ff', borderRadius: 12, border: '1px solid #e9d5ff' }}>
+                  <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: '#6b21a8' }}>Selecciona nueva agencia de envío</p>
+                  <select value={selectedAgency} onChange={e => setSelectedAgency(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d8b4fe', borderRadius: 10, fontSize: 14, fontWeight: 600, color: '#6b21a8', background: '#fff', marginBottom: 8, outline: 'none' }}>
+                    <option value="">Seleccionar agencia</option>
+                    {agencies.map(a => (
+                      <option key={a.name} value={a.name}>{a.name}</option>
+                    ))}
+                  </select>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={handleChangeAgency} disabled={!selectedAgency || savingAgency}
+                      style={{ flex: 1, padding: '10px 0', background: savingAgency ? '#c4b5fd' : 'linear-gradient(135deg, #7c3aed, #6d28d9)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: savingAgency ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      <RefreshCw size={13} />
+                      {savingAgency ? 'Guardando...' : 'Confirmar cambio'}
+                    </button>
+                    <button onClick={() => setShowAgencyChange(false)}
+                      style={{ padding: '10px 16px', background: '#fff', border: '1.5px solid #e9d5ff', borderRadius: 10, fontSize: 13, color: '#6b21a8', fontWeight: 600, cursor: 'pointer' }}>Cancelar</button>
+                  </div>
+                  <p style={{ margin: '8px 0 0', fontSize: 11, color: '#a78bfa' }}>⚠ Solo puedes cambiar la agencia 1 vez.</p>
+                </div>
+              ) : (
+                <button onClick={() => { setShowAgencyChange(true); setSelectedAgency(order.SHIPPINGAGENCY || ''); }}
+                  style={{ marginTop: 8, padding: '6px 12px', background: '#f8f0ff', border: '1.5px solid #d8b4fe', borderRadius: 10, fontSize: 12, color: '#7c3aed', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <RefreshCw size={12} /> Cambiar agencia
+                </button>
+              )
+            )}
           </div>
         </div>
 

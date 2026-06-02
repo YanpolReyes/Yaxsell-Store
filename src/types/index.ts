@@ -156,6 +156,7 @@ export interface Order {
   EXTENSIONCOUNT?: number;
   DISCOUNT?: number;
   COUPONCODE?: string;
+  AGENCYCHANGED?: boolean;
 }
 
 export interface Raffle {

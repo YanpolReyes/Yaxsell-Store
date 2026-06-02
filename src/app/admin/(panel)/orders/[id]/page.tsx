@@ -54,6 +54,10 @@ export default function OrderDetailPage() {
   const [productSkus, setProductSkus] = useState<Record<string, string>>({});
   const [proofOpen, setProofOpen] = useState(false);
   const [uploadingProof, setUploadingProof] = useState(false);
+  const [agencies, setAgencies] = useState<{ name: string }[]>([]);
+  const [editingAgency, setEditingAgency] = useState(false);
+  const [selectedAgency, setSelectedAgency] = useState('');
+  const [savingAgency, setSavingAgency] = useState(false);
   const prevStatusRef = useRef<string | null>(null);
 
   // Auto-print when status changes to 'paid'
@@ -107,6 +111,36 @@ export default function OrderDetailPage() {
   }, [orderId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Load agencies for the selector
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/agencies');
+        const data = await res.json();
+        if (data.agencies) setAgencies(data.agencies);
+      } catch {}
+    })();
+  }, []);
+
+  const saveAgency = async () => {
+    if (!order || !selectedAgency) return;
+    setSavingAgency(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, order.$id, {
+        SHIPPINGAGENCY: selectedAgency,
+        AGENCYCHANGED: true,
+      });
+      setOrder(prev => prev ? { ...prev, SHIPPINGAGENCY: selectedAgency, AGENCYCHANGED: true } : prev);
+      setEditingAgency(false);
+    } catch (e: any) {
+      console.error('Error updating agency:', e?.message);
+    } finally {
+      setSavingAgency(false);
+    }
+  };
 
   const updateStatus = async (newStatus: string) => {
     if (!order) return;
@@ -510,8 +544,39 @@ export default function OrderDetailPage() {
               <p className="font-semibold text-gray-900 text-xs sm:text-sm">Envío</p>
             </div>
             <div className="p-3 sm:p-5 space-y-1.5 sm:space-y-2">
-              {order.SHIPPINGAGENCY && (
-                <p className="text-sm sm:text-base font-bold text-violet-700 print:text-black">{order.SHIPPINGAGENCY}</p>
+              {editingAgency ? (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <select
+                    value={selectedAgency}
+                    onChange={e => setSelectedAgency(e.target.value)}
+                    className="text-sm font-bold border border-violet-200 rounded-lg px-2 py-1.5 bg-violet-50 text-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                  >
+                    <option value="">Seleccionar agencia</option>
+                    {agencies.map(a => (
+                      <option key={a.name} value={a.name}>{a.name}</option>
+                    ))}
+                  </select>
+                  <button onClick={saveAgency} disabled={!selectedAgency || savingAgency}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-violet-600 text-white text-xs font-bold rounded-lg hover:bg-violet-700 disabled:opacity-50 transition">
+                    <Save className="w-3 h-3" />
+                    {savingAgency ? 'Guardando...' : 'Guardar'}
+                  </button>
+                  <button onClick={() => setEditingAgency(false)}
+                    className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700 transition">Cancelar</button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  {order.SHIPPINGAGENCY && (
+                    <p className="text-sm sm:text-base font-bold text-violet-700 print:text-black">{order.SHIPPINGAGENCY}</p>
+                  )}
+                  {order.AGENCYCHANGED && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full">Modificada</span>
+                  )}
+                  <button onClick={() => { setEditingAgency(true); setSelectedAgency(order.SHIPPINGAGENCY || ''); }}
+                    className="text-[10px] font-bold px-2 py-1 bg-violet-50 text-violet-600 rounded-lg hover:bg-violet-100 transition flex items-center gap-1 no-print">
+                    <Truck className="w-3 h-3" /> Cambiar
+                  </button>
+                </div>
               )}
               <p className="text-xs sm:text-sm font-medium text-gray-900">{order.ADDRESS || 'Sin dirección'}</p>
               <p className="text-[10px] sm:text-xs text-gray-500">{order.COMUNA}{order.COMUNA && order.REGION ? ', ' : ''}{order.REGION}</p>

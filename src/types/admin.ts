@@ -39,6 +39,7 @@ export interface Order {
   PURCHASEDFROMLIVE?: boolean;
   COUPONCODE?: string;
   DISCOUNTAMOUNT?: number;
+  AGENCYCHANGED?: boolean;
   adminNotes?: string;
   $createdAt: string;
   $updatedAt: string;

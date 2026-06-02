@@ -286,6 +286,48 @@ export default function CatalogProductsPage() {
         }
       }
 
+      // Pass 4: For products still without source or without hasStock, search products collection by name
+      const unresolvedIds = uniqueProductIds.filter(id => {
+        const p = productMap[id];
+        return !p || (!p.hasStock && p.source !== 'products');
+      });
+      if (unresolvedIds.length > 0) {
+        const unresolvedNames = unresolvedIds.map(id => {
+          const rawAlert = rawAlerts.find(a => a.productId === id);
+          return { id, name: rawAlert?.productName || productMap[id]?.name || '' };
+        }).filter(n => n.name.length > 2);
+
+        for (const { id, name } of unresolvedNames) {
+          try {
+            const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+              Query.equal('NAME', name),
+              Query.limit(1),
+            ]);
+            if (res.documents.length > 0) {
+              const p = res.documents[0] as any;
+              const existing = productMap[id] || {};
+              const locVal = getWarehouseLocationFromFeatures(p.FEATURES, p.section ?? null);
+              productMap[id] = {
+                name: existing.name || p.NAME || '',
+                image: existing.image || extractImage(p),
+                sku: existing.sku || getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku) || '',
+                jumpsellerId: existing.jumpsellerId || p.jumpseller_id || '',
+                barcode: existing.barcode || p.barcode || '',
+                section: locVal.section,
+                gondola: locVal.gondola || '?',
+                stock: p.STOCK ?? 0,
+                price: p.PRICE || p.price || p.CURRENTPRICE || existing.price || 0,
+                inCatalog: p.ISACTIVE !== false,
+                hasStock: (p.STOCK ?? 0) > 0,
+                inInventory: false,
+                source: 'products',
+                productsDocId: p.$id,
+              };
+            }
+          } catch {}
+        }
+      }
+
       // 2. Fetch Users
       const userMap: Record<string, { name: string; email: string }> = {};
       const userChunks: string[][] = [];
@@ -373,8 +415,8 @@ export default function CatalogProductsPage() {
         email: reqs[0].email,
         requests: reqs,
         pendingCount: reqs.filter(r => r.status === 'pending').length,
-        foundCount: reqs.filter(r => r.source).length,
-        missingCount: reqs.filter(r => !r.source).length,
+        foundCount: reqs.filter(r => r.source || r.hasStock).length,
+        missingCount: reqs.filter(r => !r.source && !r.hasStock).length,
       };
     }).sort((a, b) => b.pendingCount - a.pendingCount);
   })();
@@ -885,10 +927,10 @@ export default function CatalogProductsPage() {
                 <div style={{ maxHeight: isMobile ? 'none' : 600, overflowY: 'auto', padding: isMobile ? 10 : 12 }}>
                   {selectedUser.requests.map(a => (
                     <div key={a.$id} style={{
-                      background: (a.status === 'available' || a.source === 'products') ? '#ecfdf5' : a.source === 'catalog_products' ? '#f5f3ff' : a.source === 'inventory_products' ? '#fffbeb' : (a.status === 'pending' ? '#fffbf5' : '#fef2f2'),
-                      border: `1px solid ${(a.status === 'available' || a.source === 'products') ? '#34d399' : a.source === 'catalog_products' ? '#a78bfa' : a.source === 'inventory_products' ? '#fbbf24' : (a.status === 'pending' ? '#fbcfe8' : '#fecaca')}`,
+                      background: (a.status === 'available' || a.hasStock || a.source === 'products') ? '#ecfdf5' : a.source === 'catalog_products' ? '#f5f3ff' : a.source === 'inventory_products' ? '#fffbeb' : (a.status === 'pending' ? '#fffbf5' : '#fef2f2'),
+                      border: `1px solid ${(a.status === 'available' || a.hasStock || a.source === 'products') ? '#34d399' : a.source === 'catalog_products' ? '#a78bfa' : a.source === 'inventory_products' ? '#fbbf24' : (a.status === 'pending' ? '#fbcfe8' : '#fecaca')}`,
                       borderRadius: 10, padding: isMobile ? 11 : 14, marginBottom: 10,
-                      boxShadow: (a.status === 'available' || a.source === 'products') ? '0 0 0 1px #34d399' : a.source === 'catalog_products' ? '0 0 0 1px #a78bfa' : a.source === 'inventory_products' ? '0 0 0 1px #fbbf24' : 'none',
+                      boxShadow: (a.status === 'available' || a.hasStock || a.source === 'products') ? '0 0 0 1px #34d399' : a.source === 'catalog_products' ? '0 0 0 1px #a78bfa' : a.source === 'inventory_products' ? '0 0 0 1px #fbbf24' : 'none',
                     }}>
                       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                         {/* Product image */}
@@ -917,12 +959,12 @@ export default function CatalogProductsPage() {
                             <p style={{ fontSize: isMobile ? 13 : 14, fontWeight: 700, color: '#111827', margin: 0, flex: 1, minWidth: 0 }}>
                               {a.productName}
                             </p>
-                            {a.status === 'pending' && a.source && (
-                              <span style={{ fontSize: 10, fontWeight: 700, background: a.source === 'products' ? '#d1fae5' : a.source === 'inventory_products' ? '#fef3c7' : a.source === 'catalog_products' ? '#ede9fe' : '#dbeafe', color: a.source === 'products' ? '#065f46' : a.source === 'inventory_products' ? '#92400e' : a.source === 'catalog_products' ? '#6d28d9' : '#1e40af', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 3, border: `1px solid ${a.source === 'products' ? '#34d399' : a.source === 'inventory_products' ? '#fbbf24' : a.source === 'catalog_products' ? '#a78bfa' : '#93c5fd'}`, flexShrink: 0 }}>
-                                {a.source === 'products' ? <><ShoppingCart size={10} /> En Tienda · Con Stock</> : a.source === 'inventory_products' ? <><AlertTriangle size={10} /> En Bodega</> : a.source === 'catalog_products' ? <><Eye size={10} /> En Catálogo</> : <><CheckCircle size={10} /> En Tienda</>}
+                            {a.status === 'pending' && (a.source || a.hasStock) && (
+                              <span style={{ fontSize: 10, fontWeight: 700, background: (a.source === 'products' || a.hasStock) ? '#d1fae5' : a.source === 'inventory_products' ? '#fef3c7' : a.source === 'catalog_products' ? '#ede9fe' : '#dbeafe', color: (a.source === 'products' || a.hasStock) ? '#065f46' : a.source === 'inventory_products' ? '#92400e' : a.source === 'catalog_products' ? '#6d28d9' : '#1e40af', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 3, border: `1px solid ${(a.source === 'products' || a.hasStock) ? '#34d399' : a.source === 'inventory_products' ? '#fbbf24' : a.source === 'catalog_products' ? '#a78bfa' : '#93c5fd'}`, flexShrink: 0 }}>
+                                {(a.source === 'products' || a.hasStock) ? <><ShoppingCart size={10} /> En Tienda · Con Stock</> : a.source === 'inventory_products' ? <><AlertTriangle size={10} /> En Bodega</> : a.source === 'catalog_products' ? <><Eye size={10} /> En Catálogo</> : <><CheckCircle size={10} /> En Tienda</>}
                               </span>
                             )}
-                            {a.status === 'pending' && !a.source && (
+                            {a.status === 'pending' && !a.source && !a.hasStock && (
                               <span style={{ fontSize: 10, fontWeight: 700, background: '#fdf2f8', color: '#c0547a', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap', border: '1px solid #fbcfe8', flexShrink: 0 }}>
                                 Pendiente
                               </span>
@@ -952,7 +994,7 @@ export default function CatalogProductsPage() {
                               </span>
                             )}
                             {/* Badge: producto en products con stock (only when pending) */}
-                            {a.source === 'products' && a.status !== 'available' && (
+                            {(a.source === 'products' || a.hasStock) && a.status !== 'available' && (
                               <span style={{
                                 fontSize: 10, fontWeight: 700, color: '#065f46',
                                 background: '#d1fae5', border: '1px solid #34d399',
@@ -1029,7 +1071,7 @@ export default function CatalogProductsPage() {
                               </Link>
 
                               {/* En Tienda - Notificar y llevar al cliente */}
-                              {a.source === 'products' ? (
+                              {(a.source === 'products' || a.hasStock) ? (
                                 <button
                                   onClick={() => handleMarkAvailable(a)}
                                   disabled={processingId === a.$id}
