@@ -35,6 +35,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { user, isLoggedIn } = useAuth();
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const snapshotDocIdRef = useRef<string | null>(null);
+  const itemsRef = useRef<CartItem[]>([]);
+
+  // Keep itemsRef in sync with items state
+  useEffect(() => { itemsRef.current = items; }, [items]);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -44,99 +48,60 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, []);
 
-  // Find existing snapshot doc ID on login & merge auto-added items
+  // Find existing snapshot doc ID on login
   useEffect(() => {
     if (!isLoggedIn || !user) return;
     (async () => {
       try {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
-        try {
-          const res = await databases.listDocuments(databaseId, CART_SNAPSHOTS_COLLECTION, [
-            Query.equal('userId', user.id), Query.limit(1),
-          ]);
-          if (res.documents.length > 0) {
-            snapshotDocIdRef.current = res.documents[0].$id;
-            try {
-              const snapItems: { id: string; name: string; qty: number; price: number }[] = JSON.parse((res.documents[0] as any).itemsJson || '[]');
-              if (snapItems.length > 0) {
-                const stored = localStorage.getItem('yaxsel_cart');
-                let localItems: CartItem[] = [];
-                try { localItems = stored ? JSON.parse(stored) : []; } catch {}
-                // Merge: add snapshot items not already in local cart
-                const localIds = new Set(localItems.map(i => i.product.$id));
-                const newFromSnap = snapItems.filter(si => !localIds.has(si.id));
-                if (newFromSnap.length > 0) {
-                  // Fetch product data for auto-added items
-                  try {
-                    const { databases: db2 } = getServices();
-                    const prodRes = await db2.listDocuments(databaseId, 'products', [
-                      Query.equal('$id', newFromSnap.map(si => si.id)),
-                      Query.limit(100),
-                    ]);
-                    const prodMap = new Map(prodRes.documents.map((p: any) => [p.$id, p as unknown as Product]));
-                    const newCartItems: CartItem[] = newFromSnap.map(si => {
-                      const prod = prodMap.get(si.id);
-                      if (prod) return { product: prod, quantity: si.qty };
-                      // Fallback: construct minimal product from snapshot data
-                      return {
-                        product: { $id: si.id, NAME: si.name, PRICE: si.price, STOCK: si.qty, CATEGORYID: '', DESCRIPTION: '', IMAGEURL: '', IMAGEURL2: '', IMAGEURL3: '', COST: 0, WHOLESALEPRICE: 0, WHOLESALEMINQUANTITY: 0, PACKQTY: 0, SOLDQUANTITY: 0 } as unknown as Product,
-                        quantity: si.qty,
-                      };
-                    }).filter(Boolean);
-                    if (newCartItems.length > 0) {
-                      setItems(prev => [...prev, ...newCartItems]);
-                    }
-                  } catch {}
-                }
-              }
-            } catch {}
-          }
-        } catch (e: any) {
-          if (e.code !== 404) {
-            console.warn('Error reading cart_snapshots:', e);
-          }
+        const res = await databases.listDocuments(databaseId, CART_SNAPSHOTS_COLLECTION, [
+          Query.equal('userId', user.id), Query.limit(1),
+        ]);
+        if (res.documents.length > 0) {
+          snapshotDocIdRef.current = res.documents[0].$id;
         }
       } catch {}
     })();
   }, [isLoggedIn, user?.id]);
 
-  // Save to localStorage + debounced snapshot to Appwrite (admin-only, no lag for client)
+  // Save snapshot to Appwrite (used by removeItem/clearCart for immediate sync)
+  const saveSnapshotNow = useCallback(async (currentItems: CartItem[]) => {
+    if (!isLoggedIn || !user) return;
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const snapshot = currentItems.map(i => ({
+        id: i.product.$id,
+        name: i.product.NAME,
+        qty: i.quantity,
+        price: i.product.PRICE,
+      }));
+      const data = {
+        userId: user.id,
+        itemsJson: JSON.stringify(snapshot),
+        updatedAt: Math.floor(Date.now() / 1000),
+      };
+      if (snapshotDocIdRef.current) {
+        await databases.updateDocument(databaseId, CART_SNAPSHOTS_COLLECTION, snapshotDocIdRef.current, data);
+      } else {
+        const doc = await databases.createDocument(databaseId, CART_SNAPSHOTS_COLLECTION, ID.unique(), data);
+        snapshotDocIdRef.current = doc.$id;
+      }
+    } catch {}
+  }, [isLoggedIn, user]);
+
+  // Save to localStorage + debounced snapshot to Appwrite (admin visibility)
   useEffect(() => {
     localStorage.setItem('yaxsel_cart', JSON.stringify(items));
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('yaxsel:cart-updated'));
     }
-    // Debounced snapshot sync — long debounce, single write, no per-item operations
     if (!isLoggedIn || !user) return;
     if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
-    syncTimeoutRef.current = setTimeout(async () => {
-      try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        // Lightweight snapshot: just productId + qty per item
-        const snapshot = items.map(i => ({
-          id: i.product.$id,
-          name: i.product.NAME,
-          qty: i.quantity,
-          price: i.product.PRICE,
-        }));
-        const data = {
-          userId: user.id,
-          itemsJson: JSON.stringify(snapshot),
-          itemCount: items.reduce((s, i) => s + i.quantity, 0),
-          updatedAt: Math.floor(Date.now() / 1000),
-        };
-        if (snapshotDocIdRef.current) {
-          await databases.updateDocument(databaseId, CART_SNAPSHOTS_COLLECTION, snapshotDocIdRef.current, data);
-        } else {
-          const doc = await databases.createDocument(databaseId, CART_SNAPSHOTS_COLLECTION, ID.unique(), data);
-          snapshotDocIdRef.current = doc.$id;
-        }
-      } catch {}
-    }, 10000); // 10s debounce — no rush, admin just needs to see it eventually
+    syncTimeoutRef.current = setTimeout(() => saveSnapshotNow(items), 10000);
     return () => { if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current); };
-  }, [items, isLoggedIn, user?.id]);
+  }, [items, isLoggedIn, user?.id, saveSnapshotNow]);
 
   const getEffectivePrice = (item: CartItem): number => {
     const now = Date.now();
@@ -163,7 +128,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const removeItem = (productId: string) => {
-    setItems(prev => prev.filter(i => i.product.$id !== productId));
+    const updated = itemsRef.current.filter(i => i.product.$id !== productId);
+    setItems(updated);
+    saveSnapshotNow(updated);
   };
 
   const updateQuantity = (productId: string, qty: number) => {
@@ -176,6 +143,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => {
     setItems([]);
+    saveSnapshotNow([]);
   };
 
   const totalItems = items.reduce((s, i) => s + i.quantity, 0);

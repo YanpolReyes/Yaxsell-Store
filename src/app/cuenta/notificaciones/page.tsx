@@ -76,7 +76,7 @@ export default function NotificacionesPage() {
       try {
         await markNotificationRead(id);
         setNotifs((prev) => prev.map((doc) => (doc.$id === id ? { ...doc, isRead: true } : doc)));
-        refreshCount();
+        refreshCount(true);
       } catch { /* ignore */ }
     }
     if (link) router.push(link);

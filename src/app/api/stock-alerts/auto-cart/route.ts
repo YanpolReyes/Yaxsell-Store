@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Client, Databases, Query, ID } from 'node-appwrite';
 
 const ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1';
-const PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '';
-const API_KEY = process.env.APPWRITE_API_KEY || '';
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
+const PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '6a0a4e8d0032177f3f90';
+const API_KEY = process.env.APPWRITE_API_KEY || 'standard_c476eaadc21bbecc3b6949ee4d0a932613b7a3d4ee52c80cf2c1406750ff75267becfad617da0acd444d0b903b8faea19661d48b2f8b6dc09b678e0db164ddd4b472417c3477a091188554bdd2adfad944778a2927090744ae991c9dcf48c7cebc60e437f5c8a841ffb0736da27daf197bf5716065c2ea5dda65070b07d74642';
+const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a0a58ca001798410d86';
 const CART_SNAPSHOTS_COLLECTION = 'cart_snapshots';
 const STOCK_ALERTS_COLLECTION = 'stock_alerts';
 const NOTIFICATIONS_COLLECTION = 'notifications';
@@ -23,6 +23,8 @@ export async function POST(req: NextRequest) {
     if (!productId) {
       return NextResponse.json({ error: 'productId is required' }, { status: 400 });
     }
+
+    console.log('[auto-cart] Request body:', { productId, productName, productPrice, singleUserId, singleQty, singleAlertId });
 
     // Single-user mode: add to specific user's cart and delete specific alert
     if (singleUserId && singleAlertId) {
@@ -54,7 +56,6 @@ export async function POST(req: NextRequest) {
         const snapData = {
           userId: singleUserId,
           itemsJson: JSON.stringify(currentItems),
-          itemCount: currentItems.reduce((s, i) => s + i.qty, 0),
           updatedAt: Math.floor(Date.now() / 1000),
         };
 
@@ -69,8 +70,9 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ success: true, autoAdded: 1, notified: 0 });
       } catch (e: any) {
-        console.error('Single-user auto-cart error:', e);
-        return NextResponse.json({ error: e.message }, { status: 500 });
+        console.error('Single-user auto-cart error:', e?.message || e);
+        console.error('Full error:', JSON.stringify(e, Object.getOwnPropertyNames(e)));
+        return NextResponse.json({ error: e?.message || 'Unknown error' }, { status: 500 });
       }
     }
 
@@ -124,7 +126,6 @@ export async function POST(req: NextRequest) {
         const snapData = {
           userId,
           itemsJson: JSON.stringify(currentItems),
-          itemCount: currentItems.reduce((s, i) => s + i.qty, 0),
           updatedAt: Math.floor(Date.now() / 1000),
         };
 

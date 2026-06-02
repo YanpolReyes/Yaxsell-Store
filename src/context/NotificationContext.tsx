@@ -10,7 +10,7 @@ const NOTIF_COLLECTION = 'notifications';
 
 interface NotificationContextType {
   unreadCount: number;
-  refreshCount: () => void;
+  refreshCount: (force?: boolean) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType>({
@@ -27,14 +27,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const { user, isLoggedIn } = useAuth();
   const [unreadCount, setUnreadCount] = useState(notifCacheCount);
 
-  const refreshCount = useCallback(async () => {
+  const refreshCount = useCallback(async (force = false) => {
     if (!isLoggedIn || !user) {
       setUnreadCount(0);
       return;
     }
-    // Usar caché si es reciente
+    // Usar caché si es reciente (skip si force=true)
     const now = Date.now();
-    if (now - notifCacheTimestamp < NOTIF_CACHE_TTL) {
+    if (!force && now - notifCacheTimestamp < NOTIF_CACHE_TTL) {
       setUnreadCount(notifCacheCount);
       return;
     }

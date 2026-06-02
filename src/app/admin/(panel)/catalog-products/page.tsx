@@ -19,6 +19,7 @@ interface StockAlertView extends StockAlert {
   inInventory?: boolean; // true if product is only in inventory_products (not yet published)
   source?: 'products' | 'catalog_products' | 'inventory_products';
   price?: number;
+  productsDocId?: string; // $id in 'products' collection for navigation
 }
 
 interface GroupedUser {
@@ -70,7 +71,7 @@ export default function CatalogProductsPage() {
       const uniqueUserIds = Array.from(new Set(rawAlerts.map(a => a.userId).filter(id => id && !id.includes('@'))));
       
       // 1. Fetch Products — try PRODUCTS and CATALOG_PRODUCTS first (by $id), then INVENTORY_PRODUCTS as fallback
-      const productMap: Record<string, { name: string; image: string; sku?: string; jumpsellerId?: string; barcode?: string; section?: number | null; gondola?: string; stock?: number; price?: number; inCatalog?: boolean; hasStock?: boolean; inInventory?: boolean; source?: 'products' | 'catalog_products' | 'inventory_products' }> = {};
+      const productMap: Record<string, { name: string; image: string; sku?: string; jumpsellerId?: string; barcode?: string; section?: number | null; gondola?: string; stock?: number; price?: number; inCatalog?: boolean; hasStock?: boolean; inInventory?: boolean; source?: 'products' | 'catalog_products' | 'inventory_products'; productsDocId?: string }> = {};
       const productChunks: string[][] = [];
       for (let i = 0; i < uniqueProductIds.length; i += 100) {
         productChunks.push(uniqueProductIds.slice(i, i + 100));
@@ -113,6 +114,7 @@ export default function CatalogProductsPage() {
               hasStock: (p.STOCK ?? 0) > 0,
               inInventory: false,
               source: 'products',
+              productsDocId: p.$id,
             };
           });
         } catch (e) {
@@ -143,6 +145,7 @@ export default function CatalogProductsPage() {
               hasStock: false,
               inInventory: false,
               source: 'catalog_products',
+              productsDocId: undefined,
             };
           });
         } catch (e) {
@@ -176,6 +179,7 @@ export default function CatalogProductsPage() {
               hasStock: false,
               inInventory: true,
               source: 'inventory_products',
+              productsDocId: undefined,
             };
           });
         } catch (e) {
@@ -277,6 +281,7 @@ export default function CatalogProductsPage() {
             hasStock: isInProducts && (catDoc.STOCK ?? 0) > 0,
             inInventory: isInProducts ? false : (existing.inInventory ?? false),
             source: isInProducts ? 'products' : ((catDoc._collection as 'products' | 'catalog_products' | 'inventory_products') || existing.source),
+            productsDocId: isInProducts ? catDoc.$id : (existing as any).productsDocId,
           };
         }
       }
@@ -331,6 +336,7 @@ export default function CatalogProductsPage() {
           gondola: pInfo?.gondola,
           currentStock: pInfo?.stock ?? 0,
           price: pInfo?.price ?? 0,
+          productsDocId: pInfo?.productsDocId,
           inCatalog: pInfo?.inCatalog ?? false,
           hasStock: pInfo?.hasStock ?? false,
           inInventory: pInfo?.inInventory ?? false,
@@ -394,37 +400,18 @@ export default function CatalogProductsPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      // Auto-add to user's cart & notify via API
-      try {
-        await fetch('/api/stock-alerts/auto-cart', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            productId: req.productId,
-            productName: req.productName,
-            productImage: req.productImage,
-            productPrice: req.price || 0,
-            singleUserId: req.userId,
-            singleQty: req.quantity || 1,
-            singleAlertId: req.$id,
-          }),
-        });
-      } catch (cartErr) {
-        console.warn('Error auto-adding to cart:', cartErr);
-      }
-
-      // ── Notification to user ──
-      if (req.userId) {
+      // ── Notification + alert update in parallel ──
+      const notifPromise = req.userId ? (async () => {
         const isInStore = req.source === 'products' || req.source === 'catalog_products';
         const isInventory = req.source === 'inventory_products';
         const notifData: any = {
           userId: req.userId,
           title: isInStore ? '🛒 ¡Tu producto ya está en la tienda!' : isInventory ? '📦 ¡Producto encontrado en bodega!' : '🎉 ¡Tu producto ya tiene stock!',
           message: isInStore
-            ? `[IMG:${req.productImage || ''}][PRICE:${req.price || 0}][STOCK:${req.currentStock || 0}][QTY:${req.quantity || 1}]¡Buenas noticias! "${req.productName}" que consultaste ya está disponible en la tienda y fue agregado a tu carrito (${req.quantity || 1} und). ¡No te quedes sin él!`
+            ? `[IMG:${req.productImage || ''}][PRICE:${req.price || 0}][STOCK:${req.currentStock || 0}][QTY:${req.quantity || 1}][PID:${req.productsDocId || req.productId}]¡Buenas noticias! "${req.productName}" que consultaste ya está disponible en la tienda (${req.quantity || 1} und). ¡No te quedes sin él!`
             : isInventory
-            ? `[IMG:${req.productImage || ''}][PRICE:${req.price || 0}][STOCK:${req.currentStock || 0}][QTY:${req.quantity || 1}]¡Buenas noticias! "${req.productName}" que consultaste fue encontrado en nuestra bodega y fue agregado a tu carrito (${req.quantity || 1} und). ¡No te quedes sin él!`
-            : `[IMG:${req.productImage || ''}][PRICE:${req.price || 0}][STOCK:${req.currentStock || 0}][QTY:${req.quantity || 1}]¡Buenas noticias! "${req.productName}" que consultaste ya está disponible y fue agregado a tu carrito (${req.quantity || 1} und). ¡No te quedes sin él!`,
+            ? `[IMG:${req.productImage || ''}][PRICE:${req.price || 0}][STOCK:${req.currentStock || 0}][QTY:${req.quantity || 1}][PID:${req.productsDocId || req.productId}]¡Buenas noticias! "${req.productName}" que consultaste fue encontrado en nuestra bodega (${req.quantity || 1} und). ¡No te quedes sin él!`
+            : `[IMG:${req.productImage || ''}][PRICE:${req.price || 0}][STOCK:${req.currentStock || 0}][QTY:${req.quantity || 1}][PID:${req.productsDocId || req.productId}]¡Buenas noticias! "${req.productName}" que consultaste ya está disponible (${req.quantity || 1} und). ¡No te quedes sin él!`,
           type: 'success',
           isRead: false,
         };
@@ -433,14 +420,17 @@ export default function CatalogProductsPage() {
         } catch (notifErr: any) {
           console.warn('No se pudo crear notificación:', notifErr?.message);
         }
-      }
+      })() : Promise.resolve();
 
-      // Update alert status to 'available' in Appwrite and locally
-      try {
-        await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { status: 'available' });
-      } catch (updErr: any) {
-        console.warn('No se pudo actualizar estado de alerta:', updErr?.message);
-      }
+      const updatePromise = (async () => {
+        try {
+          await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { status: 'available' });
+        } catch (updErr: any) {
+          console.warn('No se pudo actualizar estado de alerta:', updErr?.message);
+        }
+      })();
+
+      await Promise.all([notifPromise, updatePromise]);
       setAlerts(prev => prev.map(a => a.$id === req.$id ? { ...a, status: 'available' as any } : a));
     } catch (e: any) {
       window.alert('Error: ' + e.message);
@@ -459,10 +449,39 @@ export default function CatalogProductsPage() {
     if (!confirm(`¿Notificar y llevar al carrito ${foundReqs.length} producto(s) encontrado(s) para ${selectedUser.userName}?`)) return;
     setProcessingId('bulk');
     try {
-      for (const req of foundReqs) {
-        await handleMarkAvailable(req);
-        await new Promise(r => setTimeout(r, 200));
-      }
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      // Process all notifications in parallel
+      await Promise.all(foundReqs.map(async (req) => {
+        // Create notification
+        if (req.userId) {
+          const isInStore = req.source === 'products' || req.source === 'catalog_products';
+          const isInventory = req.source === 'inventory_products';
+          try {
+            await databases.createDocument(databaseId, NOTIFICATIONS_COLLECTION_ID, ID.unique(), {
+              userId: req.userId,
+              title: isInStore ? '🛒 ¡Tu producto ya está en la tienda!' : isInventory ? '📦 ¡Producto encontrado en bodega!' : '🎉 ¡Tu producto ya tiene stock!',
+              message: `[IMG:${req.productImage || ''}][PRICE:${req.price || 0}][STOCK:${req.currentStock || 0}][QTY:${req.quantity || 1}][PID:${req.productsDocId || req.productId}]¡Buenas noticias! "${req.productName}" ya tiene stock (${req.quantity || 1} und). ¡Agrégalo a tu carrito!`,
+              type: 'success',
+              isRead: false,
+            });
+          } catch (notifErr: any) {
+            console.warn('No se pudo crear notificación:', notifErr?.message);
+          }
+        }
+
+        // Update alert status
+        try {
+          await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { status: 'available' });
+        } catch (updErr: any) {
+          console.warn('No se pudo actualizar alerta:', updErr?.message);
+        }
+      }));
+
+      // Update all alerts locally in one state update
+      const updatedIds = new Set(foundReqs.map(r => r.$id));
+      setAlerts(prev => prev.map(a => updatedIds.has(a.$id) ? { ...a, status: 'available' as any } : a));
     } catch (e: any) {
       window.alert('Error: ' + e.message);
     } finally {
@@ -504,7 +523,7 @@ export default function CatalogProductsPage() {
         const notifData: any = {
           userId: req.userId,
           title: '😔 Producto sin stock por ahora',
-          message: `[IMG:${req.productImage || ''}][PRICE:${req.price || 0}][STOCK:${req.currentStock || 0}][QTY:${req.quantity || 1}]Lamentamos informarte que "${req.productName}" no tiene existencia actualmente. Lo vigilaremos de cerca y te avisaremos en cuanto vuelva a estar disponible. ¡Gracias por tu paciencia!`,
+          message: `[IMG:${req.productImage || ''}][PRICE:${req.price || 0}][STOCK:${req.currentStock || 0}][QTY:${req.quantity || 1}][PID:${req.productsDocId || req.productId}]Lamentamos informarte que "${req.productName}" no tiene existencia actualmente. Lo vigilaremos de cerca y te avisaremos en cuanto vuelva a estar disponible. ¡Gracias por tu paciencia!`,
           type: 'warning',
           isRead: false,
         };

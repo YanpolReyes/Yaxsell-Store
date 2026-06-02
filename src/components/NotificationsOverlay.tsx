@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Bell, Info, AlertTriangle, CheckCircle, Tag, ShoppingBag, Loader2, X, Gift, Package, Trash2
+  Bell, Info, AlertTriangle, CheckCircle, Tag, ShoppingBag, Loader2, X, Gift, Package, Trash2, ShoppingCart, Plus
 } from 'lucide-react';
 import { getServices, getAppwriteConfig, formatPrice } from '@/lib/appwrite';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/context/NotificationContext';
+import { useCart } from '@/context/CartContext';
 import {
   markNotificationRead,
   isNotificationUnread,
@@ -47,8 +48,10 @@ interface Props {
 export default function NotificationsOverlay({ onClose }: Props) {
   const { user, isLoggedIn } = useAuth();
   const { refreshCount } = useNotifications();
+  const { addItem, items } = useCart();
   const router = useRouter();
   const [notifs, setNotifs] = useState<Record<string, unknown>[]>([]);
+  const [addingToCart, setAddingToCart] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -121,8 +124,8 @@ export default function NotificationsOverlay({ onClose }: Props) {
         }
       }
 
-      // 6. Refresh the notification badge count
-      refreshCount();
+      // 6. Refresh the notification badge count (force to bypass cache)
+      refreshCount(true);
     }, 300);
   };
 
@@ -165,20 +168,42 @@ export default function NotificationsOverlay({ onClose }: Props) {
     };
   }, [load, onClose]);
 
-  const handleOpen = async (n: Record<string, unknown>) => {
+  const handleOpen = async (n: Record<string, unknown>, overrideLink?: string) => {
     const id = n.$id as string;
-    const link = getNotificationLink(n);
+    const link = overrideLink || getNotificationLink(n);
     if (id && isNotificationUnread(n)) {
       try {
         await markNotificationRead(id);
         setNotifs((prev) =>
           prev.map((doc) => (doc.$id === id ? { ...doc, isRead: true } : doc))
         );
-        refreshCount();
+        refreshCount(true);
       } catch { /* ignore */ }
     }
-    onClose();
-    if (link) router.push(link);
+    if (link) {
+      onClose();
+      router.push(link);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleAddToCart = async (n: Record<string, unknown>, parsedPid: string | null, parsedQty: number | null) => {
+    if (!parsedPid) return;
+    const notifId = n.$id as string;
+    setAddingToCart(notifId);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const prod = await databases.getDocument(databaseId, 'products', parsedPid);
+      const qty = parsedQty || 1;
+      addItem(prod as any, qty);
+    } catch {
+      // Product not found in products collection
+      console.warn('Could not add product to cart, PID not found:', parsedPid);
+    } finally {
+      setAddingToCart(null);
+    }
   };
 
   const panelStyle: CSSProperties = {
@@ -263,11 +288,12 @@ export default function NotificationsOverlay({ onClose }: Props) {
                   }
                 } catch {}
 
-                // Parse rich metadata from body string e.g. [IMG:url][PRICE:1500][STOCK:100][QTY:2]
+                // Parse rich metadata from body string e.g. [IMG:url][PRICE:1500][STOCK:100][QTY:2][PID:abc123]
                 let finalBody = body;
                 let parsedPrice: number | null = null;
                 let parsedStock: number | null = null;
                 let parsedQty: number | null = null;
+                let parsedPid: string | null = null;
 
                 if (finalBody) {
                   const imgMatch = finalBody.match(/\[IMG:(.*?)\]/);
@@ -289,6 +315,25 @@ export default function NotificationsOverlay({ onClose }: Props) {
                   if (qtyMatch) {
                     parsedQty = parseInt(qtyMatch[1], 10);
                     finalBody = finalBody.replace(/\[QTY:(.*?)\]/g, '');
+                  }
+                  const pidMatch = finalBody.match(/\[PID:(.*?)\]/);
+                  if (pidMatch) {
+                    parsedPid = pidMatch[1];
+                    finalBody = finalBody.replace(/\[PID:(.*?)\]/g, '');
+                  }
+                  // Fallback: try to get productId from notification data
+                  if (!parsedPid) {
+                    try {
+                      const dataVal = n.data || n.DATA;
+                      if (typeof dataVal === 'string' && dataVal) {
+                        const parsed = JSON.parse(dataVal);
+                        if (parsed.productId) parsedPid = parsed.productId;
+                      } else if (typeof dataVal === 'object' && dataVal) {
+                        parsedPid = (dataVal as any).productId || null;
+                      }
+                    } catch {}
+                    // Also check direct productId attribute
+                    if (!parsedPid && n.productId) parsedPid = n.productId as string;
                   }
                 }
 
@@ -333,11 +378,11 @@ export default function NotificationsOverlay({ onClose }: Props) {
                     <div
                       role="button"
                       tabIndex={0}
-                      onClick={() => handleOpen(n)}
+                      onClick={() => handleOpen(n, parsedPid ? `/productos/${parsedPid}` : undefined)}
                       onTouchStart={(e) => handleTouchStart(e, id)}
                       onTouchMove={(e) => handleTouchMove(e, id)}
                       onTouchEnd={(e) => handleTouchEnd(e, id, (n.userId || n.USERID || '') as string)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') handleOpen(n); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleOpen(n, parsedPid ? `/productos/${parsedPid}` : undefined); }}
                       style={{
                         display: 'flex', gap: 12, padding: 14, borderRadius: 14, border: '1px solid #f0f0f0',
                         background: read ? '#fff' : 'linear-gradient(135deg,#fdf2f8,#fff)',
@@ -396,8 +441,8 @@ export default function NotificationsOverlay({ onClose }: Props) {
                         </div>
                         {finalBody && <p style={{ margin: 0, fontSize: 14, color: '#6b7280', lineHeight: 1.5 }}>{finalBody}</p>}
                         
-                        {/* Rich Metadata Badges (Price, Stock, Qty) */}
-                        {(parsedPrice !== null || parsedStock !== null || parsedQty !== null) && (
+                        {/* Rich Metadata Badges (Price, Stock) + Add to Cart Button */}
+                        {(parsedPrice !== null || parsedStock !== null || parsedPid) && (
                           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8, alignItems: 'center' }}>
                             {parsedPrice !== null && (
                               <span style={{ fontSize: 11, fontWeight: 700, color: '#047857', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '2px 7px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -406,13 +451,31 @@ export default function NotificationsOverlay({ onClose }: Props) {
                             )}
                             {parsedStock !== null && (
                               <span style={{ fontSize: 11, fontWeight: 700, color: '#1d4ed8', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '2px 7px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 3 }}>
-                                📦 Stock subido: {parsedStock} uds
+                                📦 Stock: {parsedStock} uds
                               </span>
                             )}
-                            {parsedQty !== null && (
-                              <span style={{ fontSize: 11, fontWeight: 700, color: '#b45309', background: '#fffbeb', border: '1px solid #fef08a', padding: '2px 7px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 3 }}>
-                                🛒 En tu carrito: {parsedQty} und
-                              </span>
+                            {parsedPid && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAddToCart(n, parsedPid, parsedQty);
+                                }}
+                                disabled={addingToCart === (n.$id as string)}
+                                style={{
+                                  fontSize: 11, fontWeight: 700, color: '#fff',
+                                  background: addingToCart === (n.$id as string) ? '#9ca3af' : 'linear-gradient(135deg, #e396bf, #d946a8)',
+                                  border: 'none', padding: '4px 10px', borderRadius: 10,
+                                  cursor: addingToCart === (n.$id as string) ? 'wait' : 'pointer',
+                                  display: 'flex', alignItems: 'center', gap: 3,
+                                  transition: 'all 0.2s',
+                                }}
+                                onMouseEnter={(e) => { if (addingToCart !== (n.$id as string)) e.currentTarget.style.transform = 'scale(1.05)'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                              >
+                                {addingToCart === (n.$id as string) ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Plus size={12} />}
+                                Agregar al carrito
+                              </button>
                             )}
                           </div>
                         )}
