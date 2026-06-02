@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Query, ID } from 'appwrite';
 import Link from 'next/link';
 import { getServices, getAppwriteConfig, STOCK_ALERTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, PRODUCTS_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, USERS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { formatPrice } from '@/lib/appwrite';
 import { normalizeStockAlert, type StockAlert } from '@/lib/stock-alerts';
 import { getSkuFromFeatures, getWarehouseLocationFromFeatures } from '@/lib/product-features';
 import { Search, RefreshCw, Package, AlertTriangle, Users, Bell, CheckCircle, XCircle, User, ChevronRight, ArrowLeft, Clock, Eye, Sparkles, ExternalLink, Lock, Copy, Printer, Trash2, X, ShoppingCart } from 'lucide-react';
@@ -17,6 +18,7 @@ interface StockAlertView extends StockAlert {
   hasStock?: boolean; // true if product is in 'products' collection with STOCK > 0
   inInventory?: boolean; // true if product is only in inventory_products (not yet published)
   source?: 'products' | 'catalog_products' | 'inventory_products';
+  price?: number;
 }
 
 interface GroupedUser {
@@ -68,7 +70,7 @@ export default function CatalogProductsPage() {
       const uniqueUserIds = Array.from(new Set(rawAlerts.map(a => a.userId).filter(id => id && !id.includes('@'))));
       
       // 1. Fetch Products — try PRODUCTS and CATALOG_PRODUCTS first (by $id), then INVENTORY_PRODUCTS as fallback
-      const productMap: Record<string, { name: string; image: string; sku?: string; jumpsellerId?: string; barcode?: string; section?: number | null; gondola?: string; stock?: number; inCatalog?: boolean; hasStock?: boolean; inInventory?: boolean; source?: 'products' | 'catalog_products' | 'inventory_products' }> = {};
+      const productMap: Record<string, { name: string; image: string; sku?: string; jumpsellerId?: string; barcode?: string; section?: number | null; gondola?: string; stock?: number; price?: number; inCatalog?: boolean; hasStock?: boolean; inInventory?: boolean; source?: 'products' | 'catalog_products' | 'inventory_products' }> = {};
       const productChunks: string[][] = [];
       for (let i = 0; i < uniqueProductIds.length; i += 100) {
         productChunks.push(uniqueProductIds.slice(i, i + 100));
@@ -106,6 +108,7 @@ export default function CatalogProductsPage() {
               section: locVal.section,
               gondola: locVal.gondola || '?',
               stock: p.STOCK ?? 0,
+              price: p.PRICE || p.price || p.CURRENTPRICE || 0,
               inCatalog: true,
               hasStock: (p.STOCK ?? 0) > 0,
               inInventory: false,
@@ -135,6 +138,7 @@ export default function CatalogProductsPage() {
               section: locVal.section,
               gondola: locVal.gondola || '?',
               stock: p.STOCK ?? 0,
+              price: p.PRICE || p.price || p.CURRENTPRICE || 0,
               inCatalog: true,
               hasStock: false,
               inInventory: false,
@@ -167,6 +171,7 @@ export default function CatalogProductsPage() {
               section: locVal.section,
               gondola: locVal.gondola || '?',
               stock: p.STOCK ?? 0,
+              price: p.PRICE || p.price || p.CURRENTPRICE || 0,
               inCatalog: false,
               hasStock: false,
               inInventory: true,
@@ -267,6 +272,7 @@ export default function CatalogProductsPage() {
             section: existing.section ?? null,
             gondola: existing.gondola || '?',
             stock: isInProducts ? (catDoc.STOCK ?? docStock) : docStock,
+            price: catDoc.PRICE || catDoc.price || catDoc.CURRENTPRICE || existing.price || 0,
             inCatalog: catDoc.ISACTIVE !== false,
             hasStock: isInProducts && (catDoc.STOCK ?? 0) > 0,
             inInventory: isInProducts ? false : (existing.inInventory ?? false),
@@ -324,6 +330,7 @@ export default function CatalogProductsPage() {
           section: pInfo?.section,
           gondola: pInfo?.gondola,
           currentStock: pInfo?.stock ?? 0,
+          price: pInfo?.price ?? 0,
           inCatalog: pInfo?.inCatalog ?? false,
           hasStock: pInfo?.hasStock ?? false,
           inInventory: pInfo?.inInventory ?? false,
@@ -396,7 +403,7 @@ export default function CatalogProductsPage() {
             productId: req.productId,
             productName: req.productName,
             productImage: req.productImage,
-            productPrice: 0,
+            productPrice: req.price || 0,
             singleUserId: req.userId,
             singleQty: req.quantity || 1,
             singleAlertId: req.$id,
@@ -414,13 +421,12 @@ export default function CatalogProductsPage() {
           userId: req.userId,
           title: isInStore ? '🛒 ¡Tu producto ya está en la tienda!' : isInventory ? '📦 ¡Producto encontrado en bodega!' : '🎉 ¡Tu producto ya tiene stock!',
           message: isInStore
-            ? `¡Buenas noticias! "${req.productName}" que consultaste ya está disponible en la tienda y fue agregado a tu carrito (${req.quantity || 1} und). ¡No te quedes sin él!`
+            ? `[IMG:${req.productImage || ''}][PRICE:${req.price || 0}][STOCK:${req.currentStock || 0}][QTY:${req.quantity || 1}]¡Buenas noticias! "${req.productName}" que consultaste ya está disponible en la tienda y fue agregado a tu carrito (${req.quantity || 1} und). ¡No te quedes sin él!`
             : isInventory
-            ? `¡Buenas noticias! "${req.productName}" que consultaste fue encontrado en nuestra bodega y fue agregado a tu carrito (${req.quantity || 1} und). ¡No te quedes sin él!`
-            : `¡Buenas noticias! "${req.productName}" que consultaste ya está disponible y fue agregado a tu carrito (${req.quantity || 1} und). ¡No te quedes sin él!`,
+            ? `[IMG:${req.productImage || ''}][PRICE:${req.price || 0}][STOCK:${req.currentStock || 0}][QTY:${req.quantity || 1}]¡Buenas noticias! "${req.productName}" que consultaste fue encontrado en nuestra bodega y fue agregado a tu carrito (${req.quantity || 1} und). ¡No te quedes sin él!`
+            : `[IMG:${req.productImage || ''}][PRICE:${req.price || 0}][STOCK:${req.currentStock || 0}][QTY:${req.quantity || 1}]¡Buenas noticias! "${req.productName}" que consultaste ya está disponible y fue agregado a tu carrito (${req.quantity || 1} und). ¡No te quedes sin él!`,
           type: 'success',
           isRead: false,
-          data: JSON.stringify({ image: req.productImage || '' }),
         };
         try {
           await databases.createDocument(databaseId, NOTIFICATIONS_COLLECTION_ID, ID.unique(), notifData);
@@ -445,7 +451,7 @@ export default function CatalogProductsPage() {
 
   const handleNotifyAllFound = async () => {
     if (!selectedUser) return;
-    const foundReqs = selectedUser.requests.filter(a => a.source && a.status === 'pending');
+    const foundReqs = selectedUser.requests.filter(a => a.source);
     if (foundReqs.length === 0) {
       window.alert('No hay productos encontrados para notificar.');
       return;
@@ -498,10 +504,9 @@ export default function CatalogProductsPage() {
         const notifData: any = {
           userId: req.userId,
           title: '😔 Producto sin stock por ahora',
-          message: `Lamentamos informarte que "${req.productName}" no tiene existencia actualmente. Lo vigilaremos de cerca y te avisaremos en cuanto vuelva a estar disponible. ¡Gracias por tu paciencia!`,
+          message: `[IMG:${req.productImage || ''}][PRICE:${req.price || 0}][STOCK:${req.currentStock || 0}][QTY:${req.quantity || 1}]Lamentamos informarte que "${req.productName}" no tiene existencia actualmente. Lo vigilaremos de cerca y te avisaremos en cuanto vuelva a estar disponible. ¡Gracias por tu paciencia!`,
           type: 'warning',
           isRead: false,
-          data: JSON.stringify({ image: req.productImage || '' }),
         };
         try {
           await databases.createDocument(databaseId, NOTIFICATIONS_COLLECTION_ID, ID.unique(), notifData);
@@ -861,10 +866,10 @@ export default function CatalogProductsPage() {
                 <div style={{ maxHeight: isMobile ? 'none' : 600, overflowY: 'auto', padding: isMobile ? 10 : 12 }}>
                   {selectedUser.requests.map(a => (
                     <div key={a.$id} style={{
-                      background: a.status === 'available' ? '#ecfdf5' : a.source === 'products' ? '#eff6ff' : a.source === 'catalog_products' ? '#f5f3ff' : a.source === 'inventory_products' ? '#fffbeb' : (a.status === 'pending' ? '#fffbf5' : '#fef2f2'),
-                      border: `1px solid ${a.status === 'available' ? '#34d399' : a.source === 'products' ? '#3b82f6' : a.source === 'catalog_products' ? '#a78bfa' : a.source === 'inventory_products' ? '#fbbf24' : (a.status === 'pending' ? '#fbcfe8' : '#fecaca')}`,
+                      background: (a.status === 'available' || a.source === 'products') ? '#ecfdf5' : a.source === 'catalog_products' ? '#f5f3ff' : a.source === 'inventory_products' ? '#fffbeb' : (a.status === 'pending' ? '#fffbf5' : '#fef2f2'),
+                      border: `1px solid ${(a.status === 'available' || a.source === 'products') ? '#34d399' : a.source === 'catalog_products' ? '#a78bfa' : a.source === 'inventory_products' ? '#fbbf24' : (a.status === 'pending' ? '#fbcfe8' : '#fecaca')}`,
                       borderRadius: 10, padding: isMobile ? 11 : 14, marginBottom: 10,
-                      boxShadow: a.status === 'available' ? '0 0 0 1px #34d399' : a.source === 'products' ? '0 0 0 1px #3b82f6' : a.source === 'catalog_products' ? '0 0 0 1px #a78bfa' : a.source === 'inventory_products' ? '0 0 0 1px #fbbf24' : 'none',
+                      boxShadow: (a.status === 'available' || a.source === 'products') ? '0 0 0 1px #34d399' : a.source === 'catalog_products' ? '0 0 0 1px #a78bfa' : a.source === 'inventory_products' ? '0 0 0 1px #fbbf24' : 'none',
                     }}>
                       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                         {/* Product image */}
@@ -894,8 +899,8 @@ export default function CatalogProductsPage() {
                               {a.productName}
                             </p>
                             {a.status === 'pending' && a.source && (
-                              <span style={{ fontSize: 10, fontWeight: 700, background: a.source === 'inventory_products' ? '#fef3c7' : a.source === 'catalog_products' ? '#ede9fe' : '#dbeafe', color: a.source === 'inventory_products' ? '#92400e' : a.source === 'catalog_products' ? '#6d28d9' : '#1e40af', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 3, border: `1px solid ${a.source === 'inventory_products' ? '#fbbf24' : a.source === 'catalog_products' ? '#a78bfa' : '#93c5fd'}`, flexShrink: 0 }}>
-                                {a.source === 'inventory_products' ? <><AlertTriangle size={10} /> En Bodega</> : a.source === 'catalog_products' ? <><Eye size={10} /> En Catálogo</> : <><CheckCircle size={10} /> En Tienda</>}
+                              <span style={{ fontSize: 10, fontWeight: 700, background: a.source === 'products' ? '#d1fae5' : a.source === 'inventory_products' ? '#fef3c7' : a.source === 'catalog_products' ? '#ede9fe' : '#dbeafe', color: a.source === 'products' ? '#065f46' : a.source === 'inventory_products' ? '#92400e' : a.source === 'catalog_products' ? '#6d28d9' : '#1e40af', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 3, border: `1px solid ${a.source === 'products' ? '#34d399' : a.source === 'inventory_products' ? '#fbbf24' : a.source === 'catalog_products' ? '#a78bfa' : '#93c5fd'}`, flexShrink: 0 }}>
+                                {a.source === 'products' ? <><ShoppingCart size={10} /> En Tienda · Con Stock</> : a.source === 'inventory_products' ? <><AlertTriangle size={10} /> En Bodega</> : a.source === 'catalog_products' ? <><Eye size={10} /> En Catálogo</> : <><CheckCircle size={10} /> En Tienda</>}
                               </span>
                             )}
                             {a.status === 'pending' && !a.source && (
@@ -930,13 +935,13 @@ export default function CatalogProductsPage() {
                             {/* Badge: producto en products con stock (only when pending) */}
                             {a.source === 'products' && a.status !== 'available' && (
                               <span style={{
-                                fontSize: 10, fontWeight: 700, color: '#1e40af',
-                                background: '#dbeafe', border: '1px solid #93c5fd',
+                                fontSize: 10, fontWeight: 700, color: '#065f46',
+                                background: '#d1fae5', border: '1px solid #34d399',
                                 padding: '2px 7px', borderRadius: 10,
                                 display: 'flex', alignItems: 'center', gap: 3,
                                 whiteSpace: 'nowrap',
                               }}>
-                                <ShoppingCart size={10} /> En Tienda · {a.currentStock ?? 0} uds
+                                <ShoppingCart size={10} /> {a.currentStock ?? 0} uds
                               </span>
                             )}
                             {/* Badge: producto en catalog_products (a pedido, only when pending) */}

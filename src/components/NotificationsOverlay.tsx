@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   Bell, Info, AlertTriangle, CheckCircle, Tag, ShoppingBag, Loader2, X, Gift, Package, Trash2
 } from 'lucide-react';
-import { getServices, getAppwriteConfig } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, formatPrice } from '@/lib/appwrite';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/context/NotificationContext';
 import {
@@ -263,6 +263,35 @@ export default function NotificationsOverlay({ onClose }: Props) {
                   }
                 } catch {}
 
+                // Parse rich metadata from body string e.g. [IMG:url][PRICE:1500][STOCK:100][QTY:2]
+                let finalBody = body;
+                let parsedPrice: number | null = null;
+                let parsedStock: number | null = null;
+                let parsedQty: number | null = null;
+
+                if (finalBody) {
+                  const imgMatch = finalBody.match(/\[IMG:(.*?)\]/);
+                  if (imgMatch) {
+                    notifImage = imgMatch[1];
+                    finalBody = finalBody.replace(/\[IMG:(.*?)\]/g, '');
+                  }
+                  const priceMatch = finalBody.match(/\[PRICE:(.*?)\]/);
+                  if (priceMatch) {
+                    parsedPrice = parseFloat(priceMatch[1]);
+                    finalBody = finalBody.replace(/\[PRICE:(.*?)\]/g, '');
+                  }
+                  const stockMatch = finalBody.match(/\[STOCK:(.*?)\]/);
+                  if (stockMatch) {
+                    parsedStock = parseInt(stockMatch[1], 10);
+                    finalBody = finalBody.replace(/\[STOCK:(.*?)\]/g, '');
+                  }
+                  const qtyMatch = finalBody.match(/\[QTY:(.*?)\]/);
+                  if (qtyMatch) {
+                    parsedQty = parseInt(qtyMatch[1], 10);
+                    finalBody = finalBody.replace(/\[QTY:(.*?)\]/g, '');
+                  }
+                }
+
                 return (
                   <div
                     key={id}
@@ -365,7 +394,28 @@ export default function NotificationsOverlay({ onClose }: Props) {
                             </button>
                           </div>
                         </div>
-                        {body && <p style={{ margin: 0, fontSize: 14, color: '#6b7280', lineHeight: 1.5 }}>{body}</p>}
+                        {finalBody && <p style={{ margin: 0, fontSize: 14, color: '#6b7280', lineHeight: 1.5 }}>{finalBody}</p>}
+                        
+                        {/* Rich Metadata Badges (Price, Stock, Qty) */}
+                        {(parsedPrice !== null || parsedStock !== null || parsedQty !== null) && (
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8, alignItems: 'center' }}>
+                            {parsedPrice !== null && (
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#047857', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '2px 7px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 3 }}>
+                                💵 Precio: {formatPrice(parsedPrice)}
+                              </span>
+                            )}
+                            {parsedStock !== null && (
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#1d4ed8', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '2px 7px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 3 }}>
+                                📦 Stock subido: {parsedStock} uds
+                              </span>
+                            )}
+                            {parsedQty !== null && (
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#b45309', background: '#fffbeb', border: '1px solid #fef08a', padding: '2px 7px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 3 }}>
+                                🛒 En tu carrito: {parsedQty} und
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
