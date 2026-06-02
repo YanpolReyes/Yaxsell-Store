@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import * as XLSX from 'xlsx';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { invalidateProductCache } from '@/lib/cache';
 import { isAdminEmail } from '@/lib/admin-access';
 import { setBarcodeInFeatures, setSectionInFeatures } from '@/lib/product-features';
@@ -1407,7 +1407,25 @@ export default function InventarioPage() {
       // 2. Eliminar de inventario
       await databases.deleteDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, productId);
 
-      // 3. Actualizar estado local
+      // 3. Eliminar de catalog_products si existe (mismo $id o mismo SKU)
+      try {
+        // Try by $id first
+        await databases.deleteDocument(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, productId);
+      } catch {
+        // Not found by $id, try by SKU
+        if (sku) {
+          try {
+            const catRes = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, [
+              Query.equal('sku', sku), Query.limit(1),
+            ]);
+            if (catRes.documents.length > 0) {
+              await databases.deleteDocument(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, catRes.documents[0].$id);
+            }
+          } catch {}
+        }
+      }
+
+      // 4. Actualizar estado local
       setProducts(prev => prev.filter(x => x.$id !== productId));
       if (sku) setPublishedSkus(prev => new Set(prev).add(sku));
       if (barcode) setPublishedBarcodes(prev => new Set(prev).add(barcode));

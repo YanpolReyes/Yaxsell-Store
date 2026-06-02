@@ -261,8 +261,11 @@ export default function CatalogProductsPage() {
         const catDocByBc = bcToLookFor ? catalogByBarcode.get(bcToLookFor) : undefined;
         const catDocByName = nameToLookFor ? catalogByName.get(nameToLookFor) : undefined;
 
-        // SKU match in products has highest priority (handles published products with new $id)
-        const catDoc = (catDocBySku && catDocBySku._collection === 'products') ? catDocBySku : (catDocById || catDocByJid || catDocByBc || catDocByName);
+        // Priority: any match in 'products' collection wins over catalog_products by $id
+        // This handles the case where a product was published from inventory (new $id in products)
+        // but the old catalog_products doc still exists with the alert's original $id
+        const productsMatch = [catDocBySku, catDocByJid, catDocByBc, catDocByName].find(d => d && d._collection === 'products');
+        const catDoc = productsMatch || catDocById || catDocByJid || catDocByBc || catDocByName;
 
         if (catDoc) {
           const isInProducts = catDoc._collection === 'products';
@@ -286,25 +289,36 @@ export default function CatalogProductsPage() {
         }
       }
 
-      // Pass 4: For products still without source or without hasStock, search products collection by name
+      // Pass 4: For products still without source or without hasStock, search products collection by name and SKU
       const unresolvedIds = uniqueProductIds.filter(id => {
         const p = productMap[id];
         return !p || (!p.hasStock && p.source !== 'products');
       });
       if (unresolvedIds.length > 0) {
-        const unresolvedNames = unresolvedIds.map(id => {
+        const unresolvedItems = unresolvedIds.map(id => {
           const rawAlert = rawAlerts.find(a => a.productId === id);
-          return { id, name: rawAlert?.productName || productMap[id]?.name || '' };
-        }).filter(n => n.name.length > 2);
+          const existing = productMap[id];
+          return { id, name: rawAlert?.productName || existing?.name || '', sku: existing?.sku || rawAlert?.sku || '' };
+        }).filter(n => n.name.length > 2 || n.sku.length > 1);
 
-        for (const { id, name } of unresolvedNames) {
+        for (const { id, name, sku } of unresolvedItems) {
+          if (productMap[id]?.source === 'products' && productMap[id]?.hasStock) continue; // already resolved
           try {
-            const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-              Query.equal('NAME', name),
-              Query.limit(1),
-            ]);
-            if (res.documents.length > 0) {
-              const p = res.documents[0] as any;
+            // Try by SKU first (more precise), then by name
+            let p: any = null;
+            if (sku) {
+              const skuRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+                Query.equal('sku', sku), Query.limit(1),
+              ]);
+              if (skuRes.documents.length > 0) p = skuRes.documents[0];
+            }
+            if (!p && name) {
+              const nameRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+                Query.equal('NAME', name), Query.limit(1),
+              ]);
+              if (nameRes.documents.length > 0) p = nameRes.documents[0];
+            }
+            if (p) {
               const existing = productMap[id] || {};
               const locVal = getWarehouseLocationFromFeatures(p.FEATURES, p.section ?? null);
               productMap[id] = {
@@ -483,7 +497,7 @@ export default function CatalogProductsPage() {
 
   const handleNotifyAllFound = async () => {
     if (!selectedUser) return;
-    const foundReqs = selectedUser.requests.filter(a => a.source);
+    const foundReqs = selectedUser.requests.filter(a => a.source || a.hasStock);
     if (foundReqs.length === 0) {
       window.alert('No hay productos encontrados para notificar.');
       return;
