@@ -1438,8 +1438,8 @@ export default function InventarioPage() {
           await Promise.all(alertRes.documents.map((a: any) =>
             databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, a.$id, {
               productId: newProductsDocId,
-              productImage: p.IMAGEURL || p.IMAGEURL2 || p.IMAGE_URL || p.imageUrl || p.image || p.IMAGE || '',
-              productName: p.NAME || p.name || '',
+              productImage: p.IMAGEURL || p.IMAGEURL2 || '',
+              productName: p.NAME || '',
               sku: sku || '',
             })
           ));
@@ -1456,8 +1456,8 @@ export default function InventarioPage() {
             await Promise.all(toUpdate.map((a: any) =>
               databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, a.$id, {
                 productId: newProductsDocId,
-                productImage: p.IMAGEURL || p.IMAGEURL2 || p.IMAGE_URL || p.imageUrl || p.image || p.IMAGE || '',
-                productName: p.NAME || p.name || '',
+                productImage: p.IMAGEURL || p.IMAGEURL2 || '',
+                productName: p.NAME || '',
               })
             ));
           } catch (e) {
@@ -1562,8 +1562,8 @@ export default function InventarioPage() {
               await Promise.all(alertRes.documents.map((a: any) =>
                 databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, a.$id, {
                   productId: newDocId,
-                  productImage: p.IMAGEURL || p.IMAGEURL2 || p.IMAGE_URL || p.imageUrl || p.image || p.IMAGE || '',
-                  productName: p.NAME || p.name || '',
+                  productImage: p.IMAGEURL || p.IMAGEURL2 || '',
+                  productName: p.NAME || '',
                   sku: sku || '',
                 })
               ));
