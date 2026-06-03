@@ -16,6 +16,8 @@ import { useEffect, useRef, useState } from 'react';
 import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, PRODUCTS_COLLECTION, Query } from '@/lib/appwrite';
 import { Category, Subcategory, Product } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
+import { isEditorMockEnabled } from '@/lib/editor-mock';
+import { getTpl23MockData } from './mockData';
 
 const SHOPIFY_BASE = '/shopify/plantilla23/assets';
 
@@ -183,11 +185,21 @@ export default function HomePage23() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const editorMock = isEditorMockEnabled();
 
   /* ── Fetch categories, subcategories & products from Appwrite ── */
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Modo editor ficticio: NO tocar Appwrite (evita millones de requests en incógnito)
+        if (isEditorMockEnabled()) {
+          const mock = getTpl23MockData();
+          setCategories(mock.categories);
+          setSubcategories(mock.subcategories);
+          setProducts(mock.products);
+          return;
+        }
+
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
         const [cRes, scRes, pRes] = await Promise.all([
@@ -1791,6 +1803,27 @@ export default function HomePage23() {
         ref={containerRef}
         className="tpl23-shopify-root template-index"
       />
+      {editorMock && (
+        <div
+          style={{
+            position: 'fixed',
+            left: 12,
+            bottom: 12,
+            zIndex: 999999,
+            background: 'rgba(17,17,17,0.92)',
+            color: '#fff',
+            padding: '8px 10px',
+            borderRadius: 999,
+            fontSize: 12,
+            fontWeight: 800,
+            letterSpacing: '0.02em',
+            border: '1px solid rgba(255,255,255,0.14)',
+            boxShadow: '0 10px 24px rgba(0,0,0,0.18)',
+          }}
+        >
+          MODO EDITOR (DATOS FICTICIOS)
+        </div>
+      )}
     </>
   );
 }

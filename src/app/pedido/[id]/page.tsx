@@ -107,12 +107,16 @@ export default function PedidoPage() {
   // ── Customer edit/cancel (max 2 cambios) ──
   const [editOpen, setEditOpen] = useState(false);
   const [draftItems, setDraftItems] = useState<OrderItem[]>([]);
+  const [originalQtyById, setOriginalQtyById] = useState<Record<string, number>>({});
+  const [productStockById, setProductStockById] = useState<Record<string, number>>({});
+  const [loadingStocks, setLoadingStocks] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [editError, setEditError] = useState<string>('');
   const [productSearch, setProductSearch] = useState('');
   const [productResults, setProductResults] = useState<Product[]>([]);
   const [searchingProducts, setSearchingProducts] = useState(false);
+  const [imageModal, setImageModal] = useState<{ src: string; name: string } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -199,6 +203,37 @@ export default function PedidoPage() {
     return list.reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty) || 0), 0);
   }
 
+  function getMaxQtyFor(productId: string, currentStockFallback?: number): number | null {
+    const stock = productStockById[productId] ?? currentStockFallback;
+    if (stock === undefined || !Number.isFinite(stock)) return null;
+    const original = Number(originalQtyById[productId] ?? 0) || 0;
+    // El stock actual ya tiene descontada la reserva del pedido; por eso el máximo posible es:
+    // qty_original_en_pedido + stock_disponible_actual
+    return Math.max(0, original + stock);
+  }
+
+  async function loadStocksFor(ids: string[]) {
+    const uniq = Array.from(new Set(ids.filter(Boolean)));
+    if (uniq.length === 0) return;
+    setLoadingStocks(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const out: Record<string, number> = {};
+      await Promise.all(uniq.map(async (pid) => {
+        try {
+          const doc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, pid);
+          out[pid] = Number((doc as any).STOCK ?? 0);
+        } catch {
+          // si falla, dejamos sin stock (null) para no bloquear UI; el guardado validará igual
+        }
+      }));
+      setProductStockById(prev => ({ ...prev, ...out }));
+    } finally {
+      setLoadingStocks(false);
+    }
+  }
+
   function openEditor() {
     if (!order) return;
     setEditError('');
@@ -206,7 +241,11 @@ export default function PedidoPage() {
     setProductResults([]);
     // Clonar items actuales como base
     const base = (items || []).map(it => ({ ...it, qty: Math.max(1, Number(it.qty) || 1) }));
+    const orig: Record<string, number> = {};
+    for (const it of base) orig[it.id] = Number(it.qty) || 0;
+    setOriginalQtyById(orig);
     setDraftItems(base);
+    loadStocksFor(base.map(i => i.id));
     setEditOpen(true);
   }
 
@@ -217,8 +256,32 @@ export default function PedidoPage() {
     setProductResults([]);
   }
 
+  // Cerrar modal de imagen con ESC
+  useEffect(() => {
+    if (!imageModal) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setImageModal(null);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    // bloquear scroll
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [imageModal]);
+
   function setQty(productId: string, qty: number) {
-    setDraftItems(prev => prev.map(it => it.id === productId ? { ...it, qty: Math.max(1, qty) } : it));
+    setDraftItems(prev => prev.map(it => {
+      if (it.id !== productId) return it;
+      const minQ = 1;
+      const maxQ = getMaxQtyFor(productId, (it as any).stock);
+      const next = Math.max(minQ, qty);
+      const clamped = maxQ != null ? Math.min(next, maxQ) : next;
+      const price = Number(it.price) || 0;
+      return { ...it, qty: clamped, total: price * clamped };
+    }));
   }
 
   function removeDraft(productId: string) {
@@ -263,24 +326,35 @@ export default function PedidoPage() {
           }
         } catch {}
 
-        setProductResults(merged.slice(0, 20));
+        const list = merged.slice(0, 20);
+        setProductResults(list);
+        // cachear stock para usarlo en límites de cantidad
+        const stockMap: Record<string, number> = {};
+        for (const p of list as any[]) {
+          if (p?.$id && Number.isFinite(Number(p?.STOCK))) stockMap[String(p.$id)] = Number(p.STOCK);
+        }
+        if (Object.keys(stockMap).length) setProductStockById(prev => ({ ...prev, ...stockMap }));
       } catch {
         const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.limit(80)]);
         const docs = (res.documents as unknown as Product[]) || [];
         const qq = q.toLowerCase();
-        setProductResults(
-          docs
-            .filter((p: any) => {
-              const name = String(p?.NAME || '').toLowerCase();
-              const sku = getProductSku(p).toLowerCase();
-              const barcode = getProductBarcode(p).toLowerCase();
-              const tags = Array.isArray(p?.TAGS) ? p.TAGS.join(',') : (p?.TAGS || '');
-              const feats = Array.isArray(p?.FEATURES) ? p.FEATURES.join('\n') : (p?.FEATURES || '');
-              const hay = `${name}\n${sku}\n${barcode}\n${String(tags).toLowerCase()}\n${String(feats).toLowerCase()}`;
-              return hay.includes(qq);
-            })
-            .slice(0, 20),
-        );
+        const list = docs
+          .filter((p: any) => {
+            const name = String(p?.NAME || '').toLowerCase();
+            const sku = getProductSku(p).toLowerCase();
+            const barcode = getProductBarcode(p).toLowerCase();
+            const tags = Array.isArray(p?.TAGS) ? p.TAGS.join(',') : (p?.TAGS || '');
+            const feats = Array.isArray(p?.FEATURES) ? p.FEATURES.join('\n') : (p?.FEATURES || '');
+            const hay = `${name}\n${sku}\n${barcode}\n${String(tags).toLowerCase()}\n${String(feats).toLowerCase()}`;
+            return hay.includes(qq);
+          })
+          .slice(0, 20);
+        setProductResults(list);
+        const stockMap: Record<string, number> = {};
+        for (const p of list as any[]) {
+          if (p?.$id && Number.isFinite(Number(p?.STOCK))) stockMap[String(p.$id)] = Number(p.STOCK);
+        }
+        if (Object.keys(stockMap).length) setProductStockById(prev => ({ ...prev, ...stockMap }));
       }
     } catch (e) {
       console.error(e);
@@ -295,19 +369,37 @@ export default function PedidoPage() {
       const idx = prev.findIndex(x => x.id === p.$id);
       const price = (p.CURRENTPRICE ?? p.PRICE ?? 0) as number;
       const img = resolveStorageImageUrl(p.IMAGEURL);
+      const pid = String((p as any).$id || '');
+      const directStock = Number((p as any).STOCK ?? 0);
       if (idx >= 0) {
         const cur = prev[idx];
         const newQty = (cur.qty || 1) + 1;
         const curPrice = Number(cur.price) || 0;
+        const maxQ = getMaxQtyFor(cur.id, directStock);
+        if (maxQ != null && newQty > maxQ) {
+          alert('No hay más stock disponible para este producto.');
+          return prev;
+        }
         const next = [...prev];
         next[idx] = { ...cur, qty: newQty, total: curPrice * newQty };
         return next;
       }
+      const maxNew = getMaxQtyFor(pid, directStock);
+      if (maxNew != null && maxNew <= 0) {
+        alert('Este producto no tiene stock disponible.');
+        return prev;
+      }
       return [
         ...prev,
-        { id: p.$id, name: p.NAME, price, qty: 1, img, total: price },
+        { id: p.$id, name: p.NAME, price, qty: 1, img, total: price, stock: directStock },
       ];
     });
+
+    const pid = String((p as any).$id || '');
+    const directStock = Number((p as any).STOCK ?? 0);
+    if (pid && Number.isFinite(directStock)) {
+      setProductStockById(s => ({ ...s, [pid]: directStock }));
+    }
   }
 
   async function handleSaveEdits() {
@@ -326,12 +418,8 @@ export default function PedidoPage() {
       const latest = latestDoc as unknown as Order;
 
       const editCount = getCustomerEditCount(latest);
-      if (editCount >= MAX_CUSTOMER_EDITS) {
-        alert('Ya alcanzaste el máximo de 2 cambios permitidos para este pedido.');
-        return;
-      }
-      if (latest.STATUS !== 'pending') {
-        alert('Solo puedes modificar el pedido mientras esté en estado pendiente.');
+      if (latest.STATUS === 'paid' || latest.STATUS === 'shipped' || latest.STATUS === 'delivered' || latest.STATUS === 'cancelled') {
+        alert('No puedes modificar el pedido si ya está pagado, despachado o anulado.');
         return;
       }
 
@@ -350,34 +438,56 @@ export default function PedidoPage() {
       // IDs a tocar en stock
       const ids = new Set<string>([...oldItems.map(i => i.id), ...normalizedDraft.map(i => i.id)]);
 
-      // Validar y actualizar stock por deltas
+      // 1) Validar primero TODO (sin tocar stock)
+      const validation: { pid: string; currentStock: number; prevQty: number; nextQty: number; delta: number; name: string }[] = [];
       for (const pid of ids) {
-        const prev = oldQty.get(pid) || 0;
-        const next = normalizedDraft.find(x => x.id === pid)?.qty || 0;
-        const delta = next - prev; // + => necesita más stock, - => devuelve stock
+        const prevQty = oldQty.get(pid) || 0;
+        const nextQty = normalizedDraft.find(x => x.id === pid)?.qty || 0;
+        const delta = nextQty - prevQty;
         if (delta === 0) continue;
-
-        // Si el producto ya no existe, ignoramos (pero no deberíamos dejar el pedido con ítems inválidos)
         const productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, pid);
         const currentStock = Number((productDoc as any).STOCK ?? 0);
+        const name = String((productDoc as any).NAME || pid);
         if (delta > 0 && currentStock < delta) {
-          throw new Error(`Stock insuficiente para "${(productDoc as any).NAME || pid}". Disponible: ${currentStock}, necesitas: ${delta}.`);
+          throw new Error(`Stock insuficiente para "${name}". Disponible: ${currentStock}, necesitas: ${delta}.`);
         }
-        const newStock = currentStock - delta;
-        await databases.updateDocument(databaseId, PRODUCTS_COLLECTION, pid, { STOCK: newStock });
+        validation.push({ pid, currentStock, prevQty, nextQty, delta, name });
+      }
+
+      // 2) Aplicar cambios con rollback si algo falla a mitad
+      const applied: { pid: string; prevStock: number }[] = [];
+      try {
+        for (const v of validation) {
+          const newStock = v.currentStock - v.delta;
+          applied.push({ pid: v.pid, prevStock: v.currentStock });
+          await databases.updateDocument(databaseId, PRODUCTS_COLLECTION, v.pid, { STOCK: newStock });
+        }
+      } catch (err) {
+        for (const a of applied) {
+          try { await databases.updateDocument(databaseId, PRODUCTS_COLLECTION, a.pid, { STOCK: a.prevStock }); } catch {}
+        }
+        throw err;
       }
 
       const newSubtotal = computeSubtotal(normalizedDraft);
       const discount = Number((latest as any).DISCOUNT ?? 0) || 0;
       const newTotal = Math.max(0, newSubtotal - discount);
 
-      await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, {
-        ITEMS: JSON.stringify(normalizedDraft),
-        SUBTOTAL: newSubtotal,
-        TOTAL: newTotal,
-        UPDATEDAT: Date.now(),
-        CUSTOMEREDITCOUNT: editCount + 1,
-      });
+      try {
+        await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, {
+          ITEMS: JSON.stringify(normalizedDraft),
+          SUBTOTAL: newSubtotal,
+          TOTAL: newTotal,
+          UPDATEDAT: Date.now(),
+          CUSTOMEREDITCOUNT: editCount + 1,
+        });
+      } catch (err) {
+        // Si el update del pedido falla, revertimos stock ya aplicado
+        for (const a of applied) {
+          try { await databases.updateDocument(databaseId, PRODUCTS_COLLECTION, a.pid, { STOCK: a.prevStock }); } catch {}
+        }
+        throw err;
+      }
 
       closeEditor();
       await load();
@@ -402,12 +512,8 @@ export default function PedidoPage() {
       const latest = latestDoc as unknown as Order;
 
       const editCount = getCustomerEditCount(latest);
-      if (editCount >= MAX_CUSTOMER_EDITS) {
-        alert('Ya alcanzaste el máximo de 2 cambios permitidos para este pedido.');
-        return;
-      }
-      if (latest.STATUS !== 'pending') {
-        alert('Solo puedes anular el pedido mientras esté en estado pendiente.');
+      if (latest.STATUS === 'paid' || latest.STATUS === 'shipped' || latest.STATUS === 'delivered' || latest.STATUS === 'cancelled') {
+        alert('No puedes anular el pedido si ya está pagado, despachado o anulado.');
         return;
       }
 
@@ -485,8 +591,7 @@ export default function PedidoPage() {
   const showTimer = isPending && order.EXPIRESAT && !uploaded;
   const isSuccess = uploaded || order.STATUS !== 'pending';
   const customerEditCount = getCustomerEditCount(order);
-  const remainingEdits = Math.max(0, MAX_CUSTOMER_EDITS - customerEditCount);
-  const canCustomerModify = order.STATUS === 'pending' && remainingEdits > 0;
+  const canCustomerModify = order.STATUS !== 'paid' && order.STATUS !== 'shipped' && order.STATUS !== 'delivered' && order.STATUS !== 'cancelled';
 
   return (
     <div style={{ background: '#ebebeb', minHeight: '100vh', padding: '24px 5%', paddingBottom: 'calc(24px + 92px + env(safe-area-inset-bottom, 0px))' }}>
@@ -665,7 +770,7 @@ export default function PedidoPage() {
               <div>
                 <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#111' }}>Gestionar pedido</p>
                 <p style={{ margin: '3px 0 0', fontSize: 12, color: '#6b7280' }}>
-                  Cambios restantes: <strong>{remainingEdits}</strong> (máx. {MAX_CUSTOMER_EDITS})
+                  Estado de edición: <strong>Ilimitado</strong> (hasta confirmar pago)
                 </p>
               </div>
               {editOpen && (
@@ -676,14 +781,9 @@ export default function PedidoPage() {
               )}
             </div>
 
-            {!canCustomerModify && order.STATUS === 'pending' && remainingEdits <= 0 && (
-              <p style={{ margin: 0, fontSize: 12, color: '#b45309' }}>
-                ⚠ Ya alcanzaste el máximo de cambios permitidos para este pedido.
-              </p>
-            )}
-            {!canCustomerModify && order.STATUS !== 'pending' && (
+            {!canCustomerModify && (
               <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>
-                Solo se puede editar/anular mientras el pedido esté en estado <strong>pendiente</strong>.
+                El pedido ya está confirmado, despachado o cancelado y no puede ser modificado.
               </p>
             )}
 
@@ -712,19 +812,42 @@ export default function PedidoPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {draftItems.map((it) => (
                     <div key={it.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 12px', border: '1px solid #eee', borderRadius: 10, background: '#fff' }}>
-                      <div style={{ minWidth: 0 }}>
-                        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</p>
-                        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280' }}>{formatPrice(it.price)} c/u</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const src = it.img ? resolveStorageImageUrl(it.img) : '';
+                            if (src) setImageModal({ src, name: it.name });
+                          }}
+                          style={{ width: 46, height: 46, borderRadius: 10, background: '#f3f4f6', overflow: 'hidden', flexShrink: 0, border: '1px solid #eee', cursor: it.img ? 'pointer' : 'default', padding: 0 }}
+                          title={it.img ? 'Ver imagen' : 'Sin imagen'}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          {it.img ? (
+                            <img src={resolveStorageImageUrl(it.img)} alt={it.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Package size={18} color="#9ca3af" />
+                            </div>
+                          )}
+                        </button>
+
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</p>
+                          <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280' }}>
+                            {formatPrice(it.price)} c/u · <span style={{ fontWeight: 800, color: '#111' }}>{formatPrice((Number(it.price) || 0) * (Number(it.qty) || 0))}</span>
+                          </p>
+                        </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
-                          <button onClick={() => setQty(it.id, (it.qty || 1) - 1)} disabled={(it.qty || 1) <= 1}
-                            style={{ width: 34, height: 32, border: 'none', background: '#fff', cursor: (it.qty || 1) <= 1 ? 'not-allowed' : 'pointer', color: '#374151' }}>
+                          <button onClick={() => setQty(it.id, (it.qty || 1) - 1)} disabled={(it.qty || 1) <= 1 || loadingStocks}
+                            style={{ width: 34, height: 32, border: 'none', background: '#fff', cursor: ((it.qty || 1) <= 1 || loadingStocks) ? 'not-allowed' : 'pointer', color: '#374151' }}>
                             <Minus size={14} />
                           </button>
                           <span style={{ width: 34, textAlign: 'center', fontSize: 13, fontWeight: 800, color: '#111' }}>{it.qty}</span>
-                          <button onClick={() => setQty(it.id, (it.qty || 1) + 1)}
-                            style={{ width: 34, height: 32, border: 'none', background: '#fff', cursor: 'pointer', color: '#374151' }}>
+                          <button onClick={() => setQty(it.id, (it.qty || 1) + 1)} disabled={loadingStocks}
+                            style={{ width: 34, height: 32, border: 'none', background: '#fff', cursor: loadingStocks ? 'not-allowed' : 'pointer', color: '#374151' }}>
                             <Plus size={14} />
                           </button>
                         </div>
@@ -755,9 +878,30 @@ export default function PedidoPage() {
 
                   {productResults.length > 0 && (
                     <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {productResults.map(p => (
-                        <button key={p.$id} onClick={() => addProductToDraft(p)}
-                          style={{ width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: 12, border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                      {productResults.map(p => {
+                        const stock = Number((p as any).STOCK ?? NaN);
+                        const hasStock = Number.isFinite(stock) ? stock > 0 : true;
+                        return (
+                        <button
+                          key={p.$id}
+                          onClick={() => { if (hasStock) addProductToDraft(p); }}
+                          disabled={!hasStock}
+                          style={{
+                            width: '100%',
+                            textAlign: 'left',
+                            padding: '10px 12px',
+                            borderRadius: 12,
+                            border: '1px solid #e5e7eb',
+                            background: '#fff',
+                            cursor: hasStock ? 'pointer' : 'not-allowed',
+                            opacity: hasStock ? 1 : 0.55,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 12,
+                          }}
+                          title={!hasStock ? 'Sin stock disponible' : 'Agregar al pedido'}
+                        >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                             <div style={{ width: 44, height: 44, borderRadius: 10, background: '#f3f4f6', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -778,16 +922,21 @@ export default function PedidoPage() {
                                   return 'SKU: —';
                                 })()}
                               </p>
+                              <p style={{ margin: '2px 0 0', fontSize: 11, color: hasStock ? '#6b7280' : '#b45309', fontWeight: 800 }}>
+                                Stock: {Number.isFinite(stock) ? stock : '—'}
+                              </p>
                             </div>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                             <span style={{ fontSize: 12, fontWeight: 900, color: '#111' }}>
                               {formatPrice(((p as any).CURRENTPRICE ?? (p as any).PRICE ?? 0) as number)}
                             </span>
-                            <span style={{ fontSize: 12, fontWeight: 900, color: '#3483fa' }}>+ Agregar</span>
+                            <span style={{ fontSize: 12, fontWeight: 900, color: hasStock ? '#3483fa' : '#9ca3af' }}>
+                              {hasStock ? '+ Agregar' : 'Sin stock'}
+                            </span>
                           </div>
                         </button>
-                      ))}
+                      );})}
                     </div>
                   )}
                 </div>
@@ -803,11 +952,35 @@ export default function PedidoPage() {
                     {savingEdit ? 'Guardando...' : 'Guardar cambios'}
                   </button>
                   <p style={{ margin: 0, fontSize: 11, color: '#6b7280' }}>
-                    Nota: solo puedes hacer cambios mientras el pedido esté pendiente. Cada guardado/anulación consume 1 cambio (máx. {MAX_CUSTOMER_EDITS}).
+                    Nota: puedes realizar cambios de forma ilimitada mientras el pedido no esté confirmado como pagado.
                   </p>
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Modal: imagen completa */}
+        {imageModal && (
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+            onMouseDown={() => setImageModal(null)}
+          >
+            <div
+              style={{ width: '100%', maxWidth: 820, background: '#fff', borderRadius: 18, overflow: 'hidden', boxShadow: '0 30px 90px rgba(0,0,0,0.35)' }}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid #eee' }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{imageModal.name}</p>
+                <button onClick={() => setImageModal(null)} style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 10, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 900 }}>
+                  <X size={14} /> Cerrar
+                </button>
+              </div>
+              <div style={{ background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imageModal.src} alt={imageModal.name} style={{ width: '100%', height: 'auto', maxHeight: '82vh', objectFit: 'contain' }} />
+              </div>
+            </div>
           </div>
         )}
 
