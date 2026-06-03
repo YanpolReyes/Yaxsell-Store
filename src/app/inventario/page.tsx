@@ -204,7 +204,7 @@ export default function InventarioPage() {
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrateProgress, setMigrateProgress] = useState(0);
   const [migrateResults, setMigrateResults] = useState<{ activated: number; deactivated: number; errors: number } | null>(null);
-  const [view, setView] = useState<'excel' | 'catalog' | 'withStock' | 'located'>('catalog');
+  const [view, setView] = useState<'excel' | 'catalog' | 'withStock' | 'located'>('withStock');
   const [catalogSearch, setCatalogSearch] = useState('');
   const [stockEdits, setStockEdits] = useState<Record<string, string>>({});
   const [packQtyEdits, setPackQtyEdits] = useState<Record<string, string>>({});
@@ -1614,6 +1614,10 @@ export default function InventarioPage() {
     const barcode = getBarcode(p).toLowerCase();
     const name = (p.NAME || '').toLowerCase();
     return sku.includes(q) || name.includes(q) || barcode.includes(q);
+  }).sort((a, b) => {
+    const dateA = a.DATE_ADDED || (a as any).$createdAt || '';
+    const dateB = b.DATE_ADDED || (b as any).$createdAt || '';
+    return new Date(dateB).getTime() - new Date(dateA).getTime();
   });
 
   const filtered = rows.filter(r => {
