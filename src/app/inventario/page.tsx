@@ -725,7 +725,7 @@ export default function InventarioPage() {
       const allInventory: Product[] = [];
       let cursor: string | undefined;
       while (true) {
-        const queries: any[] = [Query.limit(500)];
+        const queries: any[] = [Query.orderDesc('$createdAt'), Query.limit(500)];
         if (cursor) queries.push(Query.cursorAfter(cursor));
         const resp: any = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, queries);
         const docs = resp.documents as unknown as Product[];
@@ -742,7 +742,7 @@ export default function InventarioPage() {
       try {
         let pCursor: string | undefined;
         while (true) {
-          const queries: any[] = [Query.limit(500)];
+          const queries: any[] = [Query.orderDesc('$createdAt'), Query.limit(500)];
           if (pCursor) queries.push(Query.cursorAfter(pCursor));
           const resp: any = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
           const docs = resp.documents as any[];
@@ -1614,10 +1614,6 @@ export default function InventarioPage() {
     const barcode = getBarcode(p).toLowerCase();
     const name = (p.NAME || '').toLowerCase();
     return sku.includes(q) || name.includes(q) || barcode.includes(q);
-  }).sort((a, b) => {
-    const dateA = a.DATE_ADDED || (a as any).$createdAt || '';
-    const dateB = b.DATE_ADDED || (b as any).$createdAt || '';
-    return new Date(dateB).getTime() - new Date(dateA).getTime();
   });
 
   const filtered = rows.filter(r => {
