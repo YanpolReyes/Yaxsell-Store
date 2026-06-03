@@ -6,6 +6,7 @@ import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, INVENTORY_PRODU
 import { Product } from '@/types/admin';
 import { RefreshCw, AlertTriangle, Package, Search, X, TrendingDown, DollarSign, Download, Check, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { getWarehouseLocationFromFeatures } from '@/lib/product-features';
 
 type StockLevel = 'all' | 'out' | 'critical' | 'low' | 'ok';
 
@@ -176,16 +177,26 @@ export default function InventoryPage() {
   };
 
   const exportCSV = () => {
-    const headers = ['Nombre', 'Categoría', 'Stock', 'Vendidos', 'Precio', 'Costo', 'Margen %', 'Valor en Stock', 'Umbral Restock', 'Estado'];
-    const rows = filtered.map(p => [
-      p.NAME || '', (p as any).CATEGORY || '', p.STOCK ?? 0, p.SOLDQUANTITY ?? 0,
-      p.PRICE, p.COST || 0,
-      p.COST && p.PRICE ? Math.round(((p.PRICE - p.COST) / p.PRICE) * 100) : '',
-      (p.STOCK ?? 0) * p.PRICE,
-      p.RESTOCKTHRESHOLD ?? '',
-      LEVEL_CONFIG[getLevel(p.STOCK ?? 0)].label,
-    ]);
-    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const headers = ['Nombre', 'Sección', 'Góndola', 'Ubicación', 'Categoría', 'Stock', 'Vendidos', 'Precio', 'Costo', 'Margen %', 'Valor en Stock', 'Umbral Restock', 'Estado'];
+    const rowsWithLocation = filtered.map(p => {
+      const loc = getWarehouseLocationFromFeatures(p.FEATURES, p.section);
+      return [
+        p.NAME || '',
+        loc.section ?? '',
+        loc.gondola ?? '',
+        loc.label ?? '',
+        (p as any).CATEGORY || '',
+        p.STOCK ?? 0,
+        p.SOLDQUANTITY ?? 0,
+        p.PRICE,
+        p.COST || 0,
+        p.COST && p.PRICE ? Math.round(((p.PRICE - p.COST) / p.PRICE) * 100) : '',
+        (p.STOCK ?? 0) * p.PRICE,
+        p.RESTOCKTHRESHOLD ?? '',
+        LEVEL_CONFIG[getLevel(p.STOCK ?? 0)].label,
+      ];
+    });
+    const csv = [headers, ...rowsWithLocation].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url;
@@ -338,6 +349,7 @@ export default function InventoryPage() {
               const lv = getLevel(p.STOCK ?? 0);
               const cfg = LEVEL_CONFIG[lv];
               const packQty = p.PACKQTY ?? 0;
+              const loc = getWarehouseLocationFromFeatures(p.FEATURES, p.section);
               return (
                 <div key={p.$id} className="p-4">
                   <div className="flex items-start gap-3">
@@ -363,6 +375,9 @@ export default function InventoryPage() {
                             {packQty > 0 ? `Pack: ${packQty}` : 'Pack: —'}
                             <span className="mx-2 text-gray-300">•</span>
                             Vendidos: <span className="font-semibold text-gray-700">{p.SOLDQUANTITY ?? 0}</span>
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Ubicación: <span className="font-semibold text-gray-700">{loc.label ?? '—'}</span>
                           </p>
                         </div>
                         <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${cfg.bg} ${cfg.text} shrink-0`}>{cfg.label}</span>
@@ -451,6 +466,7 @@ export default function InventoryPage() {
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Producto</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden lg:table-cell">Sección</th>
                 <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Stock</th>
                 <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Pack</th>
                 <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Vendidos</th>
@@ -463,12 +479,13 @@ export default function InventoryPage() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {isLoading ? Array.from({ length: 10 }).map((_, i) => (
-                <tr key={i}>{[1,2,3,4,5,6].map(j => <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-100 rounded animate-pulse" /></td>)}</tr>
+                <tr key={i}>{[1,2,3,4,5,6,7,8,9,10].map(j => <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-100 rounded animate-pulse" /></td>)}</tr>
               )) : filtered.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-12 text-center text-gray-400">No se encontraron productos</td></tr>
+                <tr><td colSpan={10} className="px-4 py-12 text-center text-gray-400">No se encontraron productos</td></tr>
               ) : filtered.map(p => {
                 const lv = getLevel(p.STOCK ?? 0);
                 const cfg = LEVEL_CONFIG[lv];
+                const loc = getWarehouseLocationFromFeatures(p.FEATURES, p.section);
                               return (
                   <tr key={p.$id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
@@ -497,6 +514,9 @@ export default function InventoryPage() {
                           </p>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-4 py-3 text-center hidden lg:table-cell">
+                      <span className="text-xs font-semibold text-gray-700">{loc.label ?? '—'}</span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       {editingStock?.id === p.$id ? (

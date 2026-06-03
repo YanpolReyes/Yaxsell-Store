@@ -3,10 +3,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package, Truck, Shield, FileText, RefreshCw } from 'lucide-react';
-import { getServices, getAppwriteConfig, ORDERS_COLLECTION, MEDIA_BUCKET_ID, MEDIA_PREFIXES, formatPrice } from '@/lib/appwrite';
-import { ID } from '@/lib/appwrite';
-import { Order, OrderItem } from '@/types';
+import { CheckCircle, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package, Truck, Shield, FileText, RefreshCw, Pencil, X, Plus, Minus, Trash2, Search } from 'lucide-react';
+import { getServices, getAppwriteConfig, ORDERS_COLLECTION, PRODUCTS_COLLECTION, MEDIA_BUCKET_ID, formatPrice, Query, ID } from '@/lib/appwrite';
+import { resolveStorageImageUrl } from '@/lib/product-images';
+import { Order, OrderItem, Product } from '@/types';
 import { generateOrderPdf } from '@/lib/generateOrderPdf';
 
 const BANK_DEFAULTS = {
@@ -71,6 +71,8 @@ function Timer({ expiresAt }: { expiresAt: number }) {
   return <span style={{ fontFamily: 'monospace', fontSize: 28, fontWeight: 700, color: urgent ? '#dc2626' : '#d97706' }}>{display}</span>;
 }
 
+const MAX_CUSTOMER_EDITS = 2;
+
 export default function PedidoPage() {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<Order | null>(null);
@@ -85,6 +87,16 @@ export default function PedidoPage() {
   const [showAgencyChange, setShowAgencyChange] = useState(false);
   const [selectedAgency, setSelectedAgency] = useState('');
   const [savingAgency, setSavingAgency] = useState(false);
+
+  // ── Customer edit/cancel (max 2 cambios) ──
+  const [editOpen, setEditOpen] = useState(false);
+  const [draftItems, setDraftItems] = useState<OrderItem[]>([]);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [editError, setEditError] = useState<string>('');
+  const [productSearch, setProductSearch] = useState('');
+  const [productResults, setProductResults] = useState<Product[]>([]);
+  const [searchingProducts, setSearchingProducts] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -161,6 +173,224 @@ export default function PedidoPage() {
     setTimeout(() => setCopied(null), 2000);
   }
 
+  function getCustomerEditCount(o: Order): number {
+    const anyO = o as any;
+    const v = anyO.CUSTOMEREDITCOUNT ?? anyO.customerEditCount ?? anyO.EDITCOUNT ?? anyO.editCount ?? 0;
+    return typeof v === 'number' && Number.isFinite(v) ? v : 0;
+  }
+
+  function computeSubtotal(list: OrderItem[]) {
+    return list.reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty) || 0), 0);
+  }
+
+  function openEditor() {
+    if (!order) return;
+    setEditError('');
+    setProductSearch('');
+    setProductResults([]);
+    // Clonar items actuales como base
+    const base = (items || []).map(it => ({ ...it, qty: Math.max(1, Number(it.qty) || 1) }));
+    setDraftItems(base);
+    setEditOpen(true);
+  }
+
+  function closeEditor() {
+    setEditOpen(false);
+    setEditError('');
+    setProductSearch('');
+    setProductResults([]);
+  }
+
+  function setQty(productId: string, qty: number) {
+    setDraftItems(prev => prev.map(it => it.id === productId ? { ...it, qty: Math.max(1, qty) } : it));
+  }
+
+  function removeDraft(productId: string) {
+    setDraftItems(prev => prev.filter(it => it.id !== productId));
+  }
+
+  async function searchProducts() {
+    const q = productSearch.trim();
+    if (q.length < 2) { setProductResults([]); return; }
+    setSearchingProducts(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      // Primero intentamos búsqueda nativa; si falla por permisos/índices, fallback a listar y filtrar.
+      try {
+        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+          Query.search('NAME', q),
+          Query.limit(20),
+        ]);
+        setProductResults(res.documents as unknown as Product[]);
+      } catch {
+        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.limit(80)]);
+        const docs = (res.documents as unknown as Product[]) || [];
+        const qq = q.toLowerCase();
+        setProductResults(docs.filter(p => (p.NAME || '').toLowerCase().includes(qq)).slice(0, 20));
+      }
+    } catch (e) {
+      console.error(e);
+      setProductResults([]);
+    } finally {
+      setSearchingProducts(false);
+    }
+  }
+
+  function addProductToDraft(p: Product) {
+    setDraftItems(prev => {
+      const idx = prev.findIndex(x => x.id === p.$id);
+      const price = (p.CURRENTPRICE ?? p.PRICE ?? 0) as number;
+      const img = resolveStorageImageUrl(p.IMAGEURL);
+      if (idx >= 0) {
+        const cur = prev[idx];
+        const newQty = (cur.qty || 1) + 1;
+        const curPrice = Number(cur.price) || 0;
+        const next = [...prev];
+        next[idx] = { ...cur, qty: newQty, total: curPrice * newQty };
+        return next;
+      }
+      return [
+        ...prev,
+        { id: p.$id, name: p.NAME, price, qty: 1, img, total: price },
+      ];
+    });
+  }
+
+  async function handleSaveEdits() {
+    if (!order || savingEdit) return;
+    if (draftItems.length === 0) { setEditError('El pedido debe tener al menos 1 producto.'); return; }
+
+    setSavingEdit(true);
+    setEditError('');
+
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      // Releer doc para evitar carreras (estado/contador/stock)
+      const latestDoc = await databases.getDocument(databaseId, ORDERS_COLLECTION, id);
+      const latest = latestDoc as unknown as Order;
+
+      const editCount = getCustomerEditCount(latest);
+      if (editCount >= MAX_CUSTOMER_EDITS) {
+        alert('Ya alcanzaste el máximo de 2 cambios permitidos para este pedido.');
+        return;
+      }
+      if (latest.STATUS !== 'pending') {
+        alert('Solo puedes modificar el pedido mientras esté en estado pendiente.');
+        return;
+      }
+
+      let oldItems: OrderItem[] = [];
+      try { oldItems = JSON.parse((latest as any).ITEMS || '[]'); } catch {}
+      const oldQty = new Map<string, number>();
+      for (const it of oldItems) oldQty.set(it.id, Number(it.qty) || 0);
+
+      // Normalizar draft + recalcular totales por línea
+      const normalizedDraft: OrderItem[] = draftItems.map(it => {
+        const qty = Math.max(1, Number(it.qty) || 1);
+        const price = Number(it.price) || 0;
+        return { ...it, qty, price, total: price * qty };
+      });
+
+      // IDs a tocar en stock
+      const ids = new Set<string>([...oldItems.map(i => i.id), ...normalizedDraft.map(i => i.id)]);
+
+      // Validar y actualizar stock por deltas
+      for (const pid of ids) {
+        const prev = oldQty.get(pid) || 0;
+        const next = normalizedDraft.find(x => x.id === pid)?.qty || 0;
+        const delta = next - prev; // + => necesita más stock, - => devuelve stock
+        if (delta === 0) continue;
+
+        // Si el producto ya no existe, ignoramos (pero no deberíamos dejar el pedido con ítems inválidos)
+        const productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, pid);
+        const currentStock = Number((productDoc as any).STOCK ?? 0);
+        if (delta > 0 && currentStock < delta) {
+          throw new Error(`Stock insuficiente para "${(productDoc as any).NAME || pid}". Disponible: ${currentStock}, necesitas: ${delta}.`);
+        }
+        const newStock = currentStock - delta;
+        await databases.updateDocument(databaseId, PRODUCTS_COLLECTION, pid, { STOCK: newStock });
+      }
+
+      const newSubtotal = computeSubtotal(normalizedDraft);
+      const discount = Number((latest as any).DISCOUNT ?? 0) || 0;
+      const newTotal = Math.max(0, newSubtotal - discount);
+
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, {
+        ITEMS: JSON.stringify(normalizedDraft),
+        SUBTOTAL: newSubtotal,
+        TOTAL: newTotal,
+        UPDATEDAT: Date.now(),
+        CUSTOMEREDITCOUNT: editCount + 1,
+      });
+
+      closeEditor();
+      await load();
+    } catch (e: any) {
+      console.error(e);
+      setEditError(e?.message || 'Error al guardar cambios. Intenta de nuevo.');
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  async function handleCancelOrder() {
+    if (!order || cancelling) return;
+    if (!window.confirm('¿Seguro que quieres anular este pedido?')) return;
+
+    setCancelling(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      const latestDoc = await databases.getDocument(databaseId, ORDERS_COLLECTION, id);
+      const latest = latestDoc as unknown as Order;
+
+      const editCount = getCustomerEditCount(latest);
+      if (editCount >= MAX_CUSTOMER_EDITS) {
+        alert('Ya alcanzaste el máximo de 2 cambios permitidos para este pedido.');
+        return;
+      }
+      if (latest.STATUS !== 'pending') {
+        alert('Solo puedes anular el pedido mientras esté en estado pendiente.');
+        return;
+      }
+
+      let latestItems: OrderItem[] = [];
+      try { latestItems = JSON.parse((latest as any).ITEMS || '[]'); } catch {}
+
+      // Restituir stock
+      for (const it of latestItems) {
+        const pid = it.id;
+        const qty = Number(it.qty) || 0;
+        if (!pid || qty <= 0) continue;
+        try {
+          const productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, pid);
+          const currentStock = Number((productDoc as any).STOCK ?? 0);
+          await databases.updateDocument(databaseId, PRODUCTS_COLLECTION, pid, { STOCK: currentStock + qty });
+        } catch (err) {
+          console.error('Error restaurando stock', pid, err);
+        }
+      }
+
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, {
+        STATUS: 'cancelled',
+        UPDATEDAT: Date.now(),
+        CUSTOMEREDITCOUNT: editCount + 1,
+      });
+
+      await load();
+    } catch (e) {
+      console.error(e);
+      alert('Error al anular el pedido. Intenta de nuevo.');
+    } finally {
+      setCancelling(false);
+    }
+  }
+
   async function handleConfirmDelivery() {
     if (!order || confirming) return;
     if (!window.confirm('¿Confirmas que recibiste tu pedido correctamente?')) return;
@@ -202,9 +432,12 @@ export default function PedidoPage() {
   const status = STATUS_MAP[order.STATUS] || { label: order.STATUS, color: '#333', bg: '#f5f5f5' };
   const showTimer = isPending && order.EXPIRESAT && !uploaded;
   const isSuccess = uploaded || order.STATUS !== 'pending';
+  const customerEditCount = getCustomerEditCount(order);
+  const remainingEdits = Math.max(0, MAX_CUSTOMER_EDITS - customerEditCount);
+  const canCustomerModify = order.STATUS === 'pending' && remainingEdits > 0;
 
   return (
-    <div style={{ background: '#ebebeb', minHeight: '100vh', padding: '24px 5%' }}>
+    <div style={{ background: '#ebebeb', minHeight: '100vh', padding: '24px 5%', paddingBottom: 'calc(24px + 92px + env(safe-area-inset-bottom, 0px))' }}>
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
 
         {/* ── Header success banner ── */}
@@ -372,6 +605,133 @@ export default function PedidoPage() {
             </div>
           </div>
         </div>
+
+        {/* ── Customer actions: editar/anular (máximo 2 veces) ── */}
+        {order.STATUS !== 'cancelled' && (
+          <div style={{ ...card, border: '1px solid #e5e7eb' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+              <div>
+                <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#111' }}>Gestionar pedido</p>
+                <p style={{ margin: '3px 0 0', fontSize: 12, color: '#6b7280' }}>
+                  Cambios restantes: <strong>{remainingEdits}</strong> (máx. {MAX_CUSTOMER_EDITS})
+                </p>
+              </div>
+              {editOpen && (
+                <button onClick={closeEditor}
+                  style={{ padding: '8px 10px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#374151' }}>
+                  <X size={14} /> Cerrar
+                </button>
+              )}
+            </div>
+
+            {!canCustomerModify && order.STATUS === 'pending' && remainingEdits <= 0 && (
+              <p style={{ margin: 0, fontSize: 12, color: '#b45309' }}>
+                ⚠ Ya alcanzaste el máximo de cambios permitidos para este pedido.
+              </p>
+            )}
+            {!canCustomerModify && order.STATUS !== 'pending' && (
+              <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>
+                Solo se puede editar/anular mientras el pedido esté en estado <strong>pendiente</strong>.
+              </p>
+            )}
+
+            {canCustomerModify && !editOpen && (
+              <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+                <button onClick={openEditor}
+                  style={{ flex: 1, minWidth: 220, padding: '12px 14px', background: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <Pencil size={14} /> Modificar productos
+                </button>
+                <button onClick={handleCancelOrder} disabled={cancelling}
+                  style={{ flex: 1, minWidth: 220, padding: '12px 14px', background: cancelling ? '#fee2e2' : '#fef2f2', color: '#991b1b', border: '1px solid #fecaca', borderRadius: 10, cursor: cancelling ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <Trash2 size={14} /> {cancelling ? 'Anulando...' : 'Anular pedido'}
+                </button>
+              </div>
+            )}
+
+            {editOpen && (
+              <div style={{ marginTop: 12 }}>
+                {editError && (
+                  <div style={{ marginBottom: 10, padding: '10px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, color: '#991b1b', fontSize: 12, fontWeight: 600 }}>
+                    {editError}
+                  </div>
+                )}
+
+                {/* Items editor */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {draftItems.map((it) => (
+                    <div key={it.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 12px', border: '1px solid #eee', borderRadius: 10, background: '#fff' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</p>
+                        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280' }}>{formatPrice(it.price)} c/u</p>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+                          <button onClick={() => setQty(it.id, (it.qty || 1) - 1)} disabled={(it.qty || 1) <= 1}
+                            style={{ width: 34, height: 32, border: 'none', background: '#fff', cursor: (it.qty || 1) <= 1 ? 'not-allowed' : 'pointer', color: '#374151' }}>
+                            <Minus size={14} />
+                          </button>
+                          <span style={{ width: 34, textAlign: 'center', fontSize: 13, fontWeight: 800, color: '#111' }}>{it.qty}</span>
+                          <button onClick={() => setQty(it.id, (it.qty || 1) + 1)}
+                            style={{ width: 34, height: 32, border: 'none', background: '#fff', cursor: 'pointer', color: '#374151' }}>
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                        <button onClick={() => removeDraft(it.id)}
+                          style={{ padding: 8, border: '1px solid #fee2e2', background: '#fff', borderRadius: 10, cursor: 'pointer', color: '#dc2626' }}
+                          title="Quitar del pedido">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add products */}
+                <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Search size={14} /> Agregar productos
+                  </p>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                    <input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="Buscar por nombre..."
+                      style={{ flex: 1, padding: '10px 12px', borderRadius: 10, border: '1px solid #e5e7eb', outline: 'none', fontSize: 13 }}
+                    />
+                    <button onClick={searchProducts} disabled={searchingProducts}
+                      style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid #e5e7eb', background: searchingProducts ? '#f3f4f6' : '#fff', cursor: searchingProducts ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Search size={14} /> {searchingProducts ? 'Buscando...' : 'Buscar'}
+                    </button>
+                  </div>
+
+                  {productResults.length > 0 && (
+                    <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {productResults.map(p => (
+                        <button key={p.$id} onClick={() => addProductToDraft(p)}
+                          style={{ width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: 10, border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.NAME}</span>
+                          <span style={{ fontSize: 12, fontWeight: 800, color: '#3483fa', flexShrink: 0 }}>+ Agregar</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Summary + save */}
+                <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#374151' }}>
+                    <span>Nuevo subtotal</span>
+                    <span style={{ fontWeight: 900, color: '#111' }}>{formatPrice(computeSubtotal(draftItems))}</span>
+                  </div>
+                  <button onClick={handleSaveEdits} disabled={savingEdit}
+                    style={{ width: '100%', padding: '12px 0', background: savingEdit ? '#93c5fd' : '#3483fa', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 900, cursor: savingEdit ? 'not-allowed' : 'pointer' }}>
+                    {savingEdit ? 'Guardando...' : 'Guardar cambios'}
+                  </button>
+                  <p style={{ margin: 0, fontSize: 11, color: '#6b7280' }}>
+                    Nota: solo puedes hacer cambios mientras el pedido esté pendiente. Cada guardado/anulación consume 1 cambio (máx. {MAX_CUSTOMER_EDITS}).
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Shipping info ── */}
         <div style={card}>

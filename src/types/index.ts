@@ -23,6 +23,7 @@ export interface Product {
   SOLDQUANTITY?: number;
   ISACTIVE?: boolean;
   SKU?: string;
+  GROUPID?: string;
   COMING_SOON?: boolean;
   DATE_ADDED?: string;
   section?: number;
@@ -157,6 +158,11 @@ export interface Order {
   DISCOUNT?: number;
   COUPONCODE?: string;
   AGENCYCHANGED?: boolean;
+  /**
+   * Cantidad de cambios hechos por el cliente (edición/cancelación) en /pedido/[id].
+   * Se usa para limitar a máximo 2 cambios.
+   */
+  CUSTOMEREDITCOUNT?: number;
 }
 
 export interface Raffle {

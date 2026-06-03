@@ -214,7 +214,7 @@ function ConfirmadoInner() {
         </div>
       )}
 
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 20px 60px' }}>
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 20px calc(60px + 92px + env(safe-area-inset-bottom, 0px))' }}>
         {/* ── Success header ── */}
         <div style={{ background: '#fff', borderRadius: 24, padding: '40px 32px 32px', border: '1px solid #fce7f3', textAlign: 'center', boxShadow: '0 12px 48px rgba(227,150,191,0.1)', marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
           {/* Background decoration */}
