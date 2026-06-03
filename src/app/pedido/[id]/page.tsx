@@ -73,6 +73,22 @@ function Timer({ expiresAt }: { expiresAt: number }) {
 
 const MAX_CUSTOMER_EDITS = 2;
 
+function getProductSku(p: any): string {
+  const direct = p?.SKU || p?.sku || '';
+  if (direct && String(direct).trim()) return String(direct).trim();
+  const feats = Array.isArray(p?.FEATURES) ? p.FEATURES.join('\n') : (p?.FEATURES || '');
+  const m = String(feats || '').match(/SKU:\s*(.+)/i);
+  return m ? m[1].trim().split('\n')[0] : '';
+}
+
+function getProductBarcode(p: any): string {
+  const direct = p?.BARCODE || p?.barcode || '';
+  if (direct && String(direct).trim()) return String(direct).trim();
+  const feats = Array.isArray(p?.FEATURES) ? p.FEATURES.join('\n') : (p?.FEATURES || '');
+  const m = String(feats || '').match(/Barcode:\s*(.+)/i);
+  return m ? m[1].trim().split('\n')[0] : '';
+}
+
 export default function PedidoPage() {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<Order | null>(null);
@@ -219,16 +235,52 @@ export default function PedidoPage() {
 
       // Primero intentamos búsqueda nativa; si falla por permisos/índices, fallback a listar y filtrar.
       try {
-        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+        const seen = new Set<string>();
+        const merged: Product[] = [];
+
+        const resByName = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
           Query.search('NAME', q),
           Query.limit(20),
         ]);
-        setProductResults(res.documents as unknown as Product[]);
+        for (const d of (resByName.documents as any[])) {
+          const id = String((d as any).$id || '');
+          if (!id || seen.has(id)) continue;
+          seen.add(id);
+          merged.push(d as Product);
+        }
+
+        // Intentar también búsqueda por FEATURES (SKU/Barcode). Si no existe índice o falla, lo ignoramos.
+        try {
+          const resByFeatures = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+            Query.search('FEATURES', q),
+            Query.limit(20),
+          ]);
+          for (const d of (resByFeatures.documents as any[])) {
+            const id = String((d as any).$id || '');
+            if (!id || seen.has(id)) continue;
+            seen.add(id);
+            merged.push(d as Product);
+          }
+        } catch {}
+
+        setProductResults(merged.slice(0, 20));
       } catch {
         const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.limit(80)]);
         const docs = (res.documents as unknown as Product[]) || [];
         const qq = q.toLowerCase();
-        setProductResults(docs.filter(p => (p.NAME || '').toLowerCase().includes(qq)).slice(0, 20));
+        setProductResults(
+          docs
+            .filter((p: any) => {
+              const name = String(p?.NAME || '').toLowerCase();
+              const sku = getProductSku(p).toLowerCase();
+              const barcode = getProductBarcode(p).toLowerCase();
+              const tags = Array.isArray(p?.TAGS) ? p.TAGS.join(',') : (p?.TAGS || '');
+              const feats = Array.isArray(p?.FEATURES) ? p.FEATURES.join('\n') : (p?.FEATURES || '');
+              const hay = `${name}\n${sku}\n${barcode}\n${String(tags).toLowerCase()}\n${String(feats).toLowerCase()}`;
+              return hay.includes(qq);
+            })
+            .slice(0, 20),
+        );
       }
     } catch (e) {
       console.error(e);
@@ -692,7 +744,7 @@ export default function PedidoPage() {
                     <Search size={14} /> Agregar productos
                   </p>
                   <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                    <input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="Buscar por nombre..."
+                    <input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="Buscar por nombre, SKU o barcode..."
                       style={{ flex: 1, padding: '10px 12px', borderRadius: 10, border: '1px solid #e5e7eb', outline: 'none', fontSize: 13 }}
                     />
                     <button onClick={searchProducts} disabled={searchingProducts}
@@ -705,9 +757,35 @@ export default function PedidoPage() {
                     <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {productResults.map(p => (
                         <button key={p.$id} onClick={() => addProductToDraft(p)}
-                          style={{ width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: 10, border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.NAME}</span>
-                          <span style={{ fontSize: 12, fontWeight: 800, color: '#3483fa', flexShrink: 0 }}>+ Agregar</span>
+                          style={{ width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: 12, border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                            <div style={{ width: 44, height: 44, borderRadius: 10, background: '#f3f4f6', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              {((p as any).IMAGEURL) ? (
+                                <img src={resolveStorageImageUrl((p as any).IMAGEURL)} alt={(p as any).NAME || 'Producto'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                <Package size={18} color="#9ca3af" />
+                              )}
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                              <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(p as any).NAME}</p>
+                              <p style={{ margin: '2px 0 0', fontSize: 11, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {(() => {
+                                  const sku = getProductSku(p);
+                                  const bc = getProductBarcode(p);
+                                  if (sku) return `SKU: ${sku}`;
+                                  if (bc) return `Barcode: ${bc}`;
+                                  return 'SKU: —';
+                                })()}
+                              </p>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                            <span style={{ fontSize: 12, fontWeight: 900, color: '#111' }}>
+                              {formatPrice(((p as any).CURRENTPRICE ?? (p as any).PRICE ?? 0) as number)}
+                            </span>
+                            <span style={{ fontSize: 12, fontWeight: 900, color: '#3483fa' }}>+ Agregar</span>
+                          </div>
                         </button>
                       ))}
                     </div>
