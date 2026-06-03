@@ -26,6 +26,7 @@ export default function InventoryPage() {
   const [sortBy, setSortBy] = useState<'name' | 'stock' | 'value' | 'sold'>('name');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [imagePreview, setImagePreview] = useState<{ src: string; name: string; stock: number; packQty?: number } | null>(null);
 
   const applyBulkThreshold = async () => {
     const val = bulkThresholdValue === '' ? null : parseInt(bulkThresholdValue, 10);
@@ -119,6 +120,22 @@ export default function InventoryPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Cerrar modal de imagen con ESC
+  useEffect(() => {
+    if (!imagePreview) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setImagePreview(null);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    // bloquear scroll
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [imagePreview]);
+
   const getLevel = (stock: number): StockLevel => {
     if (stock === 0) return 'out';
     if (stock <= 2) return 'critical';
@@ -202,7 +219,7 @@ export default function InventoryPage() {
       </div>
 
       {/* Value Summary */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: 'Unidades Totales', value: stats.totalUnits.toLocaleString('es-CL'), icon: Package, color: 'bg-indigo-500' },
           { label: 'Valor a Precio Venta', value: fmt(stats.valueAtPrice), icon: DollarSign, color: 'bg-emerald-500' },
@@ -306,12 +323,136 @@ export default function InventoryPage() {
       {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex gap-2"><AlertTriangle className="w-4 h-4 shrink-0" />{error}</div>}
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile: cards */}
+        <div className="sm:hidden divide-y divide-gray-100">
+          {isLoading ? (
+            <div className="p-4 space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-20 bg-gray-100 rounded-2xl animate-pulse" />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="px-4 py-12 text-center text-gray-400">No se encontraron productos</div>
+          ) : (
+            filtered.map(p => {
+              const lv = getLevel(p.STOCK ?? 0);
+              const cfg = LEVEL_CONFIG[lv];
+              const packQty = p.PACKQTY ?? 0;
+              return (
+                <div key={p.$id} className="p-4">
+                  <div className="flex items-start gap-3">
+                    <button
+                      type="button"
+                      onClick={() => p.IMAGEURL && setImagePreview({ src: p.IMAGEURL, name: p.NAME || 'Producto', stock: p.STOCK ?? 0, packQty: p.PACKQTY })}
+                      className="w-16 h-16 rounded-2xl bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center"
+                      title="Ver imagen"
+                    >
+                      {p.IMAGEURL ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" />
+                      ) : (
+                        <Package className="w-6 h-6 text-gray-400" />
+                      )}
+                    </button>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-900 truncate">{p.NAME}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {packQty > 0 ? `Pack: ${packQty}` : 'Pack: —'}
+                            <span className="mx-2 text-gray-300">•</span>
+                            Vendidos: <span className="font-semibold text-gray-700">{p.SOLDQUANTITY ?? 0}</span>
+                          </p>
+                        </div>
+                        <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${cfg.bg} ${cfg.text} shrink-0`}>{cfg.label}</span>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <div className="bg-gray-50 rounded-2xl p-3">
+                          <p className="text-[11px] text-gray-500 font-semibold uppercase">Stock</p>
+                          <div className="mt-1">
+                            {editingStock?.id === p.$id ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={editingStock.value}
+                                  onChange={e => setEditingStock({ id: p.$id, value: e.target.value })}
+                                  onKeyDown={e => { if (e.key === 'Enter') saveStock(p.$id); if (e.key === 'Escape') setEditingStock(null); }}
+                                  autoFocus
+                                  className="w-20 px-2 py-1 text-center border border-indigo-400 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                                <button
+                                  onClick={() => saveStock(p.$id)}
+                                  disabled={savingStockId === p.$id}
+                                  className="p-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition disabled:opacity-60"
+                                  title="Guardar"
+                                >
+                                  {savingStockId === p.$id ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Check className="w-4 h-4" />}
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setEditingStock({ id: p.$id, value: String(p.STOCK ?? 0) })}
+                                className={`text-2xl font-black leading-none ${
+                                  lv === 'out' ? 'text-red-600' : lv === 'critical' ? 'text-orange-600' : lv === 'low' ? 'text-amber-600' : 'text-gray-900'
+                                }`}
+                                title="Toca para editar stock"
+                              >
+                                {p.STOCK ?? 0}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="bg-gray-50 rounded-2xl p-3">
+                          <p className="text-[11px] text-gray-500 font-semibold uppercase">Precio</p>
+                          <p className="mt-1 text-sm font-bold text-gray-900">{fmt(p.PRICE)}</p>
+                          <p className="text-[11px] text-gray-500 mt-0.5">
+                            Valor: <span className="font-semibold text-gray-700">{fmt((p.STOCK ?? 0) * p.PRICE)}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between gap-2">
+                        <button
+                          onClick={() => setEditingThreshold({ id: p.$id, value: String(p.RESTOCKTHRESHOLD ?? '') })}
+                          className={`text-xs font-semibold rounded-full px-3 py-1.5 transition ${
+                            p.RESTOCKTHRESHOLD && (p.STOCK ?? 0) <= p.RESTOCKTHRESHOLD
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-gray-100 text-gray-600'
+                          }`}
+                          title="Editar umbral de restock"
+                        >
+                          Restock: {p.RESTOCKTHRESHOLD ?? '—'}
+                        </button>
+                        <div className="flex items-center gap-3">
+                          <Link href="/products" className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold">Editar</Link>
+                          <button
+                            onClick={() => setDeleteConfirm({ id: p.$id, name: p.NAME || 'Producto' })}
+                            disabled={deletingId === p.$id}
+                            className="text-xs text-red-600 hover:text-red-700 font-semibold disabled:opacity-50"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop/tablet: tabla */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Producto</th>
                 <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Stock</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Pack</th>
                 <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Vendidos</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Precio</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden xl:table-cell">Margen</th>
@@ -332,9 +473,15 @@ export default function InventoryPage() {
                   <tr key={p.$id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden shrink-0 group cursor-pointer">
+                        <button
+                          type="button"
+                          onClick={() => p.IMAGEURL && setImagePreview({ src: p.IMAGEURL, name: p.NAME || 'Producto', stock: p.STOCK ?? 0, packQty: p.PACKQTY })}
+                          className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden shrink-0 group cursor-pointer"
+                          title="Ver imagen"
+                        >
                           {p.IMAGEURL ? (
-                            <img 
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
                               src={p.IMAGEURL} 
                               alt={p.NAME} 
                               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-150 group-hover:z-10 group-hover:shadow-lg"
@@ -342,8 +489,13 @@ export default function InventoryPage() {
                           ) : (
                             <Package className="w-5 h-5 text-gray-400 m-auto mt-2.5" />
                           )}
+                        </button>
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 truncate max-w-[220px]">{p.NAME}</p>
+                          <p className="text-xs text-gray-500">
+                            Pack: <span className="font-semibold text-gray-700">{p.PACKQTY ?? '—'}</span>
+                          </p>
                         </div>
-                        <p className="font-medium text-gray-900 truncate max-w-[180px]">{p.NAME}</p>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -370,6 +522,9 @@ export default function InventoryPage() {
                           {p.STOCK ?? 0}
                         </button>
                       )}
+                    </td>
+                    <td className="px-4 py-3 text-center hidden md:table-cell">
+                      <span className="text-sm font-semibold text-gray-700">{p.PACKQTY ?? '—'}</span>
                     </td>
                     <td className="px-4 py-3 text-center text-gray-500 hidden sm:table-cell">{p.SOLDQUANTITY ?? 0}</td>
                     <td className="px-4 py-3 text-right">
@@ -450,6 +605,55 @@ export default function InventoryPage() {
           );
         })()}
       </div>
+
+      {/* Modal: imagen en pantalla completa / zoom */}
+      {imagePreview && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          onMouseDown={() => setImagePreview(null)}
+        >
+          <div
+            className="w-full max-w-3xl bg-white rounded-3xl overflow-hidden shadow-2xl"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <div className="min-w-0">
+                <p className="font-bold text-gray-900 truncate">{imagePreview.name}</p>
+                <p className="text-xs text-gray-500">
+                  Stock: <span className="font-semibold text-gray-700">{imagePreview.stock}</span>
+                  <span className="mx-2 text-gray-300">•</span>
+                  Pack: <span className="font-semibold text-gray-700">{imagePreview.packQty ?? '—'}</span>
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={imagePreview.src}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                >
+                  Abrir
+                </a>
+                <button
+                  onClick={() => setImagePreview(null)}
+                  className="p-2 rounded-xl hover:bg-gray-100 text-gray-600"
+                  aria-label="Cerrar"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="bg-black flex items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imagePreview.src}
+                alt={imagePreview.name}
+                className="w-full h-auto max-h-[80vh] object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bulk Threshold Modal */}
       {bulkThresholdModal && (
