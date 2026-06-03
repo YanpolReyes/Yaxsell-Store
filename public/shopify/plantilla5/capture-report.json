@@ -1,34 +1,34 @@
 {
   "plantilla": 5,
-  "sourceUrl": "https://pebble-little.myshopify.com/products/logo-polo-red",
-  "capturedAt": "2026-06-01T05:15:24.980Z",
-  "elapsedSeconds": "19.1",
+  "sourceUrl": "https://pebble-little.myshopify.com/collections/all",
+  "capturedAt": "2026-06-02T20:40:42.251Z",
+  "elapsedSeconds": "17.3",
   "files": {
     "html": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\public\\shopify\\plantilla5\\index.html",
-    "bodyClean": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\public\\shopify\\plantilla5\\product-clean.html",
+    "bodyClean": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\public\\shopify\\plantilla5\\collection-all-clean.html",
     "manifest": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\public\\shopify\\plantilla5\\manifest.json",
-    "tsx": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\src\\templates\\plantilla5\\ProductDetail.tsx"
+    "tsx": "C:\\Proyectos\\PROJECT YAXSEL\\web-store\\src\\templates\\plantilla5\\CollectionAll.tsx"
   },
   "stats": {
-    "cssTotal": 13,
+    "cssTotal": 10,
     "jsTotal": 53,
     "fontsTotal": 4,
-    "imagesTotal": 722,
-    "videosTotal": 5,
+    "imagesTotal": 488,
+    "videosTotal": 0,
     "svgMasksTotal": 0,
-    "inlineAnimScripts": 3,
-    "inlineCssKB": 60,
-    "bodyCleanKB": 999,
+    "inlineAnimScripts": 2,
+    "inlineCssKB": 59,
+    "bodyCleanKB": 1084,
     "downloaded": {
       "css": {
-        "ok": 0,
-        "skip": 13,
+        "ok": 1,
+        "skip": 9,
         "fail": 0,
         "errors": []
       },
       "js": {
-        "ok": 0,
-        "skip": 53,
+        "ok": 2,
+        "skip": 51,
         "fail": 0,
         "errors": []
       },
@@ -39,14 +39,14 @@
         "errors": []
       },
       "images": {
-        "ok": 63,
-        "skip": 659,
+        "ok": 33,
+        "skip": 455,
         "fail": 0,
         "errors": []
       },
       "videos": {
         "ok": 0,
-        "skip": 5,
+        "skip": 0,
         "fail": 0,
         "errors": []
       },

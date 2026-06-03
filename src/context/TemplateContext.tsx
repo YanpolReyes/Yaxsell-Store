@@ -4,6 +4,8 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 
 interface SectionTemplates {
   landing: number;
+  collections: number;
+  catalog: number;
   productDetail: number;
   cart: number;
   checkout: number;
@@ -16,7 +18,7 @@ interface TemplateContextType {
   getSectionTemplate: (section: keyof SectionTemplates) => number;
 }
 
-const DEFAULT_SECTIONS: SectionTemplates = { landing: 1, productDetail: 1, cart: 1, checkout: 1 };
+const DEFAULT_SECTIONS: SectionTemplates = { landing: 1, collections: 1, catalog: 1, productDetail: 1, cart: 1, checkout: 1 };
 
 const TemplateContext = createContext<TemplateContextType>({
   template: 1,
@@ -48,12 +50,14 @@ export function TemplateProvider({ children }: { children: ReactNode }) {
           if (data.sections) {
             dbSections = {
               landing: Number(data.sections.landing) || dbGlobal,
+              collections: Number(data.sections.collections) || dbGlobal,
+              catalog: Number(data.sections.catalog) || dbGlobal,
               productDetail: Number(data.sections.productDetail) || dbGlobal,
               cart: Number(data.sections.cart) || dbGlobal,
               checkout: Number(data.sections.checkout) || dbGlobal,
             };
           } else {
-            dbSections = { landing: dbGlobal, productDetail: dbGlobal, cart: dbGlobal, checkout: dbGlobal };
+            dbSections = { landing: dbGlobal, collections: dbGlobal, catalog: dbGlobal, productDetail: dbGlobal, cart: dbGlobal, checkout: dbGlobal };
           }
         }
       } catch (err) {
@@ -73,15 +77,23 @@ export function TemplateProvider({ children }: { children: ReactNode }) {
             dbSections[section] = t;
           } else {
             // Apply globally if no specific section is provided
-            dbSections = { landing: t, productDetail: t, cart: t, checkout: t };
+            dbSections = { landing: t, collections: t, catalog: t, productDetail: t, cart: t, checkout: t };
           }
           dbGlobal = t;
         } else if (pathnameMatch && pathnameMatch[1]) {
           const t = Number(pathnameMatch[1]);
-          // Check if current route is a product detail preview page
-          const isProductDetail = window.location.pathname.includes('/producto/') || window.location.pathname.includes('/productos/');
+          const path = window.location.pathname;
+          // Check if current route is a preview page for a specific section
+          const isProductDetail = path.includes('/producto/') || path.includes('/productos/');
+          const isCatalog = path.includes('/collections/all');
+          const isCollections = path.includes('/collections');
+
           if (isProductDetail) {
             dbSections.productDetail = t;
+          } else if (isCatalog) {
+            dbSections.catalog = t;
+          } else if (isCollections) {
+            dbSections.collections = t;
           } else {
             dbSections.landing = t;
           }

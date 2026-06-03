@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, Lock, ExternalLink, Loader, Zap, Eye, Palette, Pencil, LayoutDashboard, Package, ShoppingCart, CreditCard } from 'lucide-react';
+import { Check, Lock, ExternalLink, Loader, Zap, Eye, Palette, Pencil, LayoutDashboard, Package, ShoppingCart, CreditCard, Grid, List } from 'lucide-react';
 
 interface Template {
   id: number;
@@ -34,6 +34,18 @@ const SECTIONS: SectionConfig[] = [
     previewPath: (tplId) => `/preview/plantilla/${tplId}`,
   },
   {
+    key: 'collections',
+    label: 'Colecciones (Categorías)',
+    icon: <Grid size={16} />,
+    previewPath: (tplId) => `/preview/plantilla/${tplId}/collections`,
+  },
+  {
+    key: 'catalog',
+    label: 'Catálogo (Todos los productos)',
+    icon: <List size={16} />,
+    previewPath: (tplId) => `/preview/plantilla/${tplId}/collections/all`,
+  },
+  {
     key: 'productDetail',
     label: 'Detalle de Producto',
     icon: <Package size={16} />,
@@ -54,11 +66,11 @@ const SECTIONS: SectionConfig[] = [
 ];
 
 const TEMPLATES: Template[] = [
-  { id: 1, name: 'Moderna', description: 'Diseño limpio y minimalista. Fondo blanco, tipografía grande, acentos en violeta. Ideal para marcas premium.', emoji: '🛍️', tags: ['Minimalista', 'Profesional', 'Violeta'], accent: '#667eea', accentDark: '#764ba2', bg: '#f8f9fa', navBg: '#667eea', badge: 'Popular', sections: ['landing', 'productDetail', 'cart', 'checkout'] },
+  { id: 1, name: 'Moderna', description: 'Diseño limpio y minimalista. Fondo blanco, tipografía grande, acentos en violeta. Ideal para marcas premium.', emoji: '🛍️', tags: ['Minimalista', 'Profesional', 'Violeta'], accent: '#667eea', accentDark: '#764ba2', bg: '#f8f9fa', navBg: '#667eea', badge: 'Popular', sections: ['landing', 'collections', 'catalog', 'productDetail', 'cart', 'checkout'] },
   { id: 2, name: 'Marketplace', description: 'Estilo mercado masivo. Cabecera amarilla, búsqueda prominente, tarjetas compactas.', emoji: '🏪', tags: ['Masivo', 'Búsqueda', 'Amarillo'], accent: '#3483fa', accentDark: '#2968c8', bg: '#ebebeb', navBg: '#fff159', sections: ['landing'] },
   { id: 3, name: 'Retail', description: 'Estilo tienda por departamentos. Cabecera naranja, sidebar de categorías, grid denso.', emoji: '🟠', tags: ['Departamentos', 'Sidebar', 'Naranja'], accent: '#f96302', accentDark: '#c94d00', bg: '#f5f5f5', navBg: '#f96302', sections: ['landing'] },
   { id: 4, name: 'Chinamart', description: 'Landing page premium con hero cinematic, servicios, testimonios y contacto. Ideal para marcas e importadores.', emoji: '🎨', tags: ['Landing', 'Premium', 'Naranja'], accent: '#F97316', accentDark: '#EA6C0A', bg: '#FAFAFA', navBg: '#1A1A1A', sections: ['landing'] },
-  { id: 5, name: 'Pebble Little', description: 'Estilo boutique de cosméticos de alta gama con héroe animado, transiciones de scroll ultra fluidas y diseño sumamente estético. Ideal para skincare y maquillaje.', emoji: '✨', tags: ['Estética', 'Cosméticos', 'GSAP'], accent: '#dfe146', accentDark: '#2a2120', bg: '#fde6ef', navBg: '#ffece7', sections: ['landing', 'productDetail'] },
+  { id: 5, name: 'Pebble Little', description: 'Estilo boutique de cosméticos de alta gama con héroe animado, transiciones de scroll ultra fluidas y diseño sumamente estético. Ideal para skincare y maquillaje.', emoji: '✨', tags: ['Estética', 'Cosméticos', 'GSAP'], accent: '#dfe146', accentDark: '#2a2120', bg: '#fde6ef', navBg: '#ffece7', sections: ['landing', 'collections', 'catalog', 'productDetail'] },
   { id: 6, name: 'Horizon Premium', description: 'Tema premium de Shopify con split-hero animado, máscaras SVG dinámicas, scroll suave y diseño minimalista de alta gama. Animaciones GSAP/ScrollMagic.', emoji: '🚀', tags: ['Premium', 'Shopify', 'GSAP', 'Split-Hero'], accent: '#2563eb', accentDark: '#1e40af', bg: '#f8fafc', navBg: '#0f172a', sections: ['landing'] },
   { id: 7, name: 'Noble Premium', description: 'Tema premium de Shopify Noble con secciones de grids dinámicos, animaciones fluidas, menús optimizados y diseño estético de última generación.', emoji: '💎', tags: ['Elegante', 'Shopify', 'Grids', 'Noble'], accent: '#059669', accentDark: '#047857', bg: '#fafafa', navBg: '#111827', sections: ['landing'] },
   { id: 8, name: 'Exito Premium', description: 'Tema premium estilo retail masivo moderno.', emoji: '🛒', tags: ['Retail', 'Masivo'], accent: '#fbbf24', accentDark: '#d97706', bg: '#fff', navBg: '#fbbf24', sections: ['landing'] },
@@ -125,7 +137,7 @@ function TemplatePreview({ t, isActive }: { t: Template; isActive: boolean }) {
 }
 
 export default function PlantillasPage() {
-  const [sectionTemplates, setSectionTemplates] = useState<Record<string, number>>({ landing: 1, productDetail: 1, cart: 1, checkout: 1 });
+  const [sectionTemplates, setSectionTemplates] = useState<Record<string, number>>({ landing: 1, collections: 1, catalog: 1, productDetail: 1, cart: 1, checkout: 1 });
   const [saving, setSaving] = useState<string | null>(null); // section key being saved
   const [loading, setLoading] = useState(true);
   const [savedSection, setSavedSection] = useState<string | null>(null);
@@ -142,16 +154,18 @@ export default function PlantillasPage() {
           if (data.sections) {
             setSectionTemplates({
               landing: Number(data.sections.landing) || global,
+              collections: Number(data.sections.collections) || global,
+              catalog: Number(data.sections.catalog) || global,
               productDetail: Number(data.sections.productDetail) || global,
               cart: Number(data.sections.cart) || global,
               checkout: Number(data.sections.checkout) || global,
             });
           } else {
-            setSectionTemplates({ landing: global, productDetail: global, cart: global, checkout: global });
+            setSectionTemplates({ landing: global, collections: global, catalog: global, productDetail: global, cart: global, checkout: global });
           }
         }
       } catch {
-        setSectionTemplates({ landing: 1, productDetail: 1, cart: 1, checkout: 1 });
+        setSectionTemplates({ landing: 1, collections: 1, catalog: 1, productDetail: 1, cart: 1, checkout: 1 });
       } finally {
         setLoading(false);
       }

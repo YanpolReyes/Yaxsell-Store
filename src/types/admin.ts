@@ -72,6 +72,7 @@ export interface Product {
   FEATURES?: string;
   ISFEATURED?: boolean;
   ISACTIVE?: boolean;
+  GROUPID?: string;
   PACKQTY?: number;
   RESTOCKTHRESHOLD?: number;
   CUSTOM_PRIMARY_COLOR?: string;

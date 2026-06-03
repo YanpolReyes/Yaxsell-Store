@@ -381,6 +381,23 @@ function CheckoutInner() {
         const originalPrice = i.product.PRICE !== price ? i.product.PRICE : null;
         return { id: i.product.$id, name: i.product.NAME, price, originalPrice, qty: i.quantity, img: resolveStorageImageUrl(i.product.IMAGEURL), total: price * i.quantity };
       });
+
+      // ── Validación de stock antes de crear pedido (evita oversell) ──
+      for (const it of items) {
+        try {
+          const productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, it.product.$id);
+          const currentStock = Number((productDoc as any).STOCK ?? 0);
+          if (currentStock < it.quantity) {
+            throw new Error(`Stock insuficiente para "${(productDoc as any).NAME || it.product.NAME}". Disponible: ${currentStock}, necesitas: ${it.quantity}.`);
+          }
+        } catch (stockErr: any) {
+          const msg = stockErr?.message || 'No pudimos validar stock. Intenta de nuevo.';
+          setError(msg);
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const docId = await databases.createDocument(databaseId, ORDERS_COLLECTION_ID, ID.unique(), {
         USERID: user?.id || 'guest', ITEMS: JSON.stringify(itemsData),
         CUSTOMERNAME: form.name, CUSTOMERRUT: form.rut, CUSTOMERPHONE: form.phone, CUSTOMEREMAIL: form.email,
@@ -395,16 +412,28 @@ function CheckoutInner() {
       submittedRef.current = true;
       const orderId = (docId as unknown as { $id: string }).$id;
 
-      // Decrement stock for each product in the order
-      for (const item of items) {
-        try {
+      // ── Descontar stock reservado (con rollback si falla) ──
+      const stockRollback: { productId: string; prevStock: number }[] = [];
+      try {
+        for (const item of items) {
           const productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.product.$id);
-          const currentStock = (productDoc as any).STOCK ?? 0;
-          const newStock = Math.max(0, currentStock - item.quantity);
-          await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, item.product.$id, { STOCK: newStock });
-        } catch (stockErr) {
-          console.error('Error updating stock for product', item.product.$id, stockErr);
+          const currentStock = Number((productDoc as any).STOCK ?? 0);
+          if (currentStock < item.quantity) {
+            throw new Error(`Stock insuficiente para "${(productDoc as any).NAME || item.product.NAME}". Disponible: ${currentStock}, necesitas: ${item.quantity}.`);
+          }
+          stockRollback.push({ productId: item.product.$id, prevStock: currentStock });
+          await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, item.product.$id, { STOCK: currentStock - item.quantity });
         }
+      } catch (err: any) {
+        // Revertir stock ya descontado
+        for (const r of stockRollback) {
+          try { await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, r.productId, { STOCK: r.prevStock }); } catch {}
+        }
+        // Cancelar el pedido recién creado para no dejar reserva fantasma
+        try {
+          await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, { STATUS: 'cancelled', UPDATEDAT: Date.now() });
+        } catch {}
+        throw err;
       }
 
       // Mark coupon as used (increment counter and deactivate)

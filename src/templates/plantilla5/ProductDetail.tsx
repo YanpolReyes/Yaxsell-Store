@@ -127,6 +127,14 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const [related, setRelated] = useState<Product[]>([]);
   const [categoryName, setCategoryName] = useState('');
 
+  const [linkedProducts, setLinkedProducts] = useState<Product[]>([]);
+  // variantLabels: map productId -> custom label (e.g. 'Rojo', 'Verde')
+  const [variantLabels, setVariantLabels] = useState<Record<string, string>>({});
+  // activeVariantId: which linked product is currently shown inline
+  const [activeVariantId, setActiveVariantId] = useState<string>('');
+  // activeVariantProduct: the actual product data for the currently shown variant
+  const activeVariantProduct = linkedProducts.find(lp => lp.$id === activeVariantId) || product;
+
   const [refElement, setRefElement] = useState<HTMLDivElement | null>(null);
   const [bodyHtml, setBodyHtml] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -140,6 +148,42 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         const doc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, id);
         const p = normalizeProductImages(doc as unknown as Product);
         setProduct(p);
+
+        // Fetch linked products (Variantes / Modelos)
+        if (p.GROUPID) {
+          try {
+            const linkedRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+              Query.equal('GROUPID', p.GROUPID),
+              Query.limit(20)
+            ]);
+            const linked = linkedRes.documents as unknown as Product[];
+            setLinkedProducts(linked);
+            setActiveVariantId(p.$id);
+
+            // Try to fetch group metadata (GROUP_NAME, VARIANT_LABELS) from product_groups collection
+            try {
+              const grpRes = await databases.listDocuments(databaseId, 'product_groups', [
+                Query.equal('GROUPID', p.GROUPID),
+                Query.limit(1)
+              ]);
+              if (grpRes.documents.length > 0) {
+                const grpDoc = grpRes.documents[0] as any;
+                if (grpDoc.VARIANT_LABELS) {
+                  try {
+                    const labels = JSON.parse(grpDoc.VARIANT_LABELS);
+                    setVariantLabels(labels);
+                  } catch {}
+                }
+              }
+            } catch (grpErr) {
+              // product_groups lookup failed gracefully
+            }
+          } catch (linkErr) {
+            console.warn('Error fetching linked products:', linkErr);
+          }
+        } else {
+          setActiveVariantId(p.$id);
+        }
 
         // Fetch category name and related products
         if (p.CATEGORYID) {
@@ -186,7 +230,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         }
       } catch (err) {
         console.warn('Error fetching product from Appwrite (handled gracefully):', err);
-        router.push('/productos');
+        setLoadError('Error fetching product: ' + (err as Error).message);
       } finally {
         setIsLoading(false);
       }
@@ -244,12 +288,96 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     return () => { aborted = true; };
   }, []);
 
+  /* ── Switch displayed variant inline (no page navigation) ── */
+  const switchVariant = (targetProduct: Product) => {
+    if (!refElement) return;
+    const root = refElement;
+    const vImages = [targetProduct.IMAGEURL, (targetProduct as any).IMAGEURL2, (targetProduct as any).IMAGEURL3].filter(Boolean).map((v: string) => resolveStorageImageUrl(v)) as string[];
+
+    // Update main gallery images
+    root.querySelectorAll('.product__media img, .global-media-settings img, img[src*="LogoPoloRed"]').forEach((img: any, idx: number) => {
+      const targetImg = vImages[idx % vImages.length] || vImages[0];
+      img.src = targetImg;
+      if (img.srcset) img.srcset = targetImg;
+      if (img.getAttribute('data-media-src')) img.setAttribute('data-media-src', targetImg);
+      img.alt = targetProduct.NAME;
+    });
+    root.querySelectorAll('.thumbnail img, .thumbnail-list__item img').forEach((img: any, idx: number) => {
+      const targetImg = vImages[idx % vImages.length] || vImages[0];
+      img.src = targetImg;
+      if (img.srcset) img.srcset = targetImg;
+      img.alt = targetProduct.NAME;
+    });
+
+    // Update title
+    root.querySelectorAll('h1').forEach(h1 => { h1.textContent = targetProduct.NAME; });
+    root.querySelectorAll('.reversed-link__text, [data-product-title]').forEach(el => { el.textContent = targetProduct.NAME; });
+
+    // Update price
+    const vPrice = formatPrice(targetProduct.PRICE);
+    root.querySelectorAll('.price, .price-item, .price__regular span, .price__sale span, .product-card__price').forEach(el => {
+      if (el.textContent?.includes('$') || el.textContent?.includes('CLP') || el.textContent?.trim() === '') {
+        el.textContent = vPrice;
+      }
+    });
+
+    // Rewire Add to Cart button for the new variant
+    const qtyInput = root.querySelector('input[name="quantity"]') as HTMLInputElement;
+    const addToCartBtn = root.querySelector('.add-to-cart-button') as HTMLElement | null;
+    if (addToCartBtn) {
+      // Clone to remove old listeners
+      const newBtn = addToCartBtn.cloneNode(true) as HTMLButtonElement;
+      delete (newBtn as any).dataset.cartBound;
+      addToCartBtn.parentNode?.replaceChild(newBtn, addToCartBtn);
+      newBtn.dataset.cartBound = '1';
+      newBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
+        addItem(targetProduct, qty);
+        const textContent = newBtn.querySelector('.add-to-cart-text__content');
+        if (textContent) {
+          const originalText = textContent.textContent;
+          textContent.textContent = '¡Añadido!';
+          setTimeout(() => { textContent.textContent = originalText; }, 2000);
+        }
+      });
+    }
+
+    // Rewire Buy it now button
+    const customBuyBtn = root.querySelector('.yaxsell-custom-buy-button') as HTMLButtonElement | null;
+    if (customBuyBtn) {
+      const newBuyBtn = customBuyBtn.cloneNode(true) as HTMLButtonElement;
+      customBuyBtn.parentNode?.replaceChild(newBuyBtn, customBuyBtn);
+      newBuyBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
+        addItem(targetProduct, qty);
+        router.push('/cart');
+      });
+    }
+
+    // Update variant picker highlights
+    root.querySelectorAll('[data-variant-btn]').forEach((btn: any) => {
+      const isActive = btn.dataset.variantBtn === targetProduct.$id;
+      btn.style.border = isActive ? '3px solid #111827' : '2px solid #e5e7eb';
+      btn.style.transform = isActive ? 'scale(1.1)' : 'scale(1)';
+      btn.style.boxShadow = isActive ? '0 0 0 2px #fff, 0 0 0 4px #111827' : 'none';
+    });
+  };
+
   /* ── Helper to dynamically overwrite/apply Yaxsell product data ── */
   const applyYaxsellData = () => {
     if (!product || !refElement) return;
     
     const root = refElement;
     
+    // Use the currently active variant product data (or fall back to base product)
+    const displayProduct = (activeVariantId && activeVariantId !== product.$id)
+      ? (linkedProducts.find(lp => lp.$id === activeVariantId) || product)
+      : product;
+
     // Resolve prices
     const priceResolved = activeOffer ? {
       displayPrice: activeOffer.discountPrice,
@@ -257,13 +385,74 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       hasDiscount: true,
       discountPercent: activeOffer.discountPercentage,
       fromApertura: false
-    } : resolveProductDisplayPrice(product, apertura);
+    } : resolveProductDisplayPrice(displayProduct, apertura);
     const displayPrice = priceResolved.displayPrice;
     const formattedPrice = formatPrice(displayPrice);
 
-    // 1. Ocultar componentes de Shopify irrelevantes (Variant-Pickers de ropa)
+    // 1. Inject variant thumbnails — clicking switches inline, no navigation
     root.querySelectorAll('variant-picker, .variant-picker').forEach(el => {
-      (el as HTMLElement).style.display = 'none';
+      if (linkedProducts && linkedProducts.length > 1) {
+        (el as HTMLElement).style.display = 'block';
+        
+        const currentActiveId = activeVariantId || product.$id;
+        
+        let variantsHtml = `<div style="margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+            <span style="font-size: 13px; font-weight: 700; color: #111827; text-transform: uppercase; letter-spacing: 0.05em;">Modelo:</span>
+            <span id="yaxsell-variant-label" style="font-size: 13px; color: #6b7280;"></span>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">`;
+          
+        linkedProducts.forEach(lp => {
+          const isActive = lp.$id === currentActiveId;
+          const label = variantLabels[lp.$id] || '';
+          const imgUrl = resolveStorageImageUrl(lp.IMAGEURL);
+          const borderStyle = isActive
+            ? 'border: 3px solid #111827; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #111827; transform: scale(1.1);'
+            : 'border: 2px solid #e5e7eb; box-shadow: none; transform: scale(1);';
+          variantsHtml += `
+            <button 
+              data-variant-btn="${lp.$id}"
+              data-variant-label="${label}"
+              style="display: block; width: 52px; height: 52px; border-radius: 50%; overflow: hidden; ${borderStyle} cursor: pointer; transition: all 0.2s ease; background: none; padding: 0; outline: none;"
+              title="${label || lp.NAME}"
+            >
+              <img src="${imgUrl}" alt="${label || lp.NAME}" style="width: 100%; height: 100%; object-fit: cover;" />
+            </button>
+          `;
+        });
+        
+        variantsHtml += `</div></div>`;
+        el.innerHTML = variantsHtml;
+
+        // Update the label display
+        const labelEl = el.querySelector('#yaxsell-variant-label') as HTMLElement | null;
+        if (labelEl) {
+          const activeBtn = el.querySelector(`[data-variant-btn="${currentActiveId}"]`) as HTMLElement | null;
+          labelEl.textContent = activeBtn?.dataset.variantLabel || '';
+        }
+
+        // Bind click handlers for inline switching
+        el.querySelectorAll('[data-variant-btn]').forEach((btn: any) => {
+          // Avoid re-binding
+          if (btn.dataset.variantBound) return;
+          btn.dataset.variantBound = '1';
+          btn.addEventListener('click', (e: Event) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const targetId = btn.dataset.variantBtn;
+            const targetProduct = linkedProducts.find(lp => lp.$id === targetId);
+            if (!targetProduct) return;
+            setActiveVariantId(targetId);
+            switchVariant(targetProduct);
+            // Update label display
+            if (labelEl) labelEl.textContent = btn.dataset.variantLabel || '';
+          });
+        });
+
+      } else {
+        (el as HTMLElement).style.display = 'none';
+      }
     });
 
     // 2. Inyectar Bloque Informativo de Envío y Stock (estilo Yaxsell / Plantilla 1) usando la estructura exacta de local-pickup
@@ -443,8 +632,12 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         e.preventDefault();
         e.stopPropagation();
         
+        // Use the currently active variant product
+        const currentProduct = (activeVariantId && activeVariantId !== product.$id)
+          ? (linkedProducts.find(lp => lp.$id === activeVariantId) || product)
+          : product;
         const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
-        addItem(product, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined);
+        addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined);
         
         const textContent = newBtn.querySelector('.add-to-cart-text__content');
         if (textContent) {
@@ -529,7 +722,11 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             
             const qtyInput = root.querySelector('input[name="quantity"]') as HTMLInputElement;
             const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
-            addItem(product, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined);
+            // Use the currently active variant product
+            const currentProduct = (activeVariantId && activeVariantId !== product.$id)
+              ? (linkedProducts.find(lp => lp.$id === activeVariantId) || product)
+              : product;
+            addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined);
             
             router.push('/cart');
           });
@@ -640,7 +837,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       clearTimeout(t4);
       clearTimeout(t5);
     };
-  }, [product, bodyHtml, categoryName, related, refElement]);
+  }, [product, bodyHtml, categoryName, related, refElement, activeVariantId, linkedProducts, variantLabels]);
 
   /* ── Inject window.Shopify stub BEFORE loading JS ── */
   useEffect(() => {

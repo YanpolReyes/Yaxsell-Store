@@ -22,21 +22,28 @@ export default function QuickView({ product, onClose }: Props) {
   const [added, setAdded] = useState(false);
   const [imgIdx, setImgIdx] = useState(0);
   const [qty, setQty] = useState(1);
-  const [open, setOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => { requestAnimationFrame(() => setOpen(true)); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  const images = [product.IMAGEURL, product.IMAGEURL2, product.IMAGEURL3, product.IMAGEURL4, product.IMAGEURL5].filter(Boolean).map(v => resolveStorageImageUrl(v)) as string[];
-  const price = product.CURRENTPRICE && product.CURRENTPRICE > 0 ? product.CURRENTPRICE : product.PRICE;
-  const hasDisc = !!(product.CURRENTPRICE && product.CURRENTPRICE < product.PRICE);
-  const discPct = hasDisc ? Math.round(((product.PRICE - product.CURRENTPRICE!) / product.PRICE) * 100) : 0;
-  const hasWholesale = (product.WHOLESALEPRICE ?? 0) > 0 && (product.WHOLESALEMINQUANTITY ?? 0) > 0;
+  // Fallbacks for mock data vs Appwrite models
+  const rawImages = (product as any).images || [product.IMAGEURL, product.IMAGEURL2, product.IMAGEURL3, product.IMAGEURL4, product.IMAGEURL5].filter(Boolean);
+  const images = rawImages.map((v: string) => resolveStorageImageUrl(v)) as string[];
+  const productName = product.NAME || (product as any).name || 'Producto';
+  const basePrice = product.PRICE ?? (product as any).price ?? 0;
+  const currentPrice = product.CURRENTPRICE ?? (product as any).currentPrice ?? basePrice;
+  const hasDisc = currentPrice < basePrice;
+  const discPct = hasDisc ? Math.round(((basePrice - currentPrice) / basePrice) * 100) : 0;
+  const hasWholesale = ((product.WHOLESALEPRICE ?? 0) > 0 && (product.WHOLESALEMINQUANTITY ?? 0) > 0);
   const isWholesaleUser = user?.isWholesale || false;
   const isWholesaleQty = hasWholesale && isWholesaleUser && qty >= (product.WHOLESALEMINQUANTITY || 0);
-  const effectivePrice = isWholesaleQty ? product.WHOLESALEPRICE! : price;
-  const stock = product.STOCK ?? 0;
-  const rating = product.RATING ?? 0;
-  const numReviews = product.NUMREVIEWS ?? 0;
+  const effectivePrice = isWholesaleQty ? product.WHOLESALEPRICE! : currentPrice;
+  const stock = product.STOCK ?? (product as any).stock ?? 50;
+  const rating = product.RATING ?? (product as any).rating ?? 0;
+  const numReviews = product.NUMREVIEWS ?? (product as any).numReviews ?? 0;
   const stockPct = Math.min(100, (stock / 50) * 100);
   const stockColor = stock > 10 ? '#00a650' : stock > 5 ? '#f57c00' : stock > 0 ? '#e53935' : '#bbb';
 
@@ -47,15 +54,13 @@ export default function QuickView({ product, onClose }: Props) {
   }
 
   function handleClose() {
-    setOpen(false);
+    setIsClosing(true);
     setTimeout(onClose, 250);
   }
 
   return (
     <>
       <style>{`
-        @keyframes qv-in { from { opacity:0; transform: scale(0.92) translateY(20px); } to { opacity:1; transform: scale(1) translateY(0); } }
-        @keyframes qv-out { from { opacity:1; transform: scale(1); } to { opacity:0; transform: scale(0.92) translateY(20px); } }
         .qv-thumb { border: 2px solid transparent; transition: border-color .2s, transform .2s; cursor: pointer; }
         .qv-thumb:hover { transform: scale(1.08); }
         .qv-thumb-active { border-color: #3483fa !important; }
@@ -68,17 +73,19 @@ export default function QuickView({ product, onClose }: Props) {
       `}</style>
       <div onClick={handleClose} style={{
         position: 'fixed', inset: 0, zIndex: 9999,
-        background: open ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0)',
-        backdropFilter: open ? 'blur(6px)' : 'blur(0px)',
-        WebkitBackdropFilter: open ? 'blur(6px)' : 'blur(0px)',
+        background: (mounted && !isClosing) ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0)',
+        backdropFilter: (mounted && !isClosing) ? 'blur(6px)' : 'blur(0px)',
+        WebkitBackdropFilter: (mounted && !isClosing) ? 'blur(6px)' : 'blur(0px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
-        transition: 'background .3s, backdrop-filter .3s',
+        transition: 'background .25s, backdrop-filter .25s',
       }}>
         <div onClick={e => e.stopPropagation()} style={{
           background: '#fff', borderRadius: 20, width: '100%', maxWidth: 1100, maxHeight: '92vh',
           overflow: 'hidden', position: 'relative',
           boxShadow: '0 25px 60px rgba(0,0,0,0.2), 0 8px 20px rgba(0,0,0,0.1)',
-          animation: open ? 'qv-in 0.35s cubic-bezier(0.16,1,0.3,1) forwards' : 'qv-out 0.25s ease forwards',
+          opacity: (mounted && !isClosing) ? 1 : 0,
+          transform: (mounted && !isClosing) ? 'scale(1) translateY(0)' : 'scale(0.92) translateY(20px)',
+          transition: 'opacity 0.25s, transform 0.25s cubic-bezier(0.16,1,0.3,1)',
         }}>
           {/* Close button */}
           <button onClick={handleClose} style={{
@@ -99,7 +106,7 @@ export default function QuickView({ product, onClose }: Props) {
               {/* Main image */}
               <div style={{ position: 'relative', flex: 1, minHeight: 360 }}>
                 {images[imgIdx] ? (
-                  <Image src={images[imgIdx]} alt={product.NAME} fill style={{ objectFit: 'contain', padding: 20 }} sizes="400px" quality={100} unoptimized />
+                  <Image src={images[imgIdx]} alt={productName} fill style={{ objectFit: 'contain', padding: 20 }} sizes="400px" unoptimized />
                 ) : (
                   <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 72 }}>📦</span>
                 )}
@@ -141,7 +148,7 @@ export default function QuickView({ product, onClose }: Props) {
             {/* ── RIGHT: Product Info ── */}
             <div style={{ flex: 1, padding: '24px 28px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0 }}>
               {/* Name */}
-              <h2 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.3, paddingRight: 30 }}>{product.NAME}</h2>
+              <h2 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.3, paddingRight: 30 }}>{productName}</h2>
 
               {/* Rating */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 12 }}>
@@ -152,11 +159,11 @@ export default function QuickView({ product, onClose }: Props) {
               {/* Price block */}
               <div style={{ background: '#f8f9fa', borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                  <span style={{ fontSize: 32, fontWeight: 800, color: hasDisc ? '#e53935' : '#1a1a1a', letterSpacing: '-1px', lineHeight: 1 }}>{formatPrice(price)}</span>
-                  {hasDisc && <span style={{ fontSize: 15, color: '#b0b0b0', textDecoration: 'line-through' }}>{formatPrice(product.PRICE)}</span>}
+                  <span style={{ fontSize: 32, fontWeight: 800, color: hasDisc ? '#e53935' : '#1a1a1a', letterSpacing: '-1px', lineHeight: 1 }}>{formatPrice(currentPrice)}</span>
+                  {hasDisc && <span style={{ fontSize: 15, color: '#b0b0b0', textDecoration: 'line-through' }}>{formatPrice(basePrice)}</span>}
                   {hasDisc && <span style={{ fontSize: 12, fontWeight: 700, color: '#00a650', background: '#e8f5e9', padding: '2px 8px', borderRadius: 10 }}>{discPct}% OFF</span>}
                 </div>
-                {hasWholesale && price * qty >= 300000 && (
+                {hasWholesale && currentPrice * qty >= 300000 && (
                   <div style={{ marginTop: 6, fontSize: 12, color: '#f57c00', fontWeight: 600 }}>
                     <Zap size={12} style={{ display: 'inline', verticalAlign: -2 }} /> Precio mayorista: {formatPrice(product.WHOLESALEPRICE!)} (pedidos +$300.000)
                   </div>
@@ -177,9 +184,9 @@ export default function QuickView({ product, onClose }: Props) {
               </div>
 
               {/* Description */}
-              {product.DESCRIPTION && (
+              {(product.DESCRIPTION || (product as any).description) && (
                 <p style={{ margin: '0 0 14px', fontSize: 13, color: '#555', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {product.DESCRIPTION}
+                  {product.DESCRIPTION || (product as any).description}
                 </p>
               )}
 
@@ -207,7 +214,7 @@ export default function QuickView({ product, onClose }: Props) {
                 {stock > 0 && (
                   <button className="qv-add-btn" onClick={handleAdd}
                     style={{ width: '100%', padding: '13px 0', background: added ? 'linear-gradient(135deg, #00a650, #00c853)' : 'linear-gradient(135deg, #3483fa, #2968c8)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all .2s', boxShadow: '0 4px 14px rgba(52,131,250,0.25)' }}>
-                    {added ? <><Check size={17} strokeWidth={3} /> ¡Agregado!</> : <><ShoppingCart size={17} /> Agregar al carrito — {formatPrice(price * qty)}</>}
+                    {added ? <><Check size={17} strokeWidth={3} /> ¡Agregado!</> : <><ShoppingCart size={17} /> Agregar al carrito — {formatPrice(currentPrice * qty)}</>}
                   </button>
                 )}
                 <Link href={`/productos/${product.$id}`} onClick={handleClose}

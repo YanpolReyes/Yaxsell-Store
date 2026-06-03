@@ -1647,100 +1647,10 @@
     }
   
 
-
-        #shopify-buyer-consent {
-  margin-top: 1em;
-  display: inline-block;
-  width: 100%;
-}
-
-#shopify-buyer-consent.hidden {
-  display: none;
-}
-
-#shopify-subscription-policy-button {
-  background: none;
-  border: none;
-  padding: 0;
-  text-decoration: underline;
-  font-size: inherit;
-  cursor: pointer;
-}
-
-#shopify-subscription-policy-button::before {
-  box-shadow: none;
-}
-
-      
-
  #shopify-section-sections--20816632447114__header .menu-drawer__submenu--sidebar .image-card__heading {max-width: 14.5rem;} #shopify-section-sections--20816632447114__header .mega-menu--sidebar .image-card__heading {max-width: 20rem;} 
 
-
-.size-guide {
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
-}
-
-.size-guide img {
-  max-width: 50%;
-  height: auto;
-}
-.size-guide__content {
-  text-align: start;
-}
-.size-guide__content > * {
-  margin-block-start: 1rem;
-}
-
-/* Mobile */
-@media (max-width: 576px) {
-  .size-guide {
-    display: block;
-  }
-
-  .size-guide img {
-    width: 100%;
-    max-width: 100%;
-    margin-bottom: 20px;
-  }
-}
-
-
- #shopify-section-template--20816638607498__custom_section_EPfJj3 .swipe-mobile {--column-width-mobile: 73.08vw;} 
+ @media (min-width: 1024px) {#shopify-section-template--20816637788298__hero_banner_UMGgcV .hero-banner__content {padding-inline: 7rem; }} 
 
  @media (max-width: 767px) {#shopify-section-sections--20816632381578__custom_section_4yLVt7 .swipe-mobile {--column-width-mobile: min(65.8vw, 37rem); }} 
-
-
-.size-guide {
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
-}
-
-.size-guide img {
-  max-width: 50%;
-  height: auto;
-}
-.size-guide__content {
-  text-align: start;
-}
-.size-guide__content > * {
-  margin-block-start: 1rem;
-}
-
-/* Mobile */
-@media (max-width: 576px) {
-  .size-guide {
-    display: block;
-  }
-
-  .size-guide img {
-    width: 100%;
-    max-width: 100%;
-    margin-bottom: 20px;
-  }
-}
-
 
   

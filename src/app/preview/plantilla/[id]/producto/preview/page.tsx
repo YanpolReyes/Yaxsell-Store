@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import DynamicProductDetail from '@/components/DynamicProductDetail';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION } from '@/lib/appwrite';
@@ -27,6 +27,7 @@ const TEMPLATE_NAMES: Record<number, string> = {
 
 export default function PreviewProductDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = Number(params?.id);
   const [ready, setReady] = useState(false);
   const [randomProductId, setRandomProductId] = useState<string | undefined>();
@@ -38,16 +39,19 @@ export default function PreviewProductDetailPage() {
         const { databaseId } = getAppwriteConfig();
         const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.limit(1)]);
         if (res.documents && res.documents.length > 0) {
-          setRandomProductId(res.documents[0].$id);
+          const randId = res.documents[0].$id;
+          setRandomProductId(randId);
+          router.replace(`/preview/plantilla/${id}/producto/${randId}`);
+        } else {
+          setReady(true);
         }
       } catch (err) {
         console.warn('Could not fetch random product for preview', err);
-      } finally {
-        setTimeout(() => setReady(true), 300);
+        setReady(true);
       }
     }
     fetchRandomProduct();
-  }, []);
+  }, [id, router]);
 
   useEffect(() => {
     // Hide the global app navbar on preview pages
@@ -136,7 +140,7 @@ export default function PreviewProductDetailPage() {
 
       {/* Contenido de la plantilla */}
       <div>
-        {ready && <DynamicProductDetail />}
+        {ready && <DynamicProductDetail productId={randomProductId} />}
       </div>
     </div>
   );

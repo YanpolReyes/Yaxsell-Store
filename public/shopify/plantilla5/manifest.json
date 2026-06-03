@@ -1,9 +1,9 @@
 {
   "plantilla": 5,
-  "sourceUrl": "https://pebble-little.myshopify.com/products/logo-polo-red",
+  "sourceUrl": "https://pebble-little.myshopify.com/collections/all",
   "shopifyHost": "pebble-little.myshopify.com",
   "themeId": "22",
-  "capturedAt": "2026-06-01T05:15:24.978Z",
+  "capturedAt": "2026-06-02T20:40:42.249Z",
   "css": [
     "/shopify/plantilla5/assets/css/inline/index-inline-1.css",
     "/shopify/plantilla5/assets/css/pebble-little.myshopify.com/cdn/shop/t/22/assets/theme.css",
@@ -11,11 +11,8 @@
     "/shopify/plantilla5/assets/css/pebble-little.myshopify.com/cdn/shop/t/22/assets/component-non-critical.css",
     "/shopify/plantilla5/assets/css/pebble-little.myshopify.com/cdn/shop/t/22/assets/menu-drawer.css",
     "/shopify/plantilla5/assets/css/pebble-little.myshopify.com/cdn/shop/t/22/assets/header-menu.css",
-    "/shopify/plantilla5/assets/css/pebble-little.myshopify.com/cdn/shop/t/22/assets/section-product-information.css",
-    "/shopify/plantilla5/assets/css/pebble-little.myshopify.com/cdn/shopifycloud/portable-wallets/latest/accelerated-checkout-backwards-compat.css",
+    "/shopify/plantilla5/assets/css/pebble-little.myshopify.com/cdn/shop/t/22/assets/template-collection.css",
     "/shopify/plantilla5/assets/css/pebble-little.myshopify.com/cdn/shop/t/22/assets/component-localization-dropdown.css",
-    "/shopify/plantilla5/assets/css/pebble-little.myshopify.com/cdn/shop/t/22/assets/pickup-availability.css",
-    "/shopify/plantilla5/assets/css/pebble-little.myshopify.com/cdn/shop/t/22/assets/product-video-testimonials.css",
     "/shopify/plantilla5/assets/css/pebble-little.myshopify.com/cdn/shop/t/22/assets/cart-drawer.css",
     "/shopify/plantilla5/assets/css/pebble-little.myshopify.com/cdn/shop/t/22/assets/cart-modules.css",
     "/shopify/plantilla5/assets/css/pebble-little.myshopify.com/cdn/shop/t/22/assets/quick-view.css"
@@ -39,7 +36,6 @@
     "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/cart-count.js",
     "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/quick-add.js",
     "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/video-card.js",
-    "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/sticky-add-to-cart.js",
     "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/search.js",
     "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/cart-note.js",
     "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/cart-discount.js",
@@ -47,12 +43,12 @@
     "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/localization.js",
     "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/page-transition.js",
     "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/critical.js",
-    "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/product-video-testimonials.js",
-    "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/product-recommendations.js",
-    "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/card-layered.js",
+    "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/results-list.js",
+    "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/facets.js",
     "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/cart-drawer.js",
     "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/cart-items.js",
     "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/cart-shipping.js",
+    "/shopify/plantilla5/assets/js/pebble-little.myshopify.com/cdn/shop/t/22/assets/product-recommendations.js",
     "/shopify/plantilla5/assets/js/cdn.shopify.com/storefront/standard-actions.js"
   ],
   "fonts": [
@@ -62,25 +58,25 @@
     "/shopify/plantilla5/assets/fonts/pebble-little.myshopify.com/cdn/fonts/bricolage_grotesque/bricolagegrotesque_n7.d701b766b46c76aceb10c78473f491dff9b09e5e.woff"
   ],
   "stats": {
-    "cssTotal": 13,
+    "cssTotal": 10,
     "jsTotal": 53,
     "fontsTotal": 4,
-    "imagesTotal": 722,
-    "videosTotal": 5,
+    "imagesTotal": 488,
+    "videosTotal": 0,
     "svgMasksTotal": 0,
-    "inlineAnimScripts": 3,
-    "inlineCssKB": 60,
-    "bodyCleanKB": 999,
+    "inlineAnimScripts": 2,
+    "inlineCssKB": 59,
+    "bodyCleanKB": 1084,
     "downloaded": {
       "css": {
-        "ok": 0,
-        "skip": 13,
+        "ok": 1,
+        "skip": 9,
         "fail": 0,
         "errors": []
       },
       "js": {
-        "ok": 0,
-        "skip": 53,
+        "ok": 2,
+        "skip": 51,
         "fail": 0,
         "errors": []
       },
@@ -91,14 +87,14 @@
         "errors": []
       },
       "images": {
-        "ok": 63,
-        "skip": 659,
+        "ok": 33,
+        "skip": 455,
         "fail": 0,
         "errors": []
       },
       "videos": {
         "ok": 0,
-        "skip": 5,
+        "skip": 0,
         "fail": 0,
         "errors": []
       },
