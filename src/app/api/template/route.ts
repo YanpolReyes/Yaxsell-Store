@@ -86,8 +86,8 @@ export async function GET(req: NextRequest) {
 
     // Return all sections
     const global = await readKey(TEMPLATE_KEY) || 1;
-    const sections = ['landing', 'productDetail', 'cart', 'checkout'] as const;
-    const result: Record<string, number> = { landing: global, productDetail: global, cart: global, checkout: global };
+    const sections = ['landing', 'collections', 'catalog', 'productDetail', 'cart', 'checkout'] as const;
+    const result: Record<string, number> = { landing: global, collections: global, catalog: global, productDetail: global, cart: global, checkout: global };
 
     // Override with section-specific values if they exist
     for (const sec of sections) {
@@ -98,7 +98,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ template: global, sections: result });
   } catch (error: any) {
     console.error('[API template] Exception:', error);
-    return NextResponse.json({ template: 1, sections: { landing: 1, productDetail: 1, cart: 1, checkout: 1 }, error: error.message }, { status: 200 });
+    return NextResponse.json({ template: 1, sections: { landing: 1, collections: 1, catalog: 1, productDetail: 1, cart: 1, checkout: 1 }, error: error.message }, { status: 200 });
   }
 }
 
