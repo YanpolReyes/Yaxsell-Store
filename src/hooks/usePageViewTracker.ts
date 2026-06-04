@@ -122,7 +122,26 @@ export function usePageViewTracker() {
  * Obtiene estadísticas de visitas para el dashboard.
  * Solo cuenta páginas del frontend.
  */
-export async function getPageViewStats(days = 30) {
+interface PageViewStatsResult {
+  totalViews: number;
+  uniquePages: number;
+  viewsByDay: Record<string, number>;
+  topPages: { page: string; views: number }[];
+  todayViews: number;
+  topComunas: { comuna: string; count: number; lat: number; lng: number }[];
+  visitorMarkers: { comuna: string; region: string; lat: number; lng: number; count: number; users: string[] }[];
+  days: number;
+}
+
+let cachedStats: PageViewStatsResult | null = null;
+let lastStatsFetchTime = 0;
+
+export async function getPageViewStats(days = 30): Promise<PageViewStatsResult> {
+  // Use in-memory cache if requested within the last 15 minutes
+  if (cachedStats && Date.now() - lastStatsFetchTime < 15 * 60 * 1000) {
+    return cachedStats;
+  }
+
   const { databases } = getServices();
   const { databaseId } = getAppwriteConfig();
 
@@ -134,7 +153,10 @@ export async function getPageViewStats(days = 30) {
   let cursor: string | undefined;
 
   do {
-    const queries: any[] = [Query.limit(100)];
+    const queries: any[] = [
+      Query.limit(100), 
+      Query.greaterThanEqual('DATE', sinceStr)
+    ];
     if (cursor) queries.push(Query.cursorAfter(cursor));
     const res = await databases.listDocuments(databaseId, PAGE_VIEWS_COLLECTION, queries);
     const docs = res.documents.map(d => ({
@@ -204,5 +226,10 @@ export async function getPageViewStats(days = 30) {
     }, {} as Record<string, { comuna: string; region: string; lat: number; lng: number; count: number; users: string[] }>);
   const visitorMarkers = Object.values(mapMarkers);
 
-  return { totalViews, uniquePages, viewsByDay, topPages, todayViews, topComunas, visitorMarkers, days: filtered.length };
+  const result = { totalViews, uniquePages, viewsByDay, topPages, todayViews, topComunas, visitorMarkers, days: filtered.length };
+  
+  cachedStats = result;
+  lastStatsFetchTime = Date.now();
+
+  return result;
 }

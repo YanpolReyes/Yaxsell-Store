@@ -16,6 +16,8 @@ import { useEffect, useRef, useState } from 'react';
 import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, PRODUCTS_COLLECTION, Query } from '@/lib/appwrite';
 import { Category, Subcategory, Product } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
+import { isEditorMockEnabled } from '@/lib/editor-mock';
+import { getTpl23MockData } from './mockData';
 
 const SHOPIFY_BASE = '/shopify/plantilla23/assets';
 
@@ -187,6 +189,13 @@ export default function HomePage23() {
   /* ── Fetch categories, subcategories & products from Appwrite ── */
   useEffect(() => {
     const fetchData = async () => {
+      if (isEditorMockEnabled()) {
+        const mock = getTpl23MockData();
+        setCategories(mock.categories);
+        setSubcategories(mock.subcategories);
+        setProducts(mock.products);
+        return;
+      }
       try {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();

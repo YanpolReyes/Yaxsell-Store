@@ -1004,12 +1004,9 @@ export default function HomePage1() {
 
           const loadCache = async () => {
             try {
-              const { databases } = getServices();
-              const cfg = getAppwriteConfig();
-              const [prodRes, catRes, subRes] = await Promise.all([
-                databases.listDocuments(cfg.databaseId, PRODUCTS_COLLECTION, [Query.limit(200)]),
-                databases.listDocuments(cfg.databaseId, CATEGORIES_COLLECTION, [Query.limit(50)]),
-                databases.listDocuments(cfg.databaseId, SUBCATEGORIES_COLLECTION, [Query.limit(200)]),
+                fetch('/api/public-data/products').then(r => r.json()).then(d => ({ documents: d.products || [] })),
+                fetch('/api/public-data/catalog').then(r => r.json()).then(d => ({ documents: d.categories || [] })),
+                Promise.resolve({ documents: [] }), // Deshabilitado para ahorrar requests
               ]);
               allProducts = prodRes.documents;
               allCategories = catRes.documents;
@@ -1585,18 +1582,11 @@ export default function HomePage1() {
       // ── Populate search-results with real products & categories ──
       const populateSearchResults = async () => {
         try {
-          const { databases } = getServices();
-          const cfg = getAppwriteConfig();
-
           // Fetch 4 popular products
-          const prodsRes = await databases.listDocuments(cfg.databaseId, PRODUCTS_COLLECTION, [
-            Query.limit(4), Query.orderDesc('$createdAt'),
-          ]);
+          const prodsRes = await fetch('/api/public-data/products').then(r => r.json()).then(d => ({ documents: (d.products || []).slice(0, 4) }));
 
           // Fetch categories
-          const catsRes = await databases.listDocuments(cfg.databaseId, CATEGORIES_COLLECTION, [
-            Query.limit(6),
-          ]);
+          const catsRes = await fetch('/api/public-data/catalog').then(r => r.json()).then(d => ({ documents: (d.categories || []).slice(0, 6) }));
 
           // Fix "View all" link
           const viewAllLink = searchPopup.querySelector('.popular_search_product_header .search_header_title a') as HTMLAnchorElement | null;
@@ -2624,10 +2614,9 @@ export default function HomePage1() {
       (async () => {
         if (settings.productWidgetProductId) {
           try {
-            const { databaseId } = getAppwriteConfig();
-            const { databases } = getServices();
-            const doc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, settings.productWidgetProductId!);
-            const product = doc as unknown as Product;
+            const res = await fetch('/api/public-data/products').then(r => r.json());
+            const product = (res.products || []).find((p: any) => p.$id === settings.productWidgetProductId!);
+            if (!product) throw new Error('Not found');
             if (!isInStock(product)) {
               hideAllWidgets();
               return;
@@ -2698,22 +2687,15 @@ export default function HomePage1() {
 
     (async () => {
       try {
-        const { databaseId } = getAppwriteConfig();
-        const { databases } = getServices();
-        const count = settings.productWidgetProductCount || 10;
-        const queries: any[] = [Query.greaterThan('STOCK', 0), Query.limit(count)];
-
-        if (mode === 'category' && settings.productWidgetCategoryId) {
-          queries.push(Query.equal('CATEGORYID', settings.productWidgetCategoryId));
-        } else if (mode === 'subcategory' && settings.productWidgetSubcategoryId) {
-          queries.push(Query.equal('SUBCATEGORYID', settings.productWidgetSubcategoryId));
-        } else if (mode === 'random') {
-          // Shuffle: fetch more and pick random subset
-          queries[1] = Query.limit(100);
-        }
-
-        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, queries);
-        let docs = (res.documents as unknown as Product[]).filter(isInStock);
+        const res = await fetch('/api/public-data/products').then(r => r.json());
+        const filtered = (res.products || []).filter((p: any) => {
+          if (p.STOCK <= 0) return false;
+          if (mode === 'category' && settings.productWidgetCategoryId && p.CATEGORYID !== settings.productWidgetCategoryId) return false;
+          if (mode === 'subcategory' && settings.productWidgetSubcategoryId && p.SUBCATEGORYID !== settings.productWidgetSubcategoryId) return false;
+          return true;
+        });
+        const finalDocs = filtered.slice(0, count);
+        let docs = finalDocs as unknown as Product[];
 
         if (mode === 'random' && docs.length > count) {
           // Fisher-Yates shuffle
@@ -3267,10 +3249,9 @@ export default function HomePage1() {
     let alive = true;
     (async () => {
       try {
-        const { databaseId } = getAppwriteConfig();
-        const { databases } = getServices();
-        const product = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, pid);
-        if (alive) setFeaturedProduct(normalizeProductImages(product as unknown as Product));
+        const res = await fetch('/api/public-data/products').then(r => r.json());
+        const product = (res.products || []).find((p: any) => p.$id === pid);
+        if (alive && product) setFeaturedProduct(normalizeProductImages(product as unknown as Product));
       } catch {
         if (alive) setFeaturedProduct(null);
       }
@@ -3545,19 +3526,9 @@ export default function HomePage1() {
 
     (async () => {
       try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-
-        // 2) Fetch ALL active panels for this template
-        const panelsRes = await databases.listDocuments(databaseId, HOTSPOT_PANELS_COLLECTION, [
-          Query.equal('MOSAICGROUP', 'plantilla1'),
-          Query.equal('ISACTIVE', true),
-          Query.orderAsc('CELLINDEX'),
-          Query.limit(6),
-        ]);
-        if (!alive || panelsRes.total === 0) return;
-
-        const allPanels = panelsRes.documents as any[];
+        const panelsRes = await fetch('/api/public-data/hotspots').then(r => r.json());
+        const allPanels = (panelsRes.panels || []).filter((p: any) => p.MOSAICGROUP === 'plantilla1');
+        if (!alive || allPanels.length === 0) return;
         const panelIds = allPanels.map(p => p.$id);
 
         // 3) Fetch ALL hotspots for these panels
@@ -6549,29 +6520,9 @@ export default function HomePage1() {
     }
 
     async function loadVisitors() {
-      try {
-        const { getPageViewStats } = await import('@/hooks/usePageViewTracker');
-        const stats = await getPageViewStats(1); // Últimas 24h
-        const visitorsDiv = document.querySelector('.tpl1-map-visitors') as HTMLElement;
-        if (!visitorsDiv || stats.visitorMarkers.length === 0) return;
-
-        const totalToday = stats.todayViews;
-        const markers = stats.visitorMarkers.slice(0, 6);
-
-        visitorsDiv.innerHTML = `
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-            <span style="font-size:13px;font-weight:800;color:${textColor};">Visitantes hoy</span>
-            <span style="font-size:12px;font-weight:700;color:${accentColor};background:${iconBg};padding:2px 8px;border-radius:6px;">${totalToday}</span>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;">
-            ${markers.map(m => `
-              <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;background:${iconBg};font-size:11px;font-weight:600;color:${accentColor};">
-                ${m.comuna}${m.count > 1 ? ` (${m.count})` : ''}${m.users && m.users.length > 0 ? ` — ${m.users[0]}${m.users.length > 1 ? ` +${m.users.length - 1}` : ''}` : ''}
-              </span>
-            `).join('')}
-          </div>
-        `;
-      } catch {}
+      // Disabled: fetching all visitors directly from Appwrite on every homepage load 
+      // caused an O(N^2) explosion in database reads.
+      return;
     }
 
     if (address || mapEmbed) {

@@ -24,7 +24,7 @@ export default function InventoryPage() {
   const [bulkThresholdModal, setBulkThresholdModal] = useState(false);
   const [bulkThresholdValue, setBulkThresholdValue] = useState('');
   const [applyingBulkThreshold, setApplyingBulkThreshold] = useState(false);
-  const [sortBy, setSortBy] = useState<'name' | 'stock' | 'value' | 'sold'>('name');
+  const [sortBy, setSortBy] = useState<'name' | 'stock' | 'value' | 'sold' | 'newest'>('newest');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
   const [imagePreview, setImagePreview] = useState<{ src: string; name: string; stock: number; packQty?: number } | null>(null);
@@ -158,6 +158,11 @@ export default function InventoryPage() {
     const matchRestock = !needsRestockOnly || (p.RESTOCKTHRESHOLD !== undefined && (p.STOCK ?? 0) <= p.RESTOCKTHRESHOLD);
     return matchSearch && matchLevel && matchRestock;
   }).sort((a, b) => {
+    if (sortBy === 'newest') {
+      const dateA = new Date((a as any).$updatedAt || 0).getTime();
+      const dateB = new Date((b as any).$updatedAt || 0).getTime();
+      return dateB - dateA;
+    }
     if (sortBy === 'name') return (a.NAME || '').localeCompare(b.NAME || '');
     if (sortBy === 'value') return ((b.STOCK ?? 0) * b.PRICE) - ((a.STOCK ?? 0) * a.PRICE);
     if (sortBy === 'sold') return (b.SOLDQUANTITY ?? 0) - (a.SOLDQUANTITY ?? 0);
@@ -322,7 +327,7 @@ export default function InventoryPage() {
 
       <div className="flex items-center gap-2">
         <span className="text-xs text-gray-500">Ordenar:</span>
-        {([['stock','Menor stock'],['value','Mayor valor'],['sold','Más vendidos'],['name','Nombre']] as const).map(([v,l]) => (
+        {([['newest', 'Más recientes'], ['stock','Menor stock'],['value','Mayor valor'],['sold','Más vendidos'],['name','Nombre']] as const).map(([v,l]) => (
           <button key={v} onClick={() => setSortBy(v)}
             className={`px-3 py-1 rounded-xl text-xs font-medium transition ${sortBy === v ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
             {l}

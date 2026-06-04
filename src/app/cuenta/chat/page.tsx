@@ -43,9 +43,13 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Poll for new messages every 5s
+  // Poll for new messages every 30s, only if visible
   useEffect(() => {
-    const interval = setInterval(loadMessages, 5000);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadMessages();
+      }
+    }, 30000);
     return () => clearInterval(interval);
   }, [isLoggedIn, user?.id]);
 

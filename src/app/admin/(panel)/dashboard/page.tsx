@@ -1502,7 +1502,15 @@ export default function DashboardPage() {
     finally { setIsLoading(false); }
   }, []);
 
-  useEffect(() => { loadData(); const id = setInterval(loadData, 60_000); return () => clearInterval(id); }, [loadData]);
+  useEffect(() => {
+    loadData();
+    const id = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadData();
+      }
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [loadData]);
 
   useEffect(() => {
     if (allOrders.length === 0 && !isLoading) return;
