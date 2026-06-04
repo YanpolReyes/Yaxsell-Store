@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { Eye, AlertTriangle, CheckCircle, Search, RefreshCw, Package, EyeOff, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
+import { Eye, AlertTriangle, CheckCircle, Search, RefreshCw, Package, EyeOff, ChevronLeft, ChevronRight, Copy, ClipboardPaste } from 'lucide-react';
 
 interface Report {
   totalPasted: number;
@@ -639,7 +639,101 @@ export default function CatalogVisibilityPage() {
             }}
             title="Copiar todos los SKUs de productos sin imagen o con imagen rota"
           >
-            <Copy size={14} /> Copiar SKUs sin Imagen
+            <Copy size={14} /> Sku Copy
+          </button>
+          <button
+            id="btn-paste-skus"
+            onClick={async () => {
+              try {
+                let text = '';
+                try {
+                  text = await navigator.clipboard.readText();
+                } catch (err) {
+                  const input = prompt("Pega aquí los SKUs con sus URLs (separados por tabulación o espacio):");
+                  if (input) text = input;
+                }
+                
+                if (!text || !text.trim()) {
+                  alert("El portapapeles está vacío o no se pegó nada.");
+                  return;
+                }
+
+                const btn = document.getElementById('btn-paste-skus');
+                if (btn) btn.innerHTML = 'Procesando...';
+
+                const lines = text.split('\n');
+                let updated = 0;
+                let notFound = 0;
+                let emptyLines = 0;
+                
+                const { databases } = getServices();
+                const { databaseId } = getAppwriteConfig();
+
+                for (const line of lines) {
+                  const raw = line.trim();
+                  if (!raw) {
+                    emptyLines++;
+                    continue;
+                  }
+                  
+                  let sku = '';
+                  let url = '';
+                  const parts = raw.split('\t');
+                  
+                  if (parts.length >= 2 && parts[1].trim().startsWith('http')) {
+                    sku = parts[0].trim();
+                    url = parts[1].trim();
+                  } else {
+                    const m = raw.match(/^(\S+)\s+(http.+)$/);
+                    if (m) {
+                      sku = m[1].trim();
+                      url = m[2].trim();
+                    }
+                  }
+                  
+                  if (sku && url) {
+                    const product = allProducts.find(p => (p.sku || p.SKU) === sku);
+                    if (product) {
+                      const collectionId = product._source === 'catalog_products' ? CATALOG_PRODUCTS_COLLECTION_ID : PRODUCTS_COLLECTION_ID;
+                      await databases.updateDocument(databaseId, collectionId, product.$id, { IMAGEURL: url });
+                      product.IMAGEURL = url;
+                      setBrokenImages(prev => {
+                        const next = new Set(prev);
+                        next.delete(product.$id);
+                        return next;
+                      });
+                      updated++;
+                    } else {
+                      notFound++;
+                    }
+                  } else {
+                    // It might be a line with SKU but no image
+                    emptyLines++;
+                  }
+                }
+                
+                if (btn) {
+                  btn.innerHTML = 'Paste';
+                  // re-append icon by react re-render is fine
+                }
+                
+                alert(`¡Proceso completado!\nSe actualizaron ${updated} imágenes.\nNo encontrados: ${notFound}.`);
+                // Forzar re-render de la lista
+                setAllProducts([...allProducts]);
+              } catch(e: any) {
+                alert("Error al pegar o procesar: " + (e.message || e));
+                const btn = document.getElementById('btn-paste-skus');
+                if (btn) btn.innerHTML = 'Paste';
+              }
+            }}
+            style={{
+              padding: '6px 14px', borderRadius: 8, border: '1px solid #e5e7eb',
+              background: '#fff', color: '#6b7280', fontSize: 12, fontWeight: 700,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all .15s'
+            }}
+            title="Pegar SKUs y URLs desde Excel"
+          >
+            <ClipboardPaste size={14} /> Paste
           </button>
           <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 600 }}>{totalProducts} productos</span>
         </div>
