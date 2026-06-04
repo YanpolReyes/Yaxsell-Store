@@ -83,8 +83,8 @@ export default function WholesaleProductsPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       
-      const wholesalePrice = parseFloat(editWholesalePrice);
-      const minQuantity = parseInt(editMinQuantity, 10);
+      const wholesalePrice = Math.round(parseFloat(editWholesalePrice));
+      const minQuantity = Math.round(parseInt(editMinQuantity, 10));
       
       if (isNaN(wholesalePrice) || wholesalePrice < 0) {
         alert('El precio mayorista debe ser un número válido');

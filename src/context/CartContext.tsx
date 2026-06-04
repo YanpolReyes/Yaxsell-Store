@@ -108,8 +108,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (item.timedOfferPrice && item.timedOfferExpiresAt && now < item.timedOfferExpiresAt) {
       return item.timedOfferPrice;
     }
-    if (item.wholesalePrice) {
-      return item.wholesalePrice;
+    const effectiveWholesale = (item.product.WHOLESALEPRICE && item.product.WHOLESALEMINQUANTITY && item.quantity >= item.product.WHOLESALEMINQUANTITY) 
+      ? item.product.WHOLESALEPRICE 
+      : item.wholesalePrice;
+
+    if (effectiveWholesale) {
+      return effectiveWholesale;
     }
     return resolveProductDisplayPrice(item.product, apertura).displayPrice;
   };

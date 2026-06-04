@@ -25,13 +25,17 @@ export function useCartItemPrice(item: CartItem): {
         },
       };
     }
-    if (item.wholesalePrice) {
+    const effectiveWholesale = (item.product.WHOLESALEPRICE && item.product.WHOLESALEMINQUANTITY && item.quantity >= item.product.WHOLESALEMINQUANTITY) 
+      ? item.product.WHOLESALEPRICE 
+      : item.wholesalePrice;
+
+    if (effectiveWholesale) {
       return {
-        unitPrice: item.wholesalePrice,
+        unitPrice: effectiveWholesale,
         pricing: {
-          displayPrice: item.wholesalePrice,
+          displayPrice: effectiveWholesale,
           originalPrice: item.product.PRICE,
-          hasDiscount: item.wholesalePrice < item.product.PRICE,
+          hasDiscount: effectiveWholesale < item.product.PRICE,
           discountPercent: 0,
           fromApertura: false,
         },
@@ -54,6 +58,8 @@ export function useCartPricing(items: CartItem[]) {
       let unit = item.product.PRICE;
       if (item.timedOfferPrice && item.timedOfferExpiresAt && now < item.timedOfferExpiresAt) {
         unit = item.timedOfferPrice;
+      } else if (item.product.WHOLESALEPRICE && item.product.WHOLESALEMINQUANTITY && item.quantity >= item.product.WHOLESALEMINQUANTITY) {
+        unit = item.product.WHOLESALEPRICE;
       } else if (item.wholesalePrice) {
         unit = item.wholesalePrice;
       } else {

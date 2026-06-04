@@ -417,12 +417,12 @@ export default function ProductsPage() {
       const { databaseId } = getAppwriteConfig();
       const payload: Record<string, any> = {
         NAME: d.NAME, DESCRIPTION: d.DESCRIPTION || '',
-        PRICE: Number(d.PRICE) || 0, STOCK: Number(d.STOCK) || 0,
-        COST: Number(d.COST) || 0,
-        CURRENTPRICE: d.CURRENTPRICE ? Number(d.CURRENTPRICE) : null,
-        WHOLESALEPRICE: Number(d.WHOLESALEPRICE) || 0,
-        WHOLESALEMINQUANTITY: Number(d.WHOLESALEMINQUANTITY) || 0,
-        PACKQTY: Number(d.PACKQTY) || 0,
+        PRICE: Math.round(Number(d.PRICE)) || 0, STOCK: Math.round(Number(d.STOCK)) || 0,
+        COST: Math.round(Number(d.COST)) || 0,
+        CURRENTPRICE: d.CURRENTPRICE ? Math.round(Number(d.CURRENTPRICE)) : null,
+        WHOLESALEPRICE: Math.round(Number(d.WHOLESALEPRICE)) || 0,
+        WHOLESALEMINQUANTITY: Math.round(Number(d.WHOLESALEMINQUANTITY)) || 0,
+        PACKQTY: Math.round(Number(d.PACKQTY)) || 0,
         IMAGEURL: d.IMAGEURL || '', IMAGEURL2: d.IMAGEURL2 || '',
         IMAGEURL3: d.IMAGEURL3 || '',
         CATEGORYID: d.CATEGORYID || '',

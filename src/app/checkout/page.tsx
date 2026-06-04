@@ -311,7 +311,8 @@ function CheckoutInner() {
       const eligibleSubtotal = items.reduce((acc, i) => {
         const isOfferActive = i.timedOfferPrice && i.timedOfferExpiresAt && now < i.timedOfferExpiresAt;
         if (isOfferActive) return acc;
-        const itemPrice = i.wholesalePrice || resolveProductDisplayPrice(i.product, apertura).displayPrice;
+        const effectiveWholesale = (i.product.WHOLESALEPRICE && i.product.WHOLESALEMINQUANTITY && i.quantity >= i.product.WHOLESALEMINQUANTITY) ? i.product.WHOLESALEPRICE : i.wholesalePrice;
+        const itemPrice = effectiveWholesale || resolveProductDisplayPrice(i.product, apertura).displayPrice;
         return acc + itemPrice * i.quantity;
       }, 0);
 
@@ -377,7 +378,8 @@ function CheckoutInner() {
       const expiresAt = now + 3 * 60 * 60 * 1000;
       const itemsData = items.map(i => {
         const hasActiveOffer = i.timedOfferPrice && i.timedOfferExpiresAt && now < i.timedOfferExpiresAt;
-        const price = hasActiveOffer ? i.timedOfferPrice! : (i.wholesalePrice || resolveProductDisplayPrice(i.product, apertura).displayPrice);
+        const effectiveWholesale = (i.product.WHOLESALEPRICE && i.product.WHOLESALEMINQUANTITY && i.quantity >= i.product.WHOLESALEMINQUANTITY) ? i.product.WHOLESALEPRICE : i.wholesalePrice;
+        const price = hasActiveOffer ? i.timedOfferPrice! : (effectiveWholesale || resolveProductDisplayPrice(i.product, apertura).displayPrice);
         const originalPrice = i.product.PRICE !== price ? i.product.PRICE : null;
         return { id: i.product.$id, name: i.product.NAME, price, originalPrice, qty: i.quantity, img: resolveStorageImageUrl(i.product.IMAGEURL), total: price * i.quantity };
       });
