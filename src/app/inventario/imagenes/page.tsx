@@ -141,7 +141,29 @@ export default function InventarioImagenesPage() {
         return { ...row, status: 'not_found' } as ImageRow;
       });
 
-      setRows(matched);
+      // Verify if images are broken for "already_has_image"
+      const checkImageValid = (url: string): Promise<boolean> => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          img.src = url;
+        });
+      };
+
+      const finalMatched = await Promise.all(
+        matched.map(async (row) => {
+          if (row.status === 'already_has_image' && row.currentImage) {
+            const isValid = await checkImageValid(row.currentImage);
+            if (!isValid) {
+              return { ...row, status: 'found' };
+            }
+          }
+          return row;
+        })
+      );
+
+      setRows(finalMatched);
     } catch (err: any) {
       alert('Error al leer archivo: ' + (err.message || err));
     } finally {
