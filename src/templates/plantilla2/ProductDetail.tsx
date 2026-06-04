@@ -233,6 +233,11 @@ export default function ProductDetailPlantilla2({ previewProductId }: { previewP
     setTimeout(() => setAdded(false), 2500);
   }
 
+  function handleBuyNow() {
+    addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty && isWholesaleUser ? product?.WHOLESALEPRICE : undefined);
+    router.push('/carrito');
+  }
+
   return (
     <div style={{ background: '#ebebeb', minHeight: '100vh' }}>
 
@@ -537,7 +542,7 @@ export default function ProductDetailPlantilla2({ previewProductId }: { previewP
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 400 }}>
                   <StockIndicator stock={product.STOCK} soldQuantity={product.SOLDQUANTITY} />
-                  <button onClick={handleAdd} className="p2-buy-btn" style={{ padding: '15px 24px', background: '#3483fa', color: '#fff', border: 'none', borderRadius: 6, fontSize: 16, fontWeight: 600, cursor: 'pointer', transition: 'background .15s', position: 'relative', overflow: 'hidden' }}
+                  <button onClick={handleBuyNow} className="p2-buy-btn" style={{ padding: '15px 24px', background: '#3483fa', color: '#fff', border: 'none', borderRadius: 6, fontSize: 16, fontWeight: 600, cursor: 'pointer', transition: 'background .15s', position: 'relative', overflow: 'hidden' }}
                     onMouseEnter={e => (e.currentTarget.style.background = '#2968c8')}
                     onMouseLeave={e => (e.currentTarget.style.background = '#3483fa')}
                   >

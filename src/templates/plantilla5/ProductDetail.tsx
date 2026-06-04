@@ -354,7 +354,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         e.stopPropagation();
         const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
         addItem(targetProduct, qty);
-        router.push('/cart');
+        router.push('/carrito');
       });
     }
 
@@ -728,7 +728,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
               : product;
             addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined);
             
-            router.push('/cart');
+            router.push('/carrito');
           });
         }
     }

@@ -347,7 +347,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           </div>
           <button type="button" onClick={() => {
             addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty && isWholesaleUser ? product?.WHOLESALEPRICE : undefined);
-            router.push('/cart');
+            router.push('/carrito');
           }} style={{ width: '100%', padding: '12px 18px', background: '#f9fafb', color: ORANGE_PRIMARY, border: `1.5px solid ${PINK_LIGHT}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
             Comprar ahora
           </button>
@@ -822,7 +822,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             </button>
             <button type="button" className="pd-mbar-cart" onClick={() => {
               addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty && isWholesaleUser ? product?.WHOLESALEPRICE : undefined);
-              router.push('/cart');
+              router.push('/carrito');
             }}>Comprar</button>
           </div>
         </div>
