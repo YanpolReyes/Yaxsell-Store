@@ -185,6 +185,14 @@ export default function HomePage23() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   /* ── Fetch categories, subcategories & products from Appwrite ── */
   useEffect(() => {
@@ -387,22 +395,13 @@ export default function HomePage23() {
         border-color: transparent !important;
         pointer-events: none !important;
       }
-      .custom-button:not(.is-loaded) {
-        background-color: #000000 !important; /* Black skeleton loader! */
-        background-image: none !important;
-        position: relative !important;
-        overflow: hidden !important;
-        color: transparent !important;
-        border-color: transparent !important;
-        pointer-events: none !important;
-      }
+
 
       /* Disable white logo filter brightness/invert during loading so the pink skeleton shows beautifully */
       .header img.logo:not(.is-loaded) {
         filter: none !important;
       }
-      .header img.logo:not(.is-loaded)::after,
-      .custom-button:not(.is-loaded)::after {
+      .header img.logo:not(.is-loaded)::after {
         content: "" !important;
         position: absolute !important;
         top: 0 !important; right: 0 !important; bottom: 0 !important; left: 0 !important;
@@ -413,8 +412,7 @@ export default function HomePage23() {
       }
 
       /* Smooth reveal when loaded */
-      .header img.logo.is-loaded,
-      .custom-button.is-loaded {
+      .header img.logo.is-loaded {
         animation: premiumReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
       }
 
@@ -1261,10 +1259,8 @@ export default function HomePage23() {
                   style="text-decoration:none !important;width:25% !important;min-width:0 !important;display:flex !important;flex-direction:column !important;box-sizing:border-box !important;padding:0 8px !important"
                   data-type="standard"
               >
-                  <span class="w-full aspect-square shrink-0 overflow-hidden rounded-[20px]" style="width:100% !important;aspect-ratio:1/1 !important;display:block !important">
-                      <hover-zoom-image class="w-full h-full" style="width:100% !important;height:100% !important;display:block !important">
-                          <img src="${pImg}" alt="${pName}" loading="lazy" sizes="100vw" class="object-cover pointer-events-none transition-transform duration-500 group-hover/image:scale-110" style="width:100% !important;height:100% !important;max-width:none !important;max-height:none !important;object-fit:cover !important">
-                      </hover-zoom-image>
+                  <span class="w-full aspect-square shrink-0 overflow-hidden rounded-[20px] bg-white flex items-center justify-center p-4" style="width:100% !important;aspect-ratio:1/1 !important;display:flex !important">
+                      <img src="${pImg}" alt="${pName}" loading="lazy" class="pointer-events-none transition-transform duration-500 group-hover/image:scale-105" style="width:100% !important;height:100% !important;object-fit:contain !important; max-width:100% !important; max-height:100% !important;">
                   </span>
                   <div class="menu__heading-content w-full mt-2">
                       <h6 class="menu__heading-title" style="font-size:0.85em;line-height:1.2;font-weight:500;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;height:2.4em">
@@ -1486,6 +1482,191 @@ export default function HomePage23() {
           swiperWrapper.appendChild(slide);
         });
       }
+    }
+
+    // ── Inject dynamic products into Featured Collections tabs ──
+    if (products.length > 0) {
+      const formatCLP = (val: number) => '$' + Math.round(val).toLocaleString('es-CL');
+
+      const createCardHtml = (product: Product) => {
+        const pLink = `/productos/${product.$id}`;
+        const pImg = product.IMAGEURL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';
+        const pName = product.NAME || 'Producto';
+        const catObj = categories.find(c => c.$id === product.CATEGORYID);
+        const categoryName = catObj ? catObj.name : '';
+
+        const originalPrice = product.PRICE;
+        const currentPrice = product.CURRENTPRICE && product.CURRENTPRICE > 0 ? product.CURRENTPRICE : originalPrice;
+        const hasDiscount = currentPrice < originalPrice;
+
+        let priceHtml = '';
+        if (hasDiscount) {
+          priceHtml = `
+            <div class="price__sale flex w-max flex-wrap gap-[5px] items-center">
+              <div class="price-item price-item--sale">${formatCLP(currentPrice)}</div>
+              <span class="price-item price-item--compare line-through opacity-50">${formatCLP(originalPrice)}</span>
+            </div>
+          `;
+        } else {
+          priceHtml = `
+            <div class="price__regular">
+              <span class="price-item">${formatCLP(originalPrice)}</span>
+            </div>
+          `;
+        }
+
+        return `
+          <product-card class="product-card relative h-full mx-0 my-0 block bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow" data-lifting-effect="true">
+            <div class="product-card__image group group-product-card relative overflow-hidden hover-zoom-image-wrapper rounded-t-xl" data-ratio="portrait">
+              <a href="${pLink}" title="${pName}" aria-label="${pName}" class="hover-only block" tabindex="-1">
+                <div class="product-card__image-wrapper absolute inset-0 bg-white flex items-center justify-center p-4">
+                  <img src="${pImg}" alt="${pName}" loading="lazy" class="w-full h-full object-contain pointer-events-none transition-transform duration-500 group-hover-product-card:scale-105" style="object-fit: contain !important; max-width: 100%; max-height: 100%;">
+                </div>
+                <div class="overlay top-0 absolute left-0 w-full h-full z-11"></div>
+              </a>
+              
+              <div class="button-cart max-w-[95%] min-w-[45px] p-5 rounded-[100%] w-[45px] h-[45px] duration-300 ease-in-out cursor-pointer hover:py-0 hover:rounded-[0%] hover:w-auto button-cart--size z-20 absolute bottom-5 lg:bottom-10 left-0 right-0 mx-auto button--primary flex items-center justify-center inner-group"
+                   role="button"
+                   tabindex="0"
+                   aria-label="Ver detalles de ${pName}"
+                   onclick="window.location.href='${pLink}'"
+              >
+                <span class="button-cart__text min-w-[20px] min-h-[20px] [.inner-group:hover_&]:hidden [.inner-group:focus-within_&]:hidden flex items-center justify-center w-full h-full cursor-pointer">
+                  <svg aria-hidden="true" width="20px" height="20px" class="w-[20px]" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M30.622 9.602h-22.407l-1.809-7.464h-5.027v1.066h4.188l5.198 21.443c-1.108 0.323-1.923 1.334-1.923 2.547 0 1.472 1.193 2.666 2.666 2.666s2.666-1.194 2.666-2.666c0-0.603-0.208-1.153-0.545-1.599h7.487c-0.337 0.446-0.545 0.997-0.545 1.599 0 1.472 1.193 2.666 2.665 2.666s2.666-1.194 2.666-2.666c0-1.473-1.193-2.665-2.666-2.666v0h-11.403l-0.517-2.133h14.968l4.337-12.795zM13.107 27.196c0 0.882-0.717 1.599-1.599 1.599s-1.599-0.717-1.599-1.599c0-0.882 0.717-1.599 1.599-1.599s1.599 0.718 1.599 1.599zM24.836 27.196c0 0.882-0.718 1.599-1.6 1.599s-1.599-0.717-1.599-1.599c0-0.882 0.717-1.599 1.599-1.599 0.882 0 1.6 0.718 1.6 1.599zM11.058 21.331l-2.585-10.662h20.662l-3.615 10.662h-14.462z" fill="currentColor"></path>
+                  </svg>
+                </span>
+                <span class="button-cart-hover-text hidden [.inner-group:hover_&]:inline [.inner-group:focus-within_&]:inline text-xs font-bold uppercase tracking-wider text-white">Ver Detalles</span>
+              </div>
+            </div>
+            
+            <div class="product-card__content p-5 z-10 relative">
+              <div>
+                <small class="type opacity-40"><span>${categoryName}</span></small>
+              </div>
+              <a href="${pLink}" aria-label="${pName}" title="${pName}" class="link">
+                <h3 class="heading pt-2 pb-3 h5"><span class="link-hover-animation">${pName}</span></h3>
+              </a>
+              <div class="price flex gap-[5px] flex-wrap">
+                ${priceHtml}
+              </div>
+            </div>
+          </product-card>
+        `;
+      };
+
+      // 1. Populate Tab 1: Lo Último Añadido
+      const tab1Products = [...products]
+        .sort((a: any, b: any) => {
+          const dateA = a.DATE_ADDED ? new Date(a.DATE_ADDED).getTime() : (a.$createdAt ? new Date(a.$createdAt).getTime() : 0);
+          const dateB = b.DATE_ADDED ? new Date(b.DATE_ADDED).getTime() : (b.$createdAt ? new Date(b.$createdAt).getTime() : 0);
+          return dateB - dateA;
+        })
+        .slice(0, 4);
+
+      const section1 = root.querySelector('.featured-collection__products[data-index="1"]');
+      if (section1 && tab1Products.length > 0) {
+        const firstWrapper = section1.querySelector('.featured-collection__first-product-wrapper');
+        const swiperWrapper = section1.querySelector('.featured-collection__product-by-collection .swiper-wrapper');
+        
+        if (firstWrapper) {
+          firstWrapper.innerHTML = createCardHtml(tab1Products[0]);
+        }
+        
+        if (swiperWrapper) {
+          swiperWrapper.innerHTML = '';
+          const sliderProducts = tab1Products.slice(1, 4);
+          sliderProducts.forEach((prod, idx) => {
+            const slide = document.createElement('div');
+            slide.className = `swiper-slide h-auto w-full items-center flex animation-element fade-in animation-delay-${(idx + 2) * 100} py-3`;
+            slide.innerHTML = createCardHtml(prod);
+            swiperWrapper.appendChild(slide);
+          });
+        }
+
+        const swiperEl1 = section1.querySelector('.featured-collection__product-by-collection .swiper-container') as any;
+        if (swiperEl1 && swiperEl1.swiper) {
+          swiperEl1.swiper.update();
+        }
+      }
+
+      // 2. Populate Tab 2: Los Más Vendidos
+      const tab2Products = [...products]
+        .sort((a, b) => {
+          const aBest = a.TAGS?.some(t => t.toLowerCase() === 'best-seller') ? 1 : 0;
+          const bBest = b.TAGS?.some(t => t.toLowerCase() === 'best-seller') ? 1 : 0;
+          if (aBest !== bBest) return bBest - aBest;
+          return (b.SOLDQUANTITY || 0) - (a.SOLDQUANTITY || 0);
+        })
+        .slice(0, 4);
+
+      const section2 = root.querySelector('.featured-collection__products[data-index="2"]');
+      if (section2 && tab2Products.length > 0) {
+        const firstWrapper = section2.querySelector('.featured-collection__first-product-wrapper');
+        const swiperWrapper = section2.querySelector('.featured-collection__product-by-collection .swiper-wrapper');
+        
+        if (firstWrapper) {
+          firstWrapper.innerHTML = createCardHtml(tab2Products[0]);
+        }
+        
+        if (swiperWrapper) {
+          swiperWrapper.innerHTML = '';
+          const sliderProducts = tab2Products.slice(1, 4);
+          sliderProducts.forEach((prod, idx) => {
+            const slide = document.createElement('div');
+            slide.className = `swiper-slide h-auto w-full items-center flex animation-element fade-in animation-delay-${(idx + 2) * 100} py-3`;
+            slide.innerHTML = createCardHtml(prod);
+            swiperWrapper.appendChild(slide);
+          });
+        }
+
+        const swiperEl2 = section2.querySelector('.featured-collection__product-by-collection .swiper-container') as any;
+        if (swiperEl2 && swiperEl2.swiper) {
+          swiperEl2.swiper.update();
+        }
+      }
+
+      // 3. Populate ALL .product-columns-block and product-columns .swiper-container with random in-stock products
+      const columnBlocks = root.querySelectorAll('.product-columns-block .swiper-container, product-columns .swiper-container');
+      columnBlocks.forEach((swiperContainer: any) => {
+        const wrapper = swiperContainer.querySelector('.swiper-wrapper');
+        if (wrapper) {
+          const availableProducts = products.filter(p => p.STOCK && p.STOCK > 0);
+          const shuffled = availableProducts.sort(() => 0.5 - Math.random());
+          
+          const itemsTotalStr = swiperContainer.getAttribute('data-items-total');
+          const itemsNeeded = itemsTotalStr ? parseInt(itemsTotalStr, 10) : 8;
+          
+          const selected = shuffled.slice(0, itemsNeeded);
+          
+          wrapper.innerHTML = '';
+          selected.forEach((prod) => {
+            const slide = document.createElement('div');
+            slide.className = 'swiper-slide product-card-wrapper w-full py-3';
+            slide.innerHTML = createCardHtml(prod);
+            wrapper.appendChild(slide);
+          });
+
+          if (swiperContainer.swiper) {
+            swiperContainer.swiper.update();
+          }
+        }
+      });
+
+      // Intersection Observer for Hero Scroll Videos
+      const scrollVideos = root.querySelectorAll('.hero-scroll-video');
+      const videoObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const video = entry.target as HTMLVideoElement;
+          if (entry.isIntersecting) {
+            video.currentTime = 0;
+            video.play().catch(e => console.log('Video auto-play prevented:', e));
+          } else {
+            video.pause();
+          }
+        });
+      }, { threshold: 0.1 });
+      scrollVideos.forEach(v => videoObserver.observe(v));
     }
 
     root.dataset.navInjected = '1';
@@ -1795,7 +1976,43 @@ export default function HomePage23() {
         .tpl23-shopify-root .scroll-area::-webkit-scrollbar {
           display: none !important;
         }
+
+        /* --- SPLASH SCREEN --- */
+        .splash-screen {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background-color: #FBCAC9;
+          z-index: 9999999;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          transition: opacity 0.8s ease-in-out, visibility 0.8s ease-in-out;
+        }
+        .splash-screen.hidden {
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+        }
+        @keyframes pulseLogo {
+          0% { transform: scale(1); opacity: 0.9; }
+          50% { transform: scale(1.08); opacity: 1; }
+          100% { transform: scale(1); opacity: 0.9; }
+        }
+        .splash-logo {
+          width: 250px;
+          max-width: 80%;
+          animation: pulseLogo 2s infinite ease-in-out;
+          filter: drop-shadow(0 4px 15px rgba(255,255,255,0.4));
+        }
       `}</style>
+
+      <div className={`splash-screen ${!showSplash ? 'hidden' : ''}`}>
+        <img src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/1779087644982-pegada-1779087644061.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=PPeyi%2BvN0%2B62TLw7qyFMesh00OphZaWOazNAsjn90cANf5ob9tPgJu1KOv8ICB%2FwEfnyhPGFRdqyk%2FUY7ZyuNnWuQLDi9cFL3ntbzNVJkYHj0HEibiG%2FpQ7yUDelDFO8onHfWEZtrRSWbiEx%2FN9eTwvtLrSNoBbKnunkQrS98HqLEn%2BtZPaG4O8l%2Frf%2BR61G6Cd3y0k9gtTHoas2CDDR91hQQZ32eInhg6mMwUraWyKuTX%2FcbeQZnxcNWJrLAEwY0Lyyv6SalTqU4gtZB%2FP83u4Vvo%2FBagcexcn5T6H910iFP4QEiDX%2BiFK9iLZtbZh0l2%2FmT4opjJqhPCjuQKcxXg%3D%3D" alt="Cargando Kevin & Coco..." className="splash-logo" />
+      </div>
+
       <div
         ref={containerRef}
         className="tpl23-shopify-root template-index"

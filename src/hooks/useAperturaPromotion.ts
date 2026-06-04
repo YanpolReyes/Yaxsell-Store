@@ -57,7 +57,7 @@ export function invalidateAperturaCache() {
   pendingPromise = null;
 }
 
-/** Promoción global solo aplica precios visuales si el usuario ya reclamó el regalo en /cuenta/regalos */
+/** Promoción global aplica precios visuales a toda la tienda si está activa en el admin */
 export function useAperturaPromotion() {
   const { isLoggedIn } = useAuth();
   const [settings, setSettings] = useState<AperturaSettings | null>(cachedSettings);
@@ -90,7 +90,7 @@ export function useAperturaPromotion() {
     };
   }, [isLoggedIn]);
 
-  const canShowDiscount = Boolean(settings?.isActive && hasClaimedGift);
+  const canShowDiscount = Boolean(settings?.isActive);
   const effectiveSettings: AperturaSettings | null = canShowDiscount ? settings : null;
 
   return {

@@ -84,40 +84,8 @@ export default function WelcomeGiftSuccess({ percent, couponCode, onCopy, copied
         transition={{ delay: 0.28 }}
         style={{ margin: '0 0 20px', fontSize: 14, color: '#9d174d', lineHeight: 1.5, maxWidth: 320, marginLeft: 'auto', marginRight: 'auto' }}
       >
-        Los precios con descuento ya están visibles en el catálogo. El cupón se aplicará automáticamente al pagar.
+        Los precios con descuento ya están visibles en toda la tienda. Todo se aplicará automáticamente al comprar.
       </motion.p>
-
-      {couponCode && onCopy && (
-        <motion.button
-          type="button"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.35 }}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={onCopy}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '12px 20px',
-            borderRadius: 14,
-            border: '2px dashed #f5a8cf',
-            background: '#fff',
-            fontFamily: 'ui-monospace, monospace',
-            fontSize: 16,
-            fontWeight: 800,
-            color: '#c0547a',
-            cursor: 'pointer',
-            marginBottom: 18,
-          }}
-        >
-          {couponCode}
-          <span style={{ fontSize: 11, fontWeight: 700, color: copied ? '#059669' : '#9ca3af' }}>
-            {copied ? 'Copiado ✓' : 'Copiar'}
-          </span>
-        </motion.button>
-      )}
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}

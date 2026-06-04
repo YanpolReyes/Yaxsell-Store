@@ -47,6 +47,8 @@ function simpleHash(str: string): string {
  * Registra una visita única por IP por día en la página actual.
  * Solo trackea páginas del frontend (ignora /admin, /api, etc.)
  */
+const trackedPages = new Set<string>();
+
 export function usePageViewTracker() {
   const { user } = useAuth();
   useEffect(() => {
@@ -54,9 +56,14 @@ export function usePageViewTracker() {
       const page = window.location.pathname || '/';
       if (!shouldTrack(page)) return;
 
-      // Prevent Appwrite spam: check if we already tracked this page in this session
+      // Synchronous checks to prevent race conditions
       const sessionKey = `tracked_page_${page}`;
+      if (trackedPages.has(sessionKey)) return;
       if (sessionStorage.getItem(sessionKey)) return;
+
+      // Lock synchronously BEFORE any async calls
+      trackedPages.add(sessionKey);
+      sessionStorage.setItem(sessionKey, '1');
 
       try {
         const { databases } = getServices();
@@ -66,9 +73,6 @@ export function usePageViewTracker() {
         // Obtener geo info
         const geo = await getGeoInfo();
         const ipHash = simpleHash(geo.ip + date);
-        
-        // Mark as tracked in sessionStorage to avoid spamming the DB on re-renders
-        sessionStorage.setItem(sessionKey, '1');
 
         // Nombre del usuario si está logueado
         const userName = user?.name || '';
@@ -111,6 +115,7 @@ export function usePageViewTracker() {
         ]);
       } catch (e: any) {
         console.warn('[page-view-tracker] Warning (handled gracefully):', e?.message || e);
+        // Optionally remove lock if failed to allow retry, but better to prevent spam.
       }
     };
 
@@ -155,23 +160,33 @@ export async function getPageViewStats(days = 30): Promise<PageViewStatsResult> 
   do {
     const queries: any[] = [
       Query.limit(100), 
-      Query.greaterThanEqual('DATE', sinceStr)
+      Query.greaterThanEqual('DATE', sinceStr),
+      Query.orderDesc('$createdAt') // Start with newest first
     ];
     if (cursor) queries.push(Query.cursorAfter(cursor));
-    const res = await databases.listDocuments(databaseId, PAGE_VIEWS_COLLECTION, queries);
-    const docs = res.documents.map(d => ({
-      PAGE: (d as any).PAGE || '/',
-      DATE: (d as any).DATE || '',
-      VIEWS: (d as any).VIEWS || 0,
-      COMUNA: (d as any).COMUNA || '',
-      REGION: (d as any).REGION || '',
-      LAT: (d as any).LAT || 0,
-      LNG: (d as any).LNG || 0,
-      USER_NAME: (d as any).USER_NAME || '',
-    }));
-    all.push(...docs);
-    cursor = res.documents.length > 0 ? res.documents[res.documents.length - 1].$id : undefined;
-    if (res.documents.length < 100) break;
+    
+    try {
+      const res = await databases.listDocuments(databaseId, PAGE_VIEWS_COLLECTION, queries);
+      const docs = res.documents.map(d => ({
+        PAGE: (d as any).PAGE || '/',
+        DATE: (d as any).DATE || '',
+        VIEWS: (d as any).VIEWS || 0,
+        COMUNA: (d as any).COMUNA || '',
+        REGION: (d as any).REGION || '',
+        LAT: (d as any).LAT || 0,
+        LNG: (d as any).LNG || 0,
+        USER_NAME: (d as any).USER_NAME || '',
+      }));
+      all.push(...docs);
+      cursor = res.documents.length > 0 ? res.documents[res.documents.length - 1].$id : undefined;
+      
+      // Stop condition: max 100 results per request, and STOP at 3000 max documents (30 requests)
+      // to prevent extreme API spam and 504 errors.
+      if (res.documents.length < 100 || all.length >= 3000) break;
+    } catch (e) {
+      console.error("Error fetching stats page:", e);
+      break;
+    }
   } while (cursor);
 
   // Filtrar por fecha y solo frontend
