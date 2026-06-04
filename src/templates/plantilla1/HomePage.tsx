@@ -1004,6 +1004,7 @@ export default function HomePage1() {
 
           const loadCache = async () => {
             try {
+              const [prodRes, catRes, subRes] = await Promise.all([
                 fetch('/api/public-data/products').then(r => r.json()).then(d => ({ documents: d.products || [] })),
                 fetch('/api/public-data/catalog').then(r => r.json()).then(d => ({ documents: d.categories || [] })),
                 Promise.resolve({ documents: [] }), // Deshabilitado para ahorrar requests
@@ -1012,7 +1013,7 @@ export default function HomePage1() {
               allCategories = catRes.documents;
               allSubcategories = subRes.documents;
               // Compute max price
-              const maxP = Math.max(...allProducts.map(p => (p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE) || 0));
+              const maxP = Math.max(...allProducts.map((p: any) => (p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE) || 0));
               priceMaxLimit = Math.ceil(maxP / 1000) * 1000 || 100000;
               priceMax = priceMaxLimit;
               renderCategories();
@@ -1374,10 +1375,10 @@ export default function HomePage1() {
                       { duration: 400, easing: 'cubic-bezier(0.34,1.56,0.64,1)' }
                     );
                   } else if (action === 'quick') {
-                    const prod = allProducts.find(p => p.$id === prodId);
+                    const prod = allProducts.find((p: any) => p.$id === prodId);
                     if (prod) openImageLightbox(prod.IMAGEURL, prod.NAME);
                   } else if (action === 'cart') {
-                    const prod = allProducts.find(p => p.$id === prodId);
+                    const prod = allProducts.find((p: any) => p.$id === prodId);
                     if (prod) {
                       try { addItem(prod as Product, 1); } catch (err) { console.warn('addItem failed', err); }
                       const orig = b.innerHTML;
@@ -1507,10 +1508,10 @@ export default function HomePage1() {
                 { duration: 400, easing: 'cubic-bezier(0.34,1.56,0.64,1)' }
               );
             } else if (action === 'quick') {
-              const prod = allProducts.find(p => p.$id === prodId);
+              const prod = allProducts.find((p: any) => p.$id === prodId);
               if (prod) openImageLightbox(prod.IMAGEURL, prod.NAME);
             } else if (action === 'cart') {
-              const prod = allProducts.find(p => p.$id === prodId);
+              const prod = allProducts.find((p: any) => p.$id === prodId);
               if (prod) {
                 try { addItem(prod as Product, 1); } catch (err) { console.warn('addItem failed', err); }
                 const orig = btn.innerHTML;
@@ -2687,6 +2688,7 @@ export default function HomePage1() {
 
     (async () => {
       try {
+        const count = settings.productWidgetProductCount || 10;
         const res = await fetch('/api/public-data/products').then(r => r.json());
         const filtered = (res.products || []).filter((p: any) => {
           if (p.STOCK <= 0) return false;
@@ -3529,9 +3531,11 @@ export default function HomePage1() {
         const panelsRes = await fetch('/api/public-data/hotspots').then(r => r.json());
         const allPanels = (panelsRes.panels || []).filter((p: any) => p.MOSAICGROUP === 'plantilla1');
         if (!alive || allPanels.length === 0) return;
-        const panelIds = allPanels.map(p => p.$id);
+        const panelIds = allPanels.map((p: any) => p.$id);
 
         // 3) Fetch ALL hotspots for these panels
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
         const hotspotsRes = await databases.listDocuments(databaseId, BANNER_OVERLAY_POSITIONS_COLLECTION, [
           Query.equal('BANNERID', panelIds),
           Query.equal('ISACTIVE', true),
@@ -3542,7 +3546,7 @@ export default function HomePage1() {
         const allHotspots = hotspotsRes.documents as any[];
 
         // 4) Fetch ALL products for these hotspots
-        const productIds = Array.from(new Set(allHotspots.map(h => h.PRODUCTID).filter(Boolean))) as string[];
+        const productIds = Array.from(new Set(allHotspots.map((h: any) => h.PRODUCTID).filter(Boolean))) as string[];
         let allProducts: any[] = [];
         if (productIds.length > 0) {
           // Appwrite might have a limit on 'in' query size, but 100 is usually fine
@@ -3796,21 +3800,21 @@ export default function HomePage1() {
           wrapper.innerHTML = `<div class="tpl1-looks-grid"></div>`;
           const grid = wrapper.querySelector('.tpl1-looks-grid') as HTMLElement;
           
-          allPanels.forEach(panel => {
-            const panelHotspots = allHotspots.filter(h => h.BANNERID === panel.$id);
+          allPanels.forEach((panel: any) => {
+            const panelHotspots = allHotspots.filter((h: any) => h.BANNERID === panel.$id);
             const lookItem = document.createElement('div');
             lookItem.className = 'tpl1-look-item';
             lookItem.innerHTML = `<img src="${panel.IMAGEURL}" alt="${panel.TITLE || 'Look'}" />`;
             
             // Add hotspots to this look item
-            panelHotspots.forEach(h => {
+            panelHotspots.forEach((h: any) => {
               const hotspot = document.createElement('div');
               hotspot.className = 'tpl1-hotspot';
               hotspot.style.left = `${h.POSITIONX * 100}%`;
               hotspot.style.top = `${h.POSITIONY * 100}%`;
               hotspot.style.transform = 'translate(-50%, -50%)';
               
-              const product = allProducts.find(p => p.$id === h.PRODUCTID);
+              const product = allProducts.find((p: any) => p.$id === h.PRODUCTID);
               if (product) {
                 hotspot.addEventListener('click', (e) => {
                   e.stopPropagation();
@@ -3824,7 +3828,7 @@ export default function HomePage1() {
           });
         } else {
           // --- RENDER SINGLE LOOK (DEFAULT/DESKTOP) ---
-          const mainPanel = allPanels.find(p => p.CELLINDEX === 0) || allPanels[0];
+          const mainPanel = allPanels.find((p: any) => p.CELLINDEX === 0) || allPanels[0];
           if (!mainPanel) return;
 
           // Update main image
@@ -3846,15 +3850,15 @@ export default function HomePage1() {
             oldBullets.forEach(b => b.remove());
 
             // Add premium hotspots
-            const panelHotspots = allHotspots.filter(h => h.BANNERID === mainPanel.$id);
-            panelHotspots.forEach(h => {
+            const panelHotspots = allHotspots.filter((h: any) => h.BANNERID === mainPanel.$id);
+            panelHotspots.forEach((h: any) => {
               const hotspot = document.createElement('div');
               hotspot.className = 'tpl1-hotspot';
               hotspot.style.left = `${h.POSITIONX * 100}%`;
               hotspot.style.top = `${h.POSITIONY * 100}%`;
               hotspot.style.transform = 'translate(-50%, -50%)';
               
-              const product = allProducts.find(p => p.$id === h.PRODUCTID);
+              const product = allProducts.find((p: any) => p.$id === h.PRODUCTID);
               if (product) {
                 hotspot.addEventListener('click', (e) => {
                   e.stopPropagation();
@@ -3871,11 +3875,11 @@ export default function HomePage1() {
           }
 
           // Link the right content cards (existing structure)
-          const panelHotspots = allHotspots.filter(h => h.BANNERID === mainPanel.$id).slice(0, 4);
-          panelHotspots.forEach((h, i) => {
+          const panelHotspots = allHotspots.filter((h: any) => h.BANNERID === mainPanel.$id).slice(0, 4);
+          panelHotspots.forEach((h: any, i: number) => {
             const card = section.querySelector(`#item${i + 1}`) as HTMLElement | null;
             if (!card) return;
-            const prod = allProducts.find(p => p.$id === h.PRODUCTID);
+            const prod = allProducts.find((p: any) => p.$id === h.PRODUCTID);
             if (!prod) {
               card.style.display = 'none';
               return;
