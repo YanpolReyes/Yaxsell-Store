@@ -73,7 +73,7 @@ function CheckoutInner() {
   const comunas = form.region ? CHILE_REGIONES[form.region] || [] : [];
   const totalDiscount = discountParam + couponDiscount;
   const total = Math.max(0, subtotal - totalDiscount);
-  const belowMinimum = isBelowMinimumOrder(subtotal);
+  const belowMinimum = isBelowMinimumOrder(total);
 
   useEffect(() => {
     if (items.length === 0 && !submittedRef.current) router.push('/carrito');
@@ -365,7 +365,7 @@ function CheckoutInner() {
     if (!form.region || !form.comuna) { setError('Selecciona región y comuna'); return; }
     if (!form.name || !form.rut || !form.phone) { setError('Completa todos los campos obligatorios'); return; }
     if (belowMinimum) {
-      setError(minimumOrderMessage(subtotal, total));
+      setError(minimumOrderMessage(total));
       return;
     }
     setSubmitting(true); setError('');
