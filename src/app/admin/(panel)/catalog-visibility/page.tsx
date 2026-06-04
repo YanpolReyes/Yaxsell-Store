@@ -70,6 +70,8 @@ export default function CatalogVisibilityPage() {
   const PRODUCT_PAGE_SIZE = 50;
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [imageUrlModal, setImageUrlModal] = useState<{ productId: string; currentUrl: string; newUrl: string; source: string } | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
 
   const [allProducts, setAllProducts] = useState<any[]>([]);
 
@@ -617,6 +619,64 @@ export default function CatalogVisibilityPage() {
               {f === 'all' ? 'Todos' : f === 'visible' ? 'Visibles' : f === 'hidden' ? 'Ocultos' : f === 'no-image' ? 'Sin Imagen' : 'Imagen Rota'}
             </button>
           ))}
+          {activeFilter === 'broken-image' && (
+            <button
+              onClick={async () => {
+                if (isScanning) return;
+                setIsScanning(true);
+                const toCheck = allProducts.filter(p => {
+                  const url = p.IMAGEURL ? p.IMAGEURL.trim().toLowerCase() : '';
+                  if (!url || url === 'null' || url === 'undefined') return false;
+                  return !brokenImages.has(p.$id);
+                });
+                
+                if (toCheck.length === 0) {
+                  setIsScanning(false);
+                  alert('No hay más imágenes para escanear.');
+                  return;
+                }
+
+                let checked = 0;
+                let newBroken = 0;
+                const batchSize = 40; // Escanear de a 40 para no saturar
+
+                for (let i = 0; i < toCheck.length; i += batchSize) {
+                  const batch = toCheck.slice(i, i + batchSize);
+                  await Promise.all(batch.map(p => new Promise<void>(resolve => {
+                    const img = new window.Image();
+                    img.onload = () => resolve();
+                    img.onerror = () => {
+                      setBrokenImages(prev => {
+                        const next = new Set(prev);
+                        next.add(p.$id);
+                        return next;
+                      });
+                      newBroken++;
+                      resolve();
+                    };
+                    img.src = p.IMAGEURL;
+                  })));
+                  checked += batch.length;
+                  setScanProgress(Math.round((checked / toCheck.length) * 100));
+                  // Small delay to let UI breathe
+                  await new Promise(r => setTimeout(r, 50));
+                }
+                
+                setIsScanning(false);
+                setScanProgress(0);
+                alert(`Escaneo de catálogo completo finalizado.\nSe encontraron ${newBroken} imágenes rotas adicionales.`);
+              }}
+              style={{
+                padding: '6px 14px', borderRadius: 8, border: '1px solid #e5e7eb',
+                background: '#fff', color: '#6b7280', fontSize: 12, fontWeight: 700,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all .15s'
+              }}
+              title="Escanea todas las imágenes del catálogo en segundo plano para encontrar cuáles están rotas"
+            >
+              {isScanning ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Search size={14} />}
+              {isScanning ? `Escaneando... ${scanProgress}%` : 'Escanear catálogo completo'}
+            </button>
+          )}
           <button
             onClick={() => {
               const noImageSkus = allProducts
