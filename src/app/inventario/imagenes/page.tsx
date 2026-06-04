@@ -156,7 +156,7 @@ export default function InventarioImagenesPage() {
           if (row.status === 'already_has_image' && row.currentImage) {
             const isValid = await checkImageValid(row.currentImage);
             if (!isValid) {
-              return { ...row, status: 'found' };
+              return { ...row, status: 'found' as const };
             }
           }
           return row;
