@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { Eye, AlertTriangle, CheckCircle, Search, RefreshCw, Package, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Eye, AlertTriangle, CheckCircle, Search, RefreshCw, Package, EyeOff, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
 
 interface Report {
   totalPasted: number;
@@ -616,6 +616,31 @@ export default function CatalogVisibilityPage() {
               {f === 'all' ? 'Todos' : f === 'visible' ? 'Visibles' : f === 'hidden' ? 'Ocultos' : f === 'no-image' ? 'Sin Imagen' : 'Imagen Rota'}
             </button>
           ))}
+          <button
+            onClick={() => {
+              const noImageSkus = allProducts
+                .filter(p => !p.IMAGEURL || p.IMAGEURL.trim() === '' || brokenImages.has(p.$id))
+                .map(p => p.sku || p.SKU)
+                .filter(Boolean);
+              
+              if (noImageSkus.length === 0) {
+                alert('No hay productos sin imagen o con imagen rota.');
+                return;
+              }
+              
+              navigator.clipboard.writeText(noImageSkus.join('\n'))
+                .then(() => alert(`¡${noImageSkus.length} SKUs copiados al portapapeles!`))
+                .catch(err => alert('Error al copiar: ' + err));
+            }}
+            style={{
+              padding: '6px 14px', borderRadius: 8, border: '1px solid #e5e7eb',
+              background: '#fff', color: '#6b7280', fontSize: 12, fontWeight: 700,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all .15s'
+            }}
+            title="Copiar todos los SKUs de productos sin imagen o con imagen rota"
+          >
+            <Copy size={14} /> Copiar SKUs sin Imagen
+          </button>
           <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 600 }}>{totalProducts} productos</span>
         </div>
 
