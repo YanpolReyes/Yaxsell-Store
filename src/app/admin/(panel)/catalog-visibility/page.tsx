@@ -71,20 +71,17 @@ export default function CatalogVisibilityPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [imageUrlModal, setImageUrlModal] = useState<{ productId: string; currentUrl: string; newUrl: string; source: string } | null>(null);
 
-  const loadProducts = useCallback(async () => {
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+
+  const fetchProducts = useCallback(async () => {
     setIsLoadingProducts(true);
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       const all: any[] = [];
-
-      // Only load from catalog_products (a pedido / sin stock)
       let offset = 0;
       while (true) {
         const queries: any[] = [Query.limit(500), Query.offset(offset)];
-        if (activeFilter === 'visible') queries.push(Query.equal('ISACTIVE', true));
-        if (activeFilter === 'hidden') queries.push(Query.equal('ISACTIVE', false));
-        if (productSearch) queries.push(Query.contains('NAME', productSearch));
         try {
           const res = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, queries);
           all.push(...res.documents.map((d: any) => ({ ...d, _source: 'catalog_products', ISACTIVE: d.ISACTIVE ?? true })));
@@ -92,36 +89,49 @@ export default function CatalogVisibilityPage() {
           offset += 500;
         } catch { break; }
       }
-
-      // Apply client-side image filters
-      let filtered = all;
-      if (activeFilter === 'no-image') {
-        filtered = all.filter(p => !p.IMAGEURL || p.IMAGEURL.trim() === '');
-      } else if (activeFilter === 'broken-image') {
-        filtered = all.filter(p => p.IMAGEURL && p.IMAGEURL.trim() !== '' && brokenImages.has(p.$id));
-      }
-
-      // Sort: visible first, then by name
-      filtered.sort((a, b) => {
-        const aActive = a.ISACTIVE ? 0 : 1;
-        const bActive = b.ISACTIVE ? 0 : 1;
-        if (aActive !== bActive) return aActive - bActive;
-        return (a.NAME || '').localeCompare(b.NAME || '');
-      });
-
-      setTotalProducts(filtered.length);
-      setProducts(filtered);
-      setProductPage(0);
+      setAllProducts(all);
     } catch (e) {
       console.error('Error loading products', e);
     } finally {
       setIsLoadingProducts(false);
     }
-  }, [activeFilter, productSearch, brokenImages]);
+  }, []);
 
   useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+    fetchProducts();
+  }, [fetchProducts]);
+
+  useEffect(() => {
+    let filtered = allProducts;
+    
+    if (activeFilter === 'visible') filtered = filtered.filter(p => p.ISACTIVE);
+    else if (activeFilter === 'hidden') filtered = filtered.filter(p => !p.ISACTIVE);
+
+    if (productSearch) {
+      const s = productSearch.toLowerCase();
+      filtered = filtered.filter(p => (p.NAME || '').toLowerCase().includes(s));
+    }
+
+    if (activeFilter === 'no-image') {
+      filtered = filtered.filter(p => !p.IMAGEURL || p.IMAGEURL.trim() === '');
+    } else if (activeFilter === 'broken-image') {
+      filtered = filtered.filter(p => p.IMAGEURL && p.IMAGEURL.trim() !== '' && brokenImages.has(p.$id));
+    }
+
+    filtered.sort((a, b) => {
+      const aActive = a.ISACTIVE ? 0 : 1;
+      const bActive = b.ISACTIVE ? 0 : 1;
+      if (aActive !== bActive) return aActive - bActive;
+      return (a.NAME || '').localeCompare(b.NAME || '');
+    });
+
+    setTotalProducts(filtered.length);
+    setProducts(filtered);
+    // Only reset page if it's out of bounds to avoid resetting when new broken images are found on the same page
+    setProductPage(prev => Math.min(prev, Math.max(0, Math.ceil(filtered.length / PRODUCT_PAGE_SIZE) - 1)));
+  }, [allProducts, activeFilter, productSearch, brokenImages, PRODUCT_PAGE_SIZE]);
+
+  const loadProducts = fetchProducts; // For the refresh button
 
   const toggleVisibility = async (product: any) => {
     setTogglingId(product.$id);
