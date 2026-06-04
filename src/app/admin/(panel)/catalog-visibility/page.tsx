@@ -79,14 +79,15 @@ export default function CatalogVisibilityPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       const all: any[] = [];
-      let offset = 0;
+      let cursor: string | undefined;
       while (true) {
-        const queries: any[] = [Query.limit(500), Query.offset(offset)];
+        const queries: any[] = [Query.limit(500)];
+        if (cursor) queries.push(Query.cursorAfter(cursor));
         try {
           const res = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, queries);
           all.push(...res.documents.map((d: any) => ({ ...d, _source: 'catalog_products', ISACTIVE: d.ISACTIVE ?? true })));
           if (res.documents.length < 500) break;
-          offset += 500;
+          cursor = res.documents[res.documents.length - 1].$id;
         } catch { break; }
       }
       setAllProducts(all);
@@ -113,9 +114,9 @@ export default function CatalogVisibilityPage() {
     }
 
     if (activeFilter === 'no-image') {
-      filtered = filtered.filter(p => !p.IMAGEURL || p.IMAGEURL.trim() === '');
+      filtered = filtered.filter(p => !p.IMAGEURL || p.IMAGEURL.trim() === '' || p.IMAGEURL.trim() === 'null' || p.IMAGEURL.trim() === 'undefined');
     } else if (activeFilter === 'broken-image') {
-      filtered = filtered.filter(p => p.IMAGEURL && p.IMAGEURL.trim() !== '' && brokenImages.has(p.$id));
+      filtered = filtered.filter(p => p.IMAGEURL && p.IMAGEURL.trim() !== '' && p.IMAGEURL.trim() !== 'null' && brokenImages.has(p.$id));
     }
 
     filtered.sort((a, b) => {
@@ -619,7 +620,10 @@ export default function CatalogVisibilityPage() {
           <button
             onClick={() => {
               const noImageSkus = allProducts
-                .filter(p => !p.IMAGEURL || p.IMAGEURL.trim() === '' || brokenImages.has(p.$id))
+                .filter(p => {
+                  const url = p.IMAGEURL ? p.IMAGEURL.trim().toLowerCase() : '';
+                  return !url || url === 'null' || url === 'undefined' || brokenImages.has(p.$id);
+                })
                 .map(p => p.sku || p.SKU)
                 .filter(Boolean);
               
