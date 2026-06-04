@@ -725,7 +725,7 @@ export default function InventarioPage() {
       const allInventory: Product[] = [];
       let cursor: string | undefined;
       while (true) {
-        const queries: any[] = [Query.orderDesc('$updatedAt'), Query.limit(500)];
+        const queries: any[] = [Query.orderDesc('$createdAt'), Query.limit(500)];
         if (cursor) queries.push(Query.cursorAfter(cursor));
         const resp: any = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, queries);
         const docs = resp.documents as unknown as Product[];
