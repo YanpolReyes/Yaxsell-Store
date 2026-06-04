@@ -559,21 +559,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 48, color: '#c7d2fe' }}>📦</div>
                           )}
                           <ProductBadges product={p} style={{ position: 'absolute', top: 10, left: 10, zIndex: 2 }} />
-                          <button
-                            type="button"
-                            className="pk-card-fav"
-                            aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
-                            onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorite(p.$id); }}
-                            style={{
-                              position: 'absolute', top: 8, right: 8, zIndex: 5,
-                              width: 34, height: 34, borderRadius: '50%', border: 'none', cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              background: 'rgba(255,255,255,0.95)',
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                            }}
-                          >
-                            <AnimHeart filled={fav} size={22} />
-                          </button>
+
                           {hasDisc && (
                             <div className="pk-disc-badge" style={{ position: 'absolute', top: 8, right: 8, zIndex: 3 }}>
                               <AperturaDiscountBadge percent={disc} size="md" />
