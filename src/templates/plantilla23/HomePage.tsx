@@ -80,7 +80,6 @@ const CSS_FILES = [
 /* ── JS files: solo los críticos del tema ── */
 type JsFile = { src: string; module?: boolean };
 const JS_FILES: JsFile[] = [
-    { src: 'https://elfsightcdn.com/platform.js' },
     { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/swiper-bundle.min.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/functions.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/pubsub.js` },
@@ -422,6 +421,8 @@ export default function HomePage23() {
           object-fit: cover !important;
           width: 100% !important;
           height: 100% !important;
+          pointer-events: none !important;
+          touch-action: pan-y !important;
         }
       }
 
@@ -453,6 +454,11 @@ export default function HomePage23() {
         -webkit-user-select: none !important;
         -moz-user-select: none !important;
         -ms-user-select: none !important;
+      }
+      
+      /* FIX 9.1: Prevent tap highlighting on mobile */
+      * {
+        -webkit-tap-highlight-color: transparent !important;
       }
       /* Explicitly enable touch gestures and scrolling on Swiper containers */
       .swiper-container, .swiper-wrapper, .swiper-slide {
@@ -2632,10 +2638,11 @@ export default function HomePage23() {
       el.textContent = `(${cartItems.reduce((acc: any, curr: any) => acc + curr.quantity, 0)})`;
     });
 
-    const closeBtn = root.querySelector('cart-drawer .button-close');
-    if (closeBtn) {
+    const closeBtns = root.querySelectorAll('cart-drawer .button-close, cart-drawer .drawer__close');
+    closeBtns.forEach(closeBtn => {
       const handleCloseClick = (e: Event) => {
         e.preventDefault();
+        e.stopPropagation();
         const drawer = document.querySelector('cart-drawer');
         if (drawer) {
           drawer.setAttribute('data-hidden', 'true');
@@ -2647,7 +2654,8 @@ export default function HomePage23() {
       const newCloseBtn = closeBtn.cloneNode(true);
       closeBtn.parentNode?.replaceChild(newCloseBtn, closeBtn);
       newCloseBtn.addEventListener('click', handleCloseClick);
-    }
+      newCloseBtn.addEventListener('touchstart', handleCloseClick, {passive: true});
+    });
     // Hydrate "Otros también compraron" with compact 2-col scrollable grid
     root.querySelectorAll('.drawer__recommendation-wrapper').forEach(wrapper => {
       const gridId = 'pk-rec-grid';
@@ -2687,6 +2695,35 @@ export default function HomePage23() {
         `;
       }).join('');
     });
+
+    // Hydrate "Trending Search" with real products
+    const searchProductsList = root.querySelector('.search-drawer-initial-content .pt-10 ul.custom-list');
+    if (searchProductsList) {
+      searchProductsList.innerHTML = products.slice(0, 6).map((p: any) => {
+        const pImg = p.IMAGEURL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';
+        const pName = p.NAME || 'Producto';
+        const pLink = `/productos/${p.$id}`;
+        const currentPrice = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
+        const hasDiscount = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
+        
+        return `
+          <li class="py-3 flex leading-[1]">
+              <a href="${pLink}" title="${pName}" class="block h-[70px] w-[70px] min-h-[70px] min-w-[70px] mr-5 overflow-hidden rounded-md border border-gray-100">
+                  <img src="${pImg}" alt="${pName}" loading="lazy" class="object-cover h-full w-full" />
+              </a>
+              <div class="flex-1">
+                  <a href="${pLink}" title="${pName}" class="link" style="text-decoration:none;">
+                      <h6 class="heading pb-1 text-sm font-semibold text-gray-800 line-clamp-2">${pName}</h6>
+                  </a>
+                  <div class="price flex gap-[5px] flex-wrap mt-1">
+                      <span class="font-bold text-gray-900">$${(currentPrice||0).toLocaleString()}</span>
+                      ${hasDiscount ? `<span class="text-xs text-gray-400 line-through mt-[2px]">$${p.PRICE.toLocaleString()}</span>` : ''}
+                  </div>
+              </div>
+          </li>
+        `;
+      }).join('');
+    }
 
   }, [cartItems, cartTotal, bodyHtml, updateQuantity, removeItem, products]);
 

@@ -113,28 +113,32 @@ export default function RecentProductsSection() {
   if (products.length === 0) return null;
 
   return (
-    <section className="py-12 max-w-7xl mx-auto px-4 sm:px-6">
-      {/* Title block */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
+    <section className="py-14 max-w-7xl mx-auto px-4 sm:px-6 relative overflow-hidden">
+      {/* Background glow effects for premium look */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-pink-300/20 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+      <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-rose-300/20 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+
+      {/* Title block with glassmorphism */}
+      <div className="flex items-center justify-between mb-8 bg-white/40 backdrop-blur-md border border-white/60 p-4 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+        <div className="flex items-center gap-4">
           {/* Recording indicator dot (Live recording style) */}
-          <div className="relative flex items-center justify-center w-6 h-6">
-            <span className="animate-ping absolute inline-flex h-4 w-4 rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.8)]"></span>
+          <div className="relative flex items-center justify-center w-8 h-8 bg-red-50 rounded-full shadow-inner">
+            <span className="animate-ping absolute inline-flex h-5 w-5 rounded-full bg-red-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-600 shadow-[0_0_12px_rgba(220,38,38,0.9)]"></span>
           </div>
           <div>
-            <h2 className="text-xl md:text-2xl font-black tracking-wider text-gray-900">
-              LIVE SHOPPING
+            <h2 className="text-xl md:text-2xl font-black tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 drop-shadow-sm uppercase">
+              Live Shopping
             </h2>
-            <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">
-              Live shopping productos en vivo
+            <p className="text-[11px] md:text-xs text-pink-600 font-bold uppercase tracking-widest mt-0.5">
+              Productos en vivo • Stock Reciente
             </p>
           </div>
         </div>
       </div>
 
       {/* Responsive layout: scrollable list on mobile, grid on desktop */}
-      <div className="flex overflow-x-auto gap-4 pb-4 px-1 -mx-4 sm:mx-0 sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:overflow-visible scrollbar-hide">
+      <div className="flex overflow-x-auto gap-5 pb-8 px-2 -mx-4 sm:mx-0 sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:overflow-visible scrollbar-hide snap-x">
         {products.map(p => {
           const displayPrice = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
           const hasDiscount = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
@@ -144,61 +148,66 @@ export default function RecentProductsSection() {
           return (
             <div 
               key={p.$id} 
-              className="flex-shrink-0 w-[200px] sm:w-auto bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 group flex flex-col justify-between"
+              className="snap-start flex-shrink-0 w-[240px] sm:w-auto bg-white/70 backdrop-blur-xl rounded-[24px] overflow-hidden border border-white shadow-[0_8px_25px_rgba(0,0,0,0.05)] hover:shadow-[0_15px_35px_rgba(251,202,201,0.4)] transition-all duration-400 group flex flex-col justify-between transform hover:-translate-y-1.5"
             >
               {/* Product link wrapper */}
-              <a href={`/productos/${p.$id}`} className="block relative overflow-hidden aspect-square bg-gray-50">
-                {p.IMAGEURL ? (
-                  <img 
-                    src={p.IMAGEURL} 
-                    alt={p.NAME} 
-                    loading="lazy" 
-                    className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" 
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl">
-                    📦
-                  </div>
-                )}
+              <a href={`/productos/${p.$id}`} className="block relative overflow-hidden aspect-[4/5] bg-gray-50/50 p-2">
+                <div className="w-full h-full rounded-[18px] overflow-hidden relative shadow-inner">
+                  {p.IMAGEURL ? (
+                    <img 
+                      src={p.IMAGEURL} 
+                      alt={p.NAME} 
+                      loading="lazy" 
+                      className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" 
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-300 text-4xl bg-gray-100">
+                      📦
+                    </div>
+                  )}
+                  {/* Subtle overlay on hover */}
+                  <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </div>
 
                 {/* Badge top-left */}
-                <div className="absolute top-2 left-2 flex flex-col gap-1.5 z-10">
-                  <span className="bg-pink-500 text-white font-bold text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
+                  <span className="bg-white/90 backdrop-blur-sm text-gray-900 font-extrabold text-[10px] px-3 py-1 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1 border border-gray-100">
+                    <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse"></span>
                     Nuevo
                   </span>
                   {hasDiscount && (
-                    <span className="bg-green-500 text-white font-bold text-[9px] px-2 py-0.5 rounded-full shadow-sm">
-                      -{discPct}%
+                    <span className="bg-gradient-to-r from-rose-400 to-pink-500 text-white font-bold text-[10px] px-3 py-1 rounded-full shadow-md">
+                      -{discPct}% OFF
                     </span>
                   )}
                 </div>
 
                 {/* Badge top-right with Stock amount if low */}
                 {p.STOCK > 0 && p.STOCK <= 5 && (
-                  <span className="absolute top-2 right-2 bg-amber-500 text-white font-bold text-[9px] px-2 py-0.5 rounded-full shadow-sm z-10">
-                    Últimas {p.STOCK}
+                  <span className="absolute top-4 right-4 bg-orange-500/90 backdrop-blur-sm text-white font-bold text-[10px] px-3 py-1 rounded-full shadow-md z-10 animate-pulse">
+                    ¡Solo {p.STOCK}!
                   </span>
                 )}
               </a>
 
               {/* Product Info */}
-              <div className="p-3 sm:p-4 flex flex-col justify-between flex-grow">
-                <div className="mb-2">
+              <div className="p-5 flex flex-col justify-between flex-grow bg-gradient-to-b from-transparent to-white/50">
+                <div className="mb-3">
                   <a href={`/productos/${p.$id}`} className="block">
-                    <h3 className="font-semibold text-xs sm:text-sm text-gray-800 hover:text-pink-500 line-clamp-2 transition-colors duration-200 min-h-[32px] leading-tight">
+                    <h3 className="font-semibold text-sm text-gray-800 group-hover:text-pink-500 line-clamp-2 transition-colors duration-200 min-h-[40px] leading-snug">
                       {p.NAME}
                     </h3>
                   </a>
                 </div>
 
                 {/* Price and Add button */}
-                <div className="flex items-center justify-between gap-1.5 mt-auto">
+                <div className="flex items-center justify-between gap-2 mt-auto pt-2 border-t border-gray-100/50">
                   <div className="flex flex-col">
-                    <span className="font-bold text-sm sm:text-base text-gray-950">
+                    <span className="font-extrabold text-lg text-gray-900 tracking-tight">
                       {formatPrice(displayPrice)}
                     </span>
                     {hasDiscount && (
-                      <span className="text-[10px] sm:text-xs text-gray-400 line-through">
+                      <span className="text-[11px] text-gray-400 line-through font-medium">
                         {formatPrice(p.PRICE)}
                       </span>
                     )}
@@ -207,15 +216,15 @@ export default function RecentProductsSection() {
                   <button
                     onClick={(e) => handleAddToCart(e, p)}
                     disabled={isAdding}
-                    className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-xl transition-all duration-300 ${
+                    className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 shadow-md ${
                       isAdding 
-                        ? 'bg-green-500 text-white scale-110' 
-                        : 'bg-gray-950 text-white hover:bg-pink-500 shadow-sm hover:shadow active:scale-95'
+                        ? 'bg-green-500 text-white scale-110 shadow-green-500/30' 
+                        : 'bg-gray-900 text-white hover:bg-gradient-to-r hover:from-pink-500 hover:to-rose-400 hover:shadow-pink-500/40 active:scale-95'
                     }`}
                     title="Agregar al carrito"
                     aria-label="Agregar al carrito"
                   >
-                    {isAdding ? <Check size={16} /> : <ShoppingCart size={16} />}
+                    {isAdding ? <Check size={18} strokeWidth={3} /> : <ShoppingCart size={18} strokeWidth={2.5} />}
                   </button>
                 </div>
               </div>
