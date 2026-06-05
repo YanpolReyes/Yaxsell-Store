@@ -2465,8 +2465,8 @@ export default function HomePage23() {
     const root = containerRef.current;
     if (!root) return;
 
-    const cartWrapper = root.querySelector('.cart-items-wrapper');
-    const checkoutWrapper = root.querySelector('.cart-drawer-checkout');
+    const cartWrapper = root.querySelector('cart-drawer .cart-items-wrapper');
+    const checkoutWrapper = root.querySelector('cart-drawer .cart-drawer-checkout');
     if (!cartWrapper || !checkoutWrapper) return;
 
     if (cartItems.length === 0) {
@@ -2702,6 +2702,11 @@ export default function HomePage23() {
         }
         .tpl23-shopify-root .scroll-area::-webkit-scrollbar {
           display: none !important;
+        }
+
+        /* --- CART DRAWER Z-INDEX OVERRIDE --- */
+        cart-drawer.cart-drawer, .added-to-cart-popup {
+          z-index: 10005 !important;
         }
 
         /* --- SPLASH SCREEN --- */
