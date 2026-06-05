@@ -249,11 +249,15 @@ export default function HomePage23() {
                 contentPane.style.display = 'block';
             }
         }
-    };
-    
     root.addEventListener('click', handleFAQClicks);
 
-    // Global Drawer Close Logic (Cart, Search, Menu, Popups)
+    // Strip native Shopify listeners from all close buttons so they don't intercept clicks
+    const allCloseBtns = root.querySelectorAll('.button-close, .drawer__close');
+    allCloseBtns.forEach(btn => {
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode?.replaceChild(newBtn, btn);
+    });
+
     const handleDrawerClose = (e: Event) => {
       const target = e.target as HTMLElement;
       const isCloseBtn = target.closest('.button-close') || target.closest('.drawer__close');
