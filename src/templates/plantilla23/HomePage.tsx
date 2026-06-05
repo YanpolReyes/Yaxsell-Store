@@ -210,7 +210,7 @@ export default function HomePage23() {
     if (!bodyHtml || !containerRef.current) return;
     const root = containerRef.current;
     
-    const handleFAQClicks = (e) => {
+    const handleFAQClicks = (e: any) => {
         const target = e.target;
         
         // Tab switching logic
@@ -1154,9 +1154,15 @@ export default function HomePage23() {
       if (!window.matchMedia('(max-width: 767px)').matches) return;
       const popup = document.querySelector('newsletter-popup') as HTMLElement | null;
       if (!popup) return;
+      
+      // If the popup is supposed to be hidden (e.g. user clicked close), let it be hidden!
+      if (popup.getAttribute('data-hidden') === 'true') {
+         popup.style.setProperty('display', 'none', 'important');
+         return;
+      }
+      
       // Remove blocking attributes
       popup.removeAttribute('inert');
-      popup.removeAttribute('data-hidden');
       popup.style.setProperty('display', 'block', 'important');
       popup.style.setProperty('visibility', 'visible', 'important');
       popup.style.setProperty('opacity', '1', 'important');
