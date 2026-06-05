@@ -650,11 +650,16 @@ export default function HomePage23() {
           transform: rotate(-90deg) !important;
           transform-origin: left top !important;
           left: 0 !important;
-          top: 70% !important;
+          top: 85% !important;
           bottom: auto !important;
           border-radius: 0 0 10px 10px !important;
           animation: none !important;
           padding: 8px 16px !important;
+          box-shadow: 0 2px 5px rgba(251, 202, 201, 0.4) !important;
+        }
+        .button-newsletter:hover, .button-newsletter:active {
+          transform: rotate(-90deg) !important;
+          box-shadow: 0 2px 5px rgba(251, 202, 201, 0.4) !important;
         }
         .button-newsletter .h6 {
           font-size: 14px !important;
@@ -2025,19 +2030,6 @@ export default function HomePage23() {
       theme: { name: 'Captured Theme', id: '7' },
       routes: { root_url: '/', cart_url: '/cart', search_url: '/search' },
       customerAccountsEnabled: false,
-    };
-
-    // Intercept fetch/XHR to prevent 404s on /products/* and external APIs
-    const origFetch = window.fetch.bind(window);
-    window.fetch = function(input: RequestInfo | URL, init?: RequestInit) {
-      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url;
-      if (url.startsWith('/products/') || (url.includes('/products/') && !url.includes('/shopify/'))) {
-        return Promise.resolve(new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
-      }
-      if (url.includes('appwrite.io') || url.includes('nyc.cloud.appwrite')) {
-        return Promise.resolve(new Response(JSON.stringify({}), { status: 401, headers: { 'Content-Type': 'application/json' } }));
-      }
-      return origFetch(input, init);
     };
   }, []);
 
