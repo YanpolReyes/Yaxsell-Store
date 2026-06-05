@@ -1673,7 +1673,7 @@ export default function HomePage23() {
         if (imgs.length > 0) {
           imgs.forEach((img: HTMLImageElement) => {
             img.src = resolveStorageImageUrl(randomProduct.IMAGEURL) || '';
-            if (img.srcset) img.srcset = resolveStorageImageUrl(randomProduct.IMAGEURL) || '';
+            img.removeAttribute('srcset'); // Remove srcset to ensure the src fallback works correctly
           });
         }
         
@@ -1719,6 +1719,10 @@ export default function HomePage23() {
             router.push('/carrito');
           });
         }
+
+        // Remove shopify payment skeleton as we only use "Añadir to cart" for simple checkout
+        const shopifyPaymentBtn = fpBlock.querySelector('.shopify-payment-button');
+        if (shopifyPaymentBtn) shopifyPaymentBtn.remove();
         
         // Update form action just in case
         const forms = fpBlock.querySelectorAll('form');
