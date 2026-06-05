@@ -189,7 +189,7 @@ export default function HomePage23() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const { user } = useAuth();
   const router = useRouter();
-  const { addItem } = useCart();
+  const { addItem, items: cartItems, subtotal: cartTotal, updateQuantity, removeItem } = useCart();
   const { settings: apertura } = useAperturaPromotion();
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
@@ -2180,15 +2180,7 @@ export default function HomePage23() {
 
       // Intercept clicks on cart and search icons on mobile header to redirect directly and avoid broken overlays
       if (mobileHeaderActions) {
-        const mobileCartIcon = mobileHeaderActions.querySelector('[data-object="cart"], .cart-icon');
-        if (mobileCartIcon && !(mobileCartIcon as HTMLElement).dataset.redirectInjected) {
-          (mobileCartIcon as HTMLElement).dataset.redirectInjected = '1';
-          mobileCartIcon.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            window.location.href = '/carrito';
-          }, true);
-        }
+        // Removed cart redirect to allow native drawer to open
         const mobileSearchIcon = mobileHeaderActions.querySelector('[data-object="search-drawer"]');
         if (mobileSearchIcon && !(mobileSearchIcon as HTMLElement).dataset.redirectInjected) {
           (mobileSearchIcon as HTMLElement).dataset.redirectInjected = '1';
@@ -2427,6 +2419,106 @@ export default function HomePage23() {
 
     return () => { (window as any).__tpl23ScriptsLoaded = false; };
   }, [bodyHtml, categories]);
+
+  /* ═══ CART DOM HYDRATION ═══ */
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root) return;
+
+    const cartWrapper = root.querySelector('.cart-items-wrapper');
+    const checkoutWrapper = root.querySelector('.cart-drawer-checkout');
+    if (!cartWrapper || !checkoutWrapper) return;
+
+    if (cartItems.length === 0) {
+      cartWrapper.innerHTML = `
+        <h5 class="headding mb-3">Carrito</h5>
+        <div class="flex items-center pt-10 mt-10 flex-col">
+            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[25px]">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+            </svg>
+            <h6 class="heading pt-3">Tu carrito está vacío</h6>
+        </div>
+      `;
+    } else {
+      cartWrapper.innerHTML = `
+        <h5 class="headding mb-3">Carrito</h5>
+        <div class="flex flex-col gap-[2rem] pt-5">
+           ${cartItems.map((item: any) => `
+               <div class="cart-item flex items-center px-5 gap-5 transition-all duration-500 ease-in-out relative">
+                  <a href="/productos/${item.product.$id}" class="image-wrapper block h-[70px] w-[70px] min-h-[70px] min-w-[70px] img-blur link relative">
+                      <img src="${item.product.IMAGES?.[0] || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png'}" class="object-cover w-full h-full" />
+                  </a>
+                  <div class="cart-item__details flex-1">
+                      <a href="/productos/${item.product.$id}" class="link">
+                          <h6 class="heading link-hover-animation text-[13px] line-clamp-2">${item.product.NAME}</h6>
+                      </a>
+                      <div class="flex items-center justify-between mt-3">
+                          <div class="price font-bold text-[14px]">$${item.price.toLocaleString()}</div>
+                          <div class="flex items-center gap-3 border border-gray-200 rounded-full px-2 py-1 bg-white">
+                              <button class="cart-qty-btn px-2 text-gray-500 cursor-pointer" data-action="minus" data-id="${item.product.$id}">-</button>
+                              <span class="text-xs font-semibold w-3 text-center">${item.quantity}</span>
+                              <button class="cart-qty-btn px-2 text-gray-500 cursor-pointer" data-action="plus" data-id="${item.product.$id}">+</button>
+                          </div>
+                      </div>
+                  </div>
+                  <button class="absolute top-0 right-5 text-gray-400 cart-remove-btn p-1 cursor-pointer" data-id="${item.product.$id}">✕</button>
+               </div>
+           `).join('')}
+        </div>
+      `;
+    }
+
+    const handleQtyClick = (e: Event) => {
+      e.preventDefault();
+      const btn = e.currentTarget as HTMLButtonElement;
+      const action = btn.getAttribute('data-action');
+      const id = btn.getAttribute('data-id');
+      const item = cartItems.find((i: any) => i.product.$id === id);
+      if (item) {
+        if (action === 'plus') updateQuantity(id!, item.quantity + 1);
+        if (action === 'minus' && item.quantity > 1) updateQuantity(id!, item.quantity - 1);
+      }
+    };
+
+    const handleRemoveClick = (e: Event) => {
+      e.preventDefault();
+      const btn = e.currentTarget as HTMLButtonElement;
+      const id = btn.getAttribute('data-id');
+      if (id) removeItem(id);
+    };
+
+    cartWrapper.querySelectorAll('.cart-qty-btn').forEach(btn => {
+      btn.addEventListener('click', handleQtyClick);
+    });
+
+    cartWrapper.querySelectorAll('.cart-remove-btn').forEach(btn => {
+      btn.addEventListener('click', handleRemoveClick);
+    });
+
+    const checkoutBtn = checkoutWrapper.querySelector('button[name="checkout"]');
+    if (checkoutBtn) {
+       checkoutBtn.innerHTML = `
+            <span class="visible-text z-10">CHECKOUT <b class="px-2">•</b> <span>$${cartTotal.toLocaleString()}</span></span>
+            <span class="hover-text">CHECKOUT <b class="px-2">•</b> <span>$${cartTotal.toLocaleString()}</span></span>
+       `;
+       if (cartItems.length === 0) checkoutBtn.setAttribute('disabled', 'true');
+       else checkoutBtn.removeAttribute('disabled');
+       
+       const handleCheckoutClick = (e: Event) => {
+         e.preventDefault();
+         window.location.href = '/checkout';
+       };
+       // remove old listeners by cloning
+       const newBtn = checkoutBtn.cloneNode(true);
+       checkoutBtn.parentNode?.replaceChild(newBtn, checkoutBtn);
+       newBtn.addEventListener('click', handleCheckoutClick);
+    }
+
+    root.querySelectorAll('.cart-item-size').forEach(el => {
+      el.textContent = `(${cartItems.reduce((acc: any, curr: any) => acc + curr.quantity, 0)})`;
+    });
+
+  }, [cartItems, cartTotal, bodyHtml, updateQuantity, removeItem]);
 
   /* ── Loading/error states ── */
   if (loadError) {
