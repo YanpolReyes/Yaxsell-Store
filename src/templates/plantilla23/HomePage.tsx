@@ -1808,7 +1808,7 @@ export default function HomePage23() {
         
         // Update vendor
         const vendor = fpBlock.querySelector('.vendor span');
-        if (vendor) vendor.textContent = targetProduct.BRAND || 'Yaxsell';
+        if (vendor) vendor.textContent = (targetProduct as any).BRAND || 'Yaxsell';
       });
 
       // Intersection Observer for Hero Scroll Videos
