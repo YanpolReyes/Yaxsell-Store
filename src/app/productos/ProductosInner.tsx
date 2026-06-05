@@ -207,7 +207,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           </div>
           <input type="range" min={priceRange[0]} max={priceRange[1]} value={activePriceRange[1]}
             onChange={e => setActivePriceRange([activePriceRange[0], Number(e.target.value)])}
-            style={{ width: '100%', accentColor: '#e396bf', cursor: 'pointer' }} />
+            style={{ width: '100%', accentColor: '#e396bf', cursor: 'pointer', background: '#fff' }} />
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <input type="number" value={activePriceRange[0]} onChange={e => setActivePriceRange([Number(e.target.value) || 0, activePriceRange[1]])}
               style={{ flex: 1, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #fce7f3', fontSize: 12, color: '#111', outline: 'none', fontFamily: 'inherit' }} placeholder="Min" />

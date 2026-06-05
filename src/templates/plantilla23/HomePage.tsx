@@ -78,7 +78,8 @@ const CSS_FILES = [
 /* ── JS files: solo los críticos del tema ── */
 type JsFile = { src: string; module?: boolean };
 const JS_FILES: JsFile[] = [
-  { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/swiper-bundle.min.js` },
+    { src: 'https://elfsightcdn.com/platform.js' },
+    { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/swiper-bundle.min.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/functions.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/pubsub.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/script.js` },
@@ -202,6 +203,57 @@ export default function HomePage23() {
     }, 2500);
     return () => clearTimeout(timer);
   }, []);
+
+
+  /* 🪄🤖 Tabbed FAQ JS Logic 🤖🪄 */
+  useEffect(() => {
+    if (!bodyHtml || !containerRef.current) return;
+    const root = containerRef.current;
+    
+    const handleFAQClicks = (e) => {
+        const target = e.target;
+        
+        // Tab switching logic
+        const tabBtn = target.closest('.kc-tab-btn');
+        if (tabBtn) {
+            const targetId = tabBtn.getAttribute('data-target');
+            root.querySelectorAll('.kc-tab-btn').forEach(btn => btn.classList.remove('active'));
+            tabBtn.classList.add('active');
+            
+            root.querySelectorAll('.kc-faq-pane').forEach(pane => pane.classList.remove('active'));
+            const targetPane = document.getElementById(targetId || '');
+            if (targetPane) targetPane.classList.add('active');
+            return;
+        }
+        
+        // Accordion logic
+        const accordionBtn = target.closest('.kc-accordion-btn');
+        if (accordionBtn) {
+            const parent = accordionBtn.parentElement;
+            const contentPane = accordionBtn.nextElementSibling;
+            const isActive = parent.classList.contains('active');
+            
+            const currentPane = parent.closest('.kc-faq-pane');
+            if (currentPane) {
+                currentPane.querySelectorAll('.kc-accordion-item').forEach(item => {
+                    item.classList.remove('active');
+                    const itemContent = item.querySelector('.kc-accordion-content');
+                    if (itemContent) itemContent.style.display = 'none';
+                });
+            }
+            if (!isActive) {
+                parent.classList.add('active');
+                contentPane.style.display = 'block';
+            }
+        }
+    };
+    
+    root.addEventListener('click', handleFAQClicks);
+
+    return () => {
+       root.removeEventListener('click', handleFAQClicks);
+    };
+  }, [bodyHtml]);
 
   /* ── Fetch categories, subcategories & products from Appwrite ── */
   useEffect(() => {
@@ -433,7 +485,7 @@ export default function HomePage23() {
         animation: premiumReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
       }
 
-      /* Highlight word "Novedades" in menu to black */
+      /* Highlight word "CATÁLOGO" in menu to black */
       .header[data-id="sections--27304712208665__header"] .highlight {
         color: #000000 !important;
       }
@@ -747,7 +799,58 @@ export default function HomePage23() {
         box-shadow: none !important;
       }
 
-      /* Estado 3: Navbar final scrolled (data-scroll="true") - Glassmorphism sutil y elegante, sin línea blanca abajo */
+            /* ── FORCE NEWSLETTER POPUP ON MOBILE ── */
+      @media (max-width: 767px) {
+        newsletter-popup:not([data-hidden="true"]), .newsletter-popup:not([data-hidden="true"]) {
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          left: 16px !important;
+          bottom: 16px !important;
+          transform: none !important;
+          width: calc(100% - 32px) !important;
+          max-width: 360px !important;
+          z-index: 999999 !important;
+        }
+      }
+
+      
+      /* ── HIDE HEROBANNER PAGINATION AND ARROWS ── */
+      .slideshow .swiper-pagination,
+      .slideshow .button-previous,
+      .slideshow .button-next,
+      .slideshow .swiper-navigation-wrapper {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+      }
+
+      /* ── DISABLE SLIDING/DRAGGING IN HEROBANNER ── */
+      .slideshow .swiper-wrapper {
+          pointer-events: none !important;
+          touch-action: none !important;
+      }
+      .slideshow .slideshow__slide {
+          pointer-events: auto !important;
+      }
+
+      /* ── FORCE BIG POPUP TO SHOW ON MOBILE IF NOT HIDDEN ── */
+      @media (max-width: 767px) {
+        newsletter-popup:not([data-hidden="true"]), 
+        .newsletter-popup:not([data-hidden="true"]) {
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          left: 16px !important;
+          bottom: 16px !important;
+          transform: none !important;
+          width: calc(100% - 32px) !important;
+          max-width: 360px !important;
+          z-index: 999999 !important;
+        }
+      }
+\n/* Estado 3: Navbar final scrolled (data-scroll="true") - Glassmorphism sutil y elegante, sin línea blanca abajo */
       custom-header.header-element[data-scroll="true"],
       .header[data-id="sections--27304712208665__header"][data-scroll="true"] {
         background: rgba(253, 242, 248, 0.72) !important;
@@ -1008,6 +1111,75 @@ export default function HomePage23() {
         });
       }
     }, 600);
+
+    // ═══ DISABLE HEROBANNER SWIPER COMPLETELY (no drag, no swipe, no auto) ═══
+    const disableHeroSwiper = () => {
+      const heroSwiperEl = root.querySelector('custom-slideshow .swiper-container, custom-slideshow parallax-element-section .swiper-container') as HTMLElement | null;
+      if (heroSwiperEl) {
+        // @ts-ignore
+        const swiperInstance = (heroSwiperEl as any).swiper;
+        if (swiperInstance) {
+          try {
+            swiperInstance.allowTouchMove = false;
+            swiperInstance.allowSlidePrev = false;
+            swiperInstance.allowSlideNext = false;
+            swiperInstance.autoplay?.stop?.();
+            swiperInstance.disable?.();
+            // Also remove any touch/mouse event listeners by cloning the wrapper
+            const wrapper = heroSwiperEl.querySelector('.swiper-wrapper') as HTMLElement;
+            if (wrapper) {
+              wrapper.style.setProperty('transform', 'translate3d(0,0,0)', 'important');
+              wrapper.style.setProperty('transition-duration', '0ms', 'important');
+            }
+          } catch(e) { /* ignore */ }
+        }
+        // Belt-and-suspenders: prevent all pointer/touch events on the swiper itself
+        heroSwiperEl.style.setProperty('touch-action', 'pan-y', 'important');
+        heroSwiperEl.style.setProperty('user-select', 'none', 'important');
+        // Override the swiper-container data to disable init
+        heroSwiperEl.setAttribute('data-enabled', 'false');
+      }
+    };
+    // Try immediately, then retry after JS loads
+    disableHeroSwiper();
+    setTimeout(disableHeroSwiper, 500);
+    setTimeout(disableHeroSwiper, 1500);
+    setTimeout(disableHeroSwiper, 3000);
+
+    // ═══ FIX NEWSLETTER POPUP ON MOBILE ═══
+    // The button-newsletter auto-hides itself and replaces with the popup.
+    // On mobile the popup has [inert] and [data-hidden="true"] blocking it.
+    // We watch for the popup to appear and force-show it.
+    const fixNewsletterMobile = () => {
+      if (!window.matchMedia('(max-width: 767px)').matches) return;
+      const popup = document.querySelector('newsletter-popup') as HTMLElement | null;
+      if (!popup) return;
+      // Remove blocking attributes
+      popup.removeAttribute('inert');
+      popup.removeAttribute('data-hidden');
+      popup.style.setProperty('display', 'block', 'important');
+      popup.style.setProperty('visibility', 'visible', 'important');
+      popup.style.setProperty('opacity', '1', 'important');
+      popup.style.setProperty('left', '16px', 'important');
+      popup.style.setProperty('bottom', '16px', 'important');
+      popup.style.setProperty('right', 'auto', 'important');
+      popup.style.setProperty('width', 'calc(100% - 32px)', 'important');
+      popup.style.setProperty('max-width', '360px', 'important');
+      popup.style.setProperty('z-index', '999999', 'important');
+      popup.style.setProperty('transform', 'none', 'important');
+    };
+    // Watch for the popup to change state (the button-newsletter triggers it)
+    const popupEl = document.querySelector('newsletter-popup') as HTMLElement | null;
+    if (popupEl) {
+      const popupMutObs = new MutationObserver(() => {
+        fixNewsletterMobile();
+      });
+      popupMutObs.observe(popupEl, { attributes: true, attributeFilter: ['data-hidden', 'inert', 'style'] });
+    }
+    // Also run after delay (when the auto-trigger fires)
+    setTimeout(fixNewsletterMobile, 2500);
+    setTimeout(fixNewsletterMobile, 5000);
+
   }, [bodyHtml, categories]);
 
   /* ── Wire "Iniciar Sesión" button to auth popup (same style as plantilla1) ── */
@@ -1107,14 +1279,14 @@ export default function HomePage23() {
         <button id="yaxsel-auth-close" type="button" aria-label="Cerrar" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:none;background:#f3f4f6;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#666;z-index:2;">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M11 3L3 11M3 3L11 11" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
         </button>
-        <div style="padding:28px 24px 24px;text-align:center;">
-          <div style="width:56px;height:56px;margin:0 auto 14px;border-radius:50%;background:linear-gradient(135deg,#fef2f8,#fce7f3);display:flex;align-items:center;justify-content:center;color:#ec4899;box-shadow:0 4px 14px rgba(236,72,153,0.15);">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <div style="padding:32px 24px 28px;text-align:center;background:rgba(255,255,255,0.8);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:24px;">
+          <div style="width:64px;height:64px;margin:0 auto 16px;border-radius:50%;background:linear-gradient(135deg,#fdf2f8,#fbcfe8);display:flex;align-items:center;justify-content:center;color:#db2777;box-shadow:0 8px 20px rgba(219,39,119,0.15); border: 2px solid #fce7f3;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
-          <p style="font-size:18px;font-weight:800;color:#111;margin:0 0 8px;letter-spacing:-0.02em;">Inicia sesión o crea tu cuenta</p>
-          <p style="font-size:13px;color:#6b7280;margin:0 0 20px;line-height:1.45;">Para realizar pedidos necesitas iniciar sesión o registrarte.</p>
-          <a href="/login" id="yaxsel-auth-login-btn" style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;box-shadow:0 6px 20px rgba(236,72,153,0.3);margin-bottom:10px;">Iniciar sesión</a>
-          <a href="/login?tab=register" style="display:block;width:100%;padding:13px;background:#fff;color:#ec4899;border:2px solid #fce7f3;border-radius:14px;font-size:15px;font-weight:700;text-align:center;text-decoration:none;">Crear cuenta</a>
+          <p style="font-size:20px;font-weight:800;color:#1f2937;margin:0 0 8px;letter-spacing:-0.02em;">¡Hola, Belleza!</p>
+          <p style="font-size:14px;color:#6b7280;margin:0 0 24px;line-height:1.5;">Ingresa o regístrate para acceder a ofertas exclusivas y realizar pedidos.</p>
+          <a href="/login" id="yaxsel-auth-login-btn" style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#f9a8d4,#f472b6);color:#fff;border:none;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;box-shadow:0 8px 20px rgba(244,114,182,0.3);margin-bottom:12px;transition:all 0.3s ease;">Iniciar sesión</a>
+          <a href="/login?tab=register" style="display:block;width:100%;padding:14px;background:rgba(253,242,248,0.8);color:#db2777;border:1px solid #fbcfe8;border-radius:16px;font-size:15px;font-weight:700;text-align:center;text-decoration:none;transition:all 0.3s ease;">Crear cuenta nueva</a>
         </div>
       `;
 
@@ -1139,8 +1311,8 @@ export default function HomePage23() {
 
       const loginBtn = popup.querySelector('#yaxsel-auth-login-btn') as HTMLElement | null;
       if (loginBtn) {
-        loginBtn.addEventListener('mouseenter', () => { loginBtn.style.transform = 'translateY(-2px)'; loginBtn.style.boxShadow = '0 8px 32px rgba(236,72,153,0.25)'; });
-        loginBtn.addEventListener('mouseleave', () => { loginBtn.style.transform = ''; loginBtn.style.boxShadow = '0 6px 24px rgba(236,72,153,0.15)'; });
+        loginBtn.addEventListener('mouseenter', () => { loginBtn.style.transform = 'translateY(-2px)'; loginBtn.style.boxShadow = '0 8px 32px rgba(244,114,182,0.4)'; });
+        loginBtn.addEventListener('mouseleave', () => { loginBtn.style.transform = ''; loginBtn.style.boxShadow = '0 8px 20px rgba(244,114,182,0.3)'; });
       }
 
       if (!window.matchMedia('(max-width: 768px)').matches) {
@@ -1334,12 +1506,12 @@ export default function HomePage23() {
       const bestSellersLi = document.createElement('li');
       bestSellersLi.className = 'inline-block group py-2 px-1 relative shrink-0 no-keyboard-focus';
       bestSellersLi.innerHTML = `
-        <a href="/productos?tag=best-seller" title="Los Más Vendidos" aria-label="Los Más Vendidos"
+        <a href="https://kevincocochile.cl/productos" title="TIENDA" aria-label="TIENDA"
             data-action="static-link"
             class="no-keyboard-focus"
             data-menu-tier="1"
         >
-            <span class="link-hover-animation">Los Más Vendidos</span>
+            <span class="link-hover-animation">TIENDA</span>
         </a>
       `;
       desktopMenu.appendChild(bestSellersLi);
@@ -1347,12 +1519,12 @@ export default function HomePage23() {
       const newArrivalsLi = document.createElement('li');
       newArrivalsLi.className = 'inline-block group py-2 px-1 relative shrink-0 no-keyboard-focus';
       newArrivalsLi.innerHTML = `
-        <a href="/productos?tag=new" title="Novedades" aria-label="Novedades"
+        <a href="https://kevincocochile.cl/catalogo" title="CATÁLOGO" aria-label="CATÁLOGO"
             data-action="static-link"
             class="highlight no-keyboard-focus"
             data-menu-tier="1"
         >
-            <span class="link-hover-animation">Novedades</span>
+            <span class="link-hover-animation">CATÁLOGO</span>
         </a>
       `;
       desktopMenu.appendChild(newArrivalsLi);
@@ -1394,7 +1566,7 @@ export default function HomePage23() {
         mobileMenu.appendChild(mobileLi);
       });
 
-      ['Los Más Vendidos|/productos?tag=best-seller', 'Novedades|/productos?tag=new'].forEach(item => {
+      ['TIENDA|https://kevincocochile.cl/productos', 'CATÁLOGO|https://kevincocochile.cl/catalogo'].forEach(item => {
         const [label, href] = item.split('|');
         const li = document.createElement('li');
         li.className = 'group relative before:content-[\'\'] before:block before:absolute before:top-0 before:left-0 before:transition-all before:duration-500 before:ease-in-out before:h-full before:w-0 before:bg-black before:opacity-1';
@@ -1607,7 +1779,7 @@ export default function HomePage23() {
         }
       }
 
-      // 2. Populate Tab 2: Los Más Vendidos
+      // 2. Populate Tab 2: TIENDA
       const tab2Products = [...products]
         .sort((a, b) => {
           const aBest = a.TAGS?.some(t => t.toLowerCase() === 'best-seller') ? 1 : 0;
@@ -1866,7 +2038,7 @@ export default function HomePage23() {
     const loadOne = (file: JsFile) => new Promise<void>((resolve) => {
       if (document.querySelector(`script[data-tpl23="${file.src}"]`)) { resolve(); return; }
       const s = document.createElement('script');
-      s.src = `${file.src}?v=${Date.now()}`;
+      s.src = file.src.includes('elfsight') ? file.src : `${file.src}?v=${Date.now()}`;
       if (file.module) s.type = 'module';
       else s.async = false;
       s.setAttribute('data-tpl23', file.src);
@@ -2089,6 +2261,36 @@ export default function HomePage23() {
   return (
     <>
       <style>{`
+        /* Tabbed FAQ Styles */
+        .kc-tabbed-faq { position: relative; overflow: hidden; background: #ffffff; padding: 100px 0; font-family: system-ui, -apple-system, sans-serif; }
+        .kc-faq-container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 10; }
+        .kc-faq-header { text-align: center; margin-bottom: 60px; }
+        .kc-faq-header h2 { font-size: 3.5rem; font-weight: 900; color: #111827; margin-bottom: 24px; line-height: 1.1; letter-spacing: -1px; }
+        .kc-faq-header p { font-size: 1.25rem; color: #6b7280; max-width: 600px; margin: 0 auto; }
+        .kc-faq-grid { display: flex; flex-direction: column; gap: 40px; }
+        @media (min-width: 1024px) { .kc-faq-grid { flex-direction: row; gap: 60px; align-items: flex-start; } }
+        .kc-faq-tabs { flex: 0 0 320px; display: flex; flex-direction: column; gap: 12px; }
+        .kc-tab-btn { display: flex; align-items: center; gap: 16px; padding: 18px 24px; border-radius: 16px; font-size: 1.1rem; font-weight: 600; color: #4b5563; background: #f9fafb; border: 1px solid #f3f4f6; cursor: pointer; text-align: left; transition: all 0.3s ease; }
+        .kc-tab-btn:hover { background: #f3f4f6; color: #111827; }
+        .kc-tab-btn.active { background: #fdf2f8; color: #db2777; border-color: #fbcfe8; box-shadow: 0 4px 14px rgba(225, 29, 72, 0.1); }
+        .kc-tab-btn .icon { font-size: 1.4rem; }
+        .kc-faq-content-area { flex: 1; min-height: 500px; }
+        .kc-faq-pane { display: none; animation: fadeInPane 0.4s ease forwards; }
+        .kc-faq-pane.active { display: block; }
+        @keyframes fadeInPane { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .kc-faq-pane h3 { font-size: 2rem; font-weight: 800; color: #111827; margin: 0 0 32px 0; padding-bottom: 16px; border-bottom: 2px solid #f3f4f6; }
+        .kc-accordion-wrapper { display: flex; flex-direction: column; gap: 16px; }
+        .kc-accordion-item { background: #ffffff; border: 1px solid #f3f4f6; border-radius: 20px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
+        .kc-accordion-item:hover { border-color: #fbcfe8; box-shadow: 0 10px 30px rgba(0,0,0,0.04); transform: translateY(-2px); }
+        .kc-accordion-item.active { border-color: #fbcfe8; box-shadow: 0 10px 25px -5px rgba(244, 114, 182, 0.2); }
+        .kc-accordion-btn { width: 100%; text-align: left; background: transparent; border: none; padding: 24px 32px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-family: inherit; }
+        .kc-accordion-btn span:first-child { font-size: 1.15rem; font-weight: 700; color: #1f2937; padding-right: 20px; line-height: 1.4; }
+        .kc-icon-wrap { width: 36px; height: 36px; border-radius: 50%; background: #fdf2f8; color: #ec4899; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .kc-icon-wrap svg { width: 20px; height: 20px; }
+        .kc-accordion-item.active .kc-icon-wrap { transform: rotate(45deg); }
+        .kc-accordion-content { padding: 0 32px; display: none; }
+        .kc-accordion-content p { color: #4b5563; line-height: 1.7; font-size: 1.05rem; padding-bottom: 24px; margin: 0; }
+
         /* Scoped override for plantilla23 dynamic megamenu styling */
         .tpl23-shopify-root .menu--megamenu-hover-split-grandchild {
           display: none !important;

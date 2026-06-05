@@ -38,7 +38,7 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
   }
 
   /* Templates 1 (Shopify-Venice), 4 (Chinamart) y 5 (Pebble Little) tienen su propio footer en el HTML migrado */
-  const hideNativeFooter = template === 1 || template === 4 || template === 5;
+  const hideNativeFooter = true; // Hidden for all templates because we use the injected HTML footer
 
   return (
     <MaintenanceGuard>
