@@ -138,7 +138,7 @@ export default function RecentProductsSection() {
       </div>
 
       {/* Responsive layout: scrollable list on mobile, grid on desktop */}
-      <div className="flex overflow-x-auto gap-5 pb-8 px-2 -mx-4 sm:mx-0 sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:overflow-visible scrollbar-hide snap-x">
+      <div className="flex overflow-x-auto gap-5 pb-8 px-2 -mx-4 sm:mx-0 sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:gap-6 sm:overflow-visible scrollbar-hide snap-x sm:snap-none">
         {products.map(p => {
           const displayPrice = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
           const hasDiscount = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
@@ -150,8 +150,7 @@ export default function RecentProductsSection() {
               key={p.$id} 
               className="snap-start flex-shrink-0 w-[240px] sm:w-auto bg-white/70 backdrop-blur-xl rounded-[24px] overflow-hidden border border-white shadow-[0_8px_25px_rgba(0,0,0,0.05)] hover:shadow-[0_15px_35px_rgba(251,202,201,0.4)] transition-all duration-400 group flex flex-col justify-between transform hover:-translate-y-1.5"
             >
-              {/* Product link wrapper */}
-              <a href={`/productos/${p.$id}`} className="block relative overflow-hidden aspect-[4/5] bg-gray-50/50 p-2">
+              <a href={`/productos/${p.$id}`} className="block relative overflow-hidden aspect-square bg-gray-50/50 p-2">
                 <div className="w-full h-full rounded-[18px] overflow-hidden relative shadow-inner">
                   {p.IMAGEURL ? (
                     <img 

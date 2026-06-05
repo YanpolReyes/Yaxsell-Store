@@ -253,8 +253,54 @@ export default function HomePage23() {
     
     root.addEventListener('click', handleFAQClicks);
 
+    // Global Drawer Close Logic (Cart, Search, Menu, Popups)
+    const handleDrawerClose = (e: Event) => {
+      const target = e.target as HTMLElement;
+      const isCloseBtn = target.closest('.button-close') || target.closest('.drawer__close');
+      
+      // Check if clicking exactly on the overlay (the dark background, not the white inner panel)
+      const isOverlay = target.tagName.toLowerCase().includes('drawer') || target.tagName.toLowerCase().includes('popup') || target.classList.contains('drawer');
+      let clickedOutside = false;
+      if (isOverlay) {
+         // If target is the drawer element itself and not its children
+         const inner = target.querySelector('.drawer__inner, .popup__inner');
+         // We check bounding rect to see if click is outside the white panel
+         if (inner) {
+            const rect = inner.getBoundingClientRect();
+            const clientX = (e as MouseEvent).clientX || (e as TouchEvent).changedTouches?.[0]?.clientX || 0;
+            if (clientX < rect.left || clientX > rect.right) {
+               clickedOutside = true;
+            }
+         } else {
+            clickedOutside = true;
+         }
+      }
+
+      if (isCloseBtn || clickedOutside) {
+        const activeDrawers = document.querySelectorAll('cart-drawer, search-drawer, menu-drawer, variant-popup, added-to-cart-popup, .drawer');
+        let closedAny = false;
+        activeDrawers.forEach(drawer => {
+          if (drawer.getAttribute('data-hidden') !== 'true') {
+            drawer.setAttribute('data-hidden', 'true');
+            drawer.setAttribute('inert', '');
+            closedAny = true;
+          }
+        });
+        if (closedAny) {
+          e.preventDefault();
+          e.stopPropagation();
+          document.documentElement.style.overflow = '';
+        }
+      }
+    };
+
+    root.addEventListener('click', handleDrawerClose);
+    root.addEventListener('touchstart', handleDrawerClose, { passive: false });
+
     return () => {
        root.removeEventListener('click', handleFAQClicks);
+       root.removeEventListener('click', handleDrawerClose);
+       root.removeEventListener('touchstart', handleDrawerClose);
     };
   }, [bodyHtml]);
 
@@ -1325,35 +1371,37 @@ export default function HomePage23() {
     }
 
     // ═══ MOBILE HERO: Replace single button with two buttons (Tienda + Catálogo) ═══
-    if (window.innerWidth < 768) {
-      const injectMobileHeroButtons = () => {
-        const heroButtonBlock = root.querySelector('#shopify-block-ANTBPMjNnaUZNbklXR__button_VKQi4f .custom-theme-block') as HTMLElement | null;
-        if (!heroButtonBlock || heroButtonBlock.dataset.mobileBtnsInjected) return;
-        heroButtonBlock.dataset.mobileBtnsInjected = '1';
-        heroButtonBlock.innerHTML = `
-          <div style="display:flex; gap:10px; padding: 10px 0 40px;">
-            <a href="/productos" role="button" style="
-              display:inline-flex; align-items:center; justify-content:center;
-              padding: 10px 22px; border-radius:50px;
-              background: linear-gradient(135deg, #c9a94a, #e8d48a, #c9a94a);
-              color: #3b2800; font-weight:700; font-size:13px;
-              text-decoration:none; box-shadow: 0 4px 14px rgba(201,169,74,0.45);
-              letter-spacing:0.5px; border:none; white-space:nowrap;
-            ">✨ Tienda</a>
-            <a href="/catalogo" role="button" style="
-              display:inline-flex; align-items:center; justify-content:center;
-              padding: 10px 22px; border-radius:50px;
-              background: #FBCAC9; color:#fff; font-weight:700; font-size:13px;
-              text-decoration:none; box-shadow: 0 4px 14px rgba(251,202,201,0.55);
-              letter-spacing:0.5px; border:none; white-space:nowrap;
-            ">📖 Catálogo</a>
-          </div>
-        `;
-      };
-      injectMobileHeroButtons();
-      setTimeout(injectMobileHeroButtons, 800);
-      setTimeout(injectMobileHeroButtons, 2000);
-    }
+    const injectMobileHeroButtons = () => {
+      const heroButtonBlock = root.querySelector('#shopify-block-ANTBPMjNnaUZNbklXR__button_VKQi4f .custom-theme-block') as HTMLElement | null;
+      if (!heroButtonBlock || heroButtonBlock.dataset.mobileBtnsInjected) return;
+      heroButtonBlock.dataset.mobileBtnsInjected = '1';
+      const originalHtml = heroButtonBlock.innerHTML;
+      heroButtonBlock.innerHTML = `
+        <div class="md:hidden" style="display:flex; gap:10px; padding: 10px 0 40px; justify-content:center;">
+          <a href="/productos" role="button" style="
+            display:inline-flex; align-items:center; justify-content:center;
+            padding: 10px 22px; border-radius:50px;
+            background: linear-gradient(135deg, #c9a94a, #e8d48a, #c9a94a);
+            color: #3b2800; font-weight:700; font-size:13px;
+            text-decoration:none; box-shadow: 0 4px 14px rgba(201,169,74,0.45);
+            letter-spacing:0.5px; border:none; white-space:nowrap;
+          ">✨ Tienda</a>
+          <a href="/catalogo" role="button" style="
+            display:inline-flex; align-items:center; justify-content:center;
+            padding: 10px 22px; border-radius:50px;
+            background: #FBCAC9; color:#fff; font-weight:700; font-size:13px;
+            text-decoration:none; box-shadow: 0 4px 14px rgba(251,202,201,0.55);
+            letter-spacing:0.5px; border:none; white-space:nowrap;
+          ">📖 Catálogo</a>
+        </div>
+        <div class="hidden md:block">
+          ${originalHtml}
+        </div>
+      `;
+    };
+    injectMobileHeroButtons();
+    setTimeout(injectMobileHeroButtons, 800);
+    setTimeout(injectMobileHeroButtons, 2000);
 
   }, [bodyHtml, categories, isAppwriteLoaded]);
 
@@ -2638,27 +2686,10 @@ export default function HomePage23() {
       el.textContent = `(${cartItems.reduce((acc: any, curr: any) => acc + curr.quantity, 0)})`;
     });
 
-    const closeBtns = root.querySelectorAll('cart-drawer .button-close, cart-drawer .drawer__close');
-    closeBtns.forEach(closeBtn => {
-      const handleCloseClick = (e: Event) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const drawer = document.querySelector('cart-drawer');
-        if (drawer) {
-          drawer.setAttribute('data-hidden', 'true');
-          drawer.setAttribute('inert', '');
-        }
-        document.documentElement.style.overflow = '';
-      };
-      // clone to remove old listeners
-      const newCloseBtn = closeBtn.cloneNode(true);
-      closeBtn.parentNode?.replaceChild(newCloseBtn, closeBtn);
-      newCloseBtn.addEventListener('click', handleCloseClick);
-      newCloseBtn.addEventListener('touchstart', handleCloseClick, {passive: true});
-    });
+    // Removed old cart-specific closeBtn logic, handled globally now
     // Hydrate "Otros también compraron" with compact 2-col scrollable grid
-    root.querySelectorAll('.drawer__recommendation-wrapper').forEach(wrapper => {
-      const gridId = 'pk-rec-grid';
+    root.querySelectorAll('.drawer__recommendation-wrapper').forEach((wrapper, index) => {
+      const gridId = `pk-rec-grid-${index}`;
       let gridEl = wrapper.querySelector(`#${gridId}`) as HTMLElement | null;
       if (!gridEl) {
         gridEl = document.createElement('div');
