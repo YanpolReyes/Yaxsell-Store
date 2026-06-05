@@ -2424,8 +2424,9 @@ export default function HomePage23() {
     const root = containerRef.current;
     if (!root) return;
     
-    const handleGridAddToCart = (e: Event) => {
+    const handleClickEvents = (e: Event) => {
       const target = e.target as HTMLElement;
+      
       const btn = target.closest('.pk-grid-add-to-cart');
       if (btn) {
         e.preventDefault();
@@ -2434,19 +2435,29 @@ export default function HomePage23() {
         const p = products.find(prod => prod.$id === pid);
         if (p) {
           addItem(p, 1);
-          // Auto-open native template 23 cart drawer
           const cartDrawer = document.querySelector('cart-drawer');
           if (cartDrawer) {
             cartDrawer.setAttribute('data-hidden', 'false');
-            // Trigger native open behavior
             document.documentElement.classList.add('overflow-hidden');
           }
+        }
+        return;
+      }
+
+      const cartIcon = target.closest('[data-object="cart"], .cart-icon');
+      if (cartIcon && !target.closest('cart-drawer')) {
+        e.preventDefault();
+        e.stopPropagation();
+        const cartDrawer = document.querySelector('cart-drawer');
+        if (cartDrawer) {
+          cartDrawer.setAttribute('data-hidden', 'false');
+          document.documentElement.classList.add('overflow-hidden');
         }
       }
     };
 
-    root.addEventListener('click', handleGridAddToCart);
-    return () => root.removeEventListener('click', handleGridAddToCart);
+    root.addEventListener('click', handleClickEvents);
+    return () => root.removeEventListener('click', handleClickEvents);
   }, [bodyHtml, products, addItem]);
 
   /* ═══ CART DOM HYDRATION ═══ */
@@ -2560,7 +2571,40 @@ export default function HomePage23() {
       closeBtn.parentNode?.replaceChild(newCloseBtn, closeBtn);
       newCloseBtn.addEventListener('click', handleCloseClick);
     }
-  }, [cartItems, cartTotal, bodyHtml, updateQuantity, removeItem]);
+    root.querySelectorAll('.drawer__recommendation-wrapper .swiper-wrapper').forEach(wrapper => {
+       const recHtml = products.slice(0, 4).map((p: any) => {
+          const pImg = p.IMAGES?.[0] || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';
+          const pName = p.NAME || 'Producto';
+          const pLink = `/productos/${p.$id}`;
+          const currentPrice = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
+          
+          return `
+            <div class="swiper-slide h-auto w-full group">
+                <cart-recommended-product>
+                    <div class="recommended-product__image-wrapper relative group-hover:shadow-md transition-all rounded-md overflow-hidden bg-white p-2">
+                        <a href="${pLink}" title="${pName}" aria-label="${pName}" class="recommended-product__image block h-full w-full min-h-[100px] min-w-[100px] img-blur mb-2" tabindex="-1">
+                            <img src="${pImg}" alt="${pName}" class="object-contain w-full h-[120px] pointer-events-none" style="object-fit: contain !important; max-width: 100%; max-height: 100%;">
+                        </a>
+                        <cart-recommended-product-form class="product-form">
+                            <div role="button" tabindex="0" class="button-cart pk-grid-add-to-cart max-w-[95%] p-3 rounded-[100%] w-[40px] h-[40px] duration-300 ease-in-out cursor-pointer z-20 absolute bottom-2 left-0 right-0 mx-auto button--primary flex items-center justify-center opacity-0 invisible group-hover:opacity-100 group-hover:visible" aria-label="Agregar al carrito" data-product-id="${p.$id}">
+                                <span class="button-cart__text min-w-[20px] min-h-[20px] flex items-center justify-center w-full h-full cursor-pointer">
+                                    <svg aria-hidden="true" width="16px" height="16px" class="w-[16px]" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M30.622 9.602h-22.407l-1.809-7.464h-5.027v1.066h4.188l5.198 21.443c-1.108 0.323-1.923 1.334-1.923 2.547 0 1.472 1.193 2.666 2.666 2.666s2.666-1.194 2.666-2.666c0-0.603-0.208-1.153-0.545-1.599h7.487c-0.337 0.446-0.545 0.997-0.545 1.599 0 1.472 1.193 2.666 2.665 2.666s2.666-1.194 2.666-2.666c0-1.473-1.193-2.665-2.666-2.666v0h-11.403l-0.517-2.133h14.968l4.337-12.795zM13.107 27.196c0 0.882-0.717 1.599-1.599 1.599s-1.599-0.717-1.599-1.599c0-0.882 0.717-1.599 1.599-1.599s1.599 0.718 1.599 1.599zM24.836 27.196c0 0.882-0.718 1.599-1.6 1.599s-1.599-0.717-1.599-1.599c0-0.882 0.717-1.599 1.599-1.599 0.882 0 1.6 0.718 1.6 1.599zM11.058 21.331l-2.585-10.662h20.662l-3.615 10.662h-14.462z" fill="currentColor"></path></svg>
+                                </span>
+                            </div>
+                        </cart-recommended-product-form>
+                    </div>
+                    <div class="recommended-product__content mt-4 px-2">
+                        <a href="${pLink}" class="link"><h6 class="font-semibold text-[13px] line-clamp-2">${pName}</h6></a>
+                        <div class="price font-bold text-[14px] mt-2">$${(currentPrice||0).toLocaleString()}</div>
+                    </div>
+                </cart-recommended-product>
+            </div>
+          `;
+       }).join('');
+       wrapper.innerHTML = recHtml;
+    });
+
+  }, [cartItems, cartTotal, bodyHtml, updateQuantity, removeItem, products]);
 
   /* ── Loading/error states ── */
   if (loadError) {
