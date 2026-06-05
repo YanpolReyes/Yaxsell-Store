@@ -2482,7 +2482,7 @@ export default function HomePage23() {
                           <h6 class="heading link-hover-animation text-[13px] line-clamp-2">${item.product.NAME}</h6>
                       </a>
                       <div class="flex items-center justify-between mt-3">
-                          <div class="price font-bold text-[14px]">$${item.price.toLocaleString()}</div>
+                          <div class="price font-bold text-[14px]">$${((item.product?.CURRENTPRICE && item.product.CURRENTPRICE > 0) ? item.product.CURRENTPRICE : (item.product?.PRICE || 0)).toLocaleString()}</div>
                           <div class="flex items-center gap-3 border border-gray-200 rounded-full px-2 py-1 bg-white">
                               <button class="cart-qty-btn px-2 text-gray-500 cursor-pointer" data-action="minus" data-id="${item.product.$id}">-</button>
                               <span class="text-xs font-semibold w-3 text-center">${item.quantity}</span>
@@ -2527,8 +2527,8 @@ export default function HomePage23() {
     const checkoutBtn = checkoutWrapper.querySelector('button[name="checkout"]');
     if (checkoutBtn) {
        checkoutBtn.innerHTML = `
-            <span class="visible-text z-10">CHECKOUT <b class="px-2">•</b> <span>$${cartTotal.toLocaleString()}</span></span>
-            <span class="hover-text">CHECKOUT <b class="px-2">•</b> <span>$${cartTotal.toLocaleString()}</span></span>
+            <span class="visible-text z-10">CHECKOUT <b class="px-2">•</b> <span>$${(cartTotal || 0).toLocaleString()}</span></span>
+            <span class="hover-text">CHECKOUT <b class="px-2">•</b> <span>$${(cartTotal || 0).toLocaleString()}</span></span>
        `;
        if (cartItems.length === 0) checkoutBtn.setAttribute('disabled', 'true');
        else checkoutBtn.removeAttribute('disabled');
@@ -2547,6 +2547,19 @@ export default function HomePage23() {
       el.textContent = `(${cartItems.reduce((acc: any, curr: any) => acc + curr.quantity, 0)})`;
     });
 
+    const closeBtn = root.querySelector('cart-drawer .button-close');
+    if (closeBtn) {
+      const handleCloseClick = (e: Event) => {
+        e.preventDefault();
+        const drawer = document.querySelector('cart-drawer');
+        if (drawer) drawer.setAttribute('data-hidden', 'true');
+        document.documentElement.classList.remove('overflow-hidden');
+      };
+      // clone to remove old listeners
+      const newCloseBtn = closeBtn.cloneNode(true);
+      closeBtn.parentNode?.replaceChild(newCloseBtn, closeBtn);
+      newCloseBtn.addEventListener('click', handleCloseClick);
+    }
   }, [cartItems, cartTotal, bodyHtml, updateQuantity, removeItem]);
 
   /* ── Loading/error states ── */
