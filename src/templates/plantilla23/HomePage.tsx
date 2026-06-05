@@ -938,7 +938,15 @@ export default function HomePage23() {
 
         /* Hero banner mobile: remove description */
         .slideshow .body-text { display: none !important; }
+
+        /* Hide Navbar1 top section and overlays on mobile, keep ONLY bottom mobile nav */
+        .tpl1-nav { display: none !important; }
+        .tpl1-nav-mobile-overlay { display: none !important; }
       }
+
+      /* Globally hide Navbar1 top sections for Plantilla 23 */
+      .tpl1-nav { display: none !important; }
+      .tpl1-nav-mobile-overlay { display: none !important; }
 \n/* Estado 3: Navbar final scrolled (data-scroll="true") - Glassmorphism sutil y elegante, sin línea blanca abajo */
       custom-header.header-element[data-scroll="true"],
       .header[data-id="sections--27304712208665__header"][data-scroll="true"] {
@@ -2165,6 +2173,28 @@ export default function HomePage23() {
           mobileHeaderActions.insertBefore(profileBtn, cartIcon);
         } else {
           mobileHeaderActions.appendChild(profileBtn);
+        }
+      }
+
+      // Intercept clicks on cart and search icons on mobile header to redirect directly and avoid broken overlays
+      if (mobileHeaderActions) {
+        const mobileCartIcon = mobileHeaderActions.querySelector('[data-object="cart"], .cart-icon');
+        if (mobileCartIcon && !(mobileCartIcon as HTMLElement).dataset.redirectInjected) {
+          (mobileCartIcon as HTMLElement).dataset.redirectInjected = '1';
+          mobileCartIcon.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            window.location.href = '/carrito';
+          }, true);
+        }
+        const mobileSearchIcon = mobileHeaderActions.querySelector('[data-object="search-drawer"]');
+        if (mobileSearchIcon && !(mobileSearchIcon as HTMLElement).dataset.redirectInjected) {
+          (mobileSearchIcon as HTMLElement).dataset.redirectInjected = '1';
+          mobileSearchIcon.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            window.location.href = '/productos';
+          }, true);
         }
       }
     }
