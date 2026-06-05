@@ -710,19 +710,24 @@ export default function HomePage23() {
           transform: rotate(-90deg) !important;
           transform-origin: left top !important;
           left: 0 !important;
-          top: 85% !important;
+          top: 88% !important;
           bottom: auto !important;
-          border-radius: 0 0 10px 10px !important;
+          border-radius: 0 0 8px 8px !important;
           animation: none !important;
-          padding: 8px 16px !important;
+          padding: 5px 10px !important;
           box-shadow: 0 2px 5px rgba(251, 202, 201, 0.4) !important;
+          font-size: 11px !important;
         }
         .button-newsletter:hover, .button-newsletter:active {
           transform: rotate(-90deg) !important;
           box-shadow: 0 2px 5px rgba(251, 202, 201, 0.4) !important;
         }
         .button-newsletter .h6 {
-          font-size: 14px !important;
+          font-size: 11px !important;
+        }
+        .button-newsletter .button-close svg {
+          width: 14px !important;
+          height: 14px !important;
         }
       }
 
@@ -870,22 +875,24 @@ export default function HomePage23() {
         box-shadow: none !important;
       }
 
-            /* ── FORCE NEWSLETTER POPUP ON MOBILE ── */
+            /* ── NEWSLETTER POPUP: Never auto-open on mobile — only if user clicks button ── */
+      /* On mobile the popup will only show when user taps the button-newsletter label */
       @media (max-width: 767px) {
-        newsletter-popup:not([data-hidden="true"]), .newsletter-popup:not([data-hidden="true"]) {
+        /* When popup opens (triggered by user), make it look nice and compact */
+        newsletter-popup:not([data-hidden="true"]):not([data-auto-hidden="true"]) {
           display: block !important;
           visibility: visible !important;
           opacity: 1 !important;
           left: 16px !important;
-          bottom: 16px !important;
-          transform: none !important;
-          width: calc(100% - 32px) !important;
-          max-width: 360px !important;
+          bottom: 80px !important;
+          right: 16px !important;
+          width: auto !important;
+          max-width: 340px !important;
           z-index: 999999 !important;
+          transform: none !important;
         }
       }
 
-      
       /* ── HIDE HEROBANNER PAGINATION AND ARROWS ── */
       .slideshow .swiper-pagination,
       .slideshow .button-previous,
@@ -906,20 +913,28 @@ export default function HomePage23() {
           pointer-events: auto !important;
       }
 
-      /* ── FORCE BIG POPUP TO SHOW ON MOBILE IF NOT HIDDEN ── */
+      /* ── MOBILE HERO BANNER: Remove description, add two buttons ── */
       @media (max-width: 767px) {
-        newsletter-popup:not([data-hidden="true"]), 
-        .newsletter-popup:not([data-hidden="true"]) {
-          display: block !important;
-          visibility: visible !important;
-          opacity: 1 !important;
-          left: 16px !important;
-          bottom: 16px !important;
-          transform: none !important;
-          width: calc(100% - 32px) !important;
-          max-width: 360px !important;
-          z-index: 999999 !important;
-        }
+        /* Hide description text in hero banner */
+        #shopify-block-AcVBhSWFiRHVuUkd6T__text_JfdEpN { display: none !important; }
+        /* Make hero button smaller */
+        #shopify-block-ANTBPMjNnaUZNbklXR__button_VKQi4f .custom-button { font-size: 12px !important; padding: 8px 18px !important; }
+
+        /* Hide descriptions on multimedia collage cards */
+        /* Manos Suaves description */
+        #shopify-block-AYXpwUzZ2UjI3VEhCQ__text_99crGb { display: none !important; }
+        /* Manos Suaves button smaller */
+        #shopify-block-ASEtVbTFsdUJKUm1XV__button_yUjQqP .custom-button { font-size: 11px !important; padding: 6px 14px !important; }
+        /* Tu Ritual Diario description */
+        #shopify-block-Aa0hpRFd5WEFEbWEwV__text_mzj3iN { display: none !important; }
+        /* Dulce Color description — will need to find its block ID, applying via parent */
+        .multimedia-collage__block .text-block.shopify-block:not(:first-child) { display: none !important; }
+
+        /* Videos: allow scroll through them */
+        video { pointer-events: none !important; touch-action: pan-y !important; }
+
+        /* Hero banner mobile: remove description */
+        .slideshow .body-text { display: none !important; }
       }
 \n/* Estado 3: Navbar final scrolled (data-scroll="true") - Glassmorphism sutil y elegante, sin línea blanca abajo */
       custom-header.header-element[data-scroll="true"],
@@ -1066,6 +1081,7 @@ export default function HomePage23() {
     });
 
     // ═══ Video lazy-play: only play videos when visible ═══
+    const isMobile = window.innerWidth < 1024;
     const videoObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         const video = entry.target as HTMLVideoElement;
@@ -1079,7 +1095,9 @@ export default function HomePage23() {
                                  (video.src && (video.src.includes('therea.mp4') || video.src.includes('rever.mp4')));
           
           // En móvil (no hay hover), auto-reproducir incluso los videos de collage
-          if (!isCollageVideo || window.innerWidth < 1024) {
+          if (!isCollageVideo || isMobile) {
+            // Ensure loop on mobile so video repeats while visible
+            if (isMobile) video.loop = true;
             video.play().catch(() => {});
           }
         } else {
@@ -1218,45 +1236,84 @@ export default function HomePage23() {
     setTimeout(disableHeroSwiper, 1500);
     setTimeout(disableHeroSwiper, 3000);
 
-    // ═══ FIX NEWSLETTER POPUP ON MOBILE ═══
-    // The button-newsletter auto-hides itself and replaces with the popup.
-    // On mobile the popup has [inert] and [data-hidden="true"] blocking it.
-    // We watch for the popup to appear and force-show it.
-    const fixNewsletterMobile = () => {
-      if (!window.matchMedia('(max-width: 767px)').matches) return;
-      const popup = document.querySelector('newsletter-popup') as HTMLElement | null;
-      if (!popup) return;
-      
-      // If the popup is supposed to be hidden (e.g. user clicked close), let it be hidden!
-      if (popup.getAttribute('data-hidden') === 'true') {
-         popup.style.setProperty('display', 'none', 'important');
-         return;
+    // ═══ NEWSLETTER POPUP ON MOBILE: Never auto-open, only on user tap ═══
+    // On mobile, always keep the popup closed unless the user explicitly opens it.
+    if (window.matchMedia('(max-width: 767px)').matches) {
+      const preventAutoPopup = () => {
+        const popup = document.querySelector('newsletter-popup') as HTMLElement | null;
+        if (!popup) return;
+        // Mark the popup as auto-hidden so CSS doesn't force it open
+        popup.setAttribute('data-auto-hidden', 'true');
+        popup.setAttribute('data-hidden', 'true');
+        popup.setAttribute('inert', '');
+        popup.style.setProperty('display', 'none', 'important');
+        popup.style.setProperty('visibility', 'hidden', 'important');
+      };
+      preventAutoPopup();
+      // Watch for the popup to be auto-triggered and block it
+      const popupEl = document.querySelector('newsletter-popup') as HTMLElement | null;
+      if (popupEl) {
+        const popupMutObs = new MutationObserver(() => {
+          // Only allow display if user manually opened it (removed data-auto-hidden)
+          if (popupEl.getAttribute('data-auto-hidden') === 'true') {
+            popupEl.setAttribute('data-hidden', 'true');
+            popupEl.setAttribute('inert', '');
+            popupEl.style.setProperty('display', 'none', 'important');
+          }
+        });
+        popupMutObs.observe(popupEl, { attributes: true, attributeFilter: ['data-hidden', 'inert', 'style'] });
       }
-      
-      // Remove blocking attributes
-      popup.removeAttribute('inert');
-      popup.style.setProperty('display', 'block', 'important');
-      popup.style.setProperty('visibility', 'visible', 'important');
-      popup.style.setProperty('opacity', '1', 'important');
-      popup.style.setProperty('left', '16px', 'important');
-      popup.style.setProperty('bottom', '16px', 'important');
-      popup.style.setProperty('right', 'auto', 'important');
-      popup.style.setProperty('width', 'calc(100% - 32px)', 'important');
-      popup.style.setProperty('max-width', '360px', 'important');
-      popup.style.setProperty('z-index', '999999', 'important');
-      popup.style.setProperty('transform', 'none', 'important');
-    };
-    // Watch for the popup to change state (the button-newsletter triggers it)
-    const popupEl = document.querySelector('newsletter-popup') as HTMLElement | null;
-    if (popupEl) {
-      const popupMutObs = new MutationObserver(() => {
-        fixNewsletterMobile();
-      });
-      popupMutObs.observe(popupEl, { attributes: true, attributeFilter: ['data-hidden', 'inert', 'style'] });
+
+      // When user clicks the button-newsletter label, allow the popup to open
+      const btnNewsletter = document.querySelector('.button-newsletter') as HTMLElement | null;
+      if (btnNewsletter) {
+        btnNewsletter.addEventListener('click', () => {
+          const popup = document.querySelector('newsletter-popup') as HTMLElement | null;
+          if (popup) {
+            popup.removeAttribute('data-auto-hidden');
+            popup.removeAttribute('data-hidden');
+            popup.removeAttribute('inert');
+            popup.style.removeProperty('display');
+            popup.style.removeProperty('visibility');
+          }
+        });
+      }
+
+      // Prevent auto-open after scripts load
+      setTimeout(preventAutoPopup, 1500);
+      setTimeout(preventAutoPopup, 3000);
     }
-    // Also run after delay (when the auto-trigger fires)
-    setTimeout(fixNewsletterMobile, 2500);
-    setTimeout(fixNewsletterMobile, 5000);
+
+    // ═══ MOBILE HERO: Replace single button with two buttons (Tienda + Catálogo) ═══
+    if (window.innerWidth < 768) {
+      const injectMobileHeroButtons = () => {
+        const heroButtonBlock = root.querySelector('#shopify-block-ANTBPMjNnaUZNbklXR__button_VKQi4f .custom-theme-block') as HTMLElement | null;
+        if (!heroButtonBlock || heroButtonBlock.dataset.mobileBtnsInjected) return;
+        heroButtonBlock.dataset.mobileBtnsInjected = '1';
+        heroButtonBlock.innerHTML = `
+          <div style="display:flex; gap:10px; padding: 10px 0 40px;">
+            <a href="/productos" role="button" style="
+              display:inline-flex; align-items:center; justify-content:center;
+              padding: 10px 22px; border-radius:50px;
+              background: linear-gradient(135deg, #c9a94a, #e8d48a, #c9a94a);
+              color: #3b2800; font-weight:700; font-size:13px;
+              text-decoration:none; box-shadow: 0 4px 14px rgba(201,169,74,0.45);
+              letter-spacing:0.5px; border:none; white-space:nowrap;
+            ">✨ Tienda</a>
+            <a href="/catalogo" role="button" style="
+              display:inline-flex; align-items:center; justify-content:center;
+              padding: 10px 22px; border-radius:50px;
+              background: #FBCAC9; color:#fff; font-weight:700; font-size:13px;
+              text-decoration:none; box-shadow: 0 4px 14px rgba(251,202,201,0.55);
+              letter-spacing:0.5px; border:none; white-space:nowrap;
+            ">📖 Catálogo</a>
+          </div>
+        `;
+      };
+      injectMobileHeroButtons();
+      setTimeout(injectMobileHeroButtons, 800);
+      setTimeout(injectMobileHeroButtons, 2000);
+    }
 
   }, [bodyHtml, categories]);
 
@@ -2077,6 +2134,29 @@ export default function HomePage23() {
       scrollVideos.forEach(v => videoObserver.observe(v));
     }
 
+    // ═══ MOBILE: Inject Profile icon next to Buscar / Carrito in mobile header ═══
+    if (window.innerWidth < 1024) {
+      const mobileHeaderActions = root.querySelector('.flex.lg\\:hidden.justify-center.items-center') || 
+                                  document.querySelector('.flex.lg\\:hidden.justify-center.items-center');
+      if (mobileHeaderActions && !mobileHeaderActions.querySelector('[data-profile-icon]')) {
+        const profileBtn = document.createElement('a');
+        profileBtn.href = '/cuenta';
+        profileBtn.setAttribute('role', 'button');
+        profileBtn.setAttribute('aria-label', 'Mi perfil');
+        profileBtn.setAttribute('data-profile-icon', '1');
+        profileBtn.className = 'relative px-[0.5rem] uppercase';
+        profileBtn.style.cssText = 'display:inline-flex;align-items:center;';
+        profileBtn.innerHTML = `<span style="display:inline-flex;align-items:center;"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:20px;height:20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg></span>`;
+        // Insert before cart icon
+        const cartIcon = mobileHeaderActions.querySelector('.cart-icon');
+        if (cartIcon) {
+          mobileHeaderActions.insertBefore(profileBtn, cartIcon);
+        } else {
+          mobileHeaderActions.appendChild(profileBtn);
+        }
+      }
+    }
+
     root.dataset.navInjected = '1';
   }, [categories, subcategories, products]);
 
@@ -2318,7 +2398,7 @@ export default function HomePage23() {
   if (!bodyHtml) {
     return (
       <div style={{ padding: 40, textAlign: 'center', fontFamily: 'system-ui, sans-serif', color: '#888' }}>
-        Cargando plantilla 23...
+        {/* Pantalla en blanco mientras carga — no mostrar texto al cliente */}
       </div>
     );
   }
