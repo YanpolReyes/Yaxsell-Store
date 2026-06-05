@@ -13,11 +13,16 @@
    - .in-view forzado en .animation-element tras carga
    ════════════════════════════════════════════════════════════════════ */
 import { useEffect, useRef, useState } from 'react';
-import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, PRODUCTS_COLLECTION, Query } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, PRODUCTS_COLLECTION, Query, formatPrice } from '@/lib/appwrite';
 import { Category, Subcategory, Product } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { isEditorMockEnabled } from '@/lib/editor-mock';
 import { getTpl23MockData } from './mockData';
+import { useRouter } from 'next/navigation';
+import { useCart } from '@/context/CartContext';
+import { resolveStorageImageUrl } from '@/lib/product-images';
+import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
+import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 
 const SHOPIFY_BASE = '/shopify/plantilla23/assets';
 
@@ -182,6 +187,9 @@ export default function HomePage23() {
   const [bodyHtml, setBodyHtml] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const { user } = useAuth();
+  const router = useRouter();
+  const { addItem } = useCart();
+  const { settings: apertura } = useAperturaPromotion();
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -1651,6 +1659,80 @@ export default function HomePage23() {
             swiperContainer.swiper.update();
           }
         }
+      });
+
+      // 4. Populate featured-product blocks with random in-stock products
+      const featuredProductBlocks = root.querySelectorAll('featured-product');
+      featuredProductBlocks.forEach((fpBlock: any) => {
+        const availableProducts = products.filter(p => p.STOCK && p.STOCK > 0);
+        if (availableProducts.length === 0) return;
+        const randomProduct = availableProducts[Math.floor(Math.random() * availableProducts.length)];
+        
+        // Update images
+        const imgs = fpBlock.querySelectorAll('img');
+        if (imgs.length > 0) {
+          imgs.forEach((img: HTMLImageElement) => {
+            img.src = resolveStorageImageUrl(randomProduct.IMAGEURL) || '';
+            if (img.srcset) img.srcset = resolveStorageImageUrl(randomProduct.IMAGEURL) || '';
+          });
+        }
+        
+        // Update title
+        const heading = fpBlock.querySelector('h3.heading span');
+        if (heading) heading.textContent = randomProduct.NAME;
+        
+        // Update prices
+        const priceResolved = resolveProductDisplayPrice(randomProduct, apertura);
+        const regularPrice = fpBlock.querySelector('.price__regular .price-item');
+        if (regularPrice) regularPrice.textContent = formatPrice(priceResolved.displayPrice);
+        const salePrice = fpBlock.querySelector('.price__sale .price-item--sale');
+        if (salePrice) salePrice.textContent = formatPrice(priceResolved.displayPrice);
+        
+        const comparePrice = fpBlock.querySelector('.price-item--compare');
+        if (comparePrice) {
+          if (priceResolved.hasDiscount && priceResolved.originalPrice != null) {
+            comparePrice.textContent = formatPrice(priceResolved.originalPrice);
+          } else {
+            comparePrice.textContent = '';
+          }
+        }
+        
+        // Update stock
+        const badge = fpBlock.querySelector('.badge--in-stock');
+        if (badge) badge.textContent = `${randomProduct.STOCK} in stock`;
+        
+        // Update description
+        const descBlock = fpBlock.querySelector('.body-text[data-index="6"] p');
+        if (descBlock) descBlock.innerHTML = randomProduct.DESCRIPTION || '';
+        
+        // Remove variants to avoid messing with sizes
+        const variantSelector = fpBlock.querySelector('variant-selector');
+        if (variantSelector) variantSelector.remove();
+        
+        // Update cart button onClick to add THIS product and go to carrito
+        const btn = fpBlock.querySelector('.button-cart');
+        if (btn) {
+          btn.addEventListener('click', (e: Event) => {
+            e.preventDefault();
+            e.stopPropagation();
+            addItem(randomProduct, 1);
+            router.push('/carrito');
+          });
+        }
+        
+        // Update form action just in case
+        const forms = fpBlock.querySelectorAll('form');
+        forms.forEach((f: HTMLFormElement) => f.onsubmit = (e) => e.preventDefault());
+        
+        // Update link to details
+        const fullDetailsLink = fpBlock.querySelector('.full-details-link a');
+        if (fullDetailsLink) {
+          fullDetailsLink.href = `/productos/${randomProduct.$id}`;
+        }
+        
+        // Update vendor
+        const vendor = fpBlock.querySelector('.vendor span');
+        if (vendor) vendor.textContent = randomProduct.BRAND || 'Yaxsell';
       });
 
       // Intersection Observer for Hero Scroll Videos
