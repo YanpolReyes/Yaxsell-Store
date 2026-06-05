@@ -217,10 +217,10 @@ export default function HomePage23() {
         const tabBtn = target.closest('.kc-tab-btn');
         if (tabBtn) {
             const targetId = tabBtn.getAttribute('data-target');
-            root.querySelectorAll('.kc-tab-btn').forEach(btn => btn.classList.remove('active'));
+            root.querySelectorAll('.kc-tab-btn').forEach((btn: any) => btn.classList.remove('active'));
             tabBtn.classList.add('active');
             
-            root.querySelectorAll('.kc-faq-pane').forEach(pane => pane.classList.remove('active'));
+            root.querySelectorAll('.kc-faq-pane').forEach((pane: any) => pane.classList.remove('active'));
             const targetPane = document.getElementById(targetId || '');
             if (targetPane) targetPane.classList.add('active');
             return;
@@ -235,7 +235,7 @@ export default function HomePage23() {
             
             const currentPane = parent.closest('.kc-faq-pane');
             if (currentPane) {
-                currentPane.querySelectorAll('.kc-accordion-item').forEach(item => {
+                currentPane.querySelectorAll('.kc-accordion-item').forEach((item: any) => {
                     item.classList.remove('active');
                     const itemContent = item.querySelector('.kc-accordion-content');
                     if (itemContent) itemContent.style.display = 'none';
