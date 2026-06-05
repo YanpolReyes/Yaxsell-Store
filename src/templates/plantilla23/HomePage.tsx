@@ -114,9 +114,9 @@ const JS_FILES: JsFile[] = [
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/added-to-cart-popup.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/localization-popup.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/search-drawer.js` },
-  { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/cart-drawer.js`, module: true },
-  { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/cart-quantity-selector.js` },
-  { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/cart-recommended-product-form.js` },
+  // cart-drawer.js removed — native script calls Shopify fetch() which crashes; React handles drawer instead
+  // cart-quantity-selector.js removed — React handles qty updates
+  // cart-recommended-product-form.js removed — React hydrates recommendations
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/newsletter-popup.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/newsletter-invalid.js` },
   { src: `/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/newsletter-validate.js` },
@@ -2435,11 +2435,27 @@ export default function HomePage23() {
         const p = products.find(prod => prod.$id === pid);
         if (p) {
           addItem(p, 1);
-          const cartDrawer = document.querySelector('cart-drawer');
-          if (cartDrawer) {
-            cartDrawer.setAttribute('data-hidden', 'false');
-            document.documentElement.classList.add('overflow-hidden');
-          }
+
+          // Animate button: show checkmark for 600ms then open drawer
+          const btnEl = btn as HTMLElement;
+          const originalHtml = btnEl.innerHTML;
+          btnEl.innerHTML = `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>`;
+          btnEl.style.background = '#22c55e';
+          btnEl.style.transform = 'scale(1.15)';
+
+          setTimeout(() => {
+            btnEl.innerHTML = originalHtml;
+            btnEl.style.background = '';
+            btnEl.style.transform = '';
+            const cartDrawer = document.querySelector('cart-drawer');
+            if (cartDrawer) {
+              cartDrawer.setAttribute('data-hidden', 'false');
+              cartDrawer.removeAttribute('inert');
+              document.documentElement.style.overflow = 'hidden';
+            }
+          }, 650);
         }
         return;
       }
@@ -2451,7 +2467,8 @@ export default function HomePage23() {
         const cartDrawer = document.querySelector('cart-drawer');
         if (cartDrawer) {
           cartDrawer.setAttribute('data-hidden', 'false');
-          document.documentElement.classList.add('overflow-hidden');
+          cartDrawer.removeAttribute('inert');
+          document.documentElement.style.overflow = 'hidden';
         }
       }
     };
@@ -2486,7 +2503,7 @@ export default function HomePage23() {
            ${cartItems.map((item: any) => `
                <div class="cart-item flex items-center px-5 gap-5 transition-all duration-500 ease-in-out relative">
                   <a href="/productos/${item.product.$id}" class="image-wrapper block h-[70px] w-[70px] min-h-[70px] min-w-[70px] img-blur link relative">
-                      <img src="${item.product.IMAGES?.[0] || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png'}" class="object-cover w-full h-full" />
+                      <img src="${item.product.IMAGEURL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png'}" class="object-cover w-full h-full" />
                   </a>
                   <div class="cart-item__details flex-1">
                       <a href="/productos/${item.product.$id}" class="link">
@@ -2563,45 +2580,55 @@ export default function HomePage23() {
       const handleCloseClick = (e: Event) => {
         e.preventDefault();
         const drawer = document.querySelector('cart-drawer');
-        if (drawer) drawer.setAttribute('data-hidden', 'true');
-        document.documentElement.classList.remove('overflow-hidden');
+        if (drawer) {
+          drawer.setAttribute('data-hidden', 'true');
+          drawer.setAttribute('inert', '');
+        }
+        document.documentElement.style.overflow = '';
       };
       // clone to remove old listeners
       const newCloseBtn = closeBtn.cloneNode(true);
       closeBtn.parentNode?.replaceChild(newCloseBtn, closeBtn);
       newCloseBtn.addEventListener('click', handleCloseClick);
     }
-    root.querySelectorAll('.drawer__recommendation-wrapper .swiper-wrapper').forEach(wrapper => {
-       const recHtml = products.slice(0, 4).map((p: any) => {
-          const pImg = p.IMAGES?.[0] || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';
-          const pName = p.NAME || 'Producto';
-          const pLink = `/productos/${p.$id}`;
-          const currentPrice = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
-          
-          return `
-            <div class="swiper-slide h-auto w-full group">
-                <cart-recommended-product>
-                    <div class="recommended-product__image-wrapper relative group-hover:shadow-md transition-all rounded-md overflow-hidden bg-white p-2">
-                        <a href="${pLink}" title="${pName}" aria-label="${pName}" class="recommended-product__image block h-full w-full min-h-[100px] min-w-[100px] img-blur mb-2" tabindex="-1">
-                            <img src="${pImg}" alt="${pName}" class="object-contain w-full h-[120px] pointer-events-none" style="object-fit: contain !important; max-width: 100%; max-height: 100%;">
-                        </a>
-                        <cart-recommended-product-form class="product-form">
-                            <div role="button" tabindex="0" class="button-cart pk-grid-add-to-cart max-w-[95%] p-3 rounded-[100%] w-[40px] h-[40px] duration-300 ease-in-out cursor-pointer z-20 absolute bottom-2 left-0 right-0 mx-auto button--primary flex items-center justify-center opacity-0 invisible group-hover:opacity-100 group-hover:visible" aria-label="Agregar al carrito" data-product-id="${p.$id}">
-                                <span class="button-cart__text min-w-[20px] min-h-[20px] flex items-center justify-center w-full h-full cursor-pointer">
-                                    <svg aria-hidden="true" width="16px" height="16px" class="w-[16px]" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M30.622 9.602h-22.407l-1.809-7.464h-5.027v1.066h4.188l5.198 21.443c-1.108 0.323-1.923 1.334-1.923 2.547 0 1.472 1.193 2.666 2.666 2.666s2.666-1.194 2.666-2.666c0-0.603-0.208-1.153-0.545-1.599h7.487c-0.337 0.446-0.545 0.997-0.545 1.599 0 1.472 1.193 2.666 2.665 2.666s2.666-1.194 2.666-2.666c0-1.473-1.193-2.665-2.666-2.666v0h-11.403l-0.517-2.133h14.968l4.337-12.795zM13.107 27.196c0 0.882-0.717 1.599-1.599 1.599s-1.599-0.717-1.599-1.599c0-0.882 0.717-1.599 1.599-1.599s1.599 0.718 1.599 1.599zM24.836 27.196c0 0.882-0.718 1.599-1.6 1.599s-1.599-0.717-1.599-1.599c0-0.882 0.717-1.599 1.599-1.599 0.882 0 1.6 0.718 1.6 1.599zM11.058 21.331l-2.585-10.662h20.662l-3.615 10.662h-14.462z" fill="currentColor"></path></svg>
-                                </span>
-                            </div>
-                        </cart-recommended-product-form>
-                    </div>
-                    <div class="recommended-product__content mt-4 px-2">
-                        <a href="${pLink}" class="link"><h6 class="font-semibold text-[13px] line-clamp-2">${pName}</h6></a>
-                        <div class="price font-bold text-[14px] mt-2">$${(currentPrice||0).toLocaleString()}</div>
-                    </div>
-                </cart-recommended-product>
+    // Hydrate "Otros también compraron" with compact 2-col scrollable grid
+    root.querySelectorAll('.drawer__recommendation-wrapper').forEach(wrapper => {
+      const gridId = 'pk-rec-grid';
+      let gridEl = wrapper.querySelector(`#${gridId}`) as HTMLElement | null;
+      if (!gridEl) {
+        gridEl = document.createElement('div');
+        gridEl.id = gridId;
+        gridEl.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 16px;max-height:340px;overflow-y:auto;';
+        // Remove existing swiper markup to avoid conflicts
+        const swiperEl = wrapper.querySelector('.swiper-container');
+        if (swiperEl) swiperEl.replaceWith(gridEl);
+        else wrapper.appendChild(gridEl);
+      }
+
+      gridEl.innerHTML = products.slice(0, 8).map((p: any) => {
+        const pImg = p.IMAGEURL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';
+        const pName = p.NAME || 'Producto';
+        const pLink = `/productos/${p.$id}`;
+        const currentPrice = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
+        return `
+          <div style="background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);display:flex;flex-direction:column;">
+            <a href="${pLink}" style="display:block;padding:8px;">
+              <img src="${pImg}" alt="${pName}" style="width:100%;height:80px;object-fit:contain;display:block;">
+            </a>
+            <div style="padding:6px 8px 8px;flex:1;display:flex;flex-direction:column;justify-content:space-between;">
+              <a href="${pLink}" style="text-decoration:none;color:#111;">
+                <p style="margin:0;font-size:11px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${pName}</p>
+              </a>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
+                <span style="font-size:12px;font-weight:700;color:#111;">$${(currentPrice||0).toLocaleString()}</span>
+                <button class="pk-grid-add-to-cart" data-product-id="${p.$id}" style="background:var(--color-button,#e396bf);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;" aria-label="Agregar al carrito">
+                  <svg width="13" height="13" viewBox="0 0 32 32" fill="currentColor" style="color:#fff;"><path d="M30.622 9.602h-22.407l-1.809-7.464h-5.027v1.066h4.188l5.198 21.443c-1.108 0.323-1.923 1.334-1.923 2.547 0 1.472 1.193 2.666 2.666 2.666s2.666-1.194 2.666-2.666c0-0.603-0.208-1.153-0.545-1.599h7.487c-0.337 0.446-0.545 0.997-0.545 1.599 0 1.472 1.193 2.666 2.665 2.666s2.666-1.194 2.666-2.666c0-1.473-1.193-2.665-2.666-2.666v0h-11.403l-0.517-2.133h14.968l4.337-12.795z"/></svg>
+                </button>
+              </div>
             </div>
-          `;
-       }).join('');
-       wrapper.innerHTML = recHtml;
+          </div>
+        `;
+      }).join('');
     });
 
   }, [cartItems, cartTotal, bodyHtml, updateQuantity, removeItem, products]);
