@@ -1686,6 +1686,12 @@ export default function HomePage23() {
           }
         }
         
+        // Fix image opacity
+        const productMedia = fpBlock.querySelector('product-media');
+        if (productMedia) {
+          productMedia.classList.remove('opacity-0');
+        }
+
         // Update images
         const imgs = fpBlock.querySelectorAll('img');
         if (imgs.length > 0) {
@@ -1777,6 +1783,7 @@ export default function HomePage23() {
         // Update cart button onClick to add THIS product and go to carrito
         const btn = fpBlock.querySelector('.button-cart');
         if (btn) {
+          btn.classList.remove('pointer-events-none'); // Ensure it's clickable
           btn.addEventListener('click', (e: Event) => {
             e.preventDefault();
             e.stopPropagation();
