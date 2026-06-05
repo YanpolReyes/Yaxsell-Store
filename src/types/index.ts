@@ -79,7 +79,7 @@ export interface Banner {
 export interface TimedOffer {
   $id: string;
   title: string;
-  offerType: 'product' | 'category' | 'subcategory';
+  offerType: 'product' | 'category' | 'subcategory' | 'destacado_temporal';
   targetId: string;
   productName: string;
   originalPrice: number;
