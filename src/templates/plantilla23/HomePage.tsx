@@ -195,6 +195,7 @@ export default function HomePage23() {
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [destacadoTemporal, setDestacadoTemporal] = useState<any>(null);
+  const [isAppwriteLoaded, setIsAppwriteLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
@@ -295,6 +296,8 @@ export default function HomePage23() {
         }
       } catch (err) {
         console.error('[Plantilla23] Error fetching categories/subcategories/products:', err);
+      } finally {
+        setIsAppwriteLoaded(true);
       }
     };
     fetchData();
@@ -974,7 +977,7 @@ export default function HomePage23() {
 
   /* ── Set innerHTML ONCE via ref ── */
   useEffect(() => {
-    if (!bodyHtml || !containerRef.current) return;
+    if (!bodyHtml || !containerRef.current || !isAppwriteLoaded) return;
     if (containerRef.current.dataset.htmlSet) return;
 
     // Parse HTML string to DOM nodes in memory
@@ -1324,7 +1327,7 @@ export default function HomePage23() {
       setTimeout(injectMobileHeroButtons, 2000);
     }
 
-  }, [bodyHtml, categories]);
+  }, [bodyHtml, categories, isAppwriteLoaded]);
 
   /* ── Wire "Iniciar Sesión" button to auth popup (same style as plantilla1) ── */
   useEffect(() => {
@@ -2167,7 +2170,7 @@ export default function HomePage23() {
     }
 
     root.dataset.navInjected = '1';
-  }, [categories, subcategories, products]);
+  }, [categories, subcategories, products, isAppwriteLoaded]);
 
   /* ── Inject window.Shopify stub BEFORE loading JS ── */
   useEffect(() => {
