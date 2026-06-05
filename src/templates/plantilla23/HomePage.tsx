@@ -13,6 +13,8 @@
    - .in-view forzado en .animation-element tras carga
    ════════════════════════════════════════════════════════════════════ */
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import RecentProductsSection from '@/components/RecentProductsSection';
 import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, PRODUCTS_COLLECTION, TIMED_OFFERS_COLLECTION, Query, formatPrice } from '@/lib/appwrite';
 import { Category, Subcategory, Product } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
@@ -197,6 +199,7 @@ export default function HomePage23() {
   const [destacadoTemporal, setDestacadoTemporal] = useState<any>(null);
   const [isAppwriteLoaded, setIsAppwriteLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [hasPortalRoot, setHasPortalRoot] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -1041,8 +1044,17 @@ export default function HomePage23() {
       }
     }
 
+    // Find the category section container to insert the recent products portal root below it
+    const colListSection = tempDiv.querySelector('#shopify-section-template--27304712470809__collection_list_slider_YAxwGw') || tempDiv.querySelector('.collection-list')?.closest('.shopify-section');
+    if (colListSection) {
+      const portalRoot = document.createElement('div');
+      portalRoot.id = 'recent-products-portal-root';
+      colListSection.parentNode?.insertBefore(portalRoot, colListSection.nextSibling);
+    }
+
     containerRef.current.innerHTML = tempDiv.innerHTML;
     containerRef.current.dataset.htmlSet = '1';
+    setHasPortalRoot(true);
 
     // Remove leftover Shopify elements
     const root = containerRef.current;
@@ -2482,8 +2494,8 @@ export default function HomePage23() {
     const root = containerRef.current;
     if (!root) return;
 
-    const cartWrapper = root.querySelector('cart-drawer .cart-items-wrapper');
-    const checkoutWrapper = root.querySelector('cart-drawer .cart-drawer-checkout');
+    const cartWrapper = root.querySelector('cart-drawer .cart-items-wrapper') as HTMLElement;
+    const checkoutWrapper = root.querySelector('cart-drawer .cart-drawer-checkout') as HTMLElement;
     if (!cartWrapper || !checkoutWrapper) return;
 
     if (cartItems.length === 0) {
@@ -2496,33 +2508,97 @@ export default function HomePage23() {
             <h6 class="heading pt-3">Tu carrito está vacío</h6>
         </div>
       `;
+      checkoutWrapper.style.display = 'none';
     } else {
+      // Sort items: newest added at the top
+      const sortedItems = [...cartItems].reverse();
+
       cartWrapper.innerHTML = `
         <h5 class="headding mb-3">Carrito</h5>
-        <div class="flex flex-col gap-[2rem] pt-5">
-           ${cartItems.map((item: any) => `
-               <div class="cart-item flex items-center px-5 gap-5 transition-all duration-500 ease-in-out relative">
-                  <a href="/productos/${item.product.$id}" class="image-wrapper block h-[70px] w-[70px] min-h-[70px] min-w-[70px] img-blur link relative">
+        <div class="flex flex-col gap-[0.5rem] pt-2" style="max-height: 48vh; overflow-y: auto;">
+           ${sortedItems.map((item: any) => {
+             const price = (item.product?.CURRENTPRICE && item.product.CURRENTPRICE > 0) ? item.product.CURRENTPRICE : (item.product?.PRICE || 0);
+             return `
+               <div class="cart-item">
+                  <a href="/productos/${item.product.$id}" class="image-wrapper block h-[64px] w-[64px] min-h-[64px] min-w-[64px] relative">
                       <img src="${item.product.IMAGEURL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png'}" class="object-cover w-full h-full" />
                   </a>
-                  <div class="cart-item__details flex-1">
-                      <a href="/productos/${item.product.$id}" class="link">
-                          <h6 class="heading link-hover-animation text-[13px] line-clamp-2">${item.product.NAME}</h6>
+                  <div class="cart-item__details flex-1" style="min-width: 0;">
+                      <a href="/productos/${item.product.$id}" class="link" style="text-decoration: none;">
+                          <h6 class="heading" style="margin: 0 0 4px 0; font-size: 13px; font-weight: 600; color: #374151; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                            ${item.product.NAME}
+                          </h6>
                       </a>
-                      <div class="flex items-center justify-between mt-3">
-                          <div class="price font-bold text-[14px]">$${((item.product?.CURRENTPRICE && item.product.CURRENTPRICE > 0) ? item.product.CURRENTPRICE : (item.product?.PRICE || 0)).toLocaleString()}</div>
-                          <div class="flex items-center gap-3 border border-gray-200 rounded-full px-2 py-1 bg-white">
-                              <button class="cart-qty-btn px-2 text-gray-500 cursor-pointer" data-action="minus" data-id="${item.product.$id}">-</button>
-                              <span class="text-xs font-semibold w-3 text-center">${item.quantity}</span>
-                              <button class="cart-qty-btn px-2 text-gray-500 cursor-pointer" data-action="plus" data-id="${item.product.$id}">+</button>
+                      <div class="flex items-center justify-between mt-2">
+                          <div class="price font-bold text-[14px]">$${price.toLocaleString()}</div>
+                          <div class="cart-qty-container">
+                              <button class="cart-qty-btn" data-action="minus" data-id="${item.product.$id}">-</button>
+                              <span class="text-xs font-semibold w-5 text-center">${item.quantity}</span>
+                              <button class="cart-qty-btn" data-action="plus" data-id="${item.product.$id}">+</button>
                           </div>
                       </div>
                   </div>
-                  <button class="absolute top-0 right-5 text-gray-400 cart-remove-btn p-1 cursor-pointer" data-id="${item.product.$id}">✕</button>
+                  <button class="cart-remove-btn" data-id="${item.product.$id}">✕</button>
                </div>
-           `).join('')}
+             `;
+           }).join('')}
         </div>
       `;
+
+      // Hydrate subtotal and checkout buttons
+      checkoutWrapper.style.display = 'block';
+      checkoutWrapper.innerHTML = `
+        <div style="border-top: 1px solid #f3f4f6; padding-top: 16px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 14px; font-weight: 600; color: #4b5563;">Subtotal</span>
+            <span style="font-size: 18px; font-weight: 800; color: #111827;">$${(cartTotal || 0).toLocaleString()}</span>
+          </div>
+          <p style="font-size: 11px; color: #9ca3af; margin: 0;">Impuestos y envío calculados al pagar</p>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button type="button" class="checkout-redirect-btn" style="
+            width: 100%;
+            padding: 12px 0;
+            background: #111827;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: background 0.2s;
+          ">
+            Proceder al Checkout
+          </button>
+          
+          <a href="/carrito" style="
+            display: block;
+            width: 100%;
+            padding: 10px 0;
+            background: #fff;
+            color: #4b5563;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
+          ">
+            Ver Carrito Completo
+          </a>
+        </div>
+      `;
+
+      const redirectBtn = checkoutWrapper.querySelector('.checkout-redirect-btn');
+      redirectBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = '/checkout';
+      });
     }
 
     const handleQtyClick = (e: Event) => {
@@ -2551,25 +2627,6 @@ export default function HomePage23() {
     cartWrapper.querySelectorAll('.cart-remove-btn').forEach(btn => {
       btn.addEventListener('click', handleRemoveClick);
     });
-
-    const checkoutBtn = checkoutWrapper.querySelector('button[name="checkout"]');
-    if (checkoutBtn) {
-       checkoutBtn.innerHTML = `
-            <span class="visible-text z-10">CHECKOUT <b class="px-2">•</b> <span>$${(cartTotal || 0).toLocaleString()}</span></span>
-            <span class="hover-text">CHECKOUT <b class="px-2">•</b> <span>$${(cartTotal || 0).toLocaleString()}</span></span>
-       `;
-       if (cartItems.length === 0) checkoutBtn.setAttribute('disabled', 'true');
-       else checkoutBtn.removeAttribute('disabled');
-       
-       const handleCheckoutClick = (e: Event) => {
-         e.preventDefault();
-         window.location.href = '/checkout';
-       };
-       // remove old listeners by cloning
-       const newBtn = checkoutBtn.cloneNode(true);
-       checkoutBtn.parentNode?.replaceChild(newBtn, checkoutBtn);
-       newBtn.addEventListener('click', handleCheckoutClick);
-    }
 
     root.querySelectorAll('.cart-item-size').forEach(el => {
       el.textContent = `(${cartItems.reduce((acc: any, curr: any) => acc + curr.quantity, 0)})`;
@@ -2731,9 +2788,137 @@ export default function HomePage23() {
           display: none !important;
         }
 
-        /* --- CART DRAWER Z-INDEX OVERRIDE --- */
+        /* --- PREMIUM CART DRAWER OVERRIDES --- */
         cart-drawer.cart-drawer, .added-to-cart-popup {
           z-index: 10005 !important;
+        }
+        cart-drawer {
+          font-family: 'Outfit', 'Inter', sans-serif !important;
+        }
+        cart-drawer .drawer__inner {
+          background-color: #ffffff !important;
+          border-left: 1px solid #f3f4f6 !important;
+          box-shadow: -10px 0 30px rgba(0,0,0,0.08) !important;
+          max-width: 400px !important;
+          display: flex !important;
+          flex-direction: column !important;
+          padding-top: 20px !important;
+        }
+        @media (max-width: 480px) {
+          cart-drawer .drawer__inner {
+            max-width: 100vw !important;
+            width: 100vw !important;
+          }
+        }
+        cart-drawer .button-close {
+          top: 15px !important;
+          right: 15px !important;
+          width: 36px !important;
+          height: 36px !important;
+          border-radius: 50% !important;
+          background: #f9fafb !important;
+          border: 1px solid #f3f4f6 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          padding: 0 !important;
+          color: #4b5563 !important;
+          transition: all 0.2s !important;
+        }
+        cart-drawer .button-close:hover {
+          background: #f3f4f6 !important;
+          color: #111827 !important;
+          transform: scale(1.05) !important;
+        }
+        cart-drawer .cart-items-wrapper {
+          padding-left: 24px !important;
+          padding-right: 24px !important;
+          padding-top: 10px !important;
+        }
+        cart-drawer .cart-items-wrapper .headding {
+          font-size: 20px !important;
+          font-weight: 800 !important;
+          letter-spacing: -0.5px !important;
+          color: #111827 !important;
+          border-bottom: 2px solid #111827 !important;
+          padding-bottom: 12px !important;
+          margin-bottom: 20px !important;
+        }
+        cart-drawer .cart-item {
+          display: flex !important;
+          align-items: center !important;
+          gap: 16px !important;
+          padding: 16px 0 !important;
+          border-bottom: 1px solid #f3f4f6 !important;
+          position: relative !important;
+        }
+        cart-drawer .cart-item .image-wrapper {
+          border-radius: 12px !important;
+          border: 1px solid #f3f4f6 !important;
+          overflow: hidden !important;
+          background: #fafafa !important;
+          transition: transform 0.2s !important;
+        }
+        cart-drawer .cart-item:hover .image-wrapper {
+          transform: scale(1.02) !important;
+        }
+        cart-drawer .cart-item__details h6 {
+          font-size: 13px !important;
+          font-weight: 600 !important;
+          color: #374151 !important;
+          line-height: 1.4 !important;
+          margin: 0 0 6px 0 !important;
+        }
+        cart-drawer .cart-item__details .price {
+          font-size: 14px !important;
+          font-weight: 800 !important;
+          color: #111827 !important;
+        }
+        cart-drawer .cart-qty-container {
+          display: flex !important;
+          align-items: center !important;
+          border: 1px solid #e5e7eb !important;
+          border-radius: 20px !important;
+          background: #fff !important;
+          overflow: hidden !important;
+          padding: 2px 6px !important;
+        }
+        cart-drawer .cart-qty-btn {
+          font-size: 14px !important;
+          font-weight: 600 !important;
+          color: #9ca3af !important;
+          background: none !important;
+          border: none !important;
+          width: 24px !important;
+          height: 24px !important;
+          cursor: pointer !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          transition: color 0.15s !important;
+        }
+        cart-drawer .cart-qty-btn:hover {
+          color: #111827 !important;
+        }
+        cart-drawer .cart-remove-btn {
+          top: 16px !important;
+          right: 0px !important;
+          width: 24px !important;
+          height: 24px !important;
+          border-radius: 50% !important;
+          background: none !important;
+          border: none !important;
+          color: #9ca3af !important;
+          font-size: 14px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          cursor: pointer !important;
+          transition: all 0.15s !important;
+        }
+        cart-drawer .cart-remove-btn:hover {
+          color: #ef4444 !important;
+          background: #fef2f2 !important;
         }
 
         /* --- SPLASH SCREEN --- */
@@ -2777,6 +2962,10 @@ export default function HomePage23() {
         className="tpl23-shopify-root template-index"
       />
 
+      {hasPortalRoot && typeof document !== 'undefined' && document.getElementById('recent-products-portal-root') && createPortal(
+        <RecentProductsSection />,
+        document.getElementById('recent-products-portal-root')!
+      )}
     </>
   );
 }
