@@ -1006,23 +1006,25 @@ export default function HomePage23() {
           // Fallback image handling
           const categoryImg = (cat as any).BACKGROUND_IMAGE_URL || cat.iconUrl || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';
 
+          const cleanName = cat.name.replace(/\s*\(\d+\)$/, '').trim();
+
           slide.innerHTML = `
   <div class="collection-card overflow-hidden h-full border-current relative w-full fade-in animation-element animation-delay-0">
-      <a href="/productos?categoria=${cat.$id}" aria-label="${cat.name}" title="${cat.name}" class="link link-image hover-only block">
+      <a href="/productos?categoria=${cat.$id}" aria-label="${cleanName}" title="${cleanName}" class="link link-image hover-only block">
           <div class="collection-card__image-wrapper relative overflow-hidden hover-zoom-image-wrapper" data-ratio="square">
               <div class="collection-card__image w-full h-full absolute top-0 left-0 transition-all duration-300 ease-in-out transform img-blur placeholder" style="background-color: #FBCAC9;">
                   <hover-zoom-image class="w-full h-full">
-                      <img src="${categoryImg}" alt="${cat.name}" loading="lazy" sizes="100vw" class="object-cover w-full h-full pointer-events-none">
+                      <img src="${categoryImg}" alt="${cleanName}" loading="lazy" sizes="100vw" class="object-cover w-full h-full pointer-events-none">
                   </hover-zoom-image>
               </div>
               <div class="overlay absolute top-0 left-0 w-full h-full transition-opacity duration-300 ease-in-out"></div>
           </div>
       </a>
       <div class="collection-card__content z-10">
-          <a href="/productos?categoria=${cat.$id}" title="${cat.name}" aria-label="${cat.name}" class="transition-all duration-300 ease-in-out h-full w-full link">
+          <a href="/productos?categoria=${cat.$id}" title="${cleanName}" aria-label="${cleanName}" class="transition-all duration-300 ease-in-out h-full w-full link">
               <div class="py-5 pr-2 relative">
                   <h6 class="heading transition-all duration-100 ease-in-out">
-                      <span class="link-hover-animation">${cat.name}</span>
+                      <span class="link-hover-animation">${cleanName}</span>
                   </h6>
               </div>
           </a>

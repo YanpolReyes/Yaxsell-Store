@@ -737,7 +737,6 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           .pk-card-fav { display: flex !important; }
           .pk-card-actions--desktop { display: none !important; }
           .pk-card-list-actions { display: none !important; }
-          .pk-card .pk-disc-badge { top: auto !important; bottom: 10px !important; left: 10px !important; right: auto !important; }
           .pk-card .pk-card-body { padding: 10px 10px 12px !important; }
           .pk-card .pk-card-body p { font-size: 12px !important; min-height: 32px !important; line-height: 1.35 !important; }
           .pk-card .pk-price { font-size: 16px !important; }
