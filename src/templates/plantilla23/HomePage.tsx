@@ -1256,9 +1256,18 @@ export default function HomePage23() {
         const popupMutObs = new MutationObserver(() => {
           // Only allow display if user manually opened it (removed data-auto-hidden)
           if (popupEl.getAttribute('data-auto-hidden') === 'true') {
-            popupEl.setAttribute('data-hidden', 'true');
-            popupEl.setAttribute('inert', '');
-            popupEl.style.setProperty('display', 'none', 'important');
+            let needsUpdate = false;
+            if (popupEl.getAttribute('data-hidden') !== 'true') needsUpdate = true;
+            if (!popupEl.hasAttribute('inert')) needsUpdate = true;
+            if (popupEl.style.display !== 'none') needsUpdate = true;
+            
+            if (needsUpdate) {
+              popupMutObs.disconnect(); // prevent infinite loop
+              popupEl.setAttribute('data-hidden', 'true');
+              popupEl.setAttribute('inert', '');
+              popupEl.style.setProperty('display', 'none', 'important');
+              popupMutObs.observe(popupEl, { attributes: true, attributeFilter: ['data-hidden', 'inert', 'style'] });
+            }
           }
         });
         popupMutObs.observe(popupEl, { attributes: true, attributeFilter: ['data-hidden', 'inert', 'style'] });
