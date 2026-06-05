@@ -347,16 +347,76 @@ export default function HomePage23() {
       /* FIX 1: filter:blur(0px) breaks position:fixed (CSS spec) */
       [style*="blur(0"] { filter: none !important; }
 
-      /* FIX 2: Media column must start at 100vw, not 50% */
-      .split-hero .split-hero-column.split-hero-column__media {
-        min-width: 100vw !important;
-        max-width: 100vw !important;
+      /* FIX 2: Media column must start at 100vw, not 50% on desktop */
+      @media (min-width: 768px) {
+        .split-hero .split-hero-column.split-hero-column__media {
+          min-width: 100vw !important;
+          max-width: 100vw !important;
+        }
+
+        /* FIX 3: Collapsed state must be 50vw on desktop */
+        .split-hero .split-hero-column__media.is-collapsed {
+          min-width: 50vw !important;
+          max-width: 50vw !important;
+        }
       }
 
-      /* FIX 3: Collapsed state must be 50vw */
-      .split-hero .split-hero-column__media.is-collapsed {
-        min-width: 50vw !important;
-        max-width: 50vw !important;
+      @media (max-width: 767px) {
+        /* Fix mobile video scroll blocking and object-fit */
+        .split-hero video, .split-hero .split-hero__video {
+          object-fit: cover !important;
+          height: 100% !important;
+          width: 100% !important;
+          pointer-events: none !important; /* Allow scroll through video */
+        }
+        .split-hero-column__media {
+          touch-action: pan-y !important; /* Allow vertical scroll */
+        }
+        
+        /* Fix cards 'Tu ritual' / 'Dulce color' height showing skeleton */
+        .multimedia-collage-block__inner, .multimedia-collage__block {
+          height: 100% !important;
+          min-height: 100% !important;
+        }
+        hover-zoom-image {
+          display: block !important;
+          width: 100% !important;
+          height: 100% !important;
+        }
+        hover-zoom-image img {
+          object-fit: cover !important;
+          width: 100% !important;
+          height: 100% !important;
+        }
+
+        /* Fix category images cut off */
+        collection-list img, .collection-list img {
+          object-fit: cover !important;
+          height: 100% !important;
+          width: 100% !important;
+        }
+
+        /* Fix slideshow (Herobanner) background separating from text on mobile */
+        .slideshow__background {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          z-index: 0 !important;
+        }
+        .slideshow__content {
+          z-index: 10 !important;
+          position: relative !important;
+          height: 100% !important;
+          display: flex !important;
+          align-items: flex-end !important; /* Push text to bottom over the image */
+        }
+        .slideshow video, .slideshow img {
+          object-fit: cover !important;
+          width: 100% !important;
+          height: 100% !important;
+        }
       }
 
       /* FIX 4: Hide page loader and page-transition overlay */
@@ -1011,14 +1071,15 @@ export default function HomePage23() {
         const video = entry.target as HTMLVideoElement;
         if (entry.isIntersecting) {
           video.dataset.isIntersecting = "true";
-          // Do not autoplay collage videos when scrolled into view (they play only on hover)
           const isCollageVideo = video.classList.contains('ping-pong-video') || 
                                  video.classList.contains('ping-pong-forward') || 
                                  video.classList.contains('ping-pong-reverse') ||
                                  video.querySelector('source[src*="therea.mp4"]') || 
                                  video.querySelector('source[src*="rever.mp4"]') ||
                                  (video.src && (video.src.includes('therea.mp4') || video.src.includes('rever.mp4')));
-          if (!isCollageVideo) {
+          
+          // En móvil (no hay hover), auto-reproducir incluso los videos de collage
+          if (!isCollageVideo || window.innerWidth < 1024) {
             video.play().catch(() => {});
           }
         } else {
