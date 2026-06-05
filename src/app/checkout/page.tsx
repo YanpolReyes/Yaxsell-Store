@@ -908,7 +908,7 @@ function CheckoutInner() {
                 </div>
                 {belowMinimum && (
                   <p style={{ margin: '0 22px 12px', fontSize: 12, color: '#b91c1c', background: '#fef2f2', padding: '10px 12px', borderRadius: 10, border: '1px solid #fecaca', fontFamily: FF, lineHeight: 1.45 }}>
-                    ⚠ {minimumOrderMessage(subtotal, total)}
+                    ⚠ {minimumOrderMessage(total)}
                   </p>
                 )}
 
