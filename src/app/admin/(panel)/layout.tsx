@@ -79,6 +79,7 @@ const NAV_GROUPS: NavGroup[] = [
     { href: '', label: 'Marketing', icon: Ico.OfertasDia, children: [
       { href: '/admin/coupons',       label: 'Cupones',        icon: Ico.Cupones },
       { href: '/admin/timed-offers',  label: 'Ofertas Temporales', icon: Ico.Ofertas },
+      { href: '/admin/destacado-temporal', label: 'Destacado Temporal', icon: Ico.OfertasDia },
       { href: '/admin/apertura',      label: 'Apertura',       icon: Ico.Sparkles },
       { href: '/admin/vip',           label: 'VIP',            icon: Ico.Usuarios },
       { href: '/admin/points-store',  label: 'Tienda de puntos', icon: Ico.Sorteos },

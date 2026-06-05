@@ -13,7 +13,7 @@
    - .in-view forzado en .animation-element tras carga
    ════════════════════════════════════════════════════════════════════ */
 import { useEffect, useRef, useState } from 'react';
-import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, PRODUCTS_COLLECTION, Query, formatPrice } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, PRODUCTS_COLLECTION, TIMED_OFFERS_COLLECTION, Query, formatPrice } from '@/lib/appwrite';
 import { Category, Subcategory, Product } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { isEditorMockEnabled } from '@/lib/editor-mock';
@@ -193,6 +193,7 @@ export default function HomePage23() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [destacadoTemporal, setDestacadoTemporal] = useState<any>(null);
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
@@ -215,7 +216,7 @@ export default function HomePage23() {
       try {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
-        const [cRes, scRes, pRes] = await Promise.all([
+        const [cRes, scRes, pRes, dtRes] = await Promise.all([
           databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [
             Query.orderAsc('order'),
             Query.limit(100)
@@ -227,11 +228,19 @@ export default function HomePage23() {
             Query.greaterThan('STOCK', 0),
             Query.orderDesc('SOLDQUANTITY'),
             Query.limit(500)
-          ])
+          ]),
+          databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
+            Query.equal('offerType', 'destacado_temporal'),
+            Query.equal('isActive', true),
+            Query.limit(1)
+          ]).catch(() => ({ documents: [] }))
         ]);
         setCategories(cRes.documents as unknown as Category[]);
         setSubcategories(scRes.documents as unknown as Subcategory[]);
         setProducts(pRes.documents as unknown as Product[]);
+        if (dtRes.documents && dtRes.documents.length > 0) {
+          setDestacadoTemporal(dtRes.documents[0]);
+        }
       } catch (err) {
         console.error('[Plantilla23] Error fetching categories/subcategories/products:', err);
       }
@@ -1666,23 +1675,32 @@ export default function HomePage23() {
       featuredProductBlocks.forEach((fpBlock: any) => {
         const availableProducts = products.filter(p => p.STOCK && p.STOCK > 0);
         if (availableProducts.length === 0) return;
-        const randomProduct = availableProducts[Math.floor(Math.random() * availableProducts.length)];
+        
+        let targetProduct = availableProducts[Math.floor(Math.random() * availableProducts.length)];
+        let isDestacado = false;
+        if (destacadoTemporal && destacadoTemporal.targetId) {
+          const matched = products.find(p => p.$id === destacadoTemporal.targetId);
+          if (matched && matched.STOCK && matched.STOCK > 0) {
+            targetProduct = matched;
+            isDestacado = true;
+          }
+        }
         
         // Update images
         const imgs = fpBlock.querySelectorAll('img');
         if (imgs.length > 0) {
           imgs.forEach((img: HTMLImageElement) => {
-            img.src = resolveStorageImageUrl(randomProduct.IMAGEURL) || '';
+            img.src = resolveStorageImageUrl(targetProduct.IMAGEURL) || '';
             img.removeAttribute('srcset'); // Remove srcset to ensure the src fallback works correctly
           });
         }
         
         // Update title
         const heading = fpBlock.querySelector('h3.heading span');
-        if (heading) heading.textContent = randomProduct.NAME;
+        if (heading) heading.textContent = targetProduct.NAME;
         
         // Update prices
-        const priceResolved = resolveProductDisplayPrice(randomProduct, apertura);
+        const priceResolved = resolveProductDisplayPrice(targetProduct, apertura);
         const regularPrice = fpBlock.querySelector('.price__regular .price-item');
         if (regularPrice) regularPrice.textContent = formatPrice(priceResolved.displayPrice);
         const salePrice = fpBlock.querySelector('.price__sale .price-item--sale');
@@ -1699,12 +1717,59 @@ export default function HomePage23() {
         
         // Update stock
         const badge = fpBlock.querySelector('.badge--in-stock');
-        if (badge) badge.textContent = `${randomProduct.STOCK} in stock`;
+        if (badge) badge.textContent = `${targetProduct.STOCK} in stock`;
         
         // Update description
         const descBlock = fpBlock.querySelector('.body-text[data-index="6"] p');
-        if (descBlock) descBlock.innerHTML = randomProduct.DESCRIPTION || '';
+        if (descBlock) descBlock.innerHTML = targetProduct.DESCRIPTION || '';
         
+        // Timer Injection
+        const timerBlock = fpBlock.querySelector('.body-text[data-index="7"]');
+        if (timerBlock) {
+          if (isDestacado && destacadoTemporal.endDateTime) {
+            timerBlock.innerHTML = `
+              <div class="flex flex-col gap-2 my-2">
+                <span class="text-sm font-bold text-red-500 uppercase tracking-wide">La oferta termina en:</span>
+                <div class="flex items-center gap-2" id="dt-timer-container">
+                  <div class="bg-gray-100 rounded-lg px-3 py-2 flex flex-col items-center min-w-[50px]"><span class="text-lg font-bold text-gray-900" id="dt-d">00</span><span class="text-[10px] text-gray-500 uppercase">Días</span></div>
+                  <span class="text-gray-400 font-bold">:</span>
+                  <div class="bg-gray-100 rounded-lg px-3 py-2 flex flex-col items-center min-w-[50px]"><span class="text-lg font-bold text-gray-900" id="dt-h">00</span><span class="text-[10px] text-gray-500 uppercase">Hrs</span></div>
+                  <span class="text-gray-400 font-bold">:</span>
+                  <div class="bg-gray-100 rounded-lg px-3 py-2 flex flex-col items-center min-w-[50px]"><span class="text-lg font-bold text-gray-900" id="dt-m">00</span><span class="text-[10px] text-gray-500 uppercase">Min</span></div>
+                  <span class="text-gray-400 font-bold">:</span>
+                  <div class="bg-gray-100 rounded-lg px-3 py-2 flex flex-col items-center min-w-[50px]"><span class="text-lg font-bold text-red-600" id="dt-s">00</span><span class="text-[10px] text-red-500 uppercase">Seg</span></div>
+                </div>
+              </div>
+            `;
+            const end = new Date(destacadoTemporal.endDateTime).getTime();
+            const updateTimer = () => {
+              const now = new Date().getTime();
+              const distance = end - now;
+              if (distance < 0) {
+                timerBlock.innerHTML = '<span class="text-sm font-bold text-gray-500">La oferta ha terminado</span>';
+                return;
+              }
+              const d = Math.floor(distance / (1000 * 60 * 60 * 24));
+              const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+              const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+              const s = Math.floor((distance % (1000 * 60)) / 1000);
+              const elD = document.getElementById('dt-d');
+              const elH = document.getElementById('dt-h');
+              const elM = document.getElementById('dt-m');
+              const elS = document.getElementById('dt-s');
+              if (elD) elD.textContent = d.toString().padStart(2, '0');
+              if (elH) elH.textContent = h.toString().padStart(2, '0');
+              if (elM) elM.textContent = m.toString().padStart(2, '0');
+              if (elS) elS.textContent = s.toString().padStart(2, '0');
+            };
+            updateTimer();
+            if ((window as any)._dtInterval) clearInterval((window as any)._dtInterval);
+            (window as any)._dtInterval = setInterval(updateTimer, 1000);
+          } else {
+            timerBlock.style.display = 'none';
+          }
+        }
+
         // Remove variants to avoid messing with sizes
         const variantSelector = fpBlock.querySelector('variant-selector');
         if (variantSelector) variantSelector.remove();
@@ -1715,7 +1780,7 @@ export default function HomePage23() {
           btn.addEventListener('click', (e: Event) => {
             e.preventDefault();
             e.stopPropagation();
-            addItem(randomProduct, 1);
+            addItem(targetProduct, 1);
             router.push('/carrito');
           });
         }
@@ -1731,12 +1796,12 @@ export default function HomePage23() {
         // Update link to details
         const fullDetailsLink = fpBlock.querySelector('.full-details-link a');
         if (fullDetailsLink) {
-          fullDetailsLink.href = `/productos/${randomProduct.$id}`;
+          fullDetailsLink.href = `/productos/${targetProduct.$id}`;
         }
         
         // Update vendor
         const vendor = fpBlock.querySelector('.vendor span');
-        if (vendor) vendor.textContent = randomProduct.BRAND || 'Yaxsell';
+        if (vendor) vendor.textContent = targetProduct.BRAND || 'Yaxsell';
       });
 
       // Intersection Observer for Hero Scroll Videos
