@@ -645,6 +645,21 @@ export default function HomePage23() {
       .button-newsletter .button-close svg {
         color: #ffffff !important;
       }
+      @media (max-width: 1023px) {
+        .button-newsletter {
+          transform: rotate(-90deg) !important;
+          transform-origin: left top !important;
+          left: 0 !important;
+          top: 70% !important;
+          bottom: auto !important;
+          border-radius: 0 0 10px 10px !important;
+          animation: none !important;
+          padding: 8px 16px !important;
+        }
+        .button-newsletter .h6 {
+          font-size: 14px !important;
+        }
+      }
 
       /* Editorial Serif Typography with Metallic Shimmer Gradient for Kevin&Coco */
       .animated-kevin-coco {
