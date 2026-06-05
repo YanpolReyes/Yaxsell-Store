@@ -249,6 +249,7 @@ export default function HomePage23() {
                 contentPane.style.display = 'block';
             }
         }
+    };
     root.addEventListener('click', handleFAQClicks);
 
     // Strip native Shopify listeners from all close buttons so they don't intercept clicks
