@@ -149,7 +149,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           try {
             const reqs = await databases.listDocuments(databaseId, STOCK_REQUESTS_COLLECTION, [
               Query.equal('productId', p.$id),
-              Query.equal('userId', user.$id),
+              Query.equal('userId', user.id),
               Query.equal('status', 'pending')
             ]);
             if (reqs.total > 0) setHasPendingRequest(true);
@@ -308,7 +308,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         {
           productId: product.$id,
           productName: product.NAME,
-          userId: user.$id,
+          userId: user.id,
           userEmail: user.email || '',
           requestedQuantity: stockRequestQty,
           status: 'pending',

@@ -285,7 +285,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         const { databaseId } = getAppwriteConfig();
         const res = await databases.listDocuments(databaseId, STOCK_REQUESTS_COLLECTION, [
           Query.equal('productId', product!.$id),
-          Query.equal('userId', user!.$id),
+          Query.equal('userId', user!.id),
           Query.equal('status', 'pending')
         ]);
         if (res.total > 0) {
@@ -1065,7 +1065,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         {
           productId: product.$id,
           productName: product.NAME,
-          userId: user.$id,
+          userId: user.id,
           userEmail: user.email || '',
           requestedQuantity: stockRequestQty,
           status: 'pending',
