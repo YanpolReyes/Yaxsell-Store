@@ -1267,13 +1267,15 @@ export default function HomePage23() {
       });
     });
     root.querySelectorAll('.swiper-slide').forEach(slide => {
-      swiperObserver.observe(slide, { attributes: true, attributeFilter: ['class'] });
-      // Re-trigger active ones on load
-      if (slide.classList.contains('swiper-slide-active')) {
-        slide.querySelectorAll('video').forEach(v => {
-          v.currentTime = 0;
-          v.play().catch(() => {});
-        });
+      if (slide.querySelector('video')) {
+        swiperObserver.observe(slide, { attributes: true, attributeFilter: ['class'] });
+        // Re-trigger active ones on load
+        if (slide.classList.contains('swiper-slide-active')) {
+          slide.querySelectorAll('video').forEach(v => {
+            v.currentTime = 0;
+            v.play().catch(() => {});
+          });
+        }
       }
     });
 
@@ -1968,6 +1970,8 @@ export default function HomePage23() {
         `;
       };
 
+      // Push heavy hydration task to next tick to prevent mobile freezing on load
+      setTimeout(() => {
       // 1. Populate Tab 1: Lo Último Añadido
       const tab1Products = [...products]
         .sort((a: any, b: any) => {
@@ -2206,6 +2210,9 @@ export default function HomePage23() {
         const vendor = fpBlock.querySelector('.vendor span');
         if (vendor) vendor.textContent = (targetProduct as any).BRAND || 'Yaxsell';
       });
+
+      });
+      }, 50); // End of heavy hydration timeout
 
       // Intersection Observer for Hero Scroll Videos
       const scrollVideos = root.querySelectorAll('.hero-scroll-video');
