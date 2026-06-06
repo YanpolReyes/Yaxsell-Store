@@ -2777,6 +2777,115 @@ export default function HomePage23() {
       }
     });
 
+    // ═══ Live Shopping Drawer Logic ═══
+    if (!root.querySelector('.live-shopping-drawer')) {
+      const drawerHtml = `
+        <div class="live-shopping-drawer drawer fixed right-0 top-0 h-screen bg-black/50 w-full z-[100] pointer-events-none opacity-0 transition-opacity duration-300" data-hidden="true">
+          <div class="drawer__inner relative w-full max-w-[450px] bg-white min-h-full h-full ml-auto mr-0 duration-300 transition-transform translate-x-full flex flex-col pointer-events-auto">
+            <div class="drawer__header relative shrink-0 p-5 border-b border-gray-100 flex items-center justify-between">
+              <h6 class="drawer__title m-0 h6 font-bold text-gray-900">Productos del Live 🛍️</h6>
+              <button class="button-close-live p-2 hover:bg-gray-100 rounded-full cursor-pointer transition-colors" aria-label="Cerrar">
+                <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-800 pointer-events-none">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div class="live-products-grid p-4 overflow-y-auto flex-1 grid grid-cols-2 gap-3" style="align-content: start;">
+               <!-- Products will be injected here -->
+            </div>
+            <div class="p-4 border-t border-gray-100">
+              <a href="/productos" class="w-full flex items-center justify-center py-3 px-4 bg-gray-900 text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors">
+                Ir al catálogo completo
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = drawerHtml;
+      const drawerEl = tempDiv.firstElementChild as HTMLElement;
+      root.appendChild(drawerEl);
+
+      // Hydrate with top 30 newest products
+      const grid = drawerEl.querySelector('.live-products-grid');
+      if (grid) {
+        const sortedProducts = [...products]
+          .sort((a: any, b: any) => {
+            const dateA = a.DATE_ADDED ? new Date(a.DATE_ADDED).getTime() : (a.$createdAt ? new Date(a.$createdAt).getTime() : 0);
+            const dateB = b.DATE_ADDED ? new Date(b.DATE_ADDED).getTime() : (b.$createdAt ? new Date(b.$createdAt).getTime() : 0);
+            return dateB - dateA;
+          })
+          .slice(0, 30);
+          
+        grid.innerHTML = sortedProducts.map((p: any) => {
+          const pImg = p.IMAGEURL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';
+          const pName = p.NAME || 'Producto';
+          const pLink = `/productos/${p.$id}`;
+          const currentPrice = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
+          const hasDiscount = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
+          return `
+            <div class="bg-white rounded-lg border border-gray-100 overflow-hidden flex flex-col">
+              <a href="${pLink}" class="block relative aspect-square">
+                <img src="${pImg}" alt="${pName}" class="w-full h-full object-cover" loading="lazy" />
+              </a>
+              <div class="p-3 flex flex-col flex-1">
+                <a href="${pLink}" class="text-[12px] leading-tight font-medium text-gray-800 line-clamp-2 mb-2 hover:text-pink-500">${pName}</a>
+                <div class="mt-auto">
+                  <span class="font-bold text-gray-900 text-[13px]">$${(currentPrice||0).toLocaleString()}</span>
+                  ${hasDiscount ? `<span class="text-[10px] text-gray-400 line-through ml-1">$${p.PRICE.toLocaleString()}</span>` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Add close logic
+      drawerEl.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        if (target.matches('.live-shopping-drawer') || target.closest('.button-close-live')) {
+          drawerEl.style.opacity = '0';
+          drawerEl.style.pointerEvents = 'none';
+          const inner = drawerEl.querySelector('.drawer__inner') as HTMLElement;
+          if (inner) inner.style.transform = 'translateX(100%)';
+          document.body.classList.remove('overflow-hidden');
+        }
+      });
+    }
+
+    // Add buttons to carousels
+    const carousels = root.querySelectorAll('.product-columns-block .swiper-container, .featured-collection__products .swiper-container');
+    carousels.forEach(c => {
+      const parent = c.parentElement;
+      if (parent && !parent.querySelector('.btn-open-live-drawer')) {
+        const btnWrapper = document.createElement('div');
+        btnWrapper.className = 'w-full flex justify-center mt-6 mb-8 px-4';
+        btnWrapper.innerHTML = `
+          <button type="button" class="btn-open-live-drawer w-[90%] md:w-auto text-center py-3 px-8 rounded-full font-bold text-white shadow-lg transition-transform hover:scale-105 flex items-center justify-center gap-2" style="background: linear-gradient(135deg, #e396bf, #f5a8cf);">
+            Ver todos los productos del Live <span class="text-xl">🛍️</span>
+          </button>
+        `;
+        parent.insertBefore(btnWrapper, c.nextSibling);
+      }
+    });
+
+    // Add open logic to all generated buttons
+    const liveBtns = root.querySelectorAll('.btn-open-live-drawer');
+    liveBtns.forEach(btn => {
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode?.replaceChild(newBtn, btn);
+      newBtn.addEventListener('click', () => {
+        const drawerEl = root.querySelector('.live-shopping-drawer') as HTMLElement;
+        if (drawerEl) {
+          drawerEl.style.opacity = '1';
+          drawerEl.style.pointerEvents = 'auto';
+          const inner = drawerEl.querySelector('.drawer__inner') as HTMLElement;
+          if (inner) inner.style.transform = 'translateX(0)';
+          document.body.classList.add('overflow-hidden');
+        }
+      });
+    });
+    
     if (searchProductsList) {
       searchProductsList.innerHTML = products.slice(0, 6).map((p: any) => {
         const pImg = p.IMAGEURL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';
