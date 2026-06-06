@@ -5,12 +5,13 @@ import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, formatPrice } from
 import { Client, Query } from 'appwrite';
 import { Product } from '@/types';
 import { useCart } from '@/context/CartContext';
-import { Sparkles, ShoppingCart, Check } from 'lucide-react';
+import { Sparkles, ShoppingCart, Check, X } from 'lucide-react';
 
 export default function RecentProductsSection() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [addingId, setAddingId] = useState<string | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { addItem } = useCart();
 
   useEffect(() => {
@@ -81,6 +82,17 @@ export default function RecentProductsSection() {
     };
   }, []);
 
+  useEffect(() => {
+    if (isDrawerOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isDrawerOpen]);
+
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
     e.stopPropagation();
@@ -133,6 +145,89 @@ export default function RecentProductsSection() {
             <p className="text-[11px] md:text-xs text-pink-600 font-bold uppercase tracking-widest mt-0.5">
               Productos en vivo • Stock Reciente
             </p>
+          </div>
+        </div>
+        <button 
+          onClick={() => setIsDrawerOpen(true)}
+          className="bg-gray-900 hover:bg-gray-800 text-white text-xs sm:text-sm font-bold py-2 px-4 rounded-full transition-all flex items-center gap-2 shadow-lg hover:shadow-xl active:scale-95"
+        >
+          Ver todo <span className="hidden sm:inline">el Live</span> 🛍️
+        </button>
+      </div>
+
+      {/* Drawer */}
+      <div 
+        className={`fixed inset-0 z-[100] transition-opacity duration-300 ${isDrawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+      >
+        {/* Overlay */}
+        <div 
+          className="absolute inset-0 bg-black/40 backdrop-blur-sm" 
+          onClick={() => setIsDrawerOpen(false)}
+        />
+        
+        {/* Drawer Panel */}
+        <div 
+          className={`absolute top-0 right-0 h-full w-full max-w-[450px] bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${isDrawerOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-white/80 backdrop-blur-md z-10 sticky top-0">
+            <h3 className="font-black text-xl text-gray-900 tracking-tight">Productos del Live 🛍️</h3>
+            <button 
+              onClick={() => setIsDrawerOpen(false)}
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-900"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          {/* Product Grid */}
+          <div className="flex-1 overflow-y-auto p-4 bg-gray-50/50">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              {products.map(p => {
+                const displayPrice = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
+                const hasDiscount = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
+                const isAdding = addingId === p.$id;
+                
+                return (
+                  <div key={`drawer-${p.$id}`} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col">
+                    <a href={`/productos/${p.$id}`} className="block relative aspect-square bg-gray-50">
+                      {p.IMAGEURL ? (
+                        <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" loading="lazy" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl bg-gray-100">📦</div>
+                      )}
+                    </a>
+                    <div className="p-3 flex flex-col flex-1 justify-between">
+                      <a href={`/productos/${p.$id}`}>
+                        <h4 className="text-[11px] sm:text-xs font-semibold text-gray-800 line-clamp-2 leading-tight mb-2 hover:text-pink-600 transition-colors">{p.NAME}</h4>
+                      </a>
+                      <div className="flex items-center justify-between gap-1 mt-auto">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-gray-900 text-xs sm:text-sm">{formatPrice(displayPrice)}</span>
+                          {hasDiscount && <span className="text-[9px] sm:text-[10px] text-gray-400 line-through">{formatPrice(p.PRICE)}</span>}
+                        </div>
+                        <button
+                          onClick={(e) => handleAddToCart(e, p)}
+                          disabled={isAdding}
+                          className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full transition-colors ${
+                            isAdding ? 'bg-green-500 text-white' : 'bg-gray-100 hover:bg-pink-500 text-gray-700 hover:text-white'
+                          }`}
+                        >
+                          {isAdding ? <Check size={14} /> : <ShoppingCart size={14} />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Footer Action */}
+          <div className="p-4 border-t border-gray-100 bg-white">
+            <a href="/productos" className="flex items-center justify-center w-full py-3.5 bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition-all active:scale-[0.98]">
+              Ir al catálogo completo
+            </a>
           </div>
         </div>
       </div>
