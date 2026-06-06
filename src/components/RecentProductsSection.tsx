@@ -126,9 +126,6 @@ export default function RecentProductsSection() {
 
   return (
     <section className="py-14 max-w-7xl mx-auto px-4 sm:px-6 relative overflow-hidden">
-      {/* Background glow effects for premium look */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-pink-300/20 rounded-full blur-3xl -z-10 pointer-events-none"></div>
-      <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-rose-300/20 rounded-full blur-3xl -z-10 pointer-events-none"></div>
 
       {/* Title block with glassmorphism */}
       <div className="flex items-center justify-between mb-8 bg-white/40 backdrop-blur-md border border-white/60 p-4 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
@@ -157,7 +154,7 @@ export default function RecentProductsSection() {
 
       {/* Drawer */}
       <div 
-        className={`fixed inset-0 z-[100] transition-opacity duration-300 ${isDrawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 z-[99999] transition-opacity duration-300 ${isDrawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
       >
         {/* Overlay */}
         <div 

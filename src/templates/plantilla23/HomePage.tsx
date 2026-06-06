@@ -1398,22 +1398,27 @@ export default function HomePage23() {
       heroButtonBlock.dataset.mobileBtnsInjected = '1';
       const originalHtml = heroButtonBlock.innerHTML;
       heroButtonBlock.innerHTML = `
-        <div class="md:hidden" style="display:flex; gap:10px; padding: 10px 0 40px; justify-content:center;">
+        <div class="md:hidden" style="display:flex; gap:12px; padding: 15px 0 40px; justify-content:center; width: 100%;">
           <a href="/productos" role="button" style="
+            flex: 1; max-width: 160px;
             display:inline-flex; align-items:center; justify-content:center;
-            padding: 10px 22px; border-radius:50px;
-            background: linear-gradient(135deg, #c9a94a, #e8d48a, #c9a94a);
-            color: #3b2800; font-weight:700; font-size:13px;
-            text-decoration:none; box-shadow: 0 4px 14px rgba(201,169,74,0.45);
-            letter-spacing:0.5px; border:none; white-space:nowrap;
-          ">✨ Tienda</a>
+            padding: 14px 20px; border-radius:30px;
+            background: #111827; 
+            color: #ffffff; font-weight:800; font-size:14px; text-transform:uppercase;
+            text-decoration:none; 
+            box-shadow: 0 10px 25px -5px rgba(17, 24, 39, 0.4), 0 0 0 1px rgba(255,255,255,0.1) inset;
+            letter-spacing:1px; border:none; white-space:nowrap;
+          ">Tienda</a>
           <a href="/catalogo" role="button" style="
+            flex: 1; max-width: 160px;
             display:inline-flex; align-items:center; justify-content:center;
-            padding: 10px 22px; border-radius:50px;
-            background: #FBCAC9; color:#fff; font-weight:700; font-size:13px;
-            text-decoration:none; box-shadow: 0 4px 14px rgba(251,202,201,0.55);
-            letter-spacing:0.5px; border:none; white-space:nowrap;
-          ">📖 Catálogo</a>
+            padding: 14px 20px; border-radius:30px;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            color:#111827; font-weight:800; font-size:14px; text-transform:uppercase;
+            text-decoration:none; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05) inset;
+            letter-spacing:1px; border:none; white-space:nowrap;
+          ">Catálogo</a>
         </div>
         <div class="hidden md:block">
           ${originalHtml}
