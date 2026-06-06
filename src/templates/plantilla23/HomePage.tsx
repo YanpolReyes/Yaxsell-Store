@@ -261,33 +261,18 @@ export default function HomePage23() {
 
     const handleDrawerClose = (e: Event) => {
       const target = e.target as HTMLElement;
-      const isCloseBtn = target.closest('.button-close') || target.closest('.drawer__close');
+      const clickedOutside = target.matches('cart-drawer, .drawer, search-drawer, menu-drawer') && !target.closest('.drawer__inner');
+      const isCloseBtn = !!target.closest('.button-close, .drawer__close, [data-close]');
       
-      // Check if clicking exactly on the overlay (the dark background, not the white inner panel)
-      const isOverlay = target.tagName.toLowerCase().includes('drawer') || target.tagName.toLowerCase().includes('popup') || target.classList.contains('drawer');
-      let clickedOutside = false;
-      if (isOverlay) {
-         // If target is the drawer element itself and not its children
-         const inner = target.querySelector('.drawer__inner, .popup__inner');
-         // We check bounding rect to see if click is outside the white panel
-         if (inner) {
-            const rect = inner.getBoundingClientRect();
-            const clientX = (e as MouseEvent).clientX || (e as TouchEvent).changedTouches?.[0]?.clientX || 0;
-            if (clientX < rect.left || clientX > rect.right) {
-               clickedOutside = true;
-            }
-         } else {
-            clickedOutside = true;
-         }
-      }
-
       if (isCloseBtn || clickedOutside) {
         const activeDrawers = document.querySelectorAll('cart-drawer, search-drawer, menu-drawer, variant-popup, added-to-cart-popup, .drawer');
         let closedAny = false;
         activeDrawers.forEach(drawer => {
-          if (drawer.getAttribute('data-hidden') !== 'true') {
+          if (drawer.getAttribute('data-hidden') !== 'true' || drawer.classList.contains('active') || drawer.classList.contains('is-active') || drawer.hasAttribute('open')) {
             drawer.setAttribute('data-hidden', 'true');
             drawer.setAttribute('inert', '');
+            drawer.classList.remove('active', 'is-active');
+            drawer.removeAttribute('open');
             closedAny = true;
           }
         });
@@ -295,17 +280,18 @@ export default function HomePage23() {
           e.preventDefault();
           e.stopPropagation();
           document.documentElement.style.overflow = '';
+          document.body.classList.remove('overflow-hidden');
         }
       }
     };
 
-    root.addEventListener('click', handleDrawerClose);
-    root.addEventListener('touchstart', handleDrawerClose, { passive: false });
+    document.addEventListener('click', handleDrawerClose, true);
+    document.addEventListener('touchstart', handleDrawerClose, { passive: false, capture: true });
 
     return () => {
        root.removeEventListener('click', handleFAQClicks);
-       root.removeEventListener('click', handleDrawerClose);
-       root.removeEventListener('touchstart', handleDrawerClose);
+       document.removeEventListener('click', handleDrawerClose, true);
+       document.removeEventListener('touchstart', handleDrawerClose, { capture: true });
     };
   }, [bodyHtml]);
 
@@ -1052,6 +1038,36 @@ export default function HomePage23() {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = bodyHtml;
 
+    // Hydrate Categories
+    tempDiv.querySelectorAll('.collection-list-grid').forEach(wrapper => {
+      if (categories.length === 0) return;
+      const html = categories.slice(0, 10).map((cat: any) => `
+        <div class="grid__item scroll-trigger animate--slide-in" data-cascade="" style="--animation-order: 1;" data-cascade-done="1">
+          <a href="/colecciones/${cat.slug}" class="card-wrapper w-full block bg-white rounded-xl overflow-hidden" style="-webkit-tap-highlight-color: transparent;">
+             <div class="card__inner relative w-full pt-[100%] rounded-xl overflow-hidden">
+                <img src="${cat.BACKGROUND_IMAGE_URL || cat.iconUrl || ''}" alt="${cat.name}" class="absolute top-0 left-0 w-full h-full object-cover transition-transform duration-300">
+             </div>
+             <div class="card__content pt-3 pb-2 px-1 text-center">
+                 <h3 class="card__heading text-[12px] font-semibold text-gray-800 leading-tight">${cat.name}</h3>
+             </div>
+          </a>
+        </div>
+      `).join('');
+      wrapper.innerHTML = html;
+      wrapper.classList.remove('slider');
+    });
+
+    // Hydrate Subcategories
+    tempDiv.querySelectorAll('.subcategories-pill-list').forEach(wrapper => {
+      if (subcategories.length === 0) return;
+      const html = subcategories.map((sub: any) => `
+        <a href="/colecciones/sub/${sub.slug}" class="px-4 py-2 bg-gray-100 text-gray-800 rounded-full text-[13px] font-semibold whitespace-nowrap transition-colors" style="-webkit-tap-highlight-color: transparent;">
+          ${sub.name}
+        </a>
+      `).join('');
+      wrapper.innerHTML = html;
+    });
+
     if (categories.length > 0) {
       // Find Swiper wrapper inside collection-list
       const swiperWrapper = tempDiv.querySelector('.collection-list .swiper-wrapper');
@@ -1730,32 +1746,6 @@ export default function HomePage23() {
         desktopMenu.appendChild(templateEl);
       });
 
-      // ── Static links ──
-      const bestSellersLi = document.createElement('li');
-      bestSellersLi.className = 'inline-block group py-2 px-1 relative shrink-0 no-keyboard-focus';
-      bestSellersLi.innerHTML = `
-        <a href="https://kevincocochile.cl/productos" title="TIENDA" aria-label="TIENDA"
-            data-action="static-link"
-            class="no-keyboard-focus"
-            data-menu-tier="1"
-        >
-            <span class="link-hover-animation">TIENDA</span>
-        </a>
-      `;
-      desktopMenu.appendChild(bestSellersLi);
-
-      const newArrivalsLi = document.createElement('li');
-      newArrivalsLi.className = 'inline-block group py-2 px-1 relative shrink-0 no-keyboard-focus';
-      newArrivalsLi.innerHTML = `
-        <a href="https://kevincocochile.cl/catalogo" title="CATÁLOGO" aria-label="CATÁLOGO"
-            data-action="static-link"
-            class="highlight no-keyboard-focus"
-            data-menu-tier="1"
-        >
-            <span class="link-hover-animation">CATÁLOGO</span>
-        </a>
-      `;
-      desktopMenu.appendChild(newArrivalsLi);
     }
 
     // ── Mobile drawer menu ──
@@ -1933,11 +1923,11 @@ export default function HomePage23() {
         }
 
         return `
-          <product-card class="product-card relative h-full mx-0 my-0 block bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow" data-lifting-effect="true">
-            <div class="product-card__image group group-product-card relative overflow-hidden hover-zoom-image-wrapper rounded-t-xl" data-ratio="portrait">
-              <a href="${pLink}" title="${pName}" aria-label="${pName}" class="hover-only block" tabindex="-1">
+          <product-card class="product-card relative h-full mx-auto my-0 block bg-white rounded-xl shadow-sm transition-shadow w-full" data-lifting-effect="true" style="max-width: 240px; -webkit-tap-highlight-color: transparent;">
+            <div class="product-card__image group group-product-card relative overflow-hidden rounded-t-xl" data-ratio="portrait" style="aspect-ratio: 1/1;">
+              <a href="${pLink}" title="${pName}" aria-label="${pName}" class="block" tabindex="-1">
                 <div class="product-card__image-wrapper absolute inset-0 bg-white flex items-center justify-center p-4">
-                  <img src="${pImg}" alt="${pName}" loading="lazy" class="w-full h-full object-contain pointer-events-none transition-transform duration-500 group-hover-product-card:scale-105" style="object-fit: contain !important; max-width: 100%; max-height: 100%;">
+                  <img src="${pImg}" alt="${pName}" loading="lazy" class="w-full h-full object-contain pointer-events-none transition-transform duration-500" style="object-fit: contain !important; max-width: 100%; max-height: 100%;">
                 </div>
                 <div class="overlay top-0 absolute left-0 w-full h-full z-11"></div>
               </a>
@@ -2262,6 +2252,45 @@ export default function HomePage23() {
           }, true);
         }
       }
+    }
+
+    // ═══ Replace "Buscar", "Carrito" text with SVGs in PC & Mobile header ═══
+    const searchIcons = root.querySelectorAll('.search-icon .link-hover-animation');
+    searchIcons.forEach((el) => {
+      if (el.textContent?.trim().toLowerCase() === 'buscar') {
+        el.innerHTML = `<span style="display:inline-flex;align-items:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg></span>`;
+      }
+    });
+
+    const cartIcons = root.querySelectorAll('.cart-icon .link-hover-animation');
+    cartIcons.forEach((el) => {
+      if (el.textContent?.trim().toLowerCase().includes('carrito')) {
+        const qtySpan = el.parentElement?.querySelector('.cart-item-size') || el.querySelector('.cart-item-size');
+        el.innerHTML = `<span style="display:inline-flex;align-items:center;position:relative;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg></span>`;
+        if (qtySpan) {
+           (qtySpan as HTMLElement).style.position = 'absolute';
+           (qtySpan as HTMLElement).style.top = '-8px';
+           (qtySpan as HTMLElement).style.right = '-8px';
+           (qtySpan as HTMLElement).style.background = 'black';
+           (qtySpan as HTMLElement).style.color = 'white';
+           (qtySpan as HTMLElement).style.fontSize = '10px';
+           (qtySpan as HTMLElement).style.padding = '2px 4px';
+           (qtySpan as HTMLElement).style.borderRadius = '10px';
+           (qtySpan as HTMLElement).style.lineHeight = '1';
+           (qtySpan as HTMLElement).innerText = (qtySpan as HTMLElement).innerText.replace(/[()]/g, ''); // Remove parenthesis
+           el.appendChild(qtySpan);
+        }
+      }
+    });
+
+    // ═══ Inject Notification SVG in PC header ═══
+    const headerActionsPC = root.querySelector('.lg\\:flex.hidden.items-center.justify-center.pl-\\[30px\\]');
+    if (headerActionsPC && !headerActionsPC.querySelector('.notification-icon')) {
+      const notifBtn = document.createElement('a');
+      notifBtn.href = '/cuenta';
+      notifBtn.className = 'notification-icon px-[0.5rem] uppercase';
+      notifBtn.innerHTML = `<span class="link-hover-animation" style="display:inline-flex;align-items:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg></span>`;
+      headerActionsPC.insertBefore(notifBtn, headerActionsPC.querySelector('.cart-icon'));
     }
 
     root.dataset.navInjected = '1';
@@ -2694,15 +2723,22 @@ export default function HomePage23() {
     // Removed old cart-specific closeBtn logic, handled globally now
     // Hydrate "Otros también compraron" with compact 2-col scrollable grid
     root.querySelectorAll('.drawer__recommendation-wrapper').forEach((wrapper, index) => {
+      // Fix PC squishing issue
+      if (wrapper.classList.contains('md:block')) {
+        (wrapper as HTMLElement).style.setProperty('width', '360px', 'important');
+        (wrapper as HTMLElement).style.setProperty('min-width', '360px', 'important');
+        (wrapper as HTMLElement).style.setProperty('flex-shrink', '0', 'important');
+      }
+
       const gridId = `pk-rec-grid-${index}`;
       let gridEl = wrapper.querySelector(`#${gridId}`) as HTMLElement | null;
       if (!gridEl) {
         gridEl = document.createElement('div');
         gridEl.id = gridId;
-        gridEl.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 16px;max-height:340px;overflow-y:auto;';
-        // Remove existing swiper markup to avoid conflicts
-        const swiperEl = wrapper.querySelector('.swiper-container');
-        if (swiperEl) swiperEl.replaceWith(gridEl);
+        gridEl.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px 24px;';
+        // Remove existing swiper markup or custom-list to avoid conflicts
+        const existingList = wrapper.querySelector('.swiper-container, ul.custom-list');
+        if (existingList) existingList.replaceWith(gridEl);
         else wrapper.appendChild(gridEl);
       }
 
@@ -2734,6 +2770,13 @@ export default function HomePage23() {
 
     // Hydrate "Trending Search" with real products
     const searchProductsList = root.querySelector('.search-drawer-initial-content .pt-10 ul.custom-list');
+    const searchHeadings = root.querySelectorAll('.search-drawer-initial-content h5.heading');
+    searchHeadings.forEach(h => {
+      if (h.textContent?.trim().toLowerCase().includes('trending') || h.textContent?.trim().toLowerCase().includes('tendencia')) {
+        h.textContent = 'Búsquedas Populares';
+      }
+    });
+
     if (searchProductsList) {
       searchProductsList.innerHTML = products.slice(0, 6).map((p: any) => {
         const pImg = p.IMAGEURL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';

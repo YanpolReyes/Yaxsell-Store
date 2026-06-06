@@ -14,7 +14,8 @@
    ════════════════════════════════════════════════════════════════════ */
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, TIMED_OFFERS_COLLECTION, formatPrice } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, TIMED_OFFERS_COLLECTION, formatPrice, STOCK_REQUESTS_COLLECTION } from '@/lib/appwrite';
+import { useAuth } from '@/hooks/useAuth';
 import { normalizeProductImages, resolveStorageImageUrl } from '@/lib/product-images';
 import { Query } from 'appwrite';
 import { Product, TimedOffer } from '@/types';
@@ -138,6 +139,13 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const [refElement, setRefElement] = useState<HTMLDivElement | null>(null);
   const [bodyHtml, setBodyHtml] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Stock Requests state
+  const { user } = useAuth();
+  const [isStockRequestModalOpen, setIsStockRequestModalOpen] = useState(false);
+  const [stockRequestQty, setStockRequestQty] = useState(1);
+  const [isRequestingStock, setIsRequestingStock] = useState(false);
+  const [hasPendingRequest, setHasPendingRequest] = useState(false);
 
   /* ── Fetch Product from Appwrite ── */
   useEffect(() => {
@@ -267,6 +275,28 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       document.head.appendChild(link);
     });
   }, []);
+
+  /* ── Check for pending stock requests ── */
+  useEffect(() => {
+    if (!user || !product) return;
+    async function checkPendingRequest() {
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        const res = await databases.listDocuments(databaseId, STOCK_REQUESTS_COLLECTION, [
+          Query.equal('productId', product!.$id),
+          Query.equal('userId', user!.$id),
+          Query.equal('status', 'pending')
+        ]);
+        if (res.total > 0) {
+          setHasPendingRequest(true);
+        }
+      } catch (err) {
+        console.error('Error checking stock requests:', err);
+      }
+    }
+    checkPendingRequest();
+  }, [user, product]);
 
   /* ── Fetch the cleaned HTML body content ── */
   useEffect(() => {
@@ -731,6 +761,41 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             router.push('/carrito');
           });
         }
+        
+        let reqBtn = paymentButtonContainer.querySelector('.yaxsell-request-stock-btn') as HTMLButtonElement | null;
+        if (!reqBtn) {
+          reqBtn = document.createElement('button');
+          reqBtn.type = 'button';
+          reqBtn.className = 'shopify-payment-button__button shopify-payment-button__button--unbranded yaxsell-request-stock-btn';
+          reqBtn.textContent = hasPendingRequest ? 'Solicitud en revisión' : 'SOLICITAR MÁS';
+          reqBtn.style.width = '100%';
+          reqBtn.style.background = '#f3f4f6';
+          reqBtn.style.color = '#374151';
+          reqBtn.style.border = '1px solid #d1d5db';
+          reqBtn.style.borderRadius = '40px';
+          reqBtn.style.padding = '14px 20px';
+          reqBtn.style.fontSize = '14px';
+          reqBtn.style.fontWeight = '600';
+          reqBtn.style.marginTop = '10px';
+          reqBtn.style.cursor = hasPendingRequest ? 'not-allowed' : 'pointer';
+          
+          paymentButtonContainer.appendChild(reqBtn);
+          
+          reqBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (hasPendingRequest) return;
+            if (!user) {
+              alert('Debes iniciar sesión para solicitar stock.');
+              router.push('/login');
+              return;
+            }
+            setIsStockRequestModalOpen(true);
+          });
+        } else {
+           reqBtn.textContent = hasPendingRequest ? 'Solicitud en revisión' : 'SOLICITAR MÁS';
+           reqBtn.style.cursor = hasPendingRequest ? 'not-allowed' : 'pointer';
+        }
     }
 
     // Indicar que Yaxsell está listo
@@ -986,6 +1051,37 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     );
   }
 
+  /* ── Submit Stock Request ── */
+  const handleStockRequest = async () => {
+    if (!user || !product) return;
+    setIsRequestingStock(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      await databases.createDocument(
+        databaseId,
+        STOCK_REQUESTS_COLLECTION,
+        'unique()',
+        {
+          productId: product.$id,
+          productName: product.NAME,
+          userId: user.$id,
+          userEmail: user.email || '',
+          requestedQuantity: stockRequestQty,
+          status: 'pending',
+        }
+      );
+      setHasPendingRequest(true);
+      setIsStockRequestModalOpen(false);
+      alert('Tu solicitud ha sido enviada con éxito. Te notificaremos cuando tengamos más stock.');
+    } catch (err) {
+      console.error('Error submitting stock request:', err);
+      alert('Hubo un error al enviar tu solicitud. Intenta nuevamente.');
+    } finally {
+      setIsRequestingStock(false);
+    }
+  };
+
   if (isLoading || !bodyHtml) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', justifyItems: 'center', alignItems: 'center', padding: 80, fontFamily: 'system-ui, sans-serif', color: '#e396bf', background: '#fffcfd', minHeight: '100vh' }}>
@@ -1084,6 +1180,57 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           <hr style={{ border: 'none', borderTop: '1px solid #fce7f3', margin: '40px 0' }} />
           
           <ProductQuestions productId={product.$id} />
+        </div>
+      )}
+      {/* Modal de Solicitud de Stock */}
+      {isStockRequestModalOpen && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Solicitar más stock</h3>
+            <p className="text-sm text-gray-500 mb-6">
+              ¿Cuántas unidades adicionales de <strong>{product?.NAME}</strong> necesitas? Te notificaremos en cuanto lo tengamos disponible.
+            </p>
+            
+            <div className="mb-6">
+              <label className="block text-xs font-semibold text-gray-700 uppercase mb-2">Cantidad a solicitar</label>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setStockRequestQty(q => Math.max(1, q - 1))}
+                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200"
+                >
+                  -
+                </button>
+                <span className="text-2xl font-bold text-gray-900 w-12 text-center">{stockRequestQty}</span>
+                <button
+                  onClick={() => setStockRequestQty(q => Math.min(99, q + 1))}
+                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsStockRequestModalOpen(false)}
+                className="flex-1 py-3 px-4 rounded-xl font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                disabled={isRequestingStock}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleStockRequest}
+                className="flex-1 py-3 px-4 rounded-xl font-semibold text-white bg-pink-500 hover:bg-pink-600 transition-colors flex justify-center items-center"
+                disabled={isRequestingStock}
+              >
+                {isRequestingStock ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                  'Enviar'
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -66,6 +66,7 @@ export const FAVORITES_COLLECTION                = 'favorites';
 export const RAFFLES_COLLECTION                  = 'live_raffles';
 export const RAFFLE_PARTICIPANTS_COLLECTION      = 'raffle_participants';
 export const STOCK_ALERTS_COLLECTION             = 'stock_alerts';
+export const STOCK_REQUESTS_COLLECTION           = 'stock_requests';
 export const NOTIFICATIONS_COLLECTION            = 'notifications';
 export const THEME_CONFIG_COLLECTION             = 'theme_config';
 export const APERTURA_SETTINGS_COLLECTION        = 'apertura_settings';

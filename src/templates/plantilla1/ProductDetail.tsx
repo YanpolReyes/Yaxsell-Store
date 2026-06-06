@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingCart, Check, ChevronRight, Truck, Shield, RefreshCw, Heart, Sparkles, Star, Clock } from 'lucide-react';
 import ShareButton from '@/components/ShareButton';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, TIMED_OFFERS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, TIMED_OFFERS_COLLECTION, STOCK_REQUESTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
 import { buildStockAlertData } from '@/lib/stock-alerts';
 import { normalizeProductImages, getProductImageUrl, resolveStorageImageUrl } from '@/lib/product-images';
 import { Query } from 'appwrite';
@@ -68,6 +68,12 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const { addItem } = useCart();
   const [activeOffer, setActiveOffer] = useState<TimedOffer | null>(null);
   const { settings: apertura, isActive: aperturaActive, discountPercent: aperturaPct } = useAperturaPromotion();
+
+  // Stock Request State
+  const [isStockRequestModalOpen, setIsStockRequestModalOpen] = useState(false);
+  const [stockRequestQty, setStockRequestQty] = useState(1);
+  const [isRequestingStock, setIsRequestingStock] = useState(false);
+  const [hasPendingRequest, setHasPendingRequest] = useState(false);
 
   // Keyboard navigation for image gallery
   useEffect(() => {
@@ -135,6 +141,18 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             setCategoryColor(cat.COLOR || ORANGE_PRIMARY);
             setCategoryIcon(cat.iconUrl || '');
             setRelated((relRes.documents as unknown as Product[]).filter(r => r.$id !== id).slice(0, 6));
+          } catch { /* non-critical */ }
+        }
+
+        // Check if user has a pending stock request for this product
+        if (user) {
+          try {
+            const reqs = await databases.listDocuments(databaseId, STOCK_REQUESTS_COLLECTION, [
+              Query.equal('productId', p.$id),
+              Query.equal('userId', user.$id),
+              Query.equal('status', 'pending')
+            ]);
+            if (reqs.total > 0) setHasPendingRequest(true);
           } catch { /* non-critical */ }
         }
       } catch { router.push('/productos'); }
@@ -277,6 +295,36 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     setTimeout(() => setAdded(false), 2500);
   }
 
+  const handleStockRequest = async () => {
+    if (!user || !product) return;
+    setIsRequestingStock(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      await databases.createDocument(
+        databaseId,
+        STOCK_REQUESTS_COLLECTION,
+        'unique()',
+        {
+          productId: product.$id,
+          productName: product.NAME,
+          userId: user.$id,
+          userEmail: user.email || '',
+          requestedQuantity: stockRequestQty,
+          status: 'pending',
+        }
+      );
+      setHasPendingRequest(true);
+      setIsStockRequestModalOpen(false);
+      alert('Tu solicitud ha sido enviada con éxito. Te notificaremos cuando tengamos más stock.');
+    } catch (err) {
+      console.error('Error submitting stock request:', err);
+      alert('Hubo un error al enviar tu solicitud. Intenta nuevamente.');
+    } finally {
+      setIsRequestingStock(false);
+    }
+  };
+
   const buyBoxContent = (className: string) => (
     <div className={className} style={{ position: 'sticky', top: 16, background: '#fff', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 16, padding: '18px 18px 22px', boxShadow: '0 4px 16px rgba(227,150,191,0.08)' }}>
       {activeOffer && (
@@ -348,12 +396,39 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           <button type="button" onClick={() => {
             addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty && isWholesaleUser ? product?.WHOLESALEPRICE : undefined);
             router.push('/carrito');
-          }} style={{ width: '100%', padding: '12px 18px', background: '#f9fafb', color: ORANGE_PRIMARY, border: `1.5px solid ${PINK_LIGHT}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
+          }} style={{ width: '100%', padding: '12px 18px', background: ORANGE_PRIMARY, color: '#fff', border: `1.5px solid ${ORANGE_PRIMARY}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8, transition: 'all 0.2s' }}>
             Comprar ahora
           </button>
-          <button type="button" onClick={handleAdd} style={{ width: '100%', padding: '12px 18px', background: added ? '#ecfdf5' : '#f9fafb', color: added ? '#10b981' : ORANGE_PRIMARY, border: `1.5px solid ${added ? '#10b981' : PINK_LIGHT}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <button type="button" onClick={handleAdd} style={{ width: '100%', padding: '12px 18px', background: added ? '#10b981' : ORANGE_PRIMARY, color: '#fff', border: `1.5px solid ${added ? '#10b981' : ORANGE_PRIMARY}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8, transition: 'all 0.2s' }}>
             {added ? <><Check size={15} /> Agregado</> : <><ShoppingCart size={15} /> Agregar al carrito</>}
           </button>
+          {user ? (
+            <button
+              type="button"
+              onClick={() => hasPendingRequest ? null : setIsStockRequestModalOpen(true)}
+              disabled={hasPendingRequest}
+              style={{
+                width: '100%',
+                padding: '12px 18px',
+                background: hasPendingRequest ? '#f3f4f6' : '#fff',
+                color: hasPendingRequest ? '#9ca3af' : ORANGE_PRIMARY,
+                border: `2px solid ${hasPendingRequest ? '#d1d5db' : ORANGE_PRIMARY}`,
+                borderRadius: 10,
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: hasPendingRequest ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                transition: 'all 0.2s',
+              }}
+            >
+              {hasPendingRequest ? 'Solicitud en revisión...' : 'SOLICITAR MÁS STOCK'}
+            </button>
+          ) : (
+            <p style={{ margin: '8px 0 0', fontSize: 11, textAlign: 'center', color: '#9ca3af' }}>Inicia sesión para solicitar más stock</p>
+          )}
           <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${PINK_BG_DARK}`, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <p style={{ margin: 0, fontSize: 12, color: TEXT_MUTED, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
               <RefreshCw size={13} color={ORANGE_PRIMARY} style={{ flexShrink: 0, marginTop: 1 }} />
@@ -893,6 +968,63 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
                 </div>
               </div>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stock Request Modal */}
+      {isStockRequestModalOpen && (
+        <div onClick={() => !isRequestingStock && setIsStockRequestModalOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '15vh', paddingLeft: 16, paddingRight: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #f3f4f6' }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: TEXT_DARK }}>Solicitar más stock</h2>
+              <button onClick={() => !isRequestingStock && setIsStockRequestModalOpen(false)} disabled={isRequestingStock} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#666' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div style={{ padding: '24px' }}>
+              <p style={{ margin: '0 0 16px', fontSize: 14, color: TEXT_MUTED }}>
+                Ingresa la cantidad que deseas solicitar para el producto <strong style={{ color: TEXT_DARK }}>{product.NAME}</strong>. Nos comunicaremos contigo cuando esté disponible.
+              </p>
+              
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: TEXT_DARK, marginBottom: 8 }}>Cantidad requerida</label>
+                <div style={{ display: 'flex', alignItems: 'center', border: `1.5px solid #d1d5db`, borderRadius: 8, overflow: 'hidden' }}>
+                  <button type="button" onClick={() => setStockRequestQty(q => Math.max(1, q - 1))} disabled={isRequestingStock} style={{ width: 48, height: 48, border: 'none', background: '#f9fafb', fontSize: 20, cursor: 'pointer', color: TEXT_DARK, fontWeight: 600 }}>−</button>
+                  <input
+                    type="number"
+                    value={stockRequestQty}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      if (!isNaN(val) && val >= 1) setStockRequestQty(val);
+                    }}
+                    disabled={isRequestingStock}
+                    style={{ flex: 1, height: 48, textAlign: 'center', fontSize: 16, fontWeight: 600, color: TEXT_DARK, border: 'none', outline: 'none', background: '#fff' }}
+                  />
+                  <button type="button" onClick={() => setStockRequestQty(q => q + 1)} disabled={isRequestingStock} style={{ width: 48, height: 48, border: 'none', background: '#f9fafb', fontSize: 20, cursor: 'pointer', color: TEXT_DARK, fontWeight: 600 }}>+</button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => setIsStockRequestModalOpen(false)}
+                  disabled={isRequestingStock}
+                  style={{ flex: 1, padding: '12px', background: '#fff', color: TEXT_DARK, border: '1px solid #d1d5db', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleStockRequest}
+                  disabled={isRequestingStock}
+                  style={{ flex: 1, padding: '12px', background: ORANGE_PRIMARY, color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: isRequestingStock ? 'not-allowed' : 'pointer', opacity: isRequestingStock ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                >
+                  {isRequestingStock ? <RefreshCw size={16} className="animate-spin" /> : null}
+                  {isRequestingStock ? 'Enviando...' : 'Enviar Solicitud'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
