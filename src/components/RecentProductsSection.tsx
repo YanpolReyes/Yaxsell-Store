@@ -149,7 +149,7 @@ export default function RecentProductsSection() {
         </div>
         <button 
           onClick={() => setIsDrawerOpen(true)}
-          className="bg-gray-900 hover:bg-gray-800 text-white text-xs sm:text-sm font-bold py-2 px-4 rounded-full transition-all flex items-center gap-2 shadow-lg hover:shadow-xl active:scale-95"
+          className="bg-pink-500 hover:bg-pink-600 text-white text-xs sm:text-sm font-bold py-2 px-4 rounded-full transition-all flex items-center gap-2 shadow-lg hover:shadow-xl active:scale-95"
         >
           Ver todo <span className="hidden sm:inline">el Live</span> 🛍️
         </button>
@@ -225,7 +225,7 @@ export default function RecentProductsSection() {
 
           {/* Footer Action */}
           <div className="p-4 border-t border-gray-100 bg-white">
-            <a href="/productos" className="flex items-center justify-center w-full py-3.5 bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition-all active:scale-[0.98]">
+            <a href="/productos" className="flex items-center justify-center w-full py-3.5 bg-white border border-gray-900 text-gray-900 rounded-xl font-bold shadow-md hover:shadow-lg transition-all active:scale-[0.98]">
               Ir al catálogo completo
             </a>
           </div>
