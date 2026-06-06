@@ -252,8 +252,8 @@ export default function HomePage23() {
     };
     root.addEventListener('click', handleFAQClicks);
 
-    // Strip native Shopify listeners from all close buttons so they don't intercept clicks
-    const allCloseBtns = root.querySelectorAll('.button-close, .drawer__close');
+    // Strip native Shopify listeners from cart close buttons so they don't intercept our custom logic
+    const allCloseBtns = root.querySelectorAll('cart-drawer .button-close, cart-drawer .drawer__close');
     allCloseBtns.forEach(btn => {
       const newBtn = btn.cloneNode(true);
       btn.parentNode?.replaceChild(newBtn, btn);
@@ -261,11 +261,12 @@ export default function HomePage23() {
 
     const handleDrawerClose = (e: Event) => {
       const target = e.target as HTMLElement;
-      const clickedOutside = target.matches('cart-drawer, .drawer, search-drawer, menu-drawer') && !target.closest('.drawer__inner');
-      const isCloseBtn = !!target.closest('.button-close, .drawer__close, [data-close]');
+      // Only handle cart-drawer globally to avoid breaking Shopify native menu-drawer and search-drawer
+      const clickedOutside = target.matches('cart-drawer') && !target.closest('.drawer__inner');
+      const isCloseBtn = !!target.closest('cart-drawer .button-close, cart-drawer .drawer__close, cart-drawer [data-close]');
       
       if (isCloseBtn || clickedOutside) {
-        const activeDrawers = document.querySelectorAll('cart-drawer, search-drawer, menu-drawer, variant-popup, added-to-cart-popup, .drawer');
+        const activeDrawers = document.querySelectorAll('cart-drawer');
         let closedAny = false;
         activeDrawers.forEach(drawer => {
           if (drawer.getAttribute('data-hidden') !== 'true' || drawer.classList.contains('active') || drawer.classList.contains('is-active') || drawer.hasAttribute('open')) {
