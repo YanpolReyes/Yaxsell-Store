@@ -22,6 +22,7 @@ import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 import CountdownTimer from '@/components/CountdownTimer';
+import { getSkuFromFeatures } from '@/lib/product-features';
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 
@@ -194,8 +195,13 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
       if (price < activePriceRange[0] || price > activePriceRange[1]) return false;
     }
     if (!search) return true;
-    const q = search.toLowerCase();
-    return p.NAME.toLowerCase().includes(q) || (p.DESCRIPTION || '').toLowerCase().includes(q);
+    const q = search.toLowerCase().trim();
+    const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
+    const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
+    const pSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
+    return p.NAME.toLowerCase().includes(q) || 
+      (p.DESCRIPTION || '').toLowerCase().includes(q) ||
+      pSku.toLowerCase().includes(q);
   });
 
   const visibleProducts = filtered.slice(0, visibleCount);
@@ -549,6 +555,9 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
                   const hasDisc = pricing.hasDiscount;
                   const disc = pricing.discountPercent;
                   const fav = isFavorite(p.$id);
+                  const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
+                  const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
+                  const cardSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
                   return (
                     <div key={p.$id} className="pk-card" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '0 0 22px 22px', overflow: 'hidden', border: '1px solid rgba(229,231,235,0.95)', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 28px rgba(227,150,191,0.08)', backdropFilter: 'blur(10px)' }}>
                       <div className="pk-card-media-link" onClick={() => handleCardImageClick(p)} style={{ display: 'block', position: 'relative', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
@@ -592,11 +601,13 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
                         </div>
                       </div>
                       <div className="pk-card-body" style={{ padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                        {cardSku && <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4, fontWeight: 700 }}>SKU: {cardSku}</div>}
                         <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 36, lineHeight: 1.4, transition: 'color 0.2s' }}>
                             {p.NAME}
                           </p>
                         </Link>
+                        {p.PACKQTY && p.PACKQTY > 1 ? <div style={{ fontSize: 11, color: '#db2777', fontWeight: 800, marginTop: -4, marginBottom: 8 }}>{p.PACKQTY} UNIDADES POR PAQUETE</div> : null}
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 'auto' }}>
                           {price > 0 ? (
                             <>
@@ -651,6 +662,9 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
                   const hasDisc = pricing.hasDiscount;
                   const disc = pricing.discountPercent;
                   const fav = isFavorite(p.$id);
+                  const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
+                  const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
+                  const cardSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
                   return (
                     <div key={p.$id} className="pk-card-list" style={{ background: '#fff', borderRadius: 18, border: '1px solid #e5e7eb', display: 'flex', gap: 16, padding: 12, transition: 'all 0.2s', alignItems: 'center' }}>
                       <div className="pk-card-list-media" onClick={() => handleCardImageClick(p)} style={{ position: 'relative', width: 110, height: 110, borderRadius: 14, overflow: 'hidden', background: '#f8f9fa', flexShrink: 0, cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
@@ -658,9 +672,11 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
                         {hasDisc && <div style={{ position: 'absolute', top: 6, left: 6, zIndex: 3 }}><AperturaDiscountBadge percent={disc} size="sm" /></div>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
+                        {cardSku && <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2, fontWeight: 700 }}>SKU: {cardSku}</div>}
                         <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{p.NAME}</p>
                         </Link>
+                        {p.PACKQTY && p.PACKQTY > 1 ? <div style={{ fontSize: 11, color: '#db2777', fontWeight: 800, marginBottom: 6 }}>{p.PACKQTY} UNIDADES POR PAQUETE</div> : null}
                         <p style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>{p.DESCRIPTION}</p>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                           {price > 0 ? (
