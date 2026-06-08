@@ -206,6 +206,7 @@ export default function InventarioPage() {
   const [migrateResults, setMigrateResults] = useState<{ activated: number; deactivated: number; errors: number } | null>(null);
   const [view, setView] = useState<'excel' | 'catalog' | 'withStock' | 'located'>('withStock');
   const [catalogSearch, setCatalogSearch] = useState('');
+  const [isSearchingDb, setIsSearchingDb] = useState(false);
   const [stockEdits, setStockEdits] = useState<Record<string, string>>({});
   const [packQtyEdits, setPackQtyEdits] = useState<Record<string, string>>({});
   const [barcodeEdits, setBarcodeEdits] = useState<Record<string, string>>({});
@@ -720,8 +721,8 @@ export default function InventarioPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      // 1. Cargar productos de INVENTORY_PRODUCTS — lote inicial de 500
-      const queries: any[] = [Query.orderDesc('$createdAt'), Query.limit(500)];
+      // 1. Cargar productos de INVENTORY_PRODUCTS — lote inicial de 50 (optimizado para ahorrar requests)
+      const queries: any[] = [Query.orderDesc('$createdAt'), Query.limit(50)];
       const resp: any = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, queries);
       const allInventory = resp.documents as unknown as Product[];
 
@@ -730,9 +731,9 @@ export default function InventarioPage() {
       const barcodes = new Set<string>();
       const allPublished: Product[] = [];
       try {
-        const pResp: any = await cached('products:published_500', TTL.products, async () => {
+        const pResp: any = await cached('products:published_50', TTL.products, async () => {
           return await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-            Query.orderDesc('$createdAt'), Query.limit(500),
+            Query.orderDesc('$createdAt'), Query.limit(50),
           ]);
         });
         for (const d of pResp.documents) {
@@ -770,6 +771,83 @@ export default function InventarioPage() {
 
   const getSku = getSkuFromProduct;
   const getBarcode = getBarcodeFromProduct;
+
+  const triggerSearch = async (searchTerm: string) => {
+    const q = searchTerm.trim();
+    if (!q) return;
+
+    setIsSearchingDb(true);
+    setLoadingProducts(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      const queries = [
+        [Query.equal('sku', q)],
+        [Query.equal('jumpseller_id', q)],
+        [Query.equal('barcode', q)],
+        [Query.contains('NAME', q)],
+      ];
+
+      let found: Product[] = [];
+
+      for (const qry of queries) {
+        try {
+          const resp = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, [...qry, Query.limit(10)]);
+          if (resp.documents.length > 0) {
+            found.push(...(resp.documents as unknown as Product[]));
+            break;
+          }
+        } catch {}
+      }
+
+      if (found.length === 0) {
+        for (const qry of queries) {
+          try {
+            const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [...qry, Query.limit(10)]);
+            if (resp.documents.length > 0) {
+              found.push(...(resp.documents as unknown as Product[]));
+              break;
+            }
+          } catch {}
+        }
+      }
+
+      if (found.length > 0) {
+        setProducts(prev => {
+          const next = [...prev];
+          found.forEach(item => {
+            if (!next.some(p => p.$id === item.$id)) next.unshift(item);
+          });
+          return next;
+        });
+
+        setPublishedProducts(prev => {
+          const next = [...prev];
+          found.forEach(item => {
+            if (!next.some(p => p.$id === item.$id)) next.unshift(item);
+          });
+          return next;
+        });
+
+        setPublishedSkus(prev => {
+          const next = new Set(prev);
+          found.forEach(item => {
+            const sku = (item.jumpseller_id || '').toLowerCase();
+            if (sku) next.add(sku);
+          });
+          return next;
+        });
+      } else {
+        alert('No se encontraron productos en la base de datos con ese SKU, barra o nombre.');
+      }
+    } catch (e: any) {
+      alert('Error en búsqueda de base de datos: ' + e.message);
+    } finally {
+      setIsSearchingDb(false);
+      setLoadingProducts(false);
+    }
+  };
 
   const findProduct = (sku: string): Product | undefined => {
     if (!sku) return undefined;
@@ -2032,7 +2110,12 @@ export default function InventarioPage() {
                   type="text"
                   value={catalogSearch}
                   onChange={e => setCatalogSearch(e.target.value)}
-                  placeholder="Nombre, SKU o código de barras..."
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      triggerSearch(catalogSearch);
+                    }
+                  }}
+                  placeholder="SKU, barra o nombre (Enter para buscar en BD)..."
                   className="w-full pl-9 pr-16 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-pink-500"
                 />
                 {catalogSearch && (
@@ -2410,7 +2493,12 @@ export default function InventarioPage() {
                   type="text"
                   value={catalogSearch}
                   onChange={e => setCatalogSearch(e.target.value)}
-                  placeholder="Nombre, SKU o código de barras..."
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      triggerSearch(catalogSearch);
+                    }
+                  }}
+                  placeholder="SKU, barra o nombre (Enter para buscar en BD)..."
                   className="w-full pl-9 pr-10 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-pink-500"
                 />
                 {catalogSearch && (
