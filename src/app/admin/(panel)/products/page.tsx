@@ -466,15 +466,35 @@ export default function ProductsPage() {
     if (!modal) return;
     const d = modal.data;
     if (!d.NAME?.trim()) { alert('El nombre es requerido'); return; }
-    if (modal.mode === 'add' && d._sku?.trim()) {
+    if (d._sku?.trim()) {
       const skuInput = d._sku.trim().toLowerCase();
-      const skuExists = products.some(p => {
-        const pSku = getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
-        return pSku.toLowerCase() === skuInput;
-      });
-      if (skuExists) {
-        alert(`Ya existe un producto con el SKU "${d._sku}". Por favor, ingresa uno diferente.`);
-        return;
+      
+      // 1. General check for new products (add mode)
+      if (modal.mode === 'add') {
+        const skuExists = products.some(p => {
+          const pSku = getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
+          return pSku.toLowerCase() === skuInput;
+        });
+        if (skuExists) {
+          alert(`Ya existe un producto con el SKU "${d._sku}". Por favor, ingresa uno diferente.`);
+          return;
+        }
+      }
+      
+      // 2. Prevent duplicate SKUs in products with stock (add or edit mode)
+      const newStock = Math.round(Number(d.STOCK)) || 0;
+      if (newStock > 0) {
+        const duplicateSkuWithStock = products.find(p => {
+          if (modal.mode === 'edit' && p.$id === (d as Product).$id) return false;
+          const pStock = p.STOCK ?? 0;
+          if (pStock <= 0) return false;
+          const pSku = getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
+          return pSku.toLowerCase() === skuInput;
+        });
+        if (duplicateSkuWithStock) {
+          alert(`Ya existe otro producto CON STOCK ("${duplicateSkuWithStock.NAME}") que utiliza el SKU "${d._sku}". No se permiten SKUs duplicados en productos con stock activo.`);
+          return;
+        }
       }
     }
     setIsSaving(true);

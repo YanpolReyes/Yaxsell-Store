@@ -1478,6 +1478,80 @@ export default function DashboardPage() {
     cached?: boolean;
   } | null>(null);
 
+  const [duplicateSkusList, setDuplicateSkusList] = useState<string[]>([]);
+  const [isScanningDuplicates, setIsScanningDuplicates] = useState(false);
+  const [lastDuplicateScanTime, setLastDuplicateScanTime] = useState<string | null>(null);
+
+  const scanDuplicateSkus = useCallback(async (force = false) => {
+    if (typeof window === 'undefined') return;
+    const cachedData = localStorage.getItem('yaxsel_dup_skus_data');
+    const cachedTime = localStorage.getItem('yaxsel_dup_skus_time');
+    
+    if (!force && cachedData && cachedTime) {
+      const age = Date.now() - Number(cachedTime);
+      const twelveHours = 12 * 60 * 60 * 1000;
+      if (age < twelveHours) {
+        setDuplicateSkusList(JSON.parse(cachedData));
+        setLastDuplicateScanTime(new Date(Number(cachedTime)).toLocaleString());
+        return;
+      }
+    }
+
+    setIsScanningDuplicates(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      
+      const allProducts: Product[] = [];
+      let lastId: string | null = null;
+      let hasMore = true;
+      let limit = 500;
+      
+      while (hasMore && allProducts.length < 6000) {
+        const queries = [Query.limit(limit)];
+        if (lastId) {
+          queries.push(Query.cursorAfter(lastId));
+        }
+        const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
+        const docs = resp.documents as unknown as Product[];
+        allProducts.push(...docs);
+        if (docs.length < limit) {
+          hasMore = false;
+        } else {
+          lastId = docs[docs.length - 1].$id;
+        }
+      }
+
+      const skuCounts: Record<string, number> = {};
+      allProducts.forEach(p => {
+        const rawSku = (p as any).sku || p.jumpseller_id || '';
+        const features = p.FEATURES || '';
+        const match = features.match(/SKU:\s*(.+)/i);
+        const sku = (match ? match[1].trim().split('\n')[0] : rawSku).trim().toLowerCase();
+        
+        if (sku && sku !== '—' && sku !== '') {
+          skuCounts[sku] = (skuCounts[sku] || 0) + 1;
+        }
+      });
+
+      const duplicates = Object.keys(skuCounts).filter(sku => skuCounts[sku] > 1);
+      
+      localStorage.setItem('yaxsel_dup_skus_data', JSON.stringify(duplicates));
+      localStorage.setItem('yaxsel_dup_skus_time', String(Date.now()));
+      
+      setDuplicateSkusList(duplicates);
+      setLastDuplicateScanTime(new Date().toLocaleString());
+    } catch (err) {
+      console.error('Error scanning duplicate SKUs:', err);
+    } finally {
+      setIsScanningDuplicates(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    scanDuplicateSkus(false);
+  }, [scanDuplicateSkus]);
+
   const loadData = useCallback(async (options?: { force?: boolean }) => {
     const force = options?.force ?? false;
     
@@ -1941,6 +2015,52 @@ export default function DashboardPage() {
       {error && (
         <div style={{ padding: '12px 16px', background: '#fef2f2', border: '1px solid #7f1d1d', borderRadius: 12, marginBottom: 20, display: 'flex', gap: 8, fontSize: 14, color: '#7f1d1d' }}>
           <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 1 }} /> {error}
+        </div>
+      )}
+
+      {duplicateSkusList.length > 0 && (
+        <div style={{
+          padding: '16px 20px',
+          background: '#fffbeb',
+          border: '1px solid #d97706',
+          borderRadius: 16,
+          marginBottom: 20,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+          fontSize: 14,
+          color: '#b45309',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
+            <AlertTriangle size={18} style={{ flexShrink: 0, color: '#d97706' }} />
+            Hay {duplicateSkusList.length} SKU(s) repetidos en el catálogo
+          </div>
+          <div style={{ fontSize: 12, color: '#d97706', opacity: 0.9 }}>
+            SKUs duplicados detectados: {duplicateSkusList.slice(0, 15).join(', ')}{duplicateSkusList.length > 15 ? '...' : ''}.
+            Por favor, revisa tus productos para evitar problemas de stock.
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
+            <span style={{ fontSize: 11, color: '#92400e' }}>Último análisis: {lastDuplicateScanTime || 'No analizado'}</span>
+            <button
+              onClick={() => scanDuplicateSkus(true)}
+              disabled={isScanningDuplicates}
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: '#fff',
+                background: '#d97706',
+                border: 'none',
+                padding: '4px 10px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4
+              }}
+            >
+              {isScanningDuplicates ? 'Analizando...' : 'Volver a analizar'}
+            </button>
+          </div>
         </div>
       )}
 
