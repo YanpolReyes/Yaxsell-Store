@@ -15,7 +15,7 @@ import iaAnimation from '@/ia.json';
 type ProductModalData = Partial<Product> & { _barcode?: string; _sku?: string };
 
 import { MEDIA_BUCKET_ID, MEDIA_PREFIXES } from '@/lib/appwrite';
-import { invalidateProductCache } from '@/lib/cache';
+import { invalidateProductCache, cached, TTL } from '@/lib/cache';
 
 const PRODUCTS_BUCKET_ID = MEDIA_BUCKET_ID; // Backward compatibility
 
@@ -240,43 +240,57 @@ export default function ProductsPage() {
     }
   };
 
-  const load = useCallback(async () => {
-    setIsLoading(true); setError('');
+  const [lastCursor, setLastCursor] = useState<string | null>(null);
+
+  const load = useCallback(async (isLoadMore = false) => {
+    if (!isLoadMore) {
+      setIsLoading(true);
+      setProducts([]);
+    }
+    setError('');
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      // Carga todos los productos con paginación eficiente
-      const allProducts: Product[] = [];
-      let cursor: string | undefined;
-      while (true) {
-        const queries: any[] = [Query.limit(500)];
-        if (cursor) queries.push(Query.cursorAfter(cursor));
-        const resp: any = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
-        const docs = resp.documents as unknown as Product[];
-        if (!docs.length) break;
-        allProducts.push(...docs);
-        if (docs.length < 500) break;
-        cursor = docs[docs.length - 1].$id;
-      }
-      allProducts.sort((a, b) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime());
+      const queries: any[] = [Query.limit(50), Query.orderDesc('$createdAt')];
+      if (isLoadMore && lastCursor) queries.push(Query.cursorAfter(lastCursor));
+      
+      const resp: any = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
+      const docs = resp.documents as unknown as Product[];
+      
       const [cr, subRes] = await Promise.all([
-        databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]),
-        databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.limit(500)]),
+        cached('categories:all', TTL.categories, async () => {
+          return await databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]);
+        }),
+        cached('subcategories:all', TTL.categories, async () => {
+          return await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.limit(500)]);
+        }),
       ]);
-      setProducts(allProducts);
+      
+      if (isLoadMore) {
+        setProducts(prev => [...prev, ...docs]);
+      } else {
+        setProducts(docs);
+      }
+      
+      if (docs.length === 50) {
+        setLastCursor((docs[docs.length - 1] as any).$id);
+      } else {
+        setLastCursor(null);
+      }
+      
       setCategories(cr.documents as unknown as Category[]);
       setSubcategories(subRes.documents as unknown as Subcategory[]);
     } catch (e: any) { setError(e.message); }
     finally { setIsLoading(false); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(false); }, []);
 
   useEffect(() => {
-    const handler = () => load();
+    const handler = () => load(false);
     window.addEventListener('yaxsel-data-change', handler);
     return () => window.removeEventListener('yaxsel-data-change', handler);
-  }, [load]);
+  }, []);
 
   const sendYexyMessage = async () => {
     if (!yexyInput.trim() || yexyLoading) return;
@@ -1029,7 +1043,7 @@ export default function ProductsPage() {
           <button onClick={() => setAiCategorizeModal(true)} className="flex items-center gap-1.5 px-3 py-2 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-700 transition shadow-sm" title="Categorizar productos usando IA">
             <Sparkles className="w-4 h-4" /> Categorizar con Yexy
           </button>
-          <button onClick={load} disabled={isLoading} className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition text-gray-600">
+          <button onClick={() => load(false)} disabled={isLoading} className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition text-gray-600">
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
           <button onClick={syncBrokenImages} disabled={syncingImages || products.length === 0}
@@ -1252,6 +1266,17 @@ export default function ProductsPage() {
           </div>
         )}
       </div>
+
+      {lastCursor && !isLoading && (
+        <div className="flex justify-center my-4">
+          <button
+            onClick={() => load(true)}
+            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow-sm transition"
+          >
+            Cargar más productos
+          </button>
+        </div>
+      )}
 
       {/* Bulk price modal */}
       {priceModal && (

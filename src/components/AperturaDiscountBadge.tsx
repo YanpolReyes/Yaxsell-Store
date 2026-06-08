@@ -29,7 +29,7 @@ export default function AperturaDiscountBadge({ percent, size = 'md', className 
         letterSpacing: '0.04em',
         color: '#fff',
         background: 'linear-gradient(135deg, #f5a8cf 0%, #e396bf 50%, #c0547a 100%)',
-        boxShadow: '0 4px 16px rgba(227,150,191,0.45), 0 0 0 1px rgba(255,255,255,0.35) inset',
+        boxShadow: '0 2px 8px rgba(227,150,191,0.2), 0 0 0 1px rgba(255,255,255,0.35) inset',
         textTransform: 'uppercase',
         lineHeight: 1,
         position: 'relative',

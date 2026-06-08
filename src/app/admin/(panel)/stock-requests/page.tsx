@@ -77,14 +77,48 @@ export default function StockRequestsPage() {
     </div>
   );
 
-  if (error) return (
-    <div className="admin-main-content p-6">
-      <div className="bg-red-50 border border-red-200 rounded-xl p-5 flex items-center gap-3">
-        <AlertTriangle size={20} className="text-red-500" />
-        <span className="text-red-800 text-sm">{error}</span>
+  if (error) {
+    const isMissingCollection = error.includes('could not be found');
+    return (
+      <div className="admin-main-content p-6 max-w-2xl">
+        <div className={`border rounded-xl p-6 ${isMissingCollection ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'}`}>
+          <div className="flex items-start gap-3">
+            <AlertTriangle size={20} className={isMissingCollection ? 'text-amber-500 mt-0.5 shrink-0' : 'text-red-500 mt-0.5 shrink-0'} />
+            <div>
+              {isMissingCollection ? (
+                <>
+                  <h2 className="font-bold text-amber-900 text-base mb-2">Colección &apos;stock_requests&apos; no encontrada</h2>
+                  <p className="text-amber-800 text-sm mb-4">
+                    Debes crear esta colección en tu base de datos de Appwrite con los siguientes atributos:
+                  </p>
+                  <div className="bg-white rounded-lg border border-amber-200 p-4 text-xs font-mono space-y-1 text-gray-700 mb-4">
+                    <p className="font-bold text-gray-900 mb-2">Colección ID: <span className="text-pink-600">stock_requests</span></p>
+                    <p>• <strong>productId</strong> — String (required)</p>
+                    <p>• <strong>productName</strong> — String (required)</p>
+                    <p>• <strong>userId</strong> — String (required)</p>
+                    <p>• <strong>userEmail</strong> — String (optional)</p>
+                    <p>• <strong>requestedQuantity</strong> — Integer (required)</p>
+                    <p>• <strong>status</strong> — String (required, default: &apos;pending&apos;)</p>
+                  </div>
+                  <a
+                    href={`https://cloud.appwrite.io/console`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition"
+                  >
+                    Abrir Appwrite Console →
+                  </a>
+                  <button onClick={load} className="ml-3 text-sm text-amber-700 underline">Reintentar</button>
+                </>
+              ) : (
+                <span className="text-red-800 text-sm">{error}</span>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
     <div className="admin-main-content p-4 md:p-6 lg:p-8 max-w-[1200px] mx-auto">

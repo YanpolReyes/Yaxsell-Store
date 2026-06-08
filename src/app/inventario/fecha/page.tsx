@@ -56,35 +56,9 @@ export default function InventarioFechaPage() {
   }, [authLoading, isLoggedIn, user?.email, router, logout]);
 
   const loadProducts = useCallback(async () => {
-    setLoadingProducts(true);
-    try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-      // Load inventory_products
-      const allDocs: any[] = [];
-      let offset = 0;
-      while (true) {
-        const r = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, [Query.limit(2000), Query.offset(offset)]);
-        allDocs.push(...r.documents);
-        if (r.documents.length < 2000) break;
-        offset += 2000;
-      }
-      // Also load products (published catalog)
-      const pubDocs: any[] = [];
-      offset = 0;
-      while (true) {
-        const r = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(2000), Query.offset(offset)]);
-        pubDocs.push(...r.documents);
-        if (r.documents.length < 2000) break;
-        offset += 2000;
-      }
-      // Merge: inventory first, then published (avoid duplicates by $id)
-      const seen = new Set(allDocs.map((d: any) => d.$id));
-      const merged = [...allDocs, ...pubDocs.filter((d: any) => !seen.has(d.$id))];
-      setProducts(merged as unknown as Product[]);
-      setInventoryIds(new Set(allDocs.map((d: any) => d.$id)));
-    } catch (e) { console.error(e); }
-    finally { setLoadingProducts(false); }
+    // No-op to avoid downloading the entire database on mount.
+    // Products are loaded dynamically when the Excel is uploaded.
+    setLoadingProducts(false);
   }, []);
 
   useEffect(() => { loadProducts(); }, [loadProducts]);
@@ -108,25 +82,84 @@ export default function InventarioFechaPage() {
         return { sku, date, productId: null, productCollection: null, productName: null, currentDate: null, status: 'pending' as const };
       }).filter(r => r.sku && r.date);
 
+      // Fetch only the needed products to avoid downloading the entire database on mount!
+      const uniqueSkus = Array.from(new Set(parsed.map(r => r.sku.trim().toLowerCase())));
+      
+      setLoadingProducts(true);
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      
+      const fetchProductsBySkus = async (skus: string[], collectionId: string) => {
+        if (skus.length === 0) return [];
+        const results: any[] = [];
+        const chunkSize = 100;
+        for (let i = 0; i < skus.length; i += chunkSize) {
+          const chunk = skus.slice(i, i + chunkSize);
+          try {
+            const r = await databases.listDocuments(databaseId, collectionId, [
+              Query.equal('sku', chunk),
+              Query.limit(100)
+            ]);
+            results.push(...r.documents);
+          } catch (e) {
+            console.warn(`Query by sku failed in ${collectionId}:`, e);
+          }
+          if (collectionId === PRODUCTS_COLLECTION_ID) {
+            try {
+              const r = await databases.listDocuments(databaseId, collectionId, [
+                Query.equal('barcode', chunk),
+                Query.limit(100)
+              ]);
+              results.push(...r.documents);
+            } catch (e2) {}
+            try {
+              const r = await databases.listDocuments(databaseId, collectionId, [
+                Query.equal('jumpseller_id', chunk),
+                Query.limit(100)
+              ]);
+              results.push(...r.documents);
+            } catch (e3) {}
+          }
+        }
+        const seen = new Set();
+        return results.filter(d => {
+          if (seen.has(d.$id)) return false;
+          seen.add(d.$id);
+          return true;
+        });
+      };
+
+      const [allDocs, pubDocs] = await Promise.all([
+        fetchProductsBySkus(uniqueSkus, INVENTORY_PRODUCTS_COLLECTION_ID),
+        fetchProductsBySkus(uniqueSkus, PRODUCTS_COLLECTION_ID)
+      ]);
+
+      const localProducts = [...allDocs, ...pubDocs.filter((d: any) => !allDocs.some((a: any) => a.$id === d.$id))];
+      const localInventoryIds = new Set(allDocs.map((d: any) => d.$id));
+
+      setProducts(localProducts as unknown as Product[]);
+      setInventoryIds(localInventoryIds);
+      setLoadingProducts(false);
+
       // Debug: log first 5 raw Excel columns and first 5 product SKUs
       if (rawRows.length > 0) {
         console.log('[fecha] Excel columns:', Object.keys(rawRows[0]));
         console.log('[fecha] First 3 raw rows:', rawRows.slice(0, 3));
         console.log('[fecha] Parsed SKUs sample:', parsed.slice(0, 5).map(r => r.sku));
-        console.log('[fecha] Product SKUs sample:', products.slice(0, 5).map(p => `${p.NAME} => sku=${(p as any).sku} barcode=${p.barcode}`));
+        console.log('[fecha] Product SKUs sample:', localProducts.slice(0, 5).map(p => `${p.NAME} => sku=${(p as any).sku} barcode=${p.barcode}`));
       }
 
       // Build SKU index for fast lookup (track which collection each product belongs to)
       const skuIndex = new Map<string, { product: Product; collection: string }>();
-      products.forEach(p => {
-        const col = inventoryIds.has(p.$id) ? INVENTORY_PRODUCTS_COLLECTION_ID : PRODUCTS_COLLECTION_ID;
+      localProducts.forEach(p => {
+        const col = localInventoryIds.has(p.$id) ? INVENTORY_PRODUCTS_COLLECTION_ID : PRODUCTS_COLLECTION_ID;
         const pSku = getSkuFromProduct(p);
         if (pSku) skuIndex.set(pSku.toLowerCase(), { product: p, collection: col });
         if (p.barcode) skuIndex.set(p.barcode.toLowerCase(), { product: p, collection: col });
         if ((p as any).jumpseller_id) skuIndex.set(String((p as any).jumpseller_id).toLowerCase(), { product: p, collection: col });
         skuIndex.set(p.$id, { product: p, collection: col });
         if (p.TAGS && typeof p.TAGS === 'string') {
-          p.TAGS.split(',').map(t => t.trim().toLowerCase()).filter(Boolean).forEach(t => {
+          p.TAGS.split(',').map((t: string) => t.trim().toLowerCase()).filter(Boolean).forEach((t: string) => {
             if (!skuIndex.has(t)) skuIndex.set(t, { product: p, collection: col });
           });
         }
@@ -142,13 +175,13 @@ export default function InventarioFechaPage() {
         // 2) Try with original casing (no space removal)
         if (!product) { found = skuIndex.get(row.sku.toLowerCase()); product = found?.product || null; collection = found?.collection || null; }
         // 3) Name contains
-        if (!product) { const f = products.find(p => p.NAME && p.NAME.toLowerCase().replace(/\s+/g, '').includes(skuLower)); if (f) { product = f; collection = inventoryIds.has(f.$id) ? INVENTORY_PRODUCTS_COLLECTION_ID : PRODUCTS_COLLECTION_ID; } }
+        if (!product) { const f = localProducts.find(p => p.NAME && p.NAME.toLowerCase().replace(/\s+/g, '').includes(skuLower)); if (f) { product = f; collection = localInventoryIds.has(f.$id) ? INVENTORY_PRODUCTS_COLLECTION_ID : PRODUCTS_COLLECTION_ID; } }
         // 4) SKU is contained in product SKU (reverse)
-        if (!product) { const f = products.find(p => {
+        if (!product) { const f = localProducts.find(p => {
           const pSku = getSkuFromProduct(p);
           return pSku && skuLower.includes(pSku.toLowerCase().replace(/\s+/g, '')) && pSku.length >= 4;
-        }); if (f) { product = f; collection = inventoryIds.has(f.$id) ? INVENTORY_PRODUCTS_COLLECTION_ID : PRODUCTS_COLLECTION_ID; } }
-        if (product && !collection) collection = inventoryIds.has(product.$id) ? INVENTORY_PRODUCTS_COLLECTION_ID : PRODUCTS_COLLECTION_ID;
+        }); if (f) { product = f; collection = localInventoryIds.has(f.$id) ? INVENTORY_PRODUCTS_COLLECTION_ID : PRODUCTS_COLLECTION_ID; } }
+        if (product && !collection) collection = localInventoryIds.has(product.$id) ? INVENTORY_PRODUCTS_COLLECTION_ID : PRODUCTS_COLLECTION_ID;
 
         if (product) {
           const hasDate = !!((product as any).DATE_ADDED && String((product as any).DATE_ADDED).trim());

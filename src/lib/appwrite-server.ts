@@ -11,11 +11,13 @@ const API_KEY =
   process.env.APPWRITE_API_KEY ||
   'standard_c476eaadc21bbecc3b6949ee4d0a932613b7a3d4ee52c80cf2c1406750ff75267becfad617da0acd444d0b903b8faea19661d48b2f8b6dc09b678e0db164ddd4b472417c3477a091188554bdd2adfad944778a2927090744ae991c9dcf48c7cebc60e437f5c8a841ffb0736da27daf197bf5716065c2ea5dda65070b07d74642';
 
-const headers = () => ({
+export const getHeaders = () => ({
   'Content-Type': 'application/json',
   'X-Appwrite-Project': PROJECT_ID,
   'X-Appwrite-Key': API_KEY,
 });
+
+const headers = getHeaders;
 
 export function getServerConfig() {
   return { endpoint: APPWRITE_ENDPOINT, projectId: PROJECT_ID, databaseId: DATABASE_ID };

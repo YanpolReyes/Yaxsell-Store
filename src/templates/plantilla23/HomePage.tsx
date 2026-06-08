@@ -196,6 +196,8 @@ export default function HomePage23() {
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [destacadoTemporal, setDestacadoTemporal] = useState<any>(null);
+  const [packTimer, setPackTimer] = useState<any>(null);
+  const [timedOffers, setTimedOffers] = useState<any[]>([]);
   const [isAppwriteLoaded, setIsAppwriteLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [hasPortalRoot, setHasPortalRoot] = useState(false);
@@ -206,6 +208,211 @@ export default function HomePage23() {
     }, 2500);
     return () => clearTimeout(timer);
   }, []);
+
+  // React countdown timer, Lottie, and Particles for the global timer pack
+  useEffect(() => {
+    if (!bodyHtml || !hasPortalRoot) return;
+    const root = containerRef.current;
+    if (!root) return;
+
+    // 1. Timer Setup
+    let targetTime = Date.now() + (3 * 24 * 3600) * 1000;
+    try {
+      const cached = localStorage.getItem('yaxsell_offers_timer_3d');
+      if (cached) {
+        const parsed = parseInt(cached);
+        if (parsed > Date.now()) {
+          targetTime = parsed;
+        } else {
+          localStorage.setItem('yaxsell_offers_timer_3d', targetTime.toString());
+        }
+      } else {
+        localStorage.setItem('yaxsell_offers_timer_3d', targetTime.toString());
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    const updateDomTimer = () => {
+      const dEl = root.querySelector('#yaxsell-days');
+      const hEl = root.querySelector('#yaxsell-hours');
+      const mEl = root.querySelector('#yaxsell-minutes');
+      const sEl = root.querySelector('#yaxsell-seconds');
+
+      const diff = targetTime - Date.now();
+      if (diff <= 0) {
+        if (dEl) dEl.textContent = '00';
+        if (hEl) hEl.textContent = '00';
+        if (mEl) mEl.textContent = '00';
+        if (sEl) sEl.textContent = '00';
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      if (dEl) dEl.textContent = days.toString().padStart(2, '0');
+      if (hEl) hEl.textContent = hours.toString().padStart(2, '0');
+      if (mEl) mEl.textContent = minutes.toString().padStart(2, '0');
+      if (sEl) sEl.textContent = seconds.toString().padStart(2, '0');
+    };
+
+    updateDomTimer();
+    const timerId = setInterval(updateDomTimer, 1000);
+
+    // 2. Lottie Initialization
+    let lottieAnim: any = null;
+    const lottieContainer = root.querySelector('#yaxsell-lottie-hourglass');
+    if (lottieContainer) {
+      import('lottie-web').then((lottieModule) => {
+        lottieAnim = lottieModule.default.loadAnimation({
+          container: lottieContainer as HTMLElement,
+          renderer: 'svg',
+          loop: true,
+          autoplay: true,
+          path: '/lottie/offert.json'
+        });
+      }).catch((err) => {
+        console.error('Error loading lottie-web:', err);
+      });
+    }
+
+    // 3. Particle Canvas Setup
+    const canvas = root.querySelector('#yaxsell-timer-particles') as HTMLCanvasElement;
+    let animationFrameId: number;
+    let resizeObserver: ResizeObserver | null = null;
+    let onMouseMove: any = null;
+    let onMouseLeave: any = null;
+    let parentSection = canvas?.parentElement;
+
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        let width = (canvas.width = canvas.offsetWidth || canvas.clientWidth || 300);
+        let height = (canvas.height = canvas.offsetHeight || canvas.clientHeight || 150);
+
+        resizeObserver = new ResizeObserver((entries) => {
+          for (const entry of entries) {
+            width = canvas.width = entry.contentRect.width;
+            height = canvas.height = entry.contentRect.height;
+          }
+        });
+        resizeObserver.observe(parentSection || canvas);
+
+        class Particle {
+          x: number = 0;
+          y: number = 0;
+          size: number = 0;
+          baseSize: number = 0;
+          speedY: number = 0;
+          speedX: number = 0;
+          opacity: number = 0;
+          wobble: number = 0;
+          wobbleSpeed: number = 0;
+          sparkleSpeed: number = 0;
+
+          constructor() {
+            this.reset(true);
+          }
+
+          reset(initY = false) {
+            this.x = Math.random() * width;
+            this.y = initY ? Math.random() * height : height + 10;
+            this.baseSize = Math.random() * 2.5 + 0.5;
+            this.size = this.baseSize;
+            this.speedY = -(Math.random() * 0.8 + 0.2);
+            this.speedX = Math.random() * 0.2 - 0.1;
+            this.opacity = Math.random() * 0.5 + 0.2;
+            this.wobble = Math.random() * Math.PI * 2;
+            this.wobbleSpeed = Math.random() * 0.02 + 0.005;
+            this.sparkleSpeed = Math.random() * 0.05 + 0.01;
+          }
+
+          update(mX: number, mY: number) {
+            this.y += this.speedY;
+            this.wobble += this.wobbleSpeed;
+            this.x += this.speedX + Math.sin(this.wobble) * 0.25;
+
+            this.opacity = Math.max(0.1, Math.min(0.9, this.opacity + Math.sin(Date.now() * this.sparkleSpeed * 0.1) * 0.02));
+
+            const dx = this.x - mX;
+            const dy = this.y - mY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 100) {
+              const force = (100 - dist) / 100;
+              const angle = Math.atan2(dy, dx);
+              this.x += Math.cos(angle) * force * 2;
+              this.y += Math.sin(angle) * force * 2;
+            }
+
+            if (this.y < -10 || this.x < -10 || this.x > width + 10) {
+              this.reset(false);
+            }
+          }
+
+          draw(c: CanvasRenderingContext2D) {
+            c.beginPath();
+            c.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            c.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+            c.shadowBlur = this.baseSize > 1.5 ? 8 : 0;
+            c.shadowColor = '#ffffff';
+            c.fill();
+          }
+        }
+
+        const particles: Particle[] = Array.from({ length: 70 }, () => new Particle());
+
+        let mouseX = -9999;
+        let mouseY = -9999;
+
+        onMouseMove = (e: MouseEvent) => {
+          if (!parentSection) return;
+          const rect = parentSection.getBoundingClientRect();
+          mouseX = e.clientX - rect.left;
+          mouseY = e.clientY - rect.top;
+        };
+        onMouseLeave = () => {
+          mouseX = -9999;
+          mouseY = -9999;
+        };
+
+        if (parentSection) {
+          parentSection.addEventListener('mousemove', onMouseMove);
+          parentSection.addEventListener('mouseleave', onMouseLeave);
+        }
+
+        const animate = () => {
+          ctx.clearRect(0, 0, width, height);
+          ctx.shadowBlur = 0;
+          particles.forEach((p) => {
+            p.update(mouseX, mouseY);
+            p.draw(ctx);
+          });
+          animationFrameId = requestAnimationFrame(animate);
+        };
+        animate();
+      }
+    }
+
+    return () => {
+      clearInterval(timerId);
+      if (lottieAnim) {
+        lottieAnim.destroy();
+      }
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+      if (parentSection && onMouseMove && onMouseLeave) {
+        parentSection.removeEventListener('mousemove', onMouseMove);
+        parentSection.removeEventListener('mouseleave', onMouseLeave);
+      }
+    };
+  }, [bodyHtml, hasPortalRoot]);
 
 
   /* 🪄🤖 Tabbed FAQ JS Logic 🤖🪄 */
@@ -309,7 +516,7 @@ export default function HomePage23() {
       try {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
-        const [cRes, scRes, pRes, dtRes] = await Promise.all([
+        const [cRes, scRes, pRes, dtRes, ptRes, toRes] = await Promise.all([
           databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [
             Query.orderAsc('order'),
             Query.limit(100)
@@ -326,6 +533,17 @@ export default function HomePage23() {
             Query.equal('offerType', 'destacado_temporal'),
             Query.equal('isActive', true),
             Query.limit(1)
+          ]).catch(() => ({ documents: [] })),
+          databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
+            Query.equal('offerType', 'pack_timer'),
+            Query.equal('isActive', true),
+            Query.limit(1)
+          ]).catch(() => ({ documents: [] })),
+          databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
+            Query.equal('offerType', 'product'),
+            Query.equal('isActive', true),
+            Query.equal('status', 'active'),
+            Query.limit(5)
           ]).catch(() => ({ documents: [] }))
         ]);
         setCategories(cRes.documents as unknown as Category[]);
@@ -333,6 +551,12 @@ export default function HomePage23() {
         setProducts(pRes.documents as unknown as Product[]);
         if (dtRes.documents && dtRes.documents.length > 0) {
           setDestacadoTemporal(dtRes.documents[0]);
+        }
+        if (ptRes.documents && ptRes.documents.length > 0) {
+          setPackTimer(ptRes.documents[0]);
+        }
+        if (toRes.documents && toRes.documents.length > 0) {
+          setTimedOffers(toRes.documents);
         }
       } catch (err) {
         console.error('[Plantilla23] Error fetching categories/subcategories/products:', err);
@@ -925,6 +1149,16 @@ export default function HomePage23() {
         box-shadow: none !important;
       }
 
+      /* Ocultar logo en móvil cuando no hay scroll y mostrarlo solo en el sticky (data-scroll="true") */
+      @media (max-width: 1023px) {
+        custom-header[data-scroll="false"] .logo-wrapper {
+          display: none !important;
+        }
+        custom-header[data-scroll="true"] .logo-wrapper {
+          display: block !important;
+        }
+      }
+
             /* ── NEWSLETTER POPUP: Never auto-open on mobile — only if user clicks button ── */
       /* On mobile the popup will only show when user taps the button-newsletter label */
       @media (max-width: 767px) {
@@ -989,12 +1223,103 @@ export default function HomePage23() {
         /* Hide Navbar1 top section and overlays on mobile, keep ONLY bottom mobile nav */
         .tpl1-nav { display: none !important; }
         .tpl1-nav-mobile-overlay { display: none !important; }
+
+        /* Center "Poderosamente Bella" title horizontally on mobile */
+        #shopify-block-AWVVEUzRxSzlKZnpON__giant_heading_3cqAMy,
+        #shopify-block-AWVVEUzRxSzlKZnpON__giant_heading_3cqAMy giant-heading,
+        #shopify-block-AWVVEUzRxSzlKZnpON__giant_heading_3cqAMy h2 {
+          text-align: center !important;
+          justify-content: center !important;
+          display: flex !important;
+          align-items: center !important;
+          width: 100% !important;
+        }
+        #shopify-block-AWVVEUzRxSzlKZnpON__giant_heading_3cqAMy h2 span {
+          width: 100% !important;
+          text-align: center !important;
+        }
       }
 
       /* Globally hide Navbar1 top sections for Plantilla 23 */
       .tpl1-nav { display: none !important; }
       .tpl1-nav-mobile-overlay { display: none !important; }
-\n/* Estado 3: Navbar final scrolled (data-scroll="true") - Glassmorphism sutil y elegante, sin línea blanca abajo */
+
+      /* ── MANOS SUAVES BLOCK CUSTOM LAYOUT ── */
+      [data-block-id="AMXRRQ2RsU3J0dWQzY__multimedia_collage_image_block_hThbgy"] .multimedia-collage-block__inner {
+        position: relative !important;
+      }
+      [data-block-id="AMXRRQ2RsU3J0dWQzY__multimedia_collage_image_block_hThbgy"] .multimedia-collage__content {
+        position: absolute !important;
+        inset: 0 !important;
+        display: block !important;
+      }
+      [data-block-id="AMXRRQ2RsU3J0dWQzY__multimedia_collage_image_block_hThbgy"] .multimedia-collage__content > div {
+        position: relative !important;
+        width: 100% !important;
+        height: 100% !important;
+        display: block !important;
+        padding: 24px !important;
+        box-sizing: border-box !important;
+      }
+      #shopify-block-AMDN1ejVZUHhhRDZEd__heading_UErC4k {
+        position: absolute !important;
+        top: 24px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 100% !important;
+        text-align: center !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      #shopify-block-AMDN1ejVZUHhhRDZEd__heading_UErC4k h5 {
+        text-align: center !important;
+        display: inline-block !important;
+      }
+      #shopify-block-AYXpwUzZ2UjI3VEhCQ__text_99crGb {
+        position: absolute !important;
+        top: 65px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: calc(100% - 48px) !important;
+        text-align: center !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      #shopify-block-ASEtVbTFsdUJKUm1XV__button_yUjQqP {
+        position: absolute !important;
+        bottom: 24px !important;
+        left: 24px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: auto !important;
+      }
+      #shopify-block-ASEtVbTFsdUJKUm1XV__button_yUjQqP .custom-theme-block {
+        padding: 0 !important;
+        width: auto !important;
+      }
+      #shopify-block-ASEtVbTFsdUJKUm1XV__button_yUjQqP .custom-button {
+        width: auto !important;
+        display: inline-flex !important;
+        padding-left: 24px !important;
+        padding-right: 24px !important;
+      }
+
+      /* Adjust bottom spacing for Manos Suaves button on mobile */
+      @media (max-width: 767px) {
+        #shopify-block-ASEtVbTFsdUJKUm1XV__button_yUjQqP {
+          bottom: 16px !important;
+          left: 16px !important;
+        }
+      }
+
+      /* ── FORCE LIVE SHOPPING RECENT PRODUCTS SECTION BACKGROUND TO PURE WHITE ── */
+      #recent-products-portal-root,
+      #recent-products-portal-root section {
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+      }
+
+/* Estado 3: Navbar final scrolled (data-scroll="true") - Glassmorphism sutil y elegante, sin línea blanca abajo */
       custom-header.header-element[data-scroll="true"],
       .header[data-id="sections--27304712208665__header"][data-scroll="true"] {
         background: rgba(253, 242, 248, 0.72) !important;
@@ -1126,6 +1451,51 @@ export default function HomePage23() {
       colListSection.parentNode?.insertBefore(portalRoot, colListSection.nextSibling);
     }
 
+    // Populate the global pack timed offers carousel / grid
+    const carouselPlaceholder = tempDiv.querySelector('#yaxsell-homepage-offers-carousel');
+    if (carouselPlaceholder && timedOffers.length > 0) {
+      const cardsHtml = timedOffers.map(offer => {
+        const originalPrice = formatPrice(offer.originalPrice);
+        const discountPrice = formatPrice(offer.discountPrice);
+        const discountPercentage = offer.discountPercentage;
+        const productName = offer.productName;
+        const imgUrl = offer.customImagePath || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';
+        const targetUrl = offer.targetId ? `/productos/${offer.targetId}` : '#';
+
+        return `
+          <div style="background: #ffffff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); padding: 16px; width: calc(50% - 10px); display: flex; flex-direction: column; gap: 12px; transition: transform 0.3s ease, box-shadow 0.3s ease; box-sizing: border-box;" class="offer-card-hover hover:scale-[1.02] hover:shadow-lg">
+            <a href="${targetUrl}" style="text-decoration: none; color: inherit; display: block; position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: #fdf2f8;">
+              <img src="${imgUrl}" alt="${productName}" style="width: 100%; height: 100%; object-fit: cover;" />
+              <div style="position: absolute; top: 8px; left: 8px; background: #ef4444; color: #ffffff; font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 8px;">
+                -${discountPercentage}%
+              </div>
+            </a>
+            <div style="display: flex; flex-direction: column; gap: 4px; text-align: left;">
+              <a href="${targetUrl}" style="text-decoration: none; color: #1f2937; font-size: 13px; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3;">
+                ${productName}
+              </a>
+              <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 4px;">
+                <span style="font-size: 16px; font-weight: 800; color: #db2777;">${discountPrice}</span>
+                <span style="font-size: 12px; color: #9ca3af; text-decoration: line-through;">${originalPrice}</span>
+              </div>
+            </div>
+            <a href="${targetUrl}" style="text-decoration: none; display: block; text-align: center; background: #db2777; color: #ffffff; font-size: 12px; font-weight: 800; padding: 10px 14px; border-radius: 12px; margin-top: auto; transition: background 0.2s ease;">
+              Ver Oferta
+            </a>
+          </div>
+        `;
+      }).join('');
+
+      carouselPlaceholder.innerHTML = `
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 1200px; margin-bottom: 30px; padding: 0 10px; box-sizing: border-box;">
+          ${cardsHtml}
+        </div>
+        <a href="/productos?ofertas=true" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; background: #ffffff; border: 2px solid #db2777; color: #db2777; font-size: 14px; font-weight: 800; padding: 12px 30px; border-radius: 999px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 14px rgba(219, 39, 119, 0.1);" class="ver-ofertas-btn">
+          Ver todas las ofertas
+        </a>
+      `;
+    }
+
     containerRef.current.innerHTML = tempDiv.innerHTML;
     containerRef.current.dataset.htmlSet = '1';
     setHasPortalRoot(true);
@@ -1206,6 +1576,10 @@ export default function HomePage23() {
       });
     }, { threshold: 0.1 });
     root.querySelectorAll('video').forEach(video => {
+      // Skip our custom hero videos — they are managed entirely by the inline HTML scripts
+      const videoId = video.id;
+      if (videoId === 'hero1-video-desktop' || videoId === 'hero1-video-mobile') return;
+
       // Exclude slideshow/hero and split-hero videos from preload="none" and disabling autoplay
       const isHeroVideo = video.closest('.slideshow') || video.closest('split-hero') || video.closest('.split-hero');
       if (isHeroVideo) {
@@ -1223,10 +1597,7 @@ export default function HomePage23() {
     root.querySelectorAll('.slideshow video, split-hero video, .split-hero video').forEach(vid => {
       const video = vid as HTMLVideoElement;
       const hideFallback = () => {
-        const desktopImg = root.querySelector('#hero1-image-desktop') as HTMLElement;
-        const mobileImg = root.querySelector('#hero1-image-mobile') as HTMLElement;
-        if (desktopImg) desktopImg.style.setProperty('display', 'none', 'important');
-        if (mobileImg) mobileImg.style.setProperty('display', 'none', 'important');
+        if (!video.closest('.slideshow')) return;
         video.style.setProperty('z-index', '6', 'important');
       };
       video.addEventListener('playing', hideFallback);
@@ -1234,6 +1605,47 @@ export default function HomePage23() {
         hideFallback();
       }
     });
+
+    // ═══ HERO VIDEO INIT (runs here because <script> inside innerHTML doesn't execute) ═══
+    const initHeroVideos = () => {
+      // ── Desktop ──
+      const vidDesktop = root.querySelector('#hero1-video-desktop') as HTMLVideoElement | null;
+      const imgDesktop = root.querySelector('#hero1-image-desktop') as HTMLElement | null;
+      if (vidDesktop) {
+        let isFrozen = false;
+        vidDesktop.addEventListener('playing', function onDesktopPlay() {
+          vidDesktop.style.opacity = '1';
+          vidDesktop.style.transform = 'scale(1)';
+          if (imgDesktop) imgDesktop.style.opacity = '0';
+          vidDesktop.removeEventListener('playing', onDesktopPlay);
+        });
+        vidDesktop.addEventListener('timeupdate', () => {
+          if (!isFrozen && vidDesktop.duration && vidDesktop.currentTime >= vidDesktop.duration - 0.1) {
+            vidDesktop.pause();
+            isFrozen = true;
+          }
+        });
+        vidDesktop.play().catch(() => {});
+      }
+
+      // ── Mobile ──
+      const vidMobile = root.querySelector('#hero1-video-mobile') as HTMLVideoElement | null;
+      const imgMobile = root.querySelector('#hero1-image-mobile') as HTMLElement | null;
+      if (vidMobile && imgMobile) {
+        const fadeOutImg = () => {
+          vidMobile.style.opacity = '1';
+          imgMobile.style.opacity = '0';
+        };
+        vidMobile.addEventListener('playing', fadeOutImg, { once: true });
+        vidMobile.addEventListener('canplay', () => {
+          if (!vidMobile.paused) fadeOutImg();
+        }, { once: true });
+        vidMobile.play().catch(() => {});
+      }
+    };
+    initHeroVideos();
+    // Also retry after 500ms in case preload=auto hasn't buffered yet
+    setTimeout(initHeroVideos, 500);
 
     // ═══ Pause hero video when nav menu dropdown is open ═══
     const heroVideos = root.querySelectorAll('split-hero video, .split-hero video');
@@ -1432,7 +1844,7 @@ export default function HomePage23() {
     setTimeout(injectMobileHeroButtons, 800);
     setTimeout(injectMobileHeroButtons, 2000);
 
-  }, [bodyHtml, categories, isAppwriteLoaded]);
+  }, [bodyHtml, categories, isAppwriteLoaded, timedOffers]);
 
   /* ── Wire "Iniciar Sesión" button to auth popup (same style as plantilla1) ── */
   useEffect(() => {
@@ -2210,8 +2622,6 @@ export default function HomePage23() {
         const vendor = fpBlock.querySelector('.vendor span');
         if (vendor) vendor.textContent = (targetProduct as any).BRAND || 'Yaxsell';
       });
-
-      });
       }, 50); // End of heavy hydration timeout
 
       // Intersection Observer for Hero Scroll Videos
@@ -2460,6 +2870,41 @@ export default function HomePage23() {
               forward.pause();
               reverse.pause();
             });
+
+            // Scroll-driven Autoplay and Morph for Mobile on "Set de botella"
+            if ('IntersectionObserver' in window && wrapper.closest('#shopify-block-AeU1KMU9YMGYxdWlmU__multimedia_collage_video_block_ndXhr3')) {
+              const morphCard = wrapper.closest('#shopify-block-AeU1KMU9YMGYxdWlmU__multimedia_collage_video_block_ndXhr3');
+              if (morphCard && !wrapper.dataset.scrollObserverBound) {
+                wrapper.dataset.scrollObserverBound = "true";
+
+                const observer = new IntersectionObserver((entries) => {
+                  entries.forEach(entry => {
+                    // Only run on mobile
+                    if (window.innerWidth >= 768) return;
+
+                    const morphInner = morphCard.querySelector('.morph-svg-inner') as HTMLElement | null;
+                    if (entry.isIntersecting) {
+                      hoverContainer.dataset.isHovered = "true";
+                      activeVideo.play().catch(() => {});
+                      if (morphInner) {
+                        morphInner.dispatchEvent(new PointerEvent('pointerenter'));
+                      }
+                    } else {
+                      hoverContainer.dataset.isHovered = "false";
+                      forward.pause();
+                      reverse.pause();
+                      if (morphInner) {
+                        morphInner.dispatchEvent(new PointerEvent('pointerleave'));
+                      }
+                    }
+                  });
+                }, {
+                  threshold: 0.35
+                });
+
+                observer.observe(morphCard);
+              }
+            }
           });
         }, 500);
         setTimeout(() => clearInterval(collageVideoInterval), 10000);
@@ -3079,6 +3524,48 @@ export default function HomePage23() {
           max-width: 80%;
           animation: pulseLogo 2s infinite ease-in-out;
           filter: drop-shadow(0 4px 15px rgba(255,255,255,0.4));
+        }
+
+        /* Hero Banner 1 auto-height to match image aspect ratio */
+        .tpl23-shopify-root .slideshow {
+          height: auto !important;
+          min-height: unset !important;
+        }
+        .tpl23-shopify-root .slideshow parallax-element-section,
+        .tpl23-shopify-root .slideshow .hero-no-swiper-container,
+        .tpl23-shopify-root .slideshow .hero-no-swiper-wrapper {
+          height: auto !important;
+          min-height: unset !important;
+        }
+        .tpl23-shopify-root .slideshow__slide {
+          height: auto !important;
+          min-height: unset !important;
+          position: relative !important;
+        }
+        .tpl23-shopify-root .slideshow__background {
+          position: relative !important;
+          height: auto !important;
+          width: 100% !important;
+          display: block !important;
+          background-color: transparent !important;
+        }
+        /* Hero images are now absolute overlays — let inline styles + HTML classes handle them */
+        .tpl23-shopify-root #hero1-image-desktop,
+        .tpl23-shopify-root #hero1-image-mobile {
+          position: absolute !important;
+        }
+        /* Force ALL slideshow wrapper heights to auto so Shopify's JS-set heights don't create gaps */
+        .tpl23-shopify-root custom-slideshow,
+        .tpl23-shopify-root parallax-element-section,
+        .tpl23-shopify-root .hero-no-swiper-container,
+        .tpl23-shopify-root .hero-no-swiper-wrapper,
+        .tpl23-shopify-root .hero-no-swiper-wrapper > div {
+          height: auto !important;
+          min-height: unset !important;
+          max-height: unset !important;
+        }
+        .tpl23-shopify-root .slideshow__content {
+          display: none !important;
         }
       `}</style>
 

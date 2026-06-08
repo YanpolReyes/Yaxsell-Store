@@ -100,19 +100,11 @@ export default function CatalogoPage() {
           return r.documents;
         }),
         cached('products:catalogo', TTL.products, async () => {
-          const allDocs: any[] = [];
-          let offset = 0;
-          while (true) {
-            const r = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION, [
-              Query.equal('ISACTIVE', true),
-              Query.limit(2000), 
-              Query.offset(offset)
-            ]);
-            allDocs.push(...r.documents);
-            if (r.documents.length < 2000) break;
-            offset += 2000;
-          }
-          return allDocs;
+          const r = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION, [
+            Query.equal('ISACTIVE', true),
+            Query.limit(500),
+          ]);
+          return r.documents;
         }),
       ]);
 

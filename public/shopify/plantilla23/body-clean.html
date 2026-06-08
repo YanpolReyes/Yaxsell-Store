@@ -4930,8 +4930,8 @@
 
 <style data-shopify>
     .slideshow[data-id="template--27304712470809__slideshow_FBfKC8"]{
-        --height: min(55vw, calc(100vh - 120px));
-        --mobile-height: max(120vw, 400px);
+        --height: auto;
+        --mobile-height: auto;
         --media-position: absolute;
         --mobile-media-position: absolute;
         --content-position: relative;
@@ -4954,17 +4954,17 @@
     data-id="template--27304712470809__slideshow_FBfKC8"
     data-animation-type="none"
 >
-    <parallax-element-section class="relative overflow-hidden block w-full h-full">
-        <div class="hero-no-swiper-container relative overflow-hidden w-full h-full"
+    <parallax-element-section class="relative overflow-hidden block w-full h-auto">
+        <div class="hero-no-swiper-container relative overflow-hidden w-full h-auto"
             data-speed="7000"
             data-autoplay="false"
             data-loop="false"
             data-transition="slide"
         >
-            <div class="hero-no-swiper-wrapper relative w-full h-full flex flex-col">
-                <div id="shopify-block-ATmF4NzZjaytKOEVaV__slideshow_video_slide_nyFpCN" class="shopify-block w-full h-full relative">
+            <div class="hero-no-swiper-wrapper relative w-full h-auto flex flex-col">
+                <div id="shopify-block-ATmF4NzZjaytKOEVaV__slideshow_video_slide_nyFpCN" class="shopify-block w-full h-auto relative">
 
-<div class="w-full h-full slideshow__slide color-scheme-1" 
+<div class="w-full h-auto slideshow__slide color-scheme-1" 
     style="
         --text-alignment: left;
         --align-items: center;
@@ -4980,30 +4980,105 @@
     
 >
     
-    <div class="slideshow__background w-full h-full img-blur animation-element fade-in relative overflow-hidden" style="background-color: #FBCAC9;">
-        
+    <div class="slideshow__background w-full h-auto relative overflow-hidden" style="background-color: #FBCAC9;">
 
-    <!-- [MODIFICACION YAXSEL]: Hero Banner 1 progresivo.
-         La imagen entra con animación de 1.5s. El video carga invisible de fondo y, apenas puede reproducirse (onplaying),
-         se pone encima sin ninguna animación de entrada, cortando de golpe la foto. -->
-    
-    <!-- DESKTOP -->
-    <img id="hero1-image-desktop" src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/1780173022333-pegada-1780173016432.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&amp;Expires=16730334000&amp;Signature=Sa3yaIOBQLI7MIR1zG81iSWWMToOKHSAOeEhhjZjS3KZIOtkOZWDvV4imyKt3Xg%2BZvUI7DfAxYvGYPZJsVuEJSgTW8PrcSO9gNNwoy%2BEUq9MxaYw0PVkw%2BQXoEJPCXyZKPOK%2F7Nwnk3mUsZFp0uqFJQ0FB8Zqg%2BeOkHzWOIngMIh96BkQRVqnS3ecsnGqPYZqDEqsidg9v3YIl%2FM7z71qwI3MGjfOL7TKfn45vcNV1vb4MgQr%2FhjOTL2OAzawTtlB2IQTbehko3RL2T7JIdkMQWtS9Gm2MsefoCeOexwuwv3nHOTluGGUHIj6ff3yLJ7Ec4RJJMoHZ7TJA1h%2FC9XDQ%3D%3D" class="object-cover w-full h-full hidden lg:block pointer-events-none smooth-reveal absolute top-0 left-0 z-[5]" style="opacity: 0;" onload="this.style.transition = 'opacity 1.5s ease-out'; this.style.opacity = '1';" />
-    
-    <video playsinline="true" autoplay="autoplay" muted="muted" class="object-cover w-full h-full hidden lg:block pointer-events-none absolute top-0 left-0 z-[4]" preload="auto" onplaying="setTimeout(() => { const img = document.getElementById('hero1-image-desktop'); if (img) { img.style.transition = 'opacity 1.5s ease-in-out'; img.style.opacity = '0'; setTimeout(() => { img.style.display = 'none'; }, 1500); } this.style.zIndex = '6'; }, 2000);"><source src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/aabc15baa4984915ad6486ee139b15ce.HD-1080p-7.2Mbps-83967798.realesrgan.mp4?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&amp;Expires=16730334000&amp;Signature=Z5IxvmbfvlC7d6J%2Bm8okPZQE3p4uoytaJwgTa5JiZJB4qTxnSGz7LZotoWg9JIEPR2qcha0tDpl8I%2FsMu%2F4A9wkS8JiHwWuwAUG%2BNp728lY8HNDuTasiNsQ2nXz9G3IjZxB3W7pdSoer%2BedwdKiIP%2BiKdCm7s%2Fwv402T3zPG6HiYNje%2BQkR28UbUoYy9JkCNgTMXcB0gy8IHTJpU1Xx8vJvHErkCfKSl08RyDy%2Bu3qdvGNTlVJSRBJwEOov%2BcFpKi9hLmWkV9esTUPdsPOq2jDNCKuu%2F3F6jczy31T9dkKgU%2FbmA%2BdXg6oIiHOO8CKvpy4Pic7%2B5gOeWtXKtR0E%2BHg%3D%3D" type="video/mp4"></video>
+    <!-- DESKTOP: video is position:relative so it drives the container height; image is absolute overlay on top -->
+    <div class="hidden lg:block relative w-full" style="background-color: #FBCAC9;">
+      <img id="hero1-image-desktop"
+           src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2FPicsart_26-06-08_03-54-31-294.jpg.jpeg?alt=media&amp;token=6a059a7a-dcff-4f34-9d24-5899b7a97a72"
+           class="absolute inset-0 w-full h-full object-cover pointer-events-none"
+           style="z-index: 7; opacity: 1; transition: opacity 1.2s ease;" />
+      <video id="hero1-video-desktop" playsinline muted preload="auto"
+             poster="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2FPicsart_26-06-08_03-54-31-294.jpg.jpeg?alt=media&amp;token=6a059a7a-dcff-4f34-9d24-5899b7a97a72"
+             class="relative block w-full h-auto pointer-events-none"
+             style="opacity: 0; transform: scale(1.04); transition: opacity 1.4s ease, transform 2s ease; z-index: 6;">
+        <source src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2FMi%20video-8.realesrgan.mp4?alt=media&amp;token=b6b637d1-1433-4556-a528-5bfee3acba00" type="video/mp4">
+      </video>
+    </div>
 
-    <!-- MOBILE -->
-    <img id="hero1-image-mobile" src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/1780173022333-pegada-1780173016432.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&amp;Expires=16730334000&amp;Signature=Sa3yaIOBQLI7MIR1zG81iSWWMToOKHSAOeEhhjZjS3KZIOtkOZWDvV4imyKt3Xg%2BZvUI7DfAxYvGYPZJsVuEJSgTW8PrcSO9gNNwoy%2BEUq9MxaYw0PVkw%2BQXoEJPCXyZKPOK%2F7Nwnk3mUsZFp0uqFJQ0FB8Zqg%2BeOkHzWOIngMIh96BkQRVqnS3ecsnGqPYZqDEqsidg9v3YIl%2FM7z71qwI3MGjfOL7TKfn45vcNV1vb4MgQr%2FhjOTL2OAzawTtlB2IQTbehko3RL2T7JIdkMQWtS9Gm2MsefoCeOexwuwv3nHOTluGGUHIj6ff3yLJ7Ec4RJJMoHZ7TJA1h%2FC9XDQ%3D%3D" class="object-cover w-full h-full block lg:hidden pointer-events-none smooth-reveal absolute top-0 left-0 z-[5]" style="opacity: 0;" onload="this.style.transition = 'opacity 1.5s ease-out'; this.style.opacity = '1';" />
-    
-    <video playsinline="true" autoplay="autoplay" muted="muted" class="object-cover w-full h-full block lg:hidden pointer-events-none absolute top-0 left-0 z-[4]" preload="auto" onplaying="setTimeout(() => { const img = document.getElementById('hero1-image-mobile'); if (img) { img.style.transition = 'opacity 1.5s ease-in-out'; img.style.opacity = '0'; setTimeout(() => { img.style.display = 'none'; }, 1500); } this.style.zIndex = '6'; }, 2000);"><source src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/aabc15baa4984915ad6486ee139b15ce.HD-1080p-7.2Mbps-83967798.realesrgan.mp4?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&amp;Expires=16730334000&amp;Signature=Z5IxvmbfvlC7d6J%2Bm8okPZQE3p4uoytaJwgTa5JiZJB4qTxnSGz7LZotoWg9JIEPR2qcha0tDpl8I%2FsMu%2F4A9wkS8JiHwWuwAUG%2BNp728lY8HNDuTasiNsQ2nXz9G3IjZxB3W7pdSoer%2BedwdKiIP%2BiKdCm7s%2Fwv402T3zPG6HiYNje%2BQkR28UbUoYy9JkCNgTMXcB0gy8IHTJpU1Xx8vJvHErkCfKSl08RyDy%2Bu3qdvGNTlVJSRBJwEOov%2BcFpKi9hLmWkV9esTUPdsPOq2jDNCKuu%2F3F6jczy31T9dkKgU%2FbmA%2BdXg6oIiHOO8CKvpy4Pic7%2B5gOeWtXKtR0E%2BHg%3D%3D" type="video/mp4"></video>
+    <!-- MOBILE: same video, correct poster image -->
+    <div class="block lg:hidden relative w-full" style="background-color: #FBCAC9;">
+      <img id="hero1-image-mobile"
+           src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2FPicsart_26-06-08_03-21-34-169.jpg.jpeg?alt=media&amp;token=63f78155-2dd3-4fab-9913-4fca24177293"
+           class="absolute inset-0 w-full h-full object-cover pointer-events-none"
+           style="z-index: 7; opacity: 1; transition: opacity 0.8s ease;" />
+      <video id="hero1-video-mobile" playsinline autoplay loop muted preload="auto"
+             poster="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2FPicsart_26-06-08_03-21-34-169.jpg.jpeg?alt=media&amp;token=63f78155-2dd3-4fab-9913-4fca24177293"
+             class="relative block w-full h-auto pointer-events-none"
+             style="opacity: 0; transition: opacity 0.8s ease; z-index: 6;">
+        <source src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2FMi%20video-7.realesrgan.mp4?alt=media&amp;token=292e7d2a-aa5f-4216-96ee-af6c53e73c2b" type="video/mp4">
+      </video>
+    </div>
+
+    <script>
+    (function() {
+      function initHero() {
+        // ── DESKTOP ──
+        var vid = document.getElementById('hero1-video-desktop');
+        var img = document.getElementById('hero1-image-desktop');
+        if (vid) {
+          var isFrozen = false;
+
+          vid.addEventListener('playing', function onFirstPlay() {
+            vid.style.opacity = '1';
+            vid.style.transform = 'scale(1)';
+            if (img) img.style.opacity = '0';
+            vid.removeEventListener('playing', onFirstPlay);
+          });
+
+          // Freeze 0.1s before end to hold the last good frame
+          vid.addEventListener('timeupdate', function() {
+            if (!isFrozen && vid.duration && vid.currentTime >= vid.duration - 0.1) {
+              vid.pause();
+              isFrozen = true;
+            }
+          });
+
+          // Try to play immediately
+          vid.play().catch(function() {});
+        }
+
+        // ── MOBILE ──
+        var mVid = document.getElementById('hero1-video-mobile');
+        var mImg = document.getElementById('hero1-image-mobile');
+        if (mVid && mImg) {
+          var fadeOutMobileImg = function() {
+            mVid.style.opacity = '1';
+            mImg.style.opacity = '0';
+          };
+          mVid.addEventListener('playing', fadeOutMobileImg, { once: true });
+          mVid.addEventListener('canplay', function() {
+            if (!mVid.paused) fadeOutMobileImg();
+          }, { once: true });
+          mVid.play().catch(function() {});
+        }
+      }
+
+      // Run now (for when script executes after elements are in DOM)
+      // and also after a short delay (for when React injects innerHTML async)
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initHero);
+      } else {
+        initHero();
+        setTimeout(initHero, 300);
+      }
+    })();
+    </script>
+
+
+    <!-- Bottom fade: blend hero into countdown section below — raised higher -->
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 75%; background: linear-gradient(to bottom, transparent 0%, transparent 50%, #ffc9e0 100%); pointer-events: none; z-index: 20;"></div>
+
+    </div>
 
 
     </div>
 
-    <div class="overlay absolute top-0 left-0 w-full h-full"></div>
+    <!-- overlay hidden so it doesn't block the hero video -->
+    <div class="overlay absolute top-0 left-0 w-full h-full" style="display:none;"></div>
 
     
-    <div class="slideshow__content relative w-full h-full flex top-0 left-0">
+    <div class="slideshow__content hidden relative w-full h-full flex top-0 left-0">
         <div class="w-full custom-container py-10">
             <div id="shopify-block-AWVVEUzRxSzlKZnpON__giant_heading_3cqAMy" class="shopify-block giant-heading-block">
 
@@ -5168,10 +5243,132 @@
                 <div class="swiper-pagination mx-auto left-0 right-0 absolute bottom-20 mb-10 overflow-hidden rounded-[5px] opacity-0 custom-container"></div>
             
         </div>
-    </parallax-element-section>
 </custom-slideshow>
 
-</div><div id="shopify-section-template--27304712470809__collection_list_slider_YAxwGw" class="shopify-section"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/collection-list.css" rel="stylesheet" type="text/css" media="all" />
+</div>
+<div id="shopify-section-template--yaxsell_countdown_timer" class="shopify-section" style="background-color: #ffc9e0; position: relative; z-index: 10;">
+  
+  <!-- Particle Canvas Wrapper (with overflow hidden) -->
+  <div style="position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 11;">
+    <canvas id="yaxsell-timer-particles" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.85;"></canvas>
+  </div>
+
+  <style>
+    @keyframes blinkColon { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  </style>
+  <div class="custom-container" style="padding: 48px 24px 72px 24px; text-align: center; font-family: 'Outfit', 'Inter', sans-serif; position: relative; z-index: 20;">
+    
+    <!-- Countdown Timer Wrapper -->
+    <div class="yaxsell-countdown-wrapper" style="display: inline-flex; justify-content: center; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
+      <!-- Days -->
+      <div style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); padding: 16px 20px; border-radius: 20px; min-width: 80px; box-shadow: 0 10px 25px rgba(219, 39, 119, 0.08); transition: transform 0.3s ease;">
+        <span id="yaxsell-days" style="display: block; font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 800; color: #111827; line-height: 1;">01</span>
+        <span style="display: block; font-size: 11px; font-weight: 700; color: #db2777; text-transform: uppercase; margin-top: 6px; letter-spacing: 0.05em;">días</span>
+      </div>
+      
+      <span style="font-size: 24px; font-weight: 800; color: #db2777; animation: blinkColon 1s infinite;">:</span>
+      
+      <!-- Hours -->
+      <div style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); padding: 16px 20px; border-radius: 20px; min-width: 80px; box-shadow: 0 10px 25px rgba(219, 39, 119, 0.08); transition: transform 0.3s ease;">
+        <span id="yaxsell-hours" style="display: block; font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 800; color: #111827; line-height: 1;">05</span>
+        <span style="display: block; font-size: 11px; font-weight: 700; color: #db2777; text-transform: uppercase; margin-top: 6px; letter-spacing: 0.05em;">horas</span>
+      </div>
+      
+      <span style="font-size: 24px; font-weight: 800; color: #db2777; animation: blinkColon 1s infinite;">:</span>
+      
+      <!-- Minutes -->
+      <div style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); padding: 16px 20px; border-radius: 20px; min-width: 80px; box-shadow: 0 10px 25px rgba(219, 39, 119, 0.08); transition: transform 0.3s ease;">
+        <span id="yaxsell-minutes" style="display: block; font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 800; color: #111827; line-height: 1;">13</span>
+        <span style="display: block; font-size: 11px; font-weight: 700; color: #db2777; text-transform: uppercase; margin-top: 6px; letter-spacing: 0.05em;">minutos</span>
+      </div>
+      
+      <span style="font-size: 24px; font-weight: 800; color: #db2777; animation: blinkColon 1s infinite;">:</span>
+      
+      <!-- Seconds -->
+      <div style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); padding: 16px 20px; border-radius: 20px; min-width: 80px; box-shadow: 0 10px 25px rgba(219, 39, 119, 0.08); transition: transform 0.3s ease;">
+        <span id="yaxsell-seconds" style="display: block; font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 800; color: #db2777; line-height: 1;">23</span>
+        <span style="display: block; font-size: 11px; font-weight: 700; color: #db2777; text-transform: uppercase; margin-top: 6px; letter-spacing: 0.05em;">segundos</span>
+      </div>
+    </div>
+    
+    <div style="font-size: 18px; font-weight: 700; color: #ffffff; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px;">
+      <span>Aprovecha antes que termine</span>
+      <div id="yaxsell-lottie-hourglass" style="width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; margin-left: 2px;"></div>
+    </div>
+
+    <!-- Dynamic Product Cards Showcase -->
+    <div id="yaxsell-homepage-offers-carousel" style="margin-top: 40px; display: flex; flex-direction: column; align-items: center; width: 100%;"></div>
+  </div>
+
+  <!-- Smooth feathered blur transition at the bottom to blend with white background -->
+  <div style="position: absolute; bottom: -80px; left: 0; right: 0; height: 80px; background: linear-gradient(to bottom, #ffc9e0 0%, #ffffff 100%); pointer-events: none; z-index: 10;"></div>
+  
+  <style>
+    @keyframes pulseFire {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.9; }
+    }
+    @keyframes blinkColon {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    @keyframes bounceHourglass {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-4px) rotate(180deg); }
+    }
+  </style>
+
+  <!-- Countdown logic script -->
+  <script type="text/javascript">
+    (function() {
+      // Default fallback: 3 days from first run. React overwrites this from local 3-day timer logic.
+      let targetTime = Date.now() + (3 * 24 * 3600) * 1000;
+      
+      const cached = localStorage.getItem('yaxsell_offers_timer_3d');
+      if (cached) {
+        const parsed = parseInt(cached);
+        if (parsed > Date.now()) {
+          targetTime = parsed;
+        } else {
+          localStorage.setItem('yaxsell_offers_timer_3d', targetTime.toString());
+        }
+      } else {
+        localStorage.setItem('yaxsell_offers_timer_3d', targetTime.toString());
+      }
+
+      function updateTimer() {
+        const difference = targetTime - Date.now();
+        if (difference <= 0) {
+          document.getElementById('yaxsell-days').textContent = '00';
+          document.getElementById('yaxsell-hours').textContent = '00';
+          document.getElementById('yaxsell-minutes').textContent = '00';
+          document.getElementById('yaxsell-seconds').textContent = '00';
+          return;
+        }
+
+        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+        const dEl = document.getElementById('yaxsell-days');
+        const hEl = document.getElementById('yaxsell-hours');
+        const mEl = document.getElementById('yaxsell-minutes');
+        const sEl = document.getElementById('yaxsell-seconds');
+
+        if (dEl) dEl.textContent = days.toString().padStart(2, '0');
+        if (hEl) hEl.textContent = hours.toString().padStart(2, '0');
+        if (mEl) mEl.textContent = minutes.toString().padStart(2, '0');
+        if (sEl) sEl.textContent = seconds.toString().padStart(2, '0');
+      }
+
+      setInterval(updateTimer, 1000);
+      updateTimer();
+    })();
+  </script>
+</div>
+
+<div id="shopify-section-template--27304712470809__collection_list_slider_YAxwGw" class="shopify-section"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/collection-list.css" rel="stylesheet" type="text/css" media="all" />
 
 <style data-shopify>
     .collection-list[data-id="template--27304712470809__collection_list_slider_YAxwGw"]{

@@ -63,28 +63,45 @@ export default function InventoryPage() {
     finally { setSavingThresholdId(null); }
   };
 
-  const load = useCallback(async () => {
-    setIsLoading(true); setError('');
+  const [lastCursor, setLastCursor] = useState<string | null>(null);
+
+  const load = useCallback(async (isLoadMore = false) => {
+    if (!isLoadMore) {
+      setIsLoading(true);
+      setProducts([]);
+    }
+    setError('');
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      // Pagina hasta cargar todos los productos, filtra client-side
-      const all: Product[] = [];
-      let cursor: string | undefined;
-      while (true) {
-        const queries = [Query.limit(100)];
-        if (cursor) queries.push(Query.cursorAfter(cursor));
-        const resp: any = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
-        const docs = resp.documents as unknown as Product[];
-        if (!docs.length) break;
-        all.push(...docs);
-        if (docs.length < 100) break;
-        cursor = (docs[docs.length - 1] as any).$id;
+      const queries = [Query.limit(50)];
+      
+      if (isLoadMore && lastCursor) {
+        queries.push(Query.cursorAfter(lastCursor));
+      } else if (!isLoadMore) {
+        queries.push(Query.orderDesc('$updatedAt'));
       }
-      setProducts(all.filter(p => p.ISACTIVE !== false));
+
+      const resp: any = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
+      const docs = resp.documents as unknown as Product[];
+      
+      const activeDocs = docs.filter(p => p.ISACTIVE !== false);
+      
+      if (isLoadMore) {
+        setProducts(prev => [...prev, ...activeDocs]);
+      } else {
+        setProducts(activeDocs);
+      }
+      
+      if (docs.length === 50) {
+        setLastCursor((docs[docs.length - 1] as any).$id);
+      } else {
+        setLastCursor(null);
+      }
+      
     } catch (e: any) { setError(e.message); }
     finally { setIsLoading(false); }
-  }, []);
+  }, [lastCursor]);
 
   const deleteProduct = async (productId: string) => {
     setDeletingId(productId);
@@ -119,7 +136,7 @@ export default function InventoryPage() {
     finally { setSavingStockId(null); }
   };
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(false); }, []);
 
   // Cerrar modal de imagen con ESC
   useEffect(() => {
@@ -228,7 +245,7 @@ export default function InventoryPage() {
             className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50">
             Umbral masivo
           </button>
-          <button onClick={load} disabled={isLoading} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-60">
+          <button onClick={() => load(false)} disabled={isLoading} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-60">
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />Actualizar
           </button>
         </div>
@@ -324,6 +341,16 @@ export default function InventoryPage() {
           ))}
         </div>
       </div>
+      {lastCursor && !isLoading && (
+        <div className="flex justify-center mt-6">
+          <button 
+            onClick={() => load(true)} 
+            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow-sm transition"
+          >
+            Cargar más productos
+          </button>
+        </div>
+      )}
 
       <div className="flex items-center gap-2">
         <span className="text-xs text-gray-500">Ordenar:</span>

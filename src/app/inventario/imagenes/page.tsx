@@ -53,21 +53,9 @@ export default function InventarioImagenesPage() {
   }, [authLoading, isLoggedIn, user?.email, router, logout]);
 
   const loadProducts = useCallback(async () => {
-    setLoadingProducts(true);
-    try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-      const allDocs: any[] = [];
-      let offset = 0;
-      while (true) {
-        const r = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, [Query.limit(2000), Query.offset(offset)]);
-        allDocs.push(...r.documents);
-        if (r.documents.length < 2000) break;
-        offset += 2000;
-      }
-      setProducts(allDocs as unknown as Product[]);
-    } catch (e) { console.error(e); }
-    finally { setLoadingProducts(false); }
+    // No-op to avoid downloading the entire database on mount.
+    // Products are loaded dynamically when the Excel is uploaded.
+    setLoadingProducts(false);
   }, []);
 
   useEffect(() => { loadProducts(); }, [loadProducts]);
@@ -91,6 +79,48 @@ export default function InventarioImagenesPage() {
         return { sku, imageUrl, productId: null, productName: null, currentImage: null, status: 'pending' as const };
       }).filter(r => r.sku && r.imageUrl);
 
+      // Fetch only the needed products to avoid downloading the entire database on mount!
+      const uniqueSkus = Array.from(new Set(parsed.map(r => r.sku.trim().toLowerCase())));
+      
+      setLoadingProducts(true);
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      
+      const fetchProductsBySkus = async (skus: string[], collectionId: string) => {
+        if (skus.length === 0) return [];
+        const results: any[] = [];
+        const chunkSize = 100;
+        for (let i = 0; i < skus.length; i += chunkSize) {
+          const chunk = skus.slice(i, i + chunkSize);
+          try {
+            const r = await databases.listDocuments(databaseId, collectionId, [
+              Query.equal('sku', chunk),
+              Query.limit(100)
+            ]);
+            results.push(...r.documents);
+          } catch (e) {
+            console.warn(`Query by sku failed in ${collectionId}:`, e);
+          }
+          try {
+            const r = await databases.listDocuments(databaseId, collectionId, [
+              Query.equal('barcode', chunk),
+              Query.limit(100)
+            ]);
+            results.push(...r.documents);
+          } catch (e2) {}
+        }
+        const seen = new Set();
+        return results.filter(d => {
+          if (seen.has(d.$id)) return false;
+          seen.add(d.$id);
+          return true;
+        });
+      };
+
+      const allDocs = await fetchProductsBySkus(uniqueSkus, INVENTORY_PRODUCTS_COLLECTION_ID);
+      setProducts(allDocs as unknown as Product[]);
+      setLoadingProducts(false);
+
       // Debug: log Excel columns
       if (rawRows.length > 0) {
         console.log('[imagenes] Excel columns:', Object.keys(rawRows[0]));
@@ -100,14 +130,14 @@ export default function InventarioImagenesPage() {
 
       // Build SKU index for fast lookup
       const skuIndex = new Map<string, Product>();
-      products.forEach(p => {
+      allDocs.forEach(p => {
         const pSku = getSkuFromProduct(p);
         if (pSku) skuIndex.set(pSku.toLowerCase(), p);
         if (p.barcode) skuIndex.set(p.barcode.toLowerCase(), p);
         if ((p as any).jumpseller_id) skuIndex.set(String((p as any).jumpseller_id).toLowerCase(), p);
         skuIndex.set(p.$id, p);
         if (p.TAGS && typeof p.TAGS === 'string') {
-          p.TAGS.split(',').map(t => t.trim().toLowerCase()).filter(Boolean).forEach(t => {
+          p.TAGS.split(',').map((t: string) => t.trim().toLowerCase()).filter(Boolean).forEach((t: string) => {
             if (!skuIndex.has(t)) skuIndex.set(t, p);
           });
         }
@@ -121,9 +151,9 @@ export default function InventarioImagenesPage() {
         // 2) Try with original casing (no space removal)
         if (!product) product = skuIndex.get(row.sku.toLowerCase());
         // 3) Name contains
-        if (!product) product = products.find(p => p.NAME && p.NAME.toLowerCase().replace(/\s+/g, '').includes(skuLower));
+        if (!product) product = allDocs.find(p => p.NAME && p.NAME.toLowerCase().replace(/\s+/g, '').includes(skuLower));
         // 4) SKU is contained in product SKU (reverse)
-        if (!product) product = products.find(p => {
+        if (!product) product = allDocs.find(p => {
           const pSku = getSkuFromProduct(p);
           return pSku && skuLower.includes(pSku.toLowerCase().replace(/\s+/g, '')) && pSku.length >= 4;
         });

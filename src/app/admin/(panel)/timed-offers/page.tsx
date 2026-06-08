@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, TIMED_OFFERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { TimedOffer, Product } from '@/types/admin';
-import { Plus, Pencil, Trash2, X, RefreshCw, AlertTriangle, Clock, ToggleLeft, ToggleRight, Search, Download } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, RefreshCw, AlertTriangle, Clock, ToggleLeft, ToggleRight, Search, Download, ChevronDown } from 'lucide-react';
 
 export default function TimedOffersPage() {
   const [offers, setOffers] = useState<TimedOffer[]>([]);
@@ -13,26 +13,111 @@ export default function TimedOffersPage() {
   const [error, setError] = useState('');
   const [modal, setModal] = useState<{ mode: 'add' | 'edit'; data: Partial<TimedOffer> } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingPack, setIsSavingPack] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'paused' | 'expired'>('all');
+  
+  const [packTimer, setPackTimer] = useState<{
+    isActive: boolean;
+    timeType: 'duration' | 'endDateTime';
+    endDateTime?: string;
+    durationHours?: number;
+    $id?: string;
+  }>({
+    isActive: false,
+    timeType: 'endDateTime',
+    endDateTime: '',
+  });
 
   const load = useCallback(async () => {
     setIsLoading(true); setError('');
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
+      console.log('Loading timed offers and products from DB:', databaseId);
+
       const [or, pr] = await Promise.all([
-        databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION_ID, [Query.orderDesc('$createdAt'), Query.limit(100)]),
-        databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.greaterThan('STOCK', 0), Query.orderAsc('NAME'), Query.limit(500)]),
+        databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION_ID, [Query.orderDesc('$createdAt'), Query.limit(100)])
+          .catch(e => {
+            console.warn('Offers query with order failed, falling back...', e);
+            return databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION_ID, [Query.limit(100)]);
+          }),
+        databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.orderDesc('$createdAt'), Query.limit(100)])
+          .catch(e => {
+            console.warn('Products query with order failed, falling back...', e);
+            return databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(100)]);
+          }),
       ]);
+
+      console.log('Loaded offers:', or.documents.length, 'Loaded products:', pr.documents.length);
+
       setOffers(or.documents as unknown as TimedOffer[]);
       setProducts(pr.documents as unknown as Product[]);
-    } catch (e: any) { setError(e.message); }
+
+      const packDoc = or.documents.find(d => d.$id === 'pack_timer_config' || d.offerType === 'pack_timer');
+      if (packDoc) {
+        setPackTimer({
+          isActive: packDoc.isActive,
+          timeType: packDoc.timeType as any,
+          endDateTime: packDoc.endDateTime,
+          durationHours: packDoc.durationHours,
+          $id: packDoc.$id,
+        });
+      }
+    } catch (e: any) { 
+      console.error('CRITICAL ERROR loading data:', e);
+      setError(e.message); 
+    }
     finally { setIsLoading(false); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const savePackTimer = async (isActive: boolean, endDateTime: string) => {
+    setIsSavingPack(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const payload: any = {
+        title: 'Cronómetro Global Pack',
+        offerType: 'pack_timer',
+        targetId: 'pack_timer',
+        productName: 'pack_timer',
+        originalPrice: 0,
+        discountPrice: 0,
+        discountPercentage: 0,
+        customImagePath: '',
+        timeType: 'endDateTime',
+        endDateTime: new Date(endDateTime).toISOString(),
+        status: 'active',
+        isActive: isActive,
+      };
+
+      if (packTimer.$id || offers.some(o => o.$id === 'pack_timer_config')) {
+        try {
+          await databases.deleteDocument(databaseId, TIMED_OFFERS_COLLECTION_ID, 'pack_timer_config');
+        } catch (err) {}
+      }
+      const doc = await databases.createDocument(databaseId, TIMED_OFFERS_COLLECTION_ID, 'pack_timer_config', payload);
+      setPackTimer({
+        isActive: doc.isActive,
+        timeType: doc.timeType as any,
+        endDateTime: doc.endDateTime,
+        $id: doc.$id
+      });
+      // Refresh offers list to ensure it is in sync
+      const or = await databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION_ID, [Query.orderDesc('$createdAt'), Query.limit(100)]);
+      setOffers(or.documents as unknown as TimedOffer[]);
+      alert('Cronómetro de pack guardado exitosamente');
+    } catch (e: any) {
+      alert('Error al guardar: ' + e.message);
+    } finally {
+      setIsSavingPack(false);
+    }
+  };
 
   const now = () => {
     const d = new Date();
@@ -225,8 +310,10 @@ export default function TimedOffersPage() {
     a.click(); URL.revokeObjectURL(url);
   };
 
-  const displayedOffers = offers.filter(o => {
-    const name = o.productName.toLowerCase();
+  const filteredOffersList = offers.filter(o => (o.offerType as string) !== 'pack_timer' && (o.offerType as string) !== 'destacado_temporal');
+
+  const displayedOffers = filteredOffersList.filter(o => {
+    const name = (o.productName || '').toLowerCase();
     if (search && !name.includes(search.toLowerCase())) return false;
     if (statusFilter === 'active') return isActive(o);
     if (statusFilter === 'paused') return !isExpired(o) && !isActive(o);
@@ -240,9 +327,9 @@ export default function TimedOffersPage() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">Ofertas por Tiempo Limitado</h1>
           <p className="text-sm text-gray-500">
-            {offers.length} ofertas
-            {offers.filter(o => isActive(o)).length > 0 && <span className="ml-2 text-xs font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">{offers.filter(o => isActive(o)).length} activas</span>}
-            {offers.filter(o => isExpired(o)).length > 0 && <span className="ml-1 text-xs font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{offers.filter(o => isExpired(o)).length} expiradas</span>}
+            {filteredOffersList.length} ofertas
+            {filteredOffersList.filter(o => isActive(o)).length > 0 && <span className="ml-2 text-xs font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">{filteredOffersList.filter(o => isActive(o)).length} activas</span>}
+            {filteredOffersList.filter(o => isExpired(o)).length > 0 && <span className="ml-1 text-xs font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{filteredOffersList.filter(o => isExpired(o)).length} expiradas</span>}
           </p>
         </div>
         <div className="flex gap-2">
@@ -258,6 +345,81 @@ export default function TimedOffersPage() {
         </div>
       </div>
 
+      {/* PACK DE OFERTAS TEMPORALES Config Card */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-indigo-600 animate-pulse" />
+            <h2 className="text-lg font-bold text-gray-900">PACK DE OFERTAS TEMPORALES (Cronómetro Global)</h2>
+          </div>
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${packTimer.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-800'}`}>
+            {packTimer.isActive ? 'Activo' : 'Inactivo'}
+          </span>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-4 items-end">
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Fecha y Hora de Término</label>
+            <input 
+              type="datetime-local" 
+              value={packTimer.endDateTime ? packTimer.endDateTime.slice(0, 16) : ''}
+              onChange={e => setPackTimer(prev => ({ ...prev, endDateTime: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+            />
+          </div>
+          <div className="flex gap-2">
+            <button 
+              type="button"
+              onClick={() => {
+                const now = new Date();
+                now.setDate(now.getDate() + 5);
+                const offset = now.getTimezoneOffset() * 60000;
+                const localISODate = new Date(now.getTime() - offset).toISOString().slice(0, 16);
+                setPackTimer(prev => ({ ...prev, endDateTime: localISODate }));
+              }}
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-medium transition"
+            >
+              +5 Días
+            </button>
+            <button 
+              type="button"
+              onClick={() => {
+                const now = new Date();
+                now.setDate(now.getDate() + 1);
+                const offset = now.getTimezoneOffset() * 60000;
+                const localISODate = new Date(now.getTime() - offset).toISOString().slice(0, 16);
+                setPackTimer(prev => ({ ...prev, endDateTime: localISODate }));
+              }}
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-medium transition"
+            >
+              +24 Horas
+            </button>
+          </div>
+          <div className="flex items-center gap-4 justify-between md:justify-end">
+            <div className="flex items-center gap-2">
+              <input 
+                type="checkbox" 
+                id="packTimerActive" 
+                checked={packTimer.isActive}
+                onChange={e => setPackTimer(prev => ({ ...prev, isActive: e.target.checked }))}
+                className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500" 
+              />
+              <label htmlFor="packTimerActive" className="text-sm font-semibold text-gray-700 cursor-pointer">Sincronizar Cronómetro</label>
+            </div>
+            <button 
+              onClick={() => {
+                if (!packTimer.endDateTime) { alert('Selecciona una fecha de término primero'); return; }
+                savePackTimer(packTimer.isActive, packTimer.endDateTime);
+              }}
+              disabled={isSavingPack}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow transition disabled:opacity-60"
+            >
+              {isSavingPack ? 'Guardando...' : 'Guardar Cronómetro'}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="flex gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -267,7 +429,7 @@ export default function TimedOffersPage() {
         </div>
         <div className="flex bg-white border border-gray-200 rounded-xl overflow-hidden">
           {([['all','Todas'],['active','Activas'],['paused','Pausadas'],['expired','Expiradas']] as [string,string][]).map(([v,l]) => {
-            const cnt = v === 'all' ? offers.length : v === 'active' ? offers.filter(o => isActive(o)).length : v === 'expired' ? offers.filter(o => isExpired(o)).length : offers.filter(o => !isActive(o) && !isExpired(o)).length;
+            const cnt = v === 'all' ? filteredOffersList.length : v === 'active' ? filteredOffersList.filter(o => isActive(o)).length : v === 'expired' ? filteredOffersList.filter(o => isExpired(o)).length : filteredOffersList.filter(o => !isActive(o) && !isExpired(o)).length;
             return (
             <button key={v} onClick={() => setStatusFilter(v as typeof statusFilter)}
               className={`px-3 py-1.5 text-xs font-medium transition ${statusFilter === v ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
@@ -375,22 +537,22 @@ export default function TimedOffersPage() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Producto *</label>
-                <select value={modal.data.targetId || ''} onChange={e => {
-                  const product = products.find(p => p.$id === e.target.value);
-                  setModal(m => m ? { 
-                    ...m, 
-                    data: { 
-                      ...m.data, 
-                      targetId: e.target.value,
-                      productName: product?.NAME || '',
-                      originalPrice: product?.PRICE || 0
-                    } 
-                  } : m);
-                }}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                  <option value="">Seleccionar producto...</option>
-                  {products.map(p => <option key={p.$id} value={p.$id}>{p.NAME} - {fmtCLP(p.PRICE)}</option>)}
-                </select>
+                <ProductSelector 
+                  products={products} 
+                  value={modal.data.targetId || ''} 
+                  onChange={(id) => {
+                    const product = products.find(p => p.$id === id);
+                    setModal(m => m ? { 
+                      ...m, 
+                      data: { 
+                        ...m.data, 
+                        targetId: id,
+                        productName: product?.NAME || '',
+                        originalPrice: product?.PRICE || 0
+                      } 
+                    } : m);
+                  }} 
+                />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Precio Original (CLP)</label>
@@ -485,6 +647,74 @@ export default function TimedOffersPage() {
             </div>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function ProductSelector({ products, value, onChange }: { products: Product[], value: string, onChange: (id: string) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  
+  const selected = products.find(p => p.$id === value);
+  const filtered = products.filter(p => p.NAME.toLowerCase().includes(search.toLowerCase()) || p.$id.includes(search));
+
+  const fmtCLP = (v: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(v);
+
+  return (
+    <div className="relative">
+      <div 
+        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white cursor-pointer flex justify-between items-center"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {selected ? (
+          <div className="flex items-center gap-2 truncate">
+            {selected.IMAGEURL ? <img src={selected.IMAGEURL} alt="" className="w-6 h-6 object-cover rounded shrink-0" /> : <div className="w-6 h-6 bg-gray-100 rounded shrink-0" />}
+            <span className="truncate text-gray-800 font-medium">{selected.NAME}</span>
+          </div>
+        ) : (
+          <span className="text-gray-500">Seleccionar producto...</span>
+        )}
+        <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+      </div>
+      
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-72 overflow-y-auto">
+            <div className="p-2 sticky top-0 bg-white border-b border-gray-100 z-10">
+              <input 
+                type="text" 
+                autoFocus
+                placeholder="Buscar por nombre..." 
+                value={search} 
+                onChange={e => setSearch(e.target.value)}
+                className="w-full px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            {filtered.map(p => (
+              <div 
+                key={p.$id} 
+                onClick={() => { onChange(p.$id); setIsOpen(false); setSearch(''); }}
+                className={`p-2 flex items-center gap-3 cursor-pointer hover:bg-indigo-50 transition-colors border-b border-gray-50 last:border-0 ${value === p.$id ? 'bg-indigo-50/50' : ''}`}
+              >
+                <div className="w-10 h-10 shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                  {p.IMAGEURL && <img src={p.IMAGEURL} alt="" className="w-full h-full object-cover" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-gray-800 truncate leading-tight">{p.NAME}</div>
+                  <div className="text-xs text-gray-500 flex justify-between mt-1 items-center">
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold ${p.STOCK > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                      Stock: {p.STOCK}
+                    </span>
+                    <span className="font-medium text-gray-700">{fmtCLP(p.PRICE)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {filtered.length === 0 && <div className="p-4 text-center text-sm text-gray-500">No se encontraron productos</div>}
+          </div>
+        </>
       )}
     </div>
   );

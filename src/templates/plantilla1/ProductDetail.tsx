@@ -317,9 +317,13 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       setHasPendingRequest(true);
       setIsStockRequestModalOpen(false);
       alert('Tu solicitud ha sido enviada con éxito. Te notificaremos cuando tengamos más stock.');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error submitting stock request:', err);
-      alert('Hubo un error al enviar tu solicitud. Intenta nuevamente.');
+      if (err?.message?.includes('could not be found')) {
+        alert('La función de solicitud de stock no está disponible en este momento.');
+      } else {
+        alert('Hubo un error al enviar tu solicitud. Intenta nuevamente.');
+      }
     } finally {
       setIsRequestingStock(false);
     }

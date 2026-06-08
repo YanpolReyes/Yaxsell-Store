@@ -8,7 +8,7 @@ const getCachedProducts = unstable_cache(
     const { databases } = getServices();
     const { databaseId } = getAppwriteConfig();
 
-    const queries: string[] = [Query.limit(2000), Query.greaterThan('STOCK', 0)];
+    const queries: string[] = [Query.limit(500), Query.greaterThan('STOCK', 0)];
     if (sortBy === 'newest') queries.push(Query.orderDesc('$createdAt'));
     else if (sortBy === 'price_asc') queries.push(Query.orderAsc('PRICE'));
     else if (sortBy === 'price_desc') queries.push(Query.orderDesc('PRICE'));

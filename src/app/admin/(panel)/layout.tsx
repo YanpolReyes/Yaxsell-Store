@@ -277,23 +277,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       return;
     }
     
-    // Ejecutar solo si la pestaña está visible
-    const fetchVisibleBadges = () => {
+    let lastFetched = 0;
+    
+    // Ejecutar solo si la pestaña está visible y han pasado al menos 2 minutos
+    const fetchVisibleBadges = (force = false) => {
       if (document.visibilityState === 'visible') {
-        fetchBadges();
+        const now = Date.now();
+        if (force || now - lastFetched > 120_000) {
+          fetchBadges();
+          lastFetched = now;
+        }
       }
     };
 
-    fetchVisibleBadges();
+    fetchVisibleBadges(true);
     
-    // Polling cada 3 minutos (antes era cada 1 minuto) para reducir requests en 66%
-    const id = setInterval(fetchVisibleBadges, 180_000);
+    // Polling cada 3 minutos
+    const id = setInterval(() => fetchVisibleBadges(false), 180_000);
     
-    document.addEventListener('visibilitychange', fetchVisibleBadges);
+    const handleVisibilityChange = () => fetchVisibleBadges(false);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       clearInterval(id);
-      document.removeEventListener('visibilitychange', fetchVisibleBadges);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isLoading, isLoggedIn, user?.email, router, fetchBadges, logout]);
 

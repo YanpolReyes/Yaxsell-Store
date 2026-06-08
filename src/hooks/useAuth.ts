@@ -24,11 +24,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuthStatus = useCallback(async () => {
     setIsLoading(true);
     try {
-      const isLoggedIn = await AuthService.isLoggedIn();
-      if (isLoggedIn) {
-        const currentUser = await AuthService.getCurrentUser();
-        setUser(currentUser);
-      }
+      const currentUser = await AuthService.getCurrentUser();
+      setUser(currentUser);
     } catch (error) {
       console.error('Error checking auth status:', error);
       setUser(null);

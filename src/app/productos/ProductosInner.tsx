@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Search, Grid3x3, List, ShoppingCart, X, SlidersHorizontal, Sparkles, ChevronDown } from 'lucide-react';
 import AnimHeart from '@/components/AnimHeart';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, formatPrice } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, TIMED_OFFERS_COLLECTION, formatPrice } from '@/lib/appwrite';
 import { normalizeProductImages, getProductImageUrl } from '@/lib/product-images';
 import { cached, TTL } from '@/lib/cache';
 import { Query } from 'appwrite';
@@ -47,6 +47,15 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
   const { addItem } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { settings: apertura } = useAperturaPromotion();
+  
+  const [activeOfferProductIds, setActiveOfferProductIds] = useState<string[]>([]);
+  const [selectedOfertasOnly, setSelectedOfertasOnly] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('ofertas') === 'true') {
+      setSelectedOfertasOnly(true);
+    }
+  }, [searchParams]);
 
   const lockedCategory = lockCategoryId ? categories.find(c => c.$id === lockCategoryId) : null;
   const categoryProductCount = lockCategoryId
@@ -86,7 +95,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
       }
 
       // 3. Cargar productos (filtrado client-side, caché 15 min)
-      const queries: string[] = [Query.limit(2000), Query.greaterThan('STOCK', 0)];
+      const queries: string[] = [Query.limit(500), Query.greaterThan('STOCK', 0)];
       if (sortBy === 'newest') queries.push(Query.orderDesc('$createdAt'));
       else if (sortBy === 'price_asc') queries.push(Query.orderAsc('PRICE'));
       else if (sortBy === 'price_desc') queries.push(Query.orderDesc('PRICE'));
@@ -96,6 +105,19 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
         return r.documents;
       });
       setProducts((prodDocs as unknown as Product[]).map(p => normalizeProductImages(p)));
+
+      // 3.5 Cargar ofertas temporales activas para filtrar
+      try {
+        const offerDocs = await databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
+          Query.equal('isActive', true),
+          Query.equal('status', 'active'),
+          Query.limit(100),
+        ]);
+        const offerIds = offerDocs.documents.map((d: any) => d.targetId).filter(Boolean);
+        setActiveOfferProductIds(offerIds);
+      } catch (err) {
+        console.warn('Error fetching timed offers for search filters:', err);
+      }
 
       // 4. Cargar subcategorías para la categoría seleccionada (caché 30 min)
       if (catIdToUse || selectedCat) {
@@ -139,6 +161,8 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
   }, [products, apertura]);
 
   const filtered = products.filter(p => {
+    // Ofertas temporales filter
+    if (selectedOfertasOnly && !activeOfferProductIds.includes(p.$id)) return false;
     // Category filter (client-side)
     if (selectedCat && p.CATEGORYID !== selectedCat) return false;
     // Subcategory filter (client-side)
@@ -162,14 +186,15 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
   const hasMore = visibleCount < filtered.length;
 
   // Reset visible count when filters change
-  useEffect(() => { setVisibleCount(30); }, [selectedCat, selectedSubcat, selectedTag, search, sortBy, activePriceRange]);
+  useEffect(() => { setVisibleCount(30); }, [selectedCat, selectedSubcat, selectedTag, search, sortBy, activePriceRange, selectedOfertasOnly]);
 
   const hasActiveFilters = !!(
-    (selectedCat && selectedCat !== lockCategoryId) || selectedSubcat || selectedTag || search
+    (selectedCat && selectedCat !== lockCategoryId) || selectedSubcat || selectedTag || search || selectedOfertasOnly
     || (activePriceRange && (activePriceRange[0] !== priceRange[0] || activePriceRange[1] !== priceRange[1]))
   );
   const clearAllFilters = () => {
     setSelectedCat(lockCategoryId || ''); setSelectedSubcat(''); setSelectedTag(''); setSearch('');
+    setSelectedOfertasOnly(false);
     setActivePriceRange(priceRange);
   };
 
@@ -214,6 +239,19 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             <input type="number" value={activePriceRange[1]} onChange={e => setActivePriceRange([activePriceRange[0], Number(e.target.value) || 0])}
               style={{ flex: 1, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #fce7f3', fontSize: 12, color: '#111', outline: 'none', fontFamily: 'inherit' }} placeholder="Max" />
           </div>
+        </div>
+      )}
+
+      {/* Ofertas Temporales */}
+      {activeOfferProductIds.length > 0 && (
+        <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px solid #fce7f3' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>Promociones</p>
+          <button onClick={() => setSelectedOfertasOnly(!selectedOfertasOnly)}
+            style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: selectedOfertasOnly ? 700 : 500, color: selectedOfertasOnly ? '#e396bf' : '#6b7280', background: selectedOfertasOnly ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 15 }}>🔥</span>
+            <span style={{ flex: 1 }}>Ofertas Temporales</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: selectedOfertasOnly ? '#fce7f3' : '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{activeOfferProductIds.length}</span>
+          </button>
         </div>
       )}
 

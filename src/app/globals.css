@@ -239,8 +239,8 @@ select option { background: #fff; color: #111; }
 
 /* ── Promoción apertura: badges y banners ── */
 @keyframes aperturaBadgePulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 4px 16px rgba(236, 72, 153, 0.4); }
-  50% { transform: scale(1.08); box-shadow: 0 8px 24px rgba(236, 72, 153, 0.55); }
+  0%, 100% { transform: scale(1); box-shadow: 0 2px 8px rgba(236, 72, 153, 0.15); }
+  50% { transform: scale(1.02); box-shadow: 0 4px 12px rgba(236, 72, 153, 0.25); }
 }
 @keyframes aperturaSpark {
   0%, 100% { opacity: 0.5; transform: rotate(0deg) scale(0.85); }

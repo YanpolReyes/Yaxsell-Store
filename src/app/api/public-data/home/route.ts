@@ -9,18 +9,20 @@ export async function GET() {
     const { databases } = getServices();
     const { databaseId } = getAppwriteConfig();
 
-    const [prodDocs, catDocs, banDocs, offDocs] = await Promise.all([
+    const [prodDocs, catDocs, banDocs, offDocs, packDocs] = await Promise.all([
       databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.orderDesc('$createdAt'), Query.limit(8)]),
       databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [Query.orderDesc('$createdAt'), Query.limit(20)]),
       databases.listDocuments(databaseId, BANNERS_COLLECTION, [Query.orderDesc('$createdAt'), Query.limit(5)]),
-      databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [Query.equal('isActive', true), Query.equal('status', 'active'), Query.limit(4)])
+      databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [Query.equal('isActive', true), Query.equal('status', 'active'), Query.limit(5)]),
+      databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [Query.equal('offerType', 'pack_timer'), Query.equal('isActive', true), Query.limit(1)]).catch(() => ({ documents: [] })),
     ]);
 
     return NextResponse.json({
       products: prodDocs.documents,
       categories: catDocs.documents,
       banners: banDocs.documents,
-      offers: offDocs.documents
+      offers: offDocs.documents,
+      packTimer: packDocs.documents[0] || null,
     });
   } catch (error: any) {
     console.error('[API public-data/home] Error:', error);

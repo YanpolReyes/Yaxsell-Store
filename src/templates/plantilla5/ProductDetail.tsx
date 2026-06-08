@@ -211,12 +211,20 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
 
         // Fetch timed offers for this product
         try {
-          const offerRes = await databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
-            Query.equal('targetId', p.$id),
-            Query.equal('isActive', true),
-            Query.equal('status', 'active'),
-            Query.limit(1),
+          const [offerRes, packRes] = await Promise.all([
+            databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
+              Query.equal('targetId', p.$id),
+              Query.equal('isActive', true),
+              Query.equal('status', 'active'),
+              Query.limit(1),
+            ]),
+            databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
+              Query.equal('offerType', 'pack_timer'),
+              Query.equal('isActive', true),
+              Query.limit(1),
+            ]).catch(() => ({ documents: [] }))
           ]);
+          
           const active = (offerRes.documents as unknown as TimedOffer[]).filter(o => {
             if (!o.isActive || o.status !== 'active') return false;
             if (o.timeType === 'endDateTime' && o.endDateTime) {
@@ -230,8 +238,18 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             }
             return true;
           });
+
           if (active.length > 0) {
-            setActiveOffer(active[0]);
+            let resolvedOffer = active[0];
+            if (packRes.documents && packRes.documents.length > 0) {
+              const packDoc = packRes.documents[0] as any;
+              resolvedOffer = {
+                ...resolvedOffer,
+                timeType: 'endDateTime',
+                endDateTime: packDoc.endDateTime,
+              };
+            }
+            setActiveOffer(resolvedOffer);
           }
         } catch (offerErr) {
           console.warn('Error fetching timed offer (handled gracefully):', offerErr);
@@ -291,8 +309,11 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         if (res.total > 0) {
           setHasPendingRequest(true);
         }
-      } catch (err) {
-        console.error('Error checking stock requests:', err);
+      } catch (err: any) {
+        // Silently ignore if collection doesn't exist yet
+        if (!err?.message?.includes('could not be found')) {
+          console.error('Error checking stock requests:', err);
+        }
       }
     }
     checkPendingRequest();
@@ -391,9 +412,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     // Update variant picker highlights
     root.querySelectorAll('[data-variant-btn]').forEach((btn: any) => {
       const isActive = btn.dataset.variantBtn === targetProduct.$id;
-      btn.style.border = isActive ? '3px solid #111827' : '2px solid #e5e7eb';
-      btn.style.transform = isActive ? 'scale(1.1)' : 'scale(1)';
-      btn.style.boxShadow = isActive ? '0 0 0 2px #fff, 0 0 0 4px #111827' : 'none';
+      btn.style.border = isActive ? '2px solid #111827' : '1px solid #e5e7eb';
+      btn.style.transform = isActive ? 'translateY(-2px)' : 'translateY(0)';
+      btn.style.boxShadow = isActive ? '0 6px 12px rgba(17, 24, 39, 0.12)' : 'none';
+      btn.style.opacity = isActive ? '1' : '0.85';
     });
   };
 
@@ -426,28 +448,28 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         
         const currentActiveId = activeVariantId || product.$id;
         
-        let variantsHtml = `<div style="margin-bottom: 20px;">
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+        let variantsHtml = `<div style="margin-bottom: 24px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
             <span style="font-size: 13px; font-weight: 700; color: #111827; text-transform: uppercase; letter-spacing: 0.05em;">Modelo:</span>
-            <span id="yaxsell-variant-label" style="font-size: 13px; color: #6b7280;"></span>
+            <span id="yaxsell-variant-label" style="font-size: 13px; font-weight: 500; color: #4b5563;"></span>
           </div>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">`;
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">`;
           
         linkedProducts.forEach(lp => {
           const isActive = lp.$id === currentActiveId;
           const label = variantLabels[lp.$id] || '';
           const imgUrl = resolveStorageImageUrl(lp.IMAGEURL);
           const borderStyle = isActive
-            ? 'border: 3px solid #111827; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #111827; transform: scale(1.1);'
-            : 'border: 2px solid #e5e7eb; box-shadow: none; transform: scale(1);';
+            ? 'border: 2px solid #111827; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(17, 24, 39, 0.12); opacity: 1;'
+            : 'border: 1px solid #e5e7eb; transform: translateY(0); box-shadow: none; opacity: 0.85;';
           variantsHtml += `
             <button 
               data-variant-btn="${lp.$id}"
               data-variant-label="${label}"
-              style="display: block; width: 52px; height: 52px; border-radius: 50%; overflow: hidden; ${borderStyle} cursor: pointer; transition: all 0.2s ease; background: none; padding: 0; outline: none;"
+              style="display: block; width: 60px; height: 60px; border-radius: 12px; overflow: hidden; ${borderStyle} cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background: #ffffff; padding: 2px; outline: none; position: relative;"
               title="${label || lp.NAME}"
             >
-              <img src="${imgUrl}" alt="${label || lp.NAME}" style="width: 100%; height: 100%; object-fit: cover;" />
+              <img src="${imgUrl}" alt="${label || lp.NAME}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 9px;" />
             </button>
           `;
         });
@@ -572,7 +594,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
 
     // 5. Descripción
     root.querySelectorAll('div[class*="product_description"] p, div[class*="product_description"], .accordion__content, .rte').forEach(el => {
-      if (el.textContent?.includes('boasts a rustic texture') || el.textContent?.includes('eco-friendly fabric') || el.textContent?.includes('Crafted from')) {
+      if (el.textContent?.includes('boasts a rustic texture') || el.textContent?.includes('eco-friendly fabric') || el.textContent?.includes('Crafted from') || el.textContent?.includes('Elevate your casual') || el.textContent?.includes('embroidered logo') || el.textContent?.includes('classic red polo')) {
         el.innerHTML = product.DESCRIPTION || '';
       }
     });
@@ -767,17 +789,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           reqBtn = document.createElement('button');
           reqBtn.type = 'button';
           reqBtn.className = 'shopify-payment-button__button shopify-payment-button__button--unbranded yaxsell-request-stock-btn';
-          reqBtn.textContent = hasPendingRequest ? 'Solicitud en revisión' : 'SOLICITAR MÁS';
           reqBtn.style.width = '100%';
-          reqBtn.style.background = '#f3f4f6';
-          reqBtn.style.color = '#374151';
-          reqBtn.style.border = '1px solid #d1d5db';
-          reqBtn.style.borderRadius = '40px';
-          reqBtn.style.padding = '14px 20px';
-          reqBtn.style.fontSize = '14px';
-          reqBtn.style.fontWeight = '600';
           reqBtn.style.marginTop = '10px';
-          reqBtn.style.cursor = hasPendingRequest ? 'not-allowed' : 'pointer';
           
           paymentButtonContainer.appendChild(reqBtn);
           
@@ -792,10 +805,77 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             }
             setIsStockRequestModalOpen(true);
           });
-        } else {
-           reqBtn.textContent = hasPendingRequest ? 'Solicitud en revisión' : 'SOLICITAR MÁS';
-           reqBtn.style.cursor = hasPendingRequest ? 'not-allowed' : 'pointer';
         }
+
+        reqBtn.textContent = hasPendingRequest ? 'Solicitud en revisión' : 'SOLICITAR MÁS';
+        
+        // Match size/shapes from Add to Cart button
+        const addToCartBtn = root.querySelector('.add-to-cart-button') as HTMLElement | null;
+        if (addToCartBtn) {
+          const computedStyle = window.getComputedStyle(addToCartBtn);
+          reqBtn.style.borderRadius = computedStyle.borderRadius || '40px';
+          reqBtn.style.minHeight = computedStyle.minHeight;
+          reqBtn.style.height = computedStyle.height;
+          reqBtn.style.padding = computedStyle.padding;
+          reqBtn.style.fontSize = computedStyle.fontSize;
+          reqBtn.style.fontWeight = computedStyle.fontWeight;
+          reqBtn.style.letterSpacing = computedStyle.letterSpacing;
+          reqBtn.style.fontFamily = computedStyle.fontFamily;
+        } else {
+          reqBtn.style.borderRadius = '40px';
+          reqBtn.style.padding = '14px 20px';
+          reqBtn.style.fontSize = '15px';
+          reqBtn.style.fontWeight = '400';
+        }
+        
+        reqBtn.style.transition = 'all 0.2s ease';
+        reqBtn.style.cursor = hasPendingRequest ? 'not-allowed' : 'pointer';
+
+        if (hasPendingRequest) {
+          reqBtn.classList.add('is-pending');
+          reqBtn.setAttribute('disabled', 'true');
+        } else {
+          reqBtn.classList.remove('is-pending');
+          reqBtn.removeAttribute('disabled');
+        }
+    }
+
+    // Inject global pack countdown timer if product has active offer
+    if (activeOffer && activeOffer.endDateTime) {
+      const priceContainer = root.querySelector('.price') || root.querySelector('.product__info-container .price');
+      if (priceContainer && !root.querySelector('#yaxsell-product-countdown')) {
+        const timerWrapper = document.createElement('div');
+        timerWrapper.id = 'yaxsell-product-countdown';
+        timerWrapper.style.cssText = 'background: #fdf2f8; border: 1.5px solid #fce7f3; border-radius: 16px; padding: 12px 16px; margin: 16px 0; display: flex; flex-direction: column; gap: 8px; max-width: 320px;';
+        
+        timerWrapper.innerHTML = `
+          <div style="font-size: 11px; font-weight: 800; color: #db2777; letter-spacing: 0.1em; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+            <span style="animation: pulse 1.5s infinite;">⏳</span> Oferta por tiempo limitado
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="background: rgba(255,255,255,0.9); border-radius: 8px; padding: 6px 10px; min-width: 45px; text-align: center; box-shadow: 0 4px 10px rgba(219,39,119,0.05);">
+              <span id="p-days" style="font-size: 18px; font-weight: 800; color: #111827;">00</span>
+              <span style="display: block; font-size: 9px; font-weight: 700; color: #db2777; text-transform: uppercase; margin-top: 2px;">días</span>
+            </div>
+            <span style="font-weight: 800; color: #db2777;">:</span>
+            <div style="background: rgba(255,255,255,0.9); border-radius: 8px; padding: 6px 10px; min-width: 45px; text-align: center; box-shadow: 0 4px 10px rgba(219,39,119,0.05);">
+              <span id="p-hours" style="font-size: 18px; font-weight: 800; color: #111827;">00</span>
+              <span style="display: block; font-size: 9px; font-weight: 700; color: #db2777; text-transform: uppercase; margin-top: 2px;">horas</span>
+            </div>
+            <span style="font-weight: 800; color: #db2777;">:</span>
+            <div style="background: rgba(255,255,255,0.9); border-radius: 8px; padding: 6px 10px; min-width: 45px; text-align: center; box-shadow: 0 4px 10px rgba(219,39,119,0.05);">
+              <span id="p-minutes" style="font-size: 18px; font-weight: 800; color: #111827;">00</span>
+              <span style="display: block; font-size: 9px; font-weight: 700; color: #db2777; text-transform: uppercase; margin-top: 2px;">min</span>
+            </div>
+            <span style="font-weight: 800; color: #db2777;">:</span>
+            <div style="background: rgba(255,255,255,0.9); border-radius: 8px; padding: 6px 10px; min-width: 45px; text-align: center; box-shadow: 0 4px 10px rgba(219,39,119,0.05);">
+              <span id="p-seconds" style="font-size: 18px; font-weight: 800; color: #db2777;">00</span>
+              <span style="display: block; font-size: 9px; font-weight: 700; color: #db2777; text-transform: uppercase; margin-top: 2px;">seg</span>
+            </div>
+          </div>
+        `;
+        priceContainer.parentNode?.insertBefore(timerWrapper, priceContainer.nextSibling);
+      }
     }
 
     // Indicar que Yaxsell está listo
@@ -903,6 +983,43 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       clearTimeout(t5);
     };
   }, [product, bodyHtml, categoryName, related, refElement, activeVariantId, linkedProducts, variantLabels]);
+
+  // Product Page countdown timer loop
+  useEffect(() => {
+    if (!activeOffer || !activeOffer.endDateTime) return;
+    const targetTime = new Date(activeOffer.endDateTime).getTime();
+
+    const updateTimer = () => {
+      if (!refElement) return;
+      const dEl = refElement.querySelector('#p-days');
+      const hEl = refElement.querySelector('#p-hours');
+      const mEl = refElement.querySelector('#p-minutes');
+      const sEl = refElement.querySelector('#p-seconds');
+
+      const diff = targetTime - Date.now();
+      if (diff <= 0) {
+        if (dEl) dEl.textContent = '00';
+        if (hEl) hEl.textContent = '00';
+        if (mEl) mEl.textContent = '00';
+        if (sEl) sEl.textContent = '00';
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      if (dEl) dEl.textContent = days.toString().padStart(2, '0');
+      if (hEl) hEl.textContent = hours.toString().padStart(2, '0');
+      if (mEl) mEl.textContent = minutes.toString().padStart(2, '0');
+      if (sEl) sEl.textContent = seconds.toString().padStart(2, '0');
+    };
+
+    updateTimer();
+    const intervalId = setInterval(updateTimer, 1000);
+    return () => clearInterval(intervalId);
+  }, [activeOffer, refElement]);
 
   /* ── Inject window.Shopify stub BEFORE loading JS ── */
   useEffect(() => {
@@ -1074,9 +1191,13 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       setHasPendingRequest(true);
       setIsStockRequestModalOpen(false);
       alert('Tu solicitud ha sido enviada con éxito. Te notificaremos cuando tengamos más stock.');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error submitting stock request:', err);
-      alert('Hubo un error al enviar tu solicitud. Intenta nuevamente.');
+      if (err?.message?.includes('could not be found')) {
+        alert('La función de solicitud de stock no está disponible en este momento.');
+      } else {
+        alert('Hubo un error al enviar tu solicitud. Intenta nuevamente.');
+      }
     } finally {
       setIsRequestingStock(false);
     }
@@ -1163,6 +1284,44 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         body.page-loading .tpl5-shopify-root {
           opacity: 1 !important;
           visibility: visible !important;
+        }
+
+        /* Request stock button custom styling (forces white background, black text on initial load, inverse on hover) */
+        .tpl5-page-wrapper button.yaxsell-request-stock-btn,
+        .tpl5-page-wrapper .yaxsell-request-stock-btn {
+          background: #ffffff !important;
+          color: #000000 !important;
+          border: 1px solid #000000 !important;
+          transition: all 0.2s ease !important;
+        }
+        .tpl5-page-wrapper button.yaxsell-request-stock-btn:hover,
+        .tpl5-page-wrapper .yaxsell-request-stock-btn:hover {
+          background: #000000 !important;
+          color: #ffffff !important;
+          border: 1px solid #000000 !important;
+        }
+        .tpl5-page-wrapper button.yaxsell-request-stock-btn[disabled],
+        .tpl5-page-wrapper .yaxsell-request-stock-btn.is-pending {
+          background: #f3f4f6 !important;
+          color: #9ca3af !important;
+          border: 1px solid #d1d5db !important;
+          cursor: not-allowed !important;
+        }
+
+        /* Fix mobile thumbnails shifting to the right and keep them compact */
+        @media (max-width: 767.98px) {
+          .media-gallery__carousel {
+            position: relative !important;
+            overflow: hidden !important;
+          }
+          .media-gallery__carousel-thumbnails--inside {
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: calc(100% - 32px) !important;
+            max-width: 230px !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+          }
         }
       `}</style>
       <div

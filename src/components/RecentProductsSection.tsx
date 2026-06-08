@@ -240,7 +240,7 @@ export default function RecentProductsSection() {
           return (
             <div 
               key={p.$id} 
-              className="snap-start flex-shrink-0 w-[240px] sm:w-[240px] sm:mx-auto bg-white/70 backdrop-blur-xl rounded-[24px] overflow-hidden border border-white shadow-[0_8px_25px_rgba(0,0,0,0.05)] hover:shadow-[0_15px_35px_rgba(251,202,201,0.4)] transition-all duration-400 group flex flex-col justify-between transform hover:-translate-y-1.5"
+              className="snap-start flex-shrink-0 w-[240px] sm:w-[240px] sm:mx-auto bg-white rounded-[24px] overflow-hidden border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:shadow-[0_15px_35px_rgba(0,0,0,0.09)] transition-all duration-400 group flex flex-col justify-between transform hover:-translate-y-1.5"
             >
               <a href={`/productos/${p.$id}`} className="block relative overflow-hidden aspect-square bg-gray-50/50 p-2">
                 <div className="w-full h-full rounded-[18px] overflow-hidden relative shadow-inner">

@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import * as XLSX from 'xlsx';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { invalidateProductCache } from '@/lib/cache';
+import { invalidateProductCache, cached, TTL } from '@/lib/cache';
 import { isAdminEmail } from '@/lib/admin-access';
 import { setBarcodeInFeatures, setSectionInFeatures } from '@/lib/product-features';
 import { Product, Category, Subcategory } from '@/types/admin';
@@ -720,51 +720,40 @@ export default function InventarioPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      // 1. Cargar productos de INVENTORY_PRODUCTS (los que se gestionan aquí)
-      //    Puede haber muchos (2000+) así que paginamos
-      const allInventory: Product[] = [];
-      let cursor: string | undefined;
-      while (true) {
-        const queries: any[] = [Query.orderDesc('$createdAt'), Query.limit(500)];
-        if (cursor) queries.push(Query.cursorAfter(cursor));
-        const resp: any = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, queries);
-        const docs = resp.documents as unknown as Product[];
-        if (!docs.length) break;
-        allInventory.push(...docs);
-        if (docs.length < 500) break;
-        cursor = docs[docs.length - 1].$id;
-      }
+      // 1. Cargar productos de INVENTORY_PRODUCTS — lote inicial de 500
+      const queries: any[] = [Query.orderDesc('$createdAt'), Query.limit(500)];
+      const resp: any = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, queries);
+      const allInventory = resp.documents as unknown as Product[];
 
       // 2. Cargar productos de PRODUCTS (catálogo publicado) — para detección de duplicados y vista Ubicados
       const skus = new Set<string>();
       const barcodes = new Set<string>();
       const allPublished: Product[] = [];
       try {
-        let pCursor: string | undefined;
-        while (true) {
-          const queries: any[] = [Query.orderDesc('$createdAt'), Query.limit(500)];
-          if (pCursor) queries.push(Query.cursorAfter(pCursor));
-          const resp: any = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
-          const docs = resp.documents as any[];
-          if (!docs.length) break;
-          for (const d of docs) {
-            const sku = (d.jumpseller_id || '').toLowerCase();
-            const bc = (d.barcode || '').toLowerCase();
-            if (sku) skus.add(sku);
-            if (bc) barcodes.add(bc);
-          }
-          allPublished.push(...docs);
-          if (docs.length < 500) break;
-          pCursor = docs[docs.length - 1].$id;
+        const pResp: any = await cached('products:published_500', TTL.products, async () => {
+          return await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+            Query.orderDesc('$createdAt'), Query.limit(500),
+          ]);
+        });
+        for (const d of pResp.documents) {
+          const sku = (d.jumpseller_id || '').toLowerCase();
+          const bc = (d.barcode || '').toLowerCase();
+          if (sku) skus.add(sku);
+          if (bc) barcodes.add(bc);
         }
+        allPublished.push(...pResp.documents);
       } catch (e) {
         console.warn('No se pudieron cargar productos del catálogo:', e);
       }
 
       // 3. Cargar categorías y subcategorías
       const [cr, sr] = await Promise.all([
-        databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]),
-        databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.limit(500)]),
+        cached('categories:all', TTL.categories, async () => {
+          return await databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]);
+        }),
+        cached('subcategories:all', TTL.categories, async () => {
+          return await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.limit(500)]);
+        }),
       ]);
 
       setProducts(allInventory);

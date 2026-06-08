@@ -187,107 +187,11 @@ export default function CatalogProductsPage() {
         }
       }
 
-      // Pass 3: Fetch ALL CATALOG_PRODUCTS_COLLECTION_ID and PRODUCTS_COLLECTION_ID for SKU/jumpseller_id/barcode matching
-      // This solves the issue where an alert points to an old $id but the product was re-imported with a new $id.
-      // IMPORTANT: catalog_products is added FIRST, then products OVERWRITES it, so products (with stock) takes priority in lookup maps.
-      const allCatalog: any[] = [];
-      try {
-        let offsetCat = 0;
-        while (true) {
-          const res = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, [
-            Query.limit(100), Query.offset(offsetCat)
-          ]);
-          allCatalog.push(...res.documents.map((d: any) => ({ ...d, _collection: 'catalog_products' })));
-          if (res.documents.length < 100) break;
-          offsetCat += 100;
-        }
-      } catch (e) {
-        console.error('Error loading catalog_products catalog', e);
-      }
+      // Pass 3: Removed. (Previously fetched ALL catalog_products and products into memory to match by SKU).
+      // We now rely on Pass 4 to lazily fetch missing products by SKU/name via targeted queries.
 
-      try {
-        let offsetCat = 0;
-        while (true) {
-          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-            Query.limit(100), Query.offset(offsetCat)
-          ]);
-          allCatalog.push(...res.documents.map((d: any) => ({ ...d, _collection: 'products' })));
-          if (res.documents.length < 100) break;
-          offsetCat += 100;
-        }
-      } catch (e) {
-        console.error('Error loading products catalog', e);
-      }
 
-      // Build lookup maps of catalog products by normalized SKU, jumpseller_id, barcode, and name
       const norm = (s: string) => (s || '').trim().replace(/[\.\-]/g, '').toLowerCase();
-      const activeCatalogBySku = new Map<string, any>();
-      const catalogById = new Map<string, any>();
-      const catalogByJumpsellerId = new Map<string, any>();
-      const catalogByBarcode = new Map<string, any>();
-      const catalogByName = new Map<string, any>();
-      allCatalog.forEach((p: any) => {
-        catalogById.set(p.$id, p);
-        if (p.ISACTIVE !== false) {
-          const s = norm(p.sku || p.SKU);
-          if (s) activeCatalogBySku.set(s, p);
-          const jid = (p.jumpseller_id || '').trim();
-          if (jid) catalogByJumpsellerId.set(jid, p);
-          const bc = norm(p.barcode || '');
-          if (bc) catalogByBarcode.set(bc, p);
-          const nm = norm(p.NAME || p.name || p.TITLE || p.title || '');
-          if (nm) catalogByName.set(nm, p);
-        }
-      });
-
-      // Update productMap with catalog info — match by $id, SKU, jumpseller_id, or barcode
-      // Also use alert's stored sku/jumpsellerId as fallback when inventory doc is gone
-      for (const id of uniqueProductIds) {
-        const existing = productMap[id] || {};
-        // Find the raw alert for this productId to get stored sku/jumpsellerId
-        const rawAlert = rawAlerts.find(a => a.productId === id);
-        const alertSku = rawAlert?.sku || '';
-        const alertJid = rawAlert?.jumpsellerId || '';
-
-        const skuToLookFor = norm(existing.sku || alertSku || '');
-        const jidToLookFor = (existing.jumpsellerId || alertJid || '').trim();
-        const bcToLookFor = norm(existing.barcode || '');
-        const nameToLookFor = norm(rawAlert?.productName || '');
-
-        // Try matching by: 1) SKU in products (highest priority), 2) $id, 3) jumpseller_id, 4) barcode, 5) name
-        const catDocBySku = skuToLookFor ? activeCatalogBySku.get(skuToLookFor) : undefined;
-        const catDocById = catalogById.get(id);
-        const catDocByJid = jidToLookFor ? catalogByJumpsellerId.get(jidToLookFor) : undefined;
-        const catDocByBc = bcToLookFor ? catalogByBarcode.get(bcToLookFor) : undefined;
-        const catDocByName = nameToLookFor ? catalogByName.get(nameToLookFor) : undefined;
-
-        // Priority: any match in 'products' collection wins over catalog_products by $id
-        // This handles the case where a product was published from inventory (new $id in products)
-        // but the old catalog_products doc still exists with the alert's original $id
-        const productsMatch = [catDocBySku, catDocByJid, catDocByBc, catDocByName].find(d => d && d._collection === 'products');
-        const catDoc = productsMatch || catDocById || catDocByJid || catDocByBc || catDocByName;
-
-        if (catDoc) {
-          const isInProducts = catDoc._collection === 'products';
-          const docStock = existing.stock ?? catDoc.stock ?? catDoc.STOCK ?? 0;
-          productMap[id] = {
-            name: existing.name || catDoc.name || catDoc.NAME || catDoc.title || catDoc.TITLE || '',
-            image: existing.image || extractImage(catDoc),
-            sku: existing.sku || catDoc.sku || catDoc.SKU || '',
-            jumpsellerId: existing.jumpsellerId || catDoc.jumpseller_id || '',
-            barcode: existing.barcode || catDoc.barcode || '',
-            section: existing.section ?? null,
-            gondola: existing.gondola || '?',
-            stock: isInProducts ? (catDoc.STOCK ?? docStock) : docStock,
-            price: catDoc.PRICE || catDoc.price || catDoc.CURRENTPRICE || existing.price || 0,
-            inCatalog: catDoc.ISACTIVE !== false,
-            hasStock: isInProducts && (catDoc.STOCK ?? 0) > 0,
-            inInventory: isInProducts ? false : (existing.inInventory ?? false),
-            source: isInProducts ? 'products' : ((catDoc._collection as 'products' | 'catalog_products' | 'inventory_products') || existing.source),
-            productsDocId: isInProducts ? catDoc.$id : (existing as any).productsDocId,
-          };
-        }
-      }
 
       // Pass 4: For products still without source or without hasStock, search products collection by name and SKU
       const unresolvedIds = uniqueProductIds.filter(id => {
@@ -301,17 +205,26 @@ export default function CatalogProductsPage() {
           return { id, name: rawAlert?.productName || existing?.name || '', sku: existing?.sku || rawAlert?.sku || '' };
         }).filter(n => n.name.length > 2 || n.sku.length > 1);
 
+        // Batch query by SKU to reduce reads
+        const skusToSearch = Array.from(new Set(unresolvedItems.map(u => u.sku).filter(s => s.length > 1)));
+        const batchMap = new Map<string, any>();
+        
+        for (let i = 0; i < skusToSearch.length; i += 100) {
+           const chunk = skusToSearch.slice(i, i + 100);
+           try {
+             const skuRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+               Query.equal('sku', chunk), Query.limit(100),
+             ]);
+             skuRes.documents.forEach((d: any) => batchMap.set(norm(d.sku), d));
+           } catch (e) {}
+        }
+
         for (const { id, name, sku } of unresolvedItems) {
           if (productMap[id]?.source === 'products' && productMap[id]?.hasStock) continue; // already resolved
           try {
-            // Try by SKU first (more precise), then by name
             let p: any = null;
-            if (sku) {
-              const skuRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-                Query.equal('sku', sku), Query.limit(1),
-              ]);
-              if (skuRes.documents.length > 0) p = skuRes.documents[0];
-            }
+            if (sku) p = batchMap.get(norm(sku));
+            
             if (!p && name) {
               const nameRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
                 Query.equal('NAME', name), Query.limit(1),
