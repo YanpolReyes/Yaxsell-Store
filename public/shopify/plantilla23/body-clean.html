@@ -4982,32 +4982,16 @@
     
     <div class="slideshow__background w-full h-auto relative overflow-hidden" style="background-color: #FBCAC9;">
 
-    <!-- DESKTOP: video is position:relative so it drives the container height; image is absolute overlay on top -->
-    <div class="hidden lg:block relative w-full" style="background-color: #FBCAC9;">
-      <img id="hero1-image-desktop"
-           src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2FPicsart_26-06-08_03-54-31-294.jpg.jpeg?alt=media&amp;token=6a059a7a-dcff-4f34-9d24-5899b7a97a72"
-           class="absolute inset-0 w-full h-full object-cover pointer-events-none"
-           style="z-index: 7; opacity: 1; transition: opacity 1.2s ease;" />
-      <video id="hero1-video-desktop" playsinline muted preload="auto"
-             poster="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2FPicsart_26-06-08_03-54-31-294.jpg.jpeg?alt=media&amp;token=6a059a7a-dcff-4f34-9d24-5899b7a97a72"
-             class="relative block w-full h-auto pointer-events-none"
-             style="opacity: 0; transform: scale(1.04); transition: opacity 1.4s ease, transform 2s ease; z-index: 6;">
-        <source src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2FMi%20video-8.realesrgan.mp4?alt=media&amp;token=b6b637d1-1433-4556-a528-5bfee3acba00" type="video/mp4">
-      </video>
+    <!-- DESKTOP: static image -->
+    <div class="hidden lg:block w-full">
+      <img src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2Fx.jpeg?alt=media&amp;token=0ad04776-0001-40f0-a7c3-a811c5cce0e7"
+           class="block w-full h-auto pointer-events-none" style="display: block; width: 100%; height: auto;" />
     </div>
 
-    <!-- MOBILE: same video, correct poster image -->
-    <div class="block lg:hidden relative w-full" style="background-color: #FBCAC9;">
-      <img id="hero1-image-mobile"
-           src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2FPicsart_26-06-08_03-21-34-169.jpg.jpeg?alt=media&amp;token=63f78155-2dd3-4fab-9913-4fca24177293"
-           class="absolute inset-0 w-full h-full object-cover pointer-events-none"
-           style="z-index: 7; opacity: 1; transition: opacity 0.8s ease;" />
-      <video id="hero1-video-mobile" playsinline autoplay loop muted preload="auto"
-             poster="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2FPicsart_26-06-08_03-21-34-169.jpg.jpeg?alt=media&amp;token=63f78155-2dd3-4fab-9913-4fca24177293"
-             class="relative block w-full h-auto pointer-events-none"
-             style="opacity: 0; transition: opacity 0.8s ease; z-index: 6;">
-        <source src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2FMi%20video-7.realesrgan.mp4?alt=media&amp;token=292e7d2a-aa5f-4216-96ee-af6c53e73c2b" type="video/mp4">
-      </video>
+    <!-- MOBILE: static image -->
+    <div class="block lg:hidden w-full">
+      <img src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2Fxm.jpg?alt=media&amp;token=44b5a0aa-9d1a-450f-999f-7adb7e0b93d5"
+           class="block w-full h-auto pointer-events-none" style="display: block; width: 100%; height: auto;" />
     </div>
 
     <script>
