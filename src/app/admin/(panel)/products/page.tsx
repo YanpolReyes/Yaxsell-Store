@@ -281,6 +281,7 @@ export default function ProductsPage() {
       setCategories(cr.documents as unknown as Category[]);
       setSubcategories(subRes.documents as unknown as Subcategory[]);
     } catch (e: any) { setError(e.message); }
+    finally { setIsLoading(false); }
   }, [lastCursor]);
 
   const triggerSearch = async (searchTerm: string) => {
