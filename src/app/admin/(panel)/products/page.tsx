@@ -281,10 +281,55 @@ export default function ProductsPage() {
       setCategories(cr.documents as unknown as Category[]);
       setSubcategories(subRes.documents as unknown as Subcategory[]);
     } catch (e: any) { setError(e.message); }
-    finally { setIsLoading(false); }
-  }, []);
+  }, [lastCursor]);
 
-  useEffect(() => { load(false); }, []);
+  const triggerSearch = async (searchTerm: string) => {
+    const q = searchTerm.trim();
+    if (!q) {
+      load(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      const queries = [
+        [Query.equal('sku', q)],
+        [Query.equal('jumpseller_id', q)],
+        [Query.equal('barcode', q)],
+        [Query.contains('NAME', q)],
+      ];
+
+      let found: Product[] = [];
+
+      for (const qry of queries) {
+        try {
+          const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [...qry, Query.limit(100)]);
+          if (resp.documents.length > 0) {
+            found.push(...(resp.documents as unknown as Product[]));
+            break;
+          }
+        } catch {}
+      }
+
+      if (found.length > 0) {
+        setProducts(found);
+        setLastCursor(null);
+      } else {
+        setProducts([]);
+        alert('No se encontraron productos en el catálogo con ese SKU, código de barra o nombre.');
+      }
+    } catch (e: any) {
+      setError('Error al buscar: ' + e.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => { load(false); }, [load]);
 
   useEffect(() => {
     const handler = () => load(false);
@@ -1103,9 +1148,15 @@ export default function ProductsPage() {
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nombre, SKU o código de barras..."
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                triggerSearch(search);
+              }
+            }}
+            placeholder="SKU, barra o nombre (Enter para buscar en BD)..."
             className="w-full pl-9 pr-9 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-          {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><X className="w-4 h-4" /></button>}
+          {search && <button onClick={() => { setSearch(''); load(false); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><X className="w-4 h-4" /></button>}
         </div>
         <div className="relative">
           <select value={catFilter} onChange={e => setCatFilter(e.target.value)} className="appearance-none pl-3 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
