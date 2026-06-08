@@ -447,30 +447,36 @@ export default function ProductsPage() {
     },
   });
 
-  const duplicate = async (p: Product) => {
-    try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-      const payload: Record<string, any> = {
-        NAME: `${p.NAME} (copia)`, DESCRIPTION: p.DESCRIPTION || '',
-        PRICE: p.PRICE, STOCK: 0, COST: p.COST || 0,
-        WHOLESALEPRICE: p.WHOLESALEPRICE || 0, WHOLESALEMINQUANTITY: p.WHOLESALEMINQUANTITY || 0,
-        IMAGEURL: p.IMAGEURL || '', IMAGEURL2: p.IMAGEURL2 || '',
-        IMAGEURL3: p.IMAGEURL3 || '',
-        CATEGORYID: p.CATEGORYID || '',
-        TAGS: p.TAGS || '', FEATURES: p.FEATURES || '',
-      };
-      // IMAGEURL4/5 no existen en el schema (límite plan gratuito) — no enviarlos
-      const doc = await databases.createDocument(databaseId, PRODUCTS_COLLECTION_ID, ID.unique(), payload);
-      setProducts(prev => [doc as unknown as Product, ...prev]);
-      invalidateProductCache();
-    } catch (e: any) { alert('Error: ' + e.message); }
+  const duplicate = (p: Product) => {
+    const sku = getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
+    const barcode = getBarcodeFromFeatures(p.FEATURES, p.barcode);
+    setModal({
+      mode: 'add',
+      data: {
+        ...p,
+        $id: undefined as any,
+        NAME: `${p.NAME} (copia)`,
+        _sku: sku ? `${sku}-copia` : '',
+        _barcode: barcode || '',
+      },
+    });
   };
 
   const save = async () => {
     if (!modal) return;
     const d = modal.data;
     if (!d.NAME?.trim()) { alert('El nombre es requerido'); return; }
+    if (modal.mode === 'add' && d._sku?.trim()) {
+      const skuInput = d._sku.trim().toLowerCase();
+      const skuExists = products.some(p => {
+        const pSku = getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
+        return pSku.toLowerCase() === skuInput;
+      });
+      if (skuExists) {
+        alert(`Ya existe un producto con el SKU "${d._sku}". Por favor, ingresa uno diferente.`);
+        return;
+      }
+    }
     setIsSaving(true);
     try {
       const { databases } = getServices();
