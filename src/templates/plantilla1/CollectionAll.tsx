@@ -87,10 +87,11 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { settings: apertura } = useAperturaPromotion();
 
+  const activeProducts = useMemo(() => products.filter(p => p.ISACTIVE !== false), [products]);
   const lockedCategory = lockCategoryId ? categories.find(c => c.$id === lockCategoryId) : null;
   const categoryProductCount = lockCategoryId
-    ? products.filter(p => p.CATEGORYID === lockCategoryId).length
-    : products.length;
+    ? activeProducts.filter(p => p.CATEGORYID === lockCategoryId).length
+    : activeProducts.length;
 
   const handleCardImageClick = (p: Product) => {
     const imgSrc = getProductImageUrl(p);
@@ -192,7 +193,12 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
     // Price filter
     if (activePriceRange) {
       const price = resolveProductDisplayPrice(p, apertura).displayPrice;
-      if (price < activePriceRange[0] || price > activePriceRange[1]) return false;
+      if (price > 0) {
+        if (price < activePriceRange[0] || price > activePriceRange[1]) return false;
+      } else {
+        const isDefaultRange = activePriceRange[0] === priceRange[0] && activePriceRange[1] === priceRange[1];
+        if (!isDefaultRange) return false;
+      }
     }
     if (!search) return true;
     const q = search.toLowerCase().trim();
@@ -386,7 +392,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
             </p>
             <div className="pk-hero-stats" style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               <div style={{ padding: '9px 14px', borderRadius: 16, background: 'rgba(255,255,255,0.92)', border: '1px solid #e5e7eb', boxShadow: '0 4px 14px rgba(227,150,191,0.15)' }}>
-                <span style={{ display: 'block', fontSize: 18, fontWeight: 900, color: '#e396bf' }}>{lockCategoryId ? categoryProductCount : products.length}</span>
+                <span style={{ display: 'block', fontSize: 18, fontWeight: 900, color: '#e396bf' }}>{lockCategoryId ? categoryProductCount : activeProducts.length}</span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Productos</span>
               </div>
               {!lockCategoryId && (
