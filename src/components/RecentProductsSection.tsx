@@ -164,7 +164,7 @@ export default function RecentProductsSection() {
         
         {/* Drawer Panel */}
         <div 
-          className={`absolute top-0 right-0 h-full w-full max-w-[450px] bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${isDrawerOpen ? 'translate-x-0' : 'translate-x-full'}`}
+          className={`absolute top-0 right-0 h-full w-full bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${isDrawerOpen ? 'translate-x-0' : 'translate-x-full'}`}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-white/80 backdrop-blur-md z-10 sticky top-0">
@@ -179,7 +179,7 @@ export default function RecentProductsSection() {
 
           {/* Product Grid */}
           <div className="flex-1 overflow-y-auto p-4 bg-gray-50/50">
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
               {products.map(p => {
                 const displayPrice = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
                 const hasDiscount = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
