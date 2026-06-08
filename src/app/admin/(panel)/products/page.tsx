@@ -486,6 +486,10 @@ export default function ProductsPage() {
         IMAGEURL: d.IMAGEURL || '', IMAGEURL2: d.IMAGEURL2 || '',
         IMAGEURL3: d.IMAGEURL3 || '',
         CATEGORYID: d.CATEGORYID || '',
+      };
+      // Campos opcionales que pueden no existir en el schema
+      const optionalFields: Record<string, any> = {
+        TAGS: d.TAGS || '',
         FEATURES: (() => {
           let features = d.FEATURES || '';
           features = setSkuInFeatures(features, d._sku || '');
@@ -495,10 +499,6 @@ export default function ProductsPage() {
           }
           return features;
         })(),
-      };
-      // Campos opcionales que pueden no existir en el schema
-      const optionalFields: Record<string, any> = {
-        TAGS: d.TAGS || '',
         barcode: d._barcode || '',
         sku: d._sku || '',
       };
@@ -512,8 +512,6 @@ export default function ProductsPage() {
         stockRestocked = true;
       }
 
-      // Intentar con campos opcionales; si falla por atributo desconocido, reintentar sin ellos
-      const fullPayload = { ...payload, ...optionalFields };
       const doSave = async (data: Record<string, any>) => {
         if (modal.mode === 'add') {
           const nameLower = (data.NAME || '').toLowerCase().trim();
@@ -527,15 +525,32 @@ export default function ProductsPage() {
         }
       };
 
-      try {
-        await doSave(fullPayload);
-      } catch (err: any) {
-        if (err?.message === 'cancelled') throw err;
-        // Si falla por atributo desconocido, reintentar sin campos opcionales
-        if (err?.message?.includes('Unknown attribute')) {
-          await doSave(payload);
-        } else {
-          throw err;
+      // Loop to dynamically remove unknown attributes if rejected by Appwrite
+      let currentPayload = { ...payload, ...optionalFields };
+      let success = false;
+      let attempts = 0;
+
+      while (!success && attempts < 8) {
+        try {
+          await doSave(currentPayload);
+          success = true;
+        } catch (err: any) {
+          if (err?.message === 'cancelled') throw err;
+          if (err?.message?.includes('Unknown attribute') || err?.message?.includes('unknown attribute')) {
+            const match = err.message.match(/attribute:\s*"?([a-zA-Z0-9_$]+)"?/i);
+            if (match && match[1]) {
+              const attr = match[1];
+              console.warn(`[Save Fallback] Removing unknown attribute: ${attr}`);
+              delete currentPayload[attr];
+              attempts++;
+            } else {
+              // Si no podemos determinar el atributo, intentar con el payload básico
+              currentPayload = { ...payload };
+              attempts = 7;
+            }
+          } else {
+            throw err;
+          }
         }
       }
       
