@@ -2546,17 +2546,18 @@ export default function HomePage23() {
         if (timerBlock) {
           if (isDestacado && destacadoTemporal.endDateTime) {
             timerBlock.innerHTML = `
-              <div class="flex flex-col gap-2 my-2">
-                <span class="text-sm font-bold text-red-500 uppercase tracking-wide">La oferta termina en:</span>
-                <div class="flex items-center gap-2" id="dt-timer-container">
-                  <div class="bg-gray-100 rounded-lg px-3 py-2 flex flex-col items-center min-w-[50px]"><span class="text-lg font-bold text-gray-900" id="dt-d">00</span><span class="text-[10px] text-gray-500 uppercase">Días</span></div>
-                  <span class="text-gray-400 font-bold">:</span>
-                  <div class="bg-gray-100 rounded-lg px-3 py-2 flex flex-col items-center min-w-[50px]"><span class="text-lg font-bold text-gray-900" id="dt-h">00</span><span class="text-[10px] text-gray-500 uppercase">Hrs</span></div>
-                  <span class="text-gray-400 font-bold">:</span>
-                  <div class="bg-gray-100 rounded-lg px-3 py-2 flex flex-col items-center min-w-[50px]"><span class="text-lg font-bold text-gray-900" id="dt-m">00</span><span class="text-[10px] text-gray-500 uppercase">Min</span></div>
-                  <span class="text-gray-400 font-bold">:</span>
-                  <div class="bg-gray-100 rounded-lg px-3 py-2 flex flex-col items-center min-w-[50px]"><span class="text-lg font-bold text-red-600" id="dt-s">00</span><span class="text-[10px] text-red-500 uppercase">Seg</span></div>
+              <div class="flex flex-col gap-1 my-2 w-full">
+                <span class="text-xs sm:text-sm font-bold text-red-500 uppercase tracking-wide">La oferta termina en:</span>
+                <div class="flex items-center gap-1 sm:gap-2 flex-nowrap justify-between w-full" id="dt-timer-container">
+                  <div class="bg-gray-100 rounded-md px-1 sm:px-3 py-1 sm:py-2 flex flex-col items-center flex-1"><span class="text-sm sm:text-lg font-bold text-gray-900" id="dt-d">00</span><span class="text-[8px] sm:text-[10px] text-gray-500 uppercase">Días</span></div>
+                  <span class="text-gray-400 font-bold text-xs sm:text-sm">:</span>
+                  <div class="bg-gray-100 rounded-md px-1 sm:px-3 py-1 sm:py-2 flex flex-col items-center flex-1"><span class="text-sm sm:text-lg font-bold text-gray-900" id="dt-h">00</span><span class="text-[8px] sm:text-[10px] text-gray-500 uppercase">Hrs</span></div>
+                  <span class="text-gray-400 font-bold text-xs sm:text-sm">:</span>
+                  <div class="bg-gray-100 rounded-md px-1 sm:px-3 py-1 sm:py-2 flex flex-col items-center flex-1"><span class="text-sm sm:text-lg font-bold text-gray-900" id="dt-m">00</span><span class="text-[8px] sm:text-[10px] text-gray-500 uppercase">Min</span></div>
+                  <span class="text-gray-400 font-bold text-xs sm:text-sm">:</span>
+                  <div class="bg-gray-100 rounded-md px-1 sm:px-3 py-1 sm:py-2 flex flex-col items-center flex-1"><span class="text-sm sm:text-lg font-bold text-red-600" id="dt-s">00</span><span class="text-[8px] sm:text-[10px] text-red-500 uppercase">Seg</span></div>
                 </div>
+                <a href="/productos" style="margin-top:12px;background:#db2777;color:#fff;font-weight:900;text-align:center;padding:12px;border-radius:12px;text-decoration:none;display:block;text-transform:uppercase;box-shadow:0 4px 14px rgba(219,39,119,0.35);font-size:14px;letter-spacing:0.5px;">Mira todos productos de oferta</a>
               </div>
             `;
             const end = new Date(destacadoTemporal.endDateTime).getTime();
@@ -2709,6 +2710,18 @@ export default function HomePage23() {
     // ═══ Inject Notification SVG in PC header ═══
     const headerActionsPC = root.querySelector('.lg\\:flex.hidden.items-center.justify-center.pl-\\[30px\\]');
     if (headerActionsPC && !headerActionsPC.querySelector('.notification-icon')) {
+      const storeBtn = document.createElement('a');
+      storeBtn.href = '/productos';
+      storeBtn.className = 'px-[1rem] uppercase';
+      storeBtn.innerHTML = `<span class="link-hover-animation" style="font-weight:900; color:#db2777; font-size: 14px; letter-spacing: 0.5px;">Tienda</span>`;
+      headerActionsPC.insertBefore(storeBtn, headerActionsPC.firstChild);
+
+      const catalogBtn = document.createElement('a');
+      catalogBtn.href = '/productos';
+      catalogBtn.className = 'px-[1rem] uppercase';
+      catalogBtn.innerHTML = `<span class="link-hover-animation" style="font-weight:900; color:#db2777; font-size: 14px; letter-spacing: 0.5px;">Catálogo</span>`;
+      headerActionsPC.insertBefore(catalogBtn, headerActionsPC.firstChild);
+
       const notifBtn = document.createElement('a');
       notifBtn.href = '/cuenta';
       notifBtn.className = 'notification-icon px-[0.5rem] uppercase';
@@ -2861,11 +2874,13 @@ export default function HomePage23() {
             // Hover trigger for the main container
             const hoverContainer = (wrapper.closest('.multimedia-collage-block__inner') || wrapper) as HTMLElement;
             hoverContainer.addEventListener('mouseenter', () => {
+              if (window.innerWidth < 768) return; // Prevent hover video playback on mobile
               hoverContainer.dataset.isHovered = "true";
               activeVideo.play().catch(() => {});
             });
 
             hoverContainer.addEventListener('mouseleave', () => {
+              if (window.innerWidth < 768) return; // Prevent hover video playback on mobile
               hoverContainer.dataset.isHovered = "false";
               forward.pause();
               reverse.pause();
@@ -2884,8 +2899,9 @@ export default function HomePage23() {
 
                     const morphInner = morphCard.querySelector('.morph-svg-inner') as HTMLElement | null;
                     if (entry.isIntersecting) {
+                      // Prevent video autoplay on mobile to stop lag and show static image
                       hoverContainer.dataset.isHovered = "true";
-                      activeVideo.play().catch(() => {});
+                      // activeVideo.play().catch(() => {});
                       if (morphInner) {
                         morphInner.dispatchEvent(new PointerEvent('pointerenter'));
                       }

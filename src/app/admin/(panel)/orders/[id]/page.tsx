@@ -53,7 +53,9 @@ export default function OrderDetailPage() {
   const [productLocations, setProductLocations] = useState<Record<string, ProductWarehouseLocation>>({});
   const [productSkus, setProductSkus] = useState<Record<string, string>>({});
   const [proofOpen, setProofOpen] = useState(false);
+  const [shippingProofOpen, setShippingProofOpen] = useState(false);
   const [uploadingProof, setUploadingProof] = useState(false);
+  const [uploadingShippingProof, setUploadingShippingProof] = useState(false);
   const [agencies, setAgencies] = useState<{ name: string }[]>([]);
   const [editingAgency, setEditingAgency] = useState(false);
   const [selectedAgency, setSelectedAgency] = useState('');
@@ -274,6 +276,34 @@ export default function OrderDetailPage() {
     }
   };
 
+  const handleAdminUploadShippingProof = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !order) return;
+    setUploadingShippingProof(true);
+    try {
+      const { storage, databases } = getServices();
+      const { databaseId, endpoint, projectId } = getAppwriteConfig();
+      const fileId = ID.unique();
+      await storage.createFile(MEDIA_BUCKET_ID, fileId, file);
+      const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}`;
+      
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, {
+        SHIPPINGPROOFURL: url,
+      });
+      setOrder(prev => prev ? { ...prev, SHIPPINGPROOFURL: url } : prev);
+      
+      if (order.STATUS !== 'shipped' && order.STATUS !== 'delivered' && order.STATUS !== 'cancelled') {
+        await updateStatus('shipped');
+      } else {
+        await load();
+      }
+    } catch (err: any) {
+      alert('Error al subir comprobante de envío: ' + (err?.message || err));
+    } finally {
+      setUploadingShippingProof(false);
+    }
+  };
+
   const totalItems = items.reduce((s, it) => s + it.qty, 0);
   const ageDays = Math.floor(ageMs / 86400000);
   const ageHours = Math.floor(ageMs / 3600000);
@@ -308,6 +338,18 @@ export default function OrderDetailPage() {
               <XCircle className="w-8 h-8" />
             </button>
             <img src={order.PAYMENTPROOFURL} alt="Comprobante de pago" className="w-full h-auto max-h-[85vh] object-contain rounded-2xl" />
+          </div>
+        </div>
+      )}
+
+      {/* Shipping Proof lightbox */}
+      {shippingProofOpen && order.SHIPPINGPROOFURL && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setShippingProofOpen(false)}>
+          <div className="relative max-w-3xl max-h-[90vh] w-full" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShippingProofOpen(false)} className="absolute -top-10 right-0 text-white hover:text-gray-300 transition">
+              <XCircle className="w-8 h-8" />
+            </button>
+            <img src={order.SHIPPINGPROOFURL} alt="Comprobante de envío" className="w-full h-auto max-h-[85vh] object-contain rounded-2xl" />
           </div>
         </div>
       )}
@@ -509,6 +551,9 @@ export default function OrderDetailPage() {
                   {order.PAYMENTPROOFURL && (
                     <TimelineEntry dot="bg-emerald-400" title="Comprobante subido" icon={<ImageIcon className="w-3 h-3" />} />
                   )}
+                  {order.SHIPPINGPROOFURL && (
+                    <TimelineEntry dot="bg-violet-400" title="Comprobante de envío subido" icon={<Truck className="w-3 h-3" />} />
+                  )}
                   {order.UPDATEDAT && order.STATUS !== 'pending' && (
                     <TimelineEntry dot={STATUS_CONFIG[order.STATUS]?.dot || 'bg-gray-400'} title={`Estado → ${STATUS_CONFIG[order.STATUS]?.label}`} date={`${fmtDate(order.UPDATEDAT)} ${fmtTime(order.UPDATEDAT)}`} />
                   )}
@@ -591,6 +636,37 @@ export default function OrderDetailPage() {
                   <img src={(order as any).ADDRESSPHOTOURL} alt="Foto dirección" className="w-full h-20 sm:h-24 object-cover rounded-lg border border-gray-200" />
                 </a>
               )}
+              {/* Comprobante de envío */}
+              <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100">
+                {order.SHIPPINGPROOFURL ? (
+                  <button onClick={() => setShippingProofOpen(true)}
+                    className="flex items-center gap-2 p-2.5 sm:p-3 bg-violet-50 border border-violet-200 rounded-lg sm:rounded-xl hover:bg-violet-100 transition group w-full text-left">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
+                      <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] sm:text-xs font-semibold text-violet-700">Comprobante de envío</p>
+                      <p className="text-[9px] sm:text-[10px] text-violet-500">Click para ver</p>
+                    </div>
+                    <ExternalLink className="w-3 h-3 text-violet-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+                  </button>
+                ) : (
+                  <label className="flex items-center gap-2 p-2.5 sm:p-3 bg-violet-50 border border-violet-200 rounded-lg sm:rounded-xl cursor-pointer hover:bg-violet-100 transition group">
+                    <input type="file" accept="image/*,.pdf" onChange={handleAdminUploadShippingProof} className="hidden" disabled={uploadingShippingProof} />
+                    {uploadingShippingProof ? (
+                      <>
+                        <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                        <p className="text-[10px] sm:text-xs text-violet-700 font-medium">Subiendo comprobante de envío...</p>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-violet-500 flex-shrink-0 group-hover:text-violet-600" />
+                        <p className="text-[10px] sm:text-xs text-violet-700 font-medium">Subir comprobante de envío</p>
+                      </>
+                    )}
+                  </label>
+                )}
+              </div>
             </div>
           </div>
 

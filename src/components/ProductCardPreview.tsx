@@ -10,6 +10,7 @@ import { getProductImageUrl } from '@/lib/product-images';
 import { useCart } from '@/context/CartContext';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import { getSkuFromFeatures } from '@/lib/product-features';
 
 interface Props {
   product: Product;
@@ -128,7 +129,14 @@ export default function ProductCardPreview({ product, onClose }: Props) {
             transition: 'transform 0.34s cubic-bezier(0.16,1,0.3,1) 0.05s, opacity 0.28s ease 0.05s',
           }}
         >
+          {(() => {
+            const pFeatures = Array.isArray(product.FEATURES) ? product.FEATURES.join('\n') : product.FEATURES;
+            const pTags = Array.isArray(product.TAGS) ? product.TAGS.join(',') : product.TAGS;
+            const pSku = getSkuFromFeatures(pFeatures, pTags, (product as any).jumpseller_id, product.SKU || (product as any).sku);
+            return pSku ? <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 4, fontWeight: 700 }}>SKU: {pSku}</div> : null;
+          })()}
           <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: '#111827', lineHeight: 1.35 }}>{product.NAME}</p>
+          {product.PACKQTY && product.PACKQTY > 1 ? <div style={{ fontSize: 12, color: '#db2777', fontWeight: 800, marginBottom: 8 }}>{product.PACKQTY} UNIDADES POR PAQUETE</div> : null}
           <div style={{ margin: '0 0 14px', display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
             <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#e396bf' }}>{formatPrice(price)}</p>
             {pricing.hasDiscount && pricing.originalPrice != null && (

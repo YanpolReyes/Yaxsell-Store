@@ -1031,6 +1031,22 @@ export default function PedidoPage() {
                 </button>
               )
             )}
+
+            {order.SHIPPINGPROOFURL && (
+              <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #f0f0f0' }}>
+                <p style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 600, color: '#333', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Truck size={14} color="#6b21a8" /> Comprobante de envío
+                </p>
+                <button 
+                  onClick={() => setImageModal({ src: order.SHIPPINGPROOFURL!, name: 'Comprobante de envío' })}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 14px', background: '#faf5ff', color: '#6b21a8', border: '1px solid #e9d5ff', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%', transition: 'background .15s' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#f3e8ff')}
+                  onMouseLeave={e => (e.currentTarget.style.background = '#faf5ff')}
+                >
+                  <FileText size={16} /> Ver comprobante
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
