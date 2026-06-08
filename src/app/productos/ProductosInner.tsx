@@ -19,6 +19,7 @@ import ProductBadges from '@/components/ProductBadges';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
+import { getSkuFromFeatures } from '@/lib/product-features';
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 
@@ -179,7 +180,12 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     }
     if (!search) return true;
     const q = search.toLowerCase();
-    return p.NAME.toLowerCase().includes(q) || (p.DESCRIPTION || '').toLowerCase().includes(q);
+    const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
+    const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
+    const pSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
+    return p.NAME.toLowerCase().includes(q) || 
+      (p.DESCRIPTION || '').toLowerCase().includes(q) ||
+      pSku.toLowerCase().includes(q);
   });
 
   const visibleProducts = filtered.slice(0, visibleCount);
