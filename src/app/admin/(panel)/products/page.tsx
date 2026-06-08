@@ -8,7 +8,7 @@ import { Product, Category, Subcategory } from '@/types/admin';
 import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff } from 'lucide-react';
 import ImageUploadField from '@/components/admin/ImageUploadField';
 import { generateProductTitle, generateProductDescription } from '@/lib/aiAdmin';
-import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures } from '@/lib/product-features';
+import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures, setSectionInFeatures } from '@/lib/product-features';
 import Lottie from 'lottie-react';
 import iaAnimation from '@/ia.json';
 
@@ -486,16 +486,19 @@ export default function ProductsPage() {
         IMAGEURL: d.IMAGEURL || '', IMAGEURL2: d.IMAGEURL2 || '',
         IMAGEURL3: d.IMAGEURL3 || '',
         CATEGORYID: d.CATEGORYID || '',
-      };
-      // Campos opcionales que pueden no existir en el schema
-      const optionalFields: Record<string, any> = {
         TAGS: d.TAGS || '',
         FEATURES: (() => {
           let features = d.FEATURES || '';
           features = setSkuInFeatures(features, d._sku || '');
           features = setBarcodeInFeatures(features, d._barcode || '');
+          if ((d as Product).section != null) {
+            features = setSectionInFeatures(features, (d as Product).section!);
+          }
           return features;
         })(),
+      };
+      // Campos opcionales que pueden no existir en el schema
+      const optionalFields: Record<string, any> = {
         barcode: d._barcode || '',
         sku: d._sku || '',
       };
