@@ -486,7 +486,6 @@ export default function ProductsPage() {
         IMAGEURL: d.IMAGEURL || '', IMAGEURL2: d.IMAGEURL2 || '',
         IMAGEURL3: d.IMAGEURL3 || '',
         CATEGORYID: d.CATEGORYID || '',
-        TAGS: d.TAGS || '',
         FEATURES: (() => {
           let features = d.FEATURES || '';
           features = setSkuInFeatures(features, d._sku || '');
@@ -499,6 +498,7 @@ export default function ProductsPage() {
       };
       // Campos opcionales que pueden no existir en el schema
       const optionalFields: Record<string, any> = {
+        TAGS: d.TAGS || '',
         barcode: d._barcode || '',
         sku: d._sku || '',
       };
