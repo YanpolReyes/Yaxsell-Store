@@ -299,6 +299,7 @@ export default function ProductsPage() {
 
       const queries = [
         [Query.equal('sku', q)],
+        [Query.contains('TAGS', q)],
         [Query.equal('jumpseller_id', q)],
         [Query.equal('barcode', q)],
         [Query.contains('NAME', q)],
