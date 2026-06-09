@@ -5,6 +5,7 @@ import { Query, ID } from 'appwrite';
 import { 
   getServices, 
   getAppwriteConfig, 
+  PRODUCTS_COLLECTION_ID,
   INVENTORY_PRODUCTS_COLLECTION_ID, 
   CATEGORIES_COLLECTION_ID, 
   SUBCATEGORIES_COLLECTION_ID 
@@ -153,12 +154,12 @@ export default function BulkAddPage() {
           }
           subcategoryId = subcategory.$id;
 
-          // 3. Search if product SKU already exists in inventory_products
+          // 3. Search if product SKU already exists in products collection
           let product: any = null;
           if (row.sku) {
             const productResp = await databases.listDocuments(
               databaseId, 
-              INVENTORY_PRODUCTS_COLLECTION_ID, 
+              PRODUCTS_COLLECTION_ID, 
               [Query.equal('sku', row.sku), Query.limit(1)]
             );
             if (productResp.documents.length > 0) {
@@ -170,30 +171,30 @@ export default function BulkAddPage() {
             sku: row.sku || null,
             barcode: row.barcode || null,
             NAME: row.name,
-            WHOLESALEPRICE: row.wholesalePrice,
-            PRICE: row.packagePrice, // price per package maps to PRICE
+            DESCRIPTION: row.name,
+            WHOLESALEPRICE: row.packagePrice,
+            PRICE: row.wholesalePrice, // wholesalePrice (1800) maps to main PRICE, packagePrice (1500) maps to WHOLESALEPRICE
             CATEGORYID: categoryId,
             SUBCATEGORYID: subcategoryId,
             IMAGEURL: row.imageUrl || null,
-            ISACTIVE: true,
-            imported_at: new Date().toISOString()
+            ISACTIVE: true
           };
 
           if (product) {
             // Update existing product
             await databases.updateDocument(
               databaseId, 
-              INVENTORY_PRODUCTS_COLLECTION_ID, 
+              PRODUCTS_COLLECTION_ID, 
               product.$id, 
               productPayload
             );
             updated++;
           } else {
             // Create new product
-            productPayload.STOCK = 0; // initialize stock to 0
+            productPayload.STOCK = 1; // initialize stock to 1
             await databases.createDocument(
               databaseId, 
-              INVENTORY_PRODUCTS_COLLECTION_ID, 
+              PRODUCTS_COLLECTION_ID, 
               ID.unique(), 
               productPayload
             );
@@ -293,6 +294,7 @@ export default function BulkAddPage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-4 py-2 text-left font-medium text-gray-700">Imagen</th>
                     <th className="px-4 py-2 text-left font-medium text-gray-700">SKU</th>
                     <th className="px-4 py-2 text-left font-medium text-gray-700">Código Barra</th>
                     <th className="px-4 py-2 text-left font-medium text-gray-700">Nombre</th>
@@ -305,6 +307,14 @@ export default function BulkAddPage() {
                 <tbody>
                   {preview.slice(0, 10).map((row, i) => (
                     <tr key={i} className="border-t border-gray-200">
+                      <td className="px-4 py-2">
+                        {row.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={row.imageUrl} alt={row.name} className="w-10 h-10 object-contain rounded border bg-gray-50" />
+                        ) : (
+                          <span className="text-gray-400 text-xs">Sin img</span>
+                        )}
+                      </td>
                       <td className="px-4 py-2 font-mono">{row.sku}</td>
                       <td className="px-4 py-2 font-mono text-gray-500">{row.barcode}</td>
                       <td className="px-4 py-2 font-medium">{row.name.substring(0, 40)}{row.name.length > 40 ? '...' : ''}</td>
@@ -316,7 +326,7 @@ export default function BulkAddPage() {
                   ))}
                   {preview.length > 10 && (
                     <tr>
-                      <td colSpan={7} className="px-4 py-2 text-center text-gray-500">
+                      <td colSpan={8} className="px-4 py-2 text-center text-gray-500">
                         ... y {preview.length - 10} más
                       </td>
                     </tr>
