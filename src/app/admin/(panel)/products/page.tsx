@@ -1040,6 +1040,20 @@ export default function ProductsPage() {
     const matchBroken = !brokenOnly || brokenImages[p.$id]?.length;
     return matchSearch && matchCat && matchStock && matchNoImage && matchBroken;
   }).sort((a, b) => {
+    const liveA = getLiveStatus(a);
+    const liveB = getLiveStatus(b);
+
+    if (liveA && !liveB) return -1;
+    if (!liveA && liveB) return 1;
+
+    if (liveA && liveB) {
+      // Both are in Live Shopping: sort by imported_at descending
+      const timeA = a.imported_at ? new Date(a.imported_at).getTime() : 0;
+      const timeB = b.imported_at ? new Date(b.imported_at).getTime() : 0;
+      return timeB - timeA;
+    }
+
+    // Default sorting for non-live products
     let av: number | string, bv: number | string;
     if (sort.key === 'MARGIN') {
       av = (a.COST && a.PRICE) ? ((a.PRICE - a.COST) / a.PRICE) : -1;
