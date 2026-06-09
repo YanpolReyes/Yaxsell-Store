@@ -33,6 +33,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
   const [selectedCat, setSelectedCat] = useState(lockCategoryId || '');
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [selectedSubcat, setSelectedSubcat] = useState('');
+  const [selectedSubSubcat, setSelectedSubSubcat] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [isLoading, setIsLoading] = useState(true);
@@ -139,7 +140,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
       }
     } catch (e) { console.error(e); }
     finally { setIsLoading(false); }
-  }, [catParam, selectedCat, selectedSubcat, sortBy]);
+  }, [catParam, selectedCat, selectedSubcat, selectedSubSubcat, sortBy]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -204,6 +205,8 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     if (selectedCat && p.CATEGORYID !== selectedCat) return false;
     // Subcategory filter (client-side)
     if (selectedSubcat && p.SUBCATEGORYID !== selectedSubcat) return false;
+    // Sub-subcategory filter (client-side)
+    if (selectedSubSubcat && p.SUBSUBCATEGORYID !== selectedSubSubcat) return false;
     // Tag filter
     if (selectedTag) {
       const pTags = !p.TAGS ? [] : typeof p.TAGS === 'string' ? (p.TAGS as string).split(',').map(t => t.trim()) : (p.TAGS as string[]);
@@ -228,14 +231,14 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
   const hasMore = visibleCount < filtered.length;
 
   // Reset visible count when filters change
-  useEffect(() => { setVisibleCount(30); }, [selectedCat, selectedSubcat, selectedTag, search, sortBy, activePriceRange, selectedOfertasOnly]);
+  useEffect(() => { setVisibleCount(30); }, [selectedCat, selectedSubcat, selectedSubSubcat, selectedTag, search, sortBy, activePriceRange, selectedOfertasOnly]);
 
   const hasActiveFilters = !!(
-    (selectedCat && selectedCat !== lockCategoryId) || selectedSubcat || selectedTag || search || selectedOfertasOnly
+    (selectedCat && selectedCat !== lockCategoryId) || selectedSubcat || selectedSubSubcat || selectedTag || search || selectedOfertasOnly
     || (activePriceRange && (activePriceRange[0] !== priceRange[0] || activePriceRange[1] !== priceRange[1]))
   );
   const clearAllFilters = () => {
-    setSelectedCat(lockCategoryId || ''); setSelectedSubcat(''); setSelectedTag(''); setSearch('');
+    setSelectedCat(lockCategoryId || ''); setSelectedSubcat(''); setSelectedSubSubcat(''); setSelectedTag(''); setSearch('');
     setSelectedOfertasOnly(false);
     setActivePriceRange(priceRange);
   };
@@ -324,21 +327,41 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
       {subcategories.length > 0 && selectedCat && (
         <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px solid #fce7f3' }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>Subcategorías</p>
-          <button onClick={() => setSelectedSubcat('')}
-            style={{ width: '100%', textAlign: 'left', padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: !selectedSubcat ? 700 : 500, color: !selectedSubcat ? '#e396bf' : '#9ca3af', background: !selectedSubcat ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: !selectedSubcat ? '#e396bf' : '#d1d5db', flexShrink: 0 }} />
+          <button onClick={() => { setSelectedSubcat(''); setSelectedSubSubcat(''); }}
+            style={{ width: '100%', textAlign: 'left', padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: !selectedSubcat && !selectedSubSubcat ? 700 : 500, color: !selectedSubcat && !selectedSubSubcat ? '#e396bf' : '#9ca3af', background: !selectedSubcat && !selectedSubSubcat ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: !selectedSubcat && !selectedSubSubcat ? '#e396bf' : '#d1d5db', flexShrink: 0 }} />
             Todas
           </button>
-          {subcategories.map(sc => {
+          {subcategories.filter(sc => !sc.parentSubcategoryId).map(sc => {
             const scCount = products.filter(p => p.SUBCATEGORYID === sc.$id).length;
             if (scCount === 0) return null;
+            const subSubcategories = subcategories.filter(s => s.parentSubcategoryId === sc.$id);
             return (
-              <button key={sc.$id} onClick={() => setSelectedSubcat(sc.$id)}
-                style={{ width: '100%', textAlign: 'left', padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: selectedSubcat === sc.$id ? 700 : 500, color: selectedSubcat === sc.$id ? '#e396bf' : '#9ca3af', background: selectedSubcat === sc.$id ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: selectedSubcat === sc.$id ? '#e396bf' : '#d1d5db', flexShrink: 0 }} />
-                <span style={{ flex: 1 }}>{sc.name}</span>
-                <span style={{ fontSize: 10, fontWeight: 600, color: '#9ca3af', background: '#f3f4f6', padding: '2px 6px', borderRadius: 999 }}>{scCount}</span>
-              </button>
+              <div key={sc.$id}>
+                <button onClick={() => { setSelectedSubcat(sc.$id); setSelectedSubSubcat(''); }}
+                  style={{ width: '100%', textAlign: 'left', padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: selectedSubcat === sc.$id && !selectedSubSubcat ? 700 : 500, color: selectedSubcat === sc.$id && !selectedSubSubcat ? '#e396bf' : '#9ca3af', background: selectedSubcat === sc.$id && !selectedSubSubcat ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: selectedSubcat === sc.$id && !selectedSubSubcat ? '#e396bf' : '#d1d5db', flexShrink: 0 }} />
+                  <span style={{ flex: 1 }}>{sc.name}</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#9ca3af', background: '#f3f4f6', padding: '2px 6px', borderRadius: 999 }}>{scCount}</span>
+                </button>
+                {/* Level 3 */}
+                {selectedSubcat === sc.$id && subSubcategories.length > 0 && (
+                  <div style={{ paddingLeft: 14, marginBottom: 6, borderLeft: '1px dashed #fce7f3', marginLeft: 13 }}>
+                    {subSubcategories.map(ssc => {
+                      const sscCount = products.filter(p => p.SUBSUBCATEGORYID === ssc.$id).length;
+                      if (sscCount === 0) return null;
+                      return (
+                        <button key={ssc.$id} onClick={() => setSelectedSubSubcat(ssc.$id)}
+                          style={{ width: '100%', textAlign: 'left', padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: selectedSubSubcat === ssc.$id ? 700 : 500, color: selectedSubSubcat === ssc.$id ? '#c0547a' : '#9ca3af', background: selectedSubSubcat === ssc.$id ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ width: 4, height: 4, borderRadius: '50%', background: selectedSubSubcat === ssc.$id ? '#c0547a' : '#d1d5db', flexShrink: 0 }} />
+                          <span style={{ flex: 1 }}>{ssc.name}</span>
+                          <span style={{ fontSize: 9, fontWeight: 600, color: '#9ca3af' }}>{sscCount}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>

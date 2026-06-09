@@ -25,7 +25,7 @@ body {
   -webkit-font-smoothing: antialiased;
   min-height: 0 !important;
   height: auto !important;
-  overflow-x: hidden;
+  overflow-x: clip; /* clip instead of hidden: prevents page-level horizontal scroll WITHOUT blocking nested horizontal scrollers (carousels) */
 }
 
 /* Hide Shopify leftover elements after footer that cause blank scroll space */
@@ -96,6 +96,10 @@ select option { background: #fff; color: #111; }
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #f3f4f6; }
 ::-webkit-scrollbar-thumb { background: #9ca3af; border-radius: 3px; }
+
+/* Utility: hide scrollbar while keeping scroll functionality */
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
 
 /* ── Offer section responsive ── */
 @media (max-width: 768px) {

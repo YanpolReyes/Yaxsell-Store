@@ -2176,7 +2176,7 @@ export default function HomePage23() {
       sortedCats.forEach(cat => {
         const catLink = `/productos?categoria=${encodeURIComponent(cat.name)}`;
         const catSubs = subcategories
-          .filter(sc => sc.categoryId === cat.$id)
+          .filter(sc => sc.categoryId === cat.$id && !sc.parentSubcategoryId)
           .map(sc => ({ ...sc, prodCount: subProductCount[sc.$id] || 0 }))
           .filter(sc => sc.prodCount > 0)
           .sort((a, b) => b.prodCount - a.prodCount);
@@ -2190,7 +2190,20 @@ export default function HomePage23() {
           subMenuHtml += `<li class="group relative"><a href="${catLink}" aria-label="Ver todo ${cat.name}" class="w-full flex p-7 justify-between cursor-pointer z-10 relative"><span class="px-3">Ver todo ${cat.name} (${cat.prodCount})</span></a></li>`;
           catSubs.forEach(sub => {
             const subLink = `/productos?categoria=${encodeURIComponent(cat.name)}&subcategoria=${encodeURIComponent(sub.name)}`;
-            subMenuHtml += `<li class="group relative"><a href="${subLink}" aria-label="${sub.name}" class="w-full flex p-7 justify-between cursor-pointer z-10 relative"><span class="px-3">${sub.name} (${sub.prodCount})</span></a></li>`;
+            
+            // Check for level 3
+            const catSubSubs = subcategories.filter(sc => sc.parentSubcategoryId === sub.$id);
+            if (catSubSubs.length > 0) {
+              subMenuHtml += `<li class="group relative"><a href="${subLink}" aria-label="${sub.name}" class="w-full flex p-7 justify-between cursor-pointer z-10 relative"><span class="px-3">${sub.name}</span><span class="rotate-[-90deg]"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[18px]"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg></span></a>`;
+              subMenuHtml += `<div class="menu menu--drawer hidden" data-link-handle="${sub.$id}" data-tier="3"><ul class="custom-list">`;
+              subMenuHtml += `<li class="group relative"><a href="${subLink}" aria-label="Ver todo ${sub.name}" class="w-full flex p-7 justify-between cursor-pointer z-10 relative"><span class="px-3" style="color:#db2777">Ver todo ${sub.name} (${sub.prodCount})</span></a></li>`;
+              catSubSubs.forEach(ssc => {
+                 subMenuHtml += `<li class="group relative"><a href="${subLink}" aria-label="${ssc.name}" class="w-full flex p-7 justify-between cursor-pointer z-10 relative"><span class="px-3" style="padding-left:16px; opacity:0.8">${ssc.name}</span></a></li>`;
+              });
+              subMenuHtml += `</ul></div></li>`;
+            } else {
+              subMenuHtml += `<li class="group relative"><a href="${subLink}" aria-label="${sub.name}" class="w-full flex p-7 justify-between cursor-pointer z-10 relative"><span class="px-3">${sub.name} (${sub.prodCount})</span></a></li>`;
+            }
           });
           subMenuHtml += `</ul></div>`;
         }
@@ -2198,6 +2211,7 @@ export default function HomePage23() {
         mobileLi.innerHTML = `
           <a href="${catLink}" aria-label="${cat.name}" title="${cat.name}" class="w-full flex p-7 justify-between cursor-pointer z-10 relative">
               <span class="after:content-[\'\'] relative after:absolute after:top-full after:left-0 after:w-0 after:block after:h-0.5 after:bg-current after:transition-all after:duration-300 after:ease-in-out px-3">${cat.name} (${cat.prodCount})</span>
+              ${catSubs.length > 0 ? '<span class="rotate-[-90deg]"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[18px]"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg></span>' : ''}
           </a>
           ${subMenuHtml}
         `;
@@ -3332,6 +3346,30 @@ export default function HomePage23() {
         .kc-accordion-content { padding: 0 32px; display: none; }
         .kc-accordion-content p { color: #4b5563; line-height: 1.7; font-size: 1.05rem; padding-bottom: 24px; margin: 0; }
 
+        /* ── FAQ MOBILE OVERRIDES ── */
+        @media (max-width: 767px) {
+          .kc-tabbed-faq { padding: 48px 0 32px; }
+          .kc-faq-header { margin-bottom: 28px; }
+          .kc-faq-header h2 { font-size: 1.85rem !important; margin-bottom: 12px; letter-spacing: -0.5px; }
+          .kc-faq-header p { font-size: 0.95rem; }
+          .kc-faq-container { padding: 0 16px; }
+          .kc-faq-tabs { flex: none; flex-direction: row; overflow-x: auto; gap: 8px; padding-bottom: 4px; -ms-overflow-style: none; scrollbar-width: none; }
+          .kc-faq-tabs::-webkit-scrollbar { display: none; }
+          .kc-tab-btn { padding: 10px 16px; font-size: 0.85rem; gap: 8px; white-space: nowrap; flex-shrink: 0; border-radius: 20px; }
+          .kc-tab-btn .icon { font-size: 1rem; }
+          .kc-faq-content-area { min-height: auto; }
+          .kc-faq-pane h3 { font-size: 1.35rem; margin-bottom: 16px; }
+          .kc-accordion-btn { padding: 16px 20px; }
+          .kc-accordion-btn span:first-child { font-size: 0.9rem; }
+          .kc-accordion-content { padding: 0 20px; }
+          .kc-accordion-content p { font-size: 0.9rem; padding-bottom: 16px; }
+          .kc-icon-wrap { width: 28px; height: 28px; }
+          .kc-icon-wrap svg { width: 16px; height: 16px; }
+          .kc-accordion-wrapper { gap: 10px; }
+          .kc-accordion-item { border-radius: 14px; }
+          .kc-accordion-item:hover { transform: none; }
+        }
+
         /* Scoped override for plantilla23 dynamic megamenu styling */
         .tpl23-shopify-root .menu--megamenu-hover-split-grandchild {
           display: none !important;
@@ -3582,6 +3620,66 @@ export default function HomePage23() {
         }
         .tpl23-shopify-root .slideshow__content {
           display: none !important;
+        }
+
+        /* ── GLOBAL MOBILE OVERRIDES for tpl23 ── */
+        @media (max-width: 767px) {
+          /* Ensure template root doesn't overflow horizontally */
+          .tpl23-shopify-root {
+            max-width: 100vw !important;
+            overflow-x: clip !important;
+          }
+
+          /* Pack timer / offer carousel: full width on mobile */
+          #yaxsell-homepage-offers-carousel,
+          #yaxsell-homepage-offers-carousel > div {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 8px !important;
+            box-sizing: border-box !important;
+          }
+          /* Offer cards: 1 column on mobile (2 per row was crowding) */
+          #yaxsell-homepage-offers-carousel > div > div {
+            width: calc(50% - 8px) !important;
+            min-width: calc(50% - 8px) !important;
+          }
+          /* Reduce offer card padding on mobile */
+          .offer-card-hover {
+            padding: 12px !important;
+          }
+
+          /* Featured product: stack vertically on mobile */
+          .tpl23-shopify-root featured-product {
+            display: block !important;
+          }
+
+          /* Product card: prevent overflow */
+          .tpl23-shopify-root product-card {
+            max-width: 100% !important;
+            width: 100% !important;
+          }
+
+          /* Swiper containers: enforce full width on mobile */
+          .tpl23-shopify-root .swiper-container {
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+
+          /* Collection list categories: square tiles */
+          .tpl23-shopify-root .collection-list .collection-card__image-wrapper {
+            aspect-ratio: 1 / 1 !important;
+          }
+
+          /* Prevent Shopify section headers from being too large on mobile */
+          .tpl23-shopify-root .custom-container h2,
+          .tpl23-shopify-root .section-heading h2 {
+            font-size: clamp(1.4rem, 6vw, 2.2rem) !important;
+          }
+
+          /* Timer pack section */
+          #recent-products-portal-root {
+            padding: 0 !important;
+          }
         }
       `}</style>
 

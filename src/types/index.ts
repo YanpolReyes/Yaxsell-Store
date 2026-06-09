@@ -6,6 +6,7 @@ export interface Product {
   CURRENTPRICE?: number;
   CATEGORYID: string;
   SUBCATEGORYID?: string;
+  SUBSUBCATEGORYID?: string; // Nivel 3
   SELLERID: string;
   STOCK: number;
   IMAGEURL: string;
@@ -53,6 +54,7 @@ export interface Subcategory {
   $id: string;
   name: string;
   categoryId: string;
+  parentSubcategoryId?: string; // Nivel 3 (si está definido, es hija de otra subcategoría)
   order?: number;
   ICON_URL?: string;
   BACKGROUND_IMAGE_URL?: string;

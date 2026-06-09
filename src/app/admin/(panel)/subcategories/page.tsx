@@ -70,8 +70,8 @@ export default function SubcategoriesPage() {
 
   const getCategoryName = (catId: string) => categories.find(c => c.$id === catId)?.name || 'Sin categoría';
 
-  const openAdd = (categoryId?: string) => setModal({ mode: 'add', data: { name: '', categoryId: categoryId || '', order: subcategories.length } });
-  const openEdit = (s: Subcategory) => setModal({ mode: 'edit', data: { ...s, categoryId: s.categoryId } });
+  const openAdd = (categoryId?: string) => setModal({ mode: 'add', data: { name: '', categoryId: categoryId || '', parentSubcategoryId: '', order: subcategories.length } });
+  const openEdit = (s: Subcategory) => setModal({ mode: 'edit', data: { ...s, categoryId: s.categoryId, parentSubcategoryId: s.parentSubcategoryId || '' } });
 
   const save = async () => {
     if (!modal) return;
@@ -85,6 +85,7 @@ export default function SubcategoriesPage() {
       const payload: any = { 
         name: d.name, 
         categoryId: d.categoryId, 
+        parentSubcategoryId: d.parentSubcategoryId || null,
       };
       if (d.ICON_URL) payload.ICON_URL = d.ICON_URL;
       if (d.BACKGROUND_IMAGE_URL) payload.BACKGROUND_IMAGE_URL = d.BACKGROUND_IMAGE_URL;
@@ -211,8 +212,14 @@ export default function SubcategoriesPage() {
                   <Tag className="w-5 h-5 text-purple-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900">{s.name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{getCategoryName(s.categoryId)}</p>
+                  <p className="font-medium text-gray-900">
+                    {s.parentSubcategoryId ? <span className="text-indigo-400 mr-1">└─</span> : null}
+                    {s.name}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {getCategoryName(s.categoryId)}
+                    {s.parentSubcategoryId ? ` / ${subcategories.find(sub => sub.$id === s.parentSubcategoryId)?.name}` : ''}
+                  </p>
                 </div>
                 <span className="text-xs bg-purple-50 text-purple-600 font-medium px-2 py-0.5 rounded-full shrink-0">
                   {productCounts[s.$id] ?? 0} prods
@@ -243,10 +250,21 @@ export default function SubcategoriesPage() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Categoría padre *</label>
-                <select value={modal.data.categoryId || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, categoryId: e.target.value } } : m)}
+                <select value={modal.data.categoryId || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, categoryId: e.target.value, parentSubcategoryId: '' } } : m)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                   <option value="">Seleccionar categoría</option>
                   {categories.map(c => <option key={c.$id} value={c.$id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Subcategoría padre (Nivel 2) - Opcional</label>
+                <select value={modal.data.parentSubcategoryId || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, parentSubcategoryId: e.target.value } } : m)}
+                  disabled={!modal.data.categoryId}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:opacity-60">
+                  <option value="">Ninguna (Nivel 2 Principal)</option>
+                  {subcategories.filter(s => s.categoryId === modal.data.categoryId && s.$id !== (modal.data as any).$id && !s.parentSubcategoryId).map(s => (
+                    <option key={s.$id} value={s.$id}>{s.name}</option>
+                  ))}
                 </select>
               </div>
               <div>

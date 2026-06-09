@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 import { CartProvider } from '@/context/CartContext';
@@ -16,8 +16,16 @@ import HomeOnlyWidgets from '@/components/HomeOnlyWidgets';
 import PageViewTracker from '@/components/PageViewTracker';
 
 export const metadata: Metadata = {
-  title: 'Tienda',
+  title: 'Kevin & Coco | Tienda',
   description: 'Compra online fácil y rápido',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: '#FBCAC9',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -59,6 +67,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es">
       {/* eslint-disable-next-line @next/next/no-head-element */}
       <head>
+        {/* Viewport meta — critical for mobile responsiveness */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         {/* Importmap para el tema Pebble (Plantilla 5) — resuelve @theme/ a archivos locales */}
         {/* biome-ignore lint: intentional dangerouslySetInnerHTML for importmap */}
         <script type="importmap" dangerouslySetInnerHTML={{ __html: pebbleImportMap }} />

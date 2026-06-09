@@ -44,36 +44,41 @@ const Ico = {
   OctagonX:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l8.5 5v10L12 22l-8.5-5V7L12 2z"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>,
   Sparkles:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>,
   Catalogo:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 8h16"/><path d="M8 4v16"/><path d="M4 12h4"/><path d="M4 16h4"/></svg>,
+  Server:      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>,
+  MiTienda:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
 };
 
 /* Shopify-dark sidebar — no accent colors needed */
 
 /* ─────────────────────────── nav structure ─────────────────────────── */
-interface NavItem { href: string; label: string; icon: React.ReactNode; badge?: 'orders'|'notifs'|'wholesale'|'requests'; children?: NavItem[]; }
+interface NavItem { href: string; label: string; icon: React.ReactNode; badge?: 'orders'|'notifs'|'wholesale'|'requests'|'alerts'; children?: NavItem[]; }
 interface NavGroup { label: string; items: NavItem[]; defaultOpen?: boolean; }
 
 const NAV_GROUPS: NavGroup[] = [
   { label: 'General', defaultOpen: true, items: [
     { href: '/admin/dashboard', label: 'Inicio', icon: Ico.Dashboard },
     { href: '', label: 'Productos', icon: Ico.Productos, children: [
-      { href: '/admin/products',       label: 'Productos',       icon: Ico.Productos },
-      { href: '/admin/catalog-visibility', label: 'CATÁLOGO', icon: Ico.Catalogo },
-      { href: '/admin/catalog-migration', label: 'Migrar A Pedido', icon: Ico.Catalogo },
-      { href: '/admin/wholesale-products', label: 'Productos Mayoristas', icon: Ico.Mayoristas },
-      { href: '/admin/inventory',      label: 'Inventario',      icon: Ico.Inventario },
-      { href: '/admin/categories',     label: 'Categorías',      icon: Ico.Categorias },
-      { href: '/admin/subcategories',  label: 'Subcategorías',   icon: Ico.Subcategorias },
-      { href: '/admin/products/vinculacion', label: 'Vincular Productos', icon: Ico.Sparkles },
-      { href: '/admin/products/import-jumpseller', label: 'Subir Masivamente', icon: Ico.Inventario },
-      { href: '/admin/products/bulk-delete', label: 'Eliminar Masivamente', icon: Ico.OctagonX },
-      { href: '/admin/products/bulk-edit', label: 'Editar Masivamente', icon: Ico.Sparkles },
-      { href: '/admin/products/stock-editor', label: 'Editor de Stock', icon: Ico.Inventario },
-      { href: '/admin/products/pack-qty', label: 'Cant. por Paquete', icon: Ico.Inventario },
+      { href: '', label: 'TIENDA', icon: Ico.Productos, children: [
+        { href: '/admin/products',       label: 'Productos',       icon: Ico.Productos },
+        { href: '/admin/products/vinculacion', label: 'Vincular Productos', icon: Ico.Sparkles },
+        { href: '/admin/categories',     label: 'Categorías',      icon: Ico.Categorias },
+        { href: '/admin/subcategories',  label: 'Subcategorías',   icon: Ico.Subcategorias },
+      ]},
+      { href: '', label: 'INVENTARIO', icon: Ico.Inventario, children: [
+        { href: '/admin/inventory',      label: 'Stock',           icon: Ico.Inventario },
+        { href: '/admin/wholesale-products', label: 'Productos Mayoristas', icon: Ico.Mayoristas },
+        { href: '/admin/products/bulk-delete', label: 'Eliminar Masivamente', icon: Ico.OctagonX },
+        { href: '/admin/products/bulk-edit', label: 'Editar Masivamente', icon: Ico.Sparkles },
+        { href: '/admin/products/stock-editor', label: 'Editor de Stock', icon: Ico.Inventario },
+        { href: '/admin/products/pack-qty', label: 'Cantidad por Paquete', icon: Ico.Inventario },
+      ]},
+      { href: '', label: 'CATÁLOGO', icon: Ico.Catalogo, children: [
+        { href: '/admin/catalog-products', label: 'Productos a Pedido', icon: Ico.Catalogo, badge: 'alerts' },
+        { href: '/admin/stock-requests', label: 'Solicitudes de Stock', icon: Ico.Inventario, badge: 'requests' },
+        { href: '/admin/catalog-visibility', label: 'Visibilidad de Catálogo', icon: Ico.Catalogo },
+      ]},
+      { href: '/admin/product-votes', label: 'PRÓXIMAMENTE', icon: Ico.Ofertas }
     ]},
-    { href: '/admin/catalog-products', label: 'Productos a Pedido', icon: Ico.Catalogo },
-    { href: '/admin/stock-requests', label: 'Solicitudes de Stock', icon: Ico.Inventario, badge: 'requests' },
-    { href: '/admin/product-votes', label: 'Productos que Llegan', icon: Ico.Ofertas },
-    { href: '/admin/store-settings', label: 'Mi Tienda', icon: Ico.Config },
     { href: '/admin/orders',    label: 'Pedidos', icon: Ico.Pedidos, badge: 'orders' },
     { href: '/admin/users',     label: 'Clientes',    icon: Ico.Usuarios },
     { href: '/admin/analytics', label: 'Analytics',    icon: Ico.Analytics },
@@ -86,29 +91,17 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/points-store',  label: 'Tienda de puntos', icon: Ico.Sorteos },
       { href: '/admin/notifications', label: 'Notificaciones', icon: Ico.Notifs, badge: 'notifs' },
     ]},
-    { href: '', label: 'Contenido', icon: Ico.Plantillas, children: [
-      { href: '/admin/sections',         label: 'Editor de Secciones', icon: Ico.Plantillas },
-      { href: '/admin/sections-custom',  label: 'Editor Personalizado', icon: Ico.Plantillas },
-      { href: '/admin/banners',          label: 'Hero Carousel',       icon: Ico.HeroCarousel },
-      { href: '/admin/hotspot-banners',  label: 'Collage Interactivo', icon: Ico.Collage },
-      { href: '/admin/hotspot-banners-plantilla1', label: 'Collage Plantilla 1', icon: Ico.Collage },
-    ]},
     { href: '/admin/wholesale', label: 'Mayoristas',   icon: Ico.Mayoristas, badge: 'wholesale' },
   ]},
-  { label: 'Engagement', defaultOpen: false, items: [
-    { href: '/admin/engagement/plantillas', label: 'Plantillas',     icon: Ico.Plantillas },
-    { href: '/admin/live',                  label: 'Live Shopping',  icon: Ico.LiveShop },
-    { href: '/admin/clips',                 label: 'Clips / Videos', icon: Ico.Clips },
-    { href: '/admin/raffles',               label: 'Sorteos',        icon: Ico.Sorteos },
-    { href: '/admin/reviews',               label: 'Reseñas',        icon: Ico.Recomendados },
-    { href: '/admin/questions',             label: 'Preguntas Q&A',  icon: Ico.Soporte },
-  ]},
   { label: 'Configuración', defaultOpen: false, items: [
-    { href: '/admin/settings', label: 'General',          icon: Ico.Config },
-    { href: '/admin/pagos',    label: 'Pagos',            icon: Ico.Pagos },
-    { href: '/admin/agencias', label: 'Agencias de envío', icon: Ico.Agencias },
-    { href: '/admin/support',  label: 'Soporte',          icon: Ico.Soporte },
-    { href: '/inventario',     label: 'BODEGAPP',         icon: Ico.Inventario },
+    { href: '', label: 'Mi Tienda', icon: Ico.MiTienda, children: [
+      { href: '/admin/settings',       label: 'Servidor',         icon: Ico.Server },
+      { href: '/admin/store-settings', label: 'Información',      icon: Ico.Productos },
+      { href: '/admin/pagos',          label: 'Pagos',            icon: Ico.Pagos },
+      { href: '/admin/agencias',       label: 'Agencias de envío', icon: Ico.Agencias },
+      { href: '/admin/support',        label: 'Soporte',          icon: Ico.Soporte },
+    ]},
+    { href: '/inventario', label: 'BODEGAPP', icon: Ico.Inventario },
   ]},
 ];
 
@@ -213,9 +206,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const userMenuRef      = useRef<HTMLDivElement>(null);
   const userMenuTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pendingOrders,    setPendingOrders]    = useState(0);
+  const [processingOrders, setProcessingOrders] = useState(0);
   const [unreadNotifs,     setUnreadNotifs]     = useState(0);
   const [pendingWholesale, setPendingWholesale] = useState(0);
   const [pendingRequests,  setPendingRequests]  = useState(0);
+  const [pendingAlerts,    setPendingAlerts]    = useState(0);
 
   const closeUserMenu = () => {
     setUserMenuClosing(true);
@@ -245,11 +240,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const toggleItem = (label: string) => {
+    const findSiblings = (lbl: string): string[] => {
+      for (const group of NAV_GROUPS) {
+        const topLevelLabels = group.items.map(i => i.label);
+        if (topLevelLabels.includes(lbl)) return topLevelLabels;
+        for (const item of group.items) {
+          if (item.children) {
+            const childLabels = item.children.map(i => i.label);
+            if (childLabels.includes(lbl)) return childLabels;
+            for (const child of item.children) {
+              if (child.children) {
+                const grandchildLabels = child.children.map(i => i.label);
+                if (grandchildLabels.includes(lbl)) return grandchildLabels;
+              }
+            }
+          }
+        }
+      }
+      return [];
+    };
+
+    const siblings = findSiblings(label);
     setOpenItems(prev => {
-      const wasOpen = prev[label] ?? false;
-      if (wasOpen) return { ...prev, [label]: false };
-      // Accordion: close all others, open only this one
-      return { [label]: true };
+      const next = { ...prev };
+      siblings.forEach(sibling => {
+        if (sibling !== label) {
+          next[sibling] = false;
+        }
+      });
+      next[label] = !(prev[label] ?? false);
+      return next;
     });
   };
 
@@ -259,9 +279,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       if (res.ok) {
         const data = await res.json();
         setPendingOrders(data.pendingOrders);
+        setProcessingOrders(data.processingOrders || 0);
         setUnreadNotifs(data.unreadNotifs);
         setPendingWholesale(data.pendingWholesale);
         setPendingRequests(data.pendingRequests || 0);
+        setPendingAlerts(data.pendingAlerts || 0);
       }
     } catch { /* silent */ }
   }, []);
@@ -376,8 +398,41 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleLogout = async () => { await logout(); router.replace('/admin/login'); };
 
-  const badgeCount = (b?: string) => b === 'orders' ? pendingOrders : b === 'notifs' ? unreadNotifs : b === 'wholesale' ? pendingWholesale : b === 'requests' ? pendingRequests : 0;
-  const badgeColor = (b?: string) => b === 'orders' ? '#f59e0b' : b === 'notifs' ? '#6366f1' : b === 'wholesale' ? '#8b5cf6' : '#f97316';
+  const renderBadges = (item: NavItem) => {
+    const badges: React.ReactNode[] = [];
+
+    const pushBadge = (count: number, bgColor: string, textColor: string = '#fff') => {
+      if (count <= 0) return;
+      badges.push(
+        <span key={`${bgColor}-${count}`} className="sf-badge" style={{
+          background: bgColor, color: textColor, fontSize: 10, fontWeight: 700,
+          padding: '1px 6px', borderRadius: 20, minWidth: 18, textAlign: 'center',
+          display: 'inline-block', marginLeft: 4, animation: 'sf-badge-pop 0.3s cubic-bezier(0.34,1.56,0.64,1)'
+        }}>
+          {count > 99 ? '99+' : count}
+        </span>
+      );
+    };
+
+    if (item.label === 'Productos' || item.label === 'CATÁLOGO') {
+      pushBadge(pendingAlerts, '#f97316'); // Orange
+      pushBadge(pendingRequests, '#eab308', '#1a1a1a'); // Yellow
+    } else if (item.label === 'Productos a Pedido' || item.badge === 'alerts') {
+      pushBadge(pendingAlerts, '#f97316');
+    } else if (item.label === 'Solicitudes de Stock' || item.badge === 'requests') {
+      pushBadge(pendingRequests, '#eab308', '#1a1a1a');
+    } else if (item.badge === 'orders') {
+      pushBadge(processingOrders, '#4ade80', '#1a1a1a'); // Verde Claro (Procesando)
+      pushBadge(pendingOrders, '#fed7aa', '#1a1a1a'); // Naranja pastel (Pendiente)
+    } else if (item.badge === 'wholesale') {
+      pushBadge(pendingWholesale, '#8b5cf6');
+    } else if (item.badge === 'notifs') {
+      pushBadge(unreadNotifs, '#6366f1');
+    }
+
+    if (badges.length === 0) return null;
+    return <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>{badges}</div>;
+  };
 
   const isActive = (href: string) => href && (pathname === href || (href.length > 10 && pathname.startsWith(href)));
   const anyChildActive = (ch: NavItem[]) => ch.some(c => isActive(c.href));
@@ -385,7 +440,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   /* ── render a single nav item with stagger animation ── */
   const renderItem = (item: NavItem, ctr: { i: number }, depth = 0) => {
     const active  = isActive(item.href);
-    const bc      = badgeCount(item.badge);
     const expanded = openItems[item.label] ?? false;
     const childActive = item.children ? anyChildActive(item.children) : false;
     const delay = `${(ctr.i++ * 0.065).toFixed(3)}s`;
@@ -398,14 +452,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="sf-nav-item"
             style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: 8,
-              padding: '7px 12px', borderRadius: 8, cursor: 'pointer', border: 'none',
+              padding: depth > 0 ? '6px 10px' : '7px 12px', borderRadius: 8, cursor: 'pointer', border: 'none',
               background: childActive || expanded ? 'rgba(255,255,255,0.08)' : 'transparent',
               color: childActive ? '#fff' : 'rgba(255,255,255,0.7)',
-              fontSize: 14, fontWeight: 500, transition: 'all .15s',
+              fontSize: depth > 0 ? 13 : 14, fontWeight: 500, transition: 'all .15s',
               animation: anim,
             }}>
-            <span style={{ width: 20, height: 20, flexShrink: 0 }}>{item.icon}</span>
+            {depth === 0 && <span style={{ width: 20, height: 20, flexShrink: 0 }}>{item.icon}</span>}
+            {depth > 0 && <span style={{ width: 4, height: 4, borderRadius: '50%', background: childActive ? '#fff' : 'rgba(255,255,255,0.3)', flexShrink: 0 }} />}
             <span style={{ flex: 1, textAlign: 'left' }}>{item.label}</span>
+            {renderBadges(item)}
             <ChevronRight size={16} style={{ opacity: 0.9, transform: expanded ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform .25s cubic-bezier(0.16,1,0.3,1)' }} />
           </button>
           <div className={expanded ? 'sf-children sf-children-open' : 'sf-children'}>
@@ -434,11 +490,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {depth === 0 && <span style={{ width: 20, height: 20, flexShrink: 0 }}>{item.icon}</span>}
         {depth > 0 && <span style={{ width: 4, height: 4, borderRadius: '50%', background: active ? '#fff' : 'rgba(255,255,255,0.3)', flexShrink: 0 }} />}
         <span style={{ flex: 1 }}>{item.label}</span>
-        {bc > 0 && (
-          <span style={{ background: badgeColor(item.badge), color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20, minWidth: 18, textAlign: 'center' }}>
-            {bc > 99 ? '99+' : bc}
-          </span>
-        )}
+        {renderBadges(item)}
       </Link>
     );
   };

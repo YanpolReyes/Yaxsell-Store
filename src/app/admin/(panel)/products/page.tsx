@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Fragment } from 'react';
 import * as XLSX from 'xlsx';
 import { Query, ID } from 'appwrite';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Product, Category, Subcategory } from '@/types/admin';
 import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff } from 'lucide-react';
 import ImageUploadField from '@/components/admin/ImageUploadField';
@@ -39,6 +39,8 @@ export default function ProductsPage() {
   const [catFilter, setCatFilter] = useState('');
   const [stockFilter, setStockFilter] = useState<'all' | 'instock' | 'low' | 'out'>('instock');
   const [noImageOnly, setNoImageOnly] = useState(false);
+  const [showDuplicates, setShowDuplicates] = useState(false);
+  const [duplicates, setDuplicates] = useState<any[]>([]);
   const [sort, setSort] = useState<{ key: 'NAME' | 'PRICE' | 'STOCK' | 'SOLDQUANTITY' | 'MARGIN' | 'CREATED'; dir: 'asc' | 'desc' }>({ key: 'CREATED', dir: 'desc' });
   const [modal, setModal] = useState<{ mode: 'add' | 'edit'; data: ProductModalData } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -240,6 +242,222 @@ export default function ProductsPage() {
     }
   };
 
+  const checkDuplicates = async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      const prodResp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(2000)]);
+      const catResp = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, [Query.limit(2000)]);
+      const invResp = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, [Query.limit(2000)]);
+
+      const prods = prodResp.documents;
+      const catalogs = catResp.documents;
+      const inventories = invResp.documents;
+
+      const getSkuLocal = (p: any) => getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku) || p.$id;
+
+      const allItems: any[] = [];
+
+      prods.forEach(p => {
+        const sku = getSkuLocal(p).toLowerCase().trim();
+        if (sku && sku !== p.$id) {
+          allItems.push({
+            document: p,
+            sku,
+            name: p.NAME || '',
+            collection: 'products',
+            stock: p.STOCK ?? 0,
+            price: p.PRICE ?? 0,
+            imageurl: p.IMAGEURL || ''
+          });
+        }
+      });
+
+      catalogs.forEach(c => {
+        const sku = getSkuLocal(c).toLowerCase().trim();
+        if (sku && sku !== c.$id) {
+          allItems.push({
+            document: c,
+            sku,
+            name: c.NAME || c.name || '',
+            collection: 'catalog_products',
+            stock: c.STOCK ?? c.stock ?? 0,
+            price: c.PRICE ?? c.price ?? 0,
+            imageurl: c.IMAGEURL || c.imageurl || ''
+          });
+        }
+      });
+
+      inventories.forEach(i => {
+        const sku = getSkuLocal(i).toLowerCase().trim();
+        if (sku && sku !== i.$id) {
+          allItems.push({
+            document: i,
+            sku,
+            name: i.NAME || i.name || '',
+            collection: 'inventory_products',
+            stock: i.STOCK ?? i.stock ?? 0,
+            price: i.PRICE ?? i.price ?? 0,
+            imageurl: i.IMAGEURL || i.imageurl || ''
+          });
+        }
+      });
+
+      const groupedBySku = new Map<string, any[]>();
+      allItems.forEach(item => {
+        if (!groupedBySku.has(item.sku)) {
+          groupedBySku.set(item.sku, []);
+        }
+        groupedBySku.get(item.sku)!.push(item);
+      });
+
+      const groupedDuplicates: any[] = [];
+
+      groupedBySku.forEach((items, sku) => {
+        if (items.length > 1) {
+          items.sort((a, b) => {
+            const aHasStock = a.stock > 0 ? 1 : 0;
+            const bHasStock = b.stock > 0 ? 1 : 0;
+            if (aHasStock !== bHasStock) {
+              return bHasStock - aHasStock;
+            }
+            const aIsMain = a.collection === 'products' ? 1 : 0;
+            const bIsMain = b.collection === 'products' ? 1 : 0;
+            if (aIsMain !== bIsMain) {
+              return bIsMain - aIsMain;
+            }
+            return b.stock - a.stock;
+          });
+
+          const original = items[0];
+          const duplicates = items.slice(1).map(dup => {
+            let reason = '';
+            if (dup.collection === 'products') {
+              reason = `Copia interna en Productos (original tiene ${original.stock} stock)`;
+            } else {
+              reason = `Existe en colección '${dup.collection === 'catalog_products' ? 'Catálogo' : 'Inventario'}'`;
+            }
+            return {
+              ...dup,
+              reason
+            };
+          });
+
+          groupedDuplicates.push({
+            sku,
+            original,
+            duplicates
+          });
+        }
+      });
+
+      setDuplicates(groupedDuplicates);
+    } catch (e: any) {
+      setError('Error al buscar duplicados: ' + e.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const deleteDuplicate = async (dup: any) => {
+    const colName = dup.collection === 'products' ? 'productos' : dup.collection === 'catalog_products' ? 'catalog_products' : 'inventory_products';
+    if (!confirm(`¿Eliminar este producto duplicado en la colección "${colName}"?`)) return;
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      
+      let collectionId = PRODUCTS_COLLECTION_ID;
+      if (dup.collection === 'catalog_products') collectionId = CATALOG_PRODUCTS_COLLECTION_ID;
+      else if (dup.collection === 'inventory_products') collectionId = INVENTORY_PRODUCTS_COLLECTION_ID;
+
+      await databases.deleteDocument(databaseId, collectionId, dup.document.$id);
+      
+      setDuplicates(prev => prev.map(group => {
+        return {
+          ...group,
+          duplicates: group.duplicates.filter((item: any) => !(item.document.$id === dup.document.$id && item.collection === dup.collection))
+        };
+      }).filter(group => group.duplicates.length > 0));
+
+      alert('Producto duplicado eliminado con éxito.');
+    } catch (err: any) {
+      alert('Error al eliminar duplicado: ' + err.message);
+    }
+  };
+
+  const [isDeletingBulkDups, setIsDeletingBulkDups] = useState(false);
+  const [bulkDeleteProgress, setBulkDeleteProgress] = useState<{done: number; total: number} | null>(null);
+
+  const deleteZeroStockDuplicates = async () => {
+    const targets: any[] = [];
+    duplicates.forEach(group => {
+      group.duplicates.forEach((dup: any) => {
+        const stockVal = dup.stock ?? dup.document.STOCK ?? dup.document.stock ?? 0;
+        if (stockVal === 0 && dup.collection !== 'products') {
+          targets.push(dup);
+        }
+      });
+    });
+
+    if (targets.length === 0) {
+      alert('No hay productos duplicados con stock 0 en las colecciones de Catálogo o Inventario.');
+      return;
+    }
+
+    if (!confirm(`¿Eliminar de forma masiva ${targets.length} productos repetidos con stock 0 de las colecciones de Catálogo e Inventario?`)) {
+      return;
+    }
+
+    // `deleted` fuera del try para que el catch también tenga acceso
+    const deleted: any[] = [];
+    setIsDeletingBulkDups(true);
+    setBulkDeleteProgress({ done: 0, total: targets.length });
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      // Lotes de 2 con 800ms de pausa → respeta el rate limit de Appwrite
+      const BATCH_SIZE = 2;
+      const DELAY_MS = 800;
+      for (let i = 0; i < targets.length; i += BATCH_SIZE) {
+        const batch = targets.slice(i, i + BATCH_SIZE);
+        await Promise.all(batch.map(dup => {
+          let collectionId = PRODUCTS_COLLECTION_ID;
+          if (dup.collection === 'catalog_products') collectionId = CATALOG_PRODUCTS_COLLECTION_ID;
+          else if (dup.collection === 'inventory_products') collectionId = INVENTORY_PRODUCTS_COLLECTION_ID;
+          return databases.deleteDocument(databaseId, collectionId, dup.document.$id);
+        }));
+        deleted.push(...batch);
+        setBulkDeleteProgress({ done: deleted.length, total: targets.length });
+        if (i + BATCH_SIZE < targets.length) {
+          await new Promise(res => setTimeout(res, DELAY_MS));
+        }
+      }
+
+      setDuplicates(prev => prev.map(group => ({
+        ...group,
+        duplicates: group.duplicates.filter((item: any) => !deleted.some(t => t.document.$id === item.document.$id && t.collection === item.collection))
+      })).filter(group => group.duplicates.length > 0));
+
+      alert(`✅ Se eliminaron con éxito ${deleted.length} duplicados con stock 0.`);
+    } catch (err: any) {
+      // Reflejar en UI los que sí se borraron antes del error
+      if (deleted.length > 0) {
+        setDuplicates(prev => prev.map(group => ({
+          ...group,
+          duplicates: group.duplicates.filter((item: any) => !deleted.some(t => t.document.$id === item.document.$id && t.collection === item.collection))
+        })).filter(group => group.duplicates.length > 0));
+      }
+      alert(`Error al eliminar: ${err.message}\nSe eliminaron ${deleted.length} de ${targets.length}. Vuelve a intentarlo para continuar.`);
+    } finally {
+      setIsDeletingBulkDups(false);
+      setBulkDeleteProgress(null);
+    }
+  };
+
   const [lastCursor, setLastCursor] = useState<string | null>(null);
 
   const load = useCallback(async (isLoadMore = false) => {
@@ -336,7 +554,18 @@ export default function ProductsPage() {
     }
   };
 
-  useEffect(() => { load(false); }, [load]);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const querySearch = params.get('search');
+      if (querySearch) {
+        setSearch(querySearch);
+        triggerSearch(querySearch);
+        return;
+      }
+    }
+    load(false);
+  }, [load]);
 
   useEffect(() => {
     const handler = () => load(false);
@@ -518,6 +747,8 @@ export default function ProductsPage() {
         IMAGEURL: d.IMAGEURL || '', IMAGEURL2: d.IMAGEURL2 || '',
         IMAGEURL3: d.IMAGEURL3 || '',
         CATEGORYID: d.CATEGORYID || '',
+        SUBCATEGORYID: d.SUBCATEGORYID || '',
+        SUBSUBCATEGORYID: d.SUBSUBCATEGORYID || '',
       };
       // Campos opcionales que pueden no existir en el schema
       const optionalFields: Record<string, any> = {
@@ -966,10 +1197,34 @@ export default function ProductsPage() {
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Categoría</label>
                     <div className="relative">
-                      <select value={modal.data.CATEGORYID || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, CATEGORYID: e.target.value } } : m)}
+                      <select value={modal.data.CATEGORYID || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, CATEGORYID: e.target.value, SUBCATEGORYID: '', SUBSUBCATEGORYID: '' } } : m)}
                         className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <option value="">Sin categoría</option>
                         {categories.map(c => <option key={c.$id} value={c.$id}>{c.name}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Subcategoría (Nivel 2)</label>
+                    <div className="relative">
+                      <select value={modal.data.SUBCATEGORYID || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, SUBCATEGORYID: e.target.value, SUBSUBCATEGORYID: '' } } : m)}
+                        disabled={!modal.data.CATEGORYID}
+                        className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:bg-gray-100">
+                        <option value="">Ninguna</option>
+                        {subcategories.filter(s => s.categoryId === modal.data.CATEGORYID && !s.parentSubcategoryId).map(s => <option key={s.$id} value={s.$id}>{s.name}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Sub-subcategoría (Nivel 3)</label>
+                    <div className="relative">
+                      <select value={modal.data.SUBSUBCATEGORYID || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, SUBSUBCATEGORYID: e.target.value } } : m)}
+                        disabled={!modal.data.SUBCATEGORYID}
+                        className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:bg-gray-100">
+                        <option value="">Ninguna</option>
+                        {subcategories.filter(s => s.parentSubcategoryId === modal.data.SUBCATEGORYID).map(s => <option key={s.$id} value={s.$id}>{s.name}</option>)}
                       </select>
                       <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                     </div>
@@ -1158,11 +1413,42 @@ export default function ProductsPage() {
             <OctagonX className={`w-4 h-4 ${isDeletingAll ? 'animate-spin' : ''}`} />
             {isDeletingAll ? 'Borrando...' : 'Borrar todo'}
           </button>
+          {showDuplicates && duplicates.length > 0 && (
+            <button onClick={deleteZeroStockDuplicates} disabled={isDeletingBulkDups}
+              className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-xl text-sm font-semibold transition shadow-sm">
+              <Trash2 className={`w-4 h-4 ${isDeletingBulkDups ? 'animate-spin' : ''}`} />
+              {isDeletingBulkDups && bulkDeleteProgress
+                ? `Eliminando ${bulkDeleteProgress.done}/${bulkDeleteProgress.total}...`
+                : 'Eliminar repetidos stock 0'}
+            </button>
+          )}
           <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition">
             <Plus className="w-4 h-4" /> Agregar
           </button>
         </div>
       </div>
+
+      {/* Progress bar de eliminación masiva */}
+      {bulkDeleteProgress && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex flex-col gap-1.5">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-red-700 font-medium flex items-center gap-1.5">
+              <span className="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              Eliminando duplicados con stock 0...
+            </span>
+            <span className="text-red-600 font-bold tabular-nums">
+              {bulkDeleteProgress.done} / {bulkDeleteProgress.total}
+            </span>
+          </div>
+          <div className="w-full bg-red-100 rounded-full h-2 overflow-hidden">
+            <div
+              className="h-2 bg-red-500 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${bulkDeleteProgress.total > 0 ? (bulkDeleteProgress.done / bulkDeleteProgress.total) * 100 : 0}%` }}
+            />
+          </div>
+          <p className="text-xs text-red-500">Procesando de a 2 por vez para no exceder el límite de Appwrite</p>
+        </div>
+      )}
 
       {/* Stock quick filter */}
       <div className="flex gap-2 flex-wrap">
@@ -1183,6 +1469,18 @@ export default function ProductsPage() {
             noImageOnly ? 'bg-gray-700 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
           }`}>
           Sin imagen
+        </button>
+        <button onClick={() => {
+          const next = !showDuplicates;
+          setShowDuplicates(next);
+          if (next) {
+            checkDuplicates();
+          }
+        }}
+          className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium transition ${
+            showDuplicates ? 'bg-rose-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+          }`}>
+          Ver Repetidos
         </button>
         {Object.keys(brokenImages).length > 0 && (
           <button onClick={() => setBrokenOnly(v => !v)}
@@ -1245,116 +1543,333 @@ export default function ProductsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Producto</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Cód. barras</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Categoría</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer" onClick={() => toggleSort('PRICE')}>Precio {sort.key === 'PRICE' ? (sort.dir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <></>}</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer" onClick={() => toggleSort('STOCK')}>Stock {sort.key === 'STOCK' ? (sort.dir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <></>}</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell cursor-pointer" onClick={() => toggleSort('SOLDQUANTITY')}>Vendidos {sort.key === 'SOLDQUANTITY' ? (sort.dir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <></>}</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden lg:table-cell cursor-pointer" onClick={() => toggleSort('MARGIN')}>Margen {sort.key === 'MARGIN' ? (sort.dir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <></>}</th>
-                <th className="px-4 py-3" />
+                {showDuplicates ? (
+                  <>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Producto Repetido</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase" colSpan={2}>Motivo</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Precio</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Stock</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Producto a Conservar</th>
+                    <th className="px-4 py-3" />
+                  </>
+                ) : (
+                  <>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Producto</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Cód. barras</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Categoría</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer" onClick={() => toggleSort('PRICE')}>Precio {sort.key === 'PRICE' ? (sort.dir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <></>}</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer" onClick={() => toggleSort('STOCK')}>Stock {sort.key === 'STOCK' ? (sort.dir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <></>}</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell cursor-pointer" onClick={() => toggleSort('SOLDQUANTITY')}>Vendidos {sort.key === 'SOLDQUANTITY' ? (sort.dir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <></>}</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden lg:table-cell cursor-pointer" onClick={() => toggleSort('MARGIN')}>Margen {sort.key === 'MARGIN' ? (sort.dir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <></>}</th>
+                    <th className="px-4 py-3" />
+                  </>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {isLoading ? Array.from({ length: 8 }).map((_, i) => (
-                <tr key={i}>{[1,2,3,4,5,6].map(j => <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-100 rounded animate-pulse" /></td>)}</tr>
-              )) : filtered.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-400">No se encontraron productos</td></tr>
-              ) : filtered.map(p => (
-                <tr key={p.$id} className={`hover:bg-gray-50 transition-colors ${(p.STOCK ?? 0) === 0 ? 'bg-red-50/40' : ''}`}>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => { openEdit(p); setTimeout(() => setYexyOpen(true), 100); }} className="relative shrink-0 group" title="Preguntar a Yexy AI">
-                        <div className="w-10 h-10">
-                          <Lottie animationData={iaAnimation} loop={true} autoplay={true} className="w-full h-full" />
-                        </div>
-                        <span className="absolute -top-1 -right-1 text-[8px] font-bold bg-violet-600 text-white rounded px-1 leading-tight">IA</span>
-                      </button>
-                      <div className="relative w-10 h-10 shrink-0 cursor-pointer group" onClick={() => setImageUrlModal({ productId: p.$id, currentUrl: p.IMAGEURL || '', newUrl: p.IMAGEURL || '' })} title="Click para cambiar imagen">
-                        <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden">
-                          {p.IMAGEURL ? <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" /> : <Package className="w-5 h-5 text-gray-400 m-auto mt-2.5" />}
-                        </div>
-                        {brokenImages[p.$id]?.length && (
-                          <div className="absolute -top-1 -left-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center" title={`${brokenImages[p.$id].length} imagen(es) rota(s)`}>
-                            <ImageOff className="w-2.5 h-2.5 text-white" />
+              {isLoading ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={i}>
+                    {[1, 2, 3, 4, 5, 6].map(j => (
+                      <td key={j} className="px-4 py-3">
+                        <div className="h-4 bg-gray-100 rounded animate-pulse" />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : showDuplicates ? (
+                duplicates.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
+                      No se encontraron productos repetidos
+                    </td>
+                  </tr>
+                ) : (
+                  duplicates.map((group, groupIdx) => (
+                    <Fragment key={groupIdx}>
+                      {/* Original Row (Counterpart to keep) */}
+                      <tr className="bg-emerald-50/25 border-l-4 border-emerald-500 hover:bg-emerald-50/45 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden shrink-0">
+                              {group.original.imageurl ? (
+                                <img src={group.original.imageurl} alt={group.original.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <Package className="w-5 h-5 text-gray-400 m-auto mt-2.5" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900">{group.original.name}</p>
+                              <p className="text-[10px] text-gray-400 font-mono">SKU: {group.sku}</p>
+                              <p className="text-[10px] text-gray-500">
+                                Colección:{' '}
+                                <span className="font-medium text-emerald-700 uppercase text-[9px] bg-emerald-100 px-1.5 py-0.5 rounded">
+                                  {group.original.collection === 'products' ? 'Productos (Principal)' : group.original.collection === 'catalog_products' ? 'Catálogo' : 'Inventario'}
+                                </span>
+                              </p>
+                            </div>
                           </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Pencil className="w-3 h-3 text-white" />
-                        </div>
-                        {(() => { const cnt = [p.IMAGEURL, p.IMAGEURL2, p.IMAGEURL3].filter(Boolean).length; return cnt > 1 ? <span className="absolute -bottom-1 -right-1 text-[9px] font-bold bg-indigo-600 text-white rounded-full w-4 h-4 flex items-center justify-center leading-none">{cnt}</span> : null; })()}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1">
-                          <p className="font-medium text-gray-900 truncate max-w-[170px]">{p.NAME}</p>
-                        </div>
-                        {p.TAGS && <div className="flex flex-wrap gap-1 mt-0.5">{p.TAGS.split(',').map(t => t.trim()).filter(Boolean).slice(0, 3).map(t => <button key={t} onClick={e => { e.stopPropagation(); setSearch(t); }} className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full hover:bg-indigo-100 hover:text-indigo-600 transition cursor-pointer">{t}</button>)}</div>}
-                        {p.WHOLESALEPRICE ? <p className="text-xs text-violet-600">Mayor: {fmt(p.WHOLESALEPRICE)} × {p.WHOLESALEMINQUANTITY}</p> : null}
-                        {!p.IMAGEURL && <p className="text-[10px] text-amber-500 font-medium">sin imagen</p>}
-                        {getSku(p) && getSku(p) !== p.$id && (
-                          <p className="text-[10px] text-gray-400 font-mono mt-0.5">SKU: {getSku(p)}</p>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell">
-                    {getBarcode(p) ? (
-                      <span className="text-xs font-mono text-gray-700 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">{getBarcode(p)}</span>
-                    ) : (
-                      <span className="text-[10px] text-amber-500">sin código</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600 hidden sm:table-cell">{catName(p.CATEGORYID)}</td>
-                  <td className="px-4 py-3 text-right">
-                    {p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE ? (
-                      <div>
-                        <span className="font-semibold text-red-600">{fmt(p.CURRENTPRICE)}</span>
-                        <span className="text-xs text-gray-400 line-through ml-1">{fmt(p.PRICE)}</span>
-                        <span className="ml-1 text-xs font-bold text-white bg-red-500 px-1 py-0.5 rounded">
-                          -{Math.round((1 - p.CURRENTPRICE / p.PRICE) * 100)}%
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="font-semibold text-gray-900">{fmt(p.PRICE)}</span>
-                    )}
-                    {p.COST && p.COST > 0 && p.PRICE > 0 ? (
-                      <p className="text-[10px] text-gray-400 mt-0.5 text-right">{Math.round(((p.PRICE - p.COST) / p.PRICE) * 100)}% margen</p>
-                    ) : (
-                      <p className="text-[10px] text-amber-500 mt-0.5 text-right">sin costo</p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <div className="flex flex-col items-center gap-1">
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${p.STOCK === 0 ? 'bg-red-100 text-red-700' : p.STOCK <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                        {p.STOCK}
-                      </span>
-                      {p.PACKQTY ? <span className="text-[9px] text-gray-400">×{p.PACKQTY}/pq</span> : null}
-                      {(() => {
-                        const loc = getSection(p);
-                        return loc ? (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-indigo-600">
-                            <MapPin className="w-2.5 h-2.5" />G{loc.gondola} S{loc.section}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-emerald-600 font-bold" colSpan={2}>
+                          ✨ Producto a Conservar
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <p className="font-semibold text-gray-900">{fmt(group.original.price)}</p>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">
+                            {group.original.stock}
                           </span>
-                        ) : null;
-                      })()}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-500 hidden md:table-cell">{p.SOLDQUANTITY ?? 0}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition" title="Editar"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => duplicate(p)} className="p-1.5 rounded-lg hover:bg-violet-50 text-gray-400 hover:text-violet-600 transition" title="Duplicar"><Copy className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => remove(p.$id)} disabled={deleteId === p.$id} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition disabled:opacity-50" title="Eliminar">
-                        {deleteId === p.$id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-emerald-700 font-medium hidden md:table-cell">
+                          Conserva stock / principal
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">✔ Activo</span>
+                        </td>
+                      </tr>
+
+                      {/* Duplicate Rows (To be deleted) */}
+                      {group.duplicates.map((dup: any, dupIdx: number) => (
+                        <tr key={`${groupIdx}-dup-${dupIdx}`} className="bg-rose-50/10 hover:bg-rose-50/20 transition-colors border-l-4 border-rose-300">
+                          <td className="px-4 py-3 pl-8">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-gray-100 overflow-hidden shrink-0">
+                                {dup.imageurl ? (
+                                  <img src={dup.imageurl} alt={dup.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <Package className="w-4 h-4 text-gray-400 m-auto mt-2" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-800">{dup.name}</p>
+                                <p className="text-[10px] text-gray-400 font-mono">SKU: {dup.sku}</p>
+                                <p className="text-[10px] text-gray-500">
+                                  Colección:{' '}
+                                  <span className="font-medium text-rose-600 uppercase text-[9px] bg-rose-50 px-1.5 py-0.5 rounded">
+                                    {dup.collection === 'products' ? 'Productos (Principal)' : dup.collection === 'catalog_products' ? 'Catálogo' : 'Inventario'}
+                                  </span>
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-amber-600 font-medium" colSpan={2}>
+                            {dup.reason}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <p className="text-gray-900">{fmt(dup.price)}</p>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-rose-50 text-rose-700">
+                              {dup.stock}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-500 hidden md:table-cell">
+                            Copia a eliminar
+                          </td>
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => deleteDuplicate(dup)}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-medium transition"
+                              title="Eliminar este duplicado"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </Fragment>
+                  ))
+                )
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
+                    No se encontraron productos
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filtered.map(p => (
+                  <tr key={p.$id} className={`hover:bg-gray-50 transition-colors ${(p.STOCK ?? 0) === 0 ? 'bg-red-50/40' : ''}`}>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => {
+                            openEdit(p);
+                            setTimeout(() => setYexyOpen(true), 100);
+                          }}
+                          className="relative shrink-0 group"
+                          title="Preguntar a Yexy AI"
+                        >
+                          <div className="w-10 h-10">
+                            <Lottie animationData={iaAnimation} loop={true} autoplay={true} className="w-full h-full" />
+                          </div>
+                          <span className="absolute -top-1 -right-1 text-[8px] font-bold bg-violet-600 text-white rounded px-1 leading-tight">
+                            IA
+                          </span>
+                        </button>
+                        <div
+                          className="relative w-10 h-10 shrink-0 cursor-pointer group"
+                          onClick={() =>
+                            setImageUrlModal({
+                              productId: p.$id,
+                              currentUrl: p.IMAGEURL || '',
+                              newUrl: p.IMAGEURL || '',
+                            })
+                          }
+                          title="Click para cambiar imagen"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden">
+                            {p.IMAGEURL ? (
+                              <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" />
+                            ) : (
+                              <Package className="w-5 h-5 text-gray-400 m-auto mt-2.5" />
+                            )}
+                          </div>
+                          {brokenImages[p.$id]?.length && (
+                            <div
+                              className="absolute -top-1 -left-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center"
+                              title={`${brokenImages[p.$id].length} imagen(es) rota(s)`}
+                            >
+                              <ImageOff className="w-2.5 h-2.5 text-white" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Pencil className="w-3 h-3 text-white" />
+                          </div>
+                          {(() => {
+                            const cnt = [p.IMAGEURL, p.IMAGEURL2, p.IMAGEURL3].filter(Boolean).length;
+                            return cnt > 1 ? (
+                              <span className="absolute -bottom-1 -right-1 text-[9px] font-bold bg-indigo-600 text-white rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                                {cnt}
+                              </span>
+                            ) : null;
+                          })()}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1">
+                            <p className="font-medium text-gray-900 truncate max-w-[170px]">{p.NAME}</p>
+                          </div>
+                          {p.TAGS && (
+                            <div className="flex flex-wrap gap-1 mt-0.5">
+                              {p.TAGS.split(',')
+                                .map(t => t.trim())
+                                .filter(Boolean)
+                                .slice(0, 3)
+                                .map(t => (
+                                  <button
+                                    key={t}
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      setSearch(t);
+                                    }}
+                                    className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full hover:bg-indigo-100 hover:text-indigo-600 transition cursor-pointer"
+                                  >
+                                    {t}
+                                  </button>
+                                ))}
+                            </div>
+                          )}
+                          {p.WHOLESALEPRICE ? (
+                            <p className="text-xs text-violet-600">
+                              Mayor: {fmt(p.WHOLESALEPRICE)} × {p.WHOLESALEMINQUANTITY}
+                            </p>
+                          ) : null}
+                          {!p.IMAGEURL && <p className="text-[10px] text-amber-500 font-medium">sin imagen</p>}
+                          {getSku(p) && getSku(p) !== p.$id && (
+                            <p className="text-[10px] text-gray-400 font-mono mt-0.5">SKU: {getSku(p)}</p>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      {getBarcode(p) ? (
+                        <span className="text-xs font-mono text-gray-700 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">
+                          {getBarcode(p)}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-amber-500">sin código</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 hidden sm:table-cell">{catName(p.CATEGORYID)}</td>
+                    <td className="px-4 py-3 text-right">
+                      {p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE ? (
+                        <div>
+                          <span className="font-semibold text-red-600">{fmt(p.CURRENTPRICE)}</span>
+                          <span className="text-xs text-gray-400 line-through ml-1">{fmt(p.PRICE)}</span>
+                          <span className="ml-1 text-xs font-bold text-white bg-red-500 px-1 py-0.5 rounded">
+                            -{Math.round((1 - p.CURRENTPRICE / p.PRICE) * 100)}%
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="font-semibold text-gray-900">{fmt(p.PRICE)}</span>
+                      )}
+                      {p.COST && p.COST > 0 && p.PRICE > 0 ? (
+                        <p className="text-[10px] text-gray-400 mt-0.5 text-right">
+                          {Math.round(((p.PRICE - p.COST) / p.PRICE) * 100)}% margen
+                        </p>
+                      ) : (
+                        <p className="text-[10px] text-amber-500 mt-0.5 text-right">sin costo</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <span
+                          className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                            p.STOCK === 0 ? 'bg-red-100 text-red-700' : p.STOCK <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                          }`}
+                        >
+                          {p.STOCK}
+                        </span>
+                        {p.PACKQTY ? <span className="text-[9px] text-gray-400">×{p.PACKQTY}/pq</span> : null}
+                        {(() => {
+                          const loc = getSection(p);
+                          return loc ? (
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-indigo-600">
+                              <MapPin className="w-2.5 h-2.5" />G{loc.gondola} S{loc.section}
+                            </span>
+                          ) : null;
+                        })()}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-500 hidden md:table-cell">{p.SOLDQUANTITY ?? 0}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => openEdit(p)}
+                          className="p-1.5 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition"
+                          title="Editar"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => duplicate(p)}
+                          className="p-1.5 rounded-lg hover:bg-violet-50 text-gray-400 hover:text-violet-600 transition"
+                          title="Duplicar"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => remove(p.$id)}
+                          disabled={deleteId === p.$id}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition disabled:opacity-50"
+                          title="Eliminar"
+                        >
+                          {deleteId === p.$id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
-        {!isLoading && filtered.length > 0 && (
+        {!isLoading && showDuplicates && (
+          <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center gap-4 text-xs text-gray-500">
+            <span>Se encontraron <span className="font-semibold text-rose-600">{duplicates.length}</span> productos repetidos en total.</span>
+          </div>
+        )}
+        {!isLoading && !showDuplicates && filtered.length > 0 && (
           <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center gap-4 text-xs text-gray-500">
             <span><span className="font-semibold text-gray-700">{filtered.length}</span> productos</span>
             <span>Stock total: <span className="font-semibold text-gray-700">{filtered.reduce((s, p) => s + (p.STOCK ?? 0), 0).toLocaleString('es-CL')} un.</span></span>

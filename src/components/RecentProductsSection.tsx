@@ -122,28 +122,28 @@ export default function RecentProductsSection() {
   if (products.length === 0) return null;
 
   return (
-    <section className="py-14 max-w-7xl mx-auto px-4 sm:px-6 relative overflow-hidden">
+    <section className="py-8 sm:py-14 max-w-7xl mx-auto px-4 sm:px-6 relative overflow-hidden">
 
       {/* Title block with glassmorphism */}
-      <div className="flex items-center justify-between mb-8 bg-white/40 backdrop-blur-md border border-white/60 p-4 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between mb-6 sm:mb-8 bg-white/40 backdrop-blur-md border border-white/60 p-3 sm:p-4 rounded-2xl sm:rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+        <div className="flex items-center gap-3">
           {/* Recording indicator dot (Live recording style) */}
-          <div className="relative flex items-center justify-center w-8 h-8 bg-red-50 rounded-full shadow-inner">
-            <span className="animate-ping absolute inline-flex h-5 w-5 rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-600 shadow-[0_0_12px_rgba(220,38,38,0.9)]"></span>
+          <div className="relative flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 bg-red-50 rounded-full shadow-inner flex-shrink-0">
+            <span className="animate-ping absolute inline-flex h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-red-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 sm:h-3.5 sm:w-3.5 bg-red-600 shadow-[0_0_12px_rgba(220,38,38,0.9)]"></span>
           </div>
-          <div className="pl-2 sm:pl-0">
-            <h2 className="text-xl md:text-2xl font-black tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 drop-shadow-sm uppercase">
+          <div>
+            <h2 className="text-base sm:text-xl md:text-2xl font-black tracking-tight sm:tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 drop-shadow-sm uppercase">
               Live Shopping
             </h2>
-            <p className="text-[11px] md:text-xs text-pink-600 font-bold uppercase tracking-widest mt-0.5">
+            <p className="text-[10px] sm:text-[11px] md:text-xs text-pink-600 font-bold uppercase tracking-wide sm:tracking-widest mt-0">
               Productos en vivo • Stock Reciente
             </p>
           </div>
         </div>
         <button 
           onClick={() => setIsDrawerOpen(true)}
-          className="bg-pink-500 hover:bg-pink-600 text-white text-xs sm:text-sm font-bold py-2 px-4 rounded-full transition-all flex items-center gap-2 shadow-lg hover:shadow-xl active:scale-95"
+          className="bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold py-1.5 px-3 sm:py-2 sm:px-4 rounded-full transition-all flex items-center gap-1.5 shadow-lg hover:shadow-xl active:scale-95 flex-shrink-0"
         >
           Ver todo <span className="hidden sm:inline">el Live</span> 🛍️
         </button>
@@ -227,7 +227,7 @@ export default function RecentProductsSection() {
       </div>
 
       {/* Responsive layout: scrollable list on mobile, grid on desktop */}
-      <div className="flex overflow-x-auto gap-5 pb-8 px-2 -mx-4 sm:mx-0 sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:gap-6 sm:overflow-visible scrollbar-hide snap-x sm:snap-none">
+      <div className="flex overflow-x-auto gap-4 pb-6 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:gap-6 sm:overflow-visible scrollbar-hide snap-x snap-mandatory overscroll-x-contain sm:snap-none">
         {products.map(p => {
           const displayPrice = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
           const hasDiscount = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
@@ -237,7 +237,7 @@ export default function RecentProductsSection() {
           return (
             <div 
               key={p.$id} 
-              className="snap-start flex-shrink-0 w-[240px] sm:w-[240px] sm:mx-auto bg-white rounded-[24px] overflow-hidden border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:shadow-[0_15px_35px_rgba(0,0,0,0.09)] transition-all duration-400 group flex flex-col justify-between transform hover:-translate-y-1.5"
+              className="snap-start flex-shrink-0 w-[200px] xs:w-[220px] sm:w-auto sm:mx-auto bg-white rounded-[20px] sm:rounded-[24px] overflow-hidden border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:shadow-[0_15px_35px_rgba(0,0,0,0.09)] transition-all duration-400 group flex flex-col justify-between transform hover:-translate-y-1.5"
             >
               <a href={`/productos/${p.$id}`} className="block relative overflow-hidden aspect-square bg-gray-50/50 p-2">
                 <div className="w-full h-full rounded-[18px] overflow-hidden relative shadow-inner">

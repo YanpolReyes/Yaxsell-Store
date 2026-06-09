@@ -57,6 +57,7 @@ export interface Product {
   STOCK: number;
   CATEGORYID?: string;
   SUBCATEGORYID?: string;
+  SUBSUBCATEGORYID?: string;
   SELLERID?: string;
   IMAGEURL?: string;
   IMAGEURL2?: string;
@@ -104,6 +105,7 @@ export interface Subcategory {
   $id: string;
   name: string;
   categoryId: string;
+  parentSubcategoryId?: string;
   order?: number;
   ICON_URL?: string;
   BACKGROUND_IMAGE_URL?: string;

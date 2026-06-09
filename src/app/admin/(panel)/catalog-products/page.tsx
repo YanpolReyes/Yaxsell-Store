@@ -219,6 +219,20 @@ export default function CatalogProductsPage() {
            } catch (e) {}
         }
 
+        // Batch query by NAME to reduce reads
+        const namesToSearch = Array.from(new Set(unresolvedItems.map(u => u.name).filter(n => n.length > 2)));
+        const batchNameMap = new Map<string, any>();
+        
+        for (let i = 0; i < namesToSearch.length; i += 100) {
+           const chunk = namesToSearch.slice(i, i + 100);
+           try {
+             const nameRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+               Query.equal('NAME', chunk), Query.limit(100),
+             ]);
+             nameRes.documents.forEach((d: any) => batchNameMap.set(d.NAME.toLowerCase().trim(), d));
+           } catch (e) {}
+        }
+
         for (const { id, name, sku } of unresolvedItems) {
           if (productMap[id]?.source === 'products' && productMap[id]?.hasStock) continue; // already resolved
           try {
@@ -226,10 +240,7 @@ export default function CatalogProductsPage() {
             if (sku) p = batchMap.get(norm(sku));
             
             if (!p && name) {
-              const nameRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-                Query.equal('NAME', name), Query.limit(1),
-              ]);
-              if (nameRes.documents.length > 0) p = nameRes.documents[0];
+              p = batchNameMap.get(name.toLowerCase().trim());
             }
             if (p) {
               const existing = productMap[id] || {};
@@ -315,6 +326,44 @@ export default function CatalogProductsPage() {
         };
       });
       
+      // Auto-notify and mark available for pending alerts where the product has stock
+      const pendingWithStock = resolvedAlerts.filter(a => a.status === 'pending' && a.hasStock);
+      if (pendingWithStock.length > 0) {
+        pendingWithStock.forEach(async (req) => {
+          try {
+            const { databases } = getServices();
+            const { databaseId } = getAppwriteConfig();
+            
+            if (req.userId) {
+              const isInStore = req.source === 'products' || req.source === 'catalog_products';
+              const isInventory = req.source === 'inventory_products';
+              const notifData = {
+                userId: req.userId,
+                title: isInStore ? '🛒 ¡Tu producto ya está en la tienda!' : isInventory ? '📦 ¡Producto encontrado en bodega!' : '🎉 ¡Tu producto ya tiene stock!',
+                message: isInStore
+                  ? `[IMG:${req.productImage || ''}][PRICE:${req.price || 0}][STOCK:${req.currentStock || 0}][QTY:${req.quantity || 1}][PID:${req.productsDocId || req.productId}]¡Buenas noticias! "${req.productName}" que consultaste ya está disponible en la tienda (${req.quantity || 1} und). ¡No te quedes sin él!`
+                  : isInventory
+                  ? `[IMG:${req.productImage || ''}][PRICE:${req.price || 0}][STOCK:${req.currentStock || 0}][QTY:${req.quantity || 1}][PID:${req.productsDocId || req.productId}]¡Buenas noticias! "${req.productName}" que consultaste fue encontrado en nuestra bodega (${req.quantity || 1} und). ¡No te quedes sin él!`
+                  : `[IMG:${req.productImage || ''}][PRICE:${req.price || 0}][STOCK:${req.currentStock || 0}][QTY:${req.quantity || 1}][PID:${req.productsDocId || req.productId}]¡Buenas noticias! "${req.productName}" que consultaste ya está disponible (${req.quantity || 1} und). ¡No te quedes sin él!`,
+                type: 'success',
+                isRead: false,
+              };
+              await databases.createDocument(databaseId, NOTIFICATIONS_COLLECTION_ID, ID.unique(), notifData);
+            }
+            await databases.updateDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id, { status: 'available' });
+          } catch (err) {
+            console.error('Error auto-resolving restocked alert:', err);
+          }
+        });
+
+        // Set status to 'available' locally so they disappear from pending lists/counts
+        resolvedAlerts.forEach(a => {
+          if (a.status === 'pending' && a.hasStock) {
+            a.status = 'available';
+          }
+        });
+      }
+
       setAlerts(resolvedAlerts);
     } catch (e: any) { setError(e.message); }
     finally { setIsLoading(false); }
@@ -345,7 +394,7 @@ export default function CatalogProductsPage() {
         foundCount: reqs.filter(r => r.source || r.hasStock).length,
         missingCount: reqs.filter(r => !r.source && !r.hasStock).length,
       };
-    }).sort((a, b) => b.pendingCount - a.pendingCount);
+    }).filter(u => u.pendingCount > 0).sort((a, b) => b.pendingCount - a.pendingCount);
   })();
 
   const filteredUsers = groupedUsers.filter(u => {
@@ -354,9 +403,9 @@ export default function CatalogProductsPage() {
     return u.userName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
   });
 
-  const totalPending = alerts.filter(a => a.status === 'pending').length;
-  const totalAvailable = alerts.filter(a => a.status === 'available').length;
-  const totalUnavailable = alerts.filter(a => a.status === 'unavailable').length;
+  const totalPending = groupedUsers.filter(u => u.pendingCount > 0).length;
+  const totalAvailable = groupedUsers.filter(u => u.requests.some(r => r.status === 'available')).length;
+  const totalUnavailable = groupedUsers.filter(u => u.requests.some(r => r.status === 'unavailable')).length;
 
   const handleMarkAvailable = async (req: StockAlertView) => {
     // Only block if product is NOT in tienda or inventory (completely unknown)
@@ -512,12 +561,34 @@ export default function CatalogProductsPage() {
   };
 
   const handleDeleteAlert = async (req: StockAlertView) => {
-    if (!confirm(`¿Eliminar la consulta de "${req.productName}"?`)) return;
+    if (!confirm(`¿Eliminar "${req.productName}" de las consultas, catálogo e inventario?`)) return;
     setProcessingId(req.$id);
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
+
+      // 1. Delete from catalog_products (by productId matching $id)
+      try {
+        const catRes = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, [
+          Query.equal('$id', req.productId), Query.limit(1),
+        ]);
+        if (catRes.documents.length > 0) {
+          await databases.deleteDocument(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, catRes.documents[0].$id);
+        }
+      } catch (e) {
+        console.warn('No se pudo eliminar de catalog_products:', e);
+      }
+
+      // 2. Delete from inventory_products
+      try {
+        await databases.deleteDocument(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, req.productId);
+      } catch (e) {
+        console.warn('No se pudo eliminar de inventory_products:', e);
+      }
+
+      // 3. Delete the stock alert document
       await databases.deleteDocument(databaseId, STOCK_ALERTS_COLLECTION_ID, req.$id);
+      
       setAlerts(prev => prev.filter(a => a.$id !== req.$id));
     } catch (e: any) {
       window.alert('Error: ' + e.message);
@@ -733,19 +804,19 @@ export default function CatalogProductsPage() {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(160px, 1fr))', gap: isMobile ? 8 : 12, marginBottom: isMobile ? 14 : 20 }}>
         <div style={{ background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 10, padding: isMobile ? 12 : 16 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#c0547a', textTransform: 'uppercase', letterSpacing: '.5px' }}>Pendientes</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#c0547a', textTransform: 'uppercase', letterSpacing: '.5px' }}>Clientes Pendientes</div>
           <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, color: '#be185d', marginTop: 2 }}>{totalPending}</div>
         </div>
         <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: isMobile ? 12 : 16 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '.5px' }}>Sin Stock</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '.5px' }}>Clientes Sin Stock</div>
           <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, color: '#b91c1c', marginTop: 2 }}>{totalUnavailable}</div>
         </div>
         <div style={{ background: '#ecfdf5', border: '1px solid #34d399', borderRadius: 10, padding: isMobile ? 12 : 16 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#065f46', textTransform: 'uppercase', letterSpacing: '.5px' }}>En Tienda · Con Stock</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#065f46', textTransform: 'uppercase', letterSpacing: '.5px' }}>Clientes En Tienda</div>
           <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, color: '#047857', marginTop: 2 }}>{totalAvailable}</div>
         </div>
         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: isMobile ? 12 : 16 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '.5px' }}>Clientes</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '.5px' }}>Total Clientes</div>
           <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, color: '#1d4ed8', marginTop: 2 }}>{groupedUsers.length}</div>
         </div>
       </div>
@@ -833,18 +904,7 @@ export default function CatalogProductsPage() {
                   <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: '#6366f1', background: '#eef2ff', padding: '3px 9px', borderRadius: 10 }}>
                     {selectedUser.requests.length} consulta{selectedUser.requests.length !== 1 ? 's' : ''}
                   </span>
-                  <button onClick={handleNotifyAllFound} disabled={processingId === 'bulk'} title="Notificar y llevar al carrito todos los productos encontrados" style={{ flexShrink: 0, background: '#dbeafe', border: '1px solid #93c5fd', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5, cursor: processingId === 'bulk' ? 'wait' : 'pointer', color: '#1e40af', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = '#bfdbfe'; e.currentTarget.style.borderColor = '#60a5fa'; }} onMouseLeave={e => { e.currentTarget.style.background = '#dbeafe'; e.currentTarget.style.borderColor = '#93c5fd'; }}>
-                    <Bell size={13} /> Notificar
-                  </button>
-                  <button onClick={() => handlePrintPDF('available')} title="Imprimir o Guardar PDF solo con lo disponible" style={{ flexShrink: 0, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', color: '#166534', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = '#dcfce7'; e.currentTarget.style.borderColor = '#86efac'; }} onMouseLeave={e => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.borderColor = '#bbf7d0'; }}>
-                    <Printer size={13} color="#16a34a" /> Solo Disp.
-                  </button>
-                  <button onClick={() => handlePrintPDF('gallery')} title="Imprimir o Guardar Catálogo Visual" style={{ flexShrink: 0, background: '#fdf4ff', border: '1px solid #fbcfe8', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', color: '#86198f', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = '#fae8ff'; e.currentTarget.style.borderColor = '#f9a8d4'; }} onMouseLeave={e => { e.currentTarget.style.background = '#fdf4ff'; e.currentTarget.style.borderColor = '#fbcfe8'; }}>
-                    <Eye size={13} color="#c026d3" /> Galería
-                  </button>
-                  <button onClick={handleCopySkus} title="Copiar SKUs a Excel" style={{ flexShrink: 0, background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', color: '#475569', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }} onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}>
-                    <Copy size={13} /> SKUs
-                  </button>
+
                   <button onClick={handleDeleteAllUserAlerts} disabled={processingId === 'bulk'} title="Eliminar todas las consultas de este cliente" style={{ flexShrink: 0, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5, cursor: processingId === 'bulk' ? 'wait' : 'pointer', color: '#dc2626', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.borderColor = '#fca5a5'; }} onMouseLeave={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#fecaca'; }}>
                     <Trash2 size={13} /> Eliminar Todo
                   </button>
@@ -985,6 +1045,7 @@ export default function CatalogProductsPage() {
                               {/* Ir a Inventario */}
                               <Link
                                 href={`/inventario?search=${encodeURIComponent(a.sku || a.productName)}`}
+                                target="_blank"
                                 style={{
                                   display: 'flex', alignItems: 'center', gap: 6,
                                   padding: isMobile ? '7px 10px' : '8px 12px',
@@ -997,103 +1058,14 @@ export default function CatalogProductsPage() {
                                 <ExternalLink size={15} /> {isMobile ? 'Inventario' : 'Ir a Inventario'}
                               </Link>
 
-                              {/* En Tienda - Notificar y llevar al cliente */}
-                              {(a.source === 'products' || a.hasStock) ? (
-                                <button
-                                  onClick={() => handleMarkAvailable(a)}
-                                  disabled={processingId === a.$id}
-                                  style={{
-                                    padding: isMobile ? '7px 10px' : '7px 12px', border: 'none', borderRadius: 6,
-                                    fontSize: isMobile ? 11 : 12, fontWeight: 700,
-                                    background: '#2563eb', color: '#fff', cursor: processingId === a.$id ? 'wait' : 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: 5,
-                                    boxShadow: 'rgba(37, 99, 235, 0.3) 0px 2px 8px',
-                                  }}
-                                >
-                                  <ShoppingCart size={12} /> {isMobile ? 'Llevar al cliente' : `Llevar al cliente (${a.currentStock ?? 0} uds)`}
-                                </button>
-                              ) : a.source === 'catalog_products' ? (
-                                <button
-                                  onClick={() => handleMarkAvailable(a)}
-                                  disabled={processingId === a.$id}
-                                  style={{
-                                    padding: isMobile ? '7px 10px' : '7px 12px', border: 'none', borderRadius: 6,
-                                    fontSize: isMobile ? 11 : 12, fontWeight: 700,
-                                    background: '#7c3aed', color: '#fff', cursor: processingId === a.$id ? 'wait' : 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: 5,
-                                    boxShadow: 'rgba(124, 58, 237, 0.3) 0px 2px 8px',
-                                  }}
-                                >
-                                  <Eye size={12} /> {isMobile ? 'Notificar A Pedido' : 'Llevar al cliente (A Pedido)'}
-                                </button>
-                              ) : a.source === 'inventory_products' ? (
-                                <button
-                                  onClick={() => handleMarkAvailable(a)}
-                                  disabled={processingId === a.$id}
-                                  style={{
-                                    padding: isMobile ? '7px 10px' : '7px 12px', border: 'none', borderRadius: 6,
-                                    fontSize: isMobile ? 11 : 12, fontWeight: 700,
-                                    background: '#d97706', color: '#fff', cursor: processingId === a.$id ? 'wait' : 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: 5,
-                                    boxShadow: 'rgba(217, 119, 6, 0.3) 0px 2px 8px',
-                                  }}
-                                >
-                                  <AlertTriangle size={12} /> {isMobile ? 'Verificar' : 'Verificar Bodega'}
-                                </button>
-                              ) : a.currentStock && a.currentStock > 0 ? (
-                                <button
-                                  onClick={() => handleMarkAvailable(a)}
-                                  disabled={processingId === a.$id}
-                                  style={{
-                                    padding: isMobile ? '7px 10px' : '7px 12px', border: 'none', borderRadius: 6,
-                                    fontSize: isMobile ? 11 : 12, fontWeight: 700,
-                                    background: '#16a34a', color: '#fff', cursor: processingId === a.$id ? 'wait' : 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: 5,
-                                  }}
-                                >
-                                  <CheckCircle size={12} /> {isMobile ? `Stock (${a.currentStock})` : `Notificar Stock (${a.currentStock} ud)`}
-                                </button>
-                              ) : (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-                                  <button
-                                    disabled
-                                    style={{
-                                      padding: isMobile ? '7px 10px' : '7px 12px', border: 'none', borderRadius: 6,
-                                      fontSize: isMobile ? 11 : 12, fontWeight: 700,
-                                      background: '#e5e7eb', color: '#9ca3af', cursor: 'not-allowed',
-                                      display: 'flex', alignItems: 'center', gap: 5,
-                                    }}
-                                  >
-                                    <Lock size={11} /> Bloqueado
-                                  </button>
-                                  {!isMobile && (
-                                    <span style={{ fontSize: 11, color: '#f97316', fontWeight: 600 }}>⚠️ Agrega stock</span>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* No Hay Stock */}
-                              <button
-                                onClick={() => handleMarkUnavailable(a)}
-                                disabled={processingId === a.$id}
-                                style={{
-                                  padding: isMobile ? '7px 10px' : '7px 12px', border: '1px solid #fecaca', borderRadius: 6,
-                                  fontSize: isMobile ? 11 : 12, fontWeight: 700,
-                                  background: '#fff', color: '#dc2626', cursor: processingId === a.$id ? 'wait' : 'pointer',
-                                  display: 'flex', alignItems: 'center', gap: 4,
-                                }}
-                              >
-                                <XCircle size={12} /> No Hay
-                              </button>
-
                               {/* Eliminar consulta */}
                               <button
                                 onClick={() => handleDeleteAlert(a)}
                                 disabled={processingId === a.$id}
                                 style={{
-                                  padding: isMobile ? '7px 10px' : '7px 12px', border: '1px solid #e5e7eb', borderRadius: 6,
+                                  padding: isMobile ? '7px 10px' : '8px 12px', border: '1px solid #fecaca', borderRadius: 8,
                                   fontSize: isMobile ? 11 : 12, fontWeight: 700,
-                                  background: '#fff', color: '#6b7280', cursor: processingId === a.$id ? 'wait' : 'pointer',
+                                  background: '#fff', color: '#dc2626', cursor: processingId === a.$id ? 'wait' : 'pointer',
                                   display: 'flex', alignItems: 'center', gap: 4,
                                 }}
                               >

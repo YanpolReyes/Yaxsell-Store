@@ -6,7 +6,7 @@ import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, INVENTORY_PRODU
 import { Product } from '@/types/admin';
 import { RefreshCw, AlertTriangle, Package, Search, X, TrendingDown, DollarSign, Download, Check, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { getWarehouseLocationFromFeatures } from '@/lib/product-features';
+import { getWarehouseLocationFromFeatures, getSkuFromFeatures } from '@/lib/product-features';
 
 type StockLevel = 'all' | 'out' | 'critical' | 'low' | 'ok';
 
@@ -103,6 +103,63 @@ export default function InventoryPage() {
     finally { setIsLoading(false); }
   }, [lastCursor]);
 
+  const triggerSearch = async (searchTerm: string) => {
+    const q = searchTerm.trim();
+    if (!q) {
+      load(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      const qLower = q.toLowerCase();
+      const qUpper = q.toUpperCase();
+
+      const queries = [
+        [Query.equal('sku', [q, qLower, qUpper])],
+        [Query.contains('TAGS', [q, qLower, qUpper])],
+        [Query.equal('jumpseller_id', [q, qLower, qUpper])],
+        [Query.equal('barcode', [q, qLower, qUpper])],
+        [Query.contains('NAME', q)],
+        [Query.contains('NAME', qLower)],
+        [Query.contains('NAME', qUpper)],
+      ];
+
+      let found: Product[] = [];
+
+      for (const qry of queries) {
+        try {
+          const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [...qry, Query.limit(100)]);
+          if (resp.documents.length > 0) {
+            found.push(...(resp.documents as unknown as Product[]));
+            break;
+          }
+        } catch {}
+      }
+
+      if (found.length === 0) {
+        try {
+          const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.contains('FEATURES', q), Query.limit(100)]);
+          if (resp.documents.length > 0) {
+            found.push(...(resp.documents as unknown as Product[]));
+          }
+        } catch {}
+      }
+
+      const activeDocs = found.filter(p => p.ISACTIVE !== false);
+      setProducts(activeDocs);
+      setLastCursor(null);
+    } catch (e: any) {
+      setError('Error al buscar: ' + e.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const deleteProduct = async (productId: string) => {
     setDeletingId(productId);
     try {
@@ -169,8 +226,14 @@ export default function InventoryPage() {
     ok:       { label: 'Normal',    bg: 'bg-emerald-100', text: 'text-emerald-700' },
   };
 
+  const getSku = (p: Product) =>
+    getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku) || p.$id;
+
   const filtered = products.filter(p => {
-    const matchSearch = !search || p.NAME?.toLowerCase().includes(search.toLowerCase());
+    const pSku = getSku(p).toLowerCase();
+    const matchSearch = !search || 
+      p.NAME?.toLowerCase().includes(search.toLowerCase()) || 
+      pSku.includes(search.toLowerCase());
     const matchLevel = level === 'all' || getLevel(p.STOCK ?? 0) === level;
     const matchRestock = !needsRestockOnly || (p.RESTOCKTHRESHOLD !== undefined && (p.STOCK ?? 0) <= p.RESTOCKTHRESHOLD);
     return matchSearch && matchLevel && matchRestock;
@@ -322,9 +385,15 @@ export default function InventoryPage() {
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar producto..."
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                triggerSearch(search);
+              }
+            }}
+            placeholder="Buscar por nombre, SKU o código (Enter)..."
             className="w-full pl-9 pr-9 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-          {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><X className="w-4 h-4" /></button>}
+          {search && <button onClick={() => { setSearch(''); load(false); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><X className="w-4 h-4" /></button>}
         </div>
         <div className="flex gap-2 flex-wrap">
           <button onClick={() => setNeedsRestockOnly(v => !v)}
@@ -407,6 +476,12 @@ export default function InventoryPage() {
                             {packQty > 0 ? `Pack: ${packQty}` : 'Pack: —'}
                             <span className="mx-2 text-gray-300">•</span>
                             Vendidos: <span className="font-semibold text-gray-700">{p.SOLDQUANTITY ?? 0}</span>
+                            {getSku(p) && getSku(p) !== p.$id && (
+                              <>
+                                <span className="mx-2 text-gray-300">•</span>
+                                <span className="font-mono text-[10px] text-gray-400">SKU: {getSku(p)}</span>
+                              </>
+                            )}
                           </p>
                           <p className="text-xs text-gray-500 mt-1">
                             Ubicación: <span className="font-semibold text-gray-700">{loc.label ?? '—'}</span>
@@ -474,7 +549,7 @@ export default function InventoryPage() {
                           Restock: {p.RESTOCKTHRESHOLD ?? '—'}
                         </button>
                         <div className="flex items-center gap-3">
-                          <Link href="/products" className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold">Editar</Link>
+                          <Link href={`/admin/products?search=${getSku(p)}`} className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold">Editar</Link>
                           <button
                             onClick={() => setDeleteConfirm({ id: p.$id, name: p.NAME || 'Producto' })}
                             disabled={deletingId === p.$id}
@@ -543,6 +618,12 @@ export default function InventoryPage() {
                           <p className="font-medium text-gray-900 truncate max-w-[220px]">{p.NAME}</p>
                           <p className="text-xs text-gray-500">
                             Pack: <span className="font-semibold text-gray-700">{p.PACKQTY ?? '—'}</span>
+                            {getSku(p) && getSku(p) !== p.$id && (
+                              <>
+                                <span className="mx-2 text-gray-300">•</span>
+                                <span className="font-mono text-[10px] text-gray-400">SKU: {getSku(p)}</span>
+                              </>
+                            )}
                           </p>
                         </div>
                       </div>
@@ -621,7 +702,7 @@ export default function InventoryPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <Link href="/products" className="text-xs text-indigo-600 hover:text-indigo-700 font-medium">Editar</Link>
+                        <Link href={`/admin/products?search=${getSku(p)}`} className="text-xs text-indigo-600 hover:text-indigo-700 font-medium">Editar</Link>
                         <button
                           onClick={() => setDeleteConfirm({ id: p.$id, name: p.NAME || 'Producto' })}
                           disabled={deletingId === p.$id}

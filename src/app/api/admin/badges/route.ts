@@ -11,6 +11,7 @@ import {
 export async function GET() {
   try {
     const qPendingOrders = JSON.stringify({ method: 'equal', attribute: 'STATUS', values: ['pending'] });
+    const qProcessingOrders = JSON.stringify({ method: 'equal', attribute: 'STATUS', values: ['processing'] });
     const qLimit1 = JSON.stringify({ method: 'limit', values: [1] });
     const qUnreadNotifs = JSON.stringify({ method: 'equal', attribute: 'isRead', values: [false] });
     const qPendingWholesale = JSON.stringify({ method: 'equal', attribute: 'status', values: ['pending'] });
@@ -19,23 +20,37 @@ export async function GET() {
     let requestsTotal = 0;
     try {
       const qPendingRequests = JSON.stringify({ method: 'equal', attribute: 'status', values: ['pending'] });
-      const reqs = await serverListDocuments(STOCK_REQUESTS_COLLECTION_ID, [qPendingRequests, qLimit1]);
-      requestsTotal = reqs.total;
+      const reqs = await serverListDocuments(STOCK_REQUESTS_COLLECTION_ID, [qPendingRequests, JSON.stringify({ method: 'limit', values: [5000] })]);
+      const uniqueUsersReq = new Set(reqs.documents.map((d: any) => d.userId || d.email || d.$id).filter(Boolean));
+      requestsTotal = uniqueUsersReq.size;
     } catch (err) {
       console.error('Error fetching stock requests badges:', err);
     }
 
-    const [orders, notifs, wholesale] = await Promise.all([
+    let alertsTotal = 0;
+    try {
+      const qPendingAlerts = JSON.stringify({ method: 'equal', attribute: 'status', values: ['pending'] });
+      const alts = await serverListDocuments(STOCK_ALERTS_COLLECTION_ID, [qPendingAlerts, JSON.stringify({ method: 'limit', values: [5000] })]);
+      const uniqueUsersAlt = new Set(alts.documents.map((d: any) => d.userId || d.email || d.$id).filter(Boolean));
+      alertsTotal = uniqueUsersAlt.size;
+    } catch (err) {
+      console.error('Error fetching stock alerts badges:', err);
+    }
+
+    const [ordersPending, ordersProcessing, notifs, wholesale] = await Promise.all([
       serverListDocuments(ORDERS_COLLECTION_ID, [qPendingOrders, qLimit1]),
+      serverListDocuments(ORDERS_COLLECTION_ID, [qProcessingOrders, qLimit1]),
       serverListDocuments(NOTIFICATIONS_COLLECTION_ID, [qUnreadNotifs, qLimit1]),
       serverListDocuments(WHOLESALE_REQUESTS_COLLECTION_ID, [qPendingWholesale, qLimit1]),
     ]);
 
     return NextResponse.json({
-      pendingOrders: orders.total,
+      pendingOrders: ordersPending.total,
+      processingOrders: ordersProcessing.total,
       unreadNotifs: notifs.total,
       pendingWholesale: wholesale.total,
       pendingRequests: requestsTotal,
+      pendingAlerts: alertsTotal,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Error desconocido';
