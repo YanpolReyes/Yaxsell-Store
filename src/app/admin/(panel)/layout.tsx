@@ -60,6 +60,7 @@ const NAV_GROUPS: NavGroup[] = [
     { href: '', label: 'Productos', icon: Ico.Productos, children: [
       { href: '', label: 'TIENDA', icon: Ico.Productos, children: [
         { href: '/admin/products',       label: 'Productos',       icon: Ico.Productos },
+        { href: '/admin/products/liveshopping', label: 'Live Shopping',   icon: Ico.LiveShop },
         { href: '/admin/products/bulk-add', label: 'Agregar Masivamente', icon: Ico.Sparkles },
         { href: '/admin/products/vinculacion', label: 'Vincular Productos', icon: Ico.Sparkles },
         { href: '/admin/categories',     label: 'Categorías',      icon: Ico.Categorias },
