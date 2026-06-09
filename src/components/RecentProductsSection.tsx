@@ -6,6 +6,9 @@ import { Client, Query } from 'appwrite';
 import { Product } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { Sparkles, ShoppingCart, Check, X } from 'lucide-react';
+import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
+import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import { getSkuFromFeatures } from '@/lib/product-features';
 
 export default function RecentProductsSection() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -13,6 +16,7 @@ export default function RecentProductsSection() {
   const [addingId, setAddingId] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { addItem } = useCart();
+  const { settings: apertura } = useAperturaPromotion();
 
   useEffect(() => {
     // Helper to compute local 7am threshold
@@ -209,8 +213,9 @@ export default function RecentProductsSection() {
           <div className="flex-1 overflow-y-auto p-4 bg-gray-50/50">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
               {products.map(p => {
-                const displayPrice = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
-                const hasDiscount = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
+                const pricing = resolveProductDisplayPrice(p, apertura);
+                const displayPrice = pricing.displayPrice;
+                const hasDiscount = pricing.hasDiscount;
                 const isAdding = addingId === p.$id;
                 
                 return (
@@ -229,7 +234,7 @@ export default function RecentProductsSection() {
                       <div className="flex items-center justify-between gap-1 mt-auto">
                         <div className="flex flex-col">
                           <span className="font-bold text-gray-900 text-xs sm:text-sm">{formatPrice(displayPrice)}</span>
-                          {hasDiscount && <span className="text-[9px] sm:text-[10px] text-gray-400 line-through">{formatPrice(p.PRICE)}</span>}
+                          {hasDiscount && pricing.originalPrice != null && <span className="text-[9px] sm:text-[10px] text-gray-400 line-through">{formatPrice(pricing.originalPrice)}</span>}
                         </div>
                         <button
                           onClick={(e) => handleAddToCart(e, p)}
@@ -289,10 +294,15 @@ export default function RecentProductsSection() {
       {/* Responsive layout: scrollable list on mobile, grid on desktop */}
       <div className="recent-products-grid scrollbar-hide snap-x snap-mandatory overscroll-x-contain sm:snap-none">
         {products.map(p => {
-          const displayPrice = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
-          const hasDiscount = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
-          const discPct = hasDiscount ? Math.round(((p.PRICE - p.CURRENTPRICE!) / p.PRICE) * 100) : 0;
+          const pricing = resolveProductDisplayPrice(p, apertura);
+          const displayPrice = pricing.displayPrice;
+          const hasDiscount = pricing.hasDiscount;
+          const discPct = pricing.discountPercent;
           const isAdding = addingId === p.$id;
+
+          const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
+          const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
+          const cardSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
 
           return (
             <div 
@@ -341,11 +351,17 @@ export default function RecentProductsSection() {
               {/* Product Info */}
               <div className="p-3.5 flex flex-col justify-between flex-grow bg-gradient-to-b from-transparent to-white/50">
                 <div className="mb-2">
+                  {cardSku && <div className="text-[10px] text-gray-400 font-bold mb-1">SKU: {cardSku}</div>}
                   <a href={`/productos/${p.$id}`} className="block">
                     <h3 className="font-semibold text-xs sm:text-[13px] text-gray-800 group-hover:text-pink-500 line-clamp-2 transition-colors duration-200 min-h-[34px] leading-snug">
                       {p.NAME}
                     </h3>
                   </a>
+                  {p.PACKQTY && p.PACKQTY > 1 ? (
+                    <div style={{ fontSize: '10px', color: '#db2777', fontWeight: 800, marginTop: '2px' }}>
+                      {p.PACKQTY} UNIDADES POR PAQUETE
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* Price and Add button */}
@@ -354,9 +370,9 @@ export default function RecentProductsSection() {
                     <span className="font-black text-sm sm:text-base text-gray-900 tracking-tight">
                       {formatPrice(displayPrice)}
                     </span>
-                    {hasDiscount && (
+                    {hasDiscount && pricing.originalPrice != null && (
                       <span className="text-[10px] text-gray-400 line-through font-medium">
-                        {formatPrice(p.PRICE)}
+                        {formatPrice(pricing.originalPrice)}
                       </span>
                     )}
                   </div>
