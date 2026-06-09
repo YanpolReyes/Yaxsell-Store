@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Store, Phone, Mail, MapPin, Globe, Save, Loader2, Eye, EyeOff, Sparkles, Building2, MessageSquare, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Store, Phone, Mail, MapPin, Globe, Save, Loader2, Eye, EyeOff, Sparkles, Building2, MessageSquare, ToggleLeft, ToggleRight, ArrowRightLeft, AlertTriangle, CheckCircle, Database, RefreshCw } from 'lucide-react';
 import { getServices, DATABASE_ID } from '@/lib/appwrite-admin';
-import { Query } from 'appwrite';
+import { Query, ID } from 'appwrite';
 
 interface StoreSettings {
   $id?: string;
@@ -44,15 +44,38 @@ function Field({ icon, label, hint, value, onChange, placeholder, type = 'text',
 }
 
 export default function StoreSettingsPage() {
-  const [settings, setSettings] = useState<StoreSettings>({
-    storeName: '', phone: '', email: '', address: '', website: '', description: '', showInAnnouncementBar: false,
+  const [settings, setSettings] = useState<StoreSettings & { unlimitedStock: boolean }>({
+    storeName: '', phone: '', email: '', address: '', website: '', description: '', showInAnnouncementBar: false, unlimitedStock: false,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
 
+  // Migration states
+  const [migrating, setMigrating] = useState(false);
+  const [migrationSuccess, setMigrationSuccess] = useState('');
+  const [migrationError, setMigrationError] = useState('');
+  const [migrationProgress, setMigrationProgress] = useState<{ total: number; done: number; copied: number; deleted: number } | null>(null);
+  const [catalogCount, setCatalogCount] = useState<number | null>(null);
+
   useEffect(() => { loadSettings(); }, []);
+
+  useEffect(() => {
+    if (settings.$id) {
+      fetchCatalogCount();
+    }
+  }, [settings.$id]);
+
+  async function fetchCatalogCount() {
+    try {
+      const { databases } = getServices();
+      const response = await databases.listDocuments(DATABASE_ID, 'catalog_products', [Query.limit(1)]);
+      setCatalogCount(response.total);
+    } catch (err) {
+      console.error('Error fetching catalog count:', err);
+    }
+  }
 
   async function loadSettings() {
     try {
@@ -64,6 +87,7 @@ export default function StoreSettingsPage() {
           $id: doc.$id, storeName: doc.STORENAME || '', phone: doc.PHONE || '', email: doc.EMAIL || '',
           address: doc.ADDRESS || '', website: doc.WEBSITE || '', description: doc.DESCRIPTION || '',
           showInAnnouncementBar: doc.SHOWINANNOUNCEMENTBAR ?? false,
+          unlimitedStock: doc.UNLIMITEDSTOCK ?? false,
         });
       }
     } catch (error) { console.error('Error loading settings:', error); }
@@ -78,6 +102,7 @@ export default function StoreSettingsPage() {
         STORENAME: settings.storeName, PHONE: settings.phone, EMAIL: settings.email,
         ADDRESS: settings.address, WEBSITE: settings.website, DESCRIPTION: settings.description,
         SHOWINANNOUNCEMENTBAR: settings.showInAnnouncementBar,
+        UNLIMITEDSTOCK: settings.unlimitedStock,
       };
       if (settings.$id) {
         await databases.updateDocument(DATABASE_ID, 'store_settings', settings.$id, data);
@@ -85,12 +110,146 @@ export default function StoreSettingsPage() {
         const doc = await databases.createDocument(DATABASE_ID, 'store_settings', 'unique()', data);
         setSettings({ ...settings, $id: doc.$id });
       }
+
+      // Dispatch update event to invalidate frontend cache
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('store-settings-updated'));
+      }
+
       setMessage({ type: 'success', text: 'Configuración guardada exitosamente' });
       setTimeout(() => setMessage(null), 3000);
     } catch (error: any) {
       console.error('Error saving settings:', error);
       setMessage({ type: 'error', text: error.message || 'Error al guardar la configuración' });
     } finally { setSaving(false); }
+  }
+
+  const executeWithRetry = async (fn: () => Promise<any>, maxRetries = 5, initialDelay = 1500) => {
+    let retries = 0;
+    let delay = initialDelay;
+    while (true) {
+      try {
+        return await fn();
+      } catch (err: any) {
+        if (err.code === 429 && retries < maxRetries) {
+          console.warn(`Rate limit hit (429). Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          retries++;
+          delay *= 2;
+        } else {
+          throw err;
+        }
+      }
+    }
+  };
+
+  const COPY_KEYS = [
+    'NAME', 'DESCRIPTION', 'PRICE', 'CURRENTPRICE', 'COST', 'STOCK',
+    'SOLDQUANTITY', 'CATEGORYID', 'SUBCATEGORYID', 'IMAGEURL', 'IMAGEURL2', 'IMAGEURL3',
+    'IMAGEURL4', 'IMAGEURL5', 'RATING', 'NUMREVIEWS', 'WHOLESALEPRICE',
+    'WHOLESALEMINQUANTITY', 'ISFEATURED', 'ISACTIVE', 'PACKQTY', 'RESTOCKTHRESHOLD',
+    'jumpseller_id', 'section', 'sku', 'barcode', 'COMING_SOON', 'DATE_ADDED',
+    'TAGS', 'FEATURES',
+  ];
+
+  async function runMigration() {
+    if (!confirm('¿Estás seguro de que deseas migrar todos los productos de catálogo a la tienda? Esto creará/actualizará los productos en la colección "products" con stock ilimitado (99999) y los eliminará de "catalog_products".')) return;
+
+    setMigrating(true);
+    setMigrationError('');
+    setMigrationSuccess('');
+    setMigrationProgress({ total: 0, done: 0, copied: 0, deleted: 0 });
+
+    try {
+      const { databases } = getServices();
+
+      // 1. Fetch all catalog_products
+      const allDocs: any[] = [];
+      let offset = 0;
+      while (true) {
+        const res = await databases.listDocuments(DATABASE_ID, 'catalog_products', [
+          Query.limit(500), Query.offset(offset),
+        ]);
+        allDocs.push(...res.documents);
+        if (res.documents.length < 500) break;
+        offset += 500;
+      }
+
+      setMigrationProgress(p => ({ ...p!, total: allDocs.length }));
+
+      let done = 0;
+      let copied = 0;
+      let deleted = 0;
+
+      // 2. Copy each to products (setting stock to 99999)
+      for (const doc of allDocs) {
+        try {
+          const productData: any = {};
+          for (const key of COPY_KEYS) {
+            if (doc[key] !== undefined && doc[key] !== null) {
+              productData[key] = doc[key];
+            }
+          }
+          // Force stock to 99999 for unlimited stock
+          productData.STOCK = 99999;
+          productData.ISACTIVE = doc.ISACTIVE !== false;
+
+          // If there is an ORIGINAL_PRODUCT_ID reference, try to restore with that document ID
+          const targetDocId = doc.ORIGINAL_PRODUCT_ID || doc.$id || 'unique()';
+
+          // Check if document already exists in products
+          let exists = false;
+          try {
+            await databases.getDocument(DATABASE_ID, 'products', targetDocId);
+            exists = true;
+          } catch {}
+
+          if (exists) {
+            // Update existing
+            await executeWithRetry(() =>
+              databases.updateDocument(DATABASE_ID, 'products', targetDocId, {
+                ...productData,
+              })
+            );
+          } else {
+            // Create new
+            await executeWithRetry(() =>
+              databases.createDocument(DATABASE_ID, 'products', targetDocId, productData)
+            );
+          }
+
+          copied++;
+        } catch (err: any) {
+          console.error(`Error copying ${doc.NAME}:`, err.message);
+        }
+        done++;
+        setMigrationProgress(p => ({ ...p!, done, copied, deleted }));
+        await new Promise(r => setTimeout(r, 60));
+      }
+
+      // 3. Delete from catalog_products
+      done = 0;
+      for (const doc of allDocs) {
+        try {
+          await executeWithRetry(() =>
+            databases.deleteDocument(DATABASE_ID, 'catalog_products', doc.$id)
+          );
+          deleted++;
+        } catch (err: any) {
+          console.error(`Error deleting ${doc.$id}:`, err.message);
+        }
+        done++;
+        setMigrationProgress(p => ({ ...p!, done, copied, deleted }));
+        await new Promise(r => setTimeout(r, 60));
+      }
+
+      setMigrationSuccess(`Migración exitosa: ${copied} productos movidos a la tienda.`);
+      fetchCatalogCount();
+    } catch (err: any) {
+      setMigrationError(err.message || 'Ocurrió un error durante la migración');
+    } finally {
+      setMigrating(false);
+    }
   }
 
   if (loading) {
@@ -206,74 +365,200 @@ export default function StoreSettingsPage() {
         </div>
       </div>
 
-      {/* ─── Card: Visualización ─── */}
-      <div style={{
-        marginTop: 20, background: '#fff', borderRadius: 16, border: '1px solid #f0f0f0',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden',
-      }}>
-        <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid #f5f5f5', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 8, background: '#fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c0547a' }}>
-            <Eye size={16} />
+      {/* ─── Two Column Layout: Modalidad & Visualización ─── */}
+      <div className="admin-2col-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 20 }}>
+        
+        {/* ─── Card: Modalidad de Tienda ─── */}
+        <div style={{
+          background: '#fff', borderRadius: 16, border: '1px solid #f0f0f0',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden',
+        }}>
+          <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid #f5f5f5', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0369a1' }}>
+              <Database size={16} />
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#1f2937' }}>Modalidad de Tienda</div>
+              <div style={{ fontSize: 11, color: '#9ca3af' }}>Define la lógica de inventario</div>
+            </div>
           </div>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#1f2937' }}>Visualización en la tienda</div>
-            <div style={{ fontSize: 11, color: '#9ca3af' }}>Controla dónde y cómo se muestran los datos</div>
+          <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '12px 16px', borderRadius: 12,
+              background: settings.unlimitedStock ? 'linear-gradient(135deg, #f0fdf4, #e8f5e9)' : '#fafafa',
+              border: `1.5px solid ${settings.unlimitedStock ? '#bbf7d0' : '#e5e7eb'}`,
+              transition: 'all 0.3s',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: settings.unlimitedStock ? '#16a34a' : '#e5e7eb',
+                  color: settings.unlimitedStock ? '#fff' : '#9ca3af',
+                  transition: 'all 0.3s',
+                }}>
+                  {settings.unlimitedStock ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#1f2937' }}>Sin stock (Stock Ilimitado)</div>
+                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>Permite comprar cualquier cantidad sin límites de inventario</div>
+                </div>
+              </div>
+              <button onClick={() => setSettings({ ...settings, unlimitedStock: !settings.unlimitedStock })} style={{
+                width: 48, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer', position: 'relative',
+                background: settings.unlimitedStock ? '#16a34a' : '#d1d5db',
+                transition: 'background 0.3s',
+              }}>
+                <div style={{
+                  width: 20, height: 20, borderRadius: 10, background: '#fff',
+                  position: 'absolute', top: 3, left: settings.unlimitedStock ? 25 : 3,
+                  transition: 'left 0.3s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                }} />
+              </button>
+            </div>
+            
+            <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.5, background: '#f8fafc', padding: 12, borderRadius: 10, border: '1px solid #e2e8f0' }}>
+              ℹ️ <strong>Al activar Sin Stock:</strong> Se ocultarán todas las pantallas de inventario y stock del panel. Las secciones "Catálogo" y "Solicitudes" serán ocultadas en el storefront y se permitirá la compra ilimitada.
+            </div>
           </div>
         </div>
-        <div style={{ padding: '20px 22px' }}>
-          {/* Toggle */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '16px 20px', borderRadius: 12,
-            background: settings.showInAnnouncementBar ? 'linear-gradient(135deg, #eef2ff, #f0eFFF)' : '#fafafa',
-            border: `1.5px solid ${settings.showInAnnouncementBar ? '#c7d2fe' : '#e5e7eb'}`,
-            transition: 'all 0.3s',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: settings.showInAnnouncementBar ? '#5850ec' : '#e5e7eb',
-                color: settings.showInAnnouncementBar ? '#fff' : '#9ca3af',
-                transition: 'all 0.3s',
-              }}>
-                {settings.showInAnnouncementBar ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
-              </div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#1f2937' }}>Mostrar en barra de anuncios</div>
-                <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>Los datos de contacto aparecerán en la barra superior de la tienda</div>
-              </div>
-            </div>
-            <button onClick={() => setSettings({ ...settings, showInAnnouncementBar: !settings.showInAnnouncementBar })} style={{
-              width: 52, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer', position: 'relative',
-              background: settings.showInAnnouncementBar ? '#5850ec' : '#d1d5db',
-              transition: 'background 0.3s',
-            }}>
-              <div style={{
-                width: 22, height: 22, borderRadius: 11, background: '#fff',
-                position: 'absolute', top: 3, left: settings.showInAnnouncementBar ? 27 : 3,
-                transition: 'left 0.3s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-              }} />
-            </button>
-          </div>
 
-          {/* Mini preview when enabled */}
-          {settings.showInAnnouncementBar && hasData && (
-            <div style={{
-              marginTop: 14, padding: '10px 16px', borderRadius: 8,
-              background: 'linear-gradient(90deg, #1e1b4b, #4f46e5, #7c3aed, #1e1b4b)',
-              backgroundSize: '400% 100%', animation: 'gradFlow 8s ease infinite',
-              color: 'rgba(255,255,255,0.85)', fontSize: 11,
-              display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-            }}>
-              <span style={{ opacity: 0.5, fontSize: 10 }}>Vista previa →</span>
-              {settings.storeName && <span style={{ fontWeight: 700 }}>{settings.storeName}</span>}
-              {settings.phone && <span>📞 {settings.phone}</span>}
-              {settings.email && <span>💌 {settings.email}</span>}
-              {settings.address && <span>📦 {settings.address}</span>}
+        {/* ─── Card: Visualización ─── */}
+        <div style={{
+          background: '#fff', borderRadius: 16, border: '1px solid #f0f0f0',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden',
+        }}>
+          <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid #f5f5f5', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: '#fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c0547a' }}>
+              <Eye size={16} />
             </div>
-          )}
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#1f2937' }}>Visualización en la tienda</div>
+              <div style={{ fontSize: 11, color: '#9ca3af' }}>Controla dónde se muestran los datos</div>
+            </div>
+          </div>
+          <div style={{ padding: '20px 22px' }}>
+            {/* Toggle */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '16px 20px', borderRadius: 12,
+              background: settings.showInAnnouncementBar ? 'linear-gradient(135deg, #eef2ff, #f0eFFF)' : '#fafafa',
+              border: `1.5px solid ${settings.showInAnnouncementBar ? '#c7d2fe' : '#e5e7eb'}`,
+              transition: 'all 0.3s',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: settings.showInAnnouncementBar ? '#5850ec' : '#e5e7eb',
+                  color: settings.showInAnnouncementBar ? '#fff' : '#9ca3af',
+                  transition: 'all 0.3s',
+                }}>
+                  {settings.showInAnnouncementBar ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+                </div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1f2937' }}>Mostrar en barra de anuncios</div>
+                  <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>Los datos de contacto aparecerán en la barra superior de la tienda</div>
+                </div>
+              </div>
+              <button onClick={() => setSettings({ ...settings, showInAnnouncementBar: !settings.showInAnnouncementBar })} style={{
+                width: 52, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer', position: 'relative',
+                background: settings.showInAnnouncementBar ? '#5850ec' : '#d1d5db',
+                transition: 'background 0.3s',
+              }}>
+                <div style={{
+                  width: 22, height: 22, borderRadius: 11, background: '#fff',
+                  position: 'absolute', top: 3, left: settings.showInAnnouncementBar ? 27 : 3,
+                  transition: 'left 0.3s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                }} />
+              </button>
+            </div>
+
+            {/* Mini preview when enabled */}
+            {settings.showInAnnouncementBar && hasData && (
+              <div style={{
+                marginTop: 14, padding: '10px 16px', borderRadius: 8,
+                background: 'linear-gradient(90deg, #1e1b4b, #4f46e5, #7c3aed, #1e1b4b)',
+                backgroundSize: '400% 100%', animation: 'gradFlow 8s ease infinite',
+                color: 'rgba(255,255,255,0.85)', fontSize: 11,
+                display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+              }}>
+                <span style={{ opacity: 0.5, fontSize: 10 }}>Vista previa →</span>
+                {settings.storeName && <span style={{ fontWeight: 700 }}>{settings.storeName}</span>}
+                {settings.phone && <span>📞 {settings.phone}</span>}
+                {settings.email && <span>💌 {settings.email}</span>}
+                {settings.address && <span>📦 {settings.address}</span>}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* ─── Card: Migración de Catálogo a Tienda (A pedido -> General) ─── */}
+      {settings.unlimitedStock && catalogCount !== null && catalogCount > 0 && (
+        <div style={{
+          marginTop: 20, background: '#fff', borderRadius: 16, border: '1px solid #fde68a',
+          boxShadow: '0 4px 12px rgba(217, 119, 6, 0.05)', overflow: 'hidden',
+        }}>
+          <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid #fef3c7', background: '#fffbeb', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d97706' }}>
+              <ArrowRightLeft size={16} />
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e' }}>Migración de Catálogo a Tienda</div>
+              <div style={{ fontSize: 11, color: '#b45309' }}>Mueve productos "A Pedido" a la tienda con stock ilimitado</div>
+            </div>
+          </div>
+          <div style={{ padding: '20px 22px' }}>
+            {migrationSuccess && (
+              <div style={{ display: 'flex', gap: 8, background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '10px 14px', borderRadius: 10, color: '#065f46', fontSize: 13, fontWeight: 600, marginBottom: 14 }}>
+                <CheckCircle size={16} />
+                {migrationSuccess}
+              </div>
+            )}
+            {migrationError && (
+              <div style={{ display: 'flex', gap: 8, background: '#fef2f2', border: '1px solid #fecaca', padding: '10px 14px', borderRadius: 10, color: '#991b1b', fontSize: 13, fontWeight: 600, marginBottom: 14 }}>
+                <AlertTriangle size={16} />
+                {migrationError}
+              </div>
+            )}
+            
+            <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 16px', lineHeight: 1.5 }}>
+              Detectamos <strong>{catalogCount}</strong> productos en la colección "A Pedido" (catalog_products). Como estás en la modalidad sin stock, estos productos deben ser pasados a tu tienda activa para que tus clientes puedan comprarlos.
+            </p>
+
+            <button
+              onClick={runMigration}
+              disabled={migrating}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '12px 24px',
+                background: migrating ? '#9ca3af' : 'linear-gradient(135deg, #d97706, #b45309)',
+                color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700,
+                cursor: migrating ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
+                width: '100%', justifyContent: 'center',
+                boxShadow: migrating ? 'none' : '0 4px 12px rgba(217,119,6,0.25)',
+              }}
+            >
+              {migrating ? (
+                <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Migrando...</>
+              ) : (
+                <><ArrowRightLeft size={16} /> Pasar {catalogCount} productos de Catálogo a Tienda</>
+              )}
+            </button>
+
+            {migrating && migrationProgress && (
+              <div style={{ marginTop: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#4b5563', marginBottom: 6 }}>
+                  <span>Copiando y eliminando del catálogo...</span>
+                  <span>{migrationProgress.done} / {migrationProgress.total}</span>
+                </div>
+                <div style={{ height: 6, background: '#e5e7eb', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', background: '#d97706', width: `${(migrationProgress.done / migrationProgress.total) * 100}%`, transition: 'width 0.2s' }} />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ─── Save Button ─── */}
       <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
@@ -287,7 +572,7 @@ export default function StoreSettingsPage() {
           {saving ? (
             <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />Guardando...</>
           ) : (
-            <><Save size={16} />Guardar cambios</>
+            <><Save size={16} />Guardar configuración</>
           )}
         </button>
       </div>

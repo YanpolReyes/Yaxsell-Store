@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Search, ShoppingCart, User, Heart, Menu, X, MapPin, Bell, Receipt, LogOut, Package, Minus, Plus, Trash2, Home, ArrowLeft, Grid3x3, Sparkles, Ship, Container, Store, LayoutGrid, Truck, Compass } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/context/CartContext';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { useNotifications } from '@/context/NotificationContext';
 import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES, formatPrice } from '@/lib/appwrite';
 import { getSectionConfigAsync, getSectionConfig, type SectionConfig } from '@/lib/section-config';
@@ -32,6 +33,7 @@ export default function Navbar1() {
   const router = useRouter();
   const isHome = pathname === '/';
   const { user, isLoggedIn, logout } = useAuth();
+  const { unlimitedStock } = useStoreSettings();
   const { totalItems, items, subtotal, removeItem, updateQuantity } = useCart();
   const { unreadCount } = useNotifications();
   const [scrolled, setScrolled] = useState(false);
@@ -216,7 +218,7 @@ export default function Navbar1() {
   const NAV_LINKS = [
     { label: 'Inicio', href: '/' },
     { label: 'Tienda', href: '/productos' },
-    { label: 'Catálogo', href: '/catalogo' },
+    ...(!unlimitedStock ? [{ label: 'Catálogo', href: '/catalogo' }] : []),
     { label: 'En Camino', href: '/llegan-pronto', icon: () => <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginRight: 4 }}><Container size={14} style={{ verticalAlign: 'middle' }} /><Ship size={14} style={{ verticalAlign: 'middle' }} /></span> },
     { label: 'Mis Pedidos', href: '/cuenta/pedidos' },
   ];
@@ -972,7 +974,7 @@ export default function Navbar1() {
                 </svg>
               </div>
             </div>
-            <div className="tpl1-fab-bubble" onClick={() => { setFabOpen(false); router.push('/catalogo'); }}>
+            <div className="tpl1-fab-bubble" onClick={() => { setFabOpen(false); router.push('/catalogo'); }} style={{ display: unlimitedStock ? 'none' : undefined }}>
               <span className="tpl1-bubble-label">Catálogo</span>
               <div className="tpl1-bubble-circle">
                 <svg viewBox="0 0 208 256" className="tpl1-catalog-icon" fill="none" xmlns="http://www.w3.org/2000/svg">

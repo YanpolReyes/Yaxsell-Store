@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { Search, Package, ArrowRight, Heart, Bell, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getServices, getAppwriteConfig, CATALOG_PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
 import { normalizeProductImages, resolveStorageImageUrl, getProductImageUrl } from '@/lib/product-images';
@@ -20,6 +22,15 @@ import { buildStockAlertData, normalizeStockAlert } from '@/lib/stock-alerts';
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 
 export default function CatalogoPage() {
+  const router = useRouter();
+  const { unlimitedStock } = useStoreSettings();
+
+  useEffect(() => {
+    if (unlimitedStock) {
+      router.replace('/productos');
+    }
+  }, [unlimitedStock, router]);
+
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
@@ -235,6 +246,14 @@ export default function CatalogoPage() {
     const cat = categories.find(c => c.$id === catId);
     return cat?.iconUrl || '';
   };
+
+  if (unlimitedStock) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontFamily: FF }}>
+        <p style={{ color: '#6b7280', fontSize: 14 }}>Redirigiendo...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ fontFamily: FF, minHeight: '100vh', background: '#fafafa' }}>

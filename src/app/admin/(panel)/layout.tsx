@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { isAdminEmail } from '@/lib/admin-access';
 import { LogOut, Menu, X, ChevronDown, ChevronRight } from 'lucide-react';
 import GlobalSearch from '@/components/admin/GlobalSearch';
@@ -199,8 +200,45 @@ function IATopBarButton({ isOpen, onClick }: { isOpen: boolean; onClick: () => v
 /* ═══════════════════════════════ LAYOUT ═══════════════════════════════ */
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoggedIn, isLoading, logout } = useAuth();
+  const { unlimitedStock } = useStoreSettings();
   const router   = useRouter();
   const pathname = usePathname();
+
+  const filteredNavGroups = NAV_GROUPS.map(group => {
+    if (group.label === 'General') {
+      const items = group.items.map(item => {
+        if (item.label === 'Productos' && item.children) {
+          const children = item.children.map(subGroup => {
+            if (subGroup.label === 'TIENDA' && subGroup.children) {
+              const subChildren = subGroup.children.filter(c => {
+                if (unlimitedStock && c.label === 'Vincular Productos') return false;
+                return true;
+              });
+              return { ...subGroup, children: subChildren };
+            }
+            if (subGroup.label === 'INVENTARIO') {
+              return unlimitedStock ? null : subGroup;
+            }
+            if (subGroup.label === 'CATÁLOGO') {
+              return unlimitedStock ? null : subGroup;
+            }
+            return subGroup;
+          }).filter(Boolean) as NavItem[];
+          return { ...item, children };
+        }
+        return item;
+      });
+      return { ...group, items };
+    }
+    if (group.label === 'Configuración') {
+      const items = group.items.filter(item => {
+        if (unlimitedStock && item.label === 'BODEGAPP') return false;
+        return true;
+      });
+      return { ...group, items };
+    }
+    return group;
+  });
 
   const [sidebarOpen,     setSidebarOpen]     = useState(false);
   const [userMenuOpen,    setUserMenuOpen]    = useState(false);
@@ -612,7 +650,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <nav className="sf-sidebar-scroll" style={{ flex: 1, overflowY: 'auto', padding: '0 8px 0' }}>
         {(() => {
           const ctr = { i: 0 };
-          return NAV_GROUPS.map(group => {
+          return filteredNavGroups.map(group => {
             const isOpen = openGroups.includes(group.label);
             const isMain = group.label === 'General';
 

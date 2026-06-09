@@ -25,6 +25,7 @@ import { useCart } from '@/context/CartContext';
 import { resolveStorageImageUrl } from '@/lib/product-images';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
 
 const SHOPIFY_BASE = '/shopify/plantilla23/assets';
 
@@ -189,6 +190,7 @@ export default function HomePage23() {
   const [bodyHtml, setBodyHtml] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const { user } = useAuth();
+  const { unlimitedStock } = useStoreSettings();
   const router = useRouter();
   const { addItem, items: cartItems, subtotal: cartTotal, updateQuantity, removeItem } = useCart();
   const { settings: apertura } = useAperturaPromotion();
@@ -1963,6 +1965,7 @@ export default function HomePage23() {
             box-shadow: 0 10px 25px -5px rgba(17, 24, 39, 0.4), 0 0 0 1px rgba(255,255,255,0.1) inset;
             letter-spacing:1px; border:none; white-space:nowrap;
           ">Tienda</a>
+          ${!unlimitedStock ? `
           <a href="/catalogo" role="button" style="
             flex: 1; max-width: 160px;
             display:inline-flex; align-items:center; justify-content:center;
@@ -1973,6 +1976,7 @@ export default function HomePage23() {
             text-decoration:none; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05) inset;
             letter-spacing:1px; border:none; white-space:nowrap;
           ">Catálogo</a>
+          ` : ''}
         </div>
         <div class="hidden md:block">
           ${originalHtml}
@@ -2357,7 +2361,11 @@ export default function HomePage23() {
         mobileMenu.appendChild(mobileLi);
       });
 
-      ['TIENDA|https://kevincocochile.cl/productos', 'CATÁLOGO|https://kevincocochile.cl/catalogo'].forEach(item => {
+      const extraLinks = ['TIENDA|https://kevincocochile.cl/productos'];
+      if (!unlimitedStock) {
+        extraLinks.push('CATÁLOGO|https://kevincocochile.cl/catalogo');
+      }
+      extraLinks.forEach(item => {
         const [label, href] = item.split('|');
         const li = document.createElement('li');
         li.className = 'group relative before:content-[\'\'] before:block before:absolute before:top-0 before:left-0 before:transition-all before:duration-500 before:ease-in-out before:h-full before:w-0 before:bg-black before:opacity-1';

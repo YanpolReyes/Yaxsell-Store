@@ -22,6 +22,7 @@ import { Product, TimedOffer } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
 import ReviewSection from '@/components/ReviewSection';
 import ProductQuestions from '@/components/ProductQuestions';
 
@@ -120,6 +121,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const id = previewProductId || params.productId || params.id;
   const router = useRouter();
   const { addItem } = useCart();
+  const { unlimitedStock } = useStoreSettings();
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeOffer, setActiveOffer] = useState<TimedOffer | null>(null);
@@ -508,7 +510,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     });
 
     // 2. Inyectar Bloque Informativo de Envío y Stock (estilo Yaxsell / Plantilla 1) usando la estructura exacta de local-pickup
-    const stock = product.STOCK ?? 0;
+    const stock = unlimitedStock ? 99999 : (product.STOCK ?? 0);
     const stockColor = stock > 10 ? '#10b981' : stock > 5 ? '#f59e0b' : stock > 0 ? '#ef4444' : '#9ca3af';
     const stockLabel = stock > 10 ? 'Stock disponible' : stock > 5 ? 'Stock limitado' : stock > 0 ? `Últimas unidades (${stock} disp.)` : 'Sin stock';
 
@@ -785,58 +787,63 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         }
         
         let reqBtn = paymentButtonContainer.querySelector('.yaxsell-request-stock-btn') as HTMLButtonElement | null;
-        if (!reqBtn) {
-          reqBtn = document.createElement('button');
-          reqBtn.type = 'button';
-          reqBtn.className = 'shopify-payment-button__button shopify-payment-button__button--unbranded yaxsell-request-stock-btn';
-          reqBtn.style.width = '100%';
-          reqBtn.style.marginTop = '10px';
-          
-          paymentButtonContainer.appendChild(reqBtn);
-          
-          reqBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (hasPendingRequest) return;
-            if (!user) {
-              alert('Debes iniciar sesión para solicitar stock.');
-              router.push('/login');
-              return;
-            }
-            setIsStockRequestModalOpen(true);
-          });
-        }
-
-        reqBtn.textContent = hasPendingRequest ? 'Solicitud en revisión' : 'SOLICITAR MÁS';
-        
-        // Match size/shapes from Add to Cart button
-        const addToCartBtn = root.querySelector('.add-to-cart-button') as HTMLElement | null;
-        if (addToCartBtn) {
-          const computedStyle = window.getComputedStyle(addToCartBtn);
-          reqBtn.style.borderRadius = computedStyle.borderRadius || '40px';
-          reqBtn.style.minHeight = computedStyle.minHeight;
-          reqBtn.style.height = computedStyle.height;
-          reqBtn.style.padding = computedStyle.padding;
-          reqBtn.style.fontSize = computedStyle.fontSize;
-          reqBtn.style.fontWeight = computedStyle.fontWeight;
-          reqBtn.style.letterSpacing = computedStyle.letterSpacing;
-          reqBtn.style.fontFamily = computedStyle.fontFamily;
+        if (unlimitedStock) {
+          if (reqBtn) reqBtn.style.setProperty('display', 'none', 'important');
         } else {
-          reqBtn.style.borderRadius = '40px';
-          reqBtn.style.padding = '14px 20px';
-          reqBtn.style.fontSize = '15px';
-          reqBtn.style.fontWeight = '400';
-        }
-        
-        reqBtn.style.transition = 'all 0.2s ease';
-        reqBtn.style.cursor = hasPendingRequest ? 'not-allowed' : 'pointer';
+          if (!reqBtn) {
+            reqBtn = document.createElement('button');
+            reqBtn.type = 'button';
+            reqBtn.className = 'shopify-payment-button__button shopify-payment-button__button--unbranded yaxsell-request-stock-btn';
+            reqBtn.style.width = '100%';
+            reqBtn.style.marginTop = '10px';
+            
+            paymentButtonContainer.appendChild(reqBtn);
+            
+            reqBtn.addEventListener('click', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (hasPendingRequest) return;
+              if (!user) {
+                alert('Debes iniciar sesión para solicitar stock.');
+                router.push('/login');
+                return;
+              }
+              setIsStockRequestModalOpen(true);
+            });
+          }
 
-        if (hasPendingRequest) {
-          reqBtn.classList.add('is-pending');
-          reqBtn.setAttribute('disabled', 'true');
-        } else {
-          reqBtn.classList.remove('is-pending');
-          reqBtn.removeAttribute('disabled');
+          reqBtn.style.setProperty('display', 'block', 'important');
+          reqBtn.textContent = hasPendingRequest ? 'Solicitud en revisión' : 'SOLICITAR MÁS';
+          
+          // Match size/shapes from Add to Cart button
+          const addToCartBtn = root.querySelector('.add-to-cart-button') as HTMLElement | null;
+          if (addToCartBtn) {
+            const computedStyle = window.getComputedStyle(addToCartBtn);
+            reqBtn.style.borderRadius = computedStyle.borderRadius || '40px';
+            reqBtn.style.minHeight = computedStyle.minHeight;
+            reqBtn.style.height = computedStyle.height;
+            reqBtn.style.padding = computedStyle.padding;
+            reqBtn.style.fontSize = computedStyle.fontSize;
+            reqBtn.style.fontWeight = computedStyle.fontWeight;
+            reqBtn.style.letterSpacing = computedStyle.letterSpacing;
+            reqBtn.style.fontFamily = computedStyle.fontFamily;
+          } else {
+            reqBtn.style.borderRadius = '40px';
+            reqBtn.style.padding = '14px 20px';
+            reqBtn.style.fontSize = '15px';
+            reqBtn.style.fontWeight = '400';
+          }
+          
+          reqBtn.style.transition = 'all 0.2s ease';
+          reqBtn.style.cursor = hasPendingRequest ? 'not-allowed' : 'pointer';
+
+          if (hasPendingRequest) {
+            reqBtn.classList.add('is-pending');
+            reqBtn.setAttribute('disabled', 'true');
+          } else {
+            reqBtn.classList.remove('is-pending');
+            reqBtn.removeAttribute('disabled');
+          }
         }
     }
 

@@ -6,6 +6,7 @@ import { useToast } from '@/components/Toast';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { useAuth } from '@/hooks/useAuth';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { getServices, getAppwriteConfig } from '@/lib/appwrite';
 import { Query, ID } from 'appwrite';
 
@@ -33,6 +34,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { showToast } = useToast();
   const { settings: apertura } = useAperturaPromotion();
   const { user, isLoggedIn } = useAuth();
+  const { unlimitedStock } = useStoreSettings();
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const snapshotDocIdRef = useRef<string | null>(null);
   const itemsRef = useRef<CartItem[]>([]);
@@ -75,7 +77,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const existing = items.find(i => i.product.$id === product.$id);
     
     if (existing) {
-      const newQty = Math.min(existing.quantity + qty, product.STOCK);
+      const newQty = unlimitedStock ? (existing.quantity + qty) : Math.min(existing.quantity + qty, product.STOCK);
       setItems(prev => prev.map(i => i.product.$id === product.$id ? { ...i, quantity: newQty, wholesalePrice } : i));
       showToast(`Cantidad actualizada: ${newQty} unidades`, 'info');
     } else {
@@ -93,7 +95,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (qty <= 0) { removeItem(productId); return; }
     setItems(prev => prev.map(i => {
       if (i.product.$id !== productId) return i;
-      return { ...i, quantity: Math.min(qty, i.product.STOCK) };
+      return { ...i, quantity: unlimitedStock ? qty : Math.min(qty, i.product.STOCK) };
     }));
   };
 
