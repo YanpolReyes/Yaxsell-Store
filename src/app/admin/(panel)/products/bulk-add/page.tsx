@@ -30,6 +30,7 @@ export default function BulkAddPage() {
   const [results, setResults] = useState<{ 
     created: number; 
     updated: number; 
+    duplicates: string[];
     errors: string[]; 
   } | null>(null);
   const [preview, setPreview] = useState<BulkAddRow[]>([]);
@@ -99,6 +100,7 @@ export default function BulkAddPage() {
 
       let created = 0;
       let updated = 0;
+      const duplicates: string[] = [];
       const errors: string[] = [];
 
       for (const row of rows) {
@@ -181,17 +183,24 @@ export default function BulkAddPage() {
           };
 
           if (product) {
-            // Update existing product
+            // Product already exists: do NOT create/add a new document.
+            // Update imported_at so it goes to today's Live Shopping, and ensure it has stock >= 1
+            const newStock = (product.STOCK || 0) > 0 ? product.STOCK : 1;
             await databases.updateDocument(
               databaseId, 
               PRODUCTS_COLLECTION_ID, 
               product.$id, 
-              productPayload
+              {
+                imported_at: new Date().toISOString(),
+                STOCK: newStock,
+                ISACTIVE: true
+              }
             );
-            updated++;
+            duplicates.push(`[SKU: ${row.sku}] ${row.name} (Ya existía, se actualizó para Live con stock ${newStock})`);
           } else {
             // Create new product
             productPayload.STOCK = 1; // initialize stock to 1
+            productPayload.imported_at = new Date().toISOString();
             await databases.createDocument(
               databaseId, 
               PRODUCTS_COLLECTION_ID, 
@@ -209,8 +218,8 @@ export default function BulkAddPage() {
         }
       }
 
-      setResults({ created, updated, errors });
-      alert(`✅ Carga masiva completada: ${created} creado(s), ${updated} actualizado(s)`);
+      setResults({ created, updated, duplicates, errors });
+      alert(`✅ Carga masiva completada: ${created} creado(s) nuevos, ${duplicates.length} existente(s) marcados para Live`);
     } catch (e: any) {
       alert('Error: ' + e.message);
     } finally {
@@ -339,14 +348,30 @@ export default function BulkAddPage() {
 
         {results && (
           <div className="mt-6 space-y-4">
-            {(results.created > 0 || results.updated > 0) && (
+            {results.created > 0 && (
               <div className="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium text-green-900">Operación exitosa</p>
+                  <p className="font-medium text-green-900">Productos nuevos creados</p>
                   <p className="text-sm text-green-700">
-                    Se crearon {results.created} productos nuevos y se actualizaron {results.updated} existentes.
+                    Se crearon {results.created} productos nuevos con stock inicial de 1 y se agregaron a Live Shopping.
                   </p>
+                </div>
+              </div>
+            )}
+
+            {results.duplicates.length > 0 && (
+              <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-red-900">Productos existentes ({results.duplicates.length})</p>
+                  <p className="text-xs text-red-700 mb-2">
+                    Estos productos ya existían en la base de datos y no se volvieron a crear para evitar duplicados. Se activaron y agregaron a Live Shopping.
+                  </p>
+                  <details className="mt-2">
+                    <summary className="text-xs text-red-800 cursor-pointer hover:underline">Ver productos existentes</summary>
+                    <pre className="text-xs mt-2 bg-red-100 p-2 rounded overflow-auto max-h-32 font-mono">{results.duplicates.join('\n')}</pre>
+                  </details>
                 </div>
               </div>
             )}
@@ -357,7 +382,7 @@ export default function BulkAddPage() {
                 <div>
                   <p className="font-medium text-red-900">Errores ({results.errors.length})</p>
                   <details className="mt-2">
-                    <summary className="text-xs text-red-800 cursor-pointer hover:underline">Ver errores</summary>
+                    <summary className="text-xs text-red-800 cursor-pointer hover:underline">Ver errores de API</summary>
                     <pre className="text-xs mt-2 bg-red-100 p-2 rounded overflow-auto max-h-32">{results.errors.join('\n')}</pre>
                   </details>
                 </div>

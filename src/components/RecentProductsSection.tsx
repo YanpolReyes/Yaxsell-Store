@@ -15,10 +15,23 @@ export default function RecentProductsSection() {
   const { addItem } = useCart();
 
   useEffect(() => {
-    // 1. Fetch initial recent products with stock via cached API
+    // Helper to compute local 7am threshold
+    const getLiveShoppingThreshold = (): Date => {
+      const now = new Date();
+      const today7Am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0, 0);
+      if (now.getTime() >= today7Am.getTime()) {
+        return today7Am;
+      } else {
+        const yesterday7Am = new Date(today7Am);
+        yesterday7Am.setDate(yesterday7Am.getDate() - 1);
+        return yesterday7Am;
+      }
+    };
+
+    // 1. Fetch initial recent products with stock via API
     const loadRecent = async () => {
       try {
-        const res = await fetch('/api/public-data/products?sortBy=newest');
+        const res = await fetch('/api/public-data/products?live=true');
         if (res.ok) {
           const data = await res.json();
           setProducts((data.products || []).slice(0, 12) as Product[]);
@@ -33,7 +46,6 @@ export default function RecentProductsSection() {
     loadRecent();
 
     // 2. Subscribe to Realtime Updates (WebSocket)
-    // Avoids polling HTTP requests completely. Connects once, server pushes updates.
     const { endpoint, projectId, databaseId } = getAppwriteConfig();
     const realtimeClient = new Client().setEndpoint(endpoint).setProject(projectId);
 
@@ -49,8 +61,12 @@ export default function RecentProductsSection() {
         if (isDelete) {
           setProducts(prev => prev.filter(p => p.$id !== doc.$id));
         } else if (isCreate || isUpdate) {
-          if ((doc.STOCK || 0) <= 0 || doc.ISACTIVE === false) {
-            // Remove from list if stock is gone or product deactivated
+          const isStockActive = (doc.STOCK || 0) > 0 && doc.ISACTIVE !== false;
+          const threshold = getLiveShoppingThreshold();
+          const isImportedToday = doc.imported_at && new Date(doc.imported_at).getTime() >= threshold.getTime();
+
+          if (!isStockActive || !isImportedToday) {
+            // Remove from list if stock is gone, deactivated, or not imported today
             setProducts(prev => prev.filter(p => p.$id !== doc.$id));
           } else {
             // Insert or update and sort
@@ -59,8 +75,8 @@ export default function RecentProductsSection() {
               const updated = [doc, ...filtered];
               return updated
                 .sort((a, b) => {
-                  const dateA = a.DATE_ADDED ? new Date(a.DATE_ADDED).getTime() : (a.$createdAt ? new Date(a.$createdAt).getTime() : 0);
-                  const dateB = b.DATE_ADDED ? new Date(b.DATE_ADDED).getTime() : (b.$createdAt ? new Date(b.$createdAt).getTime() : 0);
+                  const dateA = a.imported_at ? new Date(a.imported_at).getTime() : 0;
+                  const dateB = b.imported_at ? new Date(b.imported_at).getTime() : 0;
                   return dateB - dateA;
                 })
                 .slice(0, 12);
@@ -70,7 +86,22 @@ export default function RecentProductsSection() {
       }
     );
 
+    // 3. Periodically sweep products to enforce 7am threshold (in case user leaves page open past 7am)
+    const sweepInterval = setInterval(() => {
+      const threshold = getLiveShoppingThreshold();
+      setProducts(prev => {
+        const filtered = prev.filter(p => {
+          return p.imported_at && new Date(p.imported_at).getTime() >= threshold.getTime();
+        });
+        if (filtered.length !== prev.length) {
+          return filtered;
+        }
+        return prev;
+      });
+    }, 30000); // check every 30 seconds
+
     return () => {
+      clearInterval(sweepInterval);
       try {
         unsubscribe();
       } catch (e) {
