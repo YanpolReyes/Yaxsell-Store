@@ -226,6 +226,9 @@ export default function RecentProductsSection() {
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl bg-gray-100">📦</div>
                       )}
+                      <span className="absolute top-2 right-2 bg-gradient-to-r from-rose-400 to-pink-500 text-white font-extrabold text-[9px] px-2 py-0.5 rounded shadow-md z-10">
+                        20% OFF
+                      </span>
                     </a>
                     <div className="p-3 flex flex-col flex-1 justify-between">
                       <a href={`/productos/${p.$id}`}>
@@ -344,19 +347,12 @@ export default function RecentProductsSection() {
                     <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse"></span>
                     Nuevo
                   </span>
-                  {hasDiscount && (
-                    <span className="bg-gradient-to-r from-rose-400 to-pink-500 text-white font-extrabold text-[9px] px-2 py-0.5 rounded-md shadow-md">
-                      -{discPct}% OFF
-                    </span>
-                  )}
                 </div>
 
-                {/* Badge top-right with Stock amount if low */}
-                {p.STOCK > 0 && p.STOCK <= 5 && (
-                  <span className="absolute top-2.5 right-2.5 bg-orange-500/95 backdrop-blur-sm text-white font-extrabold text-[9px] px-2 py-0.5 rounded-md shadow-md z-10 animate-pulse">
-                    ¡Solo {p.STOCK}!
-                  </span>
-                )}
+                {/* Badge top-right with 20% OFF */}
+                <span className="absolute top-2.5 right-2.5 bg-gradient-to-r from-rose-400 to-pink-500 text-white font-extrabold text-[9px] px-2 py-0.5 rounded-md shadow-md z-10">
+                  20% OFF
+                </span>
               </a>
 
               {/* Product Info */}
