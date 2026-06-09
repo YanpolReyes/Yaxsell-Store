@@ -5,7 +5,7 @@ import { Query } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, ORDERS_COLLECTION_ID, WHOLESALE_REQUESTS_COLLECTION_ID, SUPPORT_TICKETS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { dedupeUserDocuments, isRegisteredUserProfile, listAllUserProfiles, type UserProfileDoc } from '@/lib/users-db';
 import { Order, Product, DashboardStats } from '@/types/admin';
-import { Package, ShoppingCart, Clock, DollarSign, TrendingUp, TrendingDown, AlertTriangle, RefreshCw, ArrowRight, Plus, ChevronRight, Users, Megaphone, BarChart3, Zap, Globe, Search, MapPin, ShoppingBag, Eye, Database, Coins, Activity } from 'lucide-react';
+import { Package, ShoppingCart, Clock, DollarSign, TrendingUp, TrendingDown, AlertTriangle, RefreshCw, ArrowRight, Plus, ChevronRight, Users, Megaphone, BarChart3, Zap, Globe, Search, MapPin, ShoppingBag, Eye, Database, Coins, Activity, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { getPageViewStats } from '@/hooks/usePageViewTracker';
@@ -1472,6 +1472,7 @@ export default function DashboardPage() {
     databaseReadsTotal: number;
     databaseWritesTotal: number;
     todayReads: number;
+    sevenDaysReads?: number;
     history: { date: string; value: number }[];
     collections: { products: number; orders: number; inventory: number };
     lastUpdated: string;
@@ -2198,13 +2199,13 @@ export default function DashboardPage() {
 
       {/* ═══ Monitoreo de Costos en Tiempo Real ═══ */}
       <div className="db-card" style={{
-        background: '#0f172a',
+        background: '#ffffff',
         borderRadius: 16,
-        border: '1px solid #1e293b',
+        border: '1px solid #e5e7eb',
         padding: 24,
-        boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
         marginBottom: 24,
-        color: '#f8fafc',
+        color: '#1e293b',
         position: 'relative',
         overflow: 'hidden'
       }}>
@@ -2212,7 +2213,7 @@ export default function DashboardPage() {
         <div style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: 'radial-gradient(circle at 30% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 60%), radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 50%)',
+          backgroundImage: 'radial-gradient(circle at 30% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 60%), radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.04) 0%, transparent 50%)',
           pointerEvents: 'none'
         }} />
 
@@ -2226,22 +2227,22 @@ export default function DashboardPage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 0 15px rgba(99, 102, 241, 0.4)'
+              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)'
             }}>
               <Database size={18} color="#fff" />
             </div>
             <div>
-              <h2 style={{ fontSize: 16, fontWeight: 800, color: '#f8fafc', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
                 Monitoreo de Costos y Recursos Appwrite
               </h2>
-              <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>
+              <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>
                 Métricas de consumo en tiempo real para optimización de facturación
               </p>
             </div>
           </div>
 
           {costStats && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#1e293b', padding: '4px 12px', borderRadius: 20, border: '1px solid #334155' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f1f5f9', padding: '4px 12px', borderRadius: 20, border: '1px solid #e2e8f0' }}>
               <span style={{
                 width: 6,
                 height: 6,
@@ -2250,7 +2251,7 @@ export default function DashboardPage() {
                 boxShadow: costStats.cached ? '0 0 6px #f59e0b' : '0 0 6px #10b981',
                 display: 'inline-block'
               }} />
-              <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8' }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: '#475569' }}>
                 {costStats.cached ? 'Caché Servidor (15m)' : 'Métricas Frescas'} · Actualizado {new Date(costStats.lastUpdated).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
@@ -2260,60 +2261,79 @@ export default function DashboardPage() {
         {!costStats ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '20px 0' }}>
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 200, height: 80, background: '#1e293b', borderRadius: 12, animation: 'pulse 2s infinite' }} />
-              <div style={{ flex: 1, minWidth: 200, height: 80, background: '#1e293b', borderRadius: 12, animation: 'pulse 2s infinite' }} />
-              <div style={{ flex: 1, minWidth: 200, height: 80, background: '#1e293b', borderRadius: 12, animation: 'pulse 2s infinite' }} />
+              <div style={{ flex: 1, minWidth: 200, height: 80, background: '#f1f5f9', borderRadius: 12, animation: 'pulse 2s infinite' }} />
+              <div style={{ flex: 1, minWidth: 200, height: 80, background: '#f1f5f9', borderRadius: 12, animation: 'pulse 2s infinite' }} />
+              <div style={{ flex: 1, minWidth: 200, height: 80, background: '#f1f5f9', borderRadius: 12, animation: 'pulse 2s infinite' }} />
             </div>
-            <div style={{ height: 120, background: '#1e293b', borderRadius: 12, animation: 'pulse 2s infinite' }} />
+            <div style={{ height: 120, background: '#f1f5f9', borderRadius: 12, animation: 'pulse 2s infinite' }} />
           </div>
         ) : (
           <div style={{ position: 'relative', zIndex: 10 }}>
             {/* KPI Cards Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
               
               {/* KPI 1: Database Reads Today vs 60k limit */}
-              <div style={{ background: 'rgba(30, 41, 59, 0.5)', backdropFilter: 'blur(4px)', border: '1px solid #334155', borderRadius: 14, padding: 16 }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lecturas Hoy (Safe Limit)</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lecturas Hoy (Safe Limit)</span>
                   <Activity size={14} color="#6366f1" />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                  <span style={{ fontSize: 24, fontWeight: 800, color: '#f8fafc' }}>
+                  <span style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>
                     {costStats.todayReads.toLocaleString()}
                   </span>
                   <span style={{ fontSize: 12, color: '#64748b' }}>
                     / 60,000
                   </span>
                 </div>
-                <p style={{ fontSize: 10, color: '#94a3b8', margin: '4px 0 0' }}>
+                <p style={{ fontSize: 10, color: '#64748b', margin: '4px 0 0' }}>
                   Límite diario recomendado para plan gratuito (1.8M/mes)
                 </p>
               </div>
 
-              {/* KPI 2: Global Database Reads (30 days total) */}
-              <div style={{ background: 'rgba(30, 41, 59, 0.5)', backdropFilter: 'blur(4px)', border: '1px solid #334155', borderRadius: 14, padding: 16 }}>
+              {/* KPI 2: Database Reads Last 7 Days */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lecturas Totales (30d)</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lecturas Últimos 7 Días</span>
+                  <Calendar size={14} color="#0891b2" />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                  <span style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>
+                    {(costStats.sevenDaysReads || 0).toLocaleString()}
+                  </span>
+                  <span style={{ fontSize: 12, color: '#64748b' }}>
+                    / 420,000
+                  </span>
+                </div>
+                <p style={{ fontSize: 10, color: '#64748b', margin: '4px 0 0' }}>
+                  Consumo acumulado real de la última semana
+                </p>
+              </div>
+
+              {/* KPI 3: Global Database Reads (30 days total) */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lecturas Totales (30d)</span>
                   <Coins size={14} color="#10b981" />
                 </div>
                 <div style={{ fontSize: 24, fontWeight: 800, color: '#10b981' }}>
                   {costStats.databaseReadsTotal.toLocaleString()}
                 </div>
-                <p style={{ fontSize: 10, color: '#94a3b8', margin: '4px 0 0' }}>
+                <p style={{ fontSize: 10, color: '#64748b', margin: '4px 0 0' }}>
                   Lecturas acumuladas en la base de datos este periodo
                 </p>
               </div>
 
-              {/* KPI 3: Global Database Writes (30 days total) */}
-              <div style={{ background: 'rgba(30, 41, 59, 0.5)', backdropFilter: 'blur(4px)', border: '1px solid #334155', borderRadius: 14, padding: 16 }}>
+              {/* KPI 4: Global Database Writes (30 days total) */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Escrituras Totales (30d)</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Escrituras Totales (30d)</span>
                   <Database size={14} color="#06b6d4" />
                 </div>
                 <div style={{ fontSize: 24, fontWeight: 800, color: '#06b6d4' }}>
                   {costStats.databaseWritesTotal.toLocaleString()}
                 </div>
-                <p style={{ fontSize: 10, color: '#94a3b8', margin: '4px 0 0' }}>
+                <p style={{ fontSize: 10, color: '#64748b', margin: '4px 0 0' }}>
                   Operaciones de escritura/modificación de documentos
                 </p>
               </div>
@@ -2323,26 +2343,26 @@ export default function DashboardPage() {
             {(() => {
               const pct = Math.min(100, (costStats.todayReads / 60000) * 100);
               let barColor = '#10b981'; // green
-              let textColor = '#34d399';
+              let textColor = '#059669';
               let alertMsg = 'Consumo óptimo y seguro dentro de los límites de facturación.';
               let alertIcon = <span style={{ marginRight: 6 }}>🛡️</span>;
               
               if (pct >= 85) {
                 barColor = '#ef4444'; // red
-                textColor = '#f87171';
+                textColor = '#dc2626';
                 alertMsg = '¡Alerta Crítica! Estás por superar el límite seguro diario. Considera pausar operaciones de alto consumo o revisar las queries.';
                 alertIcon = <AlertTriangle size={14} color="#ef4444" style={{ marginRight: 6 }} />;
               } else if (pct >= 50) {
                 barColor = '#f59e0b'; // orange
-                textColor = '#fbbf24';
+                textColor = '#d97706';
                 alertMsg = 'Consumo moderado. El tráfico o las operaciones están consumiendo más lecturas de lo habitual.';
                 alertIcon = <AlertTriangle size={14} color="#f59e0b" style={{ marginRight: 6 }} />;
               }
 
               return (
-                <div style={{ background: 'rgba(30, 41, 59, 0.3)', border: '1px solid #334155', borderRadius: 14, padding: 20, marginBottom: 24 }}>
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20, marginBottom: 24 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#f8fafc' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
                       Progreso del Límite de Seguridad Diario (60,000)
                     </span>
                     <span style={{ fontSize: 13, fontWeight: 800, color: textColor }}>
@@ -2351,7 +2371,7 @@ export default function DashboardPage() {
                   </div>
                   
                   {/* The actual progress bar */}
-                  <div style={{ width: '100%', height: 10, background: '#1e293b', borderRadius: 5, overflow: 'hidden', marginBottom: 12 }}>
+                  <div style={{ width: '100%', height: 10, background: '#e2e8f0', borderRadius: 5, overflow: 'hidden', marginBottom: 12 }}>
                     <div style={{
                       width: `${pct}%`,
                       height: '100%',
@@ -2361,7 +2381,7 @@ export default function DashboardPage() {
                     }} />
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', fontSize: 12, color: '#cbd5e1', background: 'rgba(15, 23, 42, 0.4)', padding: '10px 14px', borderRadius: 8, border: `1px solid ${barColor}25` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', fontSize: 12, color: '#334155', background: '#f1f5f9', padding: '10px 14px', borderRadius: 8, border: `1px solid ${barColor}25` }}>
                     {alertIcon}
                     <span>{alertMsg}</span>
                   </div>
@@ -2372,8 +2392,8 @@ export default function DashboardPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
               
               {/* Left: 30-Day Daily Reads History Chart */}
-              <div style={{ background: 'rgba(30, 41, 59, 0.3)', border: '1px solid #334155', borderRadius: 14, padding: 20 }}>
-                <h3 style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20 }}>
+                <h3 style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Historial de Lecturas Diarias (Últimos 30 Días)
                 </h3>
                 {costStats.history && costStats.history.length > 0 ? (
@@ -2403,30 +2423,30 @@ export default function DashboardPage() {
               </div>
 
               {/* Right: Key Collections volume breakdown */}
-              <div style={{ background: 'rgba(30, 41, 59, 0.3)', border: '1px solid #334155', borderRadius: 14, padding: 20 }}>
-                <h3 style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20 }}>
+                <h3 style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Volumen de Colecciones Clave
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {[
-                    { label: 'Productos', count: costStats.collections.products, color: '#38bdf8', desc: 'Catálogo total e imágenes' },
-                    { label: 'Pedidos', count: costStats.collections.orders, color: '#e396bf', desc: 'Historial de compras y carritos' },
-                    { label: 'Inventario', count: costStats.collections.inventory, color: '#10b981', desc: 'Relación productos y stock' }
+                    { label: 'Productos', count: costStats.collections.products, color: '#0284c7', desc: 'Catálogo total e imágenes' },
+                    { label: 'Pedidos', count: costStats.collections.orders, color: '#db2777', desc: 'Historial de compras y carritos' },
+                    { label: 'Inventario', count: costStats.collections.inventory, color: '#059669', desc: 'Relación productos y stock' }
                   ].map((col, idx) => {
                     const maxCount = Math.max(costStats.collections.products, costStats.collections.orders, costStats.collections.inventory, 1);
                     const barPct = (col.count / maxCount) * 100;
                     return (
-                      <div key={idx} style={{ padding: '8px 12px', borderRadius: 10, background: 'rgba(15, 23, 42, 0.3)', border: '1px solid #1e293b' }}>
+                      <div key={idx} style={{ padding: '8px 12px', borderRadius: 10, background: '#ffffff', border: '1px solid #e2e8f0' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                           <div>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: '#f8fafc' }}>{col.label}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#0f172a' }}>{col.label}</span>
                             <span style={{ fontSize: 10, color: '#64748b', marginLeft: 6 }}>({col.desc})</span>
                           </div>
                           <span style={{ fontSize: 13, fontWeight: 800, color: col.color }}>
                             {col.count.toLocaleString()} <span style={{ fontSize: 9, fontWeight: 400, color: '#64748b' }}>docs</span>
                           </span>
                         </div>
-                        <div style={{ height: 4, background: '#1e293b', borderRadius: 2, overflow: 'hidden' }}>
+                        <div style={{ height: 4, background: '#f1f5f9', borderRadius: 2, overflow: 'hidden' }}>
                           <div style={{ height: '100%', width: `${barPct}%`, background: col.color, borderRadius: 2 }} />
                         </div>
                       </div>

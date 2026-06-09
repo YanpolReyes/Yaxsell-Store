@@ -54,10 +54,14 @@ export async function GET() {
     const todayData = databaseReads[databaseReads.length - 1];
     const todayReads = todayData ? todayData.value : 0;
 
+    // Calculate last 7 days reads
+    const sevenDaysReads = databaseReads.slice(-7).reduce((acc: number, curr: any) => acc + (curr.value || 0), 0);
+
     const result = {
       databaseReadsTotal: dbData.databaseReadsTotal || 0,
       databaseWritesTotal: dbData.databaseWritesTotal || 0,
       todayReads,
+      sevenDaysReads,
       history: databaseReads,
       collections: collectionsUsage,
       lastUpdated: new Date().toISOString()
