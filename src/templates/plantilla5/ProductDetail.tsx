@@ -674,8 +674,56 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       `;
     });
 
-    // 10. Integrar el Botón de Añadir al Carrito
+    // Override quantity selector component buttons to prevent Shopify template restriction
     const qtyInput = root.querySelector('input[name="quantity"]') as HTMLInputElement;
+    const minusBtn = root.querySelector('button[name="minus"]') as HTMLButtonElement | null;
+    const plusBtn = root.querySelector('button[name="plus"]') as HTMLButtonElement | null;
+    
+    if (qtyInput) {
+      const maxStock = unlimitedStock ? 99999 : (displayProduct?.STOCK ?? 0);
+      qtyInput.dataset.maxStock = String(maxStock);
+      qtyInput.setAttribute('max', String(maxStock));
+      qtyInput.max = String(maxStock);
+
+      if (minusBtn && plusBtn && !qtyInput.dataset.overrideBound) {
+        qtyInput.dataset.overrideBound = '1';
+        const newMinus = minusBtn.cloneNode(true) as HTMLButtonElement;
+        const newPlus = plusBtn.cloneNode(true) as HTMLButtonElement;
+        minusBtn.parentNode?.replaceChild(newMinus, minusBtn);
+        plusBtn.parentNode?.replaceChild(newPlus, plusBtn);
+
+        newMinus.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const currentVal = parseInt(qtyInput.value) || 1;
+          if (currentVal > 1) {
+            qtyInput.value = String(currentVal - 1);
+            qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
+
+        newPlus.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const currentVal = parseInt(qtyInput.value) || 1;
+          const maxLimit = parseInt(qtyInput.dataset.maxStock || '99999') || 99999;
+          if (currentVal < maxLimit) {
+            qtyInput.value = String(currentVal + 1);
+            qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
+
+        qtyInput.addEventListener('input', () => {
+          let val = parseInt(qtyInput.value) || 1;
+          const maxLimit = parseInt(qtyInput.dataset.maxStock || '99999') || 99999;
+          if (val < 1) val = 1;
+          if (val > maxLimit) val = maxLimit;
+          qtyInput.value = String(val);
+        });
+      }
+    }
+
+    // 10. Integrar el Botón de Añadir al Carrito
     const addToCartBtn = root.querySelector('.add-to-cart-button') as HTMLElement | null;
     if (addToCartBtn && !addToCartBtn.dataset.cartBound) {
       addToCartBtn.dataset.cartBound = '1';
