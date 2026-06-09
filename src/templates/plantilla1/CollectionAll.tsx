@@ -100,41 +100,53 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
     }
   };
 
-  const load = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
+  // Load catalog and products once on mount (sorting/filtering is done client-side)
+  useEffect(() => {
+    const initLoad = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch categories & offers
+        const catOffRes = await fetch('/api/public-data/catalog');
+        if (catOffRes.ok) {
+          const data = await catOffRes.json();
+          setCategories(data.categories as Category[]);
+          
+          if (catParam && !selectedCat) {
+            const found = (data.categories as Category[]).find(c => c.$id === catParam || c.name?.toLowerCase() === catParam.toLowerCase());
+            if (found) setSelectedCat(found.$id);
+          }
 
-      // Fetch categories & offers globally cached
-      const catOffRes = await fetch('/api/public-data/catalog');
-      if (catOffRes.ok) {
-        const data = await catOffRes.json();
-        setCategories(data.categories as Category[]);
-        
-        // Resolve category id
-        if (catParam && !selectedCat) {
-          const found = (data.categories as Category[]).find(c => c.$id === catParam || c.name?.toLowerCase() === catParam.toLowerCase());
-          if (found) setSelectedCat(found.$id);
+          const map: Record<string, TimedOffer> = {};
+          (data.offers as TimedOffer[]).forEach(o => {
+            if (o.targetId) map[o.targetId] = o;
+          });
+          setTimedOffersMap(map);
         }
 
-        const map: Record<string, TimedOffer> = {};
-        (data.offers as TimedOffer[]).forEach(o => {
-          if (o.targetId) map[o.targetId] = o;
-        });
-        setTimedOffersMap(map);
+        // Fetch products (always fetch default once, sorting is done client-side)
+        const prodRes = await fetch('/api/public-data/products?sortBy=newest');
+        if (prodRes.ok) {
+          const prodData = await prodRes.json();
+          setProducts((prodData.products as Product[]).map((p) => normalizeProductImages(p)));
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
       }
+    };
+    initLoad();
+  }, [catParam, lockCategoryId]);
 
-      // Fetch products globally cached
-      const prodRes = await fetch(`/api/public-data/products?sortBy=${sortBy}`);
-      if (prodRes.ok) {
-        const prodData = await prodRes.json();
-        setProducts((prodData.products as Product[]).map((p) => normalizeProductImages(p)));
-      }
-
-      // Fetch subcategories
-      const cidToUse = lockCategoryId || selectedCat;
-      if (cidToUse) {
+  // Load subcategories separately when selectedCat changes
+  useEffect(() => {
+    const cidToUse = lockCategoryId || selectedCat;
+    if (!cidToUse) {
+      setSubcategories([]);
+      return;
+    }
+    const loadSubcategories = async () => {
+      try {
         const subRes = await fetch(`/api/public-data/subcategories?categoryId=${cidToUse}`);
         if (subRes.ok) {
           const subData = await subRes.json();
@@ -145,14 +157,12 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
         } else {
           setSubcategories([]);
         }
-      } else {
-        setSubcategories([]);
+      } catch (err) {
+        console.error(err);
       }
-    } catch (e) { console.error(e); }
-    finally { setIsLoading(false); }
-  }, [catParam, selectedCat, selectedSubcat, sortBy]);
-
-  useEffect(() => { load(); }, [load]);
+    };
+    loadSubcategories();
+  }, [selectedCat, lockCategoryId]);
 
   // Extract all unique tags from products
   const allTags = useMemo(() => Array.from(new Set(products.flatMap(p => {
@@ -172,43 +182,63 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
     if (!activePriceRange) setActivePriceRange([min, max]);
   }, [products, apertura]);
 
-  const filtered = products.filter(p => {
-    // Visibility filter (hide if ISACTIVE is explicitly false)
-    if (p.ISACTIVE === false) return false;
-    // Category filter (client-side)
-    if (selectedCat && p.CATEGORYID !== selectedCat) return false;
-    // Subcategory filter (client-side)
-    if (selectedSubcat) {
-      if (selectedSubcat === 'ofertas-temporales') {
-        if (!timedOffersMap[p.$id]) return false;
-      } else if (p.SUBCATEGORYID !== selectedSubcat) {
-        return false;
+  const filtered = useMemo(() => {
+    const list = products.filter(p => {
+      // Visibility filter (hide if ISACTIVE is explicitly false)
+      if (p.ISACTIVE === false) return false;
+      // Category filter (client-side)
+      if (selectedCat && p.CATEGORYID !== selectedCat) return false;
+      // Subcategory filter (client-side)
+      if (selectedSubcat) {
+        if (selectedSubcat === 'ofertas-temporales') {
+          if (!timedOffersMap[p.$id]) return false;
+        } else if (p.SUBCATEGORYID !== selectedSubcat) {
+          return false;
+        }
       }
-    }
-    // Tag filter
-    if (selectedTag) {
-      const pTags = !p.TAGS ? [] : typeof p.TAGS === 'string' ? (p.TAGS as string).split(',').map(t => t.trim()) : (p.TAGS as string[]);
-      if (!pTags.some(t => t.toLowerCase() === selectedTag.toLowerCase())) return false;
-    }
-    // Price filter
-    if (activePriceRange) {
-      const price = resolveProductDisplayPrice(p, apertura).displayPrice;
-      if (price > 0) {
-        if (price < activePriceRange[0] || price > activePriceRange[1]) return false;
-      } else {
-        const isDefaultRange = activePriceRange[0] === priceRange[0] && activePriceRange[1] === priceRange[1];
-        if (!isDefaultRange) return false;
+      // Tag filter
+      if (selectedTag) {
+        const pTags = !p.TAGS ? [] : typeof p.TAGS === 'string' ? (p.TAGS as string).split(',').map(t => t.trim()) : (p.TAGS as string[]);
+        if (!pTags.some(t => t.toLowerCase() === selectedTag.toLowerCase())) return false;
       }
-    }
-    if (!search) return true;
-    const q = search.toLowerCase().trim();
-    const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
-    const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
-    const pSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
-    return p.NAME.toLowerCase().includes(q) || 
-      (p.DESCRIPTION || '').toLowerCase().includes(q) ||
-      pSku.toLowerCase().includes(q);
-  });
+      // Price filter
+      if (activePriceRange) {
+        const price = resolveProductDisplayPrice(p, apertura).displayPrice;
+        if (price > 0) {
+          if (price < activePriceRange[0] || price > activePriceRange[1]) return false;
+        } else {
+          const isDefaultRange = activePriceRange[0] === priceRange[0] && activePriceRange[1] === priceRange[1];
+          if (!isDefaultRange) return false;
+        }
+      }
+      if (!search) return true;
+      const q = search.toLowerCase().trim();
+      const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
+      const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
+      const pSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
+      return p.NAME.toLowerCase().includes(q) || 
+        (p.DESCRIPTION || '').toLowerCase().includes(q) ||
+        pSku.toLowerCase().includes(q);
+    });
+
+    // Sort client-side
+    return [...list].sort((a, b) => {
+      if (sortBy === 'price_asc') {
+        const pA = resolveProductDisplayPrice(a, apertura).displayPrice;
+        const pB = resolveProductDisplayPrice(b, apertura).displayPrice;
+        return pA - pB;
+      }
+      if (sortBy === 'price_desc') {
+        const pA = resolveProductDisplayPrice(a, apertura).displayPrice;
+        const pB = resolveProductDisplayPrice(b, apertura).displayPrice;
+        return pB - pA;
+      }
+      // Default: 'newest'
+      const tA = new Date((a as any).$createdAt || 0).getTime();
+      const tB = new Date((b as any).$createdAt || 0).getTime();
+      return tB - tA;
+    });
+  }, [products, selectedCat, selectedSubcat, selectedTag, activePriceRange, search, sortBy, timedOffersMap, apertura, priceRange]);
 
   const visibleProducts = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
