@@ -22,6 +22,7 @@ import ProductTabs from '@/components/ProductTabs';
 import StockIndicator from '@/components/StockIndicator';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
 import AperturaPromoBanner from '@/components/AperturaPromoBanner';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 import CountdownTimer from '@/components/CountdownTimer';
@@ -52,6 +53,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const id = previewProductId || params.productId || params.id;
   const router = useRouter();
   const { user } = useAuth();
+  const { unlimitedStock } = useStoreSettings();
   const [product, setProduct] = useState<Product | null>(null);
   const [related, setRelated] = useState<Product[]>([]);
   const [categoryName, setCategoryName] = useState('');
@@ -280,7 +282,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const isWholesaleQty = hasWholesale && qty >= (product.WHOLESALEMINQUANTITY || 0);
   const effectivePrice = isWholesaleQty && isWholesaleUser ? product.WHOLESALEPRICE! : displayPrice;
   const lineTotal = effectivePrice * qty;
-  const stock = product.STOCK ?? 0;
+  const stock = unlimitedStock ? 99999 : (product.STOCK ?? 0);
   const rating = product.RATING ?? 0;
   const numReviews = product.NUMREVIEWS ?? 0;
   const soldQty = product.SOLDQUANTITY ?? 0;
@@ -365,7 +367,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           <div style={{ marginBottom: 14 }}>
             <p style={{ margin: '0 0 6px', fontSize: 13, color: TEXT_MUTED }}>
               Cantidad: <strong style={{ color: TEXT_DARK }}>{qty} unidad{qty > 1 ? 'es' : ''}</strong>
-              <span style={{ color: '#9ca3af' }}> ({stock} disp.)</span>
+              {!unlimitedStock && <span style={{ color: '#9ca3af' }}> ({stock} disp.)</span>}
             </p>
             <div style={{ display: 'flex', alignItems: 'center', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 8, width: 'fit-content', overflow: 'hidden' }}>
               <button type="button" onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 40, height: 40, border: 'none', background: '#fff', fontSize: 18, cursor: 'pointer', color: ORANGE_PRIMARY, fontWeight: 600 }}>−</button>
@@ -376,7 +378,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
                 value={qty}
                 onChange={(e) => {
                   const val = parseInt(e.target.value);
-                  if (!isNaN(val) && val >= 1 && val <= stock) {
+                  if (!isNaN(val) && val >= 1 && (unlimitedStock || val <= stock)) {
                     setQty(val);
                   }
                 }}
@@ -393,7 +395,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
                   background: '#fff'
                 }}
               />
-              <button type="button" onClick={() => setQty(q => Math.min(stock, q + 1))} style={{ width: 40, height: 40, border: 'none', background: '#fff', fontSize: 18, cursor: 'pointer', color: ORANGE_PRIMARY, fontWeight: 600 }}>+</button>
+              <button type="button" onClick={() => setQty(q => unlimitedStock ? q + 1 : Math.min(stock, q + 1))} style={{ width: 40, height: 40, border: 'none', background: '#fff', fontSize: 18, cursor: 'pointer', color: ORANGE_PRIMARY, fontWeight: 600 }}>+</button>
             </div>
             {qty > 1 && <p style={{ margin: '8px 0 0', fontSize: 12, color: TEXT_MUTED }}>Total: <strong style={{ color: ORANGE_PRIMARY, fontSize: 14 }}>{formatPrice(lineTotal)}</strong></p>}
           </div>
@@ -406,32 +408,34 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           <button type="button" onClick={handleAdd} style={{ width: '100%', padding: '12px 18px', background: added ? '#10b981' : ORANGE_PRIMARY, color: '#fff', border: `1.5px solid ${added ? '#10b981' : ORANGE_PRIMARY}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8, transition: 'all 0.2s' }}>
             {added ? <><Check size={15} /> Agregado</> : <><ShoppingCart size={15} /> Agregar al carrito</>}
           </button>
-          {user ? (
-            <button
-              type="button"
-              onClick={() => hasPendingRequest ? null : setIsStockRequestModalOpen(true)}
-              disabled={hasPendingRequest}
-              style={{
-                width: '100%',
-                padding: '12px 18px',
-                background: hasPendingRequest ? '#f3f4f6' : '#fff',
-                color: hasPendingRequest ? '#9ca3af' : ORANGE_PRIMARY,
-                border: `2px solid ${hasPendingRequest ? '#d1d5db' : ORANGE_PRIMARY}`,
-                borderRadius: 10,
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: hasPendingRequest ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
-                transition: 'all 0.2s',
-              }}
-            >
-              {hasPendingRequest ? 'Solicitud en revisión...' : 'SOLICITAR MÁS STOCK'}
-            </button>
-          ) : (
-            <p style={{ margin: '8px 0 0', fontSize: 11, textAlign: 'center', color: '#9ca3af' }}>Inicia sesión para solicitar más stock</p>
+          {!unlimitedStock && (
+            user ? (
+              <button
+                type="button"
+                onClick={() => hasPendingRequest ? null : setIsStockRequestModalOpen(true)}
+                disabled={hasPendingRequest}
+                style={{
+                  width: '100%',
+                  padding: '12px 18px',
+                  background: hasPendingRequest ? '#f3f4f6' : '#fff',
+                  color: hasPendingRequest ? '#9ca3af' : ORANGE_PRIMARY,
+                  border: `2px solid ${hasPendingRequest ? '#d1d5db' : ORANGE_PRIMARY}`,
+                  borderRadius: 10,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: hasPendingRequest ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  transition: 'all 0.2s',
+                }}
+              >
+                {hasPendingRequest ? 'Solicitud en revisión...' : 'SOLICITAR MÁS STOCK'}
+              </button>
+            ) : (
+              <p style={{ margin: '8px 0 0', fontSize: 11, textAlign: 'center', color: '#9ca3af' }}>Inicia sesión para solicitar más stock</p>
+            )
           )}
           <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${PINK_BG_DARK}`, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <p style={{ margin: 0, fontSize: 12, color: TEXT_MUTED, display: 'flex', alignItems: 'flex-start', gap: 6 }}>

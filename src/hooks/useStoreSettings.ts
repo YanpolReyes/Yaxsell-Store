@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getServices, getAppwriteConfig } from '@/lib/appwrite';
-import { Query } from 'appwrite';
 
 export interface StoreSettings {
   $id?: string;
@@ -23,25 +21,12 @@ let pendingPromise: Promise<StoreSettings> | null = null;
 
 async function fetchStoreSettings(): Promise<StoreSettings> {
   try {
-    const { databases } = getServices();
-    const { databaseId } = getAppwriteConfig();
-    const response = await databases.listDocuments(databaseId, 'store_settings', [Query.limit(1)]);
-    if (response.documents.length > 0) {
-      const doc = response.documents[0];
-      return {
-        $id: doc.$id,
-        storeName: doc.STORENAME || '',
-        phone: doc.PHONE || '',
-        email: doc.EMAIL || '',
-        address: doc.ADDRESS || '',
-        website: doc.WEBSITE || '',
-        description: doc.DESCRIPTION || '',
-        showInAnnouncementBar: doc.SHOWINANNOUNCEMENTBAR ?? false,
-        unlimitedStock: doc.UNLIMITEDSTOCK ?? false,
-      };
+    const response = await fetch(`/api/store-settings?_t=${Date.now()}`, { cache: 'no-store' });
+    if (response.ok) {
+      return await response.json();
     }
   } catch (error) {
-    console.error('Failed to fetch store settings:', error);
+    console.error('Failed to fetch store settings from API:', error);
   }
   return {
     storeName: '', phone: '', email: '', address: '', website: '', description: '',
