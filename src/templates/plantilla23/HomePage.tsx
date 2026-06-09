@@ -13,6 +13,8 @@
    - .in-view forzado en .animation-element tras carga
    ════════════════════════════════════════════════════════════════════ */
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import RecentProductsSection from '@/components/RecentProductsSection';
 import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, PRODUCTS_COLLECTION, TIMED_OFFERS_COLLECTION, Query, formatPrice } from '@/lib/appwrite';
 import { Category, Subcategory, Product } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
@@ -199,6 +201,7 @@ export default function HomePage23() {
   const [timedOffers, setTimedOffers] = useState<any[]>([]);
   const [isAppwriteLoaded, setIsAppwriteLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [liveShoppingContainer, setLiveShoppingContainer] = useState<Element | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -1620,8 +1623,21 @@ export default function HomePage23() {
       `;
     }
 
+    // Insert Live Shopping placeholder right after the categories slider
+    const categoriesSection = tempDiv.querySelector('#shopify-section-template--27304712470809__collection_list_slider_YAxwGw');
+    if (categoriesSection) {
+      const liveShoppingRoot = document.createElement('div');
+      liveShoppingRoot.id = 'yaxsell-live-shopping-root';
+      categoriesSection.insertAdjacentElement('afterend', liveShoppingRoot);
+    }
+
     containerRef.current.innerHTML = tempDiv.innerHTML;
     containerRef.current.dataset.htmlSet = '1';
+
+    const liveShoppingEl = document.getElementById('yaxsell-live-shopping-root');
+    if (liveShoppingEl) {
+      setLiveShoppingContainer(liveShoppingEl);
+    }
 
     // Remove leftover Shopify elements
     const root = containerRef.current;
@@ -3821,6 +3837,11 @@ export default function HomePage23() {
         ref={containerRef}
         className="tpl23-shopify-root template-index"
       />
+
+      {liveShoppingContainer && createPortal(
+        <RecentProductsSection />,
+        liveShoppingContainer
+      )}
     </>
   );
 }
