@@ -226,8 +226,37 @@ export default function RecentProductsSection() {
         </div>
       </div>
 
+      <style dangerouslySetInnerHTML={{ __html: `
+        .recent-products-grid {
+          display: flex !important;
+          overflow-x: auto !important;
+          gap: 12px !important;
+          padding-bottom: 24px !important;
+        }
+        @media (min-width: 640px) {
+          .recent-products-grid {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            justify-content: flex-start !important;
+            overflow: visible !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+          }
+        }
+        .recent-product-card {
+          width: 150px !important;
+          flex-shrink: 0 !important;
+        }
+        @media (min-width: 640px) {
+          .recent-product-card {
+            width: 160px !important;
+            margin-bottom: 12px !important;
+          }
+        }
+      `}} />
+
       {/* Responsive layout: scrollable list on mobile, grid on desktop */}
-      <div className="flex overflow-x-auto gap-4 pb-6 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:gap-6 sm:overflow-visible scrollbar-hide snap-x snap-mandatory overscroll-x-contain sm:snap-none">
+      <div className="recent-products-grid scrollbar-hide snap-x snap-mandatory overscroll-x-contain sm:snap-none">
         {products.map(p => {
           const displayPrice = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
           const hasDiscount = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
@@ -237,10 +266,10 @@ export default function RecentProductsSection() {
           return (
             <div 
               key={p.$id} 
-              className="snap-start flex-shrink-0 w-[200px] xs:w-[220px] sm:w-auto sm:mx-auto bg-white rounded-[20px] sm:rounded-[24px] overflow-hidden border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:shadow-[0_15px_35px_rgba(0,0,0,0.09)] transition-all duration-400 group flex flex-col justify-between transform hover:-translate-y-1.5"
+              className="recent-product-card snap-start bg-white rounded-none overflow-hidden border-none shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.08)] transition-all duration-400 group flex flex-col justify-between transform hover:-translate-y-1"
             >
-              <a href={`/productos/${p.$id}`} className="block relative overflow-hidden aspect-square bg-gray-50/50 p-2">
-                <div className="w-full h-full rounded-[18px] overflow-hidden relative shadow-inner">
+              <a href={`/productos/${p.$id}`} className="block relative overflow-hidden aspect-square bg-gray-50/50 p-1.5">
+                <div className="w-full h-full rounded-none overflow-hidden relative shadow-inner">
                   {p.IMAGEURL ? (
                     <img 
                       src={p.IMAGEURL} 
@@ -249,7 +278,7 @@ export default function RecentProductsSection() {
                       className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" 
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300 text-4xl bg-gray-100">
+                    <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl bg-gray-100">
                       📦
                     </div>
                   )}
@@ -258,13 +287,13 @@ export default function RecentProductsSection() {
                 </div>
 
                 {/* Badge top-left */}
-                <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
-                  <span className="bg-white/90 backdrop-blur-sm text-gray-900 font-extrabold text-[10px] px-3 py-1 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1 border border-gray-100">
+                <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10">
+                  <span className="bg-white/95 backdrop-blur-sm text-gray-950 font-black text-[9px] px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm flex items-center gap-1 border border-gray-100">
                     <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse"></span>
                     Nuevo
                   </span>
                   {hasDiscount && (
-                    <span className="bg-gradient-to-r from-rose-400 to-pink-500 text-white font-bold text-[10px] px-3 py-1 rounded-full shadow-md">
+                    <span className="bg-gradient-to-r from-rose-400 to-pink-500 text-white font-extrabold text-[9px] px-2 py-0.5 rounded-md shadow-md">
                       -{discPct}% OFF
                     </span>
                   )}
@@ -272,30 +301,30 @@ export default function RecentProductsSection() {
 
                 {/* Badge top-right with Stock amount if low */}
                 {p.STOCK > 0 && p.STOCK <= 5 && (
-                  <span className="absolute top-4 right-4 bg-orange-500/90 backdrop-blur-sm text-white font-bold text-[10px] px-3 py-1 rounded-full shadow-md z-10 animate-pulse">
+                  <span className="absolute top-2.5 right-2.5 bg-orange-500/95 backdrop-blur-sm text-white font-extrabold text-[9px] px-2 py-0.5 rounded-md shadow-md z-10 animate-pulse">
                     ¡Solo {p.STOCK}!
                   </span>
                 )}
               </a>
 
               {/* Product Info */}
-              <div className="p-5 flex flex-col justify-between flex-grow bg-gradient-to-b from-transparent to-white/50">
-                <div className="mb-3">
+              <div className="p-3.5 flex flex-col justify-between flex-grow bg-gradient-to-b from-transparent to-white/50">
+                <div className="mb-2">
                   <a href={`/productos/${p.$id}`} className="block">
-                    <h3 className="font-semibold text-sm text-gray-800 group-hover:text-pink-500 line-clamp-2 transition-colors duration-200 min-h-[40px] leading-snug">
+                    <h3 className="font-semibold text-xs sm:text-[13px] text-gray-800 group-hover:text-pink-500 line-clamp-2 transition-colors duration-200 min-h-[34px] leading-snug">
                       {p.NAME}
                     </h3>
                   </a>
                 </div>
 
                 {/* Price and Add button */}
-                <div className="flex items-center justify-between gap-2 mt-auto pt-2 border-t border-gray-100/50">
+                <div className="flex items-center justify-between gap-2 mt-auto pt-1.5 border-t border-gray-100/50">
                   <div className="flex flex-col">
-                    <span className="font-extrabold text-lg text-gray-900 tracking-tight">
+                    <span className="font-black text-sm sm:text-base text-gray-900 tracking-tight">
                       {formatPrice(displayPrice)}
                     </span>
                     {hasDiscount && (
-                      <span className="text-[11px] text-gray-400 line-through font-medium">
+                      <span className="text-[10px] text-gray-400 line-through font-medium">
                         {formatPrice(p.PRICE)}
                       </span>
                     )}
@@ -304,7 +333,7 @@ export default function RecentProductsSection() {
                   <button
                     onClick={(e) => handleAddToCart(e, p)}
                     disabled={isAdding}
-                    className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 shadow-md ${
+                    className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full transition-all duration-300 shadow-md ${
                       isAdding 
                         ? 'bg-green-500 text-white scale-110 shadow-green-500/30' 
                         : 'bg-gray-900 text-white hover:bg-gradient-to-r hover:from-pink-500 hover:to-rose-400 hover:shadow-pink-500/40 active:scale-95'
@@ -312,7 +341,7 @@ export default function RecentProductsSection() {
                     title="Agregar al carrito"
                     aria-label="Agregar al carrito"
                   >
-                    {isAdding ? <Check size={18} strokeWidth={3} /> : <ShoppingCart size={18} strokeWidth={2.5} />}
+                    {isAdding ? <Check size={15} strokeWidth={3} /> : <ShoppingCart size={15} strokeWidth={2.5} />}
                   </button>
                 </div>
               </div>

@@ -29,19 +29,26 @@ export function getAppwriteConfig() {
 }
 
 let _client: Client | null = null;
+let _databases: Databases | null = null;
+let _account: Account | null = null;
+let _storage: Storage | null = null;
 
 export function getServices() {
   const { endpoint, projectId } = getConfig();
   if (!_client) {
     _client = new Client().setEndpoint(endpoint).setProject(projectId);
+    _databases = new Databases(_client);
+    _account = new Account(_client);
+    _storage = new Storage(_client);
   }
   return {
     client: _client,
-    databases: new Databases(_client),
-    account: new Account(_client),
-    storage: new Storage(_client),
+    databases: _databases!,
+    account: _account!,
+    storage: _storage!,
   };
 }
+
 
 export const PRODUCTS_COLLECTION    = 'products';
 export const INVENTORY_PRODUCTS_COLLECTION = 'inventory_products';

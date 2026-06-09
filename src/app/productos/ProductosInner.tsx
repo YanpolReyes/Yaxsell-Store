@@ -57,6 +57,10 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     if (searchParams.get('ofertas') === 'true') {
       setSelectedOfertasOnly(true);
     }
+    const sortParam = searchParams.get('sort');
+    if (sortParam === 'price_asc' || sortParam === 'price_desc' || sortParam === 'newest') {
+      setSortBy(sortParam);
+    }
   }, [searchParams]);
 
   const lockedCategory = lockCategoryId ? categories.find(c => c.$id === lockCategoryId) : null;

@@ -13,8 +13,6 @@
    - .in-view forzado en .animation-element tras carga
    ════════════════════════════════════════════════════════════════════ */
 import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import RecentProductsSection from '@/components/RecentProductsSection';
 import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, PRODUCTS_COLLECTION, TIMED_OFFERS_COLLECTION, Query, formatPrice } from '@/lib/appwrite';
 import { Category, Subcategory, Product } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
@@ -195,12 +193,12 @@ export default function HomePage23() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [cheapestProducts, setCheapestProducts] = useState<Product[]>([]);
   const [destacadoTemporal, setDestacadoTemporal] = useState<any>(null);
   const [packTimer, setPackTimer] = useState<any>(null);
   const [timedOffers, setTimedOffers] = useState<any[]>([]);
   const [isAppwriteLoaded, setIsAppwriteLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
-  const [hasPortalRoot, setHasPortalRoot] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -211,7 +209,7 @@ export default function HomePage23() {
 
   // React countdown timer, Lottie, and Particles for the global timer pack
   useEffect(() => {
-    if (!bodyHtml || !hasPortalRoot) return;
+    if (!bodyHtml) return;
     const root = containerRef.current;
     if (!root) return;
 
@@ -412,7 +410,7 @@ export default function HomePage23() {
         parentSection.removeEventListener('mouseleave', onMouseLeave);
       }
     };
-  }, [bodyHtml, hasPortalRoot]);
+  }, [bodyHtml]);
 
 
   /* 🪄🤖 Tabbed FAQ JS Logic 🤖🪄 */
@@ -511,12 +509,13 @@ export default function HomePage23() {
         setCategories(mock.categories);
         setSubcategories(mock.subcategories);
         setProducts(mock.products);
+        setCheapestProducts(mock.products);
         return;
       }
       try {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
-        const [cRes, scRes, pRes, dtRes, ptRes, toRes] = await Promise.all([
+        const [cRes, scRes, pRes, dtRes, ptRes, toRes, cheapRes] = await Promise.all([
           databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [
             Query.orderAsc('order'),
             Query.limit(100)
@@ -544,11 +543,18 @@ export default function HomePage23() {
             Query.equal('isActive', true),
             Query.equal('status', 'active'),
             Query.limit(5)
+          ]).catch(() => ({ documents: [] })),
+          databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+            Query.greaterThan('STOCK', 0),
+            Query.equal('ISACTIVE', true),
+            Query.orderAsc('PRICE'),
+            Query.limit(12)
           ]).catch(() => ({ documents: [] }))
         ]);
         setCategories(cRes.documents as unknown as Category[]);
         setSubcategories(scRes.documents as unknown as Subcategory[]);
         setProducts(pRes.documents as unknown as Product[]);
+        setCheapestProducts(cheapRes && cheapRes.documents ? (cheapRes.documents as unknown as Product[]) : []);
         if (dtRes.documents && dtRes.documents.length > 0) {
           setDestacadoTemporal(dtRes.documents[0]);
         }
@@ -1197,6 +1203,26 @@ export default function HomePage23() {
           pointer-events: auto !important;
       }
 
+      /* Ocultar el bloque de video y el contenido del collage en móviles y tablets para evitar lag severo */
+      @media (max-width: 1023px) {
+        .multimedia-collage,
+        multimedia-collage,
+        .multimedia-collage-block__inner,
+        [data-block-id="AeU1KMU9YMGYxdWlmU__multimedia_collage_video_block_ndXhr3"],
+        .collage-video-wrapper,
+        .multimedia-collage__content {
+          display: none !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
+          height: 0 !important;
+          width: 0 !important;
+          min-height: 0 !important;
+          position: absolute !important;
+          z-index: -9999 !important;
+          pointer-events: none !important;
+        }
+      }
+
       /* ── MOBILE HERO BANNER: Remove description, add two buttons ── */
       @media (max-width: 767px) {
         /* Hide description text in hero banner */
@@ -1312,11 +1338,115 @@ export default function HomePage23() {
         }
       }
 
-      /* ── FORCE LIVE SHOPPING RECENT PRODUCTS SECTION BACKGROUND TO PURE WHITE ── */
-      #recent-products-portal-root,
-      #recent-products-portal-root section {
-        background: #ffffff !important;
-        background-color: #ffffff !important;
+
+
+      /* ── FEATURED COLLECTION & PRODUCT CARDS REDESIGN ── */
+      .featured-collection {
+        background-color: #faf6f6/30 !important;
+        padding-top: 60px !important;
+        padding-bottom: 60px !important;
+      }
+      .featured-collection .heading-section {
+        text-align: center !important;
+        margin-bottom: 20px !important;
+      }
+      .featured-collection .heading-section h3 {
+        font-family: 'Playfair Display', serif !important;
+        font-weight: 800 !important;
+        color: #1f2937 !important;
+        letter-spacing: -0.5px !important;
+      }
+      .featured-collection .heading-section .body-text {
+        font-size: 14px !important;
+        color: #6b7280 !important;
+        margin-top: 6px !important;
+      }
+      
+      /* Pestañas de Tags Estilo Minimalista Boutique */
+      .featured-collection__tags {
+        margin-bottom: 40px !important;
+        border-bottom: 1px solid rgba(0,0,0,0.06) !important;
+      }
+      .featured-collection__tags .flex,
+      .featured-collection__tags [class*="flex"] {
+        display: flex !important;
+        gap: 28px !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 0 0 10px 0 !important;
+      }
+      .button-tag {
+        background: transparent !important;
+        color: #9ca3af !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        border: none !important;
+        border-bottom: 2px solid transparent !important;
+        transition: all 0.25s ease !important;
+        opacity: 1 !important;
+        box-shadow: none !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        cursor: pointer !important;
+        padding: 6px 4px !important;
+        border-radius: 0px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1.5px !important;
+      }
+      .button-tag:hover {
+        color: #db2777 !important;
+        background: transparent !important;
+      }
+      .button-tag.active {
+        color: #db2777 !important;
+        background: transparent !important;
+        border-bottom: 2px solid #db2777 !important;
+        box-shadow: none !important;
+      }
+      .button-tag span {
+        background-image: none !important;
+      }
+
+      /* Estilo destacado del primer producto alineado y limpio */
+      .featured-collection__first-product-wrapper {
+        background: transparent !important;
+        border: none !important;
+        border-radius: 0px !important;
+        padding: 0 !important;
+        max-width: 320px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: none !important;
+        position: relative !important;
+      }
+      .featured-collection__first-product-wrapper::before {
+        display: none !important;
+      }
+
+      /* Ocultar botones e indicadores nativos feos */
+      .featured-collection .swiper-pagination {
+        display: none !important;
+      }
+
+      /* Flechas de navegación */
+      .featured-collection .button-previous,
+      .featured-collection .button-next {
+        background: white !important;
+        border: 1px solid rgba(244, 63, 94, 0.15) !important;
+        border-radius: 50% !important;
+        color: #db2777 !important;
+        width: 40px !important;
+        height: 40px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+        transition: all 0.3s ease !important;
+      }
+      .featured-collection .button-previous:hover,
+      .featured-collection .button-next:hover {
+        background: #db2777 !important;
+        color: white !important;
+        box-shadow: 0 6px 16px rgba(219, 39, 119, 0.3) !important;
+        transform: scale(1.05) !important;
       }
 
 /* Estado 3: Navbar final scrolled (data-scroll="true") - Glassmorphism sutil y elegante, sin línea blanca abajo */
@@ -1443,13 +1573,7 @@ export default function HomePage23() {
       }
     }
 
-    // Find the category section container to insert the recent products portal root below it
-    const colListSection = tempDiv.querySelector('#shopify-section-template--27304712470809__collection_list_slider_YAxwGw') || tempDiv.querySelector('.collection-list')?.closest('.shopify-section');
-    if (colListSection) {
-      const portalRoot = document.createElement('div');
-      portalRoot.id = 'recent-products-portal-root';
-      colListSection.parentNode?.insertBefore(portalRoot, colListSection.nextSibling);
-    }
+
 
     // Populate the global pack timed offers carousel / grid
     const carouselPlaceholder = tempDiv.querySelector('#yaxsell-homepage-offers-carousel');
@@ -1498,7 +1622,6 @@ export default function HomePage23() {
 
     containerRef.current.innerHTML = tempDiv.innerHTML;
     containerRef.current.dataset.htmlSet = '1';
-    setHasPortalRoot(true);
 
     // Remove leftover Shopify elements
     const root = containerRef.current;
@@ -2060,7 +2183,7 @@ export default function HomePage23() {
               class="flex items-center no-keyboard-focus"
               data-menu-tier="1"
           >
-              <span class="link-hover-animation">${cat.name} <span style="opacity:0.5;font-size:0.85em">(${catProdCount})</span></span>
+              <span class="link-hover-animation">${cat.name}</span>
               <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[18px]">
   <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
 </svg>
@@ -2071,7 +2194,7 @@ export default function HomePage23() {
         const templateEl = document.createElement('template');
         templateEl.id = megamenuId;
 
-        // Left column: subcategories with product counts
+        // Left column: subcategories
         let subsHtml = '';
         catSubs.forEach((sub, subIdx) => {
           const subHandle = `cat${idx}-sub${subIdx}`;
@@ -2083,7 +2206,7 @@ export default function HomePage23() {
                 data-link-handle="${subHandle}"
                 tabindex="0"
             >
-                <span class="link-hover-animation">${sub.name} <span style="opacity:0.5;font-size:0.85em">(${sub.prodCount})</span></span>
+                <span class="link-hover-animation">${sub.name}</span>
                 <span class="rotate-[270deg]"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[18px]">
   <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
 </svg></span>
@@ -2141,7 +2264,7 @@ export default function HomePage23() {
             >
                 <div class="flex justify-between items-center mb-4">
                     <a href="${subLink}" title="${sub.name}" aria-label="${sub.name}" class="font-bold max-w-max border-b-1 border-current/20 no-keyboard-focus">
-                        <span class="link-hover-animation">${sub.name} <span style="opacity:0.5;font-size:0.85em">(${sub.prodCount})</span></span>
+                        <span class="link-hover-animation">${sub.name}</span>
                     </a>
                     <a href="${subLink}" class="text-xs font-medium transition-opacity rounded-full px-3 py-1 hover:opacity-90" style="font-size:0.75em;text-decoration:none;background-color:#FFB6C1;color:#fff">Ver todo</a>
                 </div>
@@ -2313,7 +2436,7 @@ export default function HomePage23() {
         <a href="${catLink}" title="${cat.name}" aria-label="${cat.name}" class="transition-all duration-300 ease-in-out h-full w-full link">
             <div class="py-5 pr-2 relative">
                 <h6 class="heading transition-all duration-100 ease-in-out">
-                    <span class="link-hover-animation">${cat.name} <span style="opacity:0.5;font-size:0.85em">(${cat.prodCount})</span></span>
+                    <span class="link-hover-animation">${cat.name}</span>
                 </h6>
             </div>
         </a>
@@ -2343,54 +2466,64 @@ export default function HomePage23() {
         let priceHtml = '';
         if (hasDiscount) {
           priceHtml = `
-            <div class="price__sale flex w-max flex-wrap gap-[5px] items-center">
-              <div class="price-item price-item--sale">${formatCLP(currentPrice)}</div>
-              <span class="price-item price-item--compare line-through opacity-50">${formatCLP(originalPrice)}</span>
+            <div class="flex items-center justify-center gap-2 mt-1.5">
+              <span class="text-[14px] font-bold text-gray-900">${formatCLP(currentPrice)}</span>
+              <span class="text-[11px] text-gray-400 line-through decoration-gray-300">${formatCLP(originalPrice)}</span>
             </div>
           `;
         } else {
           priceHtml = `
-            <div class="price__regular">
-              <span class="price-item">${formatCLP(originalPrice)}</span>
+            <div class="flex items-center justify-center mt-1.5">
+              <span class="text-[14px] font-bold text-gray-900">${formatCLP(originalPrice)}</span>
             </div>
           `;
         }
 
         return `
-          <product-card class="product-card relative h-full mx-auto my-0 block bg-white rounded-xl shadow-sm transition-shadow w-full" data-lifting-effect="true" style="max-width: 240px; -webkit-tap-highlight-color: transparent;">
-            <div class="product-card__image group group-product-card relative overflow-hidden rounded-t-xl" data-ratio="portrait" style="aspect-ratio: 1/1;">
-              <a href="${pLink}" title="${pName}" aria-label="${pName}" class="block" tabindex="-1">
-                <div class="product-card__image-wrapper absolute inset-0 bg-white flex items-center justify-center p-4">
-                  <img src="${pImg}" alt="${pName}" loading="lazy" class="w-full h-full object-contain pointer-events-none transition-transform duration-500" style="object-fit: contain !important; max-width: 100%; max-height: 100%;">
-                </div>
-                <div class="overlay top-0 absolute left-0 w-full h-full z-11"></div>
+          <product-card class="group block w-full bg-white transition-all duration-300 hover:-translate-y-1" style="max-width: 280px; margin: 0 auto;">
+            <!-- Contenedor de Imagen Cuadrado y Limpio -->
+            <div class="relative w-full bg-[#f8f9fa] overflow-hidden" style="aspect-ratio: 1/1;">
+              <a href="${pLink}" title="${pName}" aria-label="${pName}" class="block w-full h-full">
+                <img src="${pImg}" alt="${pName}" loading="lazy" class="w-full h-full object-cover mix-blend-multiply transition-transform duration-700 ease-out group-hover:scale-105" />
               </a>
               
-              <div class="button-cart pk-grid-add-to-cart max-w-[95%] min-w-[45px] p-5 rounded-[100%] w-[45px] h-[45px] duration-300 ease-in-out cursor-pointer hover:py-0 hover:rounded-[0%] hover:w-auto button-cart--size z-20 absolute bottom-5 lg:bottom-10 left-0 right-0 mx-auto button--primary flex items-center justify-center inner-group"
-                   role="button"
-                   tabindex="0"
-                   aria-label="Agregar ${pName} al carrito"
-                   data-product-id="${product.$id}"
-              >
-                <span class="button-cart__text min-w-[20px] min-h-[20px] [.inner-group:hover_&]:hidden [.inner-group:focus-within_&]:hidden flex items-center justify-center w-full h-full cursor-pointer">
-                  <svg aria-hidden="true" width="20px" height="20px" class="w-[20px]" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M30.622 9.602h-22.407l-1.809-7.464h-5.027v1.066h4.188l5.198 21.443c-1.108 0.323-1.923 1.334-1.923 2.547 0 1.472 1.193 2.666 2.666 2.666s2.666-1.194 2.666-2.666c0-0.603-0.208-1.153-0.545-1.599h7.487c-0.337 0.446-0.545 0.997-0.545 1.599 0 1.472 1.193 2.666 2.665 2.666s2.666-1.194 2.666-2.666c0-1.473-1.193-2.665-2.666-2.666v0h-11.403l-0.517-2.133h14.968l4.337-12.795zM13.107 27.196c0 0.882-0.717 1.599-1.599 1.599s-1.599-0.717-1.599-1.599c0-0.882 0.717-1.599 1.599-1.599s1.599 0.718 1.599 1.599zM24.836 27.196c0 0.882-0.718 1.599-1.6 1.599s-1.599-0.717-1.599-1.599c0-0.882 0.717-1.599 1.599-1.599 0.882 0 1.6 0.718 1.6 1.599zM11.058 21.331l-2.585-10.662h20.662l-3.615 10.662h-14.462z" fill="currentColor"></path>
+              <!-- Insignias Minimalistas -->
+              <div class="absolute top-2.5 left-2.5 flex flex-col gap-1.5 z-10">
+                ${hasDiscount ? `
+                  <span class="bg-gray-900 text-white text-[9px] font-bold tracking-widest px-2 py-1 uppercase shadow-sm">
+                    -${Math.round(((originalPrice - currentPrice) / originalPrice) * 100)}%
+                  </span>
+                ` : ''}
+                ${product.STOCK > 0 && product.STOCK <= 5 ? `
+                  <span class="bg-rose-500 text-white text-[9px] font-bold tracking-widest px-2 py-1 uppercase shadow-sm animate-pulse">
+                    ¡Solo ${product.STOCK}!
+                  </span>
+                ` : ''}
+              </div>
+
+              <!-- Botón flotante al hover -->
+              <div class="absolute bottom-3 right-3 z-20 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+                <button class="pk-grid-add-to-cart w-10 h-10 bg-white text-gray-900 flex items-center justify-center shadow-lg hover:bg-gray-900 hover:text-white transition-colors duration-300"
+                        data-product-id="${product.$id}"
+                        aria-label="Agregar ${pName} al carrito">
+                  <svg aria-hidden="true" width="18px" height="18px" viewBox="0 0 32 32" fill="currentColor">
+                    <path d="M30.622 9.602h-22.407l-1.809-7.464h-5.027v1.066h4.188l5.198 21.443c-1.108 0.323-1.923 1.334-1.923 2.547 0 1.472 1.193 2.666 2.666 2.666s2.666-1.194 2.666-2.666c0-0.603-0.208-1.153-0.545-1.599h7.487c-0.337 0.446-0.545 0.997-0.545 1.599 0 1.472 1.193 2.666 2.665 2.666s2.666-1.194 2.666-2.666c0-1.473-1.193-2.665-2.666-2.666v0h-11.403l-0.517-2.133h14.968l4.337-12.795zM13.107 27.196c0 0.882-0.717 1.599-1.599 1.599s-1.599-0.717-1.599-1.599c0-0.882 0.717-1.599 1.599-1.599s1.599 0.718 1.599 1.599zM24.836 27.196c0 0.882-0.718 1.599-1.6 1.599s-1.599-0.717-1.599-1.599c0-0.882 0.717-1.599 1.599-1.599 0.882 0 1.6 0.718 1.6 1.599zM11.058 21.331l-2.585-10.662h20.662l-3.615 10.662h-14.462z"></path>
                   </svg>
-                </span>
-                <span class="button-cart-hover-text hidden [.inner-group:hover_&]:inline [.inner-group:focus-within_&]:inline text-xs font-bold uppercase tracking-wider text-white">Al Carrito</span>
+                </button>
               </div>
             </div>
             
-            <div class="product-card__content p-5 z-10 relative">
-              <div>
-                <small class="type opacity-40"><span>${categoryName}</span></small>
-              </div>
-              <a href="${pLink}" aria-label="${pName}" title="${pName}" class="link">
-                <h3 class="heading pt-2 pb-3 h5"><span class="link-hover-animation">${pName}</span></h3>
+            <!-- Contenido de Texto Elegante -->
+            <div class="pt-4 pb-2 px-2 text-center flex flex-col items-center">
+              <span class="text-[9px] uppercase tracking-[0.2em] font-semibold text-gray-400 mb-1.5 block">
+                ${categoryName || 'Colección'}
+              </span>
+              <a href="${pLink}" aria-label="${pName}" title="${pName}" class="block w-full">
+                <h3 class="font-medium text-[13px] text-gray-800 hover:text-gray-500 line-clamp-2 leading-relaxed transition-colors duration-200 m-0">
+                  ${pName}
+                </h3>
               </a>
-              <div class="price flex gap-[5px] flex-wrap">
-                ${priceHtml}
-              </div>
+              ${priceHtml}
             </div>
           </product-card>
         `;
@@ -2398,12 +2531,13 @@ export default function HomePage23() {
 
       // Push heavy hydration task to next tick to prevent mobile freezing on load
       setTimeout(() => {
-      // 1. Populate Tab 1: Lo Último Añadido
-      const tab1Products = [...products]
+      // 1. Populate Tab 1: Productos baratos para empezar a emprender (cheapest in-stock)
+      const tab1Products = [...cheapestProducts]
+        .filter(p => p.STOCK && p.STOCK > 0)
         .sort((a: any, b: any) => {
-          const dateA = a.DATE_ADDED ? new Date(a.DATE_ADDED).getTime() : (a.$createdAt ? new Date(a.$createdAt).getTime() : 0);
-          const dateB = b.DATE_ADDED ? new Date(b.DATE_ADDED).getTime() : (b.$createdAt ? new Date(b.$createdAt).getTime() : 0);
-          return dateB - dateA;
+          const priceA = a.CURRENTPRICE && a.CURRENTPRICE > 0 ? a.CURRENTPRICE : (a.PRICE || 0);
+          const priceB = b.CURRENTPRICE && b.CURRENTPRICE > 0 ? b.CURRENTPRICE : (b.PRICE || 0);
+          return priceA - priceB;
         })
         .slice(0, 4);
 
@@ -2727,13 +2861,13 @@ export default function HomePage23() {
       const storeBtn = document.createElement('a');
       storeBtn.href = '/productos';
       storeBtn.className = 'px-[1rem] uppercase';
-      storeBtn.innerHTML = `<span class="link-hover-animation" style="font-weight:900; color:#db2777; font-size: 14px; letter-spacing: 0.5px;">Tienda</span>`;
+      storeBtn.innerHTML = `<span class="link-hover-animation" style="font-weight:900; color:#fff; font-size: 14px; letter-spacing: 0.5px;">Tienda</span>`;
       headerActionsPC.insertBefore(storeBtn, headerActionsPC.firstChild);
 
       const catalogBtn = document.createElement('a');
       catalogBtn.href = '/productos';
       catalogBtn.className = 'px-[1rem] uppercase';
-      catalogBtn.innerHTML = `<span class="link-hover-animation" style="font-weight:900; color:#db2777; font-size: 14px; letter-spacing: 0.5px;">Catálogo</span>`;
+      catalogBtn.innerHTML = `<span class="link-hover-animation" style="font-weight:900; color:#fff; font-size: 14px; letter-spacing: 0.5px;">Catálogo</span>`;
       headerActionsPC.insertBefore(catalogBtn, headerActionsPC.firstChild);
 
       const notifBtn = document.createElement('a');
@@ -3676,10 +3810,6 @@ export default function HomePage23() {
             font-size: clamp(1.4rem, 6vw, 2.2rem) !important;
           }
 
-          /* Timer pack section */
-          #recent-products-portal-root {
-            padding: 0 !important;
-          }
         }
       `}</style>
 
@@ -3691,11 +3821,6 @@ export default function HomePage23() {
         ref={containerRef}
         className="tpl23-shopify-root template-index"
       />
-
-      {hasPortalRoot && typeof document !== 'undefined' && document.getElementById('recent-products-portal-root') && createPortal(
-        <RecentProductsSection />,
-        document.getElementById('recent-products-portal-root')!
-      )}
     </>
   );
 }

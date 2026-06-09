@@ -6826,18 +6826,18 @@
 <div class="heading-section">
     
     
-        <h3 class="heading py-2 animation-element fade-in animation-delay-100"><span>Los Productos que Todos Amamos</span></h3>
+        <h3 class="heading py-2 animation-element fade-in animation-delay-100"><span>Productos para Empezar a Emprender</span></h3>
     
     
         <div class="body-text py-2 animation-element fade-in animation-delay-200 hyphens-auto">
-            <span><p>Descubre las fórmulas a las que nuestros clientes siempre regresan.</p></span>
+            <span><p>Comienza tu negocio hoy con nuestra selección de productos con stock al precio más bajo.</p></span>
         </div>
     
 </div>
         </div>
     
 
-    <div class="custom-container featured-collection__tags relative border-current/10  animation-element fade-in">
+    <div class="custom-container featured-collection__tags relative border-current/10  animation-element fade-in" style="display: none !important;">
         
             <div class="flex gap-5 flex-wrap px-2 py-5">
                 
@@ -6850,7 +6850,7 @@
                             data-index="1"
                             tabindex="0"
                         >
-                            <span class="link-hover-animation">Lo Último Añadido</span>
+                            <span class="link-hover-animation">Productos Económicos</span>
                         </div>
                         
                     
@@ -6887,8 +6887,21 @@
                 <div class="featured-collection__products custom-container" data-index="1" aria-hidden="false">
                     
                         <div class="w-full flex justify-end fade-in animation-element">
-                            <a href="/productos?sort=date-added" class="my-4">
-                                <small class="link-hover-animation">Ver Lo Último Añadido</small>
+                            <style>
+                                @keyframes badgePulse {
+                                    0% { transform: scale(1); }
+                                    50% { transform: scale(1.05); }
+                                    100% { transform: scale(1); }
+                                }
+                                .badge-pill-button:hover {
+                                    transform: translateY(-2px) scale(1.06) !important;
+                                    background-color: #d87ea8 !important;
+                                }
+                            </style>
+                            <a href="/productos?sort=price_asc" class="my-4" style="text-decoration: none;">
+                                <span class="badge-pill-button" style="display: inline-block; background-color: #e095b7; color: #ffffff; padding: 10px 22px; border-radius: 9999px; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8px; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); animation: badgePulse 2.2s infinite ease-in-out; cursor: pointer;">
+                                    VER MAS PRECIOS BAJOS!
+                                </span>
                             </a>
                         </div>
                     
