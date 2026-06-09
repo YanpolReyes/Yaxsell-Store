@@ -74,3 +74,56 @@ export function setSectionInFeatures(features: string, section: number | null): 
   if (section == null || !section) return base;
   return base ? `${base}\nSection: ${section}` : `Section: ${section}`;
 }
+
+// ─── Live Shopping Logic ───────────────────────────────────────────────────────
+
+export type LiveLogicMinQty = {
+  /** Minimum quantity to trigger the offer price */
+  qty: number;
+  /** Special price when qty >= minQty */
+  offerPrice: number;
+};
+
+export type LiveLogicLimitedTime = {
+  /** ISO date string when the offer expires */
+  expiresAt: string;
+  /** Offer price during the limited time period */
+  offerPrice: number;
+};
+
+export type LiveLogicConfig = {
+  /** If true, the apertura -20% global discount is suppressed for this product */
+  disableApertura?: boolean;
+  /** Minimum quantity logic */
+  minQty?: LiveLogicMinQty;
+  /** Limited time offer logic */
+  limitedTime?: LiveLogicLimitedTime;
+};
+
+export function getLiveLogicFromFeatures(features?: string | null): LiveLogicConfig | null {
+  const m = (features || '').match(/LiveLogic:\s*(\{.*\})/i);
+  if (!m) return null;
+  try {
+    return JSON.parse(m[1]) as LiveLogicConfig;
+  } catch {
+    return null;
+  }
+}
+
+export function setLiveLogicInFeatures(features: string, config: LiveLogicConfig | null): string {
+  let base = (features || '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\n?LiveLogic:\s*\{[^\n]*\}/gi, '')
+    .replace(/^LiveLogic:\s*\{[^\n]*\}\n?/gi, '')
+    .trim();
+  if (!config) return base;
+  const json = JSON.stringify(config);
+  return base ? `${base}\nLiveLogic: ${json}` : `LiveLogic: ${json}`;
+}
+
+/** Returns whether the limited-time offer is currently active (not yet expired). */
+export function isLiveLogicLimitedTimeActive(logic: LiveLogicConfig): boolean {
+  if (!logic.limitedTime) return false;
+  return new Date(logic.limitedTime.expiresAt).getTime() > Date.now();
+}
+

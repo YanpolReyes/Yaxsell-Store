@@ -42,29 +42,17 @@ export async function GET(request: NextRequest) {
     if (isLive) {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-
-      // Retrieve the 500 most recently modified products with stock.
-      // This ensures we catch any product that was recently updated (stock set and imported_at set).
-      const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-        Query.limit(500),
-        Query.greaterThan('STOCK', 0),
-        Query.orderDesc('$updatedAt')
-      ]);
-
       const threshold = getLiveShoppingThreshold();
 
-      const liveProducts = res.documents
-        .filter((doc: any) => {
-          if (!doc.imported_at) return false;
-          const importedDate = new Date(doc.imported_at);
-          return importedDate.getTime() >= threshold.getTime();
-        })
-        .sort((a: any, b: any) => {
-          // Sort by imported_at descending to show most recently imported first
-          const timeA = a.imported_at ? new Date(a.imported_at).getTime() : 0;
-          const timeB = b.imported_at ? new Date(b.imported_at).getTime() : 0;
-          return timeB - timeA;
-        });
+      // Query directly by imported_at >= threshold to get ALL live products
+      const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+        Query.greaterThanEqual('imported_at', threshold.toISOString()),
+        Query.greaterThan('STOCK', 0),
+        Query.orderDesc('imported_at'),
+        Query.limit(500),
+      ]);
+
+      const liveProducts = res.documents.filter((doc: any) => (doc.STOCK || 0) > 0);
 
       return NextResponse.json({ products: liveProducts });
     }

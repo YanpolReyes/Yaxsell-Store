@@ -5,7 +5,7 @@ import * as XLSX from 'xlsx';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Product, Category, Subcategory } from '@/types/admin';
-import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff, Eye } from 'lucide-react';
 import ImageUploadField from '@/components/admin/ImageUploadField';
 import { generateProductTitle, generateProductDescription } from '@/lib/aiAdmin';
 import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures, setSectionInFeatures } from '@/lib/product-features';
@@ -1093,10 +1093,34 @@ export default function ProductsPage() {
               </button>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">{modal.mode === 'add' ? 'Nuevo Producto' : 'Editar Producto'}</h1>
-                {modal.mode === 'edit' && <p className="text-xs text-gray-400 mt-0.5">ID: {(modal.data as Product).$id}</p>}
+                {modal.mode === 'edit' && (
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-xs text-gray-400">ID: {(modal.data as Product).$id}</p>
+                    <span className="text-gray-300">•</span>
+                    <a
+                      href={`/productos/${(modal.data as Product).$id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-indigo-600 hover:text-indigo-700 hover:underline flex items-center gap-1 font-medium"
+                    >
+                      <Eye className="w-3.5 h-3.5" /> Ver en tienda
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {modal.mode === 'edit' && (
+                <a
+                  href={`/productos/${(modal.data as Product).$id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200"
+                  title="Ver detalle del producto en la tienda"
+                >
+                  <Eye className="w-4 h-4" /> Ver Producto
+                </a>
+              )}
               <button onClick={() => setYexyOpen(!yexyOpen)}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition ${yexyOpen ? 'bg-violet-600 text-white' : 'bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200'}`}>
                 <MessageSquare className="w-4 h-4" /> Preguntar a Yexy
@@ -1921,6 +1945,15 @@ export default function ProductsPage() {
                     <td className="px-4 py-3 text-right text-gray-500 hidden md:table-cell">{p.SOLDQUANTITY ?? 0}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
+                        <a
+                          href={`/productos/${p.$id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded-lg hover:bg-emerald-50 text-gray-400 hover:text-emerald-600 transition inline-flex items-center justify-center"
+                          title="Ver en tienda"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </a>
                         <button
                           onClick={() => openEdit(p)}
                           className="p-1.5 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition"

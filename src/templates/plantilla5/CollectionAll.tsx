@@ -288,14 +288,43 @@ export default function CollectionAll5() {
     };
   }, [mounted, categories]);
 
+  // Compute Live Shopping threshold (7am local time today or yesterday)
+  const liveThreshold = useMemo(() => {
+    const now = new Date();
+    const today7Am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0, 0);
+    if (now.getTime() >= today7Am.getTime()) return today7Am.getTime();
+    const yesterday7Am = new Date(today7Am);
+    yesterday7Am.setDate(yesterday7Am.getDate() - 1);
+    return yesterday7Am.getTime();
+  }, []);
+
   const filteredProducts = useMemo(() => {
-    return products.filter(p => {
+    const filtered = products.filter(p => {
       if (selectedCat && p.CATEGORYID !== selectedCat) return false;
       if (minPrice !== null && (p.PRICE || 0) < minPrice) return false;
       if (maxPrice !== null && (p.PRICE || 0) > maxPrice) return false;
       return true;
     });
-  }, [products, selectedCat, minPrice, maxPrice]);
+
+    // Sort: Live Shopping products (imported today since 7am) appear first
+    return filtered.sort((a, b) => {
+      const aIsLive = a.imported_at && new Date(a.imported_at).getTime() >= liveThreshold;
+      const bIsLive = b.imported_at && new Date(b.imported_at).getTime() >= liveThreshold;
+
+      if (aIsLive && !bIsLive) return -1;
+      if (!aIsLive && bIsLive) return 1;
+
+      if (aIsLive && bIsLive) {
+        // Both live: sort by imported_at descending
+        const timeA = new Date(a.imported_at!).getTime();
+        const timeB = new Date(b.imported_at!).getTime();
+        return timeB - timeA;
+      }
+
+      // Both non-live: keep original order (newest first from API)
+      return 0;
+    });
+  }, [products, selectedCat, minPrice, maxPrice, liveThreshold]);
 
   const gridNode = mounted ? containerRef.current?.querySelector('.product-grid') : null;
 

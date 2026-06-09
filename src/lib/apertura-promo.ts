@@ -1,5 +1,7 @@
 import { Query } from 'appwrite';
 import { getServices, getAppwriteConfig, APERTURA_SETTINGS_COLLECTION } from '@/lib/appwrite';
+import type { LiveLogicConfig } from '@/lib/product-features';
+import { isLiveLogicLimitedTimeActive } from '@/lib/product-features';
 
 export type AperturaSettings = {
   isActive: boolean;
@@ -36,6 +38,7 @@ export function getAperturaDiscountedPrice(price: number, discountPercent: numbe
 export function resolveProductDisplayPrice(
   product: ProductPriceLike,
   apertura: AperturaSettings | null | undefined,
+  liveLogic?: LiveLogicConfig | null,
 ): ResolvedProductPrice {
   const base = product.PRICE || 0;
   const wholesale = product.WHOLESALEPRICE && product.WHOLESALEPRICE > 0 ? product.WHOLESALEPRICE : null;
@@ -56,7 +59,24 @@ export function resolveProductDisplayPrice(
     };
   }
 
-  if (apertura?.isActive && apertura.discountPercent > 0 && effectiveBase > 0 && base > 0) {
+  // If a live logic limited-time offer is active, show the live offer price
+  if (liveLogic?.limitedTime && isLiveLogicLimitedTimeActive(liveLogic)) {
+    const offerPrice = liveLogic.limitedTime.offerPrice;
+    if (offerPrice > 0 && offerPrice < effectiveBase) {
+      return {
+        displayPrice: offerPrice,
+        originalPrice: effectiveBase,
+        hasDiscount: true,
+        discountPercent: Math.round(((effectiveBase - offerPrice) / effectiveBase) * 100),
+        fromApertura: false,
+      };
+    }
+  }
+
+  // Suppress apertura discount if live logic has disableApertura flag
+  const suppressApertura = liveLogic?.disableApertura === true;
+
+  if (!suppressApertura && apertura?.isActive && apertura.discountPercent > 0 && effectiveBase > 0 && base > 0) {
     const displayPrice = getAperturaDiscountedPrice(effectiveBase, apertura.discountPercent);
     if (displayPrice < effectiveBase) {
       return {

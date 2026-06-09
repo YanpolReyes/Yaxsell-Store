@@ -8,7 +8,7 @@ import { useCart } from '@/context/CartContext';
 import { Sparkles, ShoppingCart, Check, X } from 'lucide-react';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
-import { getSkuFromFeatures } from '@/lib/product-features';
+import { getSkuFromFeatures, getLiveLogicFromFeatures, isLiveLogicLimitedTimeActive } from '@/lib/product-features';
 
 export default function RecentProductsSection() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -38,7 +38,7 @@ export default function RecentProductsSection() {
         const res = await fetch('/api/public-data/products?live=true');
         if (res.ok) {
           const data = await res.json();
-          setProducts((data.products || []).slice(0, 12) as Product[]);
+          setProducts((data.products || []) as Product[]);
         }
       } catch (err) {
         console.error('[RecentProducts] Error fetching:', err);
@@ -82,8 +82,7 @@ export default function RecentProductsSection() {
                   const dateA = a.imported_at ? new Date(a.imported_at).getTime() : 0;
                   const dateB = b.imported_at ? new Date(b.imported_at).getTime() : 0;
                   return dateB - dateA;
-                })
-                .slice(0, 12);
+                });
             });
           }
         }
@@ -213,7 +212,8 @@ export default function RecentProductsSection() {
           <div className="flex-1 overflow-y-auto p-4 bg-gray-50/50">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
               {products.map(p => {
-                const pricing = resolveProductDisplayPrice(p, apertura);
+                const liveLogicDrawer = getLiveLogicFromFeatures((p as any).FEATURES || '');
+                const pricing = resolveProductDisplayPrice(p, apertura, liveLogicDrawer);
                 const displayPrice = pricing.displayPrice;
                 const hasDiscount = pricing.hasDiscount;
                 const isAdding = addingId === p.$id;
@@ -226,9 +226,32 @@ export default function RecentProductsSection() {
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl bg-gray-100">📦</div>
                       )}
-                      <span className="absolute top-2 right-2 bg-gradient-to-r from-rose-400 to-pink-500 text-white font-extrabold text-[9px] px-2 py-0.5 rounded shadow-md z-10">
-                        20% OFF
-                      </span>
+                      {/* Logic badge or discount badge */}
+                      {(() => {
+                        const liveLogic = getLiveLogicFromFeatures((p as any).FEATURES || '');
+                        if (liveLogic?.limitedTime && isLiveLogicLimitedTimeActive(liveLogic)) {
+                          return (
+                            <span className="absolute top-2 right-2 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-extrabold text-[9px] px-2 py-0.5 rounded shadow-md z-10">
+                              ⏰ OFERTA
+                            </span>
+                          );
+                        }
+                        if (liveLogic?.minQty) {
+                          return (
+                            <span className="absolute top-2 right-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white font-extrabold text-[9px] px-2 py-0.5 rounded shadow-md z-10">
+                              📦 ×{liveLogic.minQty.qty}+
+                            </span>
+                          );
+                        }
+                        if (pricing.hasDiscount) {
+                          return (
+                            <span className="absolute top-2 right-2 bg-gradient-to-r from-rose-400 to-pink-500 text-white font-extrabold text-[9px] px-2 py-0.5 rounded shadow-md z-10">
+                              -{pricing.discountPercent}% OFF
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
                     </a>
                     <div className="p-3 flex flex-col flex-1 justify-between">
                       <a href={`/productos/${p.$id}`}>
@@ -308,15 +331,15 @@ export default function RecentProductsSection() {
       {/* Responsive layout: scrollable list on mobile, grid on desktop */}
       <div className="recent-products-grid scrollbar-hide snap-x snap-mandatory overscroll-x-contain sm:snap-none">
         {products.map(p => {
-          const pricing = resolveProductDisplayPrice(p, apertura);
+          const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
+          const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
+          const cardSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
+          const liveLogicCard = getLiveLogicFromFeatures(pFeatures);
+          const pricing = resolveProductDisplayPrice(p, apertura, liveLogicCard);
           const displayPrice = pricing.displayPrice;
           const hasDiscount = pricing.hasDiscount;
           const discPct = pricing.discountPercent;
           const isAdding = addingId === p.$id;
-
-          const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
-          const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
-          const cardSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
 
           return (
             <div 
@@ -349,10 +372,32 @@ export default function RecentProductsSection() {
                   </span>
                 </div>
 
-                {/* Badge top-right with 20% OFF */}
-                <span className="absolute top-2.5 right-2.5 bg-gradient-to-r from-rose-400 to-pink-500 text-white font-extrabold text-[9px] px-2 py-0.5 rounded-md shadow-md z-10">
-                  20% OFF
-                </span>
+                {/* Badge top-right: logic-aware */}
+                {(() => {
+                  const liveLogic = getLiveLogicFromFeatures((p as any).FEATURES || '');
+                  if (liveLogic?.limitedTime && isLiveLogicLimitedTimeActive(liveLogic)) {
+                    return (
+                      <span className="absolute top-2.5 right-2.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-extrabold text-[9px] px-2 py-0.5 rounded-md shadow-md z-10">
+                        ⏰ OFERTA
+                      </span>
+                    );
+                  }
+                  if (liveLogic?.minQty) {
+                    return (
+                      <span className="absolute top-2.5 right-2.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white font-extrabold text-[9px] px-2 py-0.5 rounded-md shadow-md z-10">
+                        📦 ×{liveLogic.minQty.qty}+
+                      </span>
+                    );
+                  }
+                  if (pricing.hasDiscount) {
+                    return (
+                      <span className="absolute top-2.5 right-2.5 bg-gradient-to-r from-rose-400 to-pink-500 text-white font-extrabold text-[9px] px-2 py-0.5 rounded-md shadow-md z-10">
+                        -{pricing.discountPercent}% OFF
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
               </a>
 
               {/* Product Info */}

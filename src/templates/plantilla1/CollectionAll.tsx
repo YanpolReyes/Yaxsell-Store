@@ -222,7 +222,28 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
     });
 
     // Sort client-side
+    const liveThresholdMs = (() => {
+      const now = new Date();
+      const today7Am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0, 0);
+      if (now.getTime() >= today7Am.getTime()) return today7Am.getTime();
+      const yesterday7Am = new Date(today7Am);
+      yesterday7Am.setDate(yesterday7Am.getDate() - 1);
+      return yesterday7Am.getTime();
+    })();
+
     return [...list].sort((a, b) => {
+      // LiveShopping products always come first
+      const aIsLive = (a as any).imported_at && new Date((a as any).imported_at).getTime() >= liveThresholdMs;
+      const bIsLive = (b as any).imported_at && new Date((b as any).imported_at).getTime() >= liveThresholdMs;
+
+      if (aIsLive && !bIsLive) return -1;
+      if (!aIsLive && bIsLive) return 1;
+
+      if (aIsLive && bIsLive) {
+        // Both live: sort by imported_at descending
+        return new Date((b as any).imported_at).getTime() - new Date((a as any).imported_at).getTime();
+      }
+
       if (sortBy === 'price_asc') {
         const pA = resolveProductDisplayPrice(a, apertura).displayPrice;
         const pB = resolveProductDisplayPrice(b, apertura).displayPrice;
