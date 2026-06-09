@@ -48,60 +48,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, []);
 
-  // Find existing snapshot doc ID on login
-  useEffect(() => {
-    if (!isLoggedIn || !user) return;
-    (async () => {
-      try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        const res = await databases.listDocuments(databaseId, CART_SNAPSHOTS_COLLECTION, [
-          Query.equal('userId', user.id), Query.limit(1),
-        ]);
-        if (res.documents.length > 0) {
-          snapshotDocIdRef.current = res.documents[0].$id;
-        }
-      } catch {}
-    })();
-  }, [isLoggedIn, user?.id]);
-
-  // Save snapshot to Appwrite (used by removeItem/clearCart for immediate sync)
-  const saveSnapshotNow = useCallback(async (currentItems: CartItem[]) => {
-    if (!isLoggedIn || !user) return;
-    try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-      const snapshot = currentItems.map(i => ({
-        id: i.product.$id,
-        name: i.product.NAME,
-        qty: i.quantity,
-        price: i.product.PRICE,
-      }));
-      const data = {
-        userId: user.id,
-        itemsJson: JSON.stringify(snapshot),
-        updatedAt: Math.floor(Date.now() / 1000),
-      };
-      if (snapshotDocIdRef.current) {
-        await databases.updateDocument(databaseId, CART_SNAPSHOTS_COLLECTION, snapshotDocIdRef.current, data);
-      } else {
-        const doc = await databases.createDocument(databaseId, CART_SNAPSHOTS_COLLECTION, ID.unique(), data);
-        snapshotDocIdRef.current = doc.$id;
-      }
-    } catch {}
-  }, [isLoggedIn, user]);
-
-  // Save to localStorage + debounced snapshot to Appwrite (admin visibility)
+  // Save to localStorage
   useEffect(() => {
     localStorage.setItem('yaxsel_cart', JSON.stringify(items));
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('yaxsel:cart-updated'));
     }
-    if (!isLoggedIn || !user) return;
-    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
-    syncTimeoutRef.current = setTimeout(() => saveSnapshotNow(items), 10000);
-    return () => { if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current); };
-  }, [items, isLoggedIn, user?.id, saveSnapshotNow]);
+  }, [items]);
 
   const getEffectivePrice = (item: CartItem): number => {
     const now = Date.now();
@@ -134,7 +87,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const removeItem = (productId: string) => {
     const updated = itemsRef.current.filter(i => i.product.$id !== productId);
     setItems(updated);
-    saveSnapshotNow(updated);
   };
 
   const updateQuantity = (productId: string, qty: number) => {
@@ -147,7 +99,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => {
     setItems([]);
-    saveSnapshotNow([]);
   };
 
   const totalItems = items.reduce((s, i) => s + i.quantity, 0);

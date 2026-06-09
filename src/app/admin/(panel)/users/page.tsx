@@ -52,12 +52,7 @@ function UsersPageInner() {
   const [sendingMsg, setSendingMsg] = useState(false);
   const [detailModal, setDetailModal] = useState<AdminCustomerRow | null>(null);
   const [togglingBanId, setTogglingBanId] = useState<string | null>(null);
-  const [favModal, setFavModal] = useState<AdminCustomerRow | null>(null);
-  const [favProducts, setFavProducts] = useState<any[]>([]);
-  const [favLoading, setFavLoading] = useState(false);
-  const [cartModal, setCartModal] = useState<AdminCustomerRow | null>(null);
-  const [cartProducts, setCartProducts] = useState<any[]>([]);
-  const [cartLoading, setCartLoading] = useState(false);
+
 
   const resolveProfileDocId = async (u: AdminCustomerRow): Promise<string> => {
     if (u.hasProfileDoc && !u.$id.startsWith('auth:')) return u.$id;
@@ -355,58 +350,6 @@ function UsersPageInner() {
                           <ClipboardList className="w-3.5 h-3.5" />
                         </Link>
                         <button type="button" onClick={async () => {
-                          setFavModal(u);
-                          setFavLoading(true);
-                          try {
-                            const { databases } = getServices();
-                            const { databaseId } = getAppwriteConfig();
-                            const favRes = await databases.listDocuments(databaseId, FAVORITES_COLLECTION_ID, [
-                              Query.equal('userId', u.userId), Query.limit(100),
-                            ]);
-                            const productIds = favRes.documents.map((d: any) => d.productId);
-                            if (productIds.length === 0) { setFavProducts([]); setFavLoading(false); return; }
-                            const prods: any[] = [];
-                            for (const pid of productIds) {
-                              try {
-                                const p = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, pid);
-                                prods.push(p);
-                              } catch {}
-                            }
-                            setFavProducts(prods);
-                          } catch (e: unknown) { console.error(e); setFavProducts([]); }
-                          finally { setFavLoading(false); }
-                        }} className="p-1.5 rounded-lg hover:bg-pink-50 text-gray-400 hover:text-pink-500" title="Ver favoritos">
-                          <Heart className="w-3.5 h-3.5" />
-                        </button>
-                        <button type="button" onClick={async () => {
-                          setCartModal(u);
-                          setCartLoading(true);
-                          try {
-                            const { databases } = getServices();
-                            const { databaseId } = getAppwriteConfig();
-                            // Read from cart_snapshots (single document)
-                            const snapRes = await databases.listDocuments(databaseId, CART_SNAPSHOTS_COLLECTION_ID, [
-                              Query.equal('userId', u.userId), Query.limit(1),
-                            ]);
-                            if (snapRes.documents.length === 0) { setCartProducts([]); setCartLoading(false); return; }
-                            const snap = snapRes.documents[0] as any;
-                            const items = JSON.parse(snap.itemsJson || '[]');
-                            if (items.length === 0) { setCartProducts([]); setCartLoading(false); return; }
-                            // Fetch product details for each item
-                            const prods: any[] = [];
-                            for (const item of items) {
-                              try {
-                                const p = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id);
-                                prods.push({ ...p, _cartQty: item.qty || 1 });
-                              } catch {}
-                            }
-                            setCartProducts(prods);
-                          } catch (e: unknown) { console.error(e); setCartProducts([]); }
-                          finally { setCartLoading(false); }
-                        }} className="p-1.5 rounded-lg hover:bg-emerald-50 text-gray-400 hover:text-emerald-500" title="Ver carrito">
-                          <ShoppingCart className="w-3.5 h-3.5" />
-                        </button>
-                        <button type="button" onClick={async () => {
                           setChatModal(u);
                           setChatLoading(true);
                           setChatDraft('');
@@ -442,118 +385,6 @@ function UsersPageInner() {
           </table>
         </div>
       </div>
-
-      {/* Cart modal */}
-      {cartModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between p-5 border-b border-gray-100 shrink-0">
-              <div>
-                <p className="font-bold text-gray-900 flex items-center gap-2"><ShoppingCart className="w-4 h-4 text-emerald-500" /> Carrito</p>
-                <p className="text-xs text-gray-500 mt-0.5">{cartModal.name || cartModal.email || 'Usuario'}</p>
-              </div>
-              <button type="button" onClick={() => { setCartModal(null); setCartProducts([]); }} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X className="w-4 h-4" /></button>
-            </div>
-            <div className="overflow-y-auto p-5 flex-1">
-              {cartLoading ? (
-                <div className="flex items-center justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-400" /></div>
-              ) : cartProducts.length === 0 ? (
-                <div className="text-center py-8">
-                  <ShoppingCart className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-                  <p className="text-sm text-gray-400">Carrito vacío</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {cartProducts.map((p: any) => (
-                    <div key={p.$id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
-                      <div className="w-12 h-12 rounded-lg bg-white border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
-                        {p.IMAGEURL ? (
-                          <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" />
-                        ) : (
-                          <ImageIcon className="w-5 h-5 text-gray-300" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900 truncate">{p.NAME || 'Sin nombre'}</p>
-                        <p className="text-xs text-gray-400">
-                          {p.PRICE > 0 ? `$${Number(p.PRICE).toLocaleString('es-CL')}` : 'Sin precio'}
-                        </p>
-                      </div>
-                      <div className="shrink-0 flex items-center gap-2">
-                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">×{p._cartQty}</span>
-                        {p.STOCK > 0 ? (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Stock: {p.STOCK}</span>
-                        ) : (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-600">Agotado</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="p-4 border-t border-gray-100 shrink-0">
-              <p className="text-xs text-gray-400 text-center">{cartProducts.length} producto{cartProducts.length !== 1 ? 's' : ''} en carrito · {cartProducts.reduce((s: number, p: any) => s + (p._cartQty || 1), 0)} unidades</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Favorites modal */}
-      {favModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between p-5 border-b border-gray-100 shrink-0">
-              <div>
-                <p className="font-bold text-gray-900 flex items-center gap-2"><Heart className="w-4 h-4 text-pink-500" /> Favoritos</p>
-                <p className="text-xs text-gray-500 mt-0.5">{favModal.name || favModal.email || 'Usuario'}</p>
-              </div>
-              <button type="button" onClick={() => { setFavModal(null); setFavProducts([]); }} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X className="w-4 h-4" /></button>
-            </div>
-            <div className="overflow-y-auto p-5 flex-1">
-              {favLoading ? (
-                <div className="flex items-center justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-400" /></div>
-              ) : favProducts.length === 0 ? (
-                <div className="text-center py-8">
-                  <Heart className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-                  <p className="text-sm text-gray-400">Sin productos favoritos</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {favProducts.map((p: any) => (
-                    <div key={p.$id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
-                      <div className="w-12 h-12 rounded-lg bg-white border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
-                        {p.IMAGEURL ? (
-                          <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" />
-                        ) : (
-                          <ImageIcon className="w-5 h-5 text-gray-300" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900 truncate">{p.NAME || 'Sin nombre'}</p>
-                        <p className="text-xs text-gray-400">
-                          {p.PRICE > 0 ? `$${Number(p.PRICE).toLocaleString('es-CL')}` : 'Sin precio'}
-                          {p.WHOLESALEPRICE > 0 && ` · Mayorista: $${Number(p.WHOLESALEPRICE).toLocaleString('es-CL')}`}
-                        </p>
-                      </div>
-                      <div className="shrink-0">
-                        {p.STOCK > 0 ? (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Stock: {p.STOCK}</span>
-                        ) : (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-600">Agotado</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="p-4 border-t border-gray-100 shrink-0">
-              <p className="text-xs text-gray-400 text-center">{favProducts.length} producto{favProducts.length !== 1 ? 's' : ''} en favoritos</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Chat modal */}
       {chatModal && (

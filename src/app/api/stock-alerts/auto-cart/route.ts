@@ -26,52 +26,24 @@ export async function POST(req: NextRequest) {
 
     console.log('[auto-cart] Request body:', { productId, productName, productPrice, singleUserId, singleQty, singleAlertId });
 
-    // Single-user mode: add to specific user's cart and delete specific alert
+    // Single-user mode: delete specific alert and notify
     if (singleUserId && singleAlertId) {
-      const qty = singleQty || 1;
       try {
-        // Add product to user's cart snapshot
-        const existingSnap = await databases.listDocuments(DATABASE_ID, CART_SNAPSHOTS_COLLECTION, [
-          Query.equal('userId', singleUserId),
-          Query.limit(1),
-        ]);
-
-        let currentItems: { id: string; name: string; qty: number; price: number }[] = [];
-        let snapDocId: string | null = null;
-
-        if (existingSnap.documents.length > 0) {
-          snapDocId = existingSnap.documents[0].$id;
-          try {
-            currentItems = JSON.parse((existingSnap.documents[0] as any).itemsJson || '[]');
-          } catch { currentItems = []; }
-        }
-
-        const existingIdx = currentItems.findIndex(i => i.id === productId);
-        if (existingIdx >= 0) {
-          currentItems[existingIdx].qty = Math.min(currentItems[existingIdx].qty + qty, 999);
-        } else {
-          currentItems.push({ id: productId, name: productName || 'Producto', qty, price: productPrice || 0 });
-        }
-
-        const snapData = {
+        // Create notification for the user
+        await databases.createDocument(DATABASE_ID, NOTIFICATIONS_COLLECTION, ID.unique(), {
           userId: singleUserId,
-          itemsJson: JSON.stringify(currentItems),
-          updatedAt: Math.floor(Date.now() / 1000),
-        };
-
-        if (snapDocId) {
-          await databases.updateDocument(DATABASE_ID, CART_SNAPSHOTS_COLLECTION, snapDocId, snapData);
-        } else {
-          await databases.createDocument(DATABASE_ID, CART_SNAPSHOTS_COLLECTION, ID.unique(), snapData);
-        }
+          type: 'stock',
+          title: '¡Producto disponible!',
+          message: `El producto "${productName || 'Producto'}" que esperabas ya tiene stock disponible. ¡Visita la tienda para comprarlo!`,
+          isRead: false,
+        });
 
         // Update alert status to 'available' (product was found and notified)
         await databases.updateDocument(DATABASE_ID, STOCK_ALERTS_COLLECTION, singleAlertId, { status: 'available' });
 
-        return NextResponse.json({ success: true, autoAdded: 1, notified: 0 });
+        return NextResponse.json({ success: true, autoAdded: 0, notified: 1 });
       } catch (e: any) {
-        console.error('Single-user auto-cart error:', e?.message || e);
-        console.error('Full error:', JSON.stringify(e, Object.getOwnPropertyNames(e)));
+        console.error('Single-user notify error:', e?.message || e);
         return NextResponse.json({ error: e?.message || 'Unknown error' }, { status: 500 });
       }
     }
@@ -91,64 +63,20 @@ export async function POST(req: NextRequest) {
 
     for (const alert of alertsRes.documents) {
       const userId = alert.userId as string;
-      const qty = Number(alert.quantity ?? 1);
 
       try {
-        // 1. Add product to user's cart snapshot
-        const existingSnap = await databases.listDocuments(DATABASE_ID, CART_SNAPSHOTS_COLLECTION, [
-          Query.equal('userId', userId),
-          Query.limit(1),
-        ]);
-
-        let currentItems: { id: string; name: string; qty: number; price: number }[] = [];
-        let snapDocId: string | null = null;
-
-        if (existingSnap.documents.length > 0) {
-          snapDocId = existingSnap.documents[0].$id;
-          try {
-            currentItems = JSON.parse((existingSnap.documents[0] as any).itemsJson || '[]');
-          } catch { currentItems = []; }
-        }
-
-        // Check if product already in cart
-        const existingIdx = currentItems.findIndex(i => i.id === productId);
-        if (existingIdx >= 0) {
-          currentItems[existingIdx].qty = Math.min(currentItems[existingIdx].qty + qty, 999);
-        } else {
-          currentItems.push({
-            id: productId,
-            name: productName || 'Producto',
-            qty,
-            price: productPrice || 0,
-          });
-        }
-
-        const snapData = {
-          userId,
-          itemsJson: JSON.stringify(currentItems),
-          updatedAt: Math.floor(Date.now() / 1000),
-        };
-
-        if (snapDocId) {
-          await databases.updateDocument(DATABASE_ID, CART_SNAPSHOTS_COLLECTION, snapDocId, snapData);
-        } else {
-          await databases.createDocument(DATABASE_ID, CART_SNAPSHOTS_COLLECTION, ID.unique(), snapData);
-        }
-
-        autoAdded++;
-
-        // 2. Create notification for the user
+        // Create notification for the user
         await databases.createDocument(DATABASE_ID, NOTIFICATIONS_COLLECTION, ID.unique(), {
           userId,
           type: 'stock',
-          title: '¡Producto agregado a tu carrito!',
-          message: `"${productName || 'Producto'}" ya tiene stock y fue agregado automáticamente a tu carrito (x${qty}).`,
+          title: '¡Producto disponible!',
+          message: `El producto "${productName || 'Producto'}" que esperabas ya tiene stock disponible. ¡Visita la tienda para comprarlo!`,
           isRead: false,
         });
 
         notified++;
 
-        // 3. Update alert status to 'available' (product was found and notified)
+        // Update alert status to 'available' (product was found and notified)
         await databases.updateDocument(DATABASE_ID, STOCK_ALERTS_COLLECTION, alert.$id, { status: 'available' });
 
       } catch (userErr) {

@@ -52,6 +52,8 @@ const trackedPages = new Set<string>();
 export function usePageViewTracker() {
   const { user } = useAuth();
   useEffect(() => {
+    // Page views tracking is disabled temporarily to save Appwrite requests quota
+    return;
     const track = async () => {
       const page = window.location.pathname || '/';
       if (!shouldTrack(page)) return;
