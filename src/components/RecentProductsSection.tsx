@@ -233,14 +233,14 @@ export default function RecentProductsSection() {
                       </a>
                       <div className="flex items-center justify-between gap-1 mt-auto">
                         <div className="flex flex-col">
-                          <span className="font-bold text-gray-900 text-xs sm:text-sm">{formatPrice(displayPrice)}</span>
+                          <span className="font-bold text-xs sm:text-sm live-price-red">{formatPrice(displayPrice)}</span>
                           {hasDiscount && pricing.originalPrice != null && <span className="text-[9px] sm:text-[10px] text-gray-400 line-through">{formatPrice(pricing.originalPrice)}</span>}
                         </div>
                         <button
                           onClick={(e) => handleAddToCart(e, p)}
                           disabled={isAdding}
                           className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full transition-colors ${
-                            isAdding ? 'bg-green-500 text-white' : 'bg-gray-100 hover:bg-pink-500 text-gray-700 hover:text-white'
+                            isAdding ? 'bg-green-500 text-white' : 'bg-[#e396bf] hover:bg-[#d685af] text-white'
                           }`}
                         >
                           {isAdding ? <Check size={14} /> : <ShoppingCart size={14} />}
@@ -263,6 +263,17 @@ export default function RecentProductsSection() {
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes livePricePulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.04); }
+          100% { transform: scale(1); }
+        }
+        .live-price-red {
+          color: #ef4444 !important;
+          animation: livePricePulse 2s infinite ease-in-out;
+          display: inline-block;
+          transform-origin: left center;
+        }
         .recent-products-grid {
           display: flex !important;
           overflow-x: auto !important;
@@ -367,7 +378,7 @@ export default function RecentProductsSection() {
                 {/* Price and Add button */}
                 <div className="flex items-center justify-between gap-2 mt-auto pt-1.5 border-t border-gray-100/50">
                   <div className="flex flex-col">
-                    <span className="font-black text-sm sm:text-base text-gray-900 tracking-tight">
+                    <span className="font-black text-sm sm:text-base tracking-tight live-price-red">
                       {formatPrice(displayPrice)}
                     </span>
                     {hasDiscount && pricing.originalPrice != null && (
@@ -383,7 +394,7 @@ export default function RecentProductsSection() {
                     className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full transition-all duration-300 shadow-md ${
                       isAdding 
                         ? 'bg-green-500 text-white scale-110 shadow-green-500/30' 
-                        : 'bg-gray-900 text-white hover:bg-gradient-to-r hover:from-pink-500 hover:to-rose-400 hover:shadow-pink-500/40 active:scale-95'
+                        : 'bg-[#e396bf] text-white hover:bg-[#d685af] active:scale-95 shadow-pink-100'
                     }`}
                     title="Agregar al carrito"
                     aria-label="Agregar al carrito"
