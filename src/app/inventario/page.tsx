@@ -782,11 +782,16 @@ export default function InventarioPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
+      const qLower = q.toLowerCase();
+      const qUpper = q.toUpperCase();
+
       const queries = [
-        [Query.equal('sku', q)],
-        [Query.equal('jumpseller_id', q)],
-        [Query.equal('barcode', q)],
+        [Query.equal('sku', [q, qLower, qUpper])],
+        [Query.equal('jumpseller_id', [q, qLower, qUpper])],
+        [Query.equal('barcode', [q, qLower, qUpper])],
         [Query.contains('NAME', q)],
+        [Query.contains('NAME', qLower)],
+        [Query.contains('NAME', qUpper)],
       ];
 
       let found: Product[] = [];
