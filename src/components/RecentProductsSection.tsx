@@ -15,17 +15,14 @@ export default function RecentProductsSection() {
   const { addItem } = useCart();
 
   useEffect(() => {
-    // 1. Fetch initial recent products with stock
+    // 1. Fetch initial recent products with stock via cached API
     const loadRecent = async () => {
       try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-          Query.greaterThan('STOCK', 0),
-          Query.orderDesc('$createdAt'),
-          Query.limit(12)
-        ]);
-        setProducts(res.documents as unknown as Product[]);
+        const res = await fetch('/api/public-data/products?sortBy=newest');
+        if (res.ok) {
+          const data = await res.json();
+          setProducts((data.products || []).slice(0, 12) as Product[]);
+        }
       } catch (err) {
         console.error('[RecentProducts] Error fetching:', err);
       } finally {
