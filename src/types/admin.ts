@@ -86,6 +86,7 @@ export interface Product {
   COMING_SOON?: boolean;
   DATE_ADDED?: string;
   section?: number;
+  imported_at?: string;
   $createdAt: string;
   $updatedAt: string;
 }

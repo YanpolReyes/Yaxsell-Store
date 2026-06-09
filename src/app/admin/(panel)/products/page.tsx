@@ -30,6 +30,25 @@ const FieldInput = ({ label, field, type = 'text', value, onChange }: { label: s
   </div>
 );
 
+const getLiveStatus = (p: Product) => {
+  if (!p.imported_at) return null;
+  const now = new Date();
+  const today7Am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0, 0);
+  const threshold = now.getTime() >= today7Am.getTime()
+    ? today7Am.getTime()
+    : new Date(today7Am.getFullYear(), today7Am.getMonth(), today7Am.getDate() - 1, 7, 0, 0, 0).getTime();
+
+  const importedTime = new Date(p.imported_at).getTime();
+  if (importedTime < threshold) return null;
+
+  const createdTime = p.$createdAt ? new Date(p.$createdAt).getTime() : 0;
+  if (createdTime >= threshold) {
+    return 'new';
+  } else {
+    return 'existing';
+  }
+};
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -1536,6 +1555,25 @@ export default function ProductsPage() {
         </div>
       )}
 
+      {/* Live Shopping Legend Indicator */}
+      <div className="bg-white border border-gray-150 rounded-xl p-3 flex flex-wrap gap-4 items-center text-xs">
+        <span className="font-semibold text-gray-700 flex items-center gap-1.5">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span>
+          </span>
+          Participan en Live Shopping de hoy:
+        </span>
+        <div className="flex items-center gap-2">
+          <span className="w-4 h-4 rounded-md bg-pink-50 border border-pink-200 border-l-4 border-l-pink-400 block shrink-0" />
+          <span className="text-gray-600">Nuevos agregados hoy</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-4 h-4 rounded-md bg-amber-50 border border-amber-250 border-l-4 border-l-amber-400 block shrink-0" />
+          <span className="text-gray-600">Ya existían, actualizados hoy</span>
+        </div>
+      </div>
+
       {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex gap-2"><AlertTriangle className="w-4 h-4 shrink-0" />{error}</div>}
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -1688,8 +1726,19 @@ export default function ProductsPage() {
                   </td>
                 </tr>
               ) : (
-                filtered.map(p => (
-                  <tr key={p.$id} className={`hover:bg-gray-50 transition-colors ${(p.STOCK ?? 0) === 0 ? 'bg-red-50/40' : ''}`}>
+                filtered.map(p => {
+                  const liveStatus = getLiveStatus(p);
+                  let rowBgClass = '';
+                  if (liveStatus === 'new') {
+                    rowBgClass = 'bg-pink-50/60 hover:bg-pink-100/60 border-l-4 border-l-pink-400';
+                  } else if (liveStatus === 'existing') {
+                    rowBgClass = 'bg-amber-50/60 hover:bg-amber-100/60 border-l-4 border-l-amber-400';
+                  } else if ((p.STOCK ?? 0) === 0) {
+                    rowBgClass = 'bg-red-50/40';
+                  }
+
+                  return (
+                    <tr key={p.$id} className={`hover:bg-gray-50 transition-colors ${rowBgClass}`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <button
@@ -1746,8 +1795,23 @@ export default function ProductsPage() {
                           })()}
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <p className="font-medium text-gray-900 truncate max-w-[170px]">{p.NAME}</p>
+                            {liveStatus === 'new' && (
+                              <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-500 text-white animate-pulse">
+                                Nuevo en Live
+                              </span>
+                            )}
+                            {liveStatus === 'existing' && (
+                              <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white">
+                                Ya estaba (En Live)
+                              </span>
+                            )}
+                            {liveStatus && p.imported_at && (
+                              <span className="text-[9px] text-gray-400 font-medium">
+                                ({new Date(p.imported_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })})
+                              </span>
+                            )}
                           </div>
                           {p.TAGS && (
                             <div className="flex flex-wrap gap-1 mt-0.5">
@@ -1859,7 +1923,8 @@ export default function ProductsPage() {
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
