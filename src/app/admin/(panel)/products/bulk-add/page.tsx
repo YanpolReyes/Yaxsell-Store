@@ -159,13 +159,20 @@ export default function BulkAddPage() {
           // 3. Search if product SKU already exists in products collection
           let product: any = null;
           if (row.sku) {
-            const productResp = await databases.listDocuments(
-              databaseId, 
-              PRODUCTS_COLLECTION_ID, 
-              [Query.equal('sku', row.sku), Query.limit(1)]
-            );
-            if (productResp.documents.length > 0) {
-              product = productResp.documents[0];
+            const cleanSku = row.sku.trim();
+            const queryAttempts = [
+              [Query.equal('sku', cleanSku)],
+              [Query.contains('FEATURES', `SKU: ${cleanSku}`)],
+              [Query.equal('jumpseller_id', cleanSku)]
+            ];
+            for (const qry of queryAttempts) {
+              try {
+                const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [...qry, Query.limit(1)]);
+                if (resp.documents.length > 0) {
+                  product = resp.documents[0];
+                  break;
+                }
+              } catch {}
             }
           }
 
@@ -186,15 +193,20 @@ export default function BulkAddPage() {
             // Product already exists: do NOT create/add a new document.
             // Update imported_at so it goes to today's Live Shopping, and ensure it has stock >= 1
             const newStock = (product.STOCK || 0) > 0 ? product.STOCK : 1;
+            const updatePayload: any = {
+              imported_at: new Date().toISOString(),
+              STOCK: newStock,
+              ISACTIVE: true
+            };
+            // If the found document doesn't have the sku field filled but we have it, fill it to clean the data
+            if (!product.sku && row.sku) {
+              updatePayload.sku = row.sku;
+            }
             await databases.updateDocument(
               databaseId, 
               PRODUCTS_COLLECTION_ID, 
               product.$id, 
-              {
-                imported_at: new Date().toISOString(),
-                STOCK: newStock,
-                ISACTIVE: true
-              }
+              updatePayload
             );
             duplicates.push(`[SKU: ${row.sku}] ${row.name} (Ya existía, se actualizó para Live con stock ${newStock})`);
           } else {

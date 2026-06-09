@@ -559,6 +559,15 @@ export default function ProductsPage() {
         } catch {}
       }
 
+      if (found.length === 0) {
+        try {
+          const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.contains('FEATURES', q), Query.limit(100)]);
+          if (resp.documents.length > 0) {
+            found.push(...(resp.documents as unknown as Product[]));
+          }
+        } catch {}
+      }
+
       if (found.length > 0) {
         setProducts(found);
         setLastCursor(null);
