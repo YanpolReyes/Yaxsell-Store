@@ -151,10 +151,19 @@ export default function BulkEditPage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <div className="mb-6">
+      <div className="mb-6 flex justify-between items-center">
         <Link href="/admin/products" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
           <ArrowLeft size={18} />
           Volver a Productos
+        </Link>
+      </div>
+
+      <div className="flex gap-6 border-b border-gray-200 mb-6">
+        <Link href="/admin/products/bulk-edit" className="border-b-2 border-indigo-600 pb-3 px-1 text-sm font-semibold text-indigo-600">
+          Editar Masivamente
+        </Link>
+        <Link href="/admin/products/bulk-add" className="border-b-2 border-transparent pb-3 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+          Agregar Masivamente
         </Link>
       </div>
 
