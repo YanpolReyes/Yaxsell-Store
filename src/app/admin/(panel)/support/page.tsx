@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Query } from 'appwrite';
 import { getServices, getAppwriteConfig, SUPPORT_TICKETS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { SupportTicket } from '@/types/admin';
-import { RefreshCw, AlertTriangle, HeadphonesIcon, MessageCircle, ChevronDown, Send, Search, X, Download, Clock, LifeBuoy, Plus, Edit2 } from 'lucide-react';
+import { RefreshCw, AlertTriangle, HeadphonesIcon, MessageCircle, ChevronDown, Send, Search, X, Download, Clock, LifeBuoy, Plus, Edit2, Save } from 'lucide-react';
 
 const STATUS_CFG = {
   open:        { label: 'Abierto',      bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200' },
