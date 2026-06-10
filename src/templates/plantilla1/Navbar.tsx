@@ -234,7 +234,7 @@ export default function Navbar1() {
   const handleLogout = async () => {
     await logout();
     setAccountOpen(false);
-    router.push('/');
+    window.location.href = '/';
   };
 
   const authPopupPanel = (

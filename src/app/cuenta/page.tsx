@@ -101,7 +101,7 @@ export default function CuentaPage() {
 
   async function handleLogout() {
     await logout();
-    router.replace('/');
+    window.location.href = '/';
   }
 
   if (isLoading) {

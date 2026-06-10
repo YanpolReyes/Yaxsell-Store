@@ -278,9 +278,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const discPct = priceResolved.discountPercent;
   const priceOriginal = priceResolved.originalPrice;
   const hasWholesale = !!(product.WHOLESALEPRICE && product.WHOLESALEMINQUANTITY && product.WHOLESALEPRICE > 0);
-  const isWholesaleUser = user?.isWholesale || false;
   const isWholesaleQty = hasWholesale && qty >= (product.WHOLESALEMINQUANTITY || 0);
-  const effectivePrice = isWholesaleQty && isWholesaleUser ? product.WHOLESALEPRICE! : displayPrice;
+  const effectivePrice = isWholesaleQty ? product.WHOLESALEPRICE! : displayPrice;
   const lineTotal = effectivePrice * qty;
   const isLimitedStock = product.STOCK !== undefined && product.STOCK !== null && product.STOCK < 99999;
   const stock = isLimitedStock ? product.STOCK! : 99999;
@@ -293,7 +292,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const hasOffer = hasDisc && discPct >= 10;
 
   function handleAdd() {
-    addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty && isWholesaleUser ? product?.WHOLESALEPRICE : undefined);
+    addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty ? product?.WHOLESALEPRICE : undefined);
     setAdded(true);
     setTimeout(() => setAdded(false), 2500);
   }
@@ -401,7 +400,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             {qty > 1 && <p style={{ margin: '8px 0 0', fontSize: 12, color: TEXT_MUTED }}>Total: <strong style={{ color: ORANGE_PRIMARY, fontSize: 14 }}>{formatPrice(lineTotal)}</strong></p>}
           </div>
           <button type="button" onClick={() => {
-            addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty && isWholesaleUser ? product?.WHOLESALEPRICE : undefined);
+            addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty ? product?.WHOLESALEPRICE : undefined);
             router.push('/carrito');
           }} style={{ width: '100%', padding: '12px 18px', background: ORANGE_PRIMARY, color: '#fff', border: `1.5px solid ${ORANGE_PRIMARY}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8, transition: 'all 0.2s' }}>
             Comprar ahora
@@ -701,13 +700,12 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
               </div>
             )}
             <div style={{ marginBottom: 18 }}>
-              {hasWholesale && <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 800, color: '#f59e0b', letterSpacing: 0.5 }}>PRECIO MAYORISTA</p>}
               {(hasDisc && !isWholesaleQty && priceOriginal != null) && (
                 <p style={{ margin: '0 0 2px', fontSize: 14, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(priceOriginal)}</p>
               )}
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-                <span className="pd-price-main" style={{ fontSize: 36, fontWeight: 400, color: TEXT_DARK, letterSpacing: -1, lineHeight: 1 }}>
-                  {formatPrice(isWholesaleQty ? product.WHOLESALEPRICE! : effectivePrice)}
+                <span className="pd-price-main" style={{ fontSize: 36, fontWeight: 400, color: isWholesaleQty ? '#059669' : TEXT_DARK, letterSpacing: -1, lineHeight: 1, transition: 'color 0.3s ease' }}>
+                  {formatPrice(effectivePrice)}
                 </span>
                 {(hasDisc && !isWholesaleQty) && (
                   priceResolved.fromApertura ? (
@@ -716,14 +714,46 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
                     <span style={{ fontSize: 16, fontWeight: 600, color: '#10b981' }}>{discPct}% OFF</span>
                   )
                 )}
+                {isWholesaleQty && (
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#059669', background: 'rgba(5,150,105,0.1)', padding: '3px 8px', borderRadius: 20 }}>PRECIO MAYORISTA</span>
+                )}
               </div>
-              {isWholesaleQty && <p style={{ margin: '6px 0 0', fontSize: 12, color: '#10b981', fontWeight: 600 }}>✓ Precio mayorista aplicado</p>}
-              {hasWholesale && !isWholesaleQty && (
-                <p style={{ margin: '8px 0 0', fontSize: 12, color: ORANGE_PRIMARY, background: '#f9fafb', padding: '6px 10px', borderRadius: 6, border: `1px solid ${PINK_BG_DARK}` }}>
-                  Comprando {product.WHOLESALEMINQUANTITY}+ unidades: <strong>{formatPrice(product.WHOLESALEPRICE!)}</strong> c/u
-                  <br />
-                  <span style={{ fontSize: 11, color: '#666' }}>A partir de {formatPrice(product.WHOLESALEPRICE! * product.WHOLESALEMINQUANTITY!)} en el total del pedido</span>
-                </p>
+              {/* Wholesale notice box - premium animated */}
+              {hasWholesale && (
+                <div style={{
+                  marginTop: 10,
+                  borderRadius: 12,
+                  padding: '10px 14px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 10,
+                  background: isWholesaleQty
+                    ? 'linear-gradient(135deg, rgba(5,150,105,0.08), rgba(16,185,129,0.12))'
+                    : 'linear-gradient(135deg, rgba(251,191,36,0.08), rgba(245,158,11,0.12))',
+                  border: isWholesaleQty ? '1.5px solid rgba(5,150,105,0.3)' : '1.5px solid rgba(245,158,11,0.35)',
+                  transition: 'all 0.4s ease',
+                }}>
+                  <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>{isWholesaleQty ? '🎉' : '⭐'}</span>
+                  <div>
+                    {isWholesaleQty ? (
+                      <>
+                        <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#059669' }}>¡Felicidades! Activaste el precio mayorista</p>
+                        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#047857' }}>
+                          {formatPrice(product.WHOLESALEPRICE!)} c/u · Ahorras {formatPrice(displayPrice - product.WHOLESALEPRICE!)} por unidad
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#92400e' }}>
+                          Lleva {product.WHOLESALEMINQUANTITY! - qty} unidad{product.WHOLESALEMINQUANTITY! - qty !== 1 ? 'es' : ''} más para precio mayorista
+                        </p>
+                        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#78350f' }}>
+                          {formatPrice(product.WHOLESALEPRICE!)} c/u comprando {product.WHOLESALEMINQUANTITY}+ · ¡Ahorras {formatPrice(displayPrice - product.WHOLESALEPRICE!)} por unidad!
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
 
@@ -877,7 +907,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
               {added ? 'Listo' : 'Carrito'}
             </button>
             <button type="button" className="pd-mbar-cart" onClick={() => {
-              addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty && isWholesaleUser ? product?.WHOLESALEPRICE : undefined);
+              addItem(product!, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQty ? product?.WHOLESALEPRICE : undefined);
               router.push('/carrito');
             }}>Comprar</button>
           </div>

@@ -36,14 +36,40 @@ export class AuthService {
   // Limpiar todas las sesiones activas
   static async clearAllSessions(): Promise<void> {
     try {
-      // Obtener todas las sesiones y eliminarlas
-      const sessions = await account.listSessions();
-      for (const session of sessions.sessions) {
-        await account.deleteSession(session.$id);
+      // Intentar eliminar la sesión actual primero (más rápido)
+      try {
+        await account.deleteSession('current');
+      } catch {
+        // puede fallar si ya no hay sesión
       }
+      // Eliminar el resto de sesiones activas
+      try {
+        const sessions = await account.listSessions();
+        for (const session of sessions.sessions) {
+          try { await account.deleteSession(session.$id); } catch { /* ignorar */ }
+        }
+      } catch { /* ignorar */ }
     } catch (error) {
-      // Si no hay sesiones, continuar
       console.log('No sessions to clear or error clearing sessions:', error);
+    } finally {
+      // Limpiar siempre localStorage de tokens Appwrite
+      if (typeof window !== 'undefined') {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.includes('cookieFallback') || key.includes('a_session') || key.includes('appwrite'))) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+        // Limpiar cookies de sesión de Appwrite
+        document.cookie.split(';').forEach(c => {
+          const name = c.trim().split('=')[0];
+          if (name && (name.includes('a_session') || name.includes('appwrite'))) {
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+          }
+        });
+      }
     }
   }
 
@@ -202,10 +228,18 @@ export class AuthService {
       return { success: true };
     } catch (error: any) {
       console.error('Logout error:', error);
-      return {
-        success: false,
-        error: error.message || 'Error al cerrar sesión'
-      };
+      // Intentar limpiar localStorage aunque haya error en la API
+      if (typeof window !== 'undefined') {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.includes('cookieFallback') || key.includes('a_session') || key.includes('appwrite'))) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+      }
+      return { success: true }; // retornar success igual para forzar el redirect
     }
   }
 
