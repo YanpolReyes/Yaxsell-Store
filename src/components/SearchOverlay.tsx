@@ -7,6 +7,7 @@ import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, formatPrice } from
 import { normalizeProductImages, getProductImageUrl } from '@/lib/product-images';
 import { Query } from 'appwrite';
 import { Product } from '@/types';
+import { getSkuFromFeatures } from '@/lib/product-features';
 
 const MAX_HISTORY = 8;
 const STORAGE_KEY = 'search_history';
@@ -49,21 +50,44 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
+      
+      // 1. Search by Name
       const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
         Query.search('NAME', q),
         Query.limit(6),
       ]);
-      setResults((res.documents as unknown as Product[]).map(p => normalizeProductImages(p)));
+      let combined = [...res.documents];
+      
+      // 2. Search by exact SKU
+      if (combined.length < 6) {
+        try {
+          const skuRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+            Query.equal('sku', [q, q.toLowerCase(), q.toUpperCase()]),
+            Query.limit(6 - combined.length),
+          ]);
+          skuRes.documents.forEach(doc => {
+            if (!combined.some(d => d.$id === doc.$id)) {
+              combined.push(doc);
+            }
+          });
+        } catch {}
+      }
+      
+      setResults((combined as unknown as Product[]).map(p => normalizeProductImages(p)));
     } catch {
       // Fallback: try contains search
       try {
         const { databases } = getServices();
         const { databaseId } = getAppwriteConfig();
-        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.limit(50)]);
-        const filtered = (res.documents as unknown as Product[]).filter(p =>
-          p.NAME.toLowerCase().includes(q.toLowerCase()) ||
-          (p.DESCRIPTION || '').toLowerCase().includes(q.toLowerCase())
-        ).slice(0, 6);
+        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.limit(80)]);
+        const filtered = (res.documents as unknown as Product[]).filter(p => {
+          const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
+          const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
+          const pSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
+          return p.NAME.toLowerCase().includes(q.toLowerCase()) ||
+            (p.DESCRIPTION || '').toLowerCase().includes(q.toLowerCase()) ||
+            pSku.toLowerCase().includes(q.toLowerCase());
+        }).slice(0, 6);
         setResults(filtered.map(p => normalizeProductImages(p)));
       } catch { setResults([]); }
     } finally {

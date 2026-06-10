@@ -12,7 +12,7 @@ import {
   AlertTriangle, ExternalLink, Image as ImageIcon, MessageSquare, Calendar, DollarSign,
   Printer, Send, Ban, StickyNote, MapPinned, Receipt, Tag, XCircle, Upload, Search,
 } from 'lucide-react';
-import { getWarehouseLocationFromFeatures, getSkuFromFeatures, type ProductWarehouseLocation } from '@/lib/product-features';
+import { getWarehouseLocationFromFeatures, getSkuFromFeatures, getBarcodeFromFeatures, type ProductWarehouseLocation } from '@/lib/product-features';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; dot: string; icon: string }> = {
   pending:    { label: 'Pendiente de pago', bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400',   icon: '🕐' },
@@ -53,6 +53,7 @@ export default function OrderDetailPage() {
   const [productLocations, setProductLocations] = useState<Record<string, ProductWarehouseLocation>>({});
   const [productSkus, setProductSkus] = useState<Record<string, string>>({});
   const [productPrices, setProductPrices] = useState<Record<string, number>>({});
+  const [productBarcodes, setProductBarcodes] = useState<Record<string, string>>({});
   const [proofOpen, setProofOpen] = useState(false);
   const [shippingProofOpen, setShippingProofOpen] = useState(false);
   const [uploadingProof, setUploadingProof] = useState(false);
@@ -247,20 +248,23 @@ export default function OrderDetailPage() {
         const locs: Record<string, ProductWarehouseLocation> = {};
         const skus: Record<string, string> = {};
         const prices: Record<string, number> = {};
+        const barcodes: Record<string, string> = {};
         await Promise.all(productIds.map(async (pid) => {
           try {
             const product = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, pid);
-            const doc = product as { STOCK?: number; FEATURES?: string; TAGS?: string; jumpseller_id?: string; sku?: string; section?: number; PRICE?: number };
+            const doc = product as { STOCK?: number; FEATURES?: string; TAGS?: string; jumpseller_id?: string; sku?: string; section?: number; PRICE?: number; barcode?: string };
             stocks[pid] = doc.STOCK || 0;
             locs[pid] = getWarehouseLocationFromFeatures(doc.FEATURES, doc.section);
             skus[pid] = getSkuFromFeatures(doc.FEATURES, doc.TAGS, doc.jumpseller_id, doc.sku);
             prices[pid] = doc.PRICE || 0;
+            barcodes[pid] = getBarcodeFromFeatures(doc.FEATURES, doc.barcode);
           } catch {}
         }));
         setProductStocks(stocks);
         setProductLocations(locs);
         setProductSkus(skus);
         setProductPrices(prices);
+        setProductBarcodes(barcodes);
       } else {
         setProductLocations({});
       }
@@ -364,19 +368,41 @@ export default function OrderDetailPage() {
     setTimeout(() => setCopied(null), 1500);
   };
 
-  const copyOrderItemsList = () => {
+  const copyOrderItemsList = (type: 'barcode' | 'sku') => {
     if (!order) return;
     let parsedItems: any[] = [];
     try { parsedItems = JSON.parse(order.ITEMS || '[]'); } catch {}
     
     const lines = parsedItems.map(it => {
       let code = '';
-      if (it.id) {
-        code = productSkus[it.id] || '';
+      if (type === 'barcode') {
+        if (it.id) {
+          code = productBarcodes[it.id] || '';
+        }
+        if (!code) {
+          code = (it as any).barcode || '';
+        }
+        if (!code && it.id) {
+          code = productSkus[it.id] || '';
+        }
+        if (!code) {
+          code = it.sku || '';
+        }
+      } else {
+        if (it.id) {
+          code = productSkus[it.id] || '';
+        }
+        if (!code) {
+          code = it.sku || '';
+        }
+        if (!code && it.id) {
+          code = productBarcodes[it.id] || '';
+        }
+        if (!code) {
+          code = (it as any).barcode || '';
+        }
       }
-      if (!code) {
-        code = it.sku || '';
-      }
+      
       if (!code) {
         code = it.id || it.name || '';
       }
@@ -396,7 +422,7 @@ export default function OrderDetailPage() {
     
     const textToCopy = lines.join('\n');
     navigator.clipboard.writeText(textToCopy);
-    setCopied('itemsList');
+    setCopied(type === 'barcode' ? 'copiedBarcode' : 'copiedSku');
     setTimeout(() => setCopied(null), 1500);
   };
 
@@ -657,16 +683,29 @@ export default function OrderDetailPage() {
           </div>
         </div>
         <div className="no-print flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-          <button onClick={copyOrderItemsList} className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-xs sm:text-sm font-medium hover:bg-indigo-100 transition">
-            {copied === 'itemsList' ? (
+          <button onClick={() => copyOrderItemsList('barcode')} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-semibold hover:bg-indigo-100 transition">
+            {copied === 'copiedBarcode' ? (
               <>
-                <Check className="w-4 h-4 text-green-500 animate-pulse" />
-                <span className="hidden sm:inline">Copiado</span>
+                <Check className="w-3.5 h-3.5 text-green-600 animate-pulse" />
+                <span>Copiado (Barra)</span>
               </>
             ) : (
               <>
-                <Copy className="w-4 h-4" />
-                <span className="hidden sm:inline">Copiar Pedido</span>
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copiar (Barra)</span>
+              </>
+            )}
+          </button>
+          <button onClick={() => copyOrderItemsList('sku')} className="flex items-center gap-1.5 px-2 py-1.5 bg-violet-50 border border-violet-200 text-violet-700 rounded-xl text-xs font-semibold hover:bg-violet-100 transition">
+            {copied === 'copiedSku' ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-green-600 animate-pulse" />
+                <span>Copiado (SKU)</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copiar (SKU)</span>
               </>
             )}
           </button>
