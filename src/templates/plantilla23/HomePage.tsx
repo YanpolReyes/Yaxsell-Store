@@ -1147,17 +1147,46 @@ export default function HomePage23() {
       }
 
       /* ── HEADER THREE-STATE STYLING (GLASSMORPHISM ONLY ON SCROLLED STICKY) ── */
-      /* Estado 1: Inicial / Fijo arriba (data-scroll="false") - Transparente puro, sin blur ni fondos */
-      custom-header.header-element[data-scroll="false"],
-      .header[data-id="sections--27304712208665__header"][data-scroll="false"] {
-        background: transparent !important;
-        background-color: transparent !important;
-        background-image: none !important;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-        border: none !important;
-        border-bottom: none !important;
-        box-shadow: none !important;
+      /* Estado 1: Inicial / Fijo arriba (data-scroll="false") - Transparente en PC, Blanco opaco, grueso y grande en Móvil */
+      @media (min-width: 1024px) {
+        custom-header.header-element[data-scroll="false"],
+        .header[data-id="sections--27304712208665__header"][data-scroll="false"] {
+          background: transparent !important;
+          background-color: transparent !important;
+          background-image: none !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          border: none !important;
+          border-bottom: none !important;
+          box-shadow: none !important;
+        }
+      }
+
+      @media (max-width: 1023px) {
+        custom-header.header-element[data-scroll="false"],
+        .header[data-id="sections--27304712208665__header"][data-scroll="false"] {
+          background: #ffffff !important;
+          background-color: #ffffff !important;
+          background-image: none !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          border: none !important;
+          border-bottom: 2px solid #f3f4f6 !important;
+          box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05) !important;
+          padding-top: 12px !important;
+          padding-bottom: 12px !important;
+          min-height: 56px !important;
+        }
+
+        /* Hacer los iconos más grandes solo en el header móvil inicial */
+        custom-header.header-element[data-scroll="false"] svg {
+          transform: scale(1.15) !important;
+        }
+
+        /* Incrementar separación entre los botones/iconos del header móvil inicial */
+        custom-header.header-element[data-scroll="false"] .flex.justify-center.items-center {
+          gap: 16px !important;
+        }
       }
 
       /* Ocultar logo en móvil cuando no hay scroll y mostrarlo solo en el sticky (data-scroll="true") */
