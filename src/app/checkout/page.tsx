@@ -389,6 +389,9 @@ function CheckoutInner() {
         try {
           const productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, it.product.$id);
           const currentStock = Number((productDoc as any).STOCK ?? 0);
+          if (currentStock === 99999) {
+            continue;
+          }
           if (currentStock < it.quantity) {
             throw new Error(`Stock insuficiente para "${(productDoc as any).NAME || it.product.NAME}". Disponible: ${currentStock}, necesitas: ${it.quantity}.`);
           }
@@ -420,6 +423,9 @@ function CheckoutInner() {
         for (const item of items) {
           const productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.product.$id);
           const currentStock = Number((productDoc as any).STOCK ?? 0);
+          if (currentStock === 99999) {
+            continue;
+          }
           if (currentStock < item.quantity) {
             throw new Error(`Stock insuficiente para "${(productDoc as any).NAME || item.product.NAME}". Disponible: ${currentStock}, necesitas: ${item.quantity}.`);
           }

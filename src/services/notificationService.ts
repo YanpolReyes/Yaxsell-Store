@@ -53,8 +53,11 @@ export function getNotificationLink(doc: Record<string, unknown>): string | unde
 }
 
 const ORDER_NOTIFY_STATUSES: OrderStatus[] = [
-  'paid',
   'processing',
+  'paid',
+  'assembling',
+  'preparing_shipping',
+  'ready_to_ship',
   'shipped',
   'delivered',
   'cancelled',
@@ -65,13 +68,25 @@ const ORDER_STATUS_COPY: Record<
   { title: string; buildMessage: (code: string) => string } | null
 > = {
   pending: null,
-  paid: {
-    title: 'Pago confirmado',
-    buildMessage: (c) => `Tu pedido ${c} fue confirmado. Estamos preparando tu compra.`,
-  },
   processing: {
-    title: 'Pedido en proceso',
-    buildMessage: (c) => `Tu pedido ${c} está siendo preparado en nuestro almacén.`,
+    title: 'Pago a verificar',
+    buildMessage: (c) => `Tu pago del pedido ${c} está siendo verificado.`,
+  },
+  paid: {
+    title: 'Pago verificado',
+    buildMessage: (c) => `Tu pago para el pedido ${c} fue verificado con éxito.`,
+  },
+  assembling: {
+    title: 'Pedido armándose',
+    buildMessage: (c) => `Tu pedido ${c} está siendo armado en nuestro almacén.`,
+  },
+  preparing_shipping: {
+    title: 'Preparando etiqueta de envío',
+    buildMessage: (c) => `Estamos preparando la etiqueta de envío para tu pedido ${c}.`,
+  },
+  ready_to_ship: {
+    title: 'Etiqueta de envío lista',
+    buildMessage: (c) => `La etiqueta de envío para tu pedido ${c} está lista.`,
   },
   shipped: {
     title: 'Pedido enviado',

@@ -113,7 +113,7 @@ export interface Coupon {
   description?: string;
 }
 
-export type OrderStatus = 'pending' | 'processing' | 'paid' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'processing' | 'paid' | 'assembling' | 'preparing_shipping' | 'ready_to_ship' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface OrderItem {
   id: string;

@@ -57,7 +57,8 @@ export default function AnalyticsPage() {
   const fmtN = (n: number) => new Intl.NumberFormat('es-CL').format(n);
 
   // KPIs
-  const paidOrders = orders.filter(o => ['paid', 'processing', 'shipped', 'delivered'].includes(o.STATUS));
+  const revenueStatuses = ['paid', 'processing', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
+  const paidOrders = orders.filter(o => revenueStatuses.includes(o.STATUS));
   const totalRevenue = paidOrders.reduce((s, o) => s + o.TOTAL, 0);
   const avgOrderValue = paidOrders.length > 0 ? totalRevenue / paidOrders.length : 0;
   const cancelledCount = orders.filter(o => o.STATUS === 'cancelled').length;
@@ -68,8 +69,8 @@ export default function AnalyticsPage() {
   const prev7Start = Date.now() - 14 * 86400000;
   const thisWeekOrders = rawOrders.filter(o => { const ts = o.CREATEDAT || new Date(o.$createdAt).getTime(); return ts >= now7Start; });
   const prevWeekOrders = rawOrders.filter(o => { const ts = o.CREATEDAT || new Date(o.$createdAt).getTime(); return ts >= prev7Start && ts < now7Start; });
-  const thisWeekRev = thisWeekOrders.filter(o => ['paid','processing','shipped','delivered'].includes(o.STATUS)).reduce((s,o) => s + o.TOTAL, 0);
-  const prevWeekRev = prevWeekOrders.filter(o => ['paid','processing','shipped','delivered'].includes(o.STATUS)).reduce((s,o) => s + o.TOTAL, 0);
+  const thisWeekRev = thisWeekOrders.filter(o => revenueStatuses.includes(o.STATUS)).reduce((s,o) => s + o.TOTAL, 0);
+  const prevWeekRev = prevWeekOrders.filter(o => revenueStatuses.includes(o.STATUS)).reduce((s,o) => s + o.TOTAL, 0);
   const wowRevPct = prevWeekRev > 0 ? Math.round(((thisWeekRev - prevWeekRev) / prevWeekRev) * 100) : null;
   const wowOrdersPct = prevWeekOrders.length > 0 ? Math.round(((thisWeekOrders.length - prevWeekOrders.length) / prevWeekOrders.length) * 100) : null;
 
@@ -88,7 +89,7 @@ export default function AnalyticsPage() {
       const ts = o.CREATEDAT || new Date(o.$createdAt).getTime();
       return ts >= d.getTime() && ts < next.getTime();
     });
-    const revenue = dayOrders.filter(o => ['paid','processing','shipped','delivered'].includes(o.STATUS))
+    const revenue = dayOrders.filter(o => revenueStatuses.includes(o.STATUS))
       .reduce((s, o) => s + o.TOTAL, 0);
     dailyStats.push({
       date: d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }),
@@ -100,12 +101,15 @@ export default function AnalyticsPage() {
 
   // Status breakdown
   const statusBreakdown = [
-    { label: 'Pendiente',  key: 'pending',    color: 'bg-amber-400' },
-    { label: 'Pagado',     key: 'paid',       color: 'bg-emerald-400' },
-    { label: 'Procesando', key: 'processing', color: 'bg-blue-400' },
-    { label: 'Enviado',    key: 'shipped',    color: 'bg-violet-400' },
-    { label: 'Entregado',  key: 'delivered',  color: 'bg-green-400' },
-    { label: 'Cancelado',  key: 'cancelled',  color: 'bg-red-400' },
+    { label: 'Pendiente',                 key: 'pending',            color: 'bg-amber-400' },
+    { label: 'Pago a Verificar',          key: 'processing',         color: 'bg-blue-400' },
+    { label: 'Pago Verificado',           key: 'paid',               color: 'bg-emerald-400' },
+    { label: 'Armando',                   key: 'assembling',         color: 'bg-indigo-400' },
+    { label: 'Preparando Etiqueta Envío', key: 'preparing_shipping', color: 'bg-orange-400' },
+    { label: 'Etiqueta Lista',            key: 'ready_to_ship',      color: 'bg-cyan-400' },
+    { label: 'Enviado',                   key: 'shipped',            color: 'bg-violet-400' },
+    { label: 'Entregado',                 key: 'delivered',          color: 'bg-green-400' },
+    { label: 'Cancelado',                 key: 'cancelled',          color: 'bg-red-400' },
   ].map(s => ({ ...s, count: orders.filter(o => o.STATUS === s.key).length }));
 
   // Category revenue (from products SOLDQUANTITY × PRICE)
@@ -399,11 +403,14 @@ export default function AnalyticsPage() {
       {/* Conversion funnel */}
       {orders.length > 0 && (() => {
         const stages = [
-          { key: 'pending',    label: 'Pendiente',  color: 'bg-amber-400' },
-          { key: 'paid',       label: 'Pagado',     color: 'bg-blue-400' },
-          { key: 'processing', label: 'Procesando', color: 'bg-indigo-400' },
-          { key: 'shipped',    label: 'Enviado',    color: 'bg-violet-400' },
-          { key: 'delivered',  label: 'Entregado',  color: 'bg-emerald-500' },
+          { key: 'pending',            label: 'Pendiente',                 color: 'bg-amber-400' },
+          { key: 'processing',         label: 'Pago a Verificar',          color: 'bg-blue-400' },
+          { key: 'paid',               label: 'Pago Verificado',           color: 'bg-emerald-400' },
+          { key: 'assembling',         label: 'Armando',                   color: 'bg-indigo-400' },
+          { key: 'preparing_shipping', label: 'Preparando Etiqueta Envío', color: 'bg-orange-400' },
+          { key: 'ready_to_ship',      label: 'Etiqueta Lista',            color: 'bg-cyan-400' },
+          { key: 'shipped',            label: 'Enviado',                   color: 'bg-violet-400' },
+          { key: 'delivered',          label: 'Entregado',                 color: 'bg-emerald-500' },
         ];
         const total = orders.length;
         const cancelledCount = orders.filter(o => o.STATUS === 'cancelled').length;

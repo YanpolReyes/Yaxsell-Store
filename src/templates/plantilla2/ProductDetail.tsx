@@ -220,12 +220,13 @@ export default function ProductDetailPlantilla2({ previewProductId }: { previewP
   const isWholesaleQty = hasWholesale && qty >= (product.WHOLESALEMINQUANTITY || 0);
   const effectivePrice = isWholesaleQty && isWholesaleUser ? product.WHOLESALEPRICE! : displayPrice;
   const lineTotal = effectivePrice * qty;
-  const stock = unlimitedStock ? 99999 : (product.STOCK ?? 0);
+  const isLimitedStock = product.STOCK !== undefined && product.STOCK !== null && product.STOCK < 99999;
+  const stock = isLimitedStock ? product.STOCK! : 99999;
   const rating = product.RATING ?? 0;
   const numReviews = product.NUMREVIEWS ?? 0;
   const soldQty = product.SOLDQUANTITY ?? 0;
-  const stockColor = unlimitedStock ? '#00a650' : (stock > 10 ? '#00a650' : stock > 5 ? '#f57c00' : stock > 0 ? '#f73737' : '#999');
-  const stockLabel = unlimitedStock ? 'Stock disponible' : (stock > 10 ? 'Stock disponible' : stock > 5 ? 'Stock limitado' : stock > 0 ? 'Últimas unidades' : 'Sin stock');
+  const stockColor = !isLimitedStock ? '#00a650' : (stock > 10 ? '#00a650' : stock > 5 ? '#f57c00' : stock > 0 ? '#f73737' : '#999');
+  const stockLabel = !isLimitedStock ? 'Stock disponible' : (stock > 10 ? 'Stock disponible' : stock > 5 ? 'Stock limitado' : stock > 0 ? 'Últimas unidades' : 'Sin stock');
   const isBestSeller = soldQty >= 20;
   const hasOffer = hasDisc && discPct >= 10;
 
@@ -502,7 +503,7 @@ export default function ProductDetailPlantilla2({ previewProductId }: { previewP
             {/* Stock */}
             <div style={{ marginBottom: 16 }}>
               <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600, color: stockColor }}>{stockLabel}</p>
-              {!unlimitedStock && stock > 0 && stock <= 10 && <p style={{ margin: 0, fontSize: 13, color: '#666' }}>¡Solo quedan {stock} unidades!</p>}
+              {isLimitedStock && stock > 0 && stock <= 10 && <p style={{ margin: 0, fontSize: 13, color: '#666' }}>¡Solo quedan {stock} unidades!</p>}
             </div>
 
             {/* Quantity + Buttons */}
@@ -511,7 +512,7 @@ export default function ProductDetailPlantilla2({ previewProductId }: { previewP
                 <div style={{ marginBottom: 16 }}>
                   <p style={{ margin: '0 0 8px', fontSize: 14, color: '#666' }}>
                     Cantidad: <strong style={{ color: '#333' }}>{qty} unidad{qty > 1 ? 'es' : ''}</strong>
-                    {!unlimitedStock && <span style={{ color: '#999' }}> (+{stock} disponibles)</span>}
+                    {isLimitedStock && <span style={{ color: '#999' }}> (+{stock} disponibles)</span>}
                   </p>
                   <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #ddd', borderRadius: 4, width: 'fit-content' }}>
                     <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 42, height: 42, border: 'none', background: 'none', fontSize: 20, cursor: 'pointer', color: '#3483fa', fontWeight: 300 }}>−</button>
@@ -522,7 +523,7 @@ export default function ProductDetailPlantilla2({ previewProductId }: { previewP
                       value={qty}
                       onChange={(e) => {
                         const val = parseInt(e.target.value);
-                        if (!isNaN(val) && val >= 1 && (unlimitedStock || val <= stock)) {
+                        if (!isNaN(val) && val >= 1 && (!isLimitedStock || val <= stock)) {
                           setQty(val);
                         }
                       }}
@@ -538,12 +539,12 @@ export default function ProductDetailPlantilla2({ previewProductId }: { previewP
                         background: '#fff'
                       }}
                     />
-                    <button onClick={() => setQty(q => unlimitedStock ? q + 1 : Math.min(stock, q + 1))} style={{ width: 42, height: 42, border: 'none', background: 'none', fontSize: 20, cursor: 'pointer', color: '#3483fa', fontWeight: 300 }}>+</button>
+                    <button onClick={() => setQty(q => !isLimitedStock ? q + 1 : Math.min(stock, q + 1))} style={{ width: 42, height: 42, border: 'none', background: 'none', fontSize: 20, cursor: 'pointer', color: '#3483fa', fontWeight: 300 }}>+</button>
                   </div>
                   {qty > 1 && <p style={{ margin: '8px 0 0', fontSize: 13, color: '#666' }}>Total: <strong style={{ color: '#333' }}>{formatPrice(lineTotal)}</strong></p>}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 400 }}>
-                  {!unlimitedStock && <StockIndicator stock={product.STOCK} soldQuantity={product.SOLDQUANTITY} />}
+                  {isLimitedStock && <StockIndicator stock={product.STOCK} soldQuantity={product.SOLDQUANTITY} />}
                   <button onClick={handleBuyNow} className="p2-buy-btn" style={{ padding: '15px 24px', background: '#3483fa', color: '#fff', border: 'none', borderRadius: 6, fontSize: 16, fontWeight: 600, cursor: 'pointer', transition: 'background .15s', position: 'relative', overflow: 'hidden' }}
                     onMouseEnter={e => (e.currentTarget.style.background = '#2968c8')}
                     onMouseLeave={e => (e.currentTarget.style.background = '#3483fa')}

@@ -1269,9 +1269,21 @@ export default function ProductsPage() {
                     })()}
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Stock</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center justify-between">
+                      <span>Stock</span>
+                      <button
+                        type="button"
+                        onClick={() => setModal(m => m ? { ...m, data: { ...m.data, STOCK: 99999 } } : m)}
+                        className="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold underline"
+                      >
+                        Poner Ilimitado (99999)
+                      </button>
+                    </label>
                     <input type="number" value={modal.data.STOCK ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, STOCK: Number(e.target.value) } } : m)}
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    {Number(modal.data.STOCK) === 99999 && (
+                      <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">✓ Stock Ilimitado (vender sin stock)</p>
+                    )}
                     {Number(modal.data.STOCK) === 0 && (
                       <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠ Stock en 0 — agotado</p>
                     )}

@@ -580,7 +580,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     });
 
     // 2. Inyectar Bloque Informativo de Envío y Stock (estilo Yaxsell / Plantilla 1) usando la estructura exacta de local-pickup
-    const stock = unlimitedStock ? 99999 : (product.STOCK ?? 0);
+    const isLimitedStock = displayProduct ? (displayProduct.STOCK !== undefined && displayProduct.STOCK !== null && displayProduct.STOCK < 99999) : false;
+    const stock = isLimitedStock ? (displayProduct?.STOCK ?? 0) : 99999;
+    const isSoldOut = isLimitedStock && stock <= 0;
     const stockColor = stock > 10 ? '#10b981' : stock > 5 ? '#f59e0b' : stock > 0 ? '#ef4444' : '#9ca3af';
     const stockLabel = stock > 10 ? 'Stock disponible' : stock > 5 ? 'Stock limitado' : stock > 0 ? `Últimas unidades (${stock} disp.)` : 'Sin stock';
 
@@ -805,10 +807,20 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     const plusBtn = root.querySelector('button[name="plus"]') as HTMLButtonElement | null;
     
     if (qtyInput) {
-      const maxStock = unlimitedStock ? 99999 : (displayProduct?.STOCK ?? 0);
+      const maxStock = isLimitedStock ? (displayProduct?.STOCK ?? 0) : 99999;
       qtyInput.dataset.maxStock = String(maxStock);
       qtyInput.setAttribute('max', String(maxStock));
       qtyInput.max = String(maxStock);
+      
+      if (isSoldOut) {
+        qtyInput.value = '0';
+        qtyInput.setAttribute('disabled', 'true');
+        qtyInput.style.opacity = '0.5';
+      } else {
+        if (qtyInput.value === '0') qtyInput.value = '1';
+        qtyInput.removeAttribute('disabled');
+        qtyInput.style.opacity = '1';
+      }
 
       if (minusBtn && plusBtn && !qtyInput.dataset.overrideBound) {
         qtyInput.dataset.overrideBound = '1';
@@ -820,6 +832,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         newMinus.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
+          if (isSoldOut) return;
           const currentVal = parseInt(qtyInput.value) || 1;
           if (currentVal > 1) {
             qtyInput.value = String(currentVal - 1);
@@ -830,6 +843,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         newPlus.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
+          if (isSoldOut) return;
           const currentVal = parseInt(qtyInput.value) || 1;
           const maxLimit = parseInt(qtyInput.dataset.maxStock || '99999') || 99999;
           if (currentVal < maxLimit) {
@@ -849,32 +863,55 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     }
 
     // 10. Integrar el Botón de Añadir al Carrito
-    const addToCartBtn = root.querySelector('.add-to-cart-button') as HTMLElement | null;
-    if (addToCartBtn && !addToCartBtn.dataset.cartBound) {
-      addToCartBtn.dataset.cartBound = '1';
-      const newBtn = addToCartBtn.cloneNode(true) as HTMLButtonElement;
-      addToCartBtn.parentNode?.replaceChild(newBtn, addToCartBtn);
-      
-      newBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Use the currently active variant product
-        const currentProduct = (activeVariantId && activeVariantId !== product.$id)
-          ? (linkedProducts.find(lp => lp.$id === activeVariantId) || product)
-          : product;
-        const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
-        addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined);
-        
-        const textContent = newBtn.querySelector('.add-to-cart-text__content');
+    const addToCartBtn = root.querySelector('.add-to-cart-button') as HTMLButtonElement | null;
+    if (addToCartBtn) {
+      if (isSoldOut) {
+        addToCartBtn.setAttribute('disabled', 'true');
+        addToCartBtn.style.opacity = '0.5';
+        addToCartBtn.style.cursor = 'not-allowed';
+        const textContent = addToCartBtn.querySelector('.add-to-cart-text__content');
         if (textContent) {
-          const originalText = textContent.textContent;
-          textContent.textContent = '¡Añadido al Carrito!';
-          setTimeout(() => {
-            textContent.textContent = originalText;
-          }, 2000);
+          textContent.textContent = 'Agotado';
         }
-      });
+      } else {
+        addToCartBtn.removeAttribute('disabled');
+        addToCartBtn.style.opacity = '1';
+        addToCartBtn.style.cursor = 'pointer';
+        const textContent = addToCartBtn.querySelector('.add-to-cart-text__content');
+        if (textContent) {
+          textContent.textContent = 'Añadir al carrito';
+        }
+      }
+
+      if (!addToCartBtn.dataset.cartBound) {
+        addToCartBtn.dataset.cartBound = '1';
+        const newBtn = addToCartBtn.cloneNode(true) as HTMLButtonElement;
+        addToCartBtn.parentNode?.replaceChild(newBtn, addToCartBtn);
+        
+        newBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const currentProduct = (activeVariantId && activeVariantId !== product.$id)
+            ? (linkedProducts.find(lp => lp.$id === activeVariantId) || product)
+            : product;
+          
+          const isCurrentSoldOut = (currentProduct.STOCK !== undefined && currentProduct.STOCK !== null && currentProduct.STOCK < 99999) && currentProduct.STOCK <= 0;
+          if (isCurrentSoldOut) return;
+
+          const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
+          addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined);
+          
+          const textContent = newBtn.querySelector('.add-to-cart-text__content');
+          if (textContent) {
+            const originalText = textContent.textContent;
+            textContent.textContent = '¡Añadido al Carrito!';
+            setTimeout(() => {
+              textContent.textContent = originalText;
+            }, 2000);
+          }
+        });
+      }
     }
 
     // Unhide the accelerated checkout blocks
@@ -959,64 +996,15 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           });
         }
         
-        let reqBtn = paymentButtonContainer.querySelector('.yaxsell-request-stock-btn') as HTMLButtonElement | null;
-        if (unlimitedStock) {
-          if (reqBtn) reqBtn.style.setProperty('display', 'none', 'important');
+        if (isSoldOut) {
+          customBuyBtn.style.setProperty('display', 'none', 'important');
         } else {
-          if (!reqBtn) {
-            reqBtn = document.createElement('button');
-            reqBtn.type = 'button';
-            reqBtn.className = 'shopify-payment-button__button shopify-payment-button__button--unbranded yaxsell-request-stock-btn';
-            reqBtn.style.width = '100%';
-            reqBtn.style.marginTop = '10px';
-            
-            paymentButtonContainer.appendChild(reqBtn);
-            
-            reqBtn.addEventListener('click', (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (hasPendingRequest) return;
-              if (!user) {
-                alert('Debes iniciar sesión para solicitar stock.');
-                router.push('/login');
-                return;
-              }
-              setIsStockRequestModalOpen(true);
-            });
-          }
+          customBuyBtn.style.setProperty('display', 'block', 'important');
+        }
 
-          reqBtn.style.setProperty('display', 'block', 'important');
-          reqBtn.textContent = hasPendingRequest ? 'Solicitud en revisión' : 'SOLICITAR MÁS';
-          
-          // Match size/shapes from Add to Cart button
-          const addToCartBtn = root.querySelector('.add-to-cart-button') as HTMLElement | null;
-          if (addToCartBtn) {
-            const computedStyle = window.getComputedStyle(addToCartBtn);
-            reqBtn.style.borderRadius = computedStyle.borderRadius || '40px';
-            reqBtn.style.minHeight = computedStyle.minHeight;
-            reqBtn.style.height = computedStyle.height;
-            reqBtn.style.padding = computedStyle.padding;
-            reqBtn.style.fontSize = computedStyle.fontSize;
-            reqBtn.style.fontWeight = computedStyle.fontWeight;
-            reqBtn.style.letterSpacing = computedStyle.letterSpacing;
-            reqBtn.style.fontFamily = computedStyle.fontFamily;
-          } else {
-            reqBtn.style.borderRadius = '40px';
-            reqBtn.style.padding = '14px 20px';
-            reqBtn.style.fontSize = '15px';
-            reqBtn.style.fontWeight = '400';
-          }
-          
-          reqBtn.style.transition = 'all 0.2s ease';
-          reqBtn.style.cursor = hasPendingRequest ? 'not-allowed' : 'pointer';
-
-          if (hasPendingRequest) {
-            reqBtn.classList.add('is-pending');
-            reqBtn.setAttribute('disabled', 'true');
-          } else {
-            reqBtn.classList.remove('is-pending');
-            reqBtn.removeAttribute('disabled');
-          }
+        let reqBtn = paymentButtonContainer.querySelector('.yaxsell-request-stock-btn') as HTMLButtonElement | null;
+        if (reqBtn) {
+          reqBtn.remove();
         }
     }
 
@@ -1564,57 +1552,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           <ProductQuestions productId={product.$id} />
         </div>
       )}
-      {/* Modal de Solicitud de Stock */}
-      {isStockRequestModalOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in duration-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Solicitar más stock</h3>
-            <p className="text-sm text-gray-500 mb-6">
-              ¿Cuántas unidades adicionales de <strong>{product?.NAME}</strong> necesitas? Te notificaremos en cuanto lo tengamos disponible.
-            </p>
-            
-            <div className="mb-6">
-              <label className="block text-xs font-semibold text-gray-700 uppercase mb-2">Cantidad a solicitar</label>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setStockRequestQty(q => Math.max(1, q - 1))}
-                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200"
-                >
-                  -
-                </button>
-                <span className="text-2xl font-bold text-gray-900 w-12 text-center">{stockRequestQty}</span>
-                <button
-                  onClick={() => setStockRequestQty(q => Math.min(99, q + 1))}
-                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200"
-                >
-                  +
-                </button>
-              </div>
-            </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setIsStockRequestModalOpen(false)}
-                className="flex-1 py-3 px-4 rounded-xl font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
-                disabled={isRequestingStock}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleStockRequest}
-                className="flex-1 py-3 px-4 rounded-xl font-semibold text-white bg-pink-500 hover:bg-pink-600 transition-colors flex justify-center items-center"
-                disabled={isRequestingStock}
-              >
-                {isRequestingStock ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                ) : (
-                  'Enviar'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

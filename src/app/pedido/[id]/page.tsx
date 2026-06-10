@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package, Truck, Shield, FileText, RefreshCw, Pencil, X, Plus, Minus, Trash2, Search } from 'lucide-react';
+import { CheckCircle, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package, Truck, Shield, FileText, RefreshCw, Pencil, X, Plus, Minus, Trash2, Search, Tag, Receipt } from 'lucide-react';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION, PRODUCTS_COLLECTION, MEDIA_BUCKET_ID, formatPrice, Query, ID } from '@/lib/appwrite';
 import { resolveStorageImageUrl } from '@/lib/product-images';
 import { Order, OrderItem, Product } from '@/types';
@@ -43,12 +43,15 @@ function getBankDetails(): Record<string, string> {
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  pending:    { label: 'Pendiente de pago',  color: '#b45309', bg: '#fffbeb' },
-  processing: { label: 'En proceso',         color: '#1558b0', bg: '#e8f0fe' },
-  paid:       { label: 'Pago confirmado',    color: '#166534', bg: '#f0fdf4' },
-  shipped:    { label: 'Despachado',         color: '#6b21a8', bg: '#faf5ff' },
-  delivered:  { label: 'Entregado',          color: '#166534', bg: '#f0fdf4' },
-  cancelled:  { label: 'Cancelado',          color: '#991b1b', bg: '#fff5f5' },
+  pending:            { label: 'Pendiente',                 color: '#b45309', bg: '#fffbeb' },
+  processing:         { label: 'Pago a verificar',          color: '#1558b0', bg: '#e8f0fe' },
+  paid:               { label: 'Pago verificado',           color: '#166534', bg: '#f0fdf4' },
+  assembling:         { label: 'Armando',                   color: '#7b1fa2', bg: '#f3e5f5' },
+  preparing_shipping: { label: 'Preparando etiqueta',        color: '#5d4037', bg: '#efebe9' },
+  ready_to_ship:      { label: 'Etiqueta lista',            color: '#00838f', bg: '#e0f7fa' },
+  shipped:            { label: 'Enviado',                   color: '#6b21a8', bg: '#faf5ff' },
+  delivered:          { label: 'Entregado',                 color: '#166534', bg: '#f0fdf4' },
+  cancelled:          { label: 'Cancelado',                 color: '#991b1b', bg: '#fff5f5' },
 };
 
 function Timer({ expiresAt }: { expiresAt: number }) {
@@ -598,8 +601,9 @@ export default function PedidoPage() {
       const latest = latestDoc as unknown as Order;
 
       const editCount = getCustomerEditCount(latest);
-      if (latest.STATUS === 'paid' || latest.STATUS === 'shipped' || latest.STATUS === 'delivered' || latest.STATUS === 'cancelled') {
-        alert('No puedes modificar el pedido si ya está pagado, despachado o anulado.');
+      const unmodifiableStatuses = ['paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'];
+      if (unmodifiableStatuses.includes(latest.STATUS)) {
+        alert('No puedes modificar el pedido si ya está verificado, en proceso de preparación o anulado.');
         return;
       }
 
@@ -692,8 +696,9 @@ export default function PedidoPage() {
       const latest = latestDoc as unknown as Order;
 
       const editCount = getCustomerEditCount(latest);
-      if (latest.STATUS === 'paid' || latest.STATUS === 'shipped' || latest.STATUS === 'delivered' || latest.STATUS === 'cancelled') {
-        alert('No puedes anular el pedido si ya está pagado, despachado o anulado.');
+      const unmodifiableStatuses = ['paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'];
+      if (unmodifiableStatuses.includes(latest.STATUS)) {
+        alert('No puedes anular el pedido si ya está verificado, en proceso de preparación o anulado.');
         return;
       }
 
@@ -771,7 +776,10 @@ export default function PedidoPage() {
   const showTimer = isPending && order.EXPIRESAT && !uploaded;
   const isSuccess = uploaded || order.STATUS !== 'pending';
   const customerEditCount = getCustomerEditCount(order);
-  const canCustomerModify = order.STATUS !== 'paid' && order.STATUS !== 'shipped' && order.STATUS !== 'delivered' && order.STATUS !== 'cancelled';
+  const canCustomerModify = !['paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'].includes(order.STATUS);
+  // Allow replacement selection even for 'paid'/'processing' orders if there are missing items
+  const hasMissingItems = items.some(it => !!(it as any).missing);
+  const canChooseReplacement = hasMissingItems && !['shipped', 'delivered', 'cancelled'].includes(order.STATUS);
 
   return (
     <div style={{ background: '#ebebeb', minHeight: '100vh', padding: '24px 5%', paddingBottom: 'calc(24px + 92px + env(safe-area-inset-bottom, 0px))' }}>
@@ -795,13 +803,16 @@ export default function PedidoPage() {
         {/* ── Order Timeline ── */}
         {(() => {
           const steps = [
-            { key: 'pending',    label: 'Pedido recibido', icon: <Clock size={16} /> },
-            { key: 'processing', label: 'Pago en revisión', icon: <Upload size={16} /> },
-            { key: 'paid',       label: 'Pago confirmado', icon: <CheckCircle size={16} /> },
-            { key: 'shipped',    label: 'Enviado', icon: <Truck size={16} /> },
-            { key: 'delivered',  label: 'Entregado', icon: <Package size={16} /> },
+            { key: 'pending',            label: 'Pedido',       icon: <Clock size={16} /> },
+            { key: 'processing',         label: 'Verificando',  icon: <Upload size={16} /> },
+            { key: 'paid',               label: 'Verificado',   icon: <CheckCircle size={16} /> },
+            { key: 'assembling',         label: 'Armando',      icon: <Package size={16} /> },
+            { key: 'preparing_shipping', label: 'Prep. Envío',  icon: <Tag size={16} /> },
+            { key: 'ready_to_ship',      label: 'Etiqueta',     icon: <Receipt size={16} /> },
+            { key: 'shipped',            label: 'Enviado',      icon: <Truck size={16} /> },
+            { key: 'delivered',          label: 'Entregado',    icon: <CheckCircle size={16} /> },
           ];
-          const statusOrder = ['pending', 'processing', 'paid', 'shipped', 'delivered'];
+          const statusOrder = ['pending', 'processing', 'paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
           const currentIdx = statusOrder.indexOf(order.STATUS);
           if (order.STATUS === 'cancelled') return null;
           return (
@@ -955,7 +966,7 @@ export default function PedidoPage() {
                       </div>
                     )}
 
-                    {isMissing && canCustomerModify && (
+                    {isMissing && (canChooseReplacement || canCustomerModify) && (
                       <button
                         onClick={() => handleOpenReplacementModal(item, i)}
                         style={{
@@ -1017,7 +1028,7 @@ export default function PedidoPage() {
 
             {!canCustomerModify && (
               <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>
-                El pedido ya está confirmado, despachado o cancelado y no puede ser modificado.
+                El pedido ya está verificado, en proceso de preparación o cancelado y no puede ser modificado.
               </p>
             )}
 
@@ -1342,7 +1353,7 @@ export default function PedidoPage() {
               )}
             </div>
             {/* Agency change: only if not paid and not changed before */}
-            {order.STATUS !== 'paid' && order.STATUS !== 'processing' && order.STATUS !== 'shipped' && order.STATUS !== 'delivered' && !order.AGENCYCHANGED && (
+            {order.STATUS === 'pending' && !order.AGENCYCHANGED && (
               showAgencyChange ? (
                 <div style={{ marginTop: 10, padding: '12px 14px', background: '#f8f0ff', borderRadius: 12, border: '1px solid #e9d5ff' }}>
                   <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: '#6b21a8' }}>Selecciona nueva agencia de envío</p>

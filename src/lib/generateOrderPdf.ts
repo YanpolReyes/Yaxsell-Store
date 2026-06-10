@@ -11,12 +11,15 @@ function formatDate(ts: number): string {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: 'Pendiente de pago',
-  processing: 'En proceso',
-  paid: 'Pago confirmado',
-  shipped: 'Despachado',
-  delivered: 'Entregado',
-  cancelled: 'Cancelado',
+  pending:            'Pendiente',
+  processing:         'Pago a verificar',
+  paid:               'Pago verificado',
+  assembling:         'Armando',
+  preparing_shipping: 'Preparando etiqueta',
+  ready_to_ship:      'Etiqueta lista',
+  shipped:            'Enviado',
+  delivered:          'Entregado',
+  cancelled:          'Cancelado',
 };
 
 export interface ProductExtraInfo {

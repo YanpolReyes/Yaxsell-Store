@@ -116,7 +116,7 @@ export default function RecentProductsSection() {
         if (isDelete) {
           setProducts(prev => prev.filter(p => p.$id !== doc.$id));
         } else if (isCreate || isUpdate) {
-          const isStockActive = (doc.STOCK || 0) > 0 && doc.ISACTIVE !== false;
+          const isStockActive = (doc.STOCK !== undefined && doc.STOCK !== null && doc.STOCK >= 0) && doc.ISACTIVE !== false;
           const threshold = getLiveShoppingThreshold();
           const isImportedToday = doc.imported_at && new Date(doc.imported_at).getTime() >= threshold.getTime();
 
@@ -275,14 +275,23 @@ export default function RecentProductsSection() {
                 const displayPrice = pricing.displayPrice;
                 const hasDiscount = pricing.hasDiscount;
                 const isAdding = addingId === p.$id;
+                const isLimitedStock = p.STOCK !== undefined && p.STOCK !== null && p.STOCK < 99999;
+                const isSoldOut = isLimitedStock && p.STOCK <= 0;
                 
                 return (
-                  <div key={`drawer-${p.$id}`} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col">
+                  <div key={`drawer-${p.$id}`} className={`bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col ${isSoldOut ? 'opacity-80' : ''}`}>
                     <a href={`/productos/${p.$id}`} className="block relative aspect-square bg-gray-50">
                       {p.IMAGEURL ? (
-                        <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" loading="lazy" />
+                        <img src={p.IMAGEURL} alt={p.NAME} className={`w-full h-full object-cover ${isSoldOut ? 'grayscale brightness-[0.7]' : ''}`} loading="lazy" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl bg-gray-100">📦</div>
+                      )}
+                      {isSoldOut && (
+                        <div className="absolute inset-0 bg-gray-950/45 backdrop-blur-[1px] flex items-center justify-center z-10">
+                          <span className="bg-white/95 backdrop-blur-md text-gray-950 font-black text-[9px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm border border-white/20">
+                            Agotado
+                          </span>
+                        </div>
                       )}
                       {/* Logic badge or discount badge */}
                       {(() => {
@@ -315,19 +324,28 @@ export default function RecentProductsSection() {
                       <a href={`/productos/${p.$id}`}>
                         <h4 className="text-[11px] sm:text-xs font-semibold text-gray-800 line-clamp-2 leading-tight mb-2 hover:text-pink-600 transition-colors">{p.NAME}</h4>
                       </a>
-                      <div className="flex items-center justify-between gap-1 mt-auto">
+                      {isLimitedStock && p.STOCK > 0 && (
+                        <div className="text-[10px] font-extrabold text-orange-600 bg-orange-50 border border-orange-100 px-2 py-0.5 rounded-md inline-block mt-1 self-start animate-pulse">
+                          🔥 ¡Solo quedan {p.STOCK}!
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between gap-1 mt-auto pt-2">
                         <div className="flex flex-col">
                           <span className="font-bold text-xs sm:text-sm live-price-red">{formatPrice(displayPrice)}</span>
                           {hasDiscount && pricing.originalPrice != null && <span className="text-[9px] sm:text-[10px] text-gray-400 line-through">{formatPrice(pricing.originalPrice)}</span>}
                         </div>
                         <button
                           onClick={(e) => handleAddToCart(e, p)}
-                          disabled={isAdding}
+                          disabled={isAdding || isSoldOut}
                           className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full transition-colors ${
-                            isAdding ? 'bg-green-500 text-white' : 'bg-[#e396bf] hover:bg-[#d685af] text-white'
+                            isAdding 
+                              ? 'bg-green-500 text-white' 
+                              : isSoldOut
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                : 'bg-[#e396bf] hover:bg-[#d685af] text-white'
                           }`}
                         >
-                          {isAdding ? <Check size={14} /> : <ShoppingCart size={14} />}
+                          {isAdding ? <Check size={14} /> : isSoldOut ? <X size={14} /> : <ShoppingCart size={14} />}
                         </button>
                       </div>
                     </div>
@@ -427,10 +445,13 @@ export default function RecentProductsSection() {
             const hasDiscount = pricing.hasDiscount;
             const isAdding = addingId === p.$id;
 
+            const isLimitedStock = p.STOCK !== undefined && p.STOCK !== null && p.STOCK < 99999;
+            const isSoldOut = isLimitedStock && p.STOCK <= 0;
+
             return (
               <div 
                 key={`carousel-${p.$id}-${idx}`} 
-                className="recent-product-card snap-start bg-white rounded-2xl overflow-hidden border border-gray-100/50 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.07)] transition-all duration-300 group flex flex-col justify-between transform hover:-translate-y-1"
+                className={`recent-product-card snap-start bg-white rounded-2xl overflow-hidden border border-gray-100/50 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.07)] transition-all duration-300 group flex flex-col justify-between transform ${isSoldOut ? 'opacity-80' : 'hover:-translate-y-1'}`}
               >
                 <a href={`/productos/${p.$id}`} className="block relative overflow-hidden aspect-square bg-gray-50/50 p-1.5">
                   <div className="w-full h-full rounded-xl overflow-hidden relative shadow-inner">
@@ -439,7 +460,7 @@ export default function RecentProductsSection() {
                         src={p.IMAGEURL} 
                         alt={p.NAME} 
                         loading="lazy" 
-                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" 
+                        className={`w-full h-full object-cover transition-transform duration-700 ease-out ${isSoldOut ? 'grayscale brightness-[0.7]' : 'group-hover:scale-110'}`} 
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl bg-gray-100">
@@ -447,6 +468,13 @@ export default function RecentProductsSection() {
                       </div>
                     )}
                     <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    {isSoldOut && (
+                      <div className="absolute inset-0 bg-gray-950/45 backdrop-blur-[1px] flex items-center justify-center z-10">
+                        <span className="bg-white/95 backdrop-blur-md text-gray-950 font-black text-[10px] sm:text-xs px-3 py-1 rounded-full uppercase tracking-wider shadow-sm border border-white/20">
+                          Agotado
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Badge top-left */}
@@ -502,6 +530,11 @@ export default function RecentProductsSection() {
                   </div>
 
                   {/* Price and Add button */}
+                  {isLimitedStock && p.STOCK > 0 && (
+                    <div className="text-[10px] font-extrabold text-orange-600 bg-orange-50 border border-orange-100 px-2 py-0.5 rounded-md inline-block mb-2 self-start animate-pulse">
+                      🔥 ¡Solo quedan {p.STOCK} un!
+                    </div>
+                  )}
                   <div className="flex items-center justify-between gap-2 mt-auto pt-1.5 border-t border-gray-100/50">
                     <div className="flex flex-col">
                       <span className="font-black text-sm sm:text-base tracking-tight live-price-red">
@@ -516,16 +549,18 @@ export default function RecentProductsSection() {
 
                     <button
                       onClick={(e) => handleAddToCart(e, p)}
-                      disabled={isAdding}
+                      disabled={isAdding || isSoldOut}
                       className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full transition-all duration-300 shadow-md ${
                         isAdding 
                           ? 'bg-green-500 text-white scale-110 shadow-green-500/30' 
-                          : 'bg-[#e396bf] text-white hover:bg-[#d685af] active:scale-95 shadow-pink-100'
+                          : isSoldOut
+                            ? 'bg-gray-250 text-gray-400 cursor-not-allowed shadow-none'
+                            : 'bg-[#e396bf] text-white hover:bg-[#d685af] active:scale-95 shadow-pink-100'
                       }`}
-                      title="Agregar al carrito"
-                      aria-label="Agregar al carrito"
+                      title={isSoldOut ? "Agotado" : "Agregar al carrito"}
+                      aria-label={isSoldOut ? "Agotado" : "Agregar al carrito"}
                     >
-                      {isAdding ? <Check size={15} strokeWidth={3} /> : <ShoppingCart size={15} strokeWidth={2.5} />}
+                      {isAdding ? <Check size={15} strokeWidth={3} /> : isSoldOut ? <X size={15} strokeWidth={2.5} /> : <ShoppingCart size={15} strokeWidth={2.5} />}
                     </button>
                   </div>
                 </div>

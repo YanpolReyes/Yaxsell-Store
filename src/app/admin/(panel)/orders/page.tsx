@@ -10,13 +10,16 @@ import { getWarehouseLocationFromFeatures } from '@/lib/product-features';
 import Link from 'next/link';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
-  all:        { label: 'Todos',       bg: 'bg-gray-100',    text: 'text-gray-700' },
-  pending:    { label: 'Pendiente',   bg: 'bg-amber-100',   text: 'text-amber-700' },
-  paid:       { label: 'Pagado',      bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  processing: { label: 'Procesando',  bg: 'bg-blue-100',    text: 'text-blue-700' },
-  shipped:    { label: 'Enviado',     bg: 'bg-violet-100',  text: 'text-violet-700' },
-  delivered:  { label: 'Entregado',   bg: 'bg-green-100',   text: 'text-green-700' },
-  cancelled:  { label: 'Cancelado',   bg: 'bg-red-100',     text: 'text-red-700' },
+  all:                { label: 'Todos',                     bg: 'bg-gray-100',    text: 'text-gray-700' },
+  pending:            { label: 'Pendiente',                 bg: 'bg-amber-100',   text: 'text-amber-700' },
+  processing:         { label: 'Pago a Verificar',          bg: 'bg-blue-100',    text: 'text-blue-700' },
+  paid:               { label: 'Pago Verificado',           bg: 'bg-emerald-100', text: 'text-emerald-700' },
+  assembling:         { label: 'Armando',                   bg: 'bg-indigo-100',  text: 'text-indigo-700' },
+  preparing_shipping: { label: 'Preparando Etiqueta Envío', bg: 'bg-orange-100', text: 'text-orange-700' },
+  ready_to_ship:      { label: 'Etiqueta Lista',            bg: 'bg-cyan-100',    text: 'text-cyan-700' },
+  shipped:            { label: 'Enviado',                   bg: 'bg-violet-100',  text: 'text-violet-700' },
+  delivered:          { label: 'Entregado',                 bg: 'bg-green-100',   text: 'text-green-700' },
+  cancelled:          { label: 'Cancelado',                 bg: 'bg-red-100',     text: 'text-red-700' },
 };
 
 const STATUS_KEYS = Object.keys(STATUS_CONFIG);
@@ -43,6 +46,29 @@ function OrdersContent() {
   const filterUserId = searchParams.get('userId') || '';
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [productLocations, setProductLocations] = useState<Record<string, { section: number | null; gondola: string | null }>>({}); // product id -> location
+  const [agenciesList, setAgenciesList] = useState<any[]>([]);
+
+  // Load agencies list
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/agencies');
+        const data = await res.json();
+        if (data.agencies) setAgenciesList(data.agencies);
+      } catch {}
+    })();
+  }, []);
+
+  const getAgencyDetails = (name: string) => {
+    if (!name) return null;
+    const found = agenciesList.find(a => a.name.toUpperCase() === name.toUpperCase());
+    return {
+      name: found?.name || name,
+      color: found?.color || '#6d28d9',
+      bg: found?.bg || '#f5f3ff',
+      logo: found?.logo || ''
+    };
+  };
 
   const toggleSort = (col: 'date' | 'total') => {
     if (sortBy === col) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
@@ -317,7 +343,7 @@ function OrdersContent() {
           <span className="text-sm font-medium text-indigo-700">{selected.size} seleccionado{selected.size !== 1 ? 's' : ''}</span>
           <span className="text-indigo-300">|</span>
           <span className="text-xs text-indigo-600">Cambiar a:</span>
-          {(['paid','processing','shipped','delivered','cancelled'] as const).map(s => (
+          {(['pending', 'processing', 'paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'] as const).map(s => (
             <button key={s} onClick={() => bulkUpdateStatus(s)} disabled={bulkUpdating}
               className={`px-3 py-1 rounded-xl text-xs font-medium transition disabled:opacity-60 ${STATUS_CONFIG[s].bg} ${STATUS_CONFIG[s].text} hover:opacity-80`}>
               {STATUS_CONFIG[s].label}
@@ -327,9 +353,91 @@ function OrdersContent() {
         </div>
       )}
 
-      {/* Table */}
+      {/* Mobile Card List & Desktop Table view */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile View: Cards */}
+        <div className="block sm:hidden divide-y divide-gray-100">
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="p-4 space-y-3 animate-pulse">
+                <div className="flex justify-between"><div className="h-4 w-24 bg-gray-100 rounded" /><div className="h-4 w-16 bg-gray-100 rounded" /></div>
+                <div className="h-4 w-40 bg-gray-100 rounded" />
+                <div className="h-4 w-32 bg-gray-100 rounded" />
+              </div>
+            ))
+          ) : filtered.length === 0 ? (
+            <div className="p-8 text-center text-gray-400 text-sm">No se encontraron pedidos</div>
+          ) : (
+            filtered.map(order => {
+              const date = order.CREATEDAT ? new Date(order.CREATEDAT) : new Date(order.$createdAt);
+              const ageMs = Date.now() - date.getTime();
+              const isOverdue = order.STATUS === 'pending' && ageMs > 3 * 86400000;
+              let items: any[] = [];
+              try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
+              const hasMissing = items.some((it: any) => it.missing === true);
+              const isWarning = hasMissing && ['pending', 'processing'].includes(order.STATUS);
+              const agency = order.SHIPPINGAGENCY || '';
+
+              return (
+                <div key={order.$id} className={`p-4 space-y-3 hover:bg-gray-50 transition-colors ${selected.has(order.$id) ? 'bg-indigo-50/60' : isWarning ? 'bg-amber-50/70' : isOverdue ? 'bg-red-50/50' : ''}`}
+                  onClick={() => window.location.href = `/admin/orders/${order.$id}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                      <input type="checkbox" checked={selected.has(order.$id)}
+                        onChange={() => toggleSelect(order.$id)}
+                        className="w-4 h-4 rounded text-indigo-600 border-gray-300 cursor-pointer" />
+                      <span className="font-mono text-xs text-indigo-600 font-bold hover:underline">{order.ORDERCODE || '—'}</span>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_CONFIG[order.STATUS]?.bg || 'bg-gray-100'} ${STATUS_CONFIG[order.STATUS]?.text || 'text-gray-700'}`}>
+                      {STATUS_CONFIG[order.STATUS]?.label}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-sm font-semibold text-gray-900">{order.CUSTOMERNAME}</p>
+                      {isWarning && <span className="text-[9px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded border border-amber-250 animate-pulse">⚠️ FALTAN PROD.</span>}
+                      {isOverdue && <span className="text-[9px] font-bold px-1 py-0.5 bg-red-500 text-white rounded">VENCIDO</span>}
+                      {(order as any).PURCHASEDFROMLIVE && <span className="text-[9px] font-bold px-1 py-0.5 bg-red-600 text-white rounded">LIVE</span>}
+                    </div>
+                    <p className="text-xs text-gray-500">{order.CUSTOMERPHONE || ''} · {order.COMUNA || '—'}, {order.REGION || '—'}</p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex flex-wrap gap-1.5 items-center">
+                      {agency && (() => {
+                        const details = getAgencyDetails(agency);
+                        return (
+                          <span 
+                            style={{ 
+                              color: details?.color, 
+                              backgroundColor: details?.bg, 
+                              borderColor: details?.color + '20' 
+                            }} 
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-lg border flex items-center gap-1"
+                          >
+                            {details?.logo && (
+                              <img src={details.logo} alt="" className="w-3.5 h-3.5 object-contain rounded-full" />
+                            )}
+                            {details?.name}
+                          </span>
+                        );
+                      })()}
+                      {order.PAYMENTMETHOD && <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100">{order.PAYMENTMETHOD}</span>}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-gray-900">{fmt(order.TOTAL)}</p>
+                      <p className="text-[10px] text-gray-400">{items.length} art.</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop View: Table */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
@@ -340,7 +448,8 @@ function OrdersContent() {
                 </th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Código</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Cliente</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Región</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Región</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Agencia</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   <button onClick={() => toggleSort('total')} className="flex items-center gap-1 ml-auto hover:text-gray-700 transition">
                     Total
@@ -361,11 +470,11 @@ function OrdersContent() {
               {isLoading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i}>
-                    {[1,2,3,4,5,6,7].map(j => <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-100 rounded animate-pulse" /></td>)}
+                    {[1,2,3,4,5,6,7,8].map(j => <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-100 rounded animate-pulse" /></td>)}
                   </tr>
                 ))
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-400">No se encontraron pedidos</td></tr>
+                <tr><td colSpan={9} className="px-4 py-12 text-center text-gray-400">No se encontraron pedidos</td></tr>
               ) : (
                 filtered.map(order => {
                   const date = order.CREATEDAT ? new Date(order.CREATEDAT) : new Date(order.$createdAt);
@@ -377,7 +486,7 @@ function OrdersContent() {
                   try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
                   const hasMissing = items.some((it: any) => it.missing === true);
                   const isWarning = hasMissing && ['pending', 'processing'].includes(order.STATUS);
-
+ 
                   return (
                     <React.Fragment key={order.$id}>
                     <tr className={`hover:bg-gray-50 transition-colors cursor-pointer ${selected.has(order.$id) ? 'bg-indigo-50/60' : isWarning ? 'bg-amber-50/70 hover:bg-amber-100/70' : isOverdue ? 'bg-red-50/50' : ''}`}
@@ -407,7 +516,27 @@ function OrdersContent() {
                           {order.COUPONCODE && <span className="text-[9px] font-mono font-bold px-1 py-0.5 bg-emerald-100 text-emerald-700 rounded">{order.COUPONCODE}</span>}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 hidden sm:table-cell">{order.REGION || '—'}</td>
+                      <td className="px-4 py-3 text-gray-600 hidden md:table-cell">{order.REGION || '—'}</td>
+                      <td className="px-4 py-3 text-gray-600 hidden lg:table-cell">
+                        {order.SHIPPINGAGENCY ? (() => {
+                          const details = getAgencyDetails(order.SHIPPINGAGENCY);
+                          return (
+                            <span 
+                              style={{ 
+                                color: details?.color, 
+                                backgroundColor: details?.bg, 
+                                borderColor: details?.color + '20' 
+                              }} 
+                              className="px-2 py-0.5 rounded-lg text-xs font-bold border inline-flex items-center gap-1"
+                            >
+                              {details?.logo && (
+                                <img src={details.logo} alt="" className="w-3.5 h-3.5 object-contain rounded-full" />
+                              )}
+                              {details?.name}
+                            </span>
+                          );
+                        })() : '—'}
+                      </td>
                       <td className="px-4 py-3 text-right">
                         <p className="font-semibold text-gray-900">{fmt(order.TOTAL)}</p>
                         {(() => { try { const items = JSON.parse(order.ITEMS || '[]'); return items.length > 0 ? <p className="text-[10px] text-gray-400">{items.length} art.</p> : null; } catch { return null; } })()}
@@ -473,7 +602,7 @@ function OrdersContent() {
                       const gift = (order as any).ISGIFT;
                       return (
                         <tr className="bg-indigo-50/30">
-                          <td colSpan={8} className="px-6 py-4">
+                          <td colSpan={9} className="px-6 py-4">
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                               {/* Items */}
                               <div className="lg:col-span-2">
@@ -562,7 +691,8 @@ function OrdersContent() {
                         ) : null;
                       })()}
                     </td>
-                    <td className="px-4 py-3 hidden sm:table-cell" />
+                    <td className="px-4 py-3 hidden md:table-cell" />
+                    <td className="px-4 py-3 hidden lg:table-cell" />
                     <td className="px-4 py-3 text-right">
                       <p className="font-bold text-gray-900">{fmt(totalSum)}</p>
                       {shippingSum > 0 && (

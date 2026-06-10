@@ -15,12 +15,15 @@ const FF = '"DM Sans",system-ui,sans-serif';
 const PINK = '#e396bf';
 
 const STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  pending:    { label: 'Pendiente de pago', bg: '#fff8e1', color: '#f57f17' },
-  processing: { label: 'En proceso',        bg: '#e3f2fd', color: '#1565c0' },
-  paid:       { label: 'Pago confirmado',   bg: '#e8f5e9', color: '#2e7d32' },
-  shipped:    { label: 'Despachado',         bg: '#fdf2f8', color: '#e396bf' },
-  delivered:  { label: 'Entregado',          bg: '#e8f5e9', color: '#1b5e20' },
-  cancelled:  { label: 'Cancelado',          bg: '#ffebee', color: '#c62828' },
+  pending:            { label: 'Pendiente',                 bg: '#fff8e1', color: '#f57f17' },
+  processing:         { label: 'Pago a verificar',          bg: '#e3f2fd', color: '#1565c0' },
+  paid:               { label: 'Pago verificado',           bg: '#e8f5e9', color: '#2e7d32' },
+  assembling:         { label: 'Armando',                   bg: '#f3e5f5', color: '#7b1fa2' },
+  preparing_shipping: { label: 'Preparando etiqueta',        bg: '#efebe9', color: '#5d4037' },
+  ready_to_ship:      { label: 'Etiqueta lista',            bg: '#e0f7fa', color: '#00838f' },
+  shipped:            { label: 'Enviado',                   bg: '#fdf2f8', color: '#e396bf' },
+  delivered:          { label: 'Entregado',                 bg: '#e8f5e9', color: '#1b5e20' },
+  cancelled:          { label: 'Cancelado',                 bg: '#ffebee', color: '#c62828' },
 };
 
 const BG_PEDIDOS = 'https://img.freepik.com/free-photo/shipment-delivery-by-truck-bell-notification-delivery-transportation-concept-3d-rendering_56104-1309.jpg?semt=ais_hybrid&w=740&q=80';
@@ -128,8 +131,11 @@ export default function MisPedidosPage() {
   const statusTabs = [
     { key: 'all', label: 'Todos' },
     { key: 'pending', label: 'Pendientes' },
-    { key: 'processing', label: 'En proceso' },
-    { key: 'paid', label: 'Pagados' },
+    { key: 'processing', label: 'Pago a verificar' },
+    { key: 'paid', label: 'Pago verificado' },
+    { key: 'assembling', label: 'Armando' },
+    { key: 'preparing_shipping', label: 'Prep. Etiqueta' },
+    { key: 'ready_to_ship', label: 'Etiqueta lista' },
     { key: 'shipped', label: 'Enviados' },
     { key: 'delivered', label: 'Entregados' },
   ];

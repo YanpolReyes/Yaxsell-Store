@@ -282,7 +282,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const isWholesaleQty = hasWholesale && qty >= (product.WHOLESALEMINQUANTITY || 0);
   const effectivePrice = isWholesaleQty && isWholesaleUser ? product.WHOLESALEPRICE! : displayPrice;
   const lineTotal = effectivePrice * qty;
-  const stock = unlimitedStock ? 99999 : (product.STOCK ?? 0);
+  const isLimitedStock = product.STOCK !== undefined && product.STOCK !== null && product.STOCK < 99999;
+  const stock = isLimitedStock ? product.STOCK! : 99999;
   const rating = product.RATING ?? 0;
   const numReviews = product.NUMREVIEWS ?? 0;
   const soldQty = product.SOLDQUANTITY ?? 0;
@@ -367,7 +368,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           <div style={{ marginBottom: 14 }}>
             <p style={{ margin: '0 0 6px', fontSize: 13, color: TEXT_MUTED }}>
               Cantidad: <strong style={{ color: TEXT_DARK }}>{qty} unidad{qty > 1 ? 'es' : ''}</strong>
-              {!unlimitedStock && <span style={{ color: '#9ca3af' }}> ({stock} disp.)</span>}
+              {isLimitedStock && <span style={{ color: '#9ca3af' }}> ({stock} disp.)</span>}
             </p>
             <div style={{ display: 'flex', alignItems: 'center', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 8, width: 'fit-content', overflow: 'hidden' }}>
               <button type="button" onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 40, height: 40, border: 'none', background: '#fff', fontSize: 18, cursor: 'pointer', color: ORANGE_PRIMARY, fontWeight: 600 }}>−</button>
@@ -378,7 +379,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
                 value={qty}
                 onChange={(e) => {
                   const val = parseInt(e.target.value);
-                  if (!isNaN(val) && val >= 1 && (unlimitedStock || val <= stock)) {
+                  if (!isNaN(val) && val >= 1 && (!isLimitedStock || val <= stock)) {
                     setQty(val);
                   }
                 }}
@@ -395,7 +396,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
                   background: '#fff'
                 }}
               />
-              <button type="button" onClick={() => setQty(q => unlimitedStock ? q + 1 : Math.min(stock, q + 1))} style={{ width: 40, height: 40, border: 'none', background: '#fff', fontSize: 18, cursor: 'pointer', color: ORANGE_PRIMARY, fontWeight: 600 }}>+</button>
+              <button type="button" onClick={() => setQty(q => !isLimitedStock ? q + 1 : Math.min(stock, q + 1))} style={{ width: 40, height: 40, border: 'none', background: '#fff', fontSize: 18, cursor: 'pointer', color: ORANGE_PRIMARY, fontWeight: 600 }}>+</button>
             </div>
             {qty > 1 && <p style={{ margin: '8px 0 0', fontSize: 12, color: TEXT_MUTED }}>Total: <strong style={{ color: ORANGE_PRIMARY, fontSize: 14 }}>{formatPrice(lineTotal)}</strong></p>}
           </div>
@@ -408,35 +409,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           <button type="button" onClick={handleAdd} style={{ width: '100%', padding: '12px 18px', background: added ? '#10b981' : ORANGE_PRIMARY, color: '#fff', border: `1.5px solid ${added ? '#10b981' : ORANGE_PRIMARY}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8, transition: 'all 0.2s' }}>
             {added ? <><Check size={15} /> Agregado</> : <><ShoppingCart size={15} /> Agregar al carrito</>}
           </button>
-          {!unlimitedStock && (
-            user ? (
-              <button
-                type="button"
-                onClick={() => hasPendingRequest ? null : setIsStockRequestModalOpen(true)}
-                disabled={hasPendingRequest}
-                style={{
-                  width: '100%',
-                  padding: '12px 18px',
-                  background: hasPendingRequest ? '#f3f4f6' : '#fff',
-                  color: hasPendingRequest ? '#9ca3af' : ORANGE_PRIMARY,
-                  border: `2px solid ${hasPendingRequest ? '#d1d5db' : ORANGE_PRIMARY}`,
-                  borderRadius: 10,
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor: hasPendingRequest ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                  transition: 'all 0.2s',
-                }}
-              >
-                {hasPendingRequest ? 'Solicitud en revisión...' : 'SOLICITAR MÁS STOCK'}
-              </button>
-            ) : (
-              <p style={{ margin: '8px 0 0', fontSize: 11, textAlign: 'center', color: '#9ca3af' }}>Inicia sesión para solicitar más stock</p>
-            )
-          )}
+
           <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${PINK_BG_DARK}`, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <p style={{ margin: 0, fontSize: 12, color: TEXT_MUTED, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
               <RefreshCw size={13} color={ORANGE_PRIMARY} style={{ flexShrink: 0, marginTop: 1 }} />
@@ -981,62 +954,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         </div>
       )}
 
-      {/* Stock Request Modal */}
-      {isStockRequestModalOpen && (
-        <div onClick={() => !isRequestingStock && setIsStockRequestModalOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '15vh', paddingLeft: 16, paddingRight: 16 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #f3f4f6' }}>
-              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: TEXT_DARK }}>Solicitar más stock</h2>
-              <button onClick={() => !isRequestingStock && setIsStockRequestModalOpen(false)} disabled={isRequestingStock} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: '#666' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-              </button>
-            </div>
-            <div style={{ padding: '24px' }}>
-              <p style={{ margin: '0 0 16px', fontSize: 14, color: TEXT_MUTED }}>
-                Ingresa la cantidad que deseas solicitar para el producto <strong style={{ color: TEXT_DARK }}>{product.NAME}</strong>. Nos comunicaremos contigo cuando esté disponible.
-              </p>
-              
-              <div style={{ marginBottom: 24 }}>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: TEXT_DARK, marginBottom: 8 }}>Cantidad requerida</label>
-                <div style={{ display: 'flex', alignItems: 'center', border: `1.5px solid #d1d5db`, borderRadius: 8, overflow: 'hidden' }}>
-                  <button type="button" onClick={() => setStockRequestQty(q => Math.max(1, q - 1))} disabled={isRequestingStock} style={{ width: 48, height: 48, border: 'none', background: '#f9fafb', fontSize: 20, cursor: 'pointer', color: TEXT_DARK, fontWeight: 600 }}>−</button>
-                  <input
-                    type="number"
-                    value={stockRequestQty}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value);
-                      if (!isNaN(val) && val >= 1) setStockRequestQty(val);
-                    }}
-                    disabled={isRequestingStock}
-                    style={{ flex: 1, height: 48, textAlign: 'center', fontSize: 16, fontWeight: 600, color: TEXT_DARK, border: 'none', outline: 'none', background: '#fff' }}
-                  />
-                  <button type="button" onClick={() => setStockRequestQty(q => q + 1)} disabled={isRequestingStock} style={{ width: 48, height: 48, border: 'none', background: '#f9fafb', fontSize: 20, cursor: 'pointer', color: TEXT_DARK, fontWeight: 600 }}>+</button>
-                </div>
-              </div>
 
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button
-                  type="button"
-                  onClick={() => setIsStockRequestModalOpen(false)}
-                  disabled={isRequestingStock}
-                  style={{ flex: 1, padding: '12px', background: '#fff', color: TEXT_DARK, border: '1px solid #d1d5db', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={handleStockRequest}
-                  disabled={isRequestingStock}
-                  style={{ flex: 1, padding: '12px', background: ORANGE_PRIMARY, color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: isRequestingStock ? 'not-allowed' : 'pointer', opacity: isRequestingStock ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-                >
-                  {isRequestingStock ? <RefreshCw size={16} className="animate-spin" /> : null}
-                  {isRequestingStock ? 'Enviando...' : 'Enviar Solicitud'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Shipping Details Modal */}
       {shippingModalOpen && (

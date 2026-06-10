@@ -32,7 +32,7 @@ const getCachedAllProducts = unstable_cache(
     while (true) {
       const queries = [
         Query.limit(limit),
-        Query.greaterThan('STOCK', 0)
+        Query.greaterThanEqual('STOCK', 0)
       ];
       if (lastId) {
         queries.push(Query.cursorAfter(lastId));
@@ -90,7 +90,7 @@ const getCachedLiveProducts = unstable_cache(
     const { databaseId } = getAppwriteConfig();
     const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
       Query.greaterThanEqual('imported_at', thresholdIso),
-      Query.greaterThan('STOCK', 0),
+      Query.greaterThanEqual('STOCK', 0),
       Query.orderDesc('imported_at'),
       Query.limit(500),
     ]);

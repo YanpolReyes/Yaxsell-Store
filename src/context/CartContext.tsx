@@ -77,7 +77,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const existing = items.find(i => i.product.$id === product.$id);
     
     if (existing) {
-      const newQty = unlimitedStock ? (existing.quantity + qty) : Math.min(existing.quantity + qty, product.STOCK);
+      const isLimited = product.STOCK !== undefined && product.STOCK !== null && product.STOCK < 99999;
+      const maxStock = isLimited ? product.STOCK : 99999;
+      const newQty = (!isLimited && unlimitedStock) ? (existing.quantity + qty) : Math.min(existing.quantity + qty, maxStock);
       setItems(prev => prev.map(i => i.product.$id === product.$id ? { ...i, quantity: newQty, wholesalePrice } : i));
       showToast(`Cantidad actualizada: ${newQty} unidades`, 'info');
     } else {
@@ -95,7 +97,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (qty <= 0) { removeItem(productId); return; }
     setItems(prev => prev.map(i => {
       if (i.product.$id !== productId) return i;
-      return { ...i, quantity: unlimitedStock ? qty : Math.min(qty, i.product.STOCK) };
+      const isLimited = i.product.STOCK !== undefined && i.product.STOCK !== null && i.product.STOCK < 99999;
+      const maxStock = isLimited ? i.product.STOCK : 99999;
+      return { ...i, quantity: (!isLimited && unlimitedStock) ? qty : Math.min(qty, maxStock) };
     }));
   };
 

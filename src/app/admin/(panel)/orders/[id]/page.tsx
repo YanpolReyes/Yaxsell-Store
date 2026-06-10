@@ -15,15 +15,18 @@ import {
 import { getWarehouseLocationFromFeatures, getSkuFromFeatures, getBarcodeFromFeatures, type ProductWarehouseLocation } from '@/lib/product-features';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; dot: string; icon: string }> = {
-  pending:    { label: 'Pendiente de pago', bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400',   icon: '🕐' },
-  paid:       { label: 'Pagado',            bg: 'bg-emerald-50', text: 'text-emerald-700',  border: 'border-emerald-200', dot: 'bg-emerald-400', icon: '💰' },
-  processing: { label: 'Procesando',        bg: 'bg-blue-50',    text: 'text-blue-700',     border: 'border-blue-200',    dot: 'bg-blue-400',    icon: '📦' },
-  shipped:    { label: 'Enviado',           bg: 'bg-violet-50',  text: 'text-violet-700',   border: 'border-violet-200',  dot: 'bg-violet-400',  icon: '🚚' },
-  delivered:  { label: 'Entregado',         bg: 'bg-green-50',   text: 'text-green-700',    border: 'border-green-200',   dot: 'bg-green-400',   icon: '✅' },
-  cancelled:  { label: 'Cancelado',         bg: 'bg-red-50',     text: 'text-red-700',      border: 'border-red-200',     dot: 'bg-red-400',     icon: '❌' },
+  pending:            { label: 'Pendiente',                 bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400',   icon: '🕐' },
+  processing:         { label: 'Pago a Verificar',          bg: 'bg-blue-50',    text: 'text-blue-700',     border: 'border-blue-200',    dot: 'bg-blue-400',    icon: '🔍' },
+  paid:               { label: 'Pago Verificado',           bg: 'bg-emerald-50', text: 'text-emerald-700',  border: 'border-emerald-200', dot: 'bg-emerald-400', icon: '💰' },
+  assembling:         { label: 'Armando',                   bg: 'bg-indigo-50',  text: 'text-indigo-700',   border: 'border-indigo-200',  dot: 'bg-indigo-400',  icon: '📦' },
+  preparing_shipping: { label: 'Preparando Etiqueta Envío', bg: 'bg-orange-50',  text: 'text-orange-700',   border: 'border-orange-200',  dot: 'bg-orange-400',  icon: '🏷️' },
+  ready_to_ship:      { label: 'Etiqueta Lista',            bg: 'bg-cyan-50',    text: 'text-cyan-700',     border: 'border-cyan-200',    dot: 'bg-cyan-400',    icon: '📋' },
+  shipped:            { label: 'Enviado',                   bg: 'bg-violet-50',  text: 'text-violet-700',   border: 'border-violet-200',  dot: 'bg-violet-400',  icon: '🚚' },
+  delivered:          { label: 'Entregado',                 bg: 'bg-green-50',   text: 'text-green-700',    border: 'border-green-200',   dot: 'bg-green-400',   icon: '✅' },
+  cancelled:          { label: 'Cancelado',                 bg: 'bg-red-50',     text: 'text-red-700',      border: 'border-red-200',     dot: 'bg-red-400',     icon: '❌' },
 };
 
-const STATUS_FLOW = ['pending', 'paid', 'processing', 'shipped', 'delivered'];
+const STATUS_FLOW = ['pending', 'processing', 'paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
 
 const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
 
@@ -69,6 +72,8 @@ export default function OrderDetailPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
+  const [notifyingIdx, setNotifyingIdx] = useState<number | null>(null);
+  const [notifiedIndices, setNotifiedIndices] = useState<Set<number>>(new Set());
 
   const toggleMissingItem = async (index: number) => {
     if (!order) return;
@@ -87,8 +92,41 @@ export default function OrderDetailPage() {
         ITEMS: JSON.stringify(parsedItems)
       });
       setOrder(prev => prev ? { ...prev, ITEMS: JSON.stringify(parsedItems) } : null);
+      // If now missing, clear notification flag so button reappears
+      if (isCurrentlyMissing) {
+        setNotifiedIndices(prev => { const s = new Set(prev); s.delete(index); return s; });
+      }
     } catch (e: any) {
       alert('Error al actualizar el producto: ' + e.message);
+    }
+  };
+
+  const notifyMissingItemToCustomer = async (index: number, itemName: string) => {
+    if (!order || notifyingIdx === index) return;
+    setNotifyingIdx(index);
+    try {
+      const { notifyOrderStatusChange } = await import('@/services/notificationService');
+      const { createNotificationClient, resolveUserIdFromOrder } = await import('@/services/notificationService');
+      const userId = await resolveUserIdFromOrder(order);
+      if (!userId) {
+        alert('No se pudo encontrar al usuario del pedido para notificar.');
+        return;
+      }
+      const code = order.ORDERCODE || order.$id;
+      await createNotificationClient({
+        title: '⚠️ Producto sin stock en tu pedido',
+        message: `El producto "${itemName}" en tu pedido ${code} no está disponible. Puedes elegir un reemplazo en tu pedido.`,
+        type: 'warning',
+        userId,
+        link: `/pedido/${order.$id}`,
+        refKey: `missing:${order.$id}:${index}:${Date.now()}`,
+      });
+      setNotifiedIndices(prev => new Set(prev).add(index));
+      alert('¡Cliente notificado! Verá el aviso al ingresar a la app.');
+    } catch (e: any) {
+      alert('Error al notificar al cliente: ' + e.message);
+    } finally {
+      setNotifyingIdx(null);
     }
   };
 
@@ -508,16 +546,22 @@ export default function OrderDetailPage() {
       await storage.createFile(MEDIA_BUCKET_ID, fileId, file);
       const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}`;
       
+      const prevStatus = order.STATUS;
       await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, {
         SHIPPINGPROOFURL: url,
+        STATUS: 'ready_to_ship',
+        UPDATEDAT: Date.now(),
       });
-      setOrder(prev => prev ? { ...prev, SHIPPINGPROOFURL: url } : prev);
+      setOrder(prev => prev ? { ...prev, SHIPPINGPROOFURL: url, STATUS: 'ready_to_ship' as OrderStatus } : prev);
       
-      if (order.STATUS !== 'shipped' && order.STATUS !== 'delivered' && order.STATUS !== 'cancelled') {
-        await updateStatus('shipped');
-      } else {
-        await load();
+      try {
+        const { notifyOrderStatusChange } = await import('@/services/notificationService');
+        await notifyOrderStatusChange(order, prevStatus, 'ready_to_ship');
+      } catch (err) {
+        console.error('Error notifying status change:', err);
       }
+      
+      await load();
     } catch (err: any) {
       alert('Error al subir comprobante de envío: ' + (err?.message || err));
     } finally {
@@ -971,36 +1015,38 @@ export default function OrderDetailPage() {
                 </a>
               )}
               {/* Comprobante de envío */}
-              <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100">
-                {order.SHIPPINGPROOFURL ? (
-                  <button onClick={() => setShippingProofOpen(true)}
-                    className="flex items-center gap-2 p-2.5 sm:p-3 bg-violet-50 border border-violet-200 rounded-lg sm:rounded-xl hover:bg-violet-100 transition group w-full text-left">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
-                      <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] sm:text-xs font-semibold text-violet-700">Comprobante de envío</p>
-                      <p className="text-[9px] sm:text-[10px] text-violet-500">Click para ver</p>
-                    </div>
-                    <ExternalLink className="w-3 h-3 text-violet-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
-                  </button>
-                ) : (
-                  <label className="flex items-center gap-2 p-2.5 sm:p-3 bg-violet-50 border border-violet-200 rounded-lg sm:rounded-xl cursor-pointer hover:bg-violet-100 transition group">
-                    <input type="file" accept="image/*,.pdf" onChange={handleAdminUploadShippingProof} className="hidden" disabled={uploadingShippingProof} />
-                    {uploadingShippingProof ? (
-                      <>
-                        <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                        <p className="text-[10px] sm:text-xs text-violet-700 font-medium">Subiendo comprobante de envío...</p>
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-violet-500 flex-shrink-0 group-hover:text-violet-600" />
-                        <p className="text-[10px] sm:text-xs text-violet-700 font-medium">Subir comprobante de envío</p>
-                      </>
-                    )}
-                  </label>
-                )}
-              </div>
+              {(order.SHIPPINGPROOFURL || order.STATUS === 'preparing_shipping') && (
+                <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100">
+                  {order.SHIPPINGPROOFURL ? (
+                    <button onClick={() => setShippingProofOpen(true)}
+                      className="flex items-center gap-2 p-2.5 sm:p-3 bg-violet-50 border border-violet-200 rounded-lg sm:rounded-xl hover:bg-violet-100 transition group w-full text-left">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
+                        <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] sm:text-xs font-semibold text-violet-700">Comprobante de envío</p>
+                        <p className="text-[9px] sm:text-[10px] text-violet-500">Click para ver</p>
+                      </div>
+                      <ExternalLink className="w-3 h-3 text-violet-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+                    </button>
+                  ) : (
+                    <label className="flex items-center gap-2 p-2.5 sm:p-3 bg-violet-50 border border-violet-200 rounded-lg sm:rounded-xl cursor-pointer hover:bg-violet-100 transition group">
+                      <input type="file" accept="image/*,.pdf" onChange={handleAdminUploadShippingProof} className="hidden" disabled={uploadingShippingProof} />
+                      {uploadingShippingProof ? (
+                        <>
+                          <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                          <p className="text-[10px] sm:text-xs text-violet-700 font-medium">Subiendo comprobante de envío...</p>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-violet-500 flex-shrink-0 group-hover:text-violet-600" />
+                          <p className="text-[10px] sm:text-xs text-violet-700 font-medium">Subir comprobante de envío</p>
+                        </>
+                      )}
+                    </label>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1168,7 +1214,7 @@ export default function OrderDetailPage() {
 
                 {/* Actions row for this product inside order */}
                 {['pending', 'processing'].includes(order.STATUS) && (
-                  <div className="flex items-center gap-2 mt-1 sm:pl-18 no-print">
+                  <div className="flex items-center gap-2 mt-1 sm:pl-18 no-print flex-wrap">
                     <button
                       onClick={() => toggleMissingItem(i)}
                       className={`text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg transition border ${isMissing ? 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'}`}
@@ -1176,12 +1222,33 @@ export default function OrderDetailPage() {
                       {isMissing ? 'Marcar como Disponible' : 'Marcar como Sin Stock (No Hay)'}
                     </button>
                     {isMissing && (
-                      <button
-                        onClick={() => setReplacingIdx(i)}
-                        className="text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
-                      >
-                        Reemplazar Producto
-                      </button>
+                      <>
+                        <button
+                          onClick={() => notifyMissingItemToCustomer(i, it.name)}
+                          disabled={notifyingIdx === i || notifiedIndices.has(i)}
+                          className={`text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg transition border flex items-center gap-1 ${
+                            notifiedIndices.has(i)
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 cursor-default'
+                              : notifyingIdx === i
+                              ? 'bg-amber-50 text-amber-700 border-amber-200 cursor-wait opacity-70'
+                              : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                          }`}
+                        >
+                          {notifiedIndices.has(i) ? (
+                            <><Check className="w-3 h-3" /> Notificado</>
+                          ) : notifyingIdx === i ? (
+                            <><div className="w-3 h-3 border border-amber-400 border-t-transparent rounded-full animate-spin" /> Enviando...</>
+                          ) : (
+                            <><Send className="w-3 h-3" /> Notificar al cliente</>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => setReplacingIdx(i)}
+                          className="text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                        >
+                          Reemplazar Producto
+                        </button>
+                      </>
                     )}
                   </div>
                 )}
