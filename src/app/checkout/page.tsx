@@ -17,6 +17,7 @@ import { Query, ID } from 'appwrite';
 import Image from 'next/image';
 import Link from 'next/link';
 import { isBelowMinimumOrder, minimumOrderMessage } from '@/lib/order-rules';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
 
 interface AgencyOption { name: string; color: string; bg: string; desc: string; logo: string; active?: boolean; }
 interface SavedAddress { id: string; alias: string; name: string; phone: string; fullAddress: string; commune: string; region: string; lat: number; lng: number; }
@@ -41,6 +42,7 @@ function CheckoutInner() {
   const discountParam = parseFloat(searchParams.get('discount') || '0');
   const { items, subtotal, clearCart, catalogSubtotal, aperturaSavings } = useCart();
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
+  const { unlimitedStock } = useStoreSettings();
   const { settings: apertura, isActive: aperturaActive, discountPercent: aperturaPct } = useAperturaPromotion();
 
   const [form, setForm] = useState({
@@ -385,13 +387,18 @@ function CheckoutInner() {
       });
 
       // ── Validación de stock antes de crear pedido (evita oversell) ──
+      // Regla: STOCK = 99999 = sentinel de "ilimitado", nunca se valida ni descuenta.
+      // Si el admin puso un stock real (< 99999), siempre se valida y descuenta,
+      // incluso en modo unlimitedStock de la tienda.
       for (const it of items) {
         try {
           const productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, it.product.$id);
           const currentStock = Number((productDoc as any).STOCK ?? 0);
+          // Producto con stock ilimitado (sentinel 99999) → no validar
           if (currentStock === 99999) {
             continue;
           }
+          // Producto con stock real asignado → validar aunque sea modo sin-stock
           if (currentStock < it.quantity) {
             throw new Error(`Stock insuficiente para "${(productDoc as any).NAME || it.product.NAME}". Disponible: ${currentStock}, necesitas: ${it.quantity}.`);
           }
@@ -418,14 +425,18 @@ function CheckoutInner() {
       const orderId = (docId as unknown as { $id: string }).$id;
 
       // ── Descontar stock reservado (con rollback si falla) ──
+      // Solo se descuenta si el producto tiene stock real asignado (< 99999).
+      // STOCK = 99999 = sentinel de ilimitado, se salta el descuento siempre.
       const stockRollback: { productId: string; prevStock: number }[] = [];
       try {
         for (const item of items) {
           const productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.product.$id);
           const currentStock = Number((productDoc as any).STOCK ?? 0);
+          // Stock ilimitado → no descontar
           if (currentStock === 99999) {
             continue;
           }
+          // Stock real → siempre descontar (incluso en modo unlimitedStock de la tienda)
           if (currentStock < item.quantity) {
             throw new Error(`Stock insuficiente para "${(productDoc as any).NAME || item.product.NAME}". Disponible: ${currentStock}, necesitas: ${item.quantity}.`);
           }

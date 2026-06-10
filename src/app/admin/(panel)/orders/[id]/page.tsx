@@ -353,7 +353,7 @@ export default function OrderDetailPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      // If cancelling, restore stock
+      // If cancelling, restore stock (only for products with real stock, not 99999 sentinel)
       if (newStatus === 'cancelled') {
         let items: { id?: string; qty?: number }[] = [];
         try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
@@ -362,6 +362,8 @@ export default function OrderDetailPage() {
             try {
               const product = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id);
               const currentStock = (product as any).STOCK || 0;
+              // No restituir si el producto tiene stock ilimitado (sentinel 99999)
+              if (currentStock === 99999) continue;
               await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id, {
                 STOCK: currentStock + item.qty,
               });

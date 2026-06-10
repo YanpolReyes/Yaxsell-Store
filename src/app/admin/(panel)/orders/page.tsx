@@ -101,6 +101,7 @@ function OrdersContent() {
       const { databaseId } = getAppwriteConfig();
 
       // If bulk cancelling, restore stock for all selected orders
+      // (only for products with real stock, not the 99999 ilimitado sentinel)
       if (newStatus === 'cancelled') {
         const selectedOrders = orders.filter(o => selected.has(o.$id));
         for (const order of selectedOrders) {
@@ -111,6 +112,8 @@ function OrdersContent() {
               try {
                 const product = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id);
                 const currentStock = (product as any).STOCK || 0;
+                // No restituir si el producto tiene stock ilimitado (sentinel 99999)
+                if (currentStock === 99999) continue;
                 await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id, {
                   STOCK: currentStock + item.qty,
                 });
@@ -144,7 +147,7 @@ function OrdersContent() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      // If cancelling, restore stock
+      // If cancelling, restore stock (only for products with real stock, not the 99999 sentinel)
       if (newStatus === 'cancelled') {
         const order = orderBefore;
         if (order) {
@@ -155,6 +158,8 @@ function OrdersContent() {
               try {
                 const product = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id);
                 const currentStock = (product as any).STOCK || 0;
+                // No restituir si el producto tiene stock ilimitado (sentinel 99999)
+                if (currentStock === 99999) continue;
                 await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, item.id, {
                   STOCK: currentStock + item.qty,
                 });

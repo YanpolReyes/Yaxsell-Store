@@ -705,7 +705,7 @@ export default function PedidoPage() {
       let latestItems: OrderItem[] = [];
       try { latestItems = JSON.parse((latest as any).ITEMS || '[]'); } catch {}
 
-      // Restituir stock
+      // Restituir stock (solo si el producto tenía stock real, no el sentinel 99999)
       for (const it of latestItems) {
         const pid = it.id;
         const qty = Number(it.qty) || 0;
@@ -713,6 +713,8 @@ export default function PedidoPage() {
         try {
           const productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, pid);
           const currentStock = Number((productDoc as any).STOCK ?? 0);
+          // No restituir si el producto tiene stock ilimitado (sentinel 99999)
+          if (currentStock === 99999) continue;
           await databases.updateDocument(databaseId, PRODUCTS_COLLECTION, pid, { STOCK: currentStock + qty });
         } catch (err) {
           console.error('Error restaurando stock', pid, err);
