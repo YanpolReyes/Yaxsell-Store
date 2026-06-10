@@ -127,6 +127,16 @@ export interface OrderItem {
   wmq?: number;
   timedOfferPrice?: number;
   timedOfferExpiresAt?: string;
+  sku?: string;
+  missing?: boolean;
+  replaced?: boolean;
+  originalItem?: {
+    id: string;
+    name: string;
+    price: number;
+    img: string;
+    sku: string;
+  };
 }
 
 export interface Order {

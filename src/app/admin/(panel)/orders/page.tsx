@@ -372,9 +372,15 @@ function OrdersContent() {
                   const isUpdating = updatingId === order.$id;
                   const ageMs = Date.now() - date.getTime();
                   const isOverdue = order.STATUS === 'pending' && ageMs > 3 * 86400000;
+                  
+                  let items: any[] = [];
+                  try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
+                  const hasMissing = items.some((it: any) => it.missing === true);
+                  const isWarning = hasMissing && ['pending', 'processing'].includes(order.STATUS);
+
                   return (
                     <React.Fragment key={order.$id}>
-                    <tr className={`hover:bg-gray-50 transition-colors cursor-pointer ${selected.has(order.$id) ? 'bg-indigo-50/60' : ''} ${isOverdue ? 'bg-red-50/50' : ''}`}
+                    <tr className={`hover:bg-gray-50 transition-colors cursor-pointer ${selected.has(order.$id) ? 'bg-indigo-50/60' : isWarning ? 'bg-amber-50/70 hover:bg-amber-100/70' : isOverdue ? 'bg-red-50/50' : ''}`}
                       onClick={() => window.location.href = `/admin/orders/${order.$id}`}>
                       <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                         <input type="checkbox" checked={selected.has(order.$id)}
@@ -383,8 +389,13 @@ function OrdersContent() {
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-indigo-600 font-semibold hover:underline">{order.ORDERCODE || '—'}</td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <p className="font-medium text-gray-900 truncate max-w-[130px]">{order.CUSTOMERNAME}</p>
+                          {isWarning && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 bg-amber-150 text-amber-800 rounded shrink-0 border border-amber-250 animate-pulse">
+                              ⚠️ FALTAN PROD.
+                            </span>
+                          )}
                           {isOverdue && <span className="text-[9px] font-bold px-1 py-0.5 bg-red-500 text-white rounded shrink-0">VENCIDO</span>}
                           {(order as any).PURCHASEDFROMLIVE && <span className="text-[9px] font-bold px-1 py-0.5 bg-red-600 text-white rounded shrink-0">LIVE</span>}
                           {(order as any).ISGIFT && <span className="text-[9px] font-bold px-1 py-0.5 bg-pink-100 text-pink-700 rounded shrink-0">🎁 REGALO</span>}
@@ -469,21 +480,27 @@ function OrdersContent() {
                                 <p className="text-xs font-semibold text-gray-500 mb-2">PRODUCTOS ({items.length})</p>
                                 <div className="space-y-1.5">
                                   {items.map((it: any, i: number) => {
-                                  const loc = it.id ? productLocations[it.id] : null;
-                                  return (
-                                    <div key={i} className="flex items-center gap-3 bg-white rounded-lg px-3 py-2 border border-gray-100">
-                                      {it.img && <img src={it.img} alt="" className="w-8 h-8 object-contain rounded" />}
-                                      <span className="text-sm text-gray-700 flex-1 truncate">{it.name}</span>
-                                      {loc && loc.section !== null && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-[10px] font-bold shrink-0">
-                                          <MapPin className="w-2.5 h-2.5" /> G{loc.gondola} S{loc.section}
-                                        </span>
-                                      )}
-                                      <span className="text-xs text-gray-400">×{it.qty}</span>
-                                      <span className="text-sm font-medium text-gray-900">{fmt(it.total || it.price * it.qty)}</span>
-                                    </div>
-                                  );
-                                })}
+                                    const loc = it.id ? productLocations[it.id] : null;
+                                    const itemMissing = !!it.missing;
+                                    return (
+                                      <div key={i} className={`flex items-center gap-3 rounded-lg px-3 py-2 border ${itemMissing ? 'bg-red-50 border-red-250 text-red-900' : 'bg-white border-gray-100'}`}>
+                                        {it.img && <img src={it.img} alt="" className="w-8 h-8 object-contain rounded" />}
+                                        <span className="text-sm flex-1 truncate">{it.name}</span>
+                                        {itemMissing && (
+                                          <span className="text-[10px] font-bold text-red-700 bg-red-100 px-1.5 py-0.5 rounded shrink-0 border border-red-200">
+                                            ⚠️ Sin stock
+                                          </span>
+                                        )}
+                                        {loc && loc.section !== null && !itemMissing && (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-[10px] font-bold shrink-0">
+                                            <MapPin className="w-2.5 h-2.5" /> G{loc.gondola} S{loc.section}
+                                          </span>
+                                        )}
+                                        <span className="text-xs text-gray-400">×{it.qty}</span>
+                                        <span className="text-sm font-medium text-gray-900">{fmt(it.total || it.price * it.qty)}</span>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </div>
                               {/* Details sidebar */}

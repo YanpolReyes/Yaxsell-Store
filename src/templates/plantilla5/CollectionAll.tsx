@@ -7,6 +7,7 @@ import { normalizeProductImages } from '@/lib/product-images';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import ProductCard5 from './ProductCard5';
+import { ChevronDown } from 'lucide-react';
 
 const FONT_FACE_CSS = `
 @font-face {
@@ -64,6 +65,7 @@ export default function CollectionAll5() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [visibleCount, setVisibleCount] = useState(20);
   const [mounted, setMounted] = useState(false);
   const { settings: apertura } = useAperturaPromotion();
 
@@ -73,6 +75,10 @@ export default function CollectionAll5() {
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
   const [priceRangeMounts, setPriceRangeMounts] = useState<HTMLElement[]>([]);
 
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [selectedCat]);
+
   const priceMaxAllowed = useMemo(() => {
     const max = Math.max(0, ...products.map(p => Number(p.PRICE) || 0));
     // fallback por si aún no cargan productos
@@ -80,15 +86,28 @@ export default function CollectionAll5() {
   }, [products]);
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/public-data/catalog').then(r => r.json()),
-      fetch('/api/public-data/products?sortBy=newest').then(r => r.json())
-    ]).then(([catData, prodData]) => {
-      setCategories(catData.categories || []);
-      const prods = (prodData.products || []).map(normalizeProductImages).filter((p: Product) => p.ISACTIVE !== false);
-      setProducts(prods);
-    }).catch(console.error);
+    fetch('/api/public-data/catalog')
+      .then(r => r.json())
+      .then(catData => {
+        setCategories(catData.categories || []);
+      })
+      .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    const url = new URL('/api/public-data/products', window.location.origin);
+    url.searchParams.set('sortBy', 'newest');
+    if (selectedCat) {
+      url.searchParams.set('categoryId', selectedCat);
+    }
+    fetch(url.toString())
+      .then(r => r.json())
+      .then(prodData => {
+        const prods = (prodData.products || []).map(normalizeProductImages).filter((p: Product) => p.ISACTIVE !== false);
+        setProducts(prods);
+      })
+      .catch(console.error);
+  }, [selectedCat]);
 
   useEffect(() => {
     document.documentElement.dataset.template = '5';
@@ -591,6 +610,38 @@ export default function CollectionAll5() {
         }
       `}</style>
 
+      {/* Selector de Categorías en Plantilla 5 */}
+      <div style={{ maxWidth: 1200, margin: '20px auto 0', padding: '0 20px', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#111', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Categoría:</span>
+        <div style={{ position: 'relative' }}>
+          <select
+            value={selectedCat || ''}
+            onChange={e => { setSelectedCat(e.target.value || null); }}
+            style={{
+              padding: '10px 36px 10px 16px',
+              borderRadius: 8,
+              border: '2px solid #111',
+              background: '#fff',
+              fontSize: 13,
+              color: '#111',
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontFamily: 'Bricolage Grotesque, sans-serif',
+              outline: 'none',
+              minWidth: 200,
+              appearance: 'none',
+              WebkitAppearance: 'none',
+            }}
+          >
+            <option value="">Todas las categorías</option>
+            {categories.map(c => (
+              <option key={c.$id} value={c.$id}>{c.name}</option>
+            ))}
+          </select>
+          <ChevronDown size={14} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#111', pointerEvents: 'none' }} />
+        </div>
+      </div>
+
       <div
         ref={containerRef}
         className="tpl5-shopify-root template-collection template-collection--all layout--full-width filter-type--vertical"
@@ -616,7 +667,35 @@ export default function CollectionAll5() {
       })}
 
       {gridNode && createPortal(
-        filteredProducts.map(p => <ProductCard5 key={p.$id} product={p} />),
+        <>
+          {filteredProducts.slice(0, visibleCount).map(p => <ProductCard5 key={p.$id} product={p} />)}
+          {visibleCount < filteredProducts.length && (
+            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center', padding: '30px 0', width: '100%' }}>
+              <button 
+                type="button"
+                onClick={() => setVisibleCount(c => c + 20)} 
+                style={{ 
+                  padding: '14px 40px', 
+                  background: '#111', 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: '999px', 
+                  fontSize: '14px', 
+                  fontWeight: 700, 
+                  cursor: 'pointer',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+                  transition: 'transform 0.15s ease'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)' }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'none' }}
+              >
+                Cargar más ({filteredProducts.length - visibleCount} restantes)
+              </button>
+            </div>
+          )}
+        </>,
         gridNode
       )}
     </>

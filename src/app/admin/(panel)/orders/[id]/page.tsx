@@ -4,13 +4,13 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { MEDIA_BUCKET_ID, MEDIA_PREFIXES, ID } from '@/lib/appwrite';
+import { MEDIA_BUCKET_ID, MEDIA_PREFIXES, ID, Query } from '@/lib/appwrite';
 import { Order, OrderStatus } from '@/types/admin';
 import {
   ArrowLeft, Package, User, MapPin, CreditCard, Truck, Clock, FileText,
   Phone, Mail, Hash, ChevronDown, Save, CheckCircle, Copy, Check,
   AlertTriangle, ExternalLink, Image as ImageIcon, MessageSquare, Calendar, DollarSign,
-  Printer, Send, Ban, StickyNote, MapPinned, Receipt, Tag, XCircle, Upload,
+  Printer, Send, Ban, StickyNote, MapPinned, Receipt, Tag, XCircle, Upload, Search,
 } from 'lucide-react';
 import { getWarehouseLocationFromFeatures, getSkuFromFeatures, type ProductWarehouseLocation } from '@/lib/product-features';
 
@@ -61,6 +61,161 @@ export default function OrderDetailPage() {
   const [selectedAgency, setSelectedAgency] = useState('');
   const [savingAgency, setSavingAgency] = useState(false);
   const prevStatusRef = useRef<string | null>(null);
+
+  // Out of stock & Replacement states
+  const [replacingIdx, setReplacingIdx] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  const toggleMissingItem = async (index: number) => {
+    if (!order) return;
+    let parsedItems: any[] = [];
+    try { parsedItems = JSON.parse(order.ITEMS || '[]'); } catch {}
+    const item = parsedItems[index];
+    if (!item) return;
+
+    const isCurrentlyMissing = !!item.missing;
+    item.missing = !isCurrentlyMissing;
+
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, order.$id, {
+        ITEMS: JSON.stringify(parsedItems)
+      });
+      setOrder(prev => prev ? { ...prev, ITEMS: JSON.stringify(parsedItems) } : null);
+    } catch (e: any) {
+      alert('Error al actualizar el producto: ' + e.message);
+    }
+  };
+
+  const handleSearchProducts = async (q: string) => {
+    setSearchQuery(q);
+    if (!q.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      // Búsqueda nativa
+      const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+        Query.search('NAME', q.trim()),
+        Query.limit(15)
+      ]);
+      setSearchResults(res.documents);
+    } catch {
+      // Fallback
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+          Query.limit(100)
+        ]);
+        const filteredProds = res.documents.filter((p: any) =>
+          p.NAME?.toLowerCase().includes(q.toLowerCase()) ||
+          p.sku?.toLowerCase().includes(q.toLowerCase())
+        );
+        setSearchResults(filteredProds.slice(0, 15));
+      } catch {}
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const replaceItem = async (newProduct: any) => {
+    if (!order || replacingIdx === null) return;
+    let parsedItems: any[] = [];
+    try { parsedItems = JSON.parse(order.ITEMS || '[]'); } catch {}
+    const oldItem = parsedItems[replacingIdx];
+    if (!oldItem) return;
+
+    const confirmMsg = `¿Reemplazar "${oldItem.name}" por "${newProduct.NAME}"?\nSe registrará el bloqueo del SKU y se eliminará de la tienda.`;
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      let oldSku = oldItem.sku || '';
+      let oldName = oldItem.name;
+      let oldImg = oldItem.img || '';
+
+      if (oldItem.id) {
+        try {
+          const oldProd: any = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, oldItem.id);
+          oldSku = oldProd.sku || getSkuFromFeatures(oldProd.FEATURES, oldProd.TAGS, oldProd.jumpseller_id, oldProd.sku);
+          oldName = oldProd.NAME || oldName;
+          oldImg = oldProd.IMAGEURL || oldImg;
+        } catch {}
+      }
+
+      if (oldSku) {
+        try {
+          const blockedResp = await databases.listDocuments(databaseId, 'blocked_products', [
+            Query.equal('sku', oldSku),
+            Query.limit(1)
+          ]);
+          if (blockedResp.documents.length === 0) {
+            await databases.createDocument(databaseId, 'blocked_products', ID.unique(), {
+              sku: oldSku,
+              name: oldName,
+              imageUrl: oldImg
+            });
+          }
+        } catch (err) {
+          console.error("Error writing to blocked_products:", err);
+        }
+      }
+
+      if (oldItem.id) {
+        try {
+          await databases.deleteDocument(databaseId, PRODUCTS_COLLECTION_ID, oldItem.id);
+        } catch {}
+      }
+
+      const newPrice = newProduct.CURRENTPRICE ?? newProduct.PRICE ?? 0;
+      const newSku = newProduct.sku || getSkuFromFeatures(newProduct.FEATURES, newProduct.TAGS, newProduct.jumpseller_id, newProduct.sku);
+
+      parsedItems[replacingIdx] = {
+        ...oldItem,
+        id: newProduct.$id,
+        name: newProduct.NAME,
+        price: newPrice,
+        img: newProduct.IMAGEURL || '',
+        sku: newSku,
+        total: newPrice * oldItem.qty,
+        missing: false,
+        replaced: true,
+        originalItem: {
+          id: oldItem.id || '',
+          name: oldItem.name,
+          price: oldItem.price,
+          img: oldItem.img || '',
+          sku: oldSku
+        }
+      };
+
+      const newSubtotal = parsedItems.reduce((s, it) => s + (it.price * it.qty), 0);
+      const newTotal = newSubtotal + (order.SHIPPINGCOST || 0) - (order.DISCOUNTAMOUNT || 0);
+
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, order.$id, {
+        ITEMS: JSON.stringify(parsedItems),
+        SUBTOTAL: newSubtotal,
+        TOTAL: newTotal
+      });
+
+      setReplacingIdx(null);
+      setSearchQuery('');
+      setSearchResults([]);
+      await load();
+      alert('Producto reemplazado y bloqueado exitosamente.');
+    } catch (e: any) {
+      alert('Error al reemplazar el producto: ' + e.message);
+    }
+  };
 
   // Auto-print when status changes to 'paid'
   useEffect(() => {
@@ -350,6 +505,93 @@ export default function OrderDetailPage() {
               <XCircle className="w-8 h-8" />
             </button>
             <img src={order.SHIPPINGPROOFURL} alt="Comprobante de envío" className="w-full h-auto max-h-[85vh] object-contain rounded-2xl" />
+          </div>
+        </div>
+      )}
+
+      {/* Replacement Modal */}
+      {replacingIdx !== null && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[85vh] flex flex-col overflow-hidden shadow-xl border border-gray-100">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-gray-150 flex items-center justify-between bg-gray-50">
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm sm:text-base">Reemplazar Producto</h3>
+                <p className="text-xs text-gray-500">
+                  Reemplazando: <span className="font-semibold text-gray-700">{items[replacingIdx]?.name}</span>
+                </p>
+              </div>
+              <button
+                onClick={() => { setReplacingIdx(null); setSearchQuery(''); setSearchResults([]); }}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 flex-1 overflow-y-auto space-y-4">
+              {/* Search Bar */}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    value={searchQuery}
+                    onChange={e => handleSearchProducts(e.target.value)}
+                    placeholder="Buscar por nombre o SKU..."
+                    className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* Search Results */}
+              <div className="space-y-2.5">
+                {searching ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : searchResults.length === 0 ? (
+                  <p className="text-xs text-gray-400 text-center py-8">
+                    {searchQuery.trim() ? 'No se encontraron productos' : 'Escribe para buscar productos disponibles...'}
+                  </p>
+                ) : (
+                  searchResults.map(p => {
+                    const price = p.CURRENTPRICE ?? p.PRICE ?? 0;
+                    const pSku = p.sku || getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
+                    return (
+                      <div
+                        key={p.$id}
+                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100/70 transition-colors"
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-white border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                          {p.IMAGEURL ? (
+                            <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" />
+                          ) : (
+                            <Package className="w-4 h-4 text-gray-300" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">{p.NAME}</p>
+                          <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
+                            SKU: <span className="font-mono">{pSku || '—'}</span> · Stock: <span className={p.STOCK > 0 || p.STOCK === 99999 ? 'text-green-600 font-bold' : 'text-red-500 font-bold'}>{p.STOCK === 99999 ? 'Ilimitado' : p.STOCK}</span>
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0 flex flex-col items-end gap-1">
+                          <p className="text-xs sm:text-sm font-bold text-gray-900">{fmt(price)}</p>
+                          <button
+                            onClick={() => replaceItem(p)}
+                            disabled={p.STOCK <= 0 && p.STOCK !== 99999}
+                            className="text-[10px] font-bold px-2.5 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                          >
+                            Seleccionar
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -758,55 +1000,99 @@ export default function OrderDetailPage() {
             const remainingStock = order.STATUS === 'pending' ? currentStock - it.qty : currentStock;
             const loc = it.id ? productLocations[it.id] : null;
             const sku = it.id ? productSkus[it.id] : '';
+            const isMissing = !!(it as any).missing;
+            const isReplaced = !!(it as any).replaced;
+            const origItem = (it as any).originalItem;
             return (
-              <div key={i} className="flex items-center gap-2.5 sm:gap-4 px-3 sm:px-5 py-2.5 sm:py-3.5 hover:bg-gray-50/50 transition">
-                <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                  {it.img
-                    ? <img src={it.img} alt="" className="w-full h-full object-contain p-0.5 sm:p-1" />
-                    : <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">{it.name}</p>
-                  <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5">
-                    <span className="text-[10px] sm:text-xs text-gray-500">{fmt(it.price)} c/u</span>
-                    <span className="text-gray-300">×</span>
-                    <span className="text-[10px] sm:text-xs font-semibold text-gray-700">{it.qty}</span>
-                    {it.originalPrice && it.originalPrice !== it.price && (
-                      <span className="text-[9px] sm:text-[10px] line-through text-gray-300">{fmt(it.originalPrice)}</span>
-                    )}
+              <div key={i} className={`flex flex-col gap-2 px-3 sm:px-5 py-3.5 hover:bg-gray-50/50 transition border-b border-gray-100 last:border-0 ${isMissing ? 'bg-red-50/80 border-l-4 border-l-red-500' : isReplaced ? 'bg-emerald-50/40 border-l-4 border-l-emerald-400' : ''}`}>
+                <div className="flex items-center gap-2.5 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                    {it.img
+                      ? <img src={it.img} alt="" className="w-full h-full object-contain p-0.5 sm:p-1" />
+                      : <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />}
                   </div>
-                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                    {sku && (
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-800 text-[10px] sm:text-xs font-bold print:bg-violet-50 print:border print:border-violet-200">
-                        <Hash className="w-3 h-3 shrink-0" />{sku}
-                      </span>
-                    )}
-                    {loc?.label && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 text-[10px] sm:text-xs font-bold print:bg-indigo-50 print:border print:border-indigo-200">
-                        <MapPin className="w-3 h-3 shrink-0" />
-                        {loc.label}
-                      </span>
-                    )}
-                  </div>
-                  {it.id && (
-                    <div className="flex items-center gap-1 sm:gap-1.5 mt-1 flex-wrap no-print">
-                      <span className={`text-[9px] sm:text-[10px] font-semibold px-1 sm:px-1.5 py-0.5 rounded ${remainingStock <= 0 ? 'bg-red-100 text-red-600' : remainingStock <= 5 ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-500'}`}>
-                        Stock: {currentStock}
-                      </span>
-                      {order.STATUS === 'pending' && (
-                        <span className={`text-[9px] sm:text-[10px] font-semibold px-1 sm:px-1.5 py-0.5 rounded ${remainingStock <= 0 ? 'bg-red-100 text-red-600' : remainingStock <= 5 ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                          → {remainingStock}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className={`text-xs sm:text-sm font-semibold truncate ${isMissing ? 'text-red-950' : 'text-gray-900'}`}>{it.name}</p>
+                      {isMissing && (
+                        <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
+                          ⚠️ Faltante
                         </span>
                       )}
-                      {order.STATUS !== 'pending' && (
-                        <span className="text-[9px] sm:text-[10px] font-semibold px-1 sm:px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-600">
-                          {remainingStock} disp
+                      {isReplaced && (
+                        <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                          🔄 Reemplazado
                         </span>
                       )}
                     </div>
-                  )}
+                    <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5">
+                      <span className="text-[10px] sm:text-xs text-gray-500">{fmt(it.price)} c/u</span>
+                      <span className="text-gray-300">×</span>
+                      <span className="text-[10px] sm:text-xs font-semibold text-gray-700">{it.qty}</span>
+                      {it.originalPrice && it.originalPrice !== it.price && (
+                        <span className="text-[9px] sm:text-[10px] line-through text-gray-300">{fmt(it.originalPrice)}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      {sku && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-800 text-[10px] sm:text-xs font-bold print:bg-violet-50 print:border print:border-violet-200">
+                          <Hash className="w-3 h-3 shrink-0" />{sku}
+                        </span>
+                      )}
+                      {loc?.label && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 text-[10px] sm:text-xs font-bold print:bg-indigo-50 print:border print:border-indigo-200">
+                          <MapPin className="w-3 h-3 shrink-0" />
+                          {loc.label}
+                        </span>
+                      )}
+                    </div>
+                    {it.id && !isMissing && !isReplaced && (
+                      <div className="flex items-center gap-1 sm:gap-1.5 mt-1 flex-wrap no-print">
+                        <span className={`text-[9px] sm:text-[10px] font-semibold px-1 sm:px-1.5 py-0.5 rounded ${remainingStock <= 0 ? 'bg-red-100 text-red-600' : remainingStock <= 5 ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-500'}`}>
+                          Stock: {currentStock}
+                        </span>
+                        {order.STATUS === 'pending' && (
+                          <span className={`text-[9px] sm:text-[10px] font-semibold px-1 sm:px-1.5 py-0.5 rounded ${remainingStock <= 0 ? 'bg-red-100 text-red-600' : remainingStock <= 5 ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                            → {remainingStock}
+                          </span>
+                        )}
+                        {order.STATUS !== 'pending' && (
+                          <span className="text-[9px] sm:text-[10px] font-semibold px-1 sm:px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-600">
+                            {remainingStock} disp
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {isReplaced && origItem && (
+                      <p className="text-[10px] text-gray-500 mt-1 italic">
+                        Originalmente: {origItem.name} ({origItem.sku || 'Sin SKU'})
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xs sm:text-sm font-bold text-gray-900">{fmt(it.total || it.price * it.qty)}</p>
+                  </div>
                 </div>
-                <p className="text-xs sm:text-sm font-bold text-gray-900 flex-shrink-0">{fmt(it.total || it.price * it.qty)}</p>
+
+                {/* Actions row for this product inside order */}
+                {['pending', 'processing'].includes(order.STATUS) && (
+                  <div className="flex items-center gap-2 mt-1 sm:pl-18 no-print">
+                    <button
+                      onClick={() => toggleMissingItem(i)}
+                      className={`text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg transition border ${isMissing ? 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'}`}
+                    >
+                      {isMissing ? 'Marcar como Disponible' : 'Marcar como Sin Stock (No Hay)'}
+                    </button>
+                    {isMissing && (
+                      <button
+                        onClick={() => setReplacingIdx(i)}
+                        className="text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                      >
+                        Reemplazar Producto
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

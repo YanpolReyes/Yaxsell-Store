@@ -8,11 +8,11 @@ import { Product, Category, Subcategory } from '@/types/admin';
 import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff, Eye } from 'lucide-react';
 import ImageUploadField from '@/components/admin/ImageUploadField';
 import { generateProductTitle, generateProductDescription } from '@/lib/aiAdmin';
-import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures, setSectionInFeatures } from '@/lib/product-features';
+import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures, setSectionInFeatures, getCustomTabsFromFeatures, setCustomTabsInFeatures } from '@/lib/product-features';
 import Lottie from 'lottie-react';
 import iaAnimation from '@/ia.json';
 
-type ProductModalData = Partial<Product> & { _barcode?: string; _sku?: string };
+type ProductModalData = Partial<Product> & { _barcode?: string; _sku?: string; _details?: string; _usage?: string; _ingredients?: string };
 
 import { MEDIA_BUCKET_ID, MEDIA_PREFIXES } from '@/lib/appwrite';
 import { invalidateProductCache, cached, TTL } from '@/lib/cache';
@@ -56,6 +56,7 @@ export default function ProductsPage() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('');
+  const [subCatFilter, setSubCatFilter] = useState('');
   const [stockFilter, setStockFilter] = useState<'all' | 'instock' | 'low' | 'out'>('instock');
   const [noImageOnly, setNoImageOnly] = useState(false);
   const [showDuplicates, setShowDuplicates] = useState(false);
@@ -479,7 +480,7 @@ export default function ProductsPage() {
 
   const [lastCursor, setLastCursor] = useState<string | null>(null);
 
-  const load = useCallback(async (isLoadMore = false) => {
+  const load = useCallback(async (isLoadMore = false, passedCursor: string | null = null, currentSearch = '', currentCat = '', currentSub = '', currentStock = 'instock') => {
     if (!isLoadMore) {
       setIsLoading(true);
       setProducts([]);
@@ -488,12 +489,76 @@ export default function ProductsPage() {
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const queries: any[] = [Query.limit(50), Query.orderDesc('$createdAt')];
-      if (isLoadMore && lastCursor) queries.push(Query.cursorAfter(lastCursor));
       
-      const resp: any = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
-      const docs = resp.documents as unknown as Product[];
+      const queries: any[] = [Query.limit(20), Query.orderDesc('$createdAt')];
       
+      if (isLoadMore && passedCursor) {
+        queries.push(Query.cursorAfter(passedCursor));
+      }
+      
+      if (currentCat) {
+        queries.push(Query.equal('CATEGORYID', currentCat));
+      }
+      if (currentSub) {
+        queries.push(Query.equal('SUBCATEGORYID', currentSub));
+      }
+      
+      if (currentStock === 'instock') {
+        queries.push(Query.greaterThan('STOCK', 0));
+      } else if (currentStock === 'out') {
+        queries.push(Query.equal('STOCK', 0));
+      } else if (currentStock === 'low') {
+        queries.push(Query.greaterThan('STOCK', 0));
+        queries.push(Query.lessThanEqual('STOCK', 10));
+      }
+
+      let docs: Product[] = [];
+      const q = currentSearch.trim();
+      
+      if (q) {
+        const qLower = q.toLowerCase();
+        const qUpper = q.toUpperCase();
+        
+        const searchOptions = [
+          [Query.equal('sku', [q, qLower, qUpper])],
+          [Query.equal('barcode', [q, qLower, qUpper])],
+          [Query.contains('NAME', q)],
+          [Query.contains('NAME', qLower)],
+          [Query.contains('NAME', qUpper)],
+          [Query.contains('TAGS', [q, qLower, qUpper])],
+          [Query.equal('jumpseller_id', [q, qLower, qUpper])],
+        ];
+        
+        let foundDocs: any[] = [];
+        for (const sOpt of searchOptions) {
+          try {
+            const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+              ...queries,
+              ...sOpt
+            ]);
+            if (resp.documents.length > 0) {
+              foundDocs = resp.documents;
+              break;
+            }
+          } catch {}
+        }
+        
+        if (foundDocs.length === 0) {
+          try {
+            const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+              ...queries,
+              Query.contains('FEATURES', q)
+            ]);
+            foundDocs = resp.documents;
+          } catch {}
+        }
+        
+        docs = foundDocs as unknown as Product[];
+      } else {
+        const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
+        docs = resp.documents as unknown as Product[];
+      }
+
       const [cr, subRes] = await Promise.all([
         cached('categories:all', TTL.categories, async () => {
           return await databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]);
@@ -509,7 +574,7 @@ export default function ProductsPage() {
         setProducts(docs);
       }
       
-      if (docs.length === 50) {
+      if (docs.length === 20) {
         setLastCursor((docs[docs.length - 1] as any).$id);
       } else {
         setLastCursor(null);
@@ -517,89 +582,35 @@ export default function ProductsPage() {
       
       setCategories(cr.documents as unknown as Category[]);
       setSubcategories(subRes.documents as unknown as Subcategory[]);
-    } catch (e: any) { setError(e.message); }
-    finally { setIsLoading(false); }
-  }, [lastCursor]);
-
-  const triggerSearch = async (searchTerm: string) => {
-    const q = searchTerm.trim();
-    if (!q) {
-      load(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setError('');
-    try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-
-      const qLower = q.toLowerCase();
-      const qUpper = q.toUpperCase();
-
-      const queries = [
-        [Query.equal('sku', [q, qLower, qUpper])],
-        [Query.contains('TAGS', [q, qLower, qUpper])],
-        [Query.equal('jumpseller_id', [q, qLower, qUpper])],
-        [Query.equal('barcode', [q, qLower, qUpper])],
-        [Query.contains('NAME', q)],
-        [Query.contains('NAME', qLower)],
-        [Query.contains('NAME', qUpper)],
-      ];
-
-      let found: Product[] = [];
-
-      for (const qry of queries) {
-        try {
-          const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [...qry, Query.limit(100)]);
-          if (resp.documents.length > 0) {
-            found.push(...(resp.documents as unknown as Product[]));
-            break;
-          }
-        } catch {}
-      }
-
-      if (found.length === 0) {
-        try {
-          const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.contains('FEATURES', q), Query.limit(100)]);
-          if (resp.documents.length > 0) {
-            found.push(...(resp.documents as unknown as Product[]));
-          }
-        } catch {}
-      }
-
-      if (found.length > 0) {
-        setProducts(found);
-        setLastCursor(null);
-      } else {
-        setProducts([]);
-        alert('No se encontraron productos en el catálogo con ese SKU, código de barra o nombre.');
-      }
     } catch (e: any) {
-      setError('Error al buscar: ' + e.message);
+      setError(e.message);
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  const triggerSearch = async (searchTerm: string) => {
+    load(false, null, searchTerm, catFilter, subCatFilter, stockFilter);
   };
 
   useEffect(() => {
+    let initialSearch = search;
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const querySearch = params.get('search');
       if (querySearch) {
+        initialSearch = querySearch;
         setSearch(querySearch);
-        triggerSearch(querySearch);
-        return;
       }
     }
-    load(false);
-  }, [load]);
+    load(false, null, initialSearch, catFilter, subCatFilter, stockFilter);
+  }, [catFilter, subCatFilter, stockFilter, load]);
 
   useEffect(() => {
-    const handler = () => load(false);
+    const handler = () => load(false, null, search, catFilter, subCatFilter, stockFilter);
     window.addEventListener('yaxsel-data-change', handler);
     return () => window.removeEventListener('yaxsel-data-change', handler);
-  }, []);
+  }, [search, catFilter, subCatFilter, stockFilter, load]);
 
   const sendYexyMessage = async () => {
     if (!yexyInput.trim() || yexyLoading) return;
@@ -700,19 +711,26 @@ export default function ProductsPage() {
     }
   };
 
-  const openAdd = () => setModal({ mode: 'add', data: { ...EMPTY, _barcode: '', _sku: '' } });
-  const openEdit = (p: Product) => setModal({
-    mode: 'edit',
-    data: {
-      ...p,
-      _barcode: getBarcodeFromFeatures(p.FEATURES, p.barcode),
-      _sku: getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku),
-    },
-  });
+  const openAdd = () => setModal({ mode: 'add', data: { ...EMPTY, _barcode: '', _sku: '', _details: '', _usage: '', _ingredients: '' } });
+  const openEdit = (p: Product) => {
+    const tabs = getCustomTabsFromFeatures(p.FEATURES) ?? {};
+    setModal({
+      mode: 'edit',
+      data: {
+        ...p,
+        _barcode: getBarcodeFromFeatures(p.FEATURES, p.barcode),
+        _sku: getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku),
+        _details: tabs.details || '',
+        _usage: tabs.usage || '',
+        _ingredients: tabs.ingredients || '',
+      },
+    });
+  };
 
   const duplicate = (p: Product) => {
     const sku = getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
     const barcode = getBarcodeFromFeatures(p.FEATURES, p.barcode);
+    const tabs = getCustomTabsFromFeatures(p.FEATURES) ?? {};
     setModal({
       mode: 'add',
       data: {
@@ -721,6 +739,9 @@ export default function ProductsPage() {
         NAME: `${p.NAME} (copia)`,
         _sku: sku ? `${sku}-copia` : '',
         _barcode: barcode || '',
+        _details: tabs.details || '',
+        _usage: tabs.usage || '',
+        _ingredients: tabs.ingredients || '',
       },
     });
   };
@@ -788,6 +809,12 @@ export default function ProductsPage() {
           if ((d as Product).section != null) {
             features = setSectionInFeatures(features, (d as Product).section!);
           }
+          const tabs = {
+            details: d._details || '',
+            usage: d._usage || '',
+            ingredients: d._ingredients || '',
+          };
+          features = setCustomTabsInFeatures(features, tabs);
           return features;
         })(),
         barcode: d._barcode || '',
@@ -1041,13 +1068,14 @@ export default function ProductsPage() {
       p.FEATURES?.toLowerCase().includes(q)
     );
     const matchCat = !catFilter || p.CATEGORYID === catFilter;
+    const matchSubCat = !subCatFilter || p.SUBCATEGORYID === subCatFilter;
     const matchStock = stockFilter === 'all' ? true
       : stockFilter === 'instock' ? (p.STOCK ?? 0) > 0
       : stockFilter === 'out' ? (p.STOCK ?? 0) === 0
       : (p.STOCK ?? 0) > 0 && (p.STOCK ?? 0) <= 10;
     const matchNoImage = !noImageOnly || !p.IMAGEURL;
     const matchBroken = !brokenOnly || brokenImages[p.$id]?.length;
-    return matchSearch && matchCat && matchStock && matchNoImage && matchBroken;
+    return matchSearch && matchCat && matchSubCat && matchStock && matchNoImage && matchBroken;
   }).sort((a, b) => {
     const liveA = getLiveStatus(a);
     const liveB = getLiveStatus(b);
@@ -1346,6 +1374,56 @@ export default function ProductsPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Custom specs/info tabs */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" /> Pestañas de Información (Ficha Técnica)
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  Completa estos campos para mostrar pestañas dedicadas debajo de la descripción en el detalle de producto de Plantilla 5. Si los dejas vacíos, no se mostrarán.
+                </p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full bg-pink-400" /> Detalles del Producto (Especificaciones / Características)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={modal.data._details || ''}
+                      onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _details: e.target.value } } : m)}
+                      placeholder="Ej: Material: 100% Algodón Orgánico&#10;Dimensiones: 15cm x 10cm&#10;Peso: 250g"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none font-sans"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full bg-pink-400" /> Modo de Uso (Instrucciones)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={modal.data._usage || ''}
+                      onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _usage: e.target.value } } : m)}
+                      placeholder="Ej: Aplicar sobre la piel limpia por la mañana y por la noche. Masajear suavemente hasta su completa absorción."
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none font-sans"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full bg-pink-400" /> Ingredientes (Composición / Tabla Nutricional)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={modal.data._ingredients || ''}
+                      onChange={e => setModal(m => m ? { ...m, data: { ...m.data, _ingredients: e.target.value } } : m)}
+                      placeholder="Ej: Aqua, Glycerin, Niacinamide, Sodium Hyaluronate, Phenoxyethanol..."
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none font-sans"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Yexy side panel */}
@@ -1566,17 +1644,26 @@ export default function ProductsPage() {
           <input value={search} onChange={e => setSearch(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Enter') {
-                triggerSearch(search);
+                load(false, null, search, catFilter, subCatFilter, stockFilter);
               }
             }}
             placeholder="SKU, barra o nombre (Enter para buscar en BD)..."
             className="w-full pl-9 pr-9 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-          {search && <button onClick={() => { setSearch(''); load(false); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><X className="w-4 h-4" /></button>}
+          {search && <button onClick={() => { setSearch(''); load(false, null, '', catFilter, subCatFilter, stockFilter); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><X className="w-4 h-4" /></button>}
         </div>
         <div className="relative">
-          <select value={catFilter} onChange={e => setCatFilter(e.target.value)} className="appearance-none pl-3 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <select value={catFilter} onChange={e => { setCatFilter(e.target.value); setSubCatFilter(''); }} className="appearance-none pl-3 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             <option value="">Todas las categorías</option>
             {categories.map(c => <option key={c.$id} value={c.$id}>{c.name}</option>)}
+          </select>
+          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+        </div>
+        <div className="relative">
+          <select value={subCatFilter} onChange={e => setSubCatFilter(e.target.value)} className="appearance-none pl-3 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">Todas las subcategorías</option>
+            {subcategories
+              .filter(s => !catFilter || s.categoryId === catFilter)
+              .map(s => <option key={s.$id} value={s.$id}>{s.name}</option>)}
           </select>
           <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         </div>
@@ -1584,18 +1671,19 @@ export default function ProductsPage() {
 
       {categories.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => setCatFilter('')}
+          <button onClick={() => { setCatFilter(''); setSubCatFilter(''); }}
             className={`px-3 py-1 rounded-full text-xs font-medium transition ${!catFilter ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
             Todas
           </button>
           {categories.map(c => {
-            const count = products.filter(p => p.CATEGORYID === c.$id).length;
-            if (count === 0) return null;
             return (
-              <button key={c.$id} onClick={() => setCatFilter(catFilter === c.$id ? '' : c.$id)}
+              <button key={c.$id} onClick={() => {
+                const nextVal = catFilter === c.$id ? '' : c.$id;
+                setCatFilter(nextVal);
+                setSubCatFilter('');
+              }}
                 className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1 ${catFilter === c.$id ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
                 {c.name}
-                <span className={`text-xs ${catFilter === c.$id ? 'text-indigo-200' : 'text-gray-400'}`}>{count}</span>
               </button>
             );
           })}
@@ -2008,7 +2096,7 @@ export default function ProductsPage() {
       {lastCursor && !isLoading && (
         <div className="flex justify-center my-4">
           <button
-            onClick={() => load(true)}
+            onClick={() => load(true, lastCursor, search, catFilter, subCatFilter, stockFilter)}
             className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow-sm transition"
           >
             Cargar más productos

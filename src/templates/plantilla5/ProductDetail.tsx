@@ -25,6 +25,7 @@ import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
 import ReviewSection from '@/components/ReviewSection';
 import ProductQuestions from '@/components/ProductQuestions';
+import { getCustomTabsFromFeatures } from '@/lib/product-features';
 
 function getExpiresAtEpochSeconds(offer: TimedOffer): number | null {
   if (offer.timeType === 'endDateTime' && offer.endDateTime) {
@@ -347,19 +348,38 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     const root = refElement;
     const vImages = [targetProduct.IMAGEURL, (targetProduct as any).IMAGEURL2, (targetProduct as any).IMAGEURL3].filter(Boolean).map((v: string) => resolveStorageImageUrl(v)) as string[];
 
-    // Update main gallery images
-    root.querySelectorAll('.product__media img, .global-media-settings img, img[src*="LogoPoloRed"]').forEach((img: any, idx: number) => {
-      const targetImg = vImages[idx % vImages.length] || vImages[0];
+    // Update main gallery images (excluding thumbnails to prevent overwriting thumbnail row)
+    root.querySelectorAll('.product__media img, .global-media-settings img, img[src*="LogoPoloRed"], .product__media-list img, .media img').forEach((img: any) => {
+      if (img.closest('.carousel__thumbnail') || img.closest('.media-gallery__grid-thumbnails') || img.closest('.media-gallery__carousel-thumbnails')) {
+        return;
+      }
+      const targetImg = vImages[0];
+      if (!targetImg) return;
+      
       img.src = targetImg;
       if (img.srcset) img.srcset = targetImg;
-      if (img.getAttribute('data-media-src')) img.setAttribute('data-media-src', targetImg);
-      img.alt = targetProduct.NAME;
+      img.setAttribute('src', targetImg);
+      img.setAttribute('srcset', targetImg);
+      img.setAttribute('data-media-src', targetImg);
+      img.setAttribute('data-src', targetImg);
+      
+      const picture = img.closest('picture');
+      if (picture) {
+        picture.querySelectorAll('source').forEach((source: any) => {
+          source.srcset = targetImg;
+          source.setAttribute('srcset', targetImg);
+          source.setAttribute('data-srcset', targetImg);
+        });
+      }
     });
-    root.querySelectorAll('.thumbnail img, .thumbnail-list__item img').forEach((img: any, idx: number) => {
+
+    // Update thumbnail list images to show the different views
+    root.querySelectorAll('.media-gallery__carousel-thumbnails img, .media-gallery__grid-thumbnails img, .thumbnail-list__item img').forEach((img: any, idx: number) => {
       const targetImg = vImages[idx % vImages.length] || vImages[0];
       img.src = targetImg;
       if (img.srcset) img.srcset = targetImg;
-      img.alt = targetProduct.NAME;
+      img.setAttribute('src', targetImg);
+      img.setAttribute('srcset', targetImg);
     });
 
     // Update title
@@ -414,11 +434,19 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     // Update variant picker highlights
     root.querySelectorAll('[data-variant-btn]').forEach((btn: any) => {
       const isActive = btn.dataset.variantBtn === targetProduct.$id;
-      btn.style.border = isActive ? '2px solid #111827' : '1px solid #e5e7eb';
+      btn.style.border = isActive ? '2.5px solid #111827' : '1px solid #e5e7eb';
       btn.style.transform = isActive ? 'translateY(-2px)' : 'translateY(0)';
       btn.style.boxShadow = isActive ? '0 6px 12px rgba(17, 24, 39, 0.12)' : 'none';
       btn.style.opacity = isActive ? '1' : '0.85';
     });
+
+    // Update the variant label display
+    const labelEl = root.querySelector('#yaxsell-variant-label') as HTMLElement | null;
+    if (labelEl) {
+      const label = variantLabels[targetProduct.$id] || '';
+      labelEl.textContent = label;
+      labelEl.style.display = label ? 'inline-block' : 'none';
+    }
   };
 
   /* ── Helper to dynamically overwrite/apply Yaxsell product data ── */
@@ -450,10 +478,10 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         
         const currentActiveId = activeVariantId || product.$id;
         
-        let variantsHtml = `<div style="margin-bottom: 24px;">
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+        let variantsHtml = `<div style="margin-bottom: 24px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
             <span style="font-size: 13px; font-weight: 700; color: #111827; text-transform: uppercase; letter-spacing: 0.05em;">Modelo:</span>
-            <span id="yaxsell-variant-label" style="font-size: 13px; font-weight: 500; color: #4b5563;"></span>
+            <span id="yaxsell-variant-label" style="font-size: 13px; font-weight: 600; color: #db2777; background: #fdf2f8; padding: 4px 12px; border-radius: 20px; border: 1px solid #fbcfe8; display: none;"></span>
           </div>
           <div style="display: flex; gap: 12px; flex-wrap: wrap;">`;
           
@@ -462,16 +490,16 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           const label = variantLabels[lp.$id] || '';
           const imgUrl = resolveStorageImageUrl(lp.IMAGEURL);
           const borderStyle = isActive
-            ? 'border: 2px solid #111827; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(17, 24, 39, 0.12); opacity: 1;'
+            ? 'border: 2.5px solid #111827; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(17, 24, 39, 0.12); opacity: 1;'
             : 'border: 1px solid #e5e7eb; transform: translateY(0); box-shadow: none; opacity: 0.85;';
           variantsHtml += `
             <button 
               data-variant-btn="${lp.$id}"
               data-variant-label="${label}"
-              style="display: block; width: 60px; height: 60px; border-radius: 12px; overflow: hidden; ${borderStyle} cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background: #ffffff; padding: 2px; outline: none; position: relative;"
+              style="display: block; width: 80px; height: 80px; border-radius: 16px; overflow: hidden; ${borderStyle} cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background: #ffffff; padding: 3px; outline: none; position: relative;"
               title="${label || lp.NAME}"
             >
-              <img src="${imgUrl}" alt="${label || lp.NAME}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 9px;" />
+              <img src="${imgUrl}" alt="${label || lp.NAME}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" />
             </button>
           `;
         });
@@ -483,7 +511,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         const labelEl = el.querySelector('#yaxsell-variant-label') as HTMLElement | null;
         if (labelEl) {
           const activeBtn = el.querySelector(`[data-variant-btn="${currentActiveId}"]`) as HTMLElement | null;
-          labelEl.textContent = activeBtn?.dataset.variantLabel || '';
+          const text = activeBtn?.dataset.variantLabel || '';
+          labelEl.textContent = text;
+          labelEl.style.display = text ? 'inline-block' : 'none';
         }
 
         // Bind click handlers for inline switching
@@ -499,14 +529,54 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             if (!targetProduct) return;
             setActiveVariantId(targetId);
             switchVariant(targetProduct);
-            // Update label display
-            if (labelEl) labelEl.textContent = btn.dataset.variantLabel || '';
           });
         });
 
       } else {
         (el as HTMLElement).style.display = 'none';
       }
+    });
+
+    // 1b. Bind click handlers for mobile thumbnails to allow switching images on mobile
+    root.querySelectorAll('.media-gallery__carousel-thumbnails .carousel__thumbnail').forEach((thumb: any, idx: number) => {
+      if (thumb.dataset.thumbBound) return;
+      thumb.dataset.thumbBound = '1';
+      thumb.style.cursor = 'pointer';
+      
+      thumb.addEventListener('click', (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Try Swiper transition first
+        const swiperContainer = root.querySelector('.media-gallery__carousel-container') as any;
+        if (swiperContainer && swiperContainer.swiper) {
+          swiperContainer.swiper.slideTo(idx);
+        } else {
+          // Fallback: manually update the main display image
+          const vImages = [displayProduct.IMAGEURL, (displayProduct as any).IMAGEURL2, (displayProduct as any).IMAGEURL3].filter(Boolean).map((v: string) => resolveStorageImageUrl(v)) as string[];
+          const targetImg = vImages[idx % vImages.length] || vImages[0];
+          root.querySelectorAll('.product__media img, .global-media-settings img, .product__media-list img, .media img').forEach((img: any) => {
+            if (img.closest('.carousel__thumbnail') || img.closest('.media-gallery__grid-thumbnails') || img.closest('.media-gallery__carousel-thumbnails')) {
+              return;
+            }
+            img.src = targetImg;
+            if (img.srcset) img.srcset = targetImg;
+          });
+        }
+        
+        // Update active class highlights
+        root.querySelectorAll('.media-gallery__carousel-thumbnails .carousel__thumbnail').forEach((t: any, tIdx: number) => {
+          if (tIdx === idx) {
+            t.classList.add('swiper-slide-active');
+            t.style.borderColor = '#db2777';
+            t.style.opacity = '1';
+          } else {
+            t.classList.remove('swiper-slide-active');
+            t.style.borderColor = '#e5e7eb';
+            t.style.opacity = '0.75';
+          }
+        });
+      });
     });
 
     // 2. Inyectar Bloque Informativo de Envío y Stock (estilo Yaxsell / Plantilla 1) usando la estructura exacta de local-pickup
@@ -594,11 +664,66 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       }
     });
 
-    // 5. Descripción
-    root.querySelectorAll('div[class*="product_description"] p, div[class*="product_description"], .accordion__content, .rte').forEach(el => {
-      if (el.textContent?.includes('boasts a rustic texture') || el.textContent?.includes('eco-friendly fabric') || el.textContent?.includes('Crafted from') || el.textContent?.includes('Elevate your casual') || el.textContent?.includes('embroidered logo') || el.textContent?.includes('classic red polo')) {
-        el.innerHTML = product.DESCRIPTION || '';
+    // 5. Descripción y Custom Tabs
+    // Eliminar el acordeón original
+    root.querySelectorAll('accordion-component, .accordion, .block-accordion').forEach(el => el.remove());
+
+    // Inyectar la descripción y las pestañas técnicas
+    root.querySelectorAll('div[class*="product_description"]').forEach(el => {
+      if ((el as any).dataset.yaxsellInjected) return;
+      (el as any).dataset.yaxsellInjected = 'true';
+
+      const customTabs = getCustomTabsFromFeatures(product.FEATURES) ?? {};
+      const techDetails = customTabs.details || '';
+      const usageInstructions = customTabs.usage || '';
+      const ingredientsList = customTabs.ingredients || '';
+
+      let specsHtml = '';
+      if (techDetails || usageInstructions || ingredientsList) {
+        specsHtml = `
+          <div class="yaxsell-product-details-specs" style="margin-top: 32px; display: flex; flex-direction: column; gap: 20px; width: 100%;">
+            <!-- Detalles del Producto -->
+            ${techDetails ? `
+              <div style="background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); border: 1.5px solid #fbcfe8; border-radius: 18px; padding: 20px; box-shadow: 0 4px 20px rgba(219,39,119,0.03); transition: transform 0.2s ease;">
+                <h3 style="font-size: 14px; font-weight: 800; color: #db2777; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #db2777;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  Detalles del Producto
+                </h3>
+                <div style="font-size: 13.5px; line-height: 1.6; color: #4b5563; margin: 0; white-space: pre-line;">${techDetails}</div>
+              </div>
+            ` : ''}
+
+            <!-- Modo de Uso -->
+            ${usageInstructions ? `
+              <div style="background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); border: 1.5px solid #fbcfe8; border-radius: 18px; padding: 20px; box-shadow: 0 4px 20px rgba(219,39,119,0.03); transition: transform 0.2s ease;">
+                <h3 style="font-size: 14px; font-weight: 800; color: #db2777; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #db2777;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                  Modo de Uso
+                </h3>
+                <div style="font-size: 13.5px; line-height: 1.6; color: #4b5563; margin: 0; white-space: pre-line;">${usageInstructions}</div>
+              </div>
+            ` : ''}
+
+            <!-- Ingredientes -->
+            ${ingredientsList ? `
+              <div style="background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); border: 1.5px solid #fbcfe8; border-radius: 18px; padding: 20px; box-shadow: 0 4px 20px rgba(219,39,119,0.03); transition: transform 0.2s ease;">
+                <h3 style="font-size: 14px; font-weight: 800; color: #db2777; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #db2777;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+                  Ingredientes y Composición
+                </h3>
+                <div style="font-size: 13.5px; line-height: 1.6; color: #4b5563; margin: 0; white-space: pre-line;">${ingredientsList}</div>
+              </div>
+            ` : ''}
+          </div>
+        `;
       }
+
+      el.innerHTML = `
+        <div class="product-description-content" style="font-size: 14px; line-height: 1.7; color: #374151; margin-bottom: 24px;">
+          ${product.DESCRIPTION || ''}
+        </div>
+        ${specsHtml}
+      `;
     });
 
     // 6. Imágenes de la Galería Principal
@@ -1369,13 +1494,56 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             position: relative !important;
             overflow: hidden !important;
           }
-          .media-gallery__carousel-thumbnails--inside {
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-            width: calc(100% - 32px) !important;
-            max-width: 230px !important;
-            box-sizing: border-box !important;
+          .media-gallery__carousel-thumbnails--inside.md\:hidden,
+          .media-gallery__carousel-thumbnails {
+            display: block !important;
+            position: relative !important;
+            margin: 16px auto 0 auto !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            left: 0 !important;
+            transform: none !important;
+            overflow: visible !important;
+          }
+          .media-gallery__carousel-thumbnails .carousel__thumbnails-swiper {
+            overflow: visible !important;
+          }
+          .media-gallery__carousel-thumbnails .swiper-wrapper {
+            display: flex !important;
+            justify-content: center !important;
+            gap: 10px !important;
+            flex-wrap: nowrap !important;
+            transform: none !important;
+            width: auto !important;
+          }
+          .media-gallery__carousel-thumbnails .carousel__thumbnail {
+            width: 44px !important;
+            height: 44px !important;
+            border-radius: 50% !important;
+            border: 2px solid #e5e7eb !important;
             overflow: hidden !important;
+            cursor: pointer !important;
+            flex-shrink: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            opacity: 0.65 !important;
+            background: #ffffff !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
+          }
+          .media-gallery__carousel-thumbnails .carousel__thumbnail img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            border-radius: 50% !important;
+          }
+          /* Highlight active slide with pink color matching template aesthetic */
+          .media-gallery__carousel-thumbnails .swiper-slide-active,
+          .media-gallery__carousel-thumbnails .carousel__thumbnail:hover {
+            border-color: #db2777 !important;
+            transform: scale(1.15) !important;
+            opacity: 1 !important;
+            box-shadow: 0 4px 10px rgba(219, 39, 119, 0.2) !important;
           }
         }
       `}</style>

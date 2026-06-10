@@ -118,6 +118,186 @@ export default function PedidoPage() {
   const [searchingProducts, setSearchingProducts] = useState(false);
   const [imageModal, setImageModal] = useState<{ src: string; name: string } | null>(null);
 
+  // Customer-side out-of-stock replacement states
+  const [customerReplacingIdx, setCustomerReplacingIdx] = useState<number | null>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [replacingError, setReplacingError] = useState('');
+
+  const handleOpenReplacementModal = async (item: OrderItem, index: number) => {
+    setCustomerReplacingIdx(index);
+    setLoadingSuggestions(true);
+    setReplacingError('');
+    setSuggestions([]);
+    
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      
+      // 1. Try to load original product to find its category
+      let categoryId = '';
+      if (item.id) {
+        try {
+          const oldProd = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, item.id);
+          categoryId = (oldProd as any).CATEGORYID || '';
+        } catch {}
+      }
+
+      // 2. Query products
+      let prods: any[] = [];
+      if (categoryId) {
+        try {
+          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+            Query.equal('CATEGORYID', categoryId),
+            Query.limit(50)
+          ]);
+          prods = res.documents;
+        } catch {}
+      }
+
+      // 3. Fallback to name search if no category products found
+      if (prods.length === 0) {
+        try {
+          const firstWord = item.name.split(' ').filter(w => w.length > 3)[0] || '';
+          if (firstWord) {
+            const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+              Query.search('NAME', firstWord),
+              Query.limit(30)
+            ]);
+            prods = res.documents;
+          }
+        } catch {}
+      }
+
+      // 4. Ultimate fallback to general products
+      if (prods.length === 0) {
+        try {
+          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+            Query.limit(50)
+          ]);
+          prods = res.documents;
+        } catch {}
+      }
+
+      // Filter: must have stock, not be the current product
+      const filtered = prods.filter((p: any) => {
+        if (p.$id === item.id) return false;
+        const stock = p.STOCK ?? 0;
+        return stock > 0 || stock === 99999;
+      });
+
+      // Sort by price similarity
+      const sorted = filtered.sort((a, b) => {
+        const diffA = Math.abs((a.CURRENTPRICE ?? a.PRICE ?? 0) - item.price);
+        const diffB = Math.abs((b.CURRENTPRICE ?? b.PRICE ?? 0) - item.price);
+        return diffA - diffB;
+      });
+
+      setSuggestions(sorted);
+    } catch (e: any) {
+      setReplacingError('Error al buscar alternativas sugeridas.');
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  const handleCustomerReplace = async (newProd: any) => {
+    if (!order || customerReplacingIdx === null) return;
+    const parsedItems = [...items];
+    const oldItem = parsedItems[customerReplacingIdx];
+    if (!oldItem) return;
+
+    if (!confirm(`¿Confirmas cambiar "${oldItem.name}" por "${newProd.NAME}"?`)) return;
+
+    setLoadingSuggestions(true);
+    setReplacingError('');
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      // 1. Block old product (SKU)
+      let oldSku = (oldItem as any).sku || '';
+      let oldName = oldItem.name;
+      let oldImg = oldItem.img || '';
+
+      if (oldItem.id) {
+        try {
+          const oldProd: any = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, oldItem.id);
+          oldSku = oldProd.sku || getProductSku(oldProd);
+          oldName = oldProd.NAME || oldName;
+          oldImg = oldProd.IMAGEURL || oldImg;
+        } catch {}
+      }
+
+      if (oldSku) {
+        try {
+          const blockedResp = await databases.listDocuments(databaseId, 'blocked_products', [
+            Query.equal('sku', oldSku),
+            Query.limit(1)
+          ]);
+          if (blockedResp.documents.length === 0) {
+            await databases.createDocument(databaseId, 'blocked_products', ID.unique(), {
+              sku: oldSku,
+              name: oldName,
+              imageUrl: oldImg
+            });
+          }
+        } catch {}
+      }
+
+      // 2. Delete from products
+      if (oldItem.id) {
+        try {
+          await databases.deleteDocument(databaseId, PRODUCTS_COLLECTION, oldItem.id);
+        } catch {}
+      }
+
+      // 3. Swap in order ITEMS
+      const newPrice = newProd.CURRENTPRICE ?? newProd.PRICE ?? 0;
+      const newSku = newProd.sku || getProductSku(newProd);
+
+      parsedItems[customerReplacingIdx] = {
+        ...oldItem,
+        id: newProd.$id,
+        name: newProd.NAME,
+        price: newPrice,
+        img: newProd.IMAGEURL || '',
+        sku: newSku,
+        total: newPrice * oldItem.qty,
+        missing: false,
+        replaced: true,
+        originalItem: {
+          id: oldItem.id || '',
+          name: oldItem.name,
+          price: oldItem.price,
+          img: oldItem.img || '',
+          sku: oldSku
+        } as any
+      };
+
+      const newSubtotal = parsedItems.reduce((s, it) => s + (it.price * it.qty), 0);
+      const newTotal = newSubtotal + (order.SHIPPINGCOST || 0) - (order.DISCOUNT || 0);
+      const editCount = (order as any).CUSTOMEREDITCOUNT || 0;
+
+      await databases.updateDocument(databaseId, ORDERS_COLLECTION, order.$id, {
+        ITEMS: JSON.stringify(parsedItems),
+        SUBTOTAL: newSubtotal,
+        TOTAL: newTotal,
+        CUSTOMEREDITCOUNT: editCount + 1,
+        UPDATEDAT: Date.now()
+      });
+
+      setCustomerReplacingIdx(null);
+      setSuggestions([]);
+      await load();
+      alert('¡Producto reemplazado con éxito!');
+    } catch (e: any) {
+      setReplacingError(e.message || 'Error al realizar el reemplazo');
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
   const load = useCallback(async () => {
     try {
       const { databases } = getServices();
@@ -740,15 +920,69 @@ export default function PedidoPage() {
             <Package size={17} color="#3483fa" /> Detalle del pedido
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
-            {items.map((item, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: i < items.length - 1 ? 12 : 0, borderBottom: i < items.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
-                <div>
-                  <p style={{ margin: '0 0 3px', fontSize: 14, color: '#333', fontWeight: 500 }}>{item.name}</p>
-                  <p style={{ margin: 0, fontSize: 12, color: '#999' }}>x{item.qty} · {formatPrice(item.price)} c/u</p>
+            {items.map((item, i) => {
+              const isMissing = !!(item as any).missing;
+              const isReplaced = !!(item as any).replaced;
+              return (
+                <div key={i} style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'flex-start', 
+                  padding: isMissing ? '10px 12px' : '0',
+                  background: isMissing ? '#fef2f2' : 'transparent',
+                  border: isMissing ? '1px solid #fecaca' : 'none',
+                  borderRadius: isMissing ? '10px' : '0',
+                  paddingBottom: !isMissing && i < items.length - 1 ? 12 : isMissing ? '10px' : 0, 
+                  borderBottom: !isMissing && i < items.length - 1 ? '1px solid #f0f0f0' : isMissing ? '1px solid #fecaca' : 'none',
+                  marginBottom: isMissing ? 6 : 0
+                }}>
+                  <div style={{ minWidth: 0, flex: 1, paddingRight: 12 }}>
+                    <p style={{ margin: '0 0 3px', fontSize: 14, color: isMissing ? '#991b1b' : '#333', fontWeight: isMissing ? 700 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.name}
+                    </p>
+                    <p style={{ margin: 0, fontSize: 12, color: isMissing ? '#b91c1c' : '#999' }}>
+                      x{item.qty} · {formatPrice(item.price)} c/u
+                    </p>
+                    
+                    {isMissing && (
+                      <div style={{ color: '#b91c1c', fontSize: 12, fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <AlertTriangle size={13} /> Producto agotado - requiere reemplazo
+                      </div>
+                    )}
+                    {isReplaced && (
+                      <div style={{ color: '#047857', fontSize: 12, fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <CheckCircle size={13} /> Reemplazado
+                      </div>
+                    )}
+
+                    {isMissing && canCustomerModify && (
+                      <button
+                        onClick={() => handleOpenReplacementModal(item, i)}
+                        style={{
+                          marginTop: 8,
+                          padding: '6px 12px',
+                          background: '#eff6ff',
+                          color: '#1e40af',
+                          border: '1px solid #bfdbfe',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          fontSize: 12,
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4
+                        }}
+                      >
+                        <RefreshCw size={12} /> Elegir reemplazo
+                      </button>
+                    )}
+                  </div>
+                  <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: isMissing ? '#991b1b' : '#333', flexShrink: 0 }}>
+                    {formatPrice(item.total)}
+                  </p>
                 </div>
-                <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#333', flexShrink: 0 }}>{formatPrice(item.total)}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#666' }}>
@@ -957,6 +1191,112 @@ export default function PedidoPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Customer Replacement Modal */}
+        {customerReplacingIdx !== null && (
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+            onMouseDown={() => { if (!loadingSuggestions) { setCustomerReplacingIdx(null); setSuggestions([]); } }}
+          >
+            <div
+              style={{ width: '100%', maxWidth: 520, background: '#fff', borderRadius: 18, overflow: 'hidden', boxShadow: '0 30px 90px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', maxHeight: '85vh' }}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid #f0f0f0', background: '#f9f9f9' }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#111' }}>Elegir producto de reemplazo</p>
+                  <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280' }}>
+                    Sugerencias para: <span style={{ fontWeight: 700 }}>{items[customerReplacingIdx]?.name}</span>
+                  </p>
+                </div>
+                <button 
+                  onClick={() => { setCustomerReplacingIdx(null); setSuggestions([]); }}
+                  disabled={loadingSuggestions}
+                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#9ca3af' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ padding: '16px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {replacingError && (
+                  <div style={{ padding: '10px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, color: '#991b1b', fontSize: 12, fontWeight: 600 }}>
+                    {replacingError}
+                  </div>
+                )}
+
+                {loadingSuggestions ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+                    <div style={{ width: 24, height: 24, border: '2px solid #3483fa', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                  </div>
+                ) : suggestions.length === 0 ? (
+                  <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: 13, padding: '40px 0' }}>
+                    No se encontraron productos alternativos disponibles en este momento.
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {suggestions.map((p) => {
+                      const price = p.CURRENTPRICE ?? p.PRICE ?? 0;
+                      const origPrice = items[customerReplacingIdx]?.price || 0;
+                      const diff = price - origPrice;
+                      const diffText = diff === 0 
+                        ? 'Mismo precio' 
+                        : diff > 0 
+                          ? `+$${diff.toLocaleString()} de diferencia`
+                          : `-$${Math.abs(diff).toLocaleString()} de diferencia`;
+                      return (
+                        <div
+                          key={p.$id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            padding: '12px',
+                            borderRadius: 14,
+                            border: '1px solid #e5e7eb',
+                            background: '#f9f9f9',
+                          }}
+                        >
+                          <div style={{ width: 48, height: 48, borderRadius: 10, background: '#fff', border: '1px solid #eee', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {p.IMAGEURL ? (
+                              <img src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <Package size={20} color="#9ca3af" />
+                            )}
+                          </div>
+                          
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.NAME}</p>
+                            <p style={{ margin: '2px 0 0', fontSize: 11, color: '#6b7280' }}>
+                              Precio: <span style={{ fontWeight: 800, color: '#111' }}>{formatPrice(price)}</span> · <span style={{ color: diff === 0 ? '#047857' : diff > 0 ? '#b45309' : '#1e40af', fontWeight: 600 }}>{diffText}</span>
+                            </p>
+                          </div>
+
+                          <button
+                            onClick={() => handleCustomerReplace(p)}
+                            style={{
+                              padding: '8px 12px',
+                              background: '#3483fa',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 8,
+                              fontSize: 12,
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              flexShrink: 0
+                            }}
+                          >
+                            Seleccionar
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

@@ -229,22 +229,22 @@ export default function HomePage() {
 
       {/* TIMED OFFER BANNER — debajo de categorías, estilo app */}
       {offers.length > 0 && (
-        <section className="py-8 max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between mb-4">
+        <section className="py-6 max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Zap size={18} className="text-orange-400" />
-              <h2 className="text-xl font-bold">Oferta por tiempo limitado</h2>
+              <Zap size={16} className="text-orange-400" />
+              <h2 className="text-lg sm:text-xl font-bold">Oferta por tiempo limitado</h2>
             </div>
             {offers.length > 1 && (
-              <Link href="/ofertas" className="text-sm text-white/50 hover:text-white flex items-center gap-1">Ver todas <ChevronRight size={14} /></Link>
+              <Link href="/ofertas" className="text-xs sm:text-sm text-white/50 hover:text-white flex items-center gap-1">Ver todas <ChevronRight size={13} /></Link>
             )}
           </div>
-          {/* Mostrar solo la primera oferta activa como banner grande */}
           {(() => {
             const offer = offers[0];
             return (
-              <Link href={offer.targetId ? `/productos/${offer.targetId}` : '/ofertas'}>
-                <div className="relative rounded-2xl overflow-hidden cursor-pointer group shadow-2xl" style={{ height: '420px' }}>
+              <Link href={offer.targetId ? `/productos/${offer.targetId}` : '/ofertas'} className="block">
+                {/* Mobile: stacked card layout / Desktop: banner with fixed height */}
+                <div className="relative rounded-2xl overflow-hidden cursor-pointer group shadow-2xl" style={{ minHeight: '220px' }}>
                   {/* Background image */}
                   {offer.customImagePath ? (
                     <Image
@@ -257,28 +257,41 @@ export default function HomePage() {
                   ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-orange-900 via-red-900 to-purple-900" />
                   )}
-                  {/* Bottom gradient overlay — igual que Flutter */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-                  {/* Pulsing badge top-right — "OFERTA POR TIEMPO LIMITADO" */}
-                  <div className="absolute top-4 right-4">
-                    <div className="flex items-center gap-1.5 bg-orange-500 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-lg animate-pulse">
-                      <Clock size={12} className="shrink-0" />
-                      OFERTA POR TIEMPO LIMITADO
+                  {/* Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                  {/* Badge top-left mobile / top-right desktop */}
+                  <div className="absolute top-3 left-3 sm:top-4 sm:right-4 sm:left-auto z-10">
+                    <div className="flex items-center gap-1 bg-orange-500 text-white text-[10px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl shadow-lg animate-pulse">
+                      <Clock size={10} className="shrink-0" />
+                      <span className="hidden xs:inline">OFERTA POR TIEMPO LIMITADO</span>
+                      <span className="xs:hidden">OFERTA</span>
                     </div>
                   </div>
-                  {/* Content bottom-left */}
-                  <div className="absolute bottom-0 left-0 right-[140px] p-6">
-                    <p className="text-white font-bold text-xl leading-tight mb-1 drop-shadow-lg">{offer.title}</p>
-                    <p className="text-white/80 text-sm font-medium mb-4 truncate">{offer.productName}</p>
+
+                  {/* Discount badge top-right mobile */}
+                  <div className="absolute top-3 right-3 sm:hidden z-10">
+                    <span className="bg-red-500 text-white text-sm font-black px-2.5 py-1 rounded-xl shadow">-{offer.discountPercentage}%</span>
+                  </div>
+
+                  {/* Content — bottom on both */}
+                  <div className="relative z-10 flex flex-col justify-end p-4 sm:p-6" style={{ minHeight: '220px' }}>
+                    {/* Spacer to push content down on mobile */}
+                    <div className="flex-1" />
+
+                    <p className="text-white font-bold text-base sm:text-xl leading-tight mb-1 drop-shadow-lg line-clamp-2">{offer.title}</p>
+                    <p className="text-white/75 text-xs sm:text-sm font-medium mb-3 truncate">{offer.productName}</p>
+
                     {/* Prices row */}
-                    <div className="flex items-center gap-3 mb-4 flex-wrap">
-                      <span className="text-white/60 text-base line-through">{formatPrice(offer.originalPrice)}</span>
-                      <span className="text-green-400 text-3xl font-bold drop-shadow-md">{formatPrice(offer.discountPrice)}</span>
-                      <span className="bg-red-500 text-white text-sm font-bold px-2.5 py-1 rounded-lg">-{offer.discountPercentage}%</span>
+                    <div className="flex items-center gap-2 sm:gap-3 mb-3 flex-wrap">
+                      <span className="text-white/55 text-sm line-through">{formatPrice(offer.originalPrice)}</span>
+                      <span className="text-green-400 text-2xl sm:text-3xl font-bold drop-shadow-md">{formatPrice(offer.discountPrice)}</span>
+                      <span className="hidden sm:inline bg-red-500 text-white text-sm font-bold px-2.5 py-1 rounded-lg">-{offer.discountPercentage}%</span>
                     </div>
+
                     {/* Countdown */}
-                    <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-xl px-3 py-2 w-fit">
-                      <Clock size={14} className="text-orange-400 shrink-0" />
+                    <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-xl px-3 py-1.5 w-fit">
+                      <Clock size={13} className="text-orange-400 shrink-0" />
                       <CountdownTimer offer={offer} />
                     </div>
                   </div>

@@ -66,6 +66,7 @@ const NAV_GROUPS: NavGroup[] = [
         { href: '/admin/products/vinculacion', label: 'Vincular Productos', icon: Ico.Sparkles },
         { href: '/admin/categories',     label: 'Categorías',      icon: Ico.Categorias },
         { href: '/admin/subcategories',  label: 'Subcategorías',   icon: Ico.Subcategorias },
+        { href: '/admin/blocked-products', label: 'Productos Bloqueados', icon: Ico.Sparkles },
       ]},
       { href: '', label: 'INVENTARIO', icon: Ico.Inventario, children: [
         { href: '/admin/inventory',      label: 'Stock',           icon: Ico.Inventario },
@@ -98,6 +99,7 @@ const NAV_GROUPS: NavGroup[] = [
     { href: '/admin/wholesale', label: 'Mayoristas',   icon: Ico.Mayoristas, badge: 'wholesale' },
   ]},
   { label: 'Configuración', defaultOpen: false, items: [
+    { href: '/admin/engagement/plantillas', label: 'Plantillas',       icon: Ico.Plantillas },
     { href: '', label: 'Mi Tienda', icon: Ico.MiTienda, children: [
       { href: '/admin/settings',       label: 'Servidor',         icon: Ico.Server },
       { href: '/admin/store-settings', label: 'Información',      icon: Ico.Productos },
@@ -209,12 +211,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const items = group.items.map(item => {
         if (item.label === 'Productos' && item.children) {
           const children = item.children.map(subGroup => {
-            if (subGroup.label === 'TIENDA' && subGroup.children) {
-              const subChildren = subGroup.children.filter(c => {
-                if (unlimitedStock && c.label === 'Vincular Productos') return false;
-                return true;
-              });
-              return { ...subGroup, children: subChildren };
+            if (subGroup.label === 'TIENDA') {
+              return subGroup;
             }
             if (subGroup.label === 'INVENTARIO') {
               return unlimitedStock ? null : subGroup;
@@ -455,10 +453,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       );
     };
 
-    if (item.label === 'Productos' || item.label === 'CATÁLOGO') {
-      pushBadge(pendingAlerts, '#f97316'); // Orange
-      pushBadge(pendingRequests, '#eab308', '#1a1a1a'); // Yellow
-    } else if (item.label === 'Productos a Pedido' || item.badge === 'alerts') {
+    if (item.label === 'Productos a Pedido' || item.badge === 'alerts') {
       pushBadge(pendingAlerts, '#f97316');
     } else if (item.label === 'Solicitudes de Stock' || item.badge === 'requests') {
       pushBadge(pendingRequests, '#eab308', '#1a1a1a');

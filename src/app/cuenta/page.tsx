@@ -303,7 +303,7 @@ export default function CuentaPage() {
           </div>
         </div>
 
-        <InaugurationBanner />
+
 
         {/* Quick Actions Icons (PC) */}
         <style>{`
@@ -577,9 +577,7 @@ export default function CuentaPage() {
           </div>
         </div>
 
-        <div style={{ padding: '14px 14px 0' }}>
-          <InaugurationBanner compact />
-        </div>
+
 
         {/* ── LOYALTY compact card ── */}
         <div style={{ padding: '14px 14px 0' }}>

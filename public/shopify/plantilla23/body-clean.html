@@ -4981,6 +4981,7 @@
 >
     
     <div class="slideshow__background w-full h-auto relative overflow-hidden" style="background-color: #FBCAC9;">
+      <canvas id="yaxsell-hero-particles" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;"></canvas>
 
     <!-- DESKTOP: static image -->
     <div class="hidden lg:block w-full">
@@ -5230,7 +5231,7 @@
 </custom-slideshow>
 
 </div>
-<div id="shopify-section-template--yaxsell_countdown_timer" class="shopify-section" style="background-color: #ffc9e0; position: relative; z-index: 10;">
+<div id="shopify-section-template--KEVIN & COCO CHILE_countdown_timer" class="shopify-section" style="background-color: #ffc9e0; position: relative; z-index: 10;">
   
   <!-- Particle Canvas Wrapper (with overflow hidden) -->
   <div style="position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 11;">
@@ -5238,40 +5239,149 @@
   </div>
 
   <style>
-    @keyframes blinkColon { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    @keyframes blinkColon { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+    
+    .yaxsell-countdown-wrapper {
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      gap: 12px !important;
+      margin: 0 auto 24px !important;
+      width: 100% !important;
+      max-width: 480px !important;
+    }
+    .yaxsell-countdown-card {
+      background: rgba(255, 255, 255, 0.88) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.6) !important;
+      padding: 16px 12px !important;
+      border-radius: 18px !important;
+      flex: 1 !important;
+      min-width: 76px !important;
+      max-width: 96px !important;
+      box-shadow: 0 10px 25px rgba(219, 39, 119, 0.08) !important;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      position: relative !important;
+      overflow: hidden !important;
+    }
+    .yaxsell-countdown-card::before {
+      content: '' !important;
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      height: 3px !important;
+      background: linear-gradient(90deg, #db2777, #f5a8cf) !important;
+      opacity: 0.8 !important;
+    }
+    .yaxsell-countdown-card:hover {
+      transform: translateY(-4px) !important;
+      box-shadow: 0 14px 35px rgba(219, 39, 119, 0.16) !important;
+      border-color: rgba(219, 39, 119, 0.3) !important;
+      background: rgba(255, 255, 255, 0.95) !important;
+    }
+    .yaxsell-countdown-num {
+      display: block !important;
+      font-size: clamp(1.8rem, 3.5vw, 2.5rem) !important;
+      font-weight: 900 !important;
+      color: #111827 !important;
+      line-height: 1 !important;
+      font-feature-settings: "tnum" !important;
+      font-variant-numeric: tabular-nums !important;
+      letter-spacing: -0.03em !important;
+    }
+    .yaxsell-countdown-label {
+      display: block !important;
+      font-size: 10px !important;
+      font-weight: 800 !important;
+      color: #db2777 !important;
+      text-transform: uppercase !important;
+      margin-top: 6px !important;
+      letter-spacing: 0.08em !important;
+    }
+    .yaxsell-countdown-colon {
+      font-size: 24px !important;
+      font-weight: 900 !important;
+      color: #db2777 !important;
+      animation: blinkColon 1.2s infinite !important;
+      line-height: 1 !important;
+      margin-top: -14px !important;
+      text-shadow: 0 0 10px rgba(219, 39, 119, 0.15) !important;
+      display: inline-block !important;
+    }
+    
+    @media (max-width: 480px) {
+      .yaxsell-countdown-wrapper {
+        gap: 6px !important;
+      }
+      .yaxsell-countdown-card {
+        padding: 10px 4px !important;
+        min-width: 55px !important;
+        border-radius: 12px !important;
+      }
+      .yaxsell-countdown-num {
+        font-size: 1.45rem !important;
+      }
+      .yaxsell-countdown-label {
+        font-size: 8px !important;
+        margin-top: 4px !important;
+        letter-spacing: 0.03em !important;
+      }
+      .yaxsell-countdown-colon {
+        font-size: 16px !important;
+        margin-top: -10px !important;
+      }
+    }
   </style>
   <div class="custom-container" style="padding: 48px 24px 72px 24px; text-align: center; font-family: 'Outfit', 'Inter', sans-serif; position: relative; z-index: 20;">
     
+    <!-- Countdown Header details -->
+    <div style="margin-bottom: 28px; text-align: center;">
+      <span style="display: inline-block; background: rgba(219, 39, 119, 0.08); color: #db2777; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; padding: 6px 16px; border-radius: 999px; margin-bottom: 12px; border: 1px solid rgba(219, 39, 119, 0.12);">
+        🔥 Oferta de Apertura
+      </span>
+      <h3 style="font-size: clamp(1.4rem, 4vw, 2.2rem); font-weight: 900; color: #111827; margin: 0 0 6px; letter-spacing: -0.03em; line-height: 1.25;">
+        Los Descuentos Finalizan Pronto
+      </h3>
+      <p style="font-size: clamp(11px, 2.8vw, 13.5px); color: #4b5563; font-weight: 500; margin: 0 auto; max-width: 460px; line-height: 1.45;">
+        Aprovecha precios rebajados en todo el catálogo. ¡Llévate tus favoritos antes de que se agoten!
+      </p>
+    </div>
+
     <!-- Countdown Timer Wrapper -->
-    <div class="yaxsell-countdown-wrapper" style="display: inline-flex; justify-content: center; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
+    <div class="yaxsell-countdown-wrapper">
       <!-- Days -->
-      <div style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); padding: 16px 20px; border-radius: 20px; min-width: 80px; box-shadow: 0 10px 25px rgba(219, 39, 119, 0.08); transition: transform 0.3s ease;">
-        <span id="yaxsell-days" style="display: block; font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 800; color: #111827; line-height: 1;">01</span>
-        <span style="display: block; font-size: 11px; font-weight: 700; color: #db2777; text-transform: uppercase; margin-top: 6px; letter-spacing: 0.05em;">días</span>
+      <div class="yaxsell-countdown-card">
+        <span id="yaxsell-days" class="yaxsell-countdown-num">01</span>
+        <span class="yaxsell-countdown-label">días</span>
       </div>
       
-      <span style="font-size: 24px; font-weight: 800; color: #db2777; animation: blinkColon 1s infinite;">:</span>
+      <span class="yaxsell-countdown-colon">:</span>
       
       <!-- Hours -->
-      <div style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); padding: 16px 20px; border-radius: 20px; min-width: 80px; box-shadow: 0 10px 25px rgba(219, 39, 119, 0.08); transition: transform 0.3s ease;">
-        <span id="yaxsell-hours" style="display: block; font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 800; color: #111827; line-height: 1;">05</span>
-        <span style="display: block; font-size: 11px; font-weight: 700; color: #db2777; text-transform: uppercase; margin-top: 6px; letter-spacing: 0.05em;">horas</span>
+      <div class="yaxsell-countdown-card">
+        <span id="yaxsell-hours" class="yaxsell-countdown-num">05</span>
+        <span class="yaxsell-countdown-label">horas</span>
       </div>
       
-      <span style="font-size: 24px; font-weight: 800; color: #db2777; animation: blinkColon 1s infinite;">:</span>
+      <span class="yaxsell-countdown-colon">:</span>
       
       <!-- Minutes -->
-      <div style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); padding: 16px 20px; border-radius: 20px; min-width: 80px; box-shadow: 0 10px 25px rgba(219, 39, 119, 0.08); transition: transform 0.3s ease;">
-        <span id="yaxsell-minutes" style="display: block; font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 800; color: #111827; line-height: 1;">13</span>
-        <span style="display: block; font-size: 11px; font-weight: 700; color: #db2777; text-transform: uppercase; margin-top: 6px; letter-spacing: 0.05em;">minutos</span>
+      <div class="yaxsell-countdown-card">
+        <span id="yaxsell-minutes" class="yaxsell-countdown-num">13</span>
+        <span class="yaxsell-countdown-label">minutos</span>
       </div>
       
-      <span style="font-size: 24px; font-weight: 800; color: #db2777; animation: blinkColon 1s infinite;">:</span>
+      <span class="yaxsell-countdown-colon">:</span>
       
       <!-- Seconds -->
-      <div style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); padding: 16px 20px; border-radius: 20px; min-width: 80px; box-shadow: 0 10px 25px rgba(219, 39, 119, 0.08); transition: transform 0.3s ease;">
-        <span id="yaxsell-seconds" style="display: block; font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 800; color: #db2777; line-height: 1;">23</span>
-        <span style="display: block; font-size: 11px; font-weight: 700; color: #db2777; text-transform: uppercase; margin-top: 6px; letter-spacing: 0.05em;">segundos</span>
+      <div class="yaxsell-countdown-card">
+        <span id="yaxsell-seconds" class="yaxsell-countdown-num">23</span>
+        <span class="yaxsell-countdown-label">segundos</span>
       </div>
     </div>
     
@@ -5987,6 +6097,678 @@
         
     </div>
 </collection-list>
+
+</div><div id="shopify-section-template--27304712470809__featured_product_38eqkx" class="shopify-section section-product section-product--featured-product"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/featured-product.css" rel="stylesheet" type="text/css" media="all" />
+<link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product.css" rel="stylesheet" type="text/css" media="all" />
+
+<style data-shopify>
+  .product[data-id="template--27304712470809__featured_product_38eqkx"]{
+    --media-width: 50%;
+    --content-width: 50%;
+  }
+  .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-media{
+    --order: 1;
+  }
+  .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-content{
+    --order: 2;
+  }
+
+  
+    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="1"]{
+      --block-padding-top: clamp(0px, 30vw, 10px);
+      --block-padding-bottom: clamp(0px, 30vw, 10px);
+    }
+    
+    
+  
+    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="2"]{
+      --block-padding-top: clamp(0px, 30vw, 0px);
+      --block-padding-bottom: clamp(0px, 30vw, 10px);
+    }
+    
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .vendor {
+          --font-size: 1.0em;
+        }
+      
+  
+    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="3"]{
+      --block-padding-top: clamp(0px, 30vw, 0px);
+      --block-padding-bottom: clamp(0px, 30vw, 10px);
+    }
+    
+    
+  
+    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="4"]{
+      --block-padding-top: clamp(0px, 30vw, 0px);
+      --block-padding-bottom: clamp(0px, 30vw, 20px);
+    }
+    
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .price {
+          --font-size: 1.0em;
+        }
+      
+  
+    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="5"]{
+      --block-padding-top: clamp(0px, 30vw, 0px);
+      --block-padding-bottom: clamp(0px, 30vw, 20px);
+    }
+    
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .inventory {
+          --color-badge-in-stock: #8cce8f;
+          --color-badge-low-stock: #ea8537;
+          --color-badge-out-stock: #000000;
+        }
+      
+  
+    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="6"]{
+      --block-padding-top: clamp(0px, 30vw, 0px);
+      --block-padding-bottom: clamp(0px, 30vw, 10px);
+    }
+    
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .body-text[data-index="6"] {
+          --font-size: 1.0em;
+        }
+      
+  
+    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="7"]{
+      --block-padding-top: clamp(0px, 30vw, 20px);
+      --block-padding-bottom: clamp(0px, 30vw, 0px);
+    }
+    
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .body-text[data-index="7"] {
+          --font-size: 1.0em;
+        }
+      
+  
+    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="8"]{
+      --block-padding-top: clamp(0px, 30vw, 20px);
+      --block-padding-bottom: clamp(0px, 30vw, 10px);
+    }
+    
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] countdown-timer{
+          --countdown-padding: 10px;
+          --countdown-border-radius: 0px;
+          --countdown-border-width: 0px;
+          --font-size: 2.0em;
+          --text-font-size: 0.7em;
+          
+            --color-background: rgb(var(--color-inner-background));
+            --color-text: var(--color-inner-text);
+          
+        }
+      
+  
+    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="9"]{
+      --block-padding-top: clamp(0px, 30vw, 0px);
+      --block-padding-bottom: clamp(0px, 30vw, 10px);
+    }
+    
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .variant-selector{
+          --input-width: 500px;
+        }
+      
+  
+    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="10"]{
+      --block-padding-top: clamp(0px, 30vw, 0px);
+      --block-padding-bottom: clamp(0px, 30vw, 10px);
+    }
+    
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-form{
+          --button-width: 500px;
+        }
+      
+  
+    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="11"]{
+      --block-padding-top: clamp(0px, 30vw, 0px);
+      --block-padding-bottom: clamp(0px, 30vw, 0px);
+    }
+    
+    
+  
+    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="12"]{
+      --block-padding-top: clamp(0px, 30vw, 0px);
+      --block-padding-bottom: clamp(0px, 30vw, 0px);
+    }
+    
+    
+  
+    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="13"]{
+      --block-padding-top: clamp(0px, 30vw, 30px);
+      --block-padding-bottom: clamp(0px, 30vw, 0px);
+    }
+    
+    
+  
+</style>
+
+<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-media.js" defer="defer"></script>
+<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-info.js" defer="defer"></script>
+
+  <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/accordion.js" defer="defer"></script>
+
+  <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
+
+<featured-product class="product block color-scheme-1 animation-wrapper" data-id="template--27304712470809__featured_product_38eqkx">
+  <div class="product-container custom-container flex animation-element fade-in">
+    
+      
+      <div class="product-media sticky w-full max-h-max top-0">
+        
+
+<product-media class="slider block overflow-hidden opacity-0">
+  <div class="relative">
+    <product-media-inner class="slider__inner flex flex-nowrap transition-all duration-600 ease-in-out">
+      
+        <product-media-slide class="cursor-grab active:cursor-grabbing select-none w-full h-auto min-w-full relative" data-media-id="51734979281177" data-index="1">
+          
+          
+
+        <media-wrapper data-type="image" class="block w-full h-full overflow-hidden relative group" data-enable-zoom="true" data-ratio="portrait">
+            <div class="image-wrapper w-full h-full absolute top-0 left-0">
+                <img 
+                    src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1780594190971-pegada-1780594188788.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=aP4p1yedHU6qKn6Fv0FKGHIkKYTLXz%2FMpMZiMxVUwOCgvzeGfqyMpxqIUD63kUd4mKn9%2Fh9boMiHV%2BQSb7znFp00eLdCntSLqkb%2FOW12HLSbFCBh8gVgdbpzaQeBr1yhcez5N%2FyF7NYisfs%2FQlLvDwSLv21i27%2BZZ9Ib9eY5an5IiIBhbS28RSczaMPfHcAvx5vYlvrk0Sz0f7rt7Ur3Bg2bY%2FdRBC%2F5jxqGojYgUcenK91eADafHzRdumKmAwKophJjJDGq2La4hO6tNY88E2rNSy0tkwV8fgQ4PqvKDY71UatpBuByMxbbXl%2FsxVeVdXqTk2tE3Ia9D52TPyGb5g%3D%3D"
+                    loading="lazy"
+                    alt="Rutina Completa SADOER"
+                    class="w-full h-full object-contain pointer-events-none"
+                    draggable="false"
+                />
+            </div>
+
+            
+                <span class="absolute top-0 left-0 w-full h-full items-center justify-center invisible flex group-hover:visible group-hover:opacity-100 transition-all opacity-0 duration-300 ease-in-out">
+                    <div role="button" data-action="open" class="button-zoom cursor-pointer w-[80px] h-[80px] flex items-center justify-center bg-[rgba(0,0,0,0.4)] text-white transition-all duration-200 ease-in-out hover:bg-[rgba(0,0,0,0.6)] hover:scale-103" aria-label="Open gallery">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[40px]">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6" />
+</svg>
+                    </div>
+                </span>
+
+                <button class="button-close absolute top-0 right-0 p-7 cursor-pointer opacity-55 z-10 hover:opacity-100 transition-all duration-150 hidden" data-close tabindex="0" role="button" aria-label="Cerrar"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[20px]">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+</svg></button>
+            
+
+            
+                <button class="button-pagination text-black cursor-pointer absolute bottom-0 right-0 m-3 p-3 bg-white transition-all duration-100 ease-in-out hover:scale-105 will-change-transform" tabindex="-1" aria-label="Open gallery"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[25px]">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+</svg></button>
+            
+        </media-wrapper>
+    
+        </product-media-slide>
+      
+    </product-media-inner>
+
+    
+      <product-navigation class="slider__navigation navigation">
+        <product-navigation-arrow role="button" tabindex="0" data-direction="prev" class="flex z-100 items-center justify-center absolute top-0 bottom-0 my-auto left-0 bg-[rgba(0,0,0,0.3)] w-[41px] h-[57px] cursor-pointer text-white hover:bg-[rgba(0,0,0,0.6)] duration-300 ease-in-out transition-all" aria-hidden="true" inert aria-label="Anterior">
+          <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[20px]">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+</svg>
+        </product-navigation-arrow>
+
+        <product-navigation-arrow role="button" tabindex="0" data-direction="next" class="flex z-100 items-center justify-center absolute top-0 bottom-0 my-auto right-0 bg-[rgba(0,0,0,0.3)] w-[41px] h-[57px] cursor-pointer text-white hover:bg-[rgba(0,0,0,0.6)] duration-300 ease-in-out transition-all" aria-hidden="true" inert aria-label="Siguiente">
+          <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[20px]">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+</svg>
+
+        </product-navigation-arrow>
+      </product-navigation>
+    
+  </div>
+</product-media>
+
+      </div>
+    
+
+    
+    <product-info
+      class="product-content flex-1 md:px-7 flex items-center pb-10"
+      data-section-id="template--27304712470809__featured_product_38eqkx"
+      data-url="/products/camellia-glow-hair-oil"
+      data-product-id="10620181414169"
+    >
+      <div class="pt-5 lg:pt-0 w-full">
+        
+          
+              <div class="product-badge-block" data-index="1" data-block>
+                <product-badge data-product-link="#product-camellia-glow-hair-oil"></product-badge>
+              </div>
+            
+        
+          
+              <small class="vendor opacity-60" data-index="2" data-block>
+                
+                  <span>SADOER</span>
+                
+              </small>
+            
+        
+          
+              
+              <h3 class="heading text-color-text" data-index="3" data-block>
+                
+                  <span>Rutina Completa SkinCare</span>
+                
+              </h3>
+            
+        
+          
+              <div data-index="4" data-block>
+                
+                  
+
+  <div class="price flex gap-[5px] flex-wrap
+      
+      
+      
+      
+    "
+  >
+    
+    <div class="price__regular">
+      
+        <span class="price-item">$25.00 USD</span>
+      
+    </div>
+    
+
+    
+    <div class="price__sale flex w-max flex-wrap gap-[5px] items-center">
+      <div class="price-item price-item--sale">$25.00 USD</div>
+      
+        <span class="price-item price-item--compare line-through opacity-50">
+          
+            
+          
+        </span>
+      
+    </div>
+    
+
+    
+    <small class="price__unit hidden opacity-50 flex items-center mx-3">
+      <span class="price-item">
+        <span></span>
+        <span class="px-0.5">/</span>
+        <span>
+          
+           
+          
+          
+        </span>
+      </span>
+    </small>
+    
+
+    
+      
+    
+  </div>
+
+                  
+                  
+
+                  <div >
+                    
+                    <form method="post" action="/cart/add" id="product-form-installment-template--27304712470809__featured_product_38eqkx" accept-charset="UTF-8" class="pay-installment" enctype="multipart/form-data"><input type="hidden" name="form_type" value="product" />
+                      <input type="hidden" name="id" value="52380513435929">
+                      
+                    <input type="hidden" name="product-id" value="10620181414169" /><input type="hidden" name="section-id" value="template--27304712470809__featured_product_38eqkx" /></form>
+                  </div>
+                
+              </div>
+            
+        
+          
+              
+                
+                <div class="inventory" role="status" data-index="5" data-block>
+                  
+
+    
+        
+          <span class="badge badge--in-stock w-max">
+            
+              Stock Disponible
+            
+          </span>
+        
+    
+
+                </div>
+              
+            
+        
+          
+              
+                <div class="body-text" data-index="6" data-block>
+                  <span><p>El poder del colágeno para una piel firme, radiante y visiblemente más joven. Consigue una hidratación profunda y un efecto luminoso con este set especial.</p></span>
+                </div>
+              
+            
+        
+          
+              <div class="body-text" data-index="7" data-block>
+                <span><p><strong>La oferta termina:</strong></p></span>
+              </div>
+            
+        
+          
+              
+                <countdown-timer
+                  class="flex"
+                  data-index="8"
+                  data-block
+                  data-date="2026/05/30"
+                  data-format="long"
+                ></countdown-timer>
+              
+            
+        
+          
+              
+                
+                  <div data-index="9" data-block>
+                    
+
+<link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/variant-selector.css" rel="stylesheet" type="text/css" media="all" />
+
+<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/variant-selector.js" defer="defer"></script>
+
+<variant-selector class="variant-selector py-2 block" aria-hidden="false" id="variant-selector-template--27304712470809__featured_product_38eqkx" data-section-id="template--27304712470809__featured_product_38eqkx" data-type="button"  >
+    
+        
+        
+        <fieldset class="product-form__input relative mt-1" data-swatch-count="0" data-field-type="button">
+            <legend class="text-[0.8em] pt-2 leading-none max-w-[80%]">
+                
+                    Tamaño
+                
+            </legend>
+            
+                
+                    
+                    
+
+                    
+
+                    
+
+                    <input type="radio" 
+                        form="product-form-template--27304712470809__featured_product_38eqkx" 
+                        name="
+                        Tamaño-1-52380513435929-button
+                    "
+                        id="template--27304712470809__featured_product_38eqkx-1-0-52380513435929"
+                        value="50 ml"
+                        class="input--button invisible absolute opacity-0"
+                        
+                        checked
+                        
+                        data-product-url="/products/camellia-glow-hair-oil"
+                        data-option-value-id="7422784274713"
+                    
+                    />
+                    <label for="template--27304712470809__featured_product_38eqkx-1-0-52380513435929" class="input--button-label mr-2 button--primary min-w-[80px] inline-block text-center py-2 my-3 px-1 cursor-pointer transition-all duration-300 ease-in-out relative delay-200" tabindex="0">
+                        50 ml
+                        <svg class="button-border absolute top-0 left-0 w-full h-full pointer-events-none transition-all duration-300 ease" viewBox="0 0 100 100" preserveAspectRatio="none" style="stroke-dasharray: 480; stroke-dashoffset: 480;">
+                            <rect x="0" y="0" width="300" height="150" fill="none" stroke-width="1" stroke="currentColor" vector-effect="non-scaling-stroke" shape-rendering="geometricPrecision"/>
+                        </svg>
+                    </label>
+                
+                    
+                    
+
+                    
+
+                    
+
+                    <input type="radio" 
+                        form="product-form-template--27304712470809__featured_product_38eqkx" 
+                        name="
+                        Tamaño-1-52380513435929-button
+                    "
+                        id="template--27304712470809__featured_product_38eqkx-1-1-52380513435929"
+                        value="100 ml"
+                        class="input--button invisible absolute opacity-0"
+                        
+                        
+                        
+                        data-product-url="/products/camellia-glow-hair-oil"
+                        data-option-value-id="7422784307481"
+                    
+                    />
+                    <label for="template--27304712470809__featured_product_38eqkx-1-1-52380513435929" class="input--button-label mr-2 button--primary min-w-[80px] inline-block text-center py-2 my-3 px-1 cursor-pointer transition-all duration-300 ease-in-out relative delay-200" tabindex="0">
+                        100 ml
+                        <svg class="button-border absolute top-0 left-0 w-full h-full pointer-events-none transition-all duration-300 ease" viewBox="0 0 100 100" preserveAspectRatio="none" style="stroke-dasharray: 480; stroke-dashoffset: 480;">
+                            <rect x="0" y="0" width="300" height="150" fill="none" stroke-width="1" stroke="currentColor" vector-effect="non-scaling-stroke" shape-rendering="geometricPrecision"/>
+                        </svg>
+                    </label>
+                
+            
+        </fieldset>
+    
+</variant-selector>
+
+                  </div>
+                
+              
+            
+        
+          
+              
+                <div data-index="10" data-block>
+                  
+
+<style data-shopify>
+    
+      .product-form .shopify-payment-button__button--unbranded{
+        background: rgba(var(--color-secondary-input-background), var(--button-background-opacity));
+        color: rgb(var(--color-secondary-input-text));
+        border-color: rgb(var(--color-secondary-input-border));
+      }
+      .product-form .shopify-payment-button__button--unbranded:hover{
+        --color-links-hover: var(--color-secondary-input-text-hover);
+        background: rgb(var(--color-secondary-input-background-hover));
+        color: rgb(var(--color-secondary-input-text-hover));
+        border-color: rgb(var(--color-secondary-input-border-hover));
+      }
+    
+</style>
+
+  <product-form class="product-form" data-section-id="template--27304712470809__featured_product_38eqkx">
+    <div class="error test" role="alert">
+      <small></small>
+    </div>
+
+    
+    
+    <form method="post" action="/cart/add" id="product-form-template--27304712470809__featured_product_38eqkx" accept-charset="UTF-8" class="shopify-product-form" enctype="multipart/form-data" novalidate="novalidate" data-type="add-to-cart-form"><input type="hidden" name="form_type" value="product" />
+      <input type="hidden" name="id" value="52380513435929" class="product-variant-id" >
+      
+      
+      
+
+      <div class="product-buy-buttons py-2">
+        <button 
+          class="button-cart custom-button my-2 button--primary cursor-pointer w-full pointer-events-none" 
+          name="add" 
+          type="submit" 
+          id="button-cart-template--27304712470809__featured_product_38eqkx" 
+        >
+          <span class="visible-text button-cart__text z-10 min-w-[20px] min-h-[20px]">
+            <span class="link-hover-animation">
+              Añadelo a tu carrito antes de que se agote!
+              
+            </span>
+          </span>
+          <span class="loading min-h-[28.8px] flex items-center"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="display: block; shape-rendering: auto; animation-play-state: running; animation-delay: 0s;" width="20px" height="20px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
+<circle cx="50" cy="50" fill="none" stroke="currentColor" stroke-width="10" r="35" stroke-dasharray="164.93361431346415 56.97787143782138" style="animation-play-state: running; animation-delay: 0s;">
+  <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" values="0 50 50;360 50 50" keyHoras="0;1" style="animation-play-state: running; animation-delay: 0s;"></animateTransform>
+</circle>
+</svg></span>
+          <span class="hover-text button-cart__text z-10 min-w-[20px] min-h-[20px]">
+            <span class="link-hover-animation">
+              Añadirlo Ahora!! D:
+              
+            </span>
+          </span>
+        </button>
+
+        
+          
+            <div data-shopify="payment-button" class="shopify-payment-button"> <shopify-accelerated-checkout recommended="null" fallback="{&quot;supports_subs&quot;:true,&quot;supports_def_opts&quot;:true,&quot;name&quot;:&quot;buy_it_now&quot;,&quot;wallet_params&quot;:{}}" access-token="d1ed3dd2d42df0ed0954198ce67baa81" buyer-country="US" buyer-locale="en" buyer-currency="USD" variant-params="[{&quot;id&quot;:52380513435929,&quot;requiresShipping&quot;:true},{&quot;id&quot;:52380513468697,&quot;requiresShipping&quot;:true}]" shop-id="100510564633" > <div class="shopify-payment-button__button" role="button" disabled aria-hidden="true" style="background-color: transparent; border: none"> <div class="shopify-payment-button__skeleton">&nbsp;</div> </div> </shopify-accelerated-checkout> </div>
+            <script>
+              document.addEventListener('DOMContentLoaded', function() {
+                var buttonCheckout = document.querySelector('.shopify-payment-button__button--unbranded');
+                if (buttonCheckout) {
+                  const buttonCheckoutText = buttonCheckout.textContent.trim();
+                  if (buttonCheckoutText !== '') {
+                    buttonCheckout.innerHTML = `
+                      <span class="visible-text z-10">
+                        <span class="link-hover-animation">${buttonCheckoutText}</span>
+                      </span>
+                      <span class="hover-text z-10">
+                        <span class="link-hover-animation">${buttonCheckoutText}</span>
+                      </span>
+                    `;
+                  }
+                  buttonCheckout.classList.add('custom-button', 'w-full', 'button--secondary', 'cursor-pointer', 'mt-2');
+                }
+              });
+            </script>
+          
+        
+      </div>
+    <input type="hidden" name="product-id" value="10620181414169" /><input type="hidden" name="section-id" value="template--27304712470809__featured_product_38eqkx" /></form>
+  </product-form>
+
+                </div>
+              
+            
+        
+          
+              
+
+<custom-accordion class="accordion block overflow-hidden py-2" data-index="11" data-block data-default-open="false">
+    <div class="accordion-heading cursor-pointer relative py-4 border-b border-current/30" tabindex="0" role="button" aria-expanded="false">
+      <span>Ingredientes Clave</span>
+      <span class="absolute right-0 top-0 bottom-0 my-auto flex items-center opacity-60 rotate-[180deg]"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[18px]">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+</svg>
+</span>
+    </div>
+    <div class="accordion-body transition-all duraiton-300 ease-in-out" style="height: 0;">
+      <div class="accordion-body__inner py-5">
+        <span><p>Camelia Seed Oil, Argan Oil, Vitamin E</p></span>
+      </div>
+    </div>
+</custom-accordion>
+            
+        
+          
+              
+
+<custom-accordion class="accordion block overflow-hidden py-2" data-index="12" data-block data-default-open="false">
+    <div class="accordion-heading cursor-pointer relative py-4 border-b border-current/30" tabindex="0" role="button" aria-expanded="false">
+      <span>Benefit of Camelia Glow Aceite Capilar</span>
+      <span class="absolute right-0 top-0 bottom-0 my-auto flex items-center opacity-60 rotate-[180deg]"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[18px]">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+</svg>
+</span>
+    </div>
+    <div class="accordion-body transition-all duraiton-300 ease-in-out" style="height: 0;">
+      <div class="accordion-body__inner py-5">
+        <span><p>Suaviza, añade brillo, protege puntas</p></span>
+      </div>
+    </div>
+</custom-accordion>
+            
+        
+          
+              
+                <div class="full-details-link text-[14px]" data-index="13" data-block>
+                  <a
+                    href="#product-camellia-glow-hair-oil"
+                    title="Camelia Glow Aceite Capilar"
+                    aria-label="Camelia Glow Aceite Capilar"
+                    class="link relative border-b-1 border-current/20"
+                  >
+                    <span class="link-hover-animation">Ver detalles completos</span>
+                  </a>
+                </div>
+              
+            
+        
+      </div>
+    </product-info>
+  </div>
+
+  <script type="application.json" id="json-selected-variant">
+    {"id":52380513435929,"title":"50 ml","option1":"50 ml","option2":null,"option3":null,"sku":"KME-HAN-HS-02-01","requires_shipping":true,"taxable":true,"featured_image":null,"available":true,"name":"Camelia Glow Aceite Capilar - 50 ml","public_title":"50 ml","options":["50 ml"],"price":2400,"weight":80,"compare_at_price":null,"inventory_management":"shopify","barcode":null,"requires_selling_plan":false,"selling_plan_allocations":[]}
+  </script>
+</featured-product>
+
+  <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/countdown-timer.js" defer></script>
+
+  
+
+<product-pagination-popup class="product-pagination-popup min-h-[100dvh] overflow-auto popup pagination z-100 flex py-[min(30%,150px)] justify-center fixed top-0 left-0 w-full h-full bg-black/50 transition-all duration-400" data-hidden="true" inert>
+  <div class="popup__inner relative w-full max-w-[1000px] min-w-max h-max min-h-fit px-7 pb-[5rem] pt-[55px] transition-all duration-400 ease-in-out">
+    <div class="button-close absolute top-0 right-0 p-7 cursor-pointer opacity-55 hover:opacity-100 transition-all duration-150" data-action="click" data-close tabindex="0" role="button" aria-label="Cerrar">
+      <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[20px]">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+</svg>
+    </div>
+    <div class="flex flex-wrap">
+      
+        <product-pagination-thumbnail class="block max-w-[max(33.3%,100px)] min-w-[max(33.3%,100px)] w-full p-2" data-index="1" tabindex="0">
+          <div class="w-full pt-[100%] relative group hover:cursor-pointer">
+            
+
+        <media-thumbnail type="image" class="block w-full h-full overflow-hidden absolute top-0 left-0">
+            <div class="w-full h-full">
+                
+                
+                <img src="//k-me-store-2.myshopify.com/cdn/shop/files/CAMELLIAGLOWHAIROIL.png?v=1778635395&amp;width=375" alt="Translation missing: en.Camelia Glow Aceite Capilar" srcset="//k-me-store-2.myshopify.com/cdn/shop/files/CAMELLIAGLOWHAIROIL.png?v=1778635395&amp;width=375 375w" width="375" height="469" loading="lazy" class="object-cover w-full h-full pointer-events-none group-hover:scale-105 transition-all duration-100 ease-in-out" draggable="false">
+            </div>
+        </media-thumbnail>
+    
+          </div>
+        </product-pagination-thumbnail>
+      
+    </div>
+  </div>
+</product-pagination-popup>
+
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Preguntas FrecuentesPage",
+      "mainEntity": [
+        
+          {
+            "@type": "Question",
+            "name": "Ingredientes Clave",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Camelia Seed Oil, Argan Oil, Vitamin E"
+            }
+          },
+        
+          {
+            "@type": "Question",
+            "name": "Benefit of Camelia Glow Aceite Capilar",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Suaviza, añade brillo, protege puntas"
+            }
+          }
+        
+      ]
+    }
+  </script>
 
 </div><div id="shopify-section-template--27304712470809__multimedia_collage_LJJ4Cn" class="shopify-section"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/multimedia-collage.css" rel="stylesheet" type="text/css" media="all" />
 
@@ -22204,678 +22986,6 @@
         
     </div>
 </custom-marquee>
-
-</div><div id="shopify-section-template--27304712470809__featured_product_38eqkx" class="shopify-section section-product section-product--featured-product"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/featured-product.css" rel="stylesheet" type="text/css" media="all" />
-<link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product.css" rel="stylesheet" type="text/css" media="all" />
-
-<style data-shopify>
-  .product[data-id="template--27304712470809__featured_product_38eqkx"]{
-    --media-width: 50%;
-    --content-width: 50%;
-  }
-  .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-media{
-    --order: 1;
-  }
-  .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-content{
-    --order: 2;
-  }
-
-  
-    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="1"]{
-      --block-padding-top: clamp(0px, 30vw, 10px);
-      --block-padding-bottom: clamp(0px, 30vw, 10px);
-    }
-    
-    
-  
-    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="2"]{
-      --block-padding-top: clamp(0px, 30vw, 0px);
-      --block-padding-bottom: clamp(0px, 30vw, 10px);
-    }
-    
-        .product[data-id="template--27304712470809__featured_product_38eqkx"] .vendor {
-          --font-size: 1.0em;
-        }
-      
-  
-    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="3"]{
-      --block-padding-top: clamp(0px, 30vw, 0px);
-      --block-padding-bottom: clamp(0px, 30vw, 10px);
-    }
-    
-    
-  
-    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="4"]{
-      --block-padding-top: clamp(0px, 30vw, 0px);
-      --block-padding-bottom: clamp(0px, 30vw, 20px);
-    }
-    
-        .product[data-id="template--27304712470809__featured_product_38eqkx"] .price {
-          --font-size: 1.0em;
-        }
-      
-  
-    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="5"]{
-      --block-padding-top: clamp(0px, 30vw, 0px);
-      --block-padding-bottom: clamp(0px, 30vw, 20px);
-    }
-    
-        .product[data-id="template--27304712470809__featured_product_38eqkx"] .inventory {
-          --color-badge-in-stock: #8cce8f;
-          --color-badge-low-stock: #ea8537;
-          --color-badge-out-stock: #000000;
-        }
-      
-  
-    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="6"]{
-      --block-padding-top: clamp(0px, 30vw, 0px);
-      --block-padding-bottom: clamp(0px, 30vw, 10px);
-    }
-    
-        .product[data-id="template--27304712470809__featured_product_38eqkx"] .body-text[data-index="6"] {
-          --font-size: 1.0em;
-        }
-      
-  
-    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="7"]{
-      --block-padding-top: clamp(0px, 30vw, 20px);
-      --block-padding-bottom: clamp(0px, 30vw, 0px);
-    }
-    
-        .product[data-id="template--27304712470809__featured_product_38eqkx"] .body-text[data-index="7"] {
-          --font-size: 1.0em;
-        }
-      
-  
-    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="8"]{
-      --block-padding-top: clamp(0px, 30vw, 20px);
-      --block-padding-bottom: clamp(0px, 30vw, 10px);
-    }
-    
-        .product[data-id="template--27304712470809__featured_product_38eqkx"] countdown-timer{
-          --countdown-padding: 10px;
-          --countdown-border-radius: 0px;
-          --countdown-border-width: 0px;
-          --font-size: 2.0em;
-          --text-font-size: 0.7em;
-          
-            --color-background: rgb(var(--color-inner-background));
-            --color-text: var(--color-inner-text);
-          
-        }
-      
-  
-    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="9"]{
-      --block-padding-top: clamp(0px, 30vw, 0px);
-      --block-padding-bottom: clamp(0px, 30vw, 10px);
-    }
-    
-        .product[data-id="template--27304712470809__featured_product_38eqkx"] .variant-selector{
-          --input-width: 500px;
-        }
-      
-  
-    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="10"]{
-      --block-padding-top: clamp(0px, 30vw, 0px);
-      --block-padding-bottom: clamp(0px, 30vw, 10px);
-    }
-    
-        .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-form{
-          --button-width: 500px;
-        }
-      
-  
-    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="11"]{
-      --block-padding-top: clamp(0px, 30vw, 0px);
-      --block-padding-bottom: clamp(0px, 30vw, 0px);
-    }
-    
-    
-  
-    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="12"]{
-      --block-padding-top: clamp(0px, 30vw, 0px);
-      --block-padding-bottom: clamp(0px, 30vw, 0px);
-    }
-    
-    
-  
-    .product[data-id="template--27304712470809__featured_product_38eqkx"] [data-block][data-index="13"]{
-      --block-padding-top: clamp(0px, 30vw, 30px);
-      --block-padding-bottom: clamp(0px, 30vw, 0px);
-    }
-    
-    
-  
-</style>
-
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-media.js" defer="defer"></script>
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-info.js" defer="defer"></script>
-
-  <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/accordion.js" defer="defer"></script>
-
-  <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-badge.js" defer="defer"></script>
-
-<featured-product class="product block color-scheme-1 animation-wrapper" data-id="template--27304712470809__featured_product_38eqkx">
-  <div class="product-container custom-container flex animation-element fade-in">
-    
-      
-      <div class="product-media sticky w-full max-h-max top-0">
-        
-
-<product-media class="slider block overflow-hidden opacity-0">
-  <div class="relative">
-    <product-media-inner class="slider__inner flex flex-nowrap transition-all duration-600 ease-in-out">
-      
-        <product-media-slide class="cursor-grab active:cursor-grabbing select-none w-full h-auto min-w-full relative" data-media-id="51734979281177" data-index="1">
-          
-          
-
-        <media-wrapper data-type="image" class="block w-full h-full overflow-hidden relative group" data-enable-zoom="true" data-ratio="portrait">
-            <div class="image-wrapper w-full h-full absolute top-0 left-0">
-                <img 
-                    src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1780594190971-pegada-1780594188788.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=aP4p1yedHU6qKn6Fv0FKGHIkKYTLXz%2FMpMZiMxVUwOCgvzeGfqyMpxqIUD63kUd4mKn9%2Fh9boMiHV%2BQSb7znFp00eLdCntSLqkb%2FOW12HLSbFCBh8gVgdbpzaQeBr1yhcez5N%2FyF7NYisfs%2FQlLvDwSLv21i27%2BZZ9Ib9eY5an5IiIBhbS28RSczaMPfHcAvx5vYlvrk0Sz0f7rt7Ur3Bg2bY%2FdRBC%2F5jxqGojYgUcenK91eADafHzRdumKmAwKophJjJDGq2La4hO6tNY88E2rNSy0tkwV8fgQ4PqvKDY71UatpBuByMxbbXl%2FsxVeVdXqTk2tE3Ia9D52TPyGb5g%3D%3D"
-                    loading="lazy"
-                    alt="Rutina Completa SADOER"
-                    class="w-full h-full object-contain pointer-events-none"
-                    draggable="false"
-                />
-            </div>
-
-            
-                <span class="absolute top-0 left-0 w-full h-full items-center justify-center invisible flex group-hover:visible group-hover:opacity-100 transition-all opacity-0 duration-300 ease-in-out">
-                    <div role="button" data-action="open" class="button-zoom cursor-pointer w-[80px] h-[80px] flex items-center justify-center bg-[rgba(0,0,0,0.4)] text-white transition-all duration-200 ease-in-out hover:bg-[rgba(0,0,0,0.6)] hover:scale-103" aria-label="Open gallery">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[40px]">
-  <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6" />
-</svg>
-                    </div>
-                </span>
-
-                <button class="button-close absolute top-0 right-0 p-7 cursor-pointer opacity-55 z-10 hover:opacity-100 transition-all duration-150 hidden" data-close tabindex="0" role="button" aria-label="Cerrar"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[20px]">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-</svg></button>
-            
-
-            
-                <button class="button-pagination text-black cursor-pointer absolute bottom-0 right-0 m-3 p-3 bg-white transition-all duration-100 ease-in-out hover:scale-105 will-change-transform" tabindex="-1" aria-label="Open gallery"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[25px]">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
-</svg></button>
-            
-        </media-wrapper>
-    
-        </product-media-slide>
-      
-    </product-media-inner>
-
-    
-      <product-navigation class="slider__navigation navigation">
-        <product-navigation-arrow role="button" tabindex="0" data-direction="prev" class="flex z-100 items-center justify-center absolute top-0 bottom-0 my-auto left-0 bg-[rgba(0,0,0,0.3)] w-[41px] h-[57px] cursor-pointer text-white hover:bg-[rgba(0,0,0,0.6)] duration-300 ease-in-out transition-all" aria-hidden="true" inert aria-label="Anterior">
-          <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[20px]">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-</svg>
-        </product-navigation-arrow>
-
-        <product-navigation-arrow role="button" tabindex="0" data-direction="next" class="flex z-100 items-center justify-center absolute top-0 bottom-0 my-auto right-0 bg-[rgba(0,0,0,0.3)] w-[41px] h-[57px] cursor-pointer text-white hover:bg-[rgba(0,0,0,0.6)] duration-300 ease-in-out transition-all" aria-hidden="true" inert aria-label="Siguiente">
-          <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[20px]">
-  <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-</svg>
-
-        </product-navigation-arrow>
-      </product-navigation>
-    
-  </div>
-</product-media>
-
-      </div>
-    
-
-    
-    <product-info
-      class="product-content flex-1 md:px-7 flex items-center pb-10"
-      data-section-id="template--27304712470809__featured_product_38eqkx"
-      data-url="/products/camellia-glow-hair-oil"
-      data-product-id="10620181414169"
-    >
-      <div class="pt-5 lg:pt-0 w-full">
-        
-          
-              <div class="product-badge-block" data-index="1" data-block>
-                <product-badge data-product-link="#product-camellia-glow-hair-oil"></product-badge>
-              </div>
-            
-        
-          
-              <small class="vendor opacity-60" data-index="2" data-block>
-                
-                  <span>SADOER</span>
-                
-              </small>
-            
-        
-          
-              
-              <h3 class="heading text-color-text" data-index="3" data-block>
-                
-                  <span>Rutina Completa SkinCare</span>
-                
-              </h3>
-            
-        
-          
-              <div data-index="4" data-block>
-                
-                  
-
-  <div class="price flex gap-[5px] flex-wrap
-      
-      
-      
-      
-    "
-  >
-    
-    <div class="price__regular">
-      
-        <span class="price-item">$25.00 USD</span>
-      
-    </div>
-    
-
-    
-    <div class="price__sale flex w-max flex-wrap gap-[5px] items-center">
-      <div class="price-item price-item--sale">$25.00 USD</div>
-      
-        <span class="price-item price-item--compare line-through opacity-50">
-          
-            
-          
-        </span>
-      
-    </div>
-    
-
-    
-    <small class="price__unit hidden opacity-50 flex items-center mx-3">
-      <span class="price-item">
-        <span></span>
-        <span class="px-0.5">/</span>
-        <span>
-          
-           
-          
-          
-        </span>
-      </span>
-    </small>
-    
-
-    
-      
-    
-  </div>
-
-                  
-                  
-
-                  <div >
-                    
-                    <form method="post" action="/cart/add" id="product-form-installment-template--27304712470809__featured_product_38eqkx" accept-charset="UTF-8" class="pay-installment" enctype="multipart/form-data"><input type="hidden" name="form_type" value="product" />
-                      <input type="hidden" name="id" value="52380513435929">
-                      
-                    <input type="hidden" name="product-id" value="10620181414169" /><input type="hidden" name="section-id" value="template--27304712470809__featured_product_38eqkx" /></form>
-                  </div>
-                
-              </div>
-            
-        
-          
-              
-                
-                <div class="inventory" role="status" data-index="5" data-block>
-                  
-
-    
-        
-          <span class="badge badge--in-stock w-max">
-            
-              100 in stock
-            
-          </span>
-        
-    
-
-                </div>
-              
-            
-        
-          
-              
-                <div class="body-text" data-index="6" data-block>
-                  <span><p>El poder del colágeno para una piel firme, radiante y visiblemente más joven. Consigue una hidratación profunda y un efecto luminoso con este set especial.</p></span>
-                </div>
-              
-            
-        
-          
-              <div class="body-text" data-index="7" data-block>
-                <span><p><strong>La oferta termina:</strong></p></span>
-              </div>
-            
-        
-          
-              
-                <countdown-timer
-                  class="flex"
-                  data-index="8"
-                  data-block
-                  data-date="2026/05/30"
-                  data-format="long"
-                ></countdown-timer>
-              
-            
-        
-          
-              
-                
-                  <div data-index="9" data-block>
-                    
-
-<link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/variant-selector.css" rel="stylesheet" type="text/css" media="all" />
-
-<script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/variant-selector.js" defer="defer"></script>
-
-<variant-selector class="variant-selector py-2 block" aria-hidden="false" id="variant-selector-template--27304712470809__featured_product_38eqkx" data-section-id="template--27304712470809__featured_product_38eqkx" data-type="button"  >
-    
-        
-        
-        <fieldset class="product-form__input relative mt-1" data-swatch-count="0" data-field-type="button">
-            <legend class="text-[0.8em] pt-2 leading-none max-w-[80%]">
-                
-                    Tamaño
-                
-            </legend>
-            
-                
-                    
-                    
-
-                    
-
-                    
-
-                    <input type="radio" 
-                        form="product-form-template--27304712470809__featured_product_38eqkx" 
-                        name="
-                        Tamaño-1-52380513435929-button
-                    "
-                        id="template--27304712470809__featured_product_38eqkx-1-0-52380513435929"
-                        value="50 ml"
-                        class="input--button invisible absolute opacity-0"
-                        
-                        checked
-                        
-                        data-product-url="/products/camellia-glow-hair-oil"
-                        data-option-value-id="7422784274713"
-                    
-                    />
-                    <label for="template--27304712470809__featured_product_38eqkx-1-0-52380513435929" class="input--button-label mr-2 button--primary min-w-[80px] inline-block text-center py-2 my-3 px-1 cursor-pointer transition-all duration-300 ease-in-out relative delay-200" tabindex="0">
-                        50 ml
-                        <svg class="button-border absolute top-0 left-0 w-full h-full pointer-events-none transition-all duration-300 ease" viewBox="0 0 100 100" preserveAspectRatio="none" style="stroke-dasharray: 480; stroke-dashoffset: 480;">
-                            <rect x="0" y="0" width="300" height="150" fill="none" stroke-width="1" stroke="currentColor" vector-effect="non-scaling-stroke" shape-rendering="geometricPrecision"/>
-                        </svg>
-                    </label>
-                
-                    
-                    
-
-                    
-
-                    
-
-                    <input type="radio" 
-                        form="product-form-template--27304712470809__featured_product_38eqkx" 
-                        name="
-                        Tamaño-1-52380513435929-button
-                    "
-                        id="template--27304712470809__featured_product_38eqkx-1-1-52380513435929"
-                        value="100 ml"
-                        class="input--button invisible absolute opacity-0"
-                        
-                        
-                        
-                        data-product-url="/products/camellia-glow-hair-oil"
-                        data-option-value-id="7422784307481"
-                    
-                    />
-                    <label for="template--27304712470809__featured_product_38eqkx-1-1-52380513435929" class="input--button-label mr-2 button--primary min-w-[80px] inline-block text-center py-2 my-3 px-1 cursor-pointer transition-all duration-300 ease-in-out relative delay-200" tabindex="0">
-                        100 ml
-                        <svg class="button-border absolute top-0 left-0 w-full h-full pointer-events-none transition-all duration-300 ease" viewBox="0 0 100 100" preserveAspectRatio="none" style="stroke-dasharray: 480; stroke-dashoffset: 480;">
-                            <rect x="0" y="0" width="300" height="150" fill="none" stroke-width="1" stroke="currentColor" vector-effect="non-scaling-stroke" shape-rendering="geometricPrecision"/>
-                        </svg>
-                    </label>
-                
-            
-        </fieldset>
-    
-</variant-selector>
-
-                  </div>
-                
-              
-            
-        
-          
-              
-                <div data-index="10" data-block>
-                  
-
-<style data-shopify>
-    
-      .product-form .shopify-payment-button__button--unbranded{
-        background: rgba(var(--color-secondary-input-background), var(--button-background-opacity));
-        color: rgb(var(--color-secondary-input-text));
-        border-color: rgb(var(--color-secondary-input-border));
-      }
-      .product-form .shopify-payment-button__button--unbranded:hover{
-        --color-links-hover: var(--color-secondary-input-text-hover);
-        background: rgb(var(--color-secondary-input-background-hover));
-        color: rgb(var(--color-secondary-input-text-hover));
-        border-color: rgb(var(--color-secondary-input-border-hover));
-      }
-    
-</style>
-
-  <product-form class="product-form" data-section-id="template--27304712470809__featured_product_38eqkx">
-    <div class="error test" role="alert">
-      <small></small>
-    </div>
-
-    
-    
-    <form method="post" action="/cart/add" id="product-form-template--27304712470809__featured_product_38eqkx" accept-charset="UTF-8" class="shopify-product-form" enctype="multipart/form-data" novalidate="novalidate" data-type="add-to-cart-form"><input type="hidden" name="form_type" value="product" />
-      <input type="hidden" name="id" value="52380513435929" class="product-variant-id" >
-      
-      
-      
-
-      <div class="product-buy-buttons py-2">
-        <button 
-          class="button-cart custom-button my-2 button--primary cursor-pointer w-full pointer-events-none" 
-          name="add" 
-          type="submit" 
-          id="button-cart-template--27304712470809__featured_product_38eqkx" 
-        >
-          <span class="visible-text button-cart__text z-10 min-w-[20px] min-h-[20px]">
-            <span class="link-hover-animation">
-              Añadir to cart
-              
-            </span>
-          </span>
-          <span class="loading min-h-[28.8px] flex items-center"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="display: block; shape-rendering: auto; animation-play-state: running; animation-delay: 0s;" width="20px" height="20px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
-<circle cx="50" cy="50" fill="none" stroke="currentColor" stroke-width="10" r="35" stroke-dasharray="164.93361431346415 56.97787143782138" style="animation-play-state: running; animation-delay: 0s;">
-  <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" values="0 50 50;360 50 50" keyHoras="0;1" style="animation-play-state: running; animation-delay: 0s;"></animateTransform>
-</circle>
-</svg></span>
-          <span class="hover-text button-cart__text z-10 min-w-[20px] min-h-[20px]">
-            <span class="link-hover-animation">
-              Añadir to cart
-              
-            </span>
-          </span>
-        </button>
-
-        
-          
-            <div data-shopify="payment-button" class="shopify-payment-button"> <shopify-accelerated-checkout recommended="null" fallback="{&quot;supports_subs&quot;:true,&quot;supports_def_opts&quot;:true,&quot;name&quot;:&quot;buy_it_now&quot;,&quot;wallet_params&quot;:{}}" access-token="d1ed3dd2d42df0ed0954198ce67baa81" buyer-country="US" buyer-locale="en" buyer-currency="USD" variant-params="[{&quot;id&quot;:52380513435929,&quot;requiresShipping&quot;:true},{&quot;id&quot;:52380513468697,&quot;requiresShipping&quot;:true}]" shop-id="100510564633" > <div class="shopify-payment-button__button" role="button" disabled aria-hidden="true" style="background-color: transparent; border: none"> <div class="shopify-payment-button__skeleton">&nbsp;</div> </div> </shopify-accelerated-checkout> </div>
-            <script>
-              document.addEventListener('DOMContentLoaded', function() {
-                var buttonCheckout = document.querySelector('.shopify-payment-button__button--unbranded');
-                if (buttonCheckout) {
-                  const buttonCheckoutText = buttonCheckout.textContent.trim();
-                  if (buttonCheckoutText !== '') {
-                    buttonCheckout.innerHTML = `
-                      <span class="visible-text z-10">
-                        <span class="link-hover-animation">${buttonCheckoutText}</span>
-                      </span>
-                      <span class="hover-text z-10">
-                        <span class="link-hover-animation">${buttonCheckoutText}</span>
-                      </span>
-                    `;
-                  }
-                  buttonCheckout.classList.add('custom-button', 'w-full', 'button--secondary', 'cursor-pointer', 'mt-2');
-                }
-              });
-            </script>
-          
-        
-      </div>
-    <input type="hidden" name="product-id" value="10620181414169" /><input type="hidden" name="section-id" value="template--27304712470809__featured_product_38eqkx" /></form>
-  </product-form>
-
-                </div>
-              
-            
-        
-          
-              
-
-<custom-accordion class="accordion block overflow-hidden py-2" data-index="11" data-block data-default-open="false">
-    <div class="accordion-heading cursor-pointer relative py-4 border-b border-current/30" tabindex="0" role="button" aria-expanded="false">
-      <span>Ingredientes Clave</span>
-      <span class="absolute right-0 top-0 bottom-0 my-auto flex items-center opacity-60 rotate-[180deg]"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[18px]">
-  <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-</svg>
-</span>
-    </div>
-    <div class="accordion-body transition-all duraiton-300 ease-in-out" style="height: 0;">
-      <div class="accordion-body__inner py-5">
-        <span><p>Camelia Seed Oil, Argan Oil, Vitamin E</p></span>
-      </div>
-    </div>
-</custom-accordion>
-            
-        
-          
-              
-
-<custom-accordion class="accordion block overflow-hidden py-2" data-index="12" data-block data-default-open="false">
-    <div class="accordion-heading cursor-pointer relative py-4 border-b border-current/30" tabindex="0" role="button" aria-expanded="false">
-      <span>Benefit of Camelia Glow Aceite Capilar</span>
-      <span class="absolute right-0 top-0 bottom-0 my-auto flex items-center opacity-60 rotate-[180deg]"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[18px]">
-  <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-</svg>
-</span>
-    </div>
-    <div class="accordion-body transition-all duraiton-300 ease-in-out" style="height: 0;">
-      <div class="accordion-body__inner py-5">
-        <span><p>Suaviza, añade brillo, protege puntas</p></span>
-      </div>
-    </div>
-</custom-accordion>
-            
-        
-          
-              
-                <div class="full-details-link text-[14px]" data-index="13" data-block>
-                  <a
-                    href="#product-camellia-glow-hair-oil"
-                    title="Camelia Glow Aceite Capilar"
-                    aria-label="Camelia Glow Aceite Capilar"
-                    class="link relative border-b-1 border-current/20"
-                  >
-                    <span class="link-hover-animation">Ver detalles completos</span>
-                  </a>
-                </div>
-              
-            
-        
-      </div>
-    </product-info>
-  </div>
-
-  <script type="application.json" id="json-selected-variant">
-    {"id":52380513435929,"title":"50 ml","option1":"50 ml","option2":null,"option3":null,"sku":"KME-HAN-HS-02-01","requires_shipping":true,"taxable":true,"featured_image":null,"available":true,"name":"Camelia Glow Aceite Capilar - 50 ml","public_title":"50 ml","options":["50 ml"],"price":2400,"weight":80,"compare_at_price":null,"inventory_management":"shopify","barcode":null,"requires_selling_plan":false,"selling_plan_allocations":[]}
-  </script>
-</featured-product>
-
-  <script src="/shopify/plantilla23/assets/js/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/countdown-timer.js" defer></script>
-
-  
-
-<product-pagination-popup class="product-pagination-popup min-h-[100dvh] overflow-auto popup pagination z-100 flex py-[min(30%,150px)] justify-center fixed top-0 left-0 w-full h-full bg-black/50 transition-all duration-400" data-hidden="true" inert>
-  <div class="popup__inner relative w-full max-w-[1000px] min-w-max h-max min-h-fit px-7 pb-[5rem] pt-[55px] transition-all duration-400 ease-in-out">
-    <div class="button-close absolute top-0 right-0 p-7 cursor-pointer opacity-55 hover:opacity-100 transition-all duration-150" data-action="click" data-close tabindex="0" role="button" aria-label="Cerrar">
-      <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[20px]">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-</svg>
-    </div>
-    <div class="flex flex-wrap">
-      
-        <product-pagination-thumbnail class="block max-w-[max(33.3%,100px)] min-w-[max(33.3%,100px)] w-full p-2" data-index="1" tabindex="0">
-          <div class="w-full pt-[100%] relative group hover:cursor-pointer">
-            
-
-        <media-thumbnail type="image" class="block w-full h-full overflow-hidden absolute top-0 left-0">
-            <div class="w-full h-full">
-                
-                
-                <img src="//k-me-store-2.myshopify.com/cdn/shop/files/CAMELLIAGLOWHAIROIL.png?v=1778635395&amp;width=375" alt="Translation missing: en.Camelia Glow Aceite Capilar" srcset="//k-me-store-2.myshopify.com/cdn/shop/files/CAMELLIAGLOWHAIROIL.png?v=1778635395&amp;width=375 375w" width="375" height="469" loading="lazy" class="object-cover w-full h-full pointer-events-none group-hover:scale-105 transition-all duration-100 ease-in-out" draggable="false">
-            </div>
-        </media-thumbnail>
-    
-          </div>
-        </product-pagination-thumbnail>
-      
-    </div>
-  </div>
-</product-pagination-popup>
-
-  <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Preguntas FrecuentesPage",
-      "mainEntity": [
-        
-          {
-            "@type": "Question",
-            "name": "Ingredientes Clave",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Camelia Seed Oil, Argan Oil, Vitamin E"
-            }
-          },
-        
-          {
-            "@type": "Question",
-            "name": "Benefit of Camelia Glow Aceite Capilar",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Suaviza, añade brillo, protege puntas"
-            }
-          }
-        
-      ]
-    }
-  </script>
 
 </div><div id="shopify-section-template--27304712470809__featured_blog_posts_slider_NPkjze" class="shopify-section"><link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/article-card.css" rel="stylesheet" type="text/css" media="all" />
 <link href="/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/featured-blog-posts.css" rel="stylesheet" type="text/css" media="all" />

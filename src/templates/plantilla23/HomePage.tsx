@@ -1466,6 +1466,334 @@ export default function HomePage23() {
         border-bottom: none !important;
         box-shadow: 0 4px 20px -2px rgba(227, 150, 191, 0.12) !important;
       }
+
+      /* ==========================================
+         FEATURED PRODUCT SECTION PREMIUM STYLING
+         ========================================== */
+      featured-product[data-id="template--27304712470809__featured_product_38eqkx"] {
+        display: block !important;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.5) 100%) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.8) !important;
+        border-radius: 28px !important;
+        box-shadow: 0 15px 40px rgba(219, 39, 119, 0.04) !important;
+        margin: 40px auto !important;
+        max-width: 1200px !important;
+        padding: 32px !important;
+        overflow: hidden !important;
+        transition: all 0.3s ease !important;
+      }
+      
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-container {
+        display: flex !important;
+        gap: 48px !important;
+        align-items: center !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      @media screen and (min-width: 769px) {
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-media {
+          width: 50% !important;
+          max-width: 50% !important;
+          flex: 0 0 50% !important;
+        }
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-content {
+          width: 50% !important;
+          max-width: 50% !important;
+          flex: 0 0 50% !important;
+        }
+      }
+
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] product-media {
+        border-radius: 20px !important;
+        overflow: hidden !important;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.04) !important;
+        border: 1px solid rgba(0, 0, 0, 0.03) !important;
+        background: #ffffff !important;
+      }
+
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] h3.heading {
+        font-size: clamp(1.4rem, 2.5vw, 2rem) !important;
+        font-weight: 900 !important;
+        color: #111827 !important;
+        letter-spacing: -0.02em !important;
+        line-height: 1.2 !important;
+        margin-bottom: 8px !important;
+      }
+
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] .vendor {
+        text-transform: uppercase !important;
+        letter-spacing: 0.12em !important;
+        color: #db2777 !important;
+        font-weight: 800 !important;
+        font-size: 11px !important;
+        display: inline-block !important;
+        margin-bottom: 6px !important;
+      }
+
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] .price-item--sale,
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] .price-item {
+        background: linear-gradient(135deg, #ff7e95 0%, #ff385c 100%) !important;
+        -webkit-background-clip: text !important;
+        background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        color: transparent !important;
+        font-weight: 900 !important;
+        font-size: 26px !important;
+        filter: drop-shadow(0 2px 4px rgba(255, 56, 92, 0.15)) !important;
+        display: inline-flex !important;
+      }
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] .price-item--compare {
+        color: #9ca3af !important;
+        font-size: 16px !important;
+        margin-left: 6px !important;
+      }
+
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] .badge--in-stock,
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] .inventory {
+        display: none !important;
+      }
+
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] custom-accordion {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+        margin: 6px 0 !important;
+        padding: 0 !important;
+      }
+
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] .accordion-heading {
+        font-weight: 700 !important;
+        font-size: 13px !important;
+        color: #374151 !important;
+        padding: 12px 0 !important;
+        border: none !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        transition: color 0.2s ease !important;
+      }
+
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] .accordion-heading:hover {
+        color: #db2777 !important;
+      }
+
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] .accordion-body__inner {
+        padding: 4px 0 14px 0 !important;
+        font-size: 12px !important;
+        color: #4b5563 !important;
+        line-height: 1.6 !important;
+      }
+
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] .button-cart {
+        background: linear-gradient(135deg, #e396bf 0%, #f472b6 100%) !important;
+        border: none !important;
+        color: #ffffff !important;
+        border-radius: 12px !important;
+        font-weight: 800 !important;
+        font-size: 14px !important;
+        letter-spacing: 0.5px !important;
+        text-transform: uppercase !important;
+        padding: 14px 24px !important;
+        box-shadow: 0 6px 16px rgba(227, 150, 191, 0.35) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        cursor: pointer !important;
+        pointer-events: auto !important;
+      }
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] .button-cart:hover {
+        background: linear-gradient(135deg, #f472b6 0%, #e396bf 100%) !important;
+        box-shadow: 0 10px 24px rgba(227, 150, 191, 0.5) !important;
+        transform: translateY(-2px) !important;
+      }
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] .button-cart:active {
+        transform: translateY(0) scale(0.98) !important;
+      }
+
+      /* Injected timer modifications */
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] #dt-timer-container > div {
+        background: linear-gradient(135deg, rgba(219, 39, 119, 0.03) 0%, rgba(244, 63, 94, 0.06) 100%) !important;
+        border: 1px solid rgba(219, 39, 119, 0.1) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 10px rgba(219, 39, 119, 0.02) !important;
+        transition: transform 0.2s ease !important;
+        padding: 10px 14px !important;
+      }
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] #dt-timer-container > div:hover {
+        transform: translateY(-2px) !important;
+      }
+
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] .body-text[data-index="7"] a {
+        transition: all 0.3s ease !important;
+      }
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] .body-text[data-index="7"] a:hover {
+        background: #be185d !important;
+        box-shadow: 0 6px 20px rgba(219, 39, 119, 0.5) !important;
+        transform: translateY(-1px) !important;
+      }
+      .product[data-id="template--27304712470809__featured_product_38eqkx"] .body-text[data-index="7"] a:active {
+        transform: translateY(0) scale(0.98) !important;
+      }
+
+      @media screen and (max-width: 768px) {
+        featured-product[data-id="template--27304712470809__featured_product_38eqkx"] {
+          margin: 16px 8px !important;
+          padding: 16px !important;
+          border-radius: 20px !important;
+        }
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-container {
+          flex-direction: column !important;
+          gap: 16px !important;
+        }
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-media,
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-content {
+          max-width: 100% !important;
+          width: 100% !important;
+        }
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] media-wrapper {
+          padding-top: 0 !important;
+          height: 280px !important;
+        }
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .image-wrapper {
+          position: relative !important;
+          height: 100% !important;
+        }
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .image-wrapper img {
+          object-fit: contain !important;
+          height: 100% !important;
+          width: 100% !important;
+        }
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-content {
+          padding: 0 !important;
+        }
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .product-content > div {
+          padding: 0 !important;
+        }
+        /* Mobile timer boxes should be compact */
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] #dt-timer-container > div {
+          padding: 6px 8px !important;
+          border-radius: 8px !important;
+        }
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] #dt-timer-container span.text-sm,
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] #dt-timer-container span.text-lg {
+          font-size: 14px !important;
+        }
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] #dt-timer-container span.text-\[8px\],
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] #dt-timer-container span.text-\[10px\] {
+          font-size: 7px !important;
+        }
+        /* Typography overrides */
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] h3.heading {
+          font-size: 18px !important;
+          margin-bottom: 6px !important;
+        }
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .price-item--sale,
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .price-item {
+          font-size: 20px !important;
+        }
+        /* Tighten accordions on mobile */
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .accordion-heading {
+          padding: 10px 0 !important;
+          font-size: 12px !important;
+        }
+        /* Compact cart button on mobile */
+        .product[data-id="template--27304712470809__featured_product_38eqkx"] .button-cart {
+          font-size: 12px !important;
+          padding: 12px 16px !important;
+          border-radius: 10px !important;
+        }
+      }
+
+      /* Column 1 Overlay Text: KEVIN&COCO */
+      #shopify-block-AQkJOZW04ZFNvR1lQT__heading_wiNdGV h1.heading span {
+        color: #ffffff !important;
+        font-weight: 900 !important;
+        text-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+        font-family: 'Outfit', sans-serif !important;
+        letter-spacing: -0.02em !important;
+        font-size: clamp(2.5rem, 6vw, 4.5rem) !important;
+      }
+      #shopify-block-AYTh4bDduYUR3cndtM__text_GmmJDh .body-text span p {
+        color: rgba(255, 255, 255, 0.95) !important;
+        font-weight: 600 !important;
+        font-size: 15px !important;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+        letter-spacing: 0.5px !important;
+      }
+      #shopify-block-AZWc3TUZta055TVh5Z__button_EtMYEL a.custom-button {
+        background: linear-gradient(135deg, #e396bf 0%, #f472b6 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        font-weight: 800 !important;
+        border-radius: 9999px !important;
+        box-shadow: 0 4px 16px rgba(227, 150, 191, 0.45) !important;
+        transition: all 0.3s ease !important;
+      }
+      #shopify-block-AZWc3TUZta055TVh5Z__button_EtMYEL a.custom-button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(227, 150, 191, 0.6) !important;
+      }
+
+      /* Column 2 (Right Column) Styles */
+      /* H2 Header: CONOCE Y PRUEBA... */
+      #shopify-block-AZ3F5bkNGMEQrb01QV__heading_TFNpkN h2.heading span {
+        background: linear-gradient(135deg, #db2777 0%, #e396bf 50%, #f472b6 100%) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        font-weight: 900 !important;
+        font-size: clamp(1.8rem, 4vw, 2.4rem) !important;
+        line-height: 1.25 !important;
+        letter-spacing: -0.02em !important;
+        font-family: 'Outfit', sans-serif !important;
+      }
+      
+      /* Description below H2 */
+      #shopify-block-AdzUvWXdBdDludWFTd__text_4izVdy .body-text p {
+        color: #4b5563 !important;
+        font-size: 15px !important;
+        line-height: 1.7 !important;
+        font-weight: 500 !important;
+        max-width: 520px;
+        margin: 0 auto;
+      }
+      
+      /* H5 Subtitle: Brilla con Kevin&Coco */
+      #shopify-block-AOCtTdFRKUmFoRWpVW__heading_YeQjN3 h5.heading span {
+        color: #db2777 !important;
+        font-weight: 800 !important;
+        font-size: clamp(1.2rem, 3vw, 1.5rem) !important;
+        letter-spacing: 0.5px !important;
+        position: relative;
+        display: inline-block;
+      }
+      #shopify-block-AOCtTdFRKUmFoRWpVW__heading_YeQjN3 h5.heading span::after {
+        content: '';
+        position: absolute;
+        bottom: -4px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 2px;
+        background: linear-gradient(135deg, #e396bf, #f472b6);
+        border-radius: 999px;
+      }
+      
+      /* Description below H5 */
+      #shopify-block-AaWlFcGdocnYyRjFaa__text_bbXKgK .body-text p em {
+        color: #6b7280 !important;
+        font-style: italic !important;
+        font-weight: 400 !important;
+        font-size: 14px !important;
+      }
+
+      /* Make it look beautiful and neat on mobile */
+      @media (max-width: 767px) {
+        .split-hero-column-inner {
+          padding: 30px 16px !important;
+        }
+        #shopify-block-AVlJPcVF6UzFJOHkzK__vertical_spacer_3VziYG .custom-theme-block {
+          --spacer-height-mobile: 20px !important;
+        }
+      }
     `;
     document.head.appendChild(overrideStyle);
   }, []);
@@ -2660,15 +2988,18 @@ export default function HomePage23() {
         const availableProducts = products.filter(p => p.STOCK && p.STOCK > 0);
         if (availableProducts.length === 0) return;
         
-        let targetProduct = availableProducts[Math.floor(Math.random() * availableProducts.length)];
+        let targetProduct = { ...availableProducts[Math.floor(Math.random() * availableProducts.length)] };
         let isDestacado = false;
         if (destacadoTemporal && destacadoTemporal.targetId) {
           const matched = products.find(p => p.$id === destacadoTemporal.targetId);
           if (matched && matched.STOCK && matched.STOCK > 0) {
-            targetProduct = matched;
+            targetProduct = { ...matched };
             isDestacado = true;
           }
         }
+
+        // Overwrite brushes details if matched
+
         
         // Fix image opacity
         const productMedia = fpBlock.querySelector('product-media');
@@ -2683,6 +3014,64 @@ export default function HomePage23() {
             img.src = resolveStorageImageUrl(targetProduct.IMAGEURL) || '';
             img.removeAttribute('srcset'); // Remove srcset to ensure the src fallback works correctly
           });
+        }
+        
+        // Update popup images or custom layout
+        const popup = root.querySelector('.product-pagination-popup');
+        if (popup) {
+          if (targetProduct.NAME && targetProduct.NAME.toUpperCase().includes('BROCHAS')) {
+            popup.innerHTML = `
+              <div class="popup__inner relative w-[95%] max-w-[800px] bg-white rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col md:flex-row gap-6 items-center my-auto mx-auto border border-gray-100">
+                <!-- Close Button -->
+                <button class="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition cursor-pointer z-10" data-close="" aria-label="Cerrar">
+                  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+                
+                <!-- Image Side -->
+                <div class="w-full md:w-1/2 flex justify-center">
+                  <div class="w-full max-w-[320px] aspect-square rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 p-2 flex items-center justify-center">
+                    <img src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1781068461246-pegada-1781068460086.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=kh%2FdeNArvZsaE3RP4l1oG%2FUoR%2BWCorcf1kBT9X%2BVbfw8NAZmdLlM%2F05x%2FD0493PS5d21eaoUupxBqcUKNnqiBFGA92OKZn8aCtYzWd3W5xu21FSyaX7Q%2BV8tScONvEiu0xWk8MD5joSc8ceU67ntjvY5mkHS7bnGwFgakl6DW7qWtATDeJf52L0txmp90lvzEYOnjUfPw2dTVrsjMt6VsbbqKF2SIwztH9ykdpkJWUVsUbca8MSx9SvvA5mT2VZvnI%2FrsCIF9Fr2Q4TMkAFskQ9iG386vT2SmLRLaqkHw11ccjIZg62ciP%2BQTsEOa6k95k7SrSPNjmw4dTrONMY%2BZA%3D%3D" class="max-w-full max-h-full object-contain">
+                  </div>
+                </div>
+                
+                <!-- Content Side -->
+                <div class="w-full md:w-1/2 flex flex-col gap-3 text-left">
+                  <span class="text-xs font-black uppercase tracking-widest text-pink-500">KEVIN & COCO</span>
+                  <h3 class="text-xl md:text-2xl font-black text-gray-900 leading-tight">SET DE BROCHAS DE 5PCS</h3>
+                  <div class="w-12 h-1 bg-pink-500 rounded-full my-1"></div>
+                  <div class="space-y-3 font-medium text-gray-600 text-sm leading-relaxed">
+                    <p class="flex items-start gap-2">
+                      <span class="text-pink-500 shrink-0">✨</span>
+                      <span><strong>Diseño Pastel:</strong> Estos sets incluyen mini brochas de maquillaje con mangos de colores pastel y cerdas suaves.</span>
+                    </p>
+                    <p class="flex items-start gap-2">
+                      <span class="text-pink-500 shrink-0">👜</span>
+                      <span><strong>Bolsa Holográfica:</strong> Cada conjunto viene en una práctica bolsa holográfica sellable, ideal para llevar en el bolso.</span>
+                    </p>
+                    <p class="flex items-start gap-2">
+                      <span class="text-pink-500 shrink-0">💄</span>
+                      <span><strong>Uso Diario:</strong> Los sets se comercializan comúnmente como kits básicos para retoques rápidos o viajes.</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            `;
+            const closeBtn = popup.querySelector('[data-close]');
+            if (closeBtn) {
+              closeBtn.addEventListener('click', () => {
+                popup.setAttribute('data-hidden', 'true');
+                popup.setAttribute('inert', '');
+              });
+            }
+          } else {
+            const popupImgs = popup.querySelectorAll('img');
+            popupImgs.forEach((img: HTMLImageElement) => {
+              img.src = resolveStorageImageUrl(targetProduct.IMAGEURL) || '';
+              img.removeAttribute('srcset');
+            });
+          }
         }
         
         // Update title
@@ -2710,7 +3099,7 @@ export default function HomePage23() {
         if (badge) badge.textContent = `${targetProduct.STOCK} in stock`;
         
         // Update description
-        const descBlock = fpBlock.querySelector('.body-text[data-index="6"] p');
+        const descBlock = fpBlock.querySelector('.body-text[data-index="6"]');
         if (descBlock) descBlock.innerHTML = targetProduct.DESCRIPTION || '';
         
         // Timer Injection
@@ -2729,7 +3118,7 @@ export default function HomePage23() {
                   <span class="text-gray-400 font-bold text-xs sm:text-sm">:</span>
                   <div class="bg-gray-100 rounded-md px-1 sm:px-3 py-1 sm:py-2 flex flex-col items-center flex-1"><span class="text-sm sm:text-lg font-bold text-red-600" id="dt-s">00</span><span class="text-[8px] sm:text-[10px] text-red-500 uppercase">Seg</span></div>
                 </div>
-                <a href="/productos" style="margin-top:12px;background:#db2777;color:#fff;font-weight:900;text-align:center;padding:12px;border-radius:12px;text-decoration:none;display:block;text-transform:uppercase;box-shadow:0 4px 14px rgba(219,39,119,0.35);font-size:14px;letter-spacing:0.5px;">Mira todos productos de oferta</a>
+                <a href="/productos" style="margin-top:12px;background:linear-gradient(135deg, #e396bf, #f472b6);color:#fff;font-weight:900;text-align:center;padding:12px;border-radius:12px;text-decoration:none;display:block;text-transform:uppercase;box-shadow:0 4px 16px rgba(227,150,191,0.35);font-size:14px;letter-spacing:0.5px;transition:all 0.3s ease;">Mira todos productos de oferta</a>
               </div>
             `;
             const end = new Date(destacadoTemporal.endDateTime).getTime();
@@ -2793,7 +3182,10 @@ export default function HomePage23() {
         
         // Update vendor
         const vendor = fpBlock.querySelector('.vendor span');
-        if (vendor) vendor.textContent = (targetProduct as any).BRAND || 'Yaxsell';
+        if (vendor) {
+          const brand = (targetProduct as any).BRAND || 'Kevin & Coco';
+          vendor.textContent = brand.toLowerCase() === 'yaxsell' ? 'Kevin & Coco' : brand;
+        }
       });
       }, 50); // End of heavy hydration timeout
 
@@ -2888,11 +3280,13 @@ export default function HomePage23() {
       storeBtn.innerHTML = `<span class="link-hover-animation" style="font-weight:900; color:#fff; font-size: 14px; letter-spacing: 0.5px;">Tienda</span>`;
       headerActionsPC.insertBefore(storeBtn, headerActionsPC.firstChild);
 
-      const catalogBtn = document.createElement('a');
-      catalogBtn.href = '/productos';
-      catalogBtn.className = 'px-[1rem] uppercase';
-      catalogBtn.innerHTML = `<span class="link-hover-animation" style="font-weight:900; color:#fff; font-size: 14px; letter-spacing: 0.5px;">Catálogo</span>`;
-      headerActionsPC.insertBefore(catalogBtn, headerActionsPC.firstChild);
+      if (!unlimitedStock) {
+        const catalogBtn = document.createElement('a');
+        catalogBtn.href = '/productos';
+        catalogBtn.className = 'px-[1rem] uppercase';
+        catalogBtn.innerHTML = `<span class="link-hover-animation" style="font-weight:900; color:#fff; font-size: 14px; letter-spacing: 0.5px;">Catálogo</span>`;
+        headerActionsPC.insertBefore(catalogBtn, headerActionsPC.firstChild);
+      }
 
       const notifBtn = document.createElement('a');
       notifBtn.href = '/cuenta';
@@ -2902,7 +3296,7 @@ export default function HomePage23() {
     }
 
     root.dataset.navInjected = '1';
-  }, [categories, subcategories, products, isAppwriteLoaded]);
+  }, [categories, subcategories, products, isAppwriteLoaded, unlimitedStock]);
 
   /* ── Inject window.Shopify stub BEFORE loading JS ── */
   useEffect(() => {

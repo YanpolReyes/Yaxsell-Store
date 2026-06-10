@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { Query } from 'appwrite';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Order, Product, Category } from '@/types/admin';
-import { TrendingUp, ShoppingCart, DollarSign, Package, RefreshCw, AlertTriangle, Download, Users } from 'lucide-react';
+import { TrendingUp, ShoppingCart, DollarSign, Package, RefreshCw, AlertTriangle, Download, Users, Copy, Check, Search } from 'lucide-react';
+import { getSkuFromFeatures } from '@/lib/product-features';
 
 type Period = '7d' | '30d' | '90d' | '365d';
 const PERIOD_LABELS: Record<Period, string> = { '7d': '7 días', '30d': '30 días', '90d': '90 días', '365d': '1 año' };
@@ -20,6 +21,14 @@ export default function AnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [period, setPeriod] = useState<Period>('30d');
+  const [copiedSku, setCopiedSku] = useState<string | null>(null);
+
+  const copySku = (sku: string) => {
+    if (!sku) return;
+    navigator.clipboard.writeText(sku);
+    setCopiedSku(sku);
+    setTimeout(() => setCopiedSku(null), 1500);
+  };
 
   const load = useCallback(async () => {
     setIsLoading(true); setError('');
@@ -116,6 +125,40 @@ export default function AnalyticsPage() {
     .sort((a, b) => (b.SOLDQUANTITY ?? 0) - (a.SOLDQUANTITY ?? 0))
     .slice(0, 8);
   const maxSold = Math.max(...topProducts.map(p => p.SOLDQUANTITY ?? 0), 1);
+  // Top products sold in the selected period from paid orders
+  const periodSoldMap: Record<string, { id: string; name: string; sku: string; img: string; qty: number; totalRevenue: number; stock: number; hasDbProduct: boolean }> = {};
+  for (const o of paidOrders) {
+    try {
+      const items = JSON.parse(o.ITEMS || '[]');
+      for (const it of items) {
+        const pid = it.id || it.productId || 'unknown';
+        const dbProd = products.find(p => p.$id === pid);
+        const sku = dbProd ? (dbProd.sku || getSkuFromFeatures(dbProd.FEATURES, dbProd.TAGS, dbProd.jumpseller_id, dbProd.sku)) : (it.sku || '');
+        const img = dbProd ? dbProd.IMAGEURL : (it.img || it.imageUrl || '');
+        const stock = dbProd ? (dbProd.STOCK ?? 0) : -1;
+        const hasDbProduct = !!dbProd;
+        const key = pid !== 'unknown' ? pid : it.name;
+        if (!periodSoldMap[key]) {
+          periodSoldMap[key] = {
+            id: pid,
+            name: it.name || '',
+            sku: sku,
+            img: img || '',
+            qty: 0,
+            totalRevenue: 0,
+            stock,
+            hasDbProduct,
+          };
+        }
+        periodSoldMap[key].qty += (it.qty || 1);
+        periodSoldMap[key].totalRevenue += (it.total || (it.price * (it.qty || 1)));
+      }
+    } catch {}
+  }
+  const topSoldProductsPeriod = Object.values(periodSoldMap)
+    .sort((a, b) => b.qty - a.qty)
+    .slice(0, 15);
+  const maxPeriodQty = Math.max(...topSoldProductsPeriod.map(p => p.qty), 1);
 
   // Region breakdown
   const regionMap: Record<string, number> = {};
@@ -458,6 +501,106 @@ export default function AnalyticsPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Top Products Period */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="font-semibold text-gray-900">Productos más Vendidos (En el Periodo)</h2>
+            <p className="text-xs text-gray-500">Calculado a partir de pedidos pagados en este rango de tiempo</p>
+          </div>
+          <span className="text-xs font-semibold px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full">
+            {topSoldProductsPeriod.length} productos
+          </span>
+        </div>
+        {topSoldProductsPeriod.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-8">Sin ventas registradas en este periodo</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50 text-xs font-semibold text-gray-500 uppercase">
+                  <th className="px-4 py-2.5 text-left w-12">#</th>
+                  <th className="px-4 py-2.5 text-left w-12">Imagen</th>
+                  <th className="px-4 py-2.5 text-left">Producto</th>
+                  <th className="px-4 py-2.5 text-left w-36">SKU</th>
+                  <th className="px-4 py-2.5 text-center w-28">Cant. Vendida</th>
+                  <th className="px-4 py-2.5 text-right w-32">Total Estimado</th>
+                  <th className="px-4 py-2.5 text-center w-36">Stock Sistema</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {topSoldProductsPeriod.map((p, i) => {
+                  return (
+                    <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 font-semibold text-gray-400 text-xs">#{i + 1}</td>
+                      <td className="px-4 py-3">
+                        <div className="w-9 h-9 rounded-xl bg-gray-100 border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
+                          {p.img ? (
+                            <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <Package className="w-4 h-4 text-gray-300" />
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 font-medium text-gray-950 max-w-[280px] truncate" title={p.name}>
+                        {p.name}
+                      </td>
+                      <td className="px-4 py-3">
+                        {p.sku ? (
+                          <div className="flex items-center gap-1.5 group">
+                            <span className="font-mono text-xs text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded font-semibold">{p.sku}</span>
+                            <button
+                              onClick={() => copySku(p.sku)}
+                              className="text-gray-400 hover:text-indigo-600 p-0.5 rounded transition"
+                              title="Copiar SKU"
+                            >
+                              {copiedSku === p.sku ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="font-bold text-gray-800 bg-indigo-50 px-2 py-0.5 rounded-full text-xs">
+                          {p.qty} uds
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right font-semibold text-emerald-600">
+                        {fmt(p.totalRevenue)}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {!p.hasDbProduct ? (
+                          <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
+                            ❌ Fuera de Catálogo / Bloqueado
+                          </span>
+                        ) : p.stock === 99999 ? (
+                          <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                            Ilimitado
+                          </span>
+                        ) : p.stock > 0 ? (
+                          <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+                            Stock: {p.stock}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
+                            Sin Stock (0)
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Top Products */}

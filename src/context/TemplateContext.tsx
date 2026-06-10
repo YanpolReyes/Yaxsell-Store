@@ -109,6 +109,31 @@ export function TemplateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const path = window.location.pathname;
+    
+    let activeTemplate = template; // default to global
+    
+    const isProductDetail = path.includes('/producto/') || path.includes('/productos/');
+    const isCatalog = path.includes('/collections/all') || path === '/productos' || path === '/catalogo';
+    const isCollections = path.includes('/collections');
+    const isCart = path === '/carrito';
+    const isCheckout = path === '/checkout';
+
+    if (isProductDetail) {
+      activeTemplate = sections.productDetail;
+    } else if (isCatalog) {
+      activeTemplate = sections.catalog;
+    } else if (isCollections) {
+      activeTemplate = sections.collections;
+    } else if (isCart) {
+      activeTemplate = sections.cart;
+    } else if (isCheckout) {
+      activeTemplate = sections.checkout;
+    } else if (path === '/' || path === '') {
+      activeTemplate = sections.landing;
+    }
+
     const bgMap: Record<number, string> = {
       1: '#f8f9fa',
       2: '#ebebeb',
@@ -116,9 +141,9 @@ export function TemplateProvider({ children }: { children: ReactNode }) {
       4: '#ffffff',
       5: '#fdfbf7',
     };
-    document.body.style.backgroundColor = bgMap[template] || '#f8f9fa';
-    document.body.style.color = template === 2 ? '#333333' : template === 4 ? '#1F1F1F' : template === 5 ? '#2a2120' : '#111827';
-  }, [template]);
+    document.body.style.backgroundColor = bgMap[activeTemplate] || '#f8f9fa';
+    document.body.style.color = activeTemplate === 2 ? '#333333' : activeTemplate === 4 ? '#1F1F1F' : activeTemplate === 5 ? '#2a2120' : '#111827';
+  }, [template, sections]);
 
   const getSectionTemplate = (section: keyof SectionTemplates): number => {
     return sections[section] || template;

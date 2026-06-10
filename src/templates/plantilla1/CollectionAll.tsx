@@ -82,7 +82,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(30);
+  const [visibleCount, setVisibleCount] = useState(20);
   const { addItem } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { settings: apertura } = useAperturaPromotion();
@@ -100,12 +100,10 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
     }
   };
 
-  // Load catalog and products once on mount (sorting/filtering is done client-side)
+  // Load catalog categories & offers once on mount
   useEffect(() => {
     const initLoad = async () => {
-      setIsLoading(true);
       try {
-        // Fetch categories & offers
         const catOffRes = await fetch('/api/public-data/catalog');
         if (catOffRes.ok) {
           const data = await catOffRes.json();
@@ -122,9 +120,28 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
           });
           setTimedOffersMap(map);
         }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    initLoad();
+  }, [catParam]);
 
-        // Fetch products (always fetch default once, sorting is done client-side)
-        const prodRes = await fetch('/api/public-data/products?sortBy=newest');
+  // Load products dynamically when selected category, subcategory, or sorting changes
+  useEffect(() => {
+    const loadProducts = async () => {
+      setIsLoading(true);
+      try {
+        const url = new URL('/api/public-data/products', window.location.origin);
+        url.searchParams.set('sortBy', sortBy);
+        const cid = lockCategoryId || selectedCat;
+        if (cid) {
+          url.searchParams.set('categoryId', cid);
+        }
+        if (selectedSubcat && selectedSubcat !== 'ofertas-temporales') {
+          url.searchParams.set('subcategoryId', selectedSubcat);
+        }
+        const prodRes = await fetch(url.toString());
         if (prodRes.ok) {
           const prodData = await prodRes.json();
           setProducts((prodData.products as Product[]).map((p) => normalizeProductImages(p)));
@@ -135,8 +152,8 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
         setIsLoading(false);
       }
     };
-    initLoad();
-  }, [catParam, lockCategoryId]);
+    loadProducts();
+  }, [selectedCat, selectedSubcat, sortBy, lockCategoryId]);
 
   // Load subcategories separately when selectedCat changes
   useEffect(() => {
@@ -265,7 +282,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
   const hasMore = visibleCount < filtered.length;
 
   // Reset visible count when filters change
-  useEffect(() => { setVisibleCount(30); }, [selectedCat, selectedSubcat, selectedTag, search, sortBy, activePriceRange]);
+  useEffect(() => { setVisibleCount(20); }, [selectedCat, selectedSubcat, selectedTag, search, sortBy, activePriceRange]);
 
   const hasActiveFilters = !!(
     (selectedCat && selectedCat !== lockCategoryId) || selectedSubcat || selectedTag || search
@@ -473,6 +490,68 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
               onBlur={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(227,150,191,0.05)'; }} />
             {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: '#f8f9fa', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e396bf' }}><X size={14} /></button>}
           </div>
+
+          {/* Selector de Categorías en Toolbar */}
+          {!lockCategoryId && (
+            <div className="pk-toolbar-select-wrap" style={{ position: 'relative' }}>
+              <select
+                value={selectedCat}
+                onChange={e => { setSelectedCat(e.target.value); setSelectedSubcat(''); }}
+                style={{
+                  padding: '12px 34px 12px 16px',
+                  borderRadius: 14,
+                  border: '1.5px solid #e5e7eb',
+                  background: '#fff',
+                  fontSize: 13,
+                  color: '#111',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                  minWidth: 160,
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                }}
+              >
+                <option value="">Todas las categorías</option>
+                {categories.map(c => (
+                  <option key={c.$id} value={c.$id}>{c.name}</option>
+                ))}
+              </select>
+              <ChevronDown size={15} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#e396bf', pointerEvents: 'none' }} />
+            </div>
+          )}
+
+          {/* Selector de Subcategorías en Toolbar */}
+          {selectedCat && subcategories.length > 0 && (
+            <div className="pk-toolbar-select-wrap" style={{ position: 'relative' }}>
+              <select
+                value={selectedSubcat}
+                onChange={e => setSelectedSubcat(e.target.value)}
+                style={{
+                  padding: '12px 34px 12px 16px',
+                  borderRadius: 14,
+                  border: '1.5px solid #e5e7eb',
+                  background: '#fff',
+                  fontSize: 13,
+                  color: '#111',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                  minWidth: 160,
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                }}
+              >
+                <option value="">Todas las subcategorías</option>
+                {subcategories.map(sc => (
+                  <option key={sc.$id} value={sc.$id}>{sc.name}</option>
+                ))}
+              </select>
+              <ChevronDown size={15} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#e396bf', pointerEvents: 'none' }} />
+            </div>
+          )}
 
           <button type="button" onClick={() => setMobileFiltersOpen(true)} className="pk-filters-btn pk-mobile-only"
             style={{ alignItems: 'center', gap: 7, padding: '12px 16px', borderRadius: 14, border: '1.5px solid #e5e7eb', background: '#fff', fontSize: 13, fontWeight: 700, color: '#e396bf', cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -786,7 +865,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
             )}
             {hasMore && (
               <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0 8px' }}>
-                <button onClick={() => setVisibleCount(c => c + 30)} style={{ padding: '12px 32px', background: 'linear-gradient(135deg,#e396bf,#c0547a)', color: '#fff', border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 20px rgba(227,150,191,0.25)', fontFamily: 'inherit' }}>
+                <button onClick={() => setVisibleCount(c => c + 20)} style={{ padding: '12px 32px', background: 'linear-gradient(135deg,#e396bf,#c0547a)', color: '#fff', border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 20px rgba(227,150,191,0.25)', fontFamily: 'inherit' }}>
                   Cargar más ({filtered.length - visibleCount} restantes)
                 </button>
               </div>

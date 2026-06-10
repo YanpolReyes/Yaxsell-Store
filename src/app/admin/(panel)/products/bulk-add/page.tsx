@@ -12,6 +12,7 @@ import {
 } from '@/lib/appwrite-admin';
 import { Sparkles, AlertTriangle, CheckCircle2, ArrowLeft, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
 
 interface BulkAddRow {
   sku: string;
@@ -25,6 +26,8 @@ interface BulkAddRow {
 }
 
 export default function BulkAddPage() {
+  const { unlimitedStock } = useStoreSettings();
+  const [sendToLive, setSendToLive] = useState(true);
   const [dataText, setDataText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState<{ 
@@ -89,14 +92,20 @@ export default function BulkAddPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      // Load all existing categories and subcategories first to minimize API calls
-      const [categoriesResp, subcategoriesResp] = await Promise.all([
+      // Load all existing categories, subcategories and blocked products first to minimize API calls
+      const [categoriesResp, subcategoriesResp, blockedResp] = await Promise.all([
         databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]),
         databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.limit(100)]),
+        databases.listDocuments(databaseId, 'blocked_products', [Query.limit(1000)])
       ]);
 
       const categoriesCache = [...categoriesResp.documents];
       const subcategoriesCache = [...subcategoriesResp.documents];
+      const blockedSkus = new Set(
+        blockedResp.documents
+          .map((d: any) => d.sku?.trim().toLowerCase())
+          .filter(Boolean)
+      );
 
       let created = 0;
       let updated = 0;
@@ -107,6 +116,12 @@ export default function BulkAddPage() {
         try {
           if (!row.name) {
             errors.push(`Fila con SKU ${row.sku || 'N/A'}: El nombre del producto es requerido.`);
+            continue;
+          }
+
+          const cleanSku = row.sku?.trim().toLowerCase();
+          if (cleanSku && blockedSkus.has(cleanSku)) {
+            errors.push(`SKU ${row.sku} está BLOQUEADO. Se omitió la importación.`);
             continue;
           }
 
@@ -191,28 +206,54 @@ export default function BulkAddPage() {
 
           if (product) {
             // Product already exists: do NOT create/add a new document.
-            // Update imported_at so it goes to today's Live Shopping, and ensure it has stock >= 1
-            const newStock = (product.STOCK || 0) > 0 ? product.STOCK : 1;
-            const updatePayload: any = {
-              imported_at: new Date().toISOString(),
-              STOCK: newStock,
-              ISACTIVE: true
-            };
-            // If the found document doesn't have the sku field filled but we have it, fill it to clean the data
-            if (!product.sku && row.sku) {
-              updatePayload.sku = row.sku;
+            if (sendToLive) {
+              // Update imported_at so it goes to today's Live Shopping, and ensure it has stock >= 1
+              const newStock = (product.STOCK || 0) > 0 ? product.STOCK : 1;
+              const updatePayload: any = {
+                imported_at: new Date().toISOString(),
+                STOCK: newStock,
+                ISACTIVE: true
+              };
+              // If the found document doesn't have the sku field filled but we have it, fill it to clean the data
+              if (!product.sku && row.sku) {
+                updatePayload.sku = row.sku;
+              }
+              await databases.updateDocument(
+                databaseId, 
+                PRODUCTS_COLLECTION_ID, 
+                product.$id, 
+                updatePayload
+              );
+              duplicates.push(`[SKU: ${row.sku}] ${row.name} (Ya existía, se actualizó para Live con stock ${newStock})`);
+            } else {
+              // Just update details without sending to Live Shopping
+              const updatePayload: any = {
+                NAME: row.name,
+                PRICE: row.wholesalePrice,
+                WHOLESALEPRICE: row.packagePrice,
+                CATEGORYID: categoryId,
+                SUBCATEGORYID: subcategoryId,
+                IMAGEURL: row.imageUrl || product.IMAGEURL || null,
+                ISACTIVE: true
+              };
+              if (!product.sku && row.sku) {
+                updatePayload.sku = row.sku;
+              }
+              await databases.updateDocument(
+                databaseId, 
+                PRODUCTS_COLLECTION_ID, 
+                product.$id, 
+                updatePayload
+              );
+              updated++;
             }
-            await databases.updateDocument(
-              databaseId, 
-              PRODUCTS_COLLECTION_ID, 
-              product.$id, 
-              updatePayload
-            );
-            duplicates.push(`[SKU: ${row.sku}] ${row.name} (Ya existía, se actualizó para Live con stock ${newStock})`);
           } else {
             // Create new product
-            productPayload.STOCK = 1; // initialize stock to 1
-            productPayload.imported_at = new Date().toISOString();
+            productPayload.STOCK = unlimitedStock ? 99999 : 0;
+            if (sendToLive) {
+              productPayload.STOCK = 1; // initialize stock to 1
+              productPayload.imported_at = new Date().toISOString();
+            }
             await databases.createDocument(
               databaseId, 
               PRODUCTS_COLLECTION_ID, 
@@ -231,7 +272,11 @@ export default function BulkAddPage() {
       }
 
       setResults({ created, updated, duplicates, errors });
-      alert(`✅ Carga masiva completada: ${created} creado(s) nuevos, ${duplicates.length} existente(s) marcados para Live`);
+      if (sendToLive) {
+        alert(`✅ Carga masiva completada: ${created} creado(s) nuevos, ${duplicates.length} existente(s) marcados para Live`);
+      } else {
+        alert(`✅ Carga masiva completada: ${created} creado(s) nuevos, ${updated} existente(s) actualizado(s) en inventario`);
+      }
     } catch (e: any) {
       alert('Error: ' + e.message);
     } finally {
@@ -262,6 +307,31 @@ export default function BulkAddPage() {
         <p className="text-gray-600 mb-6">
           Pega los datos de los productos copiados desde el Depurador de Productos para agregarlos o actualizarlos en el inventario.
         </p>
+
+        <div className="mb-6 bg-indigo-50 border border-indigo-100 rounded-lg p-4 flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-indigo-950">Modalidad de Carga</h3>
+            <p className="text-sm text-indigo-700">
+              {sendToLive 
+                ? 'Los productos se agregarán/reactivarán y se enviarán directamente a Live Shopping hoy.' 
+                : 'Solo se cargarán/actualizarán los productos en el inventario general sin mandarlos a Live Shopping.'
+              }
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSendToLive(!sendToLive)}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              sendToLive ? 'bg-indigo-600' : 'bg-gray-200'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                sendToLive ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -366,19 +436,34 @@ export default function BulkAddPage() {
                 <div>
                   <p className="font-medium text-green-900">Productos nuevos creados</p>
                   <p className="text-sm text-green-700">
-                    Se crearon {results.created} productos nuevos con stock inicial de 1 y se agregaron a Live Shopping.
+                    {sendToLive 
+                      ? `Se crearon ${results.created} productos nuevos con stock inicial de 1 y se agregaron a Live Shopping.`
+                      : `Se crearon ${results.created} productos nuevos con stock inicial de ${unlimitedStock ? '99999 (Ilimitado)' : '0'} en el inventario.`
+                    }
                   </p>
                 </div>
               </div>
             )}
 
-            {results.duplicates.length > 0 && (
+            {results.updated > 0 && (
+              <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-blue-900">Productos actualizados ({results.updated})</p>
+                  <p className="text-sm text-blue-700">
+                    Se actualizaron los detalles (precios, nombre, categoría, imagen) de {results.updated} productos existentes en el inventario general.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {sendToLive && results.duplicates.length > 0 && (
               <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
                 <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium text-red-900">Productos existentes ({results.duplicates.length})</p>
+                  <p className="font-medium text-red-900">Productos existentes marcados para Live ({results.duplicates.length})</p>
                   <p className="text-xs text-red-700 mb-2">
-                    Estos productos ya existían en la base de datos y no se volvieron a crear para evitar duplicados. Se activaron y agregaron a Live Shopping.
+                    Estos productos ya existían en la base de datos. Se reactivaron y agregaron a Live Shopping con stock mínimo.
                   </p>
                   <details className="mt-2">
                     <summary className="text-xs text-red-800 cursor-pointer hover:underline">Ver productos existentes</summary>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
+import { useEffect, useState, useCallback, useMemo, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -30,6 +30,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState(qParam);
+  const [debouncedSearch, setDebouncedSearch] = useState(qParam);
   const [selectedCat, setSelectedCat] = useState(lockCategoryId || '');
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [selectedSubcat, setSelectedSubcat] = useState('');
@@ -37,15 +38,22 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
   const [sortBy, setSortBy] = useState('newest');
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [isLoading, setIsLoading] = useState(true);
+  const [isMoreLoading, setIsMoreLoading] = useState(false);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [serverCategoryCounts, setServerCategoryCounts] = useState<Record<string, number>>({});
+  const [serverSubcategoryCounts, setServerSubcategoryCounts] = useState<Record<string, number>>({});
+  const [serverSubSubcategoryCounts, setServerSubSubcategoryCounts] = useState<Record<string, number>>({});
+  
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [zoomImage, setZoomImage] = useState<{ src: string; alt: string } | null>(null);
   const [selectedTag, setSelectedTag] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
   const [activePriceRange, setActivePriceRange] = useState<[number, number] | null>(null);
+  const [debouncedPriceRange, setDebouncedPriceRange] = useState<[number, number] | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(30);
+  
   const { addItem } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { settings: apertura } = useAperturaPromotion();
@@ -75,186 +83,200 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     }
   };
 
-  const load = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-
-      // 1. Cargar categorías primero (caché 30 min)
-      const catDocs = await cached('categories:all', TTL.categories, async () => {
-        const r = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [Query.orderAsc('$createdAt'), Query.limit(30)]);
-        return r.documents;
-      });
-      const cats = catDocs as unknown as Category[];
-      setCategories(cats);
-
-      // 2. Resolver nombre de categoría a ID
-      let catIdToUse = selectedCat;
-      if (catParam && !selectedCat) {
-        const found = cats.find(c =>
-          c.$id === catParam ||
-          c.name?.toLowerCase() === catParam.toLowerCase()
-        );
-        catIdToUse = found?.$id || '';
-        if (found) setSelectedCat(found.$id);
-      }
-
-      // 3. Cargar productos (filtrado client-side, caché 15 min)
-      const queries: string[] = [Query.limit(500), Query.greaterThan('STOCK', 0)];
-      if (sortBy === 'newest') queries.push(Query.orderDesc('$createdAt'));
-      else if (sortBy === 'price_asc') queries.push(Query.orderAsc('PRICE'));
-      else if (sortBy === 'price_desc') queries.push(Query.orderDesc('PRICE'));
-
-      const prodDocs = await cached(`products:list:${sortBy}`, TTL.products, async () => {
-        const r = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, queries);
-        return r.documents;
-      });
-      setProducts((prodDocs as unknown as Product[]).map(p => normalizeProductImages(p)));
-
-      // 3.5 Cargar ofertas temporales activas para filtrar
-      try {
-        const offerDocs = await databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
-          Query.equal('isActive', true),
-          Query.equal('status', 'active'),
-          Query.limit(100),
-        ]);
-        const offerIds = offerDocs.documents.map((d: any) => d.targetId).filter(Boolean);
-        setActiveOfferProductIds(offerIds);
-      } catch (err) {
-        console.warn('Error fetching timed offers for search filters:', err);
-      }
-
-      // 4. Cargar subcategorías para la categoría seleccionada (caché 30 min)
-      if (catIdToUse || selectedCat) {
-        try {
-          const cid = catIdToUse || selectedCat;
-          const subDocs = await cached(`subcategories:${cid}`, TTL.categories, async () => {
-            const r = await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [
-              Query.equal('categoryId', cid),
-              Query.orderAsc('$createdAt'),
-              Query.limit(50),
-            ]);
-            return r.documents;
-          });
-          setSubcategories(subDocs as unknown as Subcategory[]);
-        } catch { setSubcategories([]); }
-      } else {
-        setSubcategories([]);
-      }
-    } catch (e) { console.error(e); }
-    finally { setIsLoading(false); }
-  }, [catParam, selectedCat, selectedSubcat, selectedSubSubcat, sortBy]);
-
-  useEffect(() => { load(); }, [load]);
-
-  // Dynamic search fetch for products not in the initial 500
+  // Load catalog categories & offers once on mount
   useEffect(() => {
-    if (!search || search.trim().length < 2) return;
-    const t = setTimeout(async () => {
+    const initLoad = async () => {
       try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        const qStr = search.trim();
-        
-        // Fetch by name (contains) and exact sku concurrently
-        const [nameRes, skuRes] = await Promise.all([
-          databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.contains('NAME', qStr), Query.limit(30)]).catch(() => ({ documents: [] })),
-          databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [Query.equal('sku', qStr), Query.limit(10)]).catch(() => ({ documents: [] }))
-        ]);
-        
-        const newDocs = [...nameRes.documents, ...skuRes.documents] as unknown as Product[];
-        if (newDocs.length === 0) return;
-        
-        setProducts(prev => {
-          const map = new Map(prev.map(p => [p.$id, p]));
-          let added = false;
-          newDocs.forEach(d => {
-            if (!map.has(d.$id) && Number(d.STOCK) > 0) {
-              map.set(d.$id, normalizeProductImages(d));
-              added = true;
-            }
-          });
-          return added ? Array.from(map.values()) : prev;
-        });
-      } catch (err) {
-        console.error('Dynamic search error', err);
+        const catOffRes = await fetch('/api/public-data/catalog');
+        if (catOffRes.ok) {
+          const data = await catOffRes.json();
+          const cats = data.categories as Category[];
+          setCategories(cats);
+          
+          if (catParam && !selectedCat) {
+            const found = cats.find(c => c.$id === catParam || c.name?.toLowerCase() === catParam.toLowerCase());
+            if (found) setSelectedCat(found.$id);
+          }
+
+          const offerIds = (data.offers as any[] || []).map((d: any) => d.targetId).filter(Boolean);
+          setActiveOfferProductIds(offerIds);
+        }
+      } catch (e) {
+        console.error(e);
       }
+    };
+    initLoad();
+  }, [catParam]);
+
+  // Load subcategories separately when selectedCat changes
+  useEffect(() => {
+    const cidToUse = lockCategoryId || selectedCat;
+    if (!cidToUse) {
+      setSubcategories([]);
+      return;
+    }
+    const loadSubcategories = async () => {
+      try {
+        const subRes = await fetch(`/api/public-data/subcategories?categoryId=${cidToUse}`);
+        if (subRes.ok) {
+          const subData = await subRes.json();
+          setSubcategories(subData.subcategories as Subcategory[]);
+        } else {
+          setSubcategories([]);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    loadSubcategories();
+  }, [selectedCat, lockCategoryId]);
+
+  // Debounce search query changes
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
     }, 400);
     return () => clearTimeout(t);
   }, [search]);
 
-  // Extract all unique tags from products
+  // Debounce price range slider changes
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedPriceRange(activePriceRange);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [activePriceRange]);
+
+  // Use ref to read current active price range without breaking useCallback closure dependencies
+  const activePriceRangeRef = useRef(activePriceRange);
+  useEffect(() => {
+    activePriceRangeRef.current = activePriceRange;
+  }, [activePriceRange]);
+
+  // Dynamic server-side loading logic
+  const loadProducts = useCallback(async (isLoadMore: boolean, currentOffset: number) => {
+    if (isLoadMore) {
+      setIsMoreLoading(true);
+    } else {
+      setIsLoading(true);
+    }
+    
+    try {
+      const url = new URL('/api/public-data/products', window.location.origin);
+      url.searchParams.set('sortBy', sortBy);
+      url.searchParams.set('limit', '20');
+      url.searchParams.set('offset', currentOffset.toString());
+      
+      const cid = lockCategoryId || selectedCat;
+      if (cid) url.searchParams.set('categoryId', cid);
+      if (selectedSubcat) url.searchParams.set('subcategoryId', selectedSubcat);
+      if (selectedSubSubcat) url.searchParams.set('subSubcategoryId', selectedSubSubcat);
+      if (selectedTag) url.searchParams.set('tag', selectedTag);
+      if (selectedOfertasOnly) url.searchParams.set('ofertasOnly', 'true');
+      
+      if (debouncedSearch) {
+        url.searchParams.set('search', debouncedSearch);
+      }
+      
+      if (debouncedPriceRange) {
+        url.searchParams.set('priceMin', debouncedPriceRange[0].toString());
+        url.searchParams.set('priceMax', debouncedPriceRange[1].toString());
+      }
+      
+      const prodRes = await fetch(url.toString());
+      if (prodRes.ok) {
+        const prodData = await prodRes.json();
+        const newProducts = prodData.products as Product[];
+        
+        if (isLoadMore) {
+          setProducts(prev => {
+            const existingIds = new Set(prev.map(p => p.$id));
+            const filteredNew = newProducts.filter(p => !existingIds.has(p.$id));
+            return [...prev, ...filteredNew];
+          });
+        } else {
+          setProducts(newProducts);
+          if (prodData.priceRange) {
+            setPriceRange(prodData.priceRange);
+            if (!activePriceRangeRef.current) {
+              setActivePriceRange(prodData.priceRange);
+            }
+          }
+        }
+        
+        setTotalProducts(prodData.total || 0);
+        if (prodData.categoryCounts) {
+          setServerCategoryCounts(prodData.categoryCounts);
+        }
+        if (prodData.subcategoryCounts) {
+          setServerSubcategoryCounts(prodData.subcategoryCounts);
+        }
+        if (prodData.subSubcategoryCounts) {
+          setServerSubSubcategoryCounts(prodData.subSubcategoryCounts);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+      setIsMoreLoading(false);
+    }
+  }, [
+    selectedCat,
+    selectedSubcat,
+    selectedSubSubcat,
+    selectedTag,
+    debouncedSearch,
+    sortBy,
+    debouncedPriceRange,
+    selectedOfertasOnly,
+    lockCategoryId
+  ]);
+
+  // Trigger load when filters change
+  useEffect(() => {
+    loadProducts(false, 0);
+  }, [
+    selectedCat,
+    selectedSubcat,
+    selectedSubSubcat,
+    selectedTag,
+    debouncedSearch,
+    sortBy,
+    debouncedPriceRange,
+    selectedOfertasOnly,
+    lockCategoryId,
+    loadProducts
+  ]);
+
+  // Extract all unique tags from products displayed
   const allTags = useMemo(() => Array.from(new Set(products.flatMap(p => {
     if (!p.TAGS) return [];
     if (typeof p.TAGS === 'string') return (p.TAGS as string).split(',').map(t => t.trim()).filter(Boolean);
     return (p.TAGS as string[]).filter(Boolean);
   }))).sort(), [products]);
 
-  // Compute price range
-  useEffect(() => {
-    if (products.length === 0) return;
-    const prices = products.map(p => resolveProductDisplayPrice(p, apertura).displayPrice).filter(p => p > 0);
-    if (prices.length === 0) return;
-    const min = Math.floor(Math.min(...prices));
-    const max = Math.ceil(Math.max(...prices));
-    setPriceRange([min, max]);
-    if (!activePriceRange) setActivePriceRange([min, max]);
-  }, [products, apertura]);
-
-  const filtered = products.filter(p => {
-    // Ofertas temporales filter
-    if (selectedOfertasOnly && !activeOfferProductIds.includes(p.$id)) return false;
-    // Category filter (client-side)
-    if (selectedCat && p.CATEGORYID !== selectedCat) return false;
-    // Subcategory filter (client-side)
-    if (selectedSubcat && p.SUBCATEGORYID !== selectedSubcat) return false;
-    // Sub-subcategory filter (client-side)
-    if (selectedSubSubcat && p.SUBSUBCATEGORYID !== selectedSubSubcat) return false;
-    // Tag filter
-    if (selectedTag) {
-      const pTags = !p.TAGS ? [] : typeof p.TAGS === 'string' ? (p.TAGS as string).split(',').map(t => t.trim()) : (p.TAGS as string[]);
-      if (!pTags.some(t => t.toLowerCase() === selectedTag.toLowerCase())) return false;
-    }
-    // Price filter
-    if (activePriceRange) {
-      const price = resolveProductDisplayPrice(p, apertura).displayPrice;
-      if (price < activePriceRange[0] || price > activePriceRange[1]) return false;
-    }
-    if (!search) return true;
-    const q = search.toLowerCase().trim();
-    const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
-    const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
-    const pSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
-    return p.NAME.toLowerCase().includes(q) || 
-      (p.DESCRIPTION || '').toLowerCase().includes(q) ||
-      pSku.toLowerCase().includes(q);
-  });
-
-  const visibleProducts = filtered.slice(0, visibleCount);
-  const hasMore = visibleCount < filtered.length;
-
-  // Reset visible count when filters change
-  useEffect(() => { setVisibleCount(30); }, [selectedCat, selectedSubcat, selectedSubSubcat, selectedTag, search, sortBy, activePriceRange, selectedOfertasOnly]);
-
   const hasActiveFilters = !!(
     (selectedCat && selectedCat !== lockCategoryId) || selectedSubcat || selectedSubSubcat || selectedTag || search || selectedOfertasOnly
-    || (activePriceRange && (activePriceRange[0] !== priceRange[0] || activePriceRange[1] !== priceRange[1]))
+    || (activePriceRange && priceRange && (activePriceRange[0] !== priceRange[0] || activePriceRange[1] !== priceRange[1]))
   );
+
   const clearAllFilters = () => {
-    setSelectedCat(lockCategoryId || ''); setSelectedSubcat(''); setSelectedSubSubcat(''); setSelectedTag(''); setSearch('');
+    setSelectedCat(lockCategoryId || '');
+    setSelectedSubcat('');
+    setSelectedSubSubcat('');
+    setSelectedTag('');
+    setSearch('');
+    setDebouncedSearch('');
     setSelectedOfertasOnly(false);
     setActivePriceRange(priceRange);
+    setDebouncedPriceRange(priceRange);
   };
 
-  // Product count per category
-  const catCountMap = useMemo(() => {
-    const map: Record<string, number> = {};
-    products.forEach(p => {
-      if (p.CATEGORYID) map[p.CATEGORYID] = (map[p.CATEGORYID] || 0) + 1;
-    });
-    return map;
-  }, [products]);
+  const catCountMap = serverCategoryCounts;
+  const visibleProducts = products;
+  const filtered = products;
+  const hasMore = products.length < totalProducts;
 
   // Sidebar filters component (shared between desktop and mobile drawer)
   const FiltersSidebar = () => (
@@ -311,7 +333,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: !selectedCat ? 700 : 500, color: !selectedCat ? '#e396bf' : '#6b7280', background: !selectedCat ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 4, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: !selectedCat ? '#e396bf' : '#d1d5db', flexShrink: 0 }} />
           <span style={{ flex: 1 }}>Todas</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{products.length}</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', background: '#f3f4f6', padding: '2px 8px', borderRadius: 999 }}>{totalProducts}</span>
         </button>
         {categories.map(c => {
           const count = catCountMap[c.$id] || 0;
@@ -337,7 +359,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             Todas
           </button>
           {subcategories.filter(sc => !sc.parentSubcategoryId).map(sc => {
-            const scCount = products.filter(p => p.SUBCATEGORYID === sc.$id).length;
+            const scCount = serverSubcategoryCounts[sc.$id] || 0;
             if (scCount === 0) return null;
             const subSubcategories = subcategories.filter(s => s.parentSubcategoryId === sc.$id);
             return (
@@ -352,7 +374,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                 {selectedSubcat === sc.$id && subSubcategories.length > 0 && (
                   <div style={{ paddingLeft: 14, marginBottom: 6, borderLeft: '1px dashed #fce7f3', marginLeft: 13 }}>
                     {subSubcategories.map(ssc => {
-                      const sscCount = products.filter(p => p.SUBSUBCATEGORYID === ssc.$id).length;
+                      const sscCount = serverSubSubcategoryCounts[ssc.$id] || 0;
                       if (sscCount === 0) return null;
                       return (
                         <button key={ssc.$id} onClick={() => setSelectedSubSubcat(ssc.$id)}
@@ -424,14 +446,14 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
               <Sparkles size={13} /> {lockCategoryId ? 'Categoría' : 'Nuestra tienda'}
             </div>
             <h1 className="pk-products-title" style={{ fontSize: 42, fontWeight: 950, color: '#111827', margin: 0, letterSpacing: '-0.04em', lineHeight: 1.05 }}>
-              {lockedCategory?.name || 'Productos'}
+              {lockedCategory?.name || 'Productos'} (Paginado v2)
             </h1>
             <p className="pk-hero-subtitle" style={{ fontSize: 15, color: '#6b7280', margin: '8px 0 18px', maxWidth: 520, lineHeight: 1.55 }}>
               {lockCategoryId ? `Productos de la categoría ${lockedCategory?.name || ''}. Filtrá, ordená y comprá en un solo lugar.` : 'Descubrí nuestra selección de productos exclusivos'}
             </p>
             <div className="pk-hero-stats" style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               <div style={{ padding: '9px 14px', borderRadius: 16, background: 'rgba(255,255,255,0.92)', border: '1px solid #fce7f3', boxShadow: '0 4px 14px rgba(227,150,191,0.15)' }}>
-                <span style={{ display: 'block', fontSize: 18, fontWeight: 900, color: '#e396bf' }}>{lockCategoryId ? categoryProductCount : products.length}</span>
+                <span style={{ display: 'block', fontSize: 18, fontWeight: 900, color: '#e396bf' }}>{totalProducts}</span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Productos</span>
               </div>
               {!lockCategoryId && (
@@ -461,6 +483,68 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
               onBlur={e => { e.currentTarget.style.borderColor = '#fce7f3'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(227,150,191,0.05)'; }} />
             {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: '#fdf2f8', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e396bf' }}><X size={14} /></button>}
           </div>
+
+          {/* Selector de Categorías en Toolbar */}
+          {!lockCategoryId && (
+            <div className="pk-toolbar-select-wrap" style={{ position: 'relative' }}>
+              <select
+                value={selectedCat}
+                onChange={e => { setSelectedCat(e.target.value); setSelectedSubcat(''); }}
+                style={{
+                  padding: '12px 34px 12px 16px',
+                  borderRadius: 14,
+                  border: '1.5px solid #fce7f3',
+                  background: '#fff',
+                  fontSize: 13,
+                  color: '#111',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                  minWidth: 160,
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                }}
+              >
+                <option value="">Todas las categorías</option>
+                {categories.map(c => (
+                  <option key={c.$id} value={c.$id}>{c.name}</option>
+                ))}
+              </select>
+              <ChevronDown size={15} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#e396bf', pointerEvents: 'none' }} />
+            </div>
+          )}
+
+          {/* Selector de Subcategorías en Toolbar */}
+          {selectedCat && subcategories.length > 0 && (
+            <div className="pk-toolbar-select-wrap" style={{ position: 'relative' }}>
+              <select
+                value={selectedSubcat}
+                onChange={e => setSelectedSubcat(e.target.value)}
+                style={{
+                  padding: '12px 34px 12px 16px',
+                  borderRadius: 14,
+                  border: '1.5px solid #fce7f3',
+                  background: '#fff',
+                  fontSize: 13,
+                  color: '#111',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                  minWidth: 160,
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                }}
+              >
+                <option value="">Todas las subcategorías</option>
+                {subcategories.map(sc => (
+                  <option key={sc.$id} value={sc.$id}>{sc.name}</option>
+                ))}
+              </select>
+              <ChevronDown size={15} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#e396bf', pointerEvents: 'none' }} />
+            </div>
+          )}
 
           <button type="button" onClick={() => setMobileFiltersOpen(true)} className="pk-filters-btn pk-mobile-only"
             style={{ alignItems: 'center', gap: 7, padding: '12px 16px', borderRadius: 14, border: '1.5px solid #fce7f3', background: '#fff', fontSize: 13, fontWeight: 700, color: '#e396bf', cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -541,7 +625,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                 </div>
                 <FiltersSidebar />
                 <button type="button" className="pk-filters-apply" onClick={() => setMobileFiltersOpen(false)}>
-                  Ver {filtered.length} producto{filtered.length !== 1 ? 's' : ''}
+                  Ver {totalProducts} producto{totalProducts !== 1 ? 's' : ''}
                 </button>
               </div>
             </>
@@ -551,7 +635,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="pk-result-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, margin: '0 0 14px', padding: '10px 14px', borderRadius: 16, background: 'rgba(255,255,255,0.72)', border: '1px solid #fce7f3', backdropFilter: 'blur(10px)' }}>
               <p style={{ fontSize: 13, color: '#9ca3af', margin: 0, fontWeight: 700 }}>
-                <span style={{ color: '#e396bf', fontWeight: 900 }}>{filtered.length}</span> producto{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
+                <span style={{ color: '#e396bf', fontWeight: 900 }}>{totalProducts}</span> producto{totalProducts !== 1 ? 's' : ''} encontrado{totalProducts !== 1 ? 's' : ''}
               </p>
               {hasActiveFilters && (
                 <button onClick={clearAllFilters} style={{ padding: '6px 12px', background: '#fdf2f8', color: '#e396bf', border: 'none', borderRadius: 999, fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -560,7 +644,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
               )}
             </div>
 
-            {isLoading ? (
+            {isLoading && products.length === 0 ? (
               <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
                 {[...Array(8)].map((_, i) => (
                   <div key={i} style={{ background: '#fff', borderRadius: 18, overflow: 'hidden', border: '1px solid #fce7f3' }}>
@@ -572,7 +656,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                   </div>
                 ))}
               </div>
-            ) : filtered.length === 0 ? (
+            ) : products.length === 0 ? (
               <div className="pk-empty-state" style={{ textAlign: 'center', padding: '86px 20px', background: 'rgba(255,255,255,0.86)', borderRadius: 26, border: '1px solid #fce7f3', boxShadow: '0 14px 42px rgba(227,150,191,0.09)', backdropFilter: 'blur(14px)' }}>
                 <div className="pk-empty-icon" style={{ width: 96, height: 96, borderRadius: '50%', background: 'linear-gradient(135deg,#fdf2f8,#fce7f3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px', boxShadow: '0 10px 28px rgba(227,150,191,0.15)' }}>
                   <ShoppingCart size={36} color="#e396bf" />
@@ -585,8 +669,13 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                   </button>
                 )}
               </div>
-            ) : view === 'grid' ? (
-              <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
+            ) : (
+              <div style={{ position: 'relative', opacity: isLoading ? 0.6 : 1, transition: 'opacity 0.25s' }}>
+                {isLoading && (
+                  <div style={{ position: 'absolute', top: -10, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #e396bf, #f5a8cf, #e396bf)', backgroundSize: '200% 100%', animation: 'pkShimmer 1.2s linear infinite', zIndex: 10, borderRadius: 999 }} />
+                )}
+                {view === 'grid' ? (
+                  <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
                 {visibleProducts.map(p => {
                   const pricing = resolveProductDisplayPrice(p, apertura);
                   const price = pricing.displayPrice;
@@ -733,10 +822,16 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                 })}
               </div>
             )}
+          </div>
+        )}
             {hasMore && (
               <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0 8px' }}>
-                <button onClick={() => setVisibleCount(c => c + 30)} style={{ padding: '12px 32px', background: 'linear-gradient(135deg,#e396bf,#f5a8cf)', color: '#fff', border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 20px rgba(227,150,191,0.25)', fontFamily: 'inherit' }}>
-                  Cargar más ({filtered.length - visibleCount} restantes)
+                <button
+                  onClick={() => !isMoreLoading && loadProducts(true, products.length)}
+                  disabled={isMoreLoading}
+                  style={{ padding: '12px 32px', background: 'linear-gradient(135deg,#e396bf,#f5a8cf)', color: '#fff', border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: isMoreLoading ? 'not-allowed' : 'pointer', boxShadow: '0 6px 20px rgba(227,150,191,0.25)', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8 }}
+                >
+                  {isMoreLoading ? 'Cargando...' : `Cargar más (${totalProducts - products.length} restantes)`}
                 </button>
               </div>
             )}
@@ -843,6 +938,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           .pk-hero-logo-img { height: 96px !important; max-width: min(220px, 78vw) !important; }
           .pk-toolbar { top: 0 !important; padding: 10px !important; border-radius: 16px !important; gap: 8px !important; margin-bottom: 14px !important; }
           .pk-toolbar > div:first-child { flex: 1 1 100% !important; min-width: 100% !important; order: 1; }
+          .pk-toolbar-select-wrap { display: none !important; }
           .pk-filters-btn { order: 2; flex: 1; justify-content: center; min-height: 44px; }
           .pk-sort-wrap { order: 3; flex: 1.4; min-width: 0; }
           .pk-sort-wrap .pk-sort-btn { width: 100% !important; min-width: 0 !important; font-size: 12px !important; padding: 11px 32px 11px 12px !important; }
