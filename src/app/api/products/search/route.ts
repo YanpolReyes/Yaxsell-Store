@@ -21,13 +21,17 @@ export async function GET(req: NextRequest) {
     ]);
     let docs = (res as any).documents || [];
 
-    // Fallback: search with contains if exact match fails
+    // Fallback: search with Query.search if exact match fails
     if (docs.length === 0) {
-      const res2 = await serverListDocuments(PRODUCTS_COLLECTION_ID);
-      const allDocs = (res2 as any).documents || [];
-      docs = allDocs.filter((d: any) =>
-        (d.NAME || '').toLowerCase().includes(name.toLowerCase())
-      ).slice(0, limit);
+      try {
+        const res2 = await serverListDocuments(PRODUCTS_COLLECTION_ID, [
+          `search("NAME", ["${name}"])`,
+          `limit(${limit})`
+        ]);
+        docs = (res2 as any).documents || [];
+      } catch (err) {
+        console.error('Error on fulltext search fallback:', err);
+      }
     }
 
     const products = docs.map((d: any) => ({

@@ -621,7 +621,7 @@ export default function HomePage8() {
       cart_update_url: '/cart/update',
       cart_url: '/cart',
       predictive_search_url: '/search/suggest',
-      search_url: '/search'
+      search_url: '/productos'
     };
     (window as any).currentPage = {
       template: 'index',
@@ -649,7 +649,7 @@ export default function HomePage8() {
         currency: 'USD',
         locale: 'es',
         theme: { name: 'Captured Theme', id: '5' },
-        routes: { root_url: '/', cart_url: '/cart', search_url: '/search' },
+        routes: { root_url: '/', cart_url: '/cart', search_url: '/productos' },
         customerAccountsEnabled: false,
       };
     }

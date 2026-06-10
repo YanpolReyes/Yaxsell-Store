@@ -46,7 +46,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           Query.equal('userId', user.id),
           Query.equal('userId', 'all'),
         ]),
-        Query.limit(100),
+        Query.limit(20),
       ]);
 
       // Filter out notifications dismissed locally
@@ -100,25 +100,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn, user?.id]);
 
-  // 🔥 Polling cada 10 minutos (antes 5 min = 288 reads/día)
-  // Ahora: 144 reads/día/usuario (2x menos) - Solo corre si la pestaña está activa
+  // 🔥 Polling automático eliminado para ahorrar peticiones a la BD de Appwrite.
+  // Ahora solo se actualiza al entrar a la página o al recuperar el foco de la pestaña.
   useEffect(() => {
-    if (!isLoggedIn) return;
-    const id = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        notifCacheTimestamp = 0;
-        refreshCount();
-      }
-    }, 10 * 60 * 1000);
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Polling desactivado
   }, [isLoggedIn]);
 
   // Refresh al volver el foco — con throttle de 30s
   useEffect(() => {
     if (!isLoggedIn) return;
     const onFocus = () => {
-      if (Date.now() - notifCacheTimestamp > 30 * 1000) {
+      if (Date.now() - notifCacheTimestamp > 300 * 1000) { // 5 minutos throttle
         refreshCount();
       }
     };

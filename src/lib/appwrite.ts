@@ -40,6 +40,39 @@ export function getServices() {
     _databases = new Databases(_client);
     _account = new Account(_client);
     _storage = new Storage(_client);
+
+    // Monkey-patch listDocuments to route public queries through our caching proxy
+    const originalListDocuments = _databases.listDocuments.bind(_databases);
+    _databases.listDocuments = async (dbId, colId, queries) => {
+      const PUBLIC_CACHEABLE_COLLECTIONS = [
+        PRODUCTS_COLLECTION,
+        CATEGORIES_COLLECTION,
+        BANNERS_COLLECTION,
+        TIMED_OFFERS_COLLECTION,
+        LIVE_STREAMS_COLLECTION,
+        HOTSPOT_PANELS_COLLECTION,
+        BANNER_OVERLAY_POSITIONS_COLLECTION,
+        SUBCATEGORIES_COLLECTION,
+        THEME_CONFIG_COLLECTION,
+        APERTURA_SETTINGS_COLLECTION,
+        'store_settings'
+      ];
+
+      // Only intercept on the browser for GET requests to public collections
+      if (typeof window !== 'undefined' && PUBLIC_CACHEABLE_COLLECTIONS.includes(colId)) {
+        try {
+          const qStr = encodeURIComponent(JSON.stringify(queries || []));
+          const res = await fetch(`/api/appwrite-proxy?colId=${colId}&queries=${qStr}`);
+          if (res.ok) {
+            return await res.json();
+          }
+          // If proxy fails, fall back to original
+        } catch (e) {
+          console.warn('[CachedAppwrite] Proxy failed, falling back to direct Appwrite', e);
+        }
+      }
+      return originalListDocuments(dbId, colId, queries);
+    };
   }
   return {
     client: _client,

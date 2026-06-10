@@ -353,8 +353,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     fetchVisibleBadges(true);
     
-    // Polling cada 3 minutos
-    const id = setInterval(() => fetchVisibleBadges(false), 180_000);
+    // Polling cada 15 minutos (aumentado para ahorrar lecturas)
+    const id = setInterval(() => fetchVisibleBadges(false), 900_000);
     
     const handleVisibilityChange = () => fetchVisibleBadges(false);
     document.addEventListener('visibilitychange', handleVisibilityChange);

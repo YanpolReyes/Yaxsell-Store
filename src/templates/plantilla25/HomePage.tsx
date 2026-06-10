@@ -210,7 +210,7 @@ export default function HomePage25() {
         currency: 'USD',
         locale: 'es',
         theme: { name: 'Captured Theme', id: '188' },
-        routes: { root_url: '/', cart_url: '/cart', search_url: '/search' },
+        routes: { root_url: '/', cart_url: '/cart', search_url: '/productos' },
         customerAccountsEnabled: false,
       };
     }
@@ -224,7 +224,7 @@ export default function HomePage25() {
           cart_add_url: '/cart/add',
           cart_change_url: '/cart/change',
           cart_update_url: '/cart/update',
-          search_url: '/search',
+          search_url: '/productos',
           predictive_search_url: '/search/suggest'
         },
         variantStrings: {

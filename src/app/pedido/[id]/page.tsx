@@ -54,6 +54,60 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   cancelled:          { label: 'Cancelado',                 color: '#991b1b', bg: '#fff5f5' },
 };
 
+const STATUS_DESCRIPTIONS: Record<string, { title: string; desc: string; alertType: 'warning' | 'info' | 'success' | 'indigo' | 'danger' }> = {
+  pending: {
+    title: 'Esperando el Pago',
+    desc: 'Tu pedido ha sido recibido. Para comenzar a procesarlo, realiza la transferencia bancaria con los datos indicados abajo y sube tu comprobante de pago.',
+    alertType: 'warning'
+  },
+  processing: {
+    title: 'Verificando tu Pago',
+    desc: 'Hemos recibido tu comprobante de pago. Nuestro equipo administrativo validará la transferencia a la brevedad para confirmar tu compra.',
+    alertType: 'info'
+  },
+  paid: {
+    title: 'Pago Confirmado',
+    desc: '¡Excelente! Tu pago ha sido verificado con éxito. Tu pedido pasará a nuestra área de preparación en bodega en las próximas horas.',
+    alertType: 'success'
+  },
+  assembling: {
+    title: 'Armando tu Pedido',
+    desc: 'Nuestro equipo en bodega está seleccionando y empaquetando tus productos con mucho cuidado. ¡Pronto estará listo para el despacho!',
+    alertType: 'indigo'
+  },
+  preparing_shipping: {
+    title: 'Preparando Etiqueta de Despacho',
+    desc: 'Estamos generando la etiqueta de envío con tus datos de entrega y sellando la caja para entregarla a la empresa de transporte.',
+    alertType: 'indigo'
+  },
+  ready_to_ship: {
+    title: 'Listo para ser Retirado',
+    desc: 'El paquete ya está embalado y etiquetado en nuestro centro de despacho, a la espera de ser retirado por la agencia de envíos seleccionada.',
+    alertType: 'indigo'
+  },
+  shipped: {
+    title: 'Pedido Despachado / En camino',
+    desc: '¡Tu pedido ya está en camino! Ha sido entregado a la empresa de transporte. Puedes ver y descargar el comprobante de envío abajo para realizar el seguimiento.',
+    alertType: 'success'
+  },
+  delivered: {
+    title: 'Pedido Entregado',
+    desc: 'El pedido ha sido entregado correctamente en la dirección de destino. ¡Muchas gracias por tu compra y por confiar en nosotros!',
+    alertType: 'success'
+  },
+  cancelled: {
+    title: 'Pedido Cancelado',
+    desc: 'Este pedido ha sido anulado. Si ya habías realizado la transferencia o tienes dudas, ponte en contacto con soporte técnico.',
+    alertType: 'danger'
+  }
+};
+
+function isPdfUrl(url?: string | null): boolean {
+  if (!url) return false;
+  const clean = url.toLowerCase();
+  return clean.endsWith('.pdf') || clean.includes('.pdf') || clean.includes('ext=pdf');
+}
+
 function Timer({ expiresAt }: { expiresAt: number }) {
   const [display, setDisplay] = useState('');
   const [urgent, setUrgent] = useState(false);
@@ -120,6 +174,8 @@ export default function PedidoPage() {
   const [productResults, setProductResults] = useState<Product[]>([]);
   const [searchingProducts, setSearchingProducts] = useState(false);
   const [imageModal, setImageModal] = useState<{ src: string; name: string } | null>(null);
+  const [paymentProofIsPdf, setPaymentProofIsPdf] = useState(false);
+  const [shippingProofIsPdf, setShippingProofIsPdf] = useState(false);
 
   // Customer-side out-of-stock replacement states
   const [customerReplacingIdx, setCustomerReplacingIdx] = useState<number | null>(null);
@@ -316,6 +372,52 @@ export default function PedidoPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    if (order?.PAYMENTPROOFURL) {
+      if (isPdfUrl(order.PAYMENTPROOFURL)) {
+        setPaymentProofIsPdf(true);
+      } else {
+        fetch(order.PAYMENTPROOFURL, { method: 'HEAD' })
+          .then(res => {
+            const contentType = res.headers.get('content-type');
+            if (contentType?.includes('application/pdf')) {
+              setPaymentProofIsPdf(true);
+            } else {
+              setPaymentProofIsPdf(false);
+            }
+          })
+          .catch(err => {
+            console.warn('Error checking payment proof Content-Type:', err);
+            setPaymentProofIsPdf(false);
+          });
+      }
+    } else {
+      setPaymentProofIsPdf(false);
+    }
+
+    if (order?.SHIPPINGPROOFURL) {
+      if (isPdfUrl(order.SHIPPINGPROOFURL)) {
+        setShippingProofIsPdf(true);
+      } else {
+        fetch(order.SHIPPINGPROOFURL, { method: 'HEAD' })
+          .then(res => {
+            const contentType = res.headers.get('content-type');
+            if (contentType?.includes('application/pdf')) {
+              setShippingProofIsPdf(true);
+            } else {
+              setShippingProofIsPdf(false);
+            }
+          })
+          .catch(err => {
+            console.warn('Error checking shipping proof Content-Type:', err);
+            setShippingProofIsPdf(false);
+          });
+      }
+    } else {
+      setShippingProofIsPdf(false);
+    }
+  }, [order?.PAYMENTPROOFURL, order?.SHIPPINGPROOFURL]);
+
   // Load agencies
   useEffect(() => {
     (async () => {
@@ -355,7 +457,8 @@ export default function PedidoPage() {
       const { databaseId, endpoint, projectId } = getAppwriteConfig();
       const fileId = ID.unique();
       const up = await storage.createFile(MEDIA_BUCKET_ID, fileId, file);
-      const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}`;
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}&ext=${ext}`;
       await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, { PAYMENTPROOFURL: url, STATUS: 'processing' });
       setUploaded(true);
       await load();
@@ -811,6 +914,36 @@ export default function PedidoPage() {
           )}
         </div>
 
+        {(() => {
+          const info = STATUS_DESCRIPTIONS[order.STATUS] || { title: 'Estado del pedido', desc: 'Tu pedido está siendo procesado.', alertType: 'info' };
+          let bgClass = 'bg-blue-50/80 border-blue-200 text-blue-800';
+          let iconColor = 'text-blue-500';
+          if (info.alertType === 'warning') {
+            bgClass = 'bg-amber-50/80 border-amber-200 text-amber-800';
+            iconColor = 'text-amber-600';
+          } else if (info.alertType === 'success') {
+            bgClass = 'bg-green-50/80 border-green-200 text-green-800';
+            iconColor = 'text-green-600';
+          } else if (info.alertType === 'indigo') {
+            bgClass = 'bg-indigo-50/80 border-indigo-200 text-indigo-800';
+            iconColor = 'text-indigo-600';
+          } else if (info.alertType === 'danger') {
+            bgClass = 'bg-red-50/80 border-red-200 text-red-800';
+            iconColor = 'text-red-600';
+          }
+          return (
+            <div className={`rounded-3xl p-5 md:p-6 border ${bgClass} shadow-sm flex items-start gap-3.5`}>
+              <div className="w-10 h-10 rounded-2xl bg-white/85 flex items-center justify-center shrink-0 shadow-sm border border-black/5">
+                <Shield className={`w-5 h-5 ${iconColor}`} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-extrabold tracking-tight uppercase">{info.title}</h3>
+                <p className="text-xs leading-relaxed mt-1 opacity-90">{info.desc}</p>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ── Order Timeline (Stepper) ── */}
         {(() => {
           const steps = [
@@ -913,16 +1046,45 @@ export default function PedidoPage() {
           </div>
         )}
 
-        {/* ── Upload comprobante ── */}
-        {(isPending || order.STATUS === 'processing') && (
-          <div className={`bg-white rounded-3xl p-5 md:p-6 shadow-sm border transition-all ${uploaded ? 'border-green-200 bg-green-50/10' : 'border-pink-100/40'}`}>
+        {/* ── Comprobante de pago ── */}
+        {(isPending || order.STATUS === 'processing' || order.PAYMENTPROOFURL) && (
+          <div className={`bg-white rounded-3xl p-5 md:p-6 shadow-sm border transition-all ${order.PAYMENTPROOFURL ? 'border-green-200 bg-green-50/10' : 'border-pink-100/40'}`}>
             <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2 mb-4">
-              <Upload size={18} className={uploaded ? 'text-green-500' : 'text-pink-500'} />
+              <Upload size={18} className={order.PAYMENTPROOFURL ? 'text-green-600' : 'text-pink-500'} />
               Comprobante de pago
             </h2>
-            {uploaded ? (
-              <div className="flex items-center gap-2 text-green-600 text-sm font-bold bg-green-50/50 p-4 rounded-2xl border border-green-100">
-                <CheckCircle size={18} /> Comprobante recibido y en proceso de verificación
+            
+            {order.PAYMENTPROOFURL ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-green-700 text-sm font-bold bg-green-50/60 p-4 rounded-2xl border border-green-200">
+                  <CheckCircle size={18} className="shrink-0" />
+                  <span>Comprobante recibido y en proceso de verificación</span>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button 
+                    onClick={() => {
+                      const url = order.PAYMENTPROOFURL!;
+                      if (isPdfUrl(url) || paymentProofIsPdf) {
+                        window.open(url, '_blank');
+                      } else {
+                        setImageModal({ src: url, name: 'Comprobante de pago' });
+                      }
+                    }}
+                    className="flex-1 py-3 bg-white hover:bg-gray-50 text-gray-700 border border-gray-250 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition duration-300"
+                  >
+                    <ExternalLink size={14} /> Ver comprobante actual
+                  </button>
+                  
+                  {/* Permitir re-subir comprobante si aún no ha sido verificado como pagado */}
+                  {(order.STATUS === 'pending' || order.STATUS === 'processing') && (
+                    <label className={`flex-1 py-3 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-150 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition duration-300 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                      <input type="file" accept="image/*,.pdf" onChange={handleUpload} className="hidden" disabled={uploading} />
+                      <RefreshCw size={14} className={uploading ? 'animate-spin' : ''} />
+                      <span>{uploading ? 'Subiendo...' : 'Cambiar comprobante'}</span>
+                    </label>
+                  )}
+                </div>
               </div>
             ) : (
               <>
@@ -955,16 +1117,37 @@ export default function PedidoPage() {
             {items.map((item, i) => {
               const isMissing = !!(item as any).missing;
               const isReplaced = !!(item as any).replaced;
+              const hasDiscount = item.originalPrice && item.originalPrice > item.price;
+              const discountPct = hasDiscount ? Math.round(((item.originalPrice! - item.price) / item.originalPrice!) * 100) : 0;
               return (
-                <div key={i} className={`pt-3 first:pt-0 flex flex-col gap-2 ${isMissing ? 'bg-red-50/30 p-3 rounded-2xl border border-red-100' : ''}`}>
-                  <div className="flex justify-between items-start gap-4">
+                <div key={i} className={`pt-3 first:pt-0 ${isMissing ? 'bg-red-50/30 p-3 rounded-2xl border border-red-100' : ''}`}>
+                  <div className="flex gap-3 items-start">
+                    {/* Imagen de Producto */}
+                    <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-pink-100/30 overflow-hidden shrink-0 flex items-center justify-center">
+                      {item.img ? (
+                        <img src={resolveStorageImageUrl(item.img)} alt={item.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Package size={20} className="text-gray-300" />
+                      )}
+                    </div>
+                    
                     <div className="min-w-0 flex-1">
                       <p className={`text-sm font-bold leading-tight ${isMissing ? 'text-red-900' : 'text-gray-800'}`}>
                         {item.name}
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Cantidad: {item.qty} · {formatPrice(item.price)} c/u
-                      </p>
+                      
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className="text-xs text-gray-400">
+                          Cantidad: <strong className="text-gray-800 font-bold">{item.qty}</strong> · {formatPrice(item.price)} c/u
+                        </span>
+                        {hasDiscount && (
+                          <>
+                            <span className="text-xs line-through text-gray-300">{formatPrice(item.originalPrice!)}</span>
+                            <span className="px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 text-[10px] font-extrabold">-{discountPct}%</span>
+                          </>
+                        )}
+                      </div>
+
                       {isMissing && (
                         <div className="text-red-600 text-xs font-bold mt-2 flex items-center gap-1">
                           <AlertTriangle size={13} /> Producto agotado - requiere reemplazo
@@ -990,7 +1173,8 @@ export default function PedidoPage() {
                         </button>
                       )}
                     </div>
-                    <p className={`text-sm font-extrabold ${isMissing ? 'text-red-900' : 'text-gray-900'} shrink-0`}>
+                    
+                    <p className={`text-sm font-extrabold ${isMissing ? 'text-red-900' : 'text-gray-900'} shrink-0 pt-0.5`}>
                       {formatPrice(item.total)}
                     </p>
                   </div>
@@ -1008,6 +1192,14 @@ export default function PedidoPage() {
               <span>Envío</span>
               <span className="font-bold text-green-600">{order.SHIPPINGCOST > 0 ? formatPrice(order.SHIPPINGCOST) : 'A coordinar'}</span>
             </div>
+            {order.DISCOUNT && order.DISCOUNT > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-emerald-600 flex items-center gap-1">
+                  <Tag className="w-3.5 h-3.5" /> Descuento {order.COUPONCODE && <span className="font-mono text-xs">({order.COUPONCODE})</span>}
+                </span>
+                <span className="text-emerald-600 font-medium">-{formatPrice(order.DISCOUNT)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-base font-extrabold text-gray-950 pt-3 border-t border-gray-150 mt-2">
               <span>Total</span>
               <span>{formatPrice(order.TOTAL)}</span>
@@ -1261,28 +1453,46 @@ export default function PedidoPage() {
         )}
 
         {/* Modal: Fullscreen Image Lightbox */}
-        {imageModal && (
-          <div
-            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
-            onClick={() => setImageModal(null)}
-          >
+        {imageModal && (() => {
+          const isPdf = isPdfUrl(imageModal.src) || (imageModal.src === order?.PAYMENTPROOFURL ? paymentProofIsPdf : (imageModal.src === order?.SHIPPINGPROOFURL ? shippingProofIsPdf : false));
+          return (
             <div
-              className="w-full max-w-2xl bg-white rounded-3xl overflow-hidden shadow-2xl relative"
-              onClick={(e) => e.stopPropagation()}
+              className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+              onClick={() => setImageModal(null)}
             >
-              <div className="px-4 py-3 border-b border-gray-150 flex items-center justify-between bg-gray-50">
-                <p className="text-xs font-bold text-gray-700 truncate pr-4">{imageModal.name}</p>
-                <button onClick={() => setImageModal(null)} className="p-1 rounded-xl bg-white border border-gray-200 hover:bg-gray-100 text-gray-600 transition flex items-center gap-1 text-xs font-bold">
-                  <X size={14} /> Cerrar
-                </button>
-              </div>
-              <div className="bg-black/95 flex items-center justify-center min-h-[40vh] max-h-[80vh] overflow-hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={imageModal.src} alt="" className="max-w-full max-h-[78vh] object-contain" />
+              <div
+                className="w-full max-w-2xl bg-white rounded-3xl overflow-hidden shadow-2xl relative"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="px-4 py-3 border-b border-gray-150 flex items-center justify-between bg-gray-50">
+                  <p className="text-xs font-bold text-gray-700 truncate pr-4">{imageModal.name}</p>
+                  <div className="flex gap-2">
+                    <a href={imageModal.src} target="_blank" rel="noreferrer" className="px-3 py-1 rounded-xl bg-pink-50 border border-pink-100 hover:bg-pink-100 text-pink-700 transition flex items-center gap-1 text-xs font-bold no-underline">
+                      <ExternalLink size={14} /> Abrir archivo
+                    </a>
+                    <button onClick={() => setImageModal(null)} className="p-1 px-3 rounded-xl bg-white border border-gray-250 hover:bg-gray-100 text-gray-600 transition flex items-center gap-1 text-xs font-bold">
+                      <X size={14} /> Cerrar
+                    </button>
+                  </div>
+                </div>
+                <div className="bg-black/95 flex items-center justify-center min-h-[40vh] max-h-[80vh] overflow-hidden p-6 text-white">
+                  {isPdf ? (
+                    <div className="flex flex-col items-center justify-center gap-4 py-12">
+                      <FileText size={64} className="text-pink-500 animate-pulse" />
+                      <p className="text-sm font-semibold text-gray-300">Este archivo es un comprobante en formato PDF</p>
+                      <a href={imageModal.src} target="_blank" rel="noreferrer" className="px-6 py-2.5 bg-pink-500 hover:bg-pink-600 text-white rounded-xl transition font-bold text-xs flex items-center gap-2 no-underline">
+                        <ExternalLink size={14} /> Abrir y ver PDF en nueva pestaña
+                      </a>
+                    </div>
+                  ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={imageModal.src} alt="" className="max-w-full max-h-[78vh] object-contain" />
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── Shipping info ── */}
         <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-pink-100/40">
@@ -1335,27 +1545,39 @@ export default function PedidoPage() {
               )
             )}
 
-            {/* Comprobante de envío */}
-            {order.SHIPPINGPROOFURL && (
-              <div className="mt-5 pt-5 border-t border-gray-100">
-                <p className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-3">
-                  <Truck className="w-4 h-4 text-pink-600" /> Comprobante de envío
-                </p>
-                <button 
-                  onClick={() => {
-                    const url = order.SHIPPINGPROOFURL!;
-                    if (url.toLowerCase().endsWith('.pdf') || (url.includes('/files/') && url.toLowerCase().includes('.pdf'))) {
-                      window.open(url, '_blank');
-                    } else {
-                      setImageModal({ src: url, name: 'Comprobante de envío' });
-                    }
-                  }}
-                  className="w-full py-3 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-100 rounded-2xl transition duration-300 font-semibold flex items-center justify-center gap-2 text-xs"
-                >
-                  <FileText size={15} /> Ver comprobante de despacho
-                </button>
-              </div>
-            )}
+            {order.SHIPPINGPROOFURL && (() => {
+              const url = order.SHIPPINGPROOFURL!;
+              const isPdf = isPdfUrl(url) || shippingProofIsPdf;
+              return (
+                <div className="mt-5 pt-5 border-t border-gray-100">
+                  <p className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-3">
+                    <Truck className="w-4 h-4 text-pink-600" /> Comprobante de envío
+                  </p>
+                  {isPdf ? (
+                    <div className="space-y-2">
+                      <p className="text-xs text-gray-500 font-medium">El comprobante de despacho se encuentra disponible en formato PDF:</p>
+                      <button 
+                        onClick={() => window.open(url, '_blank')}
+                        className="w-full py-3 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-100 rounded-2xl transition duration-300 font-semibold flex items-center justify-center gap-2 text-xs"
+                      >
+                        <FileText size={15} /> Ver comprobante de despacho (PDF)
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-xs text-gray-500 font-medium">Haz click en la imagen para ampliarla:</p>
+                      <div className="relative rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 max-h-60 flex items-center justify-center cursor-pointer hover:opacity-95 transition"
+                        onClick={() => setImageModal({ src: url, name: 'Comprobante de envío' })}>
+                        <img src={url} alt="Comprobante de despacho" className="max-w-full max-h-60 object-contain p-1" />
+                        <div className="absolute bottom-2 right-2 bg-black/60 text-white rounded-lg px-2.5 py-1 text-[10px] font-bold flex items-center gap-1">
+                          <Search size={10} /> Ampliar imagen
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
 

@@ -427,7 +427,7 @@ export default function HomePage12() {
         currency: 'USD',
         locale: 'es',
         theme: { name: 'Captured Theme', id: '7' },
-        routes: { root_url: '/', cart_url: '/cart', search_url: '/search' },
+        routes: { root_url: '/', cart_url: '/cart', search_url: '/productos' },
         customerAccountsEnabled: false,
       };
     }

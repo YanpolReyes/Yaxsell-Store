@@ -38,15 +38,19 @@ export function generateOrderPdf(
   const date = formatDate(order.CREATEDAT);
   const subtotal = order.SUBTOTAL || items.reduce((s, i) => s + (i.total || i.price * i.qty), 0);
   const total = order.TOTAL || subtotal;
-  const discount = order.DISCOUNT || (subtotal - total > 0 ? subtotal - total : 0);
+  const discount = order.DISCOUNT || (order as any).DISCOUNTAMOUNT || (subtotal - total > 0 ? subtotal - total : 0);
 
   const itemsHtml = items.map(i => {
     const extra = i.id ? productExtraInfo?.[i.id] : null;
     const loc = extra?.location?.label || null;
     const sku = extra?.sku || '';
+    const note = (i as any).note || '';
     return `
     <tr style="page-break-inside:avoid;break-inside:avoid;">
-      <td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#333;">${i.name}</td>
+      <td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#333;">
+        <div style="font-weight:600;">${i.name}</div>
+        ${note ? `<div style="font-size:11px;color:#d97706;background:#fffbeb;border:1px solid #fef3c7;padding:3px 6px;border-radius:4px;margin-top:4px;display:inline-block;">💬 Nota: ${note}</div>` : ''}
+      </td>
       ${hasSku ? `<td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#7c3aed;text-align:center;font-weight:600;font-family:monospace;">${sku || '—'}</td>` : ''}
       ${hasLocations ? `<td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#4338ca;text-align:center;font-weight:600;">${loc || '—'}</td>` : ''}
       <td style="padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#666;text-align:center;">${i.qty}</td>
@@ -130,7 +134,9 @@ export function generateOrderPdf(
     </div>` : ''}
     <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px;">
       <span style="color:#666;">Envío</span>
-      <span style="color:#00a650;font-size:12px;">Pago contraentrega</span>
+      <span style="color:${order.SHIPPINGCOST > 0 ? '#333' : '#00a650'};font-size:${order.SHIPPINGCOST > 0 ? '14px' : '12px'};">
+        ${order.SHIPPINGCOST > 0 ? formatPrice(order.SHIPPINGCOST) : 'Pago contraentrega'}
+      </span>
     </div>
     <div style="display:flex;justify-content:space-between;padding:12px 0 0;margin-top:8px;border-top:2px solid #333;font-size:18px;font-weight:700;">
       <span>Total</span>

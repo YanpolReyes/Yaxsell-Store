@@ -138,7 +138,8 @@ function ConfirmadoInner() {
       const { databaseId, endpoint, projectId } = getAppwriteConfig();
       const fileId = ID.unique();
       const up = await storage.createFile(MEDIA_BUCKET_ID, fileId, file);
-      const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}`;
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      const url = `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${fileId}/view?project=${projectId}${ext ? `&ext=${ext}` : ''}`;
       await databases.updateDocument(databaseId, ORDERS_COLLECTION, orderId, { PAYMENTPROOFURL: url, STATUS: 'processing' });
       setUploaded(true);
       await load();

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 /* ════════════════════════════════════════════════════════════════════
    PLANTILLA 10 — Noble Premium Theme (noble-preview.myshopify.com)
    Estrategia (identica a plantilla7):
@@ -209,7 +209,7 @@ export default function HomePage10() {
       currency: 'USD',
       locale: 'en',
       theme: { name: 'Noble Premium', id: '148' },
-      routes: { root_url: '/', cart_url: '/cart', search_url: '/search' },
+      routes: { root_url: '/', cart_url: '/cart', search_url: '/productos' },
       customerAccountsEnabled: false,
     };
   }, []);

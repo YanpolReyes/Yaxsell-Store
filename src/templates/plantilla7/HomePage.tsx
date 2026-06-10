@@ -192,7 +192,7 @@ export default function HomePage7() {
       currency: 'USD',
       locale: 'es',
       theme: { name: 'Noble Premium', id: '1234' },
-      routes: { root_url: '/', cart_url: '/cart', search_url: '/search' },
+      routes: { root_url: '/', cart_url: '/cart', search_url: '/productos' },
       customerAccountsEnabled: false,
     };
   }, []);

@@ -1550,7 +1550,7 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    scanDuplicateSkus(false);
+    // scanDuplicateSkus(false); // Deshabilitado para reducir consumo de Appwrite
   }, [scanDuplicateSkus]);
 
   const loadData = useCallback(async (options?: { force?: boolean }) => {
@@ -1684,12 +1684,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadData();
-    const id = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        loadData({ force: true });
-      }
-    }, 300_000);
-    return () => clearInterval(id);
+    // El polling automático cada 5 minutos fue eliminado para evitar fugas de peticiones.
+    // El usuario debe recargar manualmente si quiere ver nuevos datos.
   }, [loadData]);
 
   useEffect(() => {
@@ -2020,51 +2016,58 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {duplicateSkusList.length > 0 && (
-        <div style={{
-          padding: '16px 20px',
-          background: '#fffbeb',
-          border: '1px solid #d97706',
-          borderRadius: 16,
-          marginBottom: 20,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 6,
-          fontSize: 14,
-          color: '#b45309',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
-            <AlertTriangle size={18} style={{ flexShrink: 0, color: '#d97706' }} />
-            Hay {duplicateSkusList.length} SKU(s) repetidos en el catálogo
-          </div>
+      <div style={{
+        padding: '16px 20px',
+        background: duplicateSkusList.length > 0 ? '#fffbeb' : '#f8fafc',
+        border: `1px solid ${duplicateSkusList.length > 0 ? '#d97706' : '#e2e8f0'}`,
+        borderRadius: 16,
+        marginBottom: 20,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+        fontSize: 14,
+        color: duplicateSkusList.length > 0 ? '#b45309' : '#475569',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
+          {duplicateSkusList.length > 0 ? (
+            <><AlertTriangle size={18} style={{ flexShrink: 0, color: '#d97706' }} /> Hay {duplicateSkusList.length} SKU(s) repetidos en el catálogo</>
+          ) : (
+            <><Database size={18} style={{ flexShrink: 0, color: '#64748b' }} /> Auditoría de Catálogo (SKUs Duplicados)</>
+          )}
+        </div>
+        {duplicateSkusList.length > 0 ? (
           <div style={{ fontSize: 12, color: '#d97706', opacity: 0.9 }}>
             SKUs duplicados detectados: {duplicateSkusList.slice(0, 15).join(', ')}{duplicateSkusList.length > 15 ? '...' : ''}.
             Por favor, revisa tus productos para evitar problemas de stock.
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
-            <span style={{ fontSize: 11, color: '#92400e' }}>Último análisis: {lastDuplicateScanTime || 'No analizado'}</span>
-            <button
-              onClick={() => scanDuplicateSkus(true)}
-              disabled={isScanningDuplicates}
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: '#fff',
-                background: '#d97706',
-                border: 'none',
-                padding: '4px 10px',
-                borderRadius: 8,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4
-              }}
-            >
-              {isScanningDuplicates ? 'Analizando...' : 'Volver a analizar'}
-            </button>
+        ) : (
+          <div style={{ fontSize: 12, color: '#64748b', opacity: 0.9 }}>
+            {lastDuplicateScanTime ? 'No se detectaron SKUs duplicados en el último análisis.' : 'No se ha analizado el catálogo recientemente. Usa este botón para buscar problemas de SKUs repetidos.'}
           </div>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
+          <span style={{ fontSize: 11, color: duplicateSkusList.length > 0 ? '#92400e' : '#64748b' }}>Último análisis: {lastDuplicateScanTime || 'No analizado'}</span>
+          <button
+            onClick={() => scanDuplicateSkus(true)}
+            disabled={isScanningDuplicates}
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: '#fff',
+              background: duplicateSkusList.length > 0 ? '#d97706' : '#3b82f6',
+              border: 'none',
+              padding: '4px 10px',
+              borderRadius: 8,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4
+            }}
+          >
+            {isScanningDuplicates ? 'Analizando...' : 'Analizar Catálogo'}
+          </button>
         </div>
-      )}
+      </div>
 
       {/* ═══ Panel Estadístico Empresarial ═══ */}
       <div className="db-card db-stats-panel" style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', padding: '24px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', marginBottom: 24 }}>
