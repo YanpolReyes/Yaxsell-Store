@@ -52,6 +52,7 @@ export default function OrderDetailPage() {
   const [productStocks, setProductStocks] = useState<Record<string, number>>({});
   const [productLocations, setProductLocations] = useState<Record<string, ProductWarehouseLocation>>({});
   const [productSkus, setProductSkus] = useState<Record<string, string>>({});
+  const [productPrices, setProductPrices] = useState<Record<string, number>>({});
   const [proofOpen, setProofOpen] = useState(false);
   const [shippingProofOpen, setShippingProofOpen] = useState(false);
   const [uploadingProof, setUploadingProof] = useState(false);
@@ -245,18 +246,21 @@ export default function OrderDetailPage() {
         const stocks: Record<string, number> = {};
         const locs: Record<string, ProductWarehouseLocation> = {};
         const skus: Record<string, string> = {};
+        const prices: Record<string, number> = {};
         await Promise.all(productIds.map(async (pid) => {
           try {
             const product = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, pid);
-            const doc = product as { STOCK?: number; FEATURES?: string; TAGS?: string; jumpseller_id?: string; sku?: string; section?: number };
+            const doc = product as { STOCK?: number; FEATURES?: string; TAGS?: string; jumpseller_id?: string; sku?: string; section?: number; PRICE?: number };
             stocks[pid] = doc.STOCK || 0;
             locs[pid] = getWarehouseLocationFromFeatures(doc.FEATURES, doc.section);
             skus[pid] = getSkuFromFeatures(doc.FEATURES, doc.TAGS, doc.jumpseller_id, doc.sku);
+            prices[pid] = doc.PRICE || 0;
           } catch {}
         }));
         setProductStocks(stocks);
         setProductLocations(locs);
         setProductSkus(skus);
+        setProductPrices(prices);
       } else {
         setProductLocations({});
       }
@@ -357,6 +361,42 @@ export default function OrderDetailPage() {
   const copyText = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
     setCopied(key);
+    setTimeout(() => setCopied(null), 1500);
+  };
+
+  const copyOrderItemsList = () => {
+    if (!order) return;
+    let parsedItems: any[] = [];
+    try { parsedItems = JSON.parse(order.ITEMS || '[]'); } catch {}
+    
+    const lines = parsedItems.map(it => {
+      let code = '';
+      if (it.id) {
+        code = productSkus[it.id] || '';
+      }
+      if (!code) {
+        code = it.sku || '';
+      }
+      if (!code) {
+        code = it.id || it.name || '';
+      }
+      
+      const qty = it.qty || 1;
+      
+      let origPrice = 0;
+      if (it.id) {
+        origPrice = productPrices[it.id] || 0;
+      }
+      if (!origPrice) {
+        origPrice = it.originalPrice || it.price || 0;
+      }
+      
+      return `${code},${qty},${origPrice}`;
+    });
+    
+    const textToCopy = lines.join('\n');
+    navigator.clipboard.writeText(textToCopy);
+    setCopied('itemsList');
     setTimeout(() => setCopied(null), 1500);
   };
 
@@ -617,6 +657,19 @@ export default function OrderDetailPage() {
           </div>
         </div>
         <div className="no-print flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <button onClick={copyOrderItemsList} className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-xs sm:text-sm font-medium hover:bg-indigo-100 transition">
+            {copied === 'itemsList' ? (
+              <>
+                <Check className="w-4 h-4 text-green-500 animate-pulse" />
+                <span className="hidden sm:inline">Copiado</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4" />
+                <span className="hidden sm:inline">Copiar Pedido</span>
+              </>
+            )}
+          </button>
           <button onClick={() => window.print()} className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl text-xs sm:text-sm font-medium hover:bg-gray-50 transition">
             <Printer className="w-4 h-4" /> <span className="hidden sm:inline">Imprimir</span>
           </button>
