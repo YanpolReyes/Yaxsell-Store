@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package, Truck, Shield, FileText, RefreshCw, Pencil, X, Plus, Minus, Trash2, Search, Tag, Receipt } from 'lucide-react';
+import { CheckCircle, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package, Truck, Shield, FileText, RefreshCw, Pencil, X, Plus, Minus, Trash2, Search, Tag, Receipt, ExternalLink } from 'lucide-react';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION, PRODUCTS_COLLECTION, MEDIA_BUCKET_ID, formatPrice, Query, ID } from '@/lib/appwrite';
 import { resolveStorageImageUrl } from '@/lib/product-images';
 import { Order, OrderItem, Product } from '@/types';
@@ -784,62 +784,83 @@ export default function PedidoPage() {
   const canChooseReplacement = hasMissingItems && !['shipped', 'delivered', 'cancelled'].includes(order.STATUS);
 
   return (
-    <div style={{ background: '#ebebeb', minHeight: '100vh', padding: '24px 5%', paddingBottom: 'calc(24px + 92px + env(safe-area-inset-bottom, 0px))' }}>
-      <div style={{ maxWidth: 680, margin: '0 auto' }}>
+    <div className="bg-gradient-to-br from-pink-50 via-white to-indigo-50/50 min-h-screen py-8 px-4 sm:px-6 lg:px-8 pb-24">
+      <div className="max-w-2xl mx-auto space-y-6">
 
         {/* ── Header success banner ── */}
-        <div style={{ ...card, textAlign: 'center', padding: '32px 22px', borderTop: `4px solid ${isSuccess ? '#00a650' : '#f59e0b'}` }}>
-          <div style={{ width: 64, height: 64, borderRadius: '50%', background: isSuccess ? '#f0fdf4' : '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+        <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-pink-100/40 text-center relative overflow-hidden">
+          <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-pink-400 via-pink-500 to-indigo-500" />
+          <div className="w-16 h-16 rounded-full bg-pink-50 flex items-center justify-center mx-auto mb-4 border border-pink-100/50 shadow-inner">
             {isSuccess
-              ? <CheckCircle size={36} color="#00a650" />
-              : <Clock size={36} color="#d97706" />}
+              ? <CheckCircle size={32} className="text-pink-500" />
+              : <Clock size={32} className="text-pink-500" />}
           </div>
-          <p style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: '#333' }}>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">
             {isSuccess ? '¡Pedido confirmado!' : '¡Pedido recibido!'}
-          </p>
-          <p style={{ margin: '0 0 10px', fontSize: 15, color: '#666' }}>Código: <strong style={{ color: '#333' }}>{order.ORDERCODE}</strong></p>
-          <span style={{ display: 'inline-block', padding: '4px 14px', borderRadius: 20, background: status.bg, color: status.color, fontSize: 13, fontWeight: 600 }}>{status.label}</span>
-          {order.CUSTOMERNAME && <p style={{ margin: '12px 0 0', fontSize: 14, color: '#888' }}>Hola <strong style={{ color: '#333' }}>{order.CUSTOMERNAME}</strong>, gracias por tu compra.</p>}
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">Código: <strong className="text-gray-900 font-bold">{order.ORDERCODE}</strong></p>
+          <div className="mt-3">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-pink-50 text-pink-600 border border-pink-100/30">
+              {status.label}
+            </span>
+          </div>
+          {order.CUSTOMERNAME && (
+            <p className="text-sm text-gray-500 mt-4">
+              Hola <strong className="text-gray-900 font-semibold">{order.CUSTOMERNAME}</strong>, gracias por tu compra.
+            </p>
+          )}
         </div>
 
-        {/* ── Order Timeline ── */}
+        {/* ── Order Timeline (Stepper) ── */}
         {(() => {
           const steps = [
-            { key: 'pending',            label: 'Pedido',       icon: <Clock size={16} /> },
-            { key: 'processing',         label: 'Verificando',  icon: <Upload size={16} /> },
-            { key: 'paid',               label: 'Verificado',   icon: <CheckCircle size={16} /> },
-            { key: 'assembling',         label: 'Armando',      icon: <Package size={16} /> },
-            { key: 'preparing_shipping', label: 'Prep. Envío',  icon: <Tag size={16} /> },
-            { key: 'ready_to_ship',      label: 'Etiqueta',     icon: <Receipt size={16} /> },
-            { key: 'shipped',            label: 'Enviado',      icon: <Truck size={16} /> },
-            { key: 'delivered',          label: 'Entregado',    icon: <CheckCircle size={16} /> },
+            { key: 'pending',            label: 'Pedido',       icon: <Clock size={15} /> },
+            { key: 'processing',         label: 'Verificando',  icon: <Upload size={15} /> },
+            { key: 'paid',               label: 'Verificado',   icon: <CheckCircle size={15} /> },
+            { key: 'assembling',         label: 'Armando',      icon: <Package size={15} /> },
+            { key: 'preparing_shipping', label: 'Prep. Envío',  icon: <Tag size={15} /> },
+            { key: 'ready_to_ship',      label: 'Etiqueta',     icon: <Receipt size={15} /> },
+            { key: 'shipped',            label: 'Enviado',      icon: <Truck size={15} /> },
+            { key: 'delivered',          label: 'Entregado',    icon: <CheckCircle size={15} /> },
           ];
           const statusOrder = ['pending', 'processing', 'paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
           const currentIdx = statusOrder.indexOf(order.STATUS);
           if (order.STATUS === 'cancelled') return null;
           return (
-            <div style={{ ...card, padding: '20px 16px' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative' }}>
-                {/* Line connector */}
-                <div style={{ position: 'absolute', top: 16, left: 24, right: 24, height: 2, background: '#e5e7eb', zIndex: 0 }} />
-                <div style={{ position: 'absolute', top: 16, left: 24, height: 2, background: '#3483fa', zIndex: 1, width: currentIdx >= 0 ? `${Math.min(100, (currentIdx / (steps.length - 1)) * 100)}%` : '0%', transition: 'width .5s ease' }} />
+            <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-pink-100/40">
+              {/* Desktop horizontal timeline */}
+              <div className="hidden md:flex items-start justify-between relative">
+                <div className="absolute top-4 left-6 right-6 h-0.5 bg-gray-100 z-0" />
+                <div className="absolute top-4 left-6 h-0.5 bg-gradient-to-r from-pink-400 to-pink-500 z-1 transition-all duration-500" style={{ width: currentIdx >= 0 ? `${Math.min(100, (currentIdx / (steps.length - 1)) * 100)}%` : '0%' }} />
                 {steps.map((step, i) => {
                   const done = i <= currentIdx;
                   const active = i === currentIdx;
                   return (
-                    <div key={step.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2, flex: 1 }}>
-                      <div style={{
-                        width: 32, height: 32, borderRadius: '50%',
-                        background: done ? '#3483fa' : '#fff',
-                        border: `2px solid ${done ? '#3483fa' : '#d1d5db'}`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: done ? '#fff' : '#9ca3af',
-                        transition: 'all .3s',
-                        boxShadow: active ? '0 0 0 4px rgba(52,131,250,0.2)' : 'none',
-                      }}>
+                    <div key={step.key} className="flex flex-col items-center relative z-10 flex-1">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${done ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-gray-200 text-gray-400'} ${active ? 'ring-4 ring-pink-100 scale-110' : ''}`}>
                         {step.icon}
                       </div>
-                      <span style={{ marginTop: 6, fontSize: 11, fontWeight: active ? 700 : 500, color: done ? '#333' : '#9ca3af', textAlign: 'center', lineHeight: 1.2, maxWidth: 70 }}>
+                      <span className={`mt-2 text-[10px] text-center leading-tight max-w-[70px] ${active ? 'font-extrabold text-gray-900' : done ? 'font-semibold text-gray-700' : 'text-gray-400'}`}>
+                        {step.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Mobile vertical timeline */}
+              <div className="flex md:hidden flex-col gap-4 relative pl-2">
+                <div className="absolute left-6 top-4 bottom-4 w-0.5 bg-gray-100 z-0" />
+                <div className="absolute left-6 top-4 w-0.5 bg-pink-400 z-1 transition-all duration-500" style={{ height: currentIdx >= 0 ? `${Math.min(100, (currentIdx / (steps.length - 1)) * 100)}%` : '0%' }} />
+                {steps.map((step, i) => {
+                  const done = i <= currentIdx;
+                  const active = i === currentIdx;
+                  return (
+                    <div key={step.key} className="flex items-center gap-4 relative z-10">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all shrink-0 ${done ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-gray-200 text-gray-400'} ${active ? 'ring-4 ring-pink-100 scale-110' : ''}`}>
+                        {step.icon}
+                      </div>
+                      <span className={`text-xs font-semibold ${active ? 'text-pink-600 font-extrabold' : done ? 'text-gray-800' : 'text-gray-400'}`}>
                         {step.label}
                       </span>
                     </div>
@@ -852,41 +873,41 @@ export default function PedidoPage() {
 
         {/* ── Timer ── */}
         {showTimer && (
-          <div style={{ ...card, textAlign: 'center', border: '1px solid #fde68a', background: '#fffbeb' }}>
-            <p style={{ margin: '0 0 6px', fontSize: 13, color: '#92400e' }}>Tienes 3 horas para completar el pago</p>
-            <Timer expiresAt={order.EXPIRESAT!} />
-            <p style={{ margin: '6px 0 0', fontSize: 12, color: '#b45309' }}>Una vez transferido, sube tu comprobante abajo</p>
+          <div className="bg-amber-50/70 border border-amber-200 rounded-3xl p-6 text-center shadow-sm">
+            <p className="text-sm font-semibold text-amber-800 mb-2">Tienes 3 horas para completar el pago</p>
+            <div className="my-2">
+              <Timer expiresAt={order.EXPIRESAT!} />
+            </div>
+            <p className="text-xs text-amber-600">Una vez transferido, sube tu comprobante abajo para validarlo.</p>
           </div>
         )}
 
         {/* ── Bank details ── */}
         {isPending && !uploaded && (
-          <div style={card}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#333' }}>Datos para transferir</h2>
-              <button onClick={copyAll} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', background: '#f5f5f5', border: '1px solid #ddd', borderRadius: 6, cursor: 'pointer', fontSize: 12, color: '#555' }}>
-                {copied === 'all' ? <><Check size={12} color="#00a650" /> Copiado</> : <><Copy size={12} /> Copiar todo</>}
+          <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-pink-100/40">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-extrabold text-gray-900">Datos de transferencia</h2>
+              <button onClick={copyAll} className="flex items-center gap-1 px-3 py-1.5 bg-pink-50 border border-pink-100/30 rounded-xl text-xs font-bold text-pink-600 hover:bg-pink-100 transition">
+                {copied === 'all' ? <><Check size={12} className="text-green-500" /> Copiado</> : <><Copy size={12} /> Copiar todo</>}
               </button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div className="grid grid-cols-1 gap-2">
               {Object.entries(BANK).map(([key, val]) => (
                 <button key={key} onClick={() => copyField(key, val)}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: copied === key ? '#f0fdf4' : '#f9f9f9', border: '1px solid #eee', borderRadius: 6, cursor: 'pointer', textAlign: 'left', transition: 'background .15s' }}
-                  onMouseEnter={e => { if (copied !== key) (e.currentTarget as HTMLElement).style.background = '#f5f5f5'; }}
-                  onMouseLeave={e => { if (copied !== key) (e.currentTarget as HTMLElement).style.background = '#f9f9f9'; }}>
+                  className={`flex items-center justify-between p-3 rounded-2xl border text-left transition ${copied === key ? 'bg-green-50/50 border-green-200' : 'bg-pink-50/10 border-pink-100/20 hover:bg-pink-50/30'}`}>
                   <div>
-                    <p style={{ margin: 0, fontSize: 11, color: '#999' }}>{key}</p>
-                    <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#333' }}>{val}</p>
+                    <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{key}</p>
+                    <p className="text-sm font-bold text-gray-800 mt-0.5">{val}</p>
                   </div>
-                  <span style={{ fontSize: 11, color: copied === key ? '#00a650' : '#aaa', display: 'flex', alignItems: 'center', gap: 3 }}>
-                    {copied === key ? <><Check size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
+                  <span className={`text-xs font-semibold flex items-center gap-1 ${copied === key ? 'text-green-600' : 'text-gray-400 group-hover:text-pink-500'}`}>
+                    {copied === key ? <><Check size={12} /> Copiado</> : <><Copy size={12} /> Copiar</>}
                   </span>
                 </button>
               ))}
             </div>
-            <div style={{ marginTop: 14, padding: '12px 14px', background: '#fff8e1', border: '1px solid #fde68a', borderRadius: 6 }}>
-              <p style={{ margin: 0, fontSize: 13, color: '#92400e' }}>
-                ⚠️ Transfiere exactamente <strong style={{ fontSize: 15 }}>{formatPrice(order.TOTAL)}</strong> y sube el comprobante abajo para confirmar tu pedido.
+            <div className="mt-4 p-4 bg-pink-50/30 border border-pink-100/40 rounded-2xl">
+              <p className="text-xs text-pink-800 leading-relaxed">
+                ⚠️ Transfiere exactamente <strong className="text-sm font-extrabold">{formatPrice(order.TOTAL)}</strong> y sube el comprobante abajo para confirmar tu pedido.
               </p>
             </div>
           </div>
@@ -894,30 +915,28 @@ export default function PedidoPage() {
 
         {/* ── Upload comprobante ── */}
         {(isPending || order.STATUS === 'processing') && (
-          <div style={{ ...card, border: `1px solid ${uploaded ? '#bbf7d0' : '#fde68a'}` }}>
-            <h2 style={{ margin: '0 0 14px', fontSize: 17, fontWeight: 700, color: '#333', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Upload size={17} color={uploaded ? '#00a650' : '#d97706'} />
+          <div className={`bg-white rounded-3xl p-5 md:p-6 shadow-sm border transition-all ${uploaded ? 'border-green-200 bg-green-50/10' : 'border-pink-100/40'}`}>
+            <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2 mb-4">
+              <Upload size={18} className={uploaded ? 'text-green-500' : 'text-pink-500'} />
               Comprobante de pago
             </h2>
             {uploaded ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#00a650', fontSize: 14, fontWeight: 600 }}>
-                <CheckCircle size={18} /> Comprobante recibido correctamente
+              <div className="flex items-center gap-2 text-green-600 text-sm font-bold bg-green-50/50 p-4 rounded-2xl border border-green-100">
+                <CheckCircle size={18} /> Comprobante recibido y en proceso de verificación
               </div>
             ) : (
               <>
-                <p style={{ margin: '0 0 12px', fontSize: 13, color: '#666' }}>Sube tu comprobante de transferencia (imagen o PDF)</p>
-                <label style={{ display: 'block', cursor: uploading ? 'not-allowed' : 'pointer' }}>
-                  <input type="file" accept="image/*,.pdf" onChange={handleUpload} style={{ display: 'none' }} disabled={uploading} />
-                  <div style={{ border: '2px dashed #ddd', borderRadius: 8, padding: '24px 16px', textAlign: 'center', background: '#fafafa', transition: 'border-color .15s' }}
-                    onMouseEnter={e => { if (!uploading) (e.currentTarget as HTMLElement).style.borderColor = '#3483fa'; }}
-                    onMouseLeave={e => { if (!uploading) (e.currentTarget as HTMLElement).style.borderColor = '#ddd'; }}>
+                <p className="text-xs text-gray-500 mb-3">Por favor, sube una captura o archivo PDF de tu transferencia.</p>
+                <label className={`block ${uploading ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                  <input type="file" accept="image/*,.pdf" onChange={handleUpload} className="hidden" disabled={uploading} />
+                  <div className="border-2 border-dashed border-pink-100 hover:border-pink-300 rounded-2xl p-6 text-center bg-pink-50/5 transition">
                     {uploading ? (
-                      <p style={{ margin: 0, fontSize: 14, color: '#888' }}>Subiendo...</p>
+                      <p className="text-sm font-semibold text-pink-500 animate-pulse">Subiendo comprobante...</p>
                     ) : (
                       <>
-                        <Upload size={28} color="#bbb" style={{ marginBottom: 8 }} />
-                        <p style={{ margin: '0 0 4px', fontSize: 14, color: '#555', fontWeight: 500 }}>Click para subir comprobante</p>
-                        <p style={{ margin: 0, fontSize: 12, color: '#aaa' }}>JPG, PNG o PDF</p>
+                        <Upload size={32} className="text-pink-300 mx-auto mb-2" />
+                        <p className="text-sm font-bold text-pink-700">Haz click para subir comprobante</p>
+                        <p className="text-xs text-gray-400 mt-0.5">Formatos: JPG, PNG, PDF</p>
                       </>
                     )}
                   </div>
@@ -928,180 +947,160 @@ export default function PedidoPage() {
         )}
 
         {/* ── Order items ── */}
-        <div style={card}>
-          <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 700, color: '#333', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Package size={17} color="#3483fa" /> Detalle del pedido
+        <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-pink-100/40">
+          <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2 mb-4">
+            <Package size={18} className="text-pink-500" /> Detalle del pedido
           </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+          <div className="divide-y divide-pink-50/40 space-y-3 pb-4">
             {items.map((item, i) => {
               const isMissing = !!(item as any).missing;
               const isReplaced = !!(item as any).replaced;
               return (
-                <div key={i} style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'flex-start', 
-                  padding: isMissing ? '10px 12px' : '0',
-                  background: isMissing ? '#fef2f2' : 'transparent',
-                  border: isMissing ? '1px solid #fecaca' : 'none',
-                  borderRadius: isMissing ? '10px' : '0',
-                  paddingBottom: !isMissing && i < items.length - 1 ? 12 : isMissing ? '10px' : 0, 
-                  borderBottom: !isMissing && i < items.length - 1 ? '1px solid #f0f0f0' : isMissing ? '1px solid #fecaca' : 'none',
-                  marginBottom: isMissing ? 6 : 0
-                }}>
-                  <div style={{ minWidth: 0, flex: 1, paddingRight: 12 }}>
-                    <p style={{ margin: '0 0 3px', fontSize: 14, color: isMissing ? '#991b1b' : '#333', fontWeight: isMissing ? 700 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.name}
+                <div key={i} className={`pt-3 first:pt-0 flex flex-col gap-2 ${isMissing ? 'bg-red-50/30 p-3 rounded-2xl border border-red-100' : ''}`}>
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-sm font-bold leading-tight ${isMissing ? 'text-red-900' : 'text-gray-800'}`}>
+                        {item.name}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Cantidad: {item.qty} · {formatPrice(item.price)} c/u
+                      </p>
+                      {isMissing && (
+                        <div className="text-red-600 text-xs font-bold mt-2 flex items-center gap-1">
+                          <AlertTriangle size={13} /> Producto agotado - requiere reemplazo
+                        </div>
+                      )}
+                      {isReplaced && (
+                        <div className="text-green-600 text-xs font-bold mt-1 flex items-center gap-1">
+                          <CheckCircle size={13} /> Reemplazado
+                        </div>
+                      )}
+                      {(item as any).note && (
+                        <div className="mt-2 text-xs bg-amber-50 text-amber-800 p-2.5 rounded-xl border border-amber-100/60 flex items-start gap-1">
+                          <span className="font-bold">💬 Nota:</span>
+                          <span>{(item as any).note}</span>
+                        </div>
+                      )}
+                      {isMissing && (canChooseReplacement || canCustomerModify) && (
+                        <button
+                          onClick={() => handleOpenReplacementModal(item, i)}
+                          className="mt-2.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-blue-100 transition"
+                        >
+                          <RefreshCw size={12} /> Elegir reemplazo
+                        </button>
+                      )}
+                    </div>
+                    <p className={`text-sm font-extrabold ${isMissing ? 'text-red-900' : 'text-gray-900'} shrink-0`}>
+                      {formatPrice(item.total)}
                     </p>
-                    <p style={{ margin: 0, fontSize: 12, color: isMissing ? '#b91c1c' : '#999' }}>
-                      x{item.qty} · {formatPrice(item.price)} c/u
-                    </p>
-                    
-                    {isMissing && (
-                      <div style={{ color: '#b91c1c', fontSize: 12, fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <AlertTriangle size={13} /> Producto agotado - requiere reemplazo
-                      </div>
-                    )}
-                    {isReplaced && (
-                      <div style={{ color: '#047857', fontSize: 12, fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <CheckCircle size={13} /> Reemplazado
-                      </div>
-                    )}
-
-                    {isMissing && (canChooseReplacement || canCustomerModify) && (
-                      <button
-                        onClick={() => handleOpenReplacementModal(item, i)}
-                        style={{
-                          marginTop: 8,
-                          padding: '6px 12px',
-                          background: '#eff6ff',
-                          color: '#1e40af',
-                          border: '1px solid #bfdbfe',
-                          borderRadius: 8,
-                          cursor: 'pointer',
-                          fontSize: 12,
-                          fontWeight: 800,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4
-                        }}
-                      >
-                        <RefreshCw size={12} /> Elegir reemplazo
-                      </button>
-                    )}
                   </div>
-                  <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: isMissing ? '#991b1b' : '#333', flexShrink: 0 }}>
-                    {formatPrice(item.total)}
-                  </p>
                 </div>
               );
             })}
           </div>
-          <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#666' }}>
-              <span>Subtotal</span><span>{formatPrice(order.SUBTOTAL)}</span>
+
+          <div className="border-t border-gray-100 pt-4 flex flex-col gap-2 text-sm text-gray-500">
+            <div className="flex justify-between">
+              <span>Subtotal</span>
+              <span className="font-semibold text-gray-800">{formatPrice(order.SUBTOTAL)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#666' }}>
-              <span>Envío</span><span style={{ color: '#00a650' }}>{order.SHIPPINGCOST > 0 ? formatPrice(order.SHIPPINGCOST) : 'A coordinar'}</span>
+            <div className="flex justify-between">
+              <span>Envío</span>
+              <span className="font-bold text-green-600">{order.SHIPPINGCOST > 0 ? formatPrice(order.SHIPPINGCOST) : 'A coordinar'}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 700, color: '#333', paddingTop: 6, borderTop: '1px solid #f0f0f0', marginTop: 4 }}>
-              <span>Total</span><span>{formatPrice(order.TOTAL)}</span>
+            <div className="flex justify-between text-base font-extrabold text-gray-950 pt-3 border-t border-gray-150 mt-2">
+              <span>Total</span>
+              <span>{formatPrice(order.TOTAL)}</span>
             </div>
           </div>
         </div>
 
         {/* ── Customer actions: editar/anular (máximo 2 veces) ── */}
         {order.STATUS !== 'cancelled' && (
-          <div style={{ ...card, border: '1px solid #e5e7eb' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+          <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-gray-100">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div>
-                <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#111' }}>Gestionar pedido</p>
-                <p style={{ margin: '3px 0 0', fontSize: 12, color: '#6b7280' }}>
-                  Estado de edición: <strong>Ilimitado</strong> (hasta confirmar pago)
-                </p>
+                <h3 className="text-sm font-extrabold text-gray-900">Gestionar pedido</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Modificaciones disponibles antes del empaque.</p>
               </div>
               {editOpen && (
                 <button onClick={closeEditor}
-                  style={{ padding: '8px 10px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#374151' }}>
-                  <X size={14} /> Cerrar
+                  className="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 transition flex items-center gap-1 self-start sm:self-auto">
+                  <X size={14} /> Cerrar editor
                 </button>
               )}
             </div>
 
             {!canCustomerModify && (
-              <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>
-                El pedido ya está verificado, en proceso de preparación o cancelado y no puede ser modificado.
+              <p className="text-xs text-gray-400">
+                Este pedido se encuentra en preparación o ya fue despachado, por lo que no permite modificaciones.
               </p>
             )}
 
             {canCustomerModify && !editOpen && (
-              <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button onClick={openEditor}
-                  style={{ flex: 1, minWidth: 220, padding: '12px 14px', background: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  className="flex-1 py-3 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-100 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition duration-300">
                   <Pencil size={14} /> Modificar productos
                 </button>
                 <button onClick={handleCancelOrder} disabled={cancelling}
-                  style={{ flex: 1, minWidth: 220, padding: '12px 14px', background: cancelling ? '#fee2e2' : '#fef2f2', color: '#991b1b', border: '1px solid #fecaca', borderRadius: 10, cursor: cancelling ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  className="flex-1 py-3 bg-red-50 hover:bg-red-100 text-red-700 border border-red-100 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition duration-300 disabled:opacity-50">
                   <Trash2 size={14} /> {cancelling ? 'Anulando...' : 'Anular pedido'}
                 </button>
               </div>
             )}
 
             {editOpen && (
-              <div style={{ marginTop: 12 }}>
+              <div className="space-y-4 mt-2">
                 {editError && (
-                  <div style={{ marginBottom: 10, padding: '10px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, color: '#991b1b', fontSize: 12, fontWeight: 600 }}>
+                  <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-xs font-semibold text-red-700">
                     {editError}
                   </div>
                 )}
 
                 {/* Items editor */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div className="space-y-2.5">
                   {draftItems.map((it) => (
-                    <div key={it.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 12px', border: '1px solid #eee', borderRadius: 10, background: '#fff' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                    <div key={it.id} className="flex items-center justify-between gap-3 p-3 border border-gray-100 rounded-2xl bg-gray-50/50">
+                      <div className="flex items-center gap-3 min-w-0">
                         <button
                           type="button"
                           onClick={() => {
                             const src = it.img ? resolveStorageImageUrl(it.img) : '';
                             if (src) setImageModal({ src, name: it.name });
                           }}
-                          style={{ width: 46, height: 46, borderRadius: 10, background: '#f3f4f6', overflow: 'hidden', flexShrink: 0, border: '1px solid #eee', cursor: it.img ? 'pointer' : 'default', padding: 0 }}
-                          title={it.img ? 'Ver imagen' : 'Sin imagen'}
+                          className="w-11 h-11 rounded-xl bg-white overflow-hidden shrink-0 border border-gray-100 cursor-pointer"
                         >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           {it.img ? (
-                            <img src={resolveStorageImageUrl(it.img)} alt={it.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={resolveStorageImageUrl(it.img)} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <Package size={18} color="#9ca3af" />
+                            <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                              <Package size={18} className="text-gray-400" />
                             </div>
                           )}
                         </button>
-
-                        <div style={{ minWidth: 0 }}>
-                          <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</p>
-                          <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280' }}>
-                            {formatPrice(it.price)} c/u · <span style={{ fontWeight: 800, color: '#111' }}>{formatPrice((Number(it.price) || 0) * (Number(it.qty) || 0))}</span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-gray-900 truncate">{it.name}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {formatPrice(it.price)} · <span className="font-semibold text-gray-700">{formatPrice(it.price * it.qty)}</span>
                           </p>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center border border-gray-200 rounded-xl bg-white overflow-hidden">
                           <button onClick={() => setQty(it.id, (it.qty || 1) - 1)} disabled={(it.qty || 1) <= 1 || loadingStocks}
-                            style={{ width: 34, height: 32, border: 'none', background: '#fff', cursor: ((it.qty || 1) <= 1 || loadingStocks) ? 'not-allowed' : 'pointer', color: '#374151' }}>
-                            <Minus size={14} />
+                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 text-gray-500">
+                            <Minus size={12} />
                           </button>
-                          <span style={{ width: 34, textAlign: 'center', fontSize: 13, fontWeight: 800, color: '#111' }}>{it.qty}</span>
+                          <span className="w-8 text-center text-xs font-bold text-gray-800">{it.qty}</span>
                           <button onClick={() => setQty(it.id, (it.qty || 1) + 1)} disabled={loadingStocks}
-                            style={{ width: 34, height: 32, border: 'none', background: '#fff', cursor: loadingStocks ? 'not-allowed' : 'pointer', color: '#374151' }}>
-                            <Plus size={14} />
+                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 text-gray-500">
+                            <Plus size={12} />
                           </button>
                         </div>
                         <button onClick={() => removeDraft(it.id)}
-                          style={{ padding: 8, border: '1px solid #fee2e2', background: '#fff', borderRadius: 10, cursor: 'pointer', color: '#dc2626' }}
-                          title="Quitar del pedido">
-                          <Trash2 size={16} />
+                          className="p-2 border border-red-100 rounded-xl hover:bg-red-50 text-red-600 transition">
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     </div>
@@ -1109,98 +1108,66 @@ export default function PedidoPage() {
                 </div>
 
                 {/* Add products */}
-                <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Search size={14} /> Agregar productos
+                <div className="border-t border-gray-100 pt-3">
+                  <p className="text-xs font-bold text-gray-800 flex items-center gap-1 mb-2">
+                    <Search size={13} /> Agregar productos
                   </p>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                    <input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="Buscar por nombre, SKU o barcode..."
-                      style={{ flex: 1, padding: '10px 12px', borderRadius: 10, border: '1px solid #e5e7eb', outline: 'none', fontSize: 13 }}
+                  <div className="flex gap-2">
+                    <input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="Buscar producto..."
+                      className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-xs outline-none focus:border-pink-300"
                     />
                     <button onClick={searchProducts} disabled={searchingProducts}
-                      style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid #e5e7eb', background: searchingProducts ? '#f3f4f6' : '#fff', cursor: searchingProducts ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Search size={14} /> {searchingProducts ? 'Buscando...' : 'Buscar'}
+                      className="px-4 py-2 bg-pink-500 text-white rounded-xl font-bold text-xs hover:bg-pink-600 transition disabled:opacity-50 flex items-center gap-1">
+                      <Search size={13} /> Buscar
                     </button>
                   </div>
 
                   {productResults.length > 0 && (
-                    <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div className="mt-3 space-y-2">
                       {productResults.map(p => {
                         const stock = Number((p as any).STOCK ?? NaN);
                         const hasStock = Number.isFinite(stock) ? stock > 0 : true;
                         return (
-                        <button
-                          key={p.$id}
-                          onClick={() => { if (hasStock) addProductToDraft(p); }}
-                          disabled={!hasStock}
-                          style={{
-                            width: '100%',
-                            textAlign: 'left',
-                            padding: '10px 12px',
-                            borderRadius: 12,
-                            border: '1px solid #e5e7eb',
-                            background: '#fff',
-                            cursor: hasStock ? 'pointer' : 'not-allowed',
-                            opacity: hasStock ? 1 : 0.55,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: 12,
-                          }}
-                          title={!hasStock ? 'Sin stock disponible' : 'Agregar al pedido'}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                            <div style={{ width: 44, height: 44, borderRadius: 10, background: '#f3f4f6', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              {((p as any).IMAGEURL) ? (
-                                <img src={resolveStorageImageUrl((p as any).IMAGEURL)} alt={(p as any).NAME || 'Producto'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              ) : (
-                                <Package size={18} color="#9ca3af" />
-                              )}
+                          <button
+                            key={p.$id}
+                            onClick={() => { if (hasStock) addProductToDraft(p); }}
+                            disabled={!hasStock}
+                            className="w-full flex items-center justify-between p-2.5 rounded-xl border border-gray-100 hover:bg-gray-50 text-left disabled:opacity-50 transition"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-9 h-9 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden shrink-0">
+                                {p.IMAGEURL ? (
+                                  <img src={resolveStorageImageUrl(p.IMAGEURL)} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center"><Package size={15} className="text-gray-300" /></div>
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-gray-800 truncate">{p.NAME}</p>
+                                <p className="text-[10px] text-gray-400 mt-0.5">Stock: {Number.isFinite(stock) ? stock : '—'}</p>
+                              </div>
                             </div>
-                            <div style={{ minWidth: 0 }}>
-                              <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(p as any).NAME}</p>
-                              <p style={{ margin: '2px 0 0', fontSize: 11, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {(() => {
-                                  const sku = getProductSku(p);
-                                  const bc = getProductBarcode(p);
-                                  if (sku) return `SKU: ${sku}`;
-                                  if (bc) return `Barcode: ${bc}`;
-                                  return 'SKU: —';
-                                })()}
-                              </p>
-                              <p style={{ margin: '2px 0 0', fontSize: 11, color: hasStock ? '#6b7280' : '#b45309', fontWeight: 800 }}>
-                                Stock: {Number.isFinite(stock) ? stock : '—'}
-                              </p>
+                            <div className="shrink-0 flex items-center gap-2">
+                              <span className="text-xs font-extrabold text-gray-900">{formatPrice((p.CURRENTPRICE ?? p.PRICE ?? 0) as number)}</span>
+                              <span className="text-[10px] font-bold text-pink-600">+ Agregar</span>
                             </div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                            <span style={{ fontSize: 12, fontWeight: 900, color: '#111' }}>
-                              {formatPrice(((p as any).CURRENTPRICE ?? (p as any).PRICE ?? 0) as number)}
-                            </span>
-                            <span style={{ fontSize: 12, fontWeight: 900, color: hasStock ? '#3483fa' : '#9ca3af' }}>
-                              {hasStock ? '+ Agregar' : 'Sin stock'}
-                            </span>
-                          </div>
-                        </button>
-                      );})}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
 
-                {/* Summary + save */}
-                <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#374151' }}>
+                {/* Summary & Save */}
+                <div className="border-t border-gray-100 pt-3 space-y-3">
+                  <div className="flex justify-between text-xs font-bold text-gray-700">
                     <span>Nuevo subtotal</span>
-                    <span style={{ fontWeight: 900, color: '#111' }}>{formatPrice(computeSubtotal(draftItems))}</span>
+                    <span>{formatPrice(computeSubtotal(draftItems))}</span>
                   </div>
                   <button onClick={handleSaveEdits} disabled={savingEdit}
-                    style={{ width: '100%', padding: '12px 0', background: savingEdit ? '#93c5fd' : '#3483fa', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 900, cursor: savingEdit ? 'not-allowed' : 'pointer' }}>
-                    {savingEdit ? 'Guardando...' : 'Guardar cambios'}
+                    className="w-full py-3 bg-pink-500 hover:bg-pink-600 text-white rounded-2xl font-bold text-sm transition duration-300 disabled:opacity-50">
+                    {savingEdit ? 'Guardando...' : 'Confirmar cambios en pedido'}
                   </button>
-                  <p style={{ margin: 0, fontSize: 11, color: '#6b7280' }}>
-                    Nota: puedes realizar cambios de forma ilimitada mientras el pedido no esté confirmado como pagado.
-                  </p>
                 </div>
               </div>
             )}
@@ -1210,46 +1177,44 @@ export default function PedidoPage() {
         {/* Customer Replacement Modal */}
         {customerReplacingIdx !== null && (
           <div
-            style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
             onMouseDown={() => { if (!loadingSuggestions) { setCustomerReplacingIdx(null); setSuggestions([]); } }}
           >
             <div
-              style={{ width: '100%', maxWidth: 520, background: '#fff', borderRadius: 18, overflow: 'hidden', boxShadow: '0 30px 90px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', maxHeight: '85vh' }}
+              className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh] border border-gray-150"
               onMouseDown={(e) => e.stopPropagation()}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid #f0f0f0', background: '#f9f9f9' }}>
+              <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
                 <div>
-                  <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#111' }}>Elegir producto de reemplazo</p>
-                  <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280' }}>
-                    Sugerencias para: <span style={{ fontWeight: 700 }}>{items[customerReplacingIdx]?.name}</span>
+                  <h3 className="font-extrabold text-gray-900 text-sm">Selecciona una alternativa</h3>
+                  <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[280px]">
+                    Reemplazo para: {items[customerReplacingIdx]?.name}
                   </p>
                 </div>
                 <button 
                   onClick={() => { setCustomerReplacingIdx(null); setSuggestions([]); }}
                   disabled={loadingSuggestions}
-                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#9ca3af' }}
+                  className="text-gray-400 hover:text-gray-600 transition"
                 >
                   <X size={20} />
                 </button>
               </div>
 
-              <div style={{ padding: '16px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div className="p-4 overflow-y-auto flex-1 space-y-3">
                 {replacingError && (
-                  <div style={{ padding: '10px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, color: '#991b1b', fontSize: 12, fontWeight: 600 }}>
+                  <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-xs font-semibold text-red-700">
                     {replacingError}
                   </div>
                 )}
 
                 {loadingSuggestions ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
-                    <div style={{ width: 24, height: 24, border: '2px solid #3483fa', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                  <div className="flex justify-center py-8">
+                    <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : suggestions.length === 0 ? (
-                  <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: 13, padding: '40px 0' }}>
-                    No se encontraron productos alternativos disponibles en este momento.
-                  </p>
+                  <p className="text-center text-gray-400 text-xs py-8">No hay alternativas sugeridas en stock.</p>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div className="space-y-2">
                     {suggestions.map((p) => {
                       const price = p.CURRENTPRICE ?? p.PRICE ?? 0;
                       const origPrice = items[customerReplacingIdx]?.price || 0;
@@ -1262,46 +1227,28 @@ export default function PedidoPage() {
                       return (
                         <div
                           key={p.$id}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 12,
-                            padding: '12px',
-                            borderRadius: 14,
-                            border: '1px solid #e5e7eb',
-                            background: '#f9f9f9',
-                          }}
+                          className="flex items-center justify-between gap-3 p-3 bg-gray-50 border border-gray-100 rounded-2xl hover:bg-gray-100/55 transition"
                         >
-                          <div style={{ width: 48, height: 48, borderRadius: 10, background: '#fff', border: '1px solid #eee', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {p.IMAGEURL ? (
-                              <img src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : (
-                              <Package size={20} color="#9ca3af" />
-                            )}
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 overflow-hidden shrink-0 flex items-center justify-center">
+                              {p.IMAGEURL ? (
+                                <img src={resolveStorageImageUrl(p.IMAGEURL)} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <Package size={18} className="text-gray-300" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-gray-800 truncate">{p.NAME}</p>
+                              <p className="text-[10px] text-gray-500 mt-0.5">
+                                Precio: <span className="font-semibold text-gray-800">{formatPrice(price)}</span> · <span className="font-medium text-pink-600">{diffText}</span>
+                              </p>
+                            </div>
                           </div>
-                          
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.NAME}</p>
-                            <p style={{ margin: '2px 0 0', fontSize: 11, color: '#6b7280' }}>
-                              Precio: <span style={{ fontWeight: 800, color: '#111' }}>{formatPrice(price)}</span> · <span style={{ color: diff === 0 ? '#047857' : diff > 0 ? '#b45309' : '#1e40af', fontWeight: 600 }}>{diffText}</span>
-                            </p>
-                          </div>
-
                           <button
                             onClick={() => handleCustomerReplace(p)}
-                            style={{
-                              padding: '8px 12px',
-                              background: '#3483fa',
-                              color: '#fff',
-                              border: 'none',
-                              borderRadius: 8,
-                              fontSize: 12,
-                              fontWeight: 800,
-                              cursor: 'pointer',
-                              flexShrink: 0
-                            }}
+                            className="px-3 py-1.5 bg-pink-500 hover:bg-pink-600 text-white rounded-xl text-xs font-bold shrink-0 transition"
                           >
-                            Seleccionar
+                            Elegir
                           </button>
                         </div>
                       );
@@ -1313,90 +1260,99 @@ export default function PedidoPage() {
           </div>
         )}
 
-        {/* Modal: imagen completa */}
+        {/* Modal: Fullscreen Image Lightbox */}
         {imageModal && (
           <div
-            style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-            onMouseDown={() => setImageModal(null)}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={() => setImageModal(null)}
           >
             <div
-              style={{ width: '100%', maxWidth: 820, background: '#fff', borderRadius: 18, overflow: 'hidden', boxShadow: '0 30px 90px rgba(0,0,0,0.35)' }}
-              onMouseDown={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl bg-white rounded-3xl overflow-hidden shadow-2xl relative"
+              onClick={(e) => e.stopPropagation()}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid #eee' }}>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{imageModal.name}</p>
-                <button onClick={() => setImageModal(null)} style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 10, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 900 }}>
+              <div className="px-4 py-3 border-b border-gray-150 flex items-center justify-between bg-gray-50">
+                <p className="text-xs font-bold text-gray-700 truncate pr-4">{imageModal.name}</p>
+                <button onClick={() => setImageModal(null)} className="p-1 rounded-xl bg-white border border-gray-200 hover:bg-gray-100 text-gray-600 transition flex items-center gap-1 text-xs font-bold">
                   <X size={14} /> Cerrar
                 </button>
               </div>
-              <div style={{ background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="bg-black/95 flex items-center justify-center min-h-[40vh] max-h-[80vh] overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={imageModal.src} alt={imageModal.name} style={{ width: '100%', height: 'auto', maxHeight: '82vh', objectFit: 'contain' }} />
+                <img src={imageModal.src} alt="" className="max-w-full max-h-[78vh] object-contain" />
               </div>
             </div>
           </div>
         )}
 
         {/* ── Shipping info ── */}
-        <div style={card}>
-          <h2 style={{ margin: '0 0 14px', fontSize: 17, fontWeight: 700, color: '#333', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <MapPin size={17} color="#3483fa" /> Datos de envío
+        <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-pink-100/40">
+          <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2 mb-4">
+            <MapPin size={18} className="text-pink-500" /> Datos de envío
           </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 14, color: '#555' }}>
-            <p style={{ margin: 0, fontWeight: 600, color: '#333', fontSize: 15 }}>{order.CUSTOMERNAME}</p>
-            <p style={{ margin: 0 }}>{order.CUSTOMERPHONE}{order.CUSTOMEREMAIL ? ` · ${order.CUSTOMEREMAIL}` : ''}</p>
-            <p style={{ margin: 0 }}>{order.ADDRESS}</p>
-            <p style={{ margin: 0 }}>{order.COMUNA}, {order.REGION}</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-              <Truck size={13} color="#3483fa" />
-              <span style={{ color: '#3483fa', fontWeight: 500 }}>{order.SHIPPINGAGENCY}</span>
+          <div className="flex flex-col gap-1.5 text-sm text-gray-600">
+            <p className="font-bold text-gray-900 text-base">{order.CUSTOMERNAME}</p>
+            <p>{order.CUSTOMERPHONE}{order.CUSTOMEREMAIL ? ` · ${order.CUSTOMEREMAIL}` : ''}</p>
+            <p>{order.ADDRESS}</p>
+            <p>{order.COMUNA}, {order.REGION}</p>
+            <div className="flex items-center gap-2 mt-2 font-semibold text-pink-600 text-xs">
+              <Truck size={14} />
+              <span>{order.SHIPPINGAGENCY}</span>
               {order.AGENCYCHANGED && (
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', background: '#fffbeb', color: '#b45309', borderRadius: 8, border: '1px solid #fef08a' }}>Modificada</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 bg-pink-50 text-pink-700 rounded-md border border-pink-100">Modificada</span>
               )}
             </div>
-            {/* Agency change: only if not paid and not changed before */}
+
+            {/* Agency change option */}
             {order.STATUS === 'pending' && !order.AGENCYCHANGED && (
               showAgencyChange ? (
-                <div style={{ marginTop: 10, padding: '12px 14px', background: '#f8f0ff', borderRadius: 12, border: '1px solid #e9d5ff' }}>
-                  <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: '#6b21a8' }}>Selecciona nueva agencia de envío</p>
+                <div className="mt-4 p-4 bg-pink-50/20 border border-pink-100 rounded-2xl">
+                  <p className="text-xs font-bold text-pink-800 mb-2">Selecciona nueva agencia de envío</p>
                   <select value={selectedAgency} onChange={e => setSelectedAgency(e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d8b4fe', borderRadius: 10, fontSize: 14, fontWeight: 600, color: '#6b21a8', background: '#fff', marginBottom: 8, outline: 'none' }}>
+                    className="w-full px-3 py-2 border border-pink-200 rounded-xl text-xs font-bold text-pink-700 bg-white mb-3 outline-none focus:ring-2 focus:ring-pink-300">
                     <option value="">Seleccionar agencia</option>
                     {agencies.map(a => (
                       <option key={a.name} value={a.name}>{a.name}</option>
                     ))}
                   </select>
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div className="flex gap-2">
                     <button onClick={handleChangeAgency} disabled={!selectedAgency || savingAgency}
-                      style={{ flex: 1, padding: '10px 0', background: savingAgency ? '#c4b5fd' : 'linear-gradient(135deg, #7c3aed, #6d28d9)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: savingAgency ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      className="flex-1 py-2 bg-pink-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-pink-600 disabled:opacity-50 transition">
                       <RefreshCw size={13} />
-                      {savingAgency ? 'Guardando...' : 'Confirmar cambio'}
+                      {savingAgency ? 'Guardando...' : 'Confirmar'}
                     </button>
                     <button onClick={() => setShowAgencyChange(false)}
-                      style={{ padding: '10px 16px', background: '#fff', border: '1.5px solid #e9d5ff', borderRadius: 10, fontSize: 13, color: '#6b21a8', fontWeight: 600, cursor: 'pointer' }}>Cancelar</button>
+                      className="px-4 py-2 bg-white border border-pink-100 text-pink-600 rounded-xl text-xs font-bold hover:bg-pink-50/50 transition">
+                      Cancelar
+                    </button>
                   </div>
-                  <p style={{ margin: '8px 0 0', fontSize: 11, color: '#a78bfa' }}>⚠ Solo puedes cambiar la agencia 1 vez.</p>
+                  <p className="text-[10px] text-pink-400 mt-2">⚠ Solo puedes cambiar la agencia 1 vez.</p>
                 </div>
               ) : (
                 <button onClick={() => { setShowAgencyChange(true); setSelectedAgency(order.SHIPPINGAGENCY || ''); }}
-                  style={{ marginTop: 8, padding: '6px 12px', background: '#f8f0ff', border: '1.5px solid #d8b4fe', borderRadius: 10, fontSize: 12, color: '#7c3aed', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <RefreshCw size={12} /> Cambiar agencia
+                  className="mt-3.5 px-3 py-1.5 bg-pink-50/50 text-pink-600 border border-pink-100 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-pink-100/50 transition self-start">
+                  <RefreshCw size={12} /> Cambiar agencia de despacho
                 </button>
               )
             )}
 
+            {/* Comprobante de envío */}
             {order.SHIPPINGPROOFURL && (
-              <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #f0f0f0' }}>
-                <p style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 600, color: '#333', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Truck size={14} color="#6b21a8" /> Comprobante de envío
+              <div className="mt-5 pt-5 border-t border-gray-100">
+                <p className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-3">
+                  <Truck className="w-4 h-4 text-pink-600" /> Comprobante de envío
                 </p>
                 <button 
-                  onClick={() => setImageModal({ src: order.SHIPPINGPROOFURL!, name: 'Comprobante de envío' })}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 14px', background: '#faf5ff', color: '#6b21a8', border: '1px solid #e9d5ff', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%', transition: 'background .15s' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#f3e8ff')}
-                  onMouseLeave={e => (e.currentTarget.style.background = '#faf5ff')}
+                  onClick={() => {
+                    const url = order.SHIPPINGPROOFURL!;
+                    if (url.toLowerCase().endsWith('.pdf') || (url.includes('/files/') && url.toLowerCase().includes('.pdf'))) {
+                      window.open(url, '_blank');
+                    } else {
+                      setImageModal({ src: url, name: 'Comprobante de envío' });
+                    }
+                  }}
+                  className="w-full py-3 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-100 rounded-2xl transition duration-300 font-semibold flex items-center justify-center gap-2 text-xs"
                 >
-                  <FileText size={16} /> Ver comprobante
+                  <FileText size={15} /> Ver comprobante de despacho
                 </button>
               </div>
             )}
@@ -1405,58 +1361,58 @@ export default function PedidoPage() {
 
         {/* ── Delivery confirmation ── */}
         {order.STATUS === 'shipped' && !confirmed && (
-          <div style={{ ...card, background: '#f0f5ff', border: '1px solid #bfdbfe' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <Truck size={20} color="#3483fa" />
+          <div className="bg-indigo-50/30 border border-indigo-100 rounded-3xl p-5 md:p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
+                <Truck size={18} className="text-indigo-600" />
+              </div>
               <div>
-                <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#1e40af' }}>Tu pedido fue despachado</p>
-                <p style={{ margin: '2px 0 0', fontSize: 13, color: '#3b82f6' }}>¿Ya lo recibiste? Confirma la entrega.</p>
+                <p className="text-sm font-extrabold text-indigo-900">Tu pedido fue despachado</p>
+                <p className="text-xs text-indigo-500">¿Ya lo recibiste? Por favor, confirma la entrega.</p>
               </div>
             </div>
             <button onClick={handleConfirmDelivery} disabled={confirming}
-              style={{ width: '100%', padding: '12px 0', background: confirming ? '#93c5fd' : '#3483fa', color: '#fff', border: 'none', borderRadius: 6, fontSize: 15, fontWeight: 600, cursor: confirming ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <Package size={16} />
+              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition duration-300 disabled:opacity-50">
+              <Package size={15} />
               {confirming ? 'Confirmando...' : 'Confirmar que recibí mi pedido'}
             </button>
           </div>
         )}
+
+        {/* Delivered confirmation */}
         {(order.STATUS === 'delivered' || confirmed) && (
-          <div style={{ ...card, background: '#f0fdf4', border: '1px solid #86efac', textAlign: 'center' }}>
-            <CheckCircle size={28} color="#16a34a" style={{ margin: '0 auto 8px' }} />
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#166534' }}>Entrega confirmada</p>
-            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#22c55e' }}>Gracias por confirmar la recepción de tu pedido.</p>
+          <div className="bg-green-50/20 border border-green-200 rounded-3xl p-5 md:p-6 text-center">
+            <CheckCircle size={28} className="text-green-600 mx-auto mb-2" />
+            <p className="text-sm font-bold text-green-800">Entrega confirmada</p>
+            <p className="text-xs text-green-600 mt-0.5">Gracias por confirmar la recepción de tu pedido.</p>
           </div>
         )}
 
-        {/* ── Trust + Actions ── */}
-        <div style={{ ...card, background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <Shield size={18} color="#00a650" style={{ flexShrink: 0, marginTop: 1 }} />
-            <p style={{ margin: 0, fontSize: 13, color: '#166534', lineHeight: 1.5 }}>
-              <strong>Compra Protegida</strong> — Si tienes algún problema con tu pedido, te devolvemos el dinero.
-            </p>
+        {/* Purchase Protection */}
+        <div className="bg-green-50/20 border border-green-200 rounded-3xl p-4 flex items-start gap-3">
+          <Shield size={18} className="text-green-600 shrink-0 mt-0.5" />
+          <p className="text-xs text-green-800 leading-relaxed">
+            <strong>Compra Protegida</strong> — Si tienes algún problema con la recepción de tu pedido, te garantizamos la devolución de tu dinero o reemplazo de productos.
+          </p>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="space-y-3">
+          {/* Download PDF */}
+          <button onClick={() => generateOrderPdf(order, items)}
+            className="w-full py-3 bg-white hover:bg-gray-50 text-gray-700 border border-gray-250 rounded-2xl font-semibold flex items-center justify-center gap-2 text-xs transition">
+            <FileText size={15} /> Descargar comprobante en PDF
+          </button>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link href="/productos" className="flex-1 py-3 bg-pink-500 hover:bg-pink-600 text-white text-center rounded-2xl font-bold text-xs transition no-underline block">
+              Seguir comprando
+            </Link>
+            <Link href="/cuenta/pedidos" className="flex-1 py-3 bg-white hover:bg-gray-50 text-pink-600 text-center rounded-2xl font-bold text-xs transition border border-pink-100 no-underline block">
+              Ver mis pedidos
+            </Link>
           </div>
         </div>
-
-        {/* Download PDF */}
-        <button onClick={() => generateOrderPdf(order, items)}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '12px 0', background: '#fff', color: '#333', border: '1px solid #e0e0e0', borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: 'pointer', marginTop: 4, marginBottom: 4 }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#f5f5f5')}
-          onMouseLeave={e => (e.currentTarget.style.background = '#fff')}>
-          <FileText size={16} /> Descargar comprobante PDF
-        </button>
-
-        <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-          <Link href="/productos" style={{ flex: 1, display: 'block', padding: '13px 0', background: '#3483fa', color: '#fff', textAlign: 'center', borderRadius: 6, fontSize: 15, fontWeight: 600, textDecoration: 'none' }}
-            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = '#2968c8')}
-            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = '#3483fa')}>
-            Seguir comprando
-          </Link>
-          <Link href="/cuenta/pedidos" style={{ flex: 1, display: 'block', padding: '13px 0', background: '#fff', color: '#3483fa', textAlign: 'center', borderRadius: 6, fontSize: 15, fontWeight: 600, textDecoration: 'none', border: '1px solid #3483fa' }}>
-            Ver mis pedidos
-          </Link>
-        </div>
-
       </div>
     </div>
   );

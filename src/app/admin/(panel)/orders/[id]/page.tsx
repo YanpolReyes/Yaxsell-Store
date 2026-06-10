@@ -556,6 +556,9 @@ export default function OrderDetailPage() {
       });
       setOrder(prev => prev ? { ...prev, SHIPPINGPROOFURL: url, STATUS: 'ready_to_ship' as OrderStatus } : prev);
       
+      // Abrir automáticamente el comprobante PDF/imagen en el navegador
+      window.open(url, '_blank');
+      
       try {
         const { notifyOrderStatusChange } = await import('@/services/notificationService');
         await notifyOrderStatusChange(order, prevStatus, 'ready_to_ship');
@@ -1020,7 +1023,14 @@ export default function OrderDetailPage() {
               {(order.SHIPPINGPROOFURL || order.STATUS === 'preparing_shipping') && (
                 <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100">
                   {order.SHIPPINGPROOFURL ? (
-                    <button onClick={() => setShippingProofOpen(true)}
+                    <button onClick={() => {
+                      const url = order.SHIPPINGPROOFURL!;
+                      if (url.toLowerCase().endsWith('.pdf') || (url.includes('/files/') && url.toLowerCase().includes('.pdf'))) {
+                        window.open(url, '_blank');
+                      } else {
+                        setShippingProofOpen(true);
+                      }
+                    }}
                       className="flex items-center gap-2 p-2.5 sm:p-3 bg-violet-50 border border-violet-200 rounded-lg sm:rounded-xl hover:bg-violet-100 transition group w-full text-left">
                       <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
                         <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600" />
@@ -1069,7 +1079,14 @@ export default function OrderDetailPage() {
                 </div>
               )}
               {order.PAYMENTPROOFURL ? (
-                <button onClick={() => setProofOpen(true)}
+                <button onClick={() => {
+                  const url = order.PAYMENTPROOFURL!;
+                  if (url.toLowerCase().endsWith('.pdf') || (url.includes('/files/') && url.toLowerCase().includes('.pdf'))) {
+                    window.open(url, '_blank');
+                  } else {
+                    setProofOpen(true);
+                  }
+                }}
                   className="flex items-center gap-2 p-2.5 sm:p-3 bg-emerald-50 border border-emerald-200 rounded-lg sm:rounded-xl hover:bg-emerald-100 transition group w-full text-left">
                   <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
                     <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
@@ -1165,6 +1182,11 @@ export default function OrderDetailPage() {
                         </span>
                       )}
                     </div>
+                    {(it as any).note && (
+                      <p className="text-[11px] bg-amber-50 text-amber-800 p-2 rounded-lg mt-1 border border-amber-100 font-medium">
+                        💬 Nota: {(it as any).note}
+                      </p>
+                    )}
                     <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5">
                       <span className="text-[10px] sm:text-xs text-gray-500">{fmt(it.price)} c/u</span>
                       <span className="text-gray-300">×</span>

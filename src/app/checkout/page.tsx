@@ -50,6 +50,7 @@ function CheckoutInner() {
     region: '', comuna: '', address: '', additionalInfo: '',
   });
   const [customerNote, setCustomerNote] = useState('');
+  const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
   const [isGift, setIsGift] = useState(false);
   const [agencies, setAgencies] = useState<AgencyOption[]>(FALLBACK_AGENCIES);
   const [agency, setAgency] = useState('');
@@ -383,7 +384,17 @@ function CheckoutInner() {
         const effectiveWholesale = (i.product.WHOLESALEPRICE && i.product.WHOLESALEMINQUANTITY && i.quantity >= i.product.WHOLESALEMINQUANTITY) ? i.product.WHOLESALEPRICE : i.wholesalePrice;
         const price = hasActiveOffer ? i.timedOfferPrice! : (effectiveWholesale || resolveProductDisplayPrice(i.product, apertura).displayPrice);
         const originalPrice = i.product.PRICE !== price ? i.product.PRICE : null;
-        return { id: i.product.$id, name: i.product.NAME, price, originalPrice, qty: i.quantity, img: resolveStorageImageUrl(i.product.IMAGEURL), total: price * i.quantity };
+        const note = itemNotes[i.product.$id] || '';
+        return { 
+          id: i.product.$id, 
+          name: i.product.NAME, 
+          price, 
+          originalPrice, 
+          qty: i.quantity, 
+          img: resolveStorageImageUrl(i.product.IMAGEURL), 
+          total: price * i.quantity,
+          ...(note.trim() ? { note: note.trim() } : {})
+        };
       });
 
       // ── Validación de stock antes de crear pedido (evita oversell) ──
@@ -852,30 +863,51 @@ function CheckoutInner() {
                 </div>
 
                 {/* Items */}
-                <div style={{ padding: '14px 22px', maxHeight: 240, overflowY: 'auto' }}>
+                <div style={{ padding: '14px 22px', maxHeight: 360, overflowY: 'auto' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {items.map((item, idx) => {
                       const pricing = resolveProductDisplayPrice(item.product, apertura);
                       const price = pricing.displayPrice;
                       return (
-                        <div key={`${item.product.$id}-${idx}`} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 10px', borderRadius: 12, background: '#fefcfe', border: '1px solid #fdf2f8', transition: 'all .15s' }}>
-                          <div style={{ position: 'relative', width: 48, height: 48, background: 'linear-gradient(135deg, #fdf2f8, #fff)', borderRadius: 12, overflow: 'visible', flexShrink: 0, border: '1px solid #fce7f3' }}>
-                            {item.product.IMAGEURL
-                              ? <img src={resolveStorageImageUrl(item.product.IMAGEURL)} alt={item.product.NAME} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', padding: 2 }} />
-                              : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📦</span>}
-                            <span style={{ position: 'absolute', top: -3, right: -3, background: `linear-gradient(135deg, ${PINK}, #c0547a)`, color: '#fff', fontSize: 8, fontWeight: 800, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(227,150,191,0.3)' }}>{item.quantity}</span>
+                        <div key={`${item.product.$id}-${idx}`} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 12px', borderRadius: 12, background: '#fefcfe', border: '1px solid #fdf2f8', transition: 'all .15s' }}>
+                          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                            <div style={{ position: 'relative', width: 48, height: 48, background: 'linear-gradient(135deg, #fdf2f8, #fff)', borderRadius: 12, overflow: 'visible', flexShrink: 0, border: '1px solid #fce7f3' }}>
+                              {item.product.IMAGEURL
+                                ? <img src={resolveStorageImageUrl(item.product.IMAGEURL)} alt={item.product.NAME} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', padding: 2 }} />
+                                : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📦</span>}
+                              <span style={{ position: 'absolute', top: -3, right: -3, background: `linear-gradient(135deg, ${PINK}, #c0547a)`, color: '#fff', fontSize: 8, fontWeight: 800, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(227,150,191,0.3)' }}>{item.quantity}</span>
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ margin: 0, fontSize: 12, color: '#374151', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontFamily: FF, fontWeight: 500 }}>{item.product.NAME}</p>
+                              {pricing.fromApertura && (
+                                <span style={{ fontSize: 9, fontWeight: 700, color: '#be185d', background: '#fdf2f8', padding: '2px 6px', borderRadius: 6, marginTop: 4, display: 'inline-block' }}>Promo apertura</span>
+                              )}
+                            </div>
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                              {pricing.hasDiscount && pricing.originalPrice != null && (
+                                <p style={{ margin: '0 0 2px', fontSize: 10, color: '#9ca3af', textDecoration: 'line-through', fontFamily: FF }}>{formatPrice(pricing.originalPrice * item.quantity)}</p>
+                              )}
+                              <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: pricing.fromApertura ? '#e396bf' : '#111', fontFamily: FF }}>{formatPrice(price * item.quantity)}</p>
+                            </div>
                           </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ margin: 0, fontSize: 12, color: '#374151', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontFamily: FF, fontWeight: 500 }}>{item.product.NAME}</p>
-                            {pricing.fromApertura && (
-                              <span style={{ fontSize: 9, fontWeight: 700, color: '#be185d', background: '#fdf2f8', padding: '2px 6px', borderRadius: 6, marginTop: 4, display: 'inline-block' }}>Promo apertura</span>
-                            )}
-                          </div>
-                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                            {pricing.hasDiscount && pricing.originalPrice != null && (
-                              <p style={{ margin: '0 0 2px', fontSize: 10, color: '#9ca3af', textDecoration: 'line-through', fontFamily: FF }}>{formatPrice(pricing.originalPrice * item.quantity)}</p>
-                            )}
-                            <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: pricing.fromApertura ? '#e396bf' : '#111', fontFamily: FF }}>{formatPrice(price * item.quantity)}</p>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <input 
+                              type="text" 
+                              placeholder="Nota: Ej. color azul, talla, etc."
+                              value={itemNotes[item.product.$id] || ''}
+                              onChange={(e) => setItemNotes(prev => ({ ...prev, [item.product.$id]: e.target.value }))}
+                              style={{ 
+                                width: '100%', 
+                                padding: '6px 10px', 
+                                fontSize: 11, 
+                                border: '1.5px solid #fce7f3', 
+                                borderRadius: 8, 
+                                outline: 'none',
+                                background: '#fff',
+                                color: '#111'
+                              }}
+                              className="ck-input-placeholder"
+                            />
                           </div>
                         </div>
                       );
