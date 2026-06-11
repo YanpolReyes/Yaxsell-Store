@@ -14,6 +14,7 @@ import WhatsAppButton from '@/components/WhatsAppButton';
 import ScrollToTop from '@/components/ScrollToTop';
 import HomeOnlyWidgets from '@/components/HomeOnlyWidgets';
 import PageViewTracker from '@/components/PageViewTracker';
+import ClientFetchCache from '@/components/ClientFetchCache';
 
 export const metadata: Metadata = {
   title: 'Kevin & Coco | Tienda',
@@ -74,6 +75,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script type="importmap" dangerouslySetInnerHTML={{ __html: pebbleImportMap }} />
       </head>
       <body>
+        <ClientFetchCache />
         <AuthProvider>
           <ToastProvider>
             <NotificationProvider>

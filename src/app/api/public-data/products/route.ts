@@ -19,9 +19,26 @@ function getLiveShoppingThreshold(): Date {
   }
 }
 
+// Module-level in-memory cache fallbacks (safe-guard in case unstable_cache is bypassed or server restarts)
+let memoryCacheAllProducts: any[] | null = null;
+let memoryCacheAllProductsTime = 0;
+
+let memoryCacheActiveOffers: any[] | null = null;
+let memoryCacheActiveOffersTime = 0;
+
+let memoryCacheAperturaSettings: any = null;
+let memoryCacheAperturaSettingsTime = 0;
+
+let memoryCacheLiveProducts: Record<string, { data: any[]; timestamp: number }> = {};
+
 // Cache all active products for 60 seconds
 const getCachedAllProducts = unstable_cache(
   async () => {
+    const now = Date.now();
+    if (memoryCacheAllProducts && (now - memoryCacheAllProductsTime < 60000)) {
+      return memoryCacheAllProducts;
+    }
+
     const { databases } = getServices();
     const { databaseId } = getAppwriteConfig();
     
@@ -52,7 +69,10 @@ const getCachedAllProducts = unstable_cache(
     }
     
     // Normalize images on fetch
-    return allProducts.map(p => normalizeProductImages(p as any));
+    const normalized = allProducts.map(p => normalizeProductImages(p as any));
+    memoryCacheAllProducts = normalized;
+    memoryCacheAllProductsTime = Date.now();
+    return normalized;
   },
   ['all-public-products-cache-v3'],
   { revalidate: 60, tags: ['products'] }
@@ -61,6 +81,11 @@ const getCachedAllProducts = unstable_cache(
 // Cache active offer target IDs
 const getCachedActiveOffers = unstable_cache(
   async () => {
+    const now = Date.now();
+    if (memoryCacheActiveOffers && (now - memoryCacheActiveOffersTime < 60000)) {
+      return memoryCacheActiveOffers;
+    }
+
     const { databases } = getServices();
     const { databaseId } = getAppwriteConfig();
     const res = await databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
@@ -68,7 +93,10 @@ const getCachedActiveOffers = unstable_cache(
       Query.equal('status', 'active'),
       Query.limit(100)
     ]);
-    return res.documents.map((d: any) => d.targetId).filter(Boolean);
+    const ids = res.documents.map((d: any) => d.targetId).filter(Boolean);
+    memoryCacheActiveOffers = ids;
+    memoryCacheActiveOffersTime = Date.now();
+    return ids;
   },
   ['active-offers-cache-v3'],
   { revalidate: 60, tags: ['offers'] }
@@ -77,7 +105,15 @@ const getCachedActiveOffers = unstable_cache(
 // Cache apertura settings
 const getCachedAperturaSettings = unstable_cache(
   async () => {
-    return await fetchAperturaSettings();
+    const now = Date.now();
+    if (memoryCacheAperturaSettings && (now - memoryCacheAperturaSettingsTime < 60000)) {
+      return memoryCacheAperturaSettings;
+    }
+
+    const settings = await fetchAperturaSettings();
+    memoryCacheAperturaSettings = settings;
+    memoryCacheAperturaSettingsTime = Date.now();
+    return settings;
   },
   ['apertura-settings-cache-v3'],
   { revalidate: 60, tags: ['settings'] }
@@ -86,6 +122,12 @@ const getCachedAperturaSettings = unstable_cache(
 // Cache live products for 30 seconds
 const getCachedLiveProducts = unstable_cache(
   async (thresholdIso: string) => {
+    const now = Date.now();
+    const cached = memoryCacheLiveProducts[thresholdIso];
+    if (cached && (now - cached.timestamp < 30000)) {
+      return cached.data;
+    }
+
     const { databases } = getServices();
     const { databaseId } = getAppwriteConfig();
     const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
@@ -94,7 +136,12 @@ const getCachedLiveProducts = unstable_cache(
       Query.orderDesc('imported_at'),
       Query.limit(500),
     ]);
-    return res.documents.map(p => normalizeProductImages(p as any));
+    const normalized = res.documents.map(p => normalizeProductImages(p as any));
+    memoryCacheLiveProducts[thresholdIso] = {
+      data: normalized,
+      timestamp: Date.now()
+    };
+    return normalized;
   },
   ['live-products-cache-v3'],
   { revalidate: 30, tags: ['products', 'live'] }
