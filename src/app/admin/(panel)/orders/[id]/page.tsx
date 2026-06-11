@@ -559,9 +559,15 @@ export default function OrderDetailPage() {
   const isOverdue = order.STATUS === 'pending' && ageMs > 3 * 86400000;
   const scRaw = STATUS_CONFIG[order.STATUS] || STATUS_CONFIG.pending;
   const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+  const isReadyRetiro = order.STATUS === 'ready_to_ship' && isRetiro;
   const sc = {
     ...scRaw,
-    label: (order.STATUS === 'ready_to_ship' && isRetiro) ? 'Listo para retirar' : scRaw.label
+    label: isReadyRetiro ? 'Listo para retirar' : scRaw.label,
+    bg: isReadyRetiro ? 'bg-fuchsia-50' : scRaw.bg,
+    text: isReadyRetiro ? 'text-fuchsia-700' : scRaw.text,
+    border: isReadyRetiro ? 'border-fuchsia-200' : scRaw.border,
+    dot: isReadyRetiro ? 'bg-fuchsia-400' : scRaw.dot,
+    icon: isReadyRetiro ? '🛍️' : scRaw.icon,
   };
   const customerNote = (order as any).CUSTOMERNOTE;
   const isGift = (order as any).ISGIFT;
@@ -957,12 +963,17 @@ export default function OrderDetailPage() {
           </div>
           {/* Progress bar */}
           <div className="flex items-center gap-0.5 sm:gap-1">
-            {STATUS_FLOW.map((step, i) => {
+             {STATUS_FLOW.map((step, i) => {
               const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+              const isReadyRetiro = step === 'ready_to_ship' && isRetiro;
               const stepCfgRaw = STATUS_CONFIG[step];
               const stepCfg = {
                 ...stepCfgRaw,
-                label: (step === 'ready_to_ship' && isRetiro) ? 'Listo para retirar' : stepCfgRaw.label
+                label: isReadyRetiro ? 'Listo para retirar' : stepCfgRaw.label,
+                bg: isReadyRetiro ? 'bg-fuchsia-50' : stepCfgRaw.bg,
+                text: isReadyRetiro ? 'text-fuchsia-700' : stepCfgRaw.text,
+                border: isReadyRetiro ? 'border-fuchsia-200' : stepCfgRaw.border,
+                dot: isReadyRetiro ? 'bg-fuchsia-400' : stepCfgRaw.dot,
               };
               const isCompleted = i <= currentStepIdx;
               const isCurrent = i === currentStepIdx;

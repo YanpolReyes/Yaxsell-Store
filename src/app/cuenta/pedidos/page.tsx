@@ -196,7 +196,11 @@ export default function MisPedidosPage() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {filtered.map(order => {
-              const st = STATUS[order.STATUS] || { label: order.STATUS, bg: '#f5f5f5', color: '#666' };
+              const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+              const isReadyRetiro = order.STATUS === 'ready_to_ship' && isRetiro;
+              const st = isReadyRetiro 
+                ? { label: 'Listo para retirar', bg: '#fae8ff', color: '#a21caf' }
+                : (STATUS[order.STATUS] || { label: order.STATUS, bg: '#f5f5f5', color: '#666' });
               let items: any[] = [];
               try { items = JSON.parse(order.ITEMS || '[]'); } catch {}
               const qty = items.reduce((s: number, i: any) => s + (i.qty || 1), 0);

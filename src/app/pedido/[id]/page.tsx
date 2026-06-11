@@ -877,7 +877,11 @@ export default function PedidoPage() {
 
   const isPending = order.STATUS === 'pending';
   const BANK = getBankDetails();
-  const status = STATUS_MAP[order.STATUS] || { label: order.STATUS, color: '#333', bg: '#f5f5f5' };
+  const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+  const isReadyRetiro = order.STATUS === 'ready_to_ship' && isRetiro;
+  const status = isReadyRetiro 
+    ? { label: 'Listo para retirar', color: '#a21caf', bg: '#fae8ff' }
+    : (STATUS_MAP[order.STATUS] || { label: order.STATUS, color: '#333', bg: '#f5f5f5' });
   const showTimer = isPending && order.EXPIRESAT && !uploaded;
   const isSuccess = uploaded || order.STATUS !== 'pending';
   const customerEditCount = getCustomerEditCount(order);
@@ -915,7 +919,16 @@ export default function PedidoPage() {
         </div>
 
         {(() => {
-          const info = STATUS_DESCRIPTIONS[order.STATUS] || { title: 'Estado del pedido', desc: 'Tu pedido está siendo procesado.', alertType: 'info' };
+          const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+          const isReadyRetiro = order.STATUS === 'ready_to_ship' && isRetiro;
+          const infoRaw = STATUS_DESCRIPTIONS[order.STATUS] || { title: 'Estado del pedido', desc: 'Tu pedido está siendo procesado.', alertType: 'info' };
+          const info = isReadyRetiro 
+            ? {
+                title: 'Listo para retirar',
+                desc: '¡Tu pedido ya está listo! Puedes pasar a retirarlo en nuestra tienda física.',
+                alertType: 'indigo'
+              }
+            : infoRaw;
           let bgClass = 'bg-blue-50/80 border-blue-200 text-blue-800';
           let iconColor = 'text-blue-500';
           if (info.alertType === 'warning') {
@@ -925,20 +938,30 @@ export default function PedidoPage() {
             bgClass = 'bg-green-50/80 border-green-200 text-green-800';
             iconColor = 'text-green-600';
           } else if (info.alertType === 'indigo') {
-            bgClass = 'bg-indigo-50/80 border-indigo-200 text-indigo-800';
-            iconColor = 'text-indigo-600';
+            bgClass = isReadyRetiro 
+              ? 'bg-fuchsia-50 border-fuchsia-200 text-fuchsia-800' 
+              : 'bg-indigo-50/80 border-indigo-200 text-indigo-800';
+            iconColor = isReadyRetiro ? 'text-fuchsia-500' : 'text-indigo-600';
           } else if (info.alertType === 'danger') {
             bgClass = 'bg-red-50/80 border-red-200 text-red-800';
             iconColor = 'text-red-600';
           }
           return (
-            <div className={`rounded-3xl p-5 md:p-6 border ${bgClass} shadow-sm flex items-start gap-3.5`}>
-              <div className="w-10 h-10 rounded-2xl bg-white/85 flex items-center justify-center shrink-0 shadow-sm border border-black/5">
-                <Shield className={`w-5 h-5 ${iconColor}`} />
+            <div className={`border rounded-3xl p-5 md:p-6 mb-8 flex items-start gap-4 transition-all duration-300 ${bgClass}`}>
+              <div className={`p-3 rounded-2xl bg-white shadow-sm flex-shrink-0 ${iconColor}`}>
+                {order.STATUS === 'pending' && <Clock size={24} />}
+                {order.STATUS === 'processing' && <Upload size={24} />}
+                {order.STATUS === 'paid' && <CheckCircle size={24} />}
+                {order.STATUS === 'assembling' && <Package size={24} />}
+                {order.STATUS === 'preparing_shipping' && <Tag size={24} />}
+                {order.STATUS === 'ready_to_ship' && <Receipt size={24} />}
+                {order.STATUS === 'shipped' && <Truck size={24} />}
+                {order.STATUS === 'delivered' && <CheckCircle size={24} />}
+                {order.STATUS === 'cancelled' && <AlertTriangle size={24} />}
               </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-extrabold tracking-tight uppercase">{info.title}</h3>
-                <p className="text-xs leading-relaxed mt-1 opacity-90">{info.desc}</p>
+              <div className="flex-1">
+                <h3 className="font-bold text-base md:text-lg mb-1">{info.title}</h3>
+                <p className="text-sm leading-relaxed opacity-90">{info.desc}</p>
               </div>
             </div>
           );
@@ -946,13 +969,14 @@ export default function PedidoPage() {
 
         {/* ── Order Timeline (Stepper) ── */}
         {(() => {
+          const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
           const steps = [
             { key: 'pending',            label: 'Pedido',       icon: <Clock size={15} /> },
             { key: 'processing',         label: 'Verificando',  icon: <Upload size={15} /> },
             { key: 'paid',               label: 'Verificado',   icon: <CheckCircle size={15} /> },
             { key: 'assembling',         label: 'Armando',      icon: <Package size={15} /> },
             { key: 'preparing_shipping', label: 'Prep. Envío',  icon: <Tag size={15} /> },
-            { key: 'ready_to_ship',      label: 'Etiqueta',     icon: <Receipt size={15} /> },
+            { key: 'ready_to_ship',      label: isRetiro ? 'Retiro' : 'Etiqueta',     icon: <Receipt size={15} /> },
             { key: 'shipped',            label: 'Enviado',      icon: <Truck size={15} /> },
             { key: 'delivered',          label: 'Entregado',    icon: <CheckCircle size={15} /> },
           ];
