@@ -1146,11 +1146,16 @@ export default function ProductsPage() {
         });
       });
 
+      const cleanVal = (val: any) => {
+        if (val === null || val === undefined) return '';
+        return String(val).replace(/\r/g, '');
+      };
+
       const csvContent = [headers, ...rows]
-        .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+        .map(r => r.map(v => `"${cleanVal(v).replace(/"/g, '""')}"`).join(','))
         .join('\n');
 
-      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
