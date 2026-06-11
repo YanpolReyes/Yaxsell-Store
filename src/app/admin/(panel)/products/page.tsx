@@ -1058,8 +1058,8 @@ export default function ProductsPage() {
         const title = isVariant ? '' : parent.NAME;
         const desc = isVariant ? '' : (parent.DESCRIPTION || '');
         const vendor = isVariant ? '' : 'Kevin & Coco';
-        const category = isVariant ? '' : catName(parent.CATEGORYID);
-        const type = isVariant ? '' : '';
+        const category = isVariant ? '' : '';
+        const type = isVariant ? '' : catName(parent.CATEGORYID);
         const tags = isVariant ? '' : (parent.TAGS || '');
         const status = isVariant ? '' : (parent.ISACTIVE !== false ? 'active' : 'draft');
         const published = isVariant ? '' : 'TRUE';
