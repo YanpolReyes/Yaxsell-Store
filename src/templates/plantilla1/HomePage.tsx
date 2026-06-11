@@ -813,7 +813,7 @@ export default function HomePage1() {
   }, [bodyHtml]);
 
   /* ── Hacer funcionales los botones del navbar Shopify (search, user, cart) ── */
-  const { totalItems, items, subtotal, removeItem, updateQuantity, addItem } = useCart();
+  const { totalItems, items, subtotal, removeItem, updateQuantity, addItem, getEffectivePrice } = useCart();
   const { unreadCount } = useNotifications();
   const [notifOpen, setNotifOpen] = useState(false);
 
@@ -2294,10 +2294,7 @@ export default function HomePage1() {
 
       let html = '<div class="tpl1-cart-items-scroll" style="overflow-y:auto;flex:1;padding:20px;">';
       items.forEach(item => {
-        const now = Date.now();
-        const price = (item.timedOfferPrice && item.timedOfferExpiresAt && now < item.timedOfferExpiresAt)
-          ? item.timedOfferPrice
-          : (item.product.CURRENTPRICE && item.product.CURRENTPRICE > 0 ? item.product.CURRENTPRICE : item.product.PRICE);
+        const price = getEffectivePrice(item);
         const hasDisc = item.product.CURRENTPRICE && item.product.CURRENTPRICE > 0 && item.product.CURRENTPRICE < item.product.PRICE;
         html += `<div style="display:flex;gap:16px;padding:18px 0;border-bottom:1px solid #fce7f3;align-items:flex-start;">
           <div class="tpl1-cart-item-img" data-product-id="${item.product.$id}" style="width:72px;height:72px;border-radius:12px;overflow:hidden;background:#fef2f8;flex-shrink:0;border:1px solid #fce7f3;cursor:pointer;position:relative;transition:transform 0.2s ease;">

@@ -34,7 +34,7 @@ export default function Navbar1() {
   const isHome = pathname === '/';
   const { user, isLoggedIn, logout } = useAuth();
   const { unlimitedStock } = useStoreSettings();
-  const { totalItems, items, subtotal, removeItem, updateQuantity } = useCart();
+  const { totalItems, items, subtotal, removeItem, updateQuantity, getEffectivePrice } = useCart();
   const { unreadCount } = useNotifications();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -848,10 +848,7 @@ export default function Navbar1() {
             ) : (
               <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
                 {items.map(item => {
-                  const now = Date.now();
-                  const price = (item.timedOfferPrice && item.timedOfferExpiresAt && now < item.timedOfferExpiresAt)
-                    ? item.timedOfferPrice
-                    : (item.product.CURRENTPRICE && item.product.CURRENTPRICE > 0 ? item.product.CURRENTPRICE : item.product.PRICE);
+                  const price = getEffectivePrice(item);
                   return (
                     <div key={item.product.$id} style={{ display: 'flex', gap: 16, padding: '16px 24px', borderBottom: '1px solid #f3f4f6', alignItems: 'center' }}>
                       {/* Imagen del producto - clickable */}

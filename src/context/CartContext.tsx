@@ -20,6 +20,7 @@ interface CartContextType {
   subtotal: number;
   catalogSubtotal: number;
   aperturaSavings: number;
+  getEffectivePrice: (item: CartItem) => number;
 }
 
 // Legacy per-item collection (kept for admin backward compat on read)
@@ -122,7 +123,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, totalItems, subtotal, catalogSubtotal, aperturaSavings }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, totalItems, subtotal, catalogSubtotal, aperturaSavings, getEffectivePrice }}>
       {children}
     </CartContext.Provider>
   );

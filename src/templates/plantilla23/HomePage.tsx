@@ -192,7 +192,7 @@ export default function HomePage23() {
   const { user } = useAuth();
   const { unlimitedStock } = useStoreSettings();
   const router = useRouter();
-  const { addItem, items: cartItems, subtotal: cartTotal, updateQuantity, removeItem } = useCart();
+  const { addItem, items: cartItems, subtotal: cartTotal, updateQuantity, removeItem, getEffectivePrice } = useCart();
   const { settings: apertura } = useAperturaPromotion();
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
@@ -3665,7 +3665,7 @@ export default function HomePage23() {
         <h5 class="headding mb-3">Carrito</h5>
         <div class="flex flex-col gap-[0.5rem] pt-2" style="max-height: 48vh; overflow-y: auto;">
            ${sortedItems.map((item: any) => {
-             const price = (item.product?.CURRENTPRICE && item.product.CURRENTPRICE > 0) ? item.product.CURRENTPRICE : (item.product?.PRICE || 0);
+             const price = getEffectivePrice(item);
              return `
                <div class="cart-item">
                   <a href="/productos/${item.product.$id}" class="image-wrapper block h-[64px] w-[64px] min-h-[64px] min-w-[64px] relative">
