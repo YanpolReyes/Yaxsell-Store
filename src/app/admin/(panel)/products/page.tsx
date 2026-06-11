@@ -981,6 +981,165 @@ export default function ProductsPage() {
     a.click(); URL.revokeObjectURL(url);
   };
 
+  const exportShopifyCSV = () => {
+    const slugify = (text: string) => {
+      return text
+        .toString()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\-]+/g, '')
+        .replace(/\-\-+/g, '-')
+        .replace(/^-+/, '')
+        .replace(/-+$/, '');
+    };
+
+    const headers = [
+      'Title', 'URL handle', 'Description', 'Vendor', 'Product category', 'Type', 'Tags',
+      'Published on online store', 'Status', 'SKU', 'Barcode',
+      'Option1 name', 'Option1 value', 'Option1 Linked To',
+      'Option2 name', 'Option2 value', 'Option2 Linked To',
+      'Option3 name', 'Option3 value', 'Option3 Linked To',
+      'Price', 'Compare-at price', 'Cost per item', 'Charge tax', 'Tax code',
+      'Unit price total measure', 'Unit price total measure unit',
+      'Unit price base measure', 'Unit price base measure unit',
+      'Inventory tracker', 'Inventory quantity', 'Continue selling when out of stock',
+      'Weight value (grams)', 'Weight unit for display', 'Requires shipping', 'Fulfillment service',
+      'Product image URL', 'Image position', 'Image alt text', 'Variant image URL',
+      'Gift card', 'SEO title', 'SEO description',
+      'Color (product.metafields.shopify.color-pattern)',
+      'Google Shopping / Google product category', 'Google Shopping / Gender',
+      'Google Shopping / Age group', 'Google Shopping / Manufacturer part number (MPN)',
+      'Google Shopping / Ad group name', 'Google Shopping / Ads labels',
+      'Google Shopping / Condition', 'Google Shopping / Custom product',
+      'Google Shopping / Custom label 0', 'Google Shopping / Custom label 1',
+      'Google Shopping / Custom label 2', 'Google Shopping / Custom label 3',
+      'Google Shopping / Custom label 4'
+    ];
+
+    const rows: string[][] = [];
+
+    // Group products by GROUPID to support Shopify variants
+    const groups: Record<string, Product[]> = {};
+    const standalone: Product[] = [];
+
+    products.forEach(p => {
+      const gid = p.GROUPID?.trim();
+      if (gid) {
+        if (!groups[gid]) groups[gid] = [];
+        groups[gid].push(p);
+      } else {
+        standalone.push(p);
+      }
+    });
+
+    const addProductRows = (parent: Product, isVariant: boolean, variantVal?: string, variantImg?: string) => {
+      const handle = slugify(parent.NAME);
+      const title = isVariant ? '' : parent.NAME;
+      const desc = isVariant ? '' : (parent.DESCRIPTION || '');
+      const vendor = isVariant ? '' : 'Kevin & Coco';
+      const category = isVariant ? '' : catName(parent.CATEGORYID);
+      const type = isVariant ? '' : '';
+      const tags = isVariant ? '' : (parent.TAGS || '');
+      const status = isVariant ? '' : (parent.ISACTIVE !== false ? 'active' : 'draft');
+      const published = isVariant ? '' : 'TRUE';
+      const optName = isVariant ? 'Title' : (variantVal ? 'Title' : 'Title');
+      const optVal = variantVal || 'Default Title';
+
+      const sku = getSku(parent);
+      const barcode = getBarcode(parent) || '';
+
+      let price = parent.PRICE;
+      let compareAtPrice = '';
+      if (parent.CURRENTPRICE && parent.CURRENTPRICE > 0 && parent.CURRENTPRICE < parent.PRICE) {
+        price = parent.CURRENTPRICE;
+        compareAtPrice = String(parent.PRICE);
+      }
+
+      const cost = parent.COST ? String(parent.COST) : '';
+
+      // Main image for this row
+      const mainImg = variantImg || parent.IMAGEURL || '';
+
+      const row = Array(57).fill('');
+      row[0] = title;
+      row[1] = handle;
+      row[2] = desc;
+      row[3] = vendor;
+      row[4] = category;
+      row[5] = type;
+      row[6] = tags;
+      row[7] = published;
+      row[8] = status;
+      row[9] = sku;
+      row[10] = barcode;
+      row[11] = optName;
+      row[12] = optVal;
+      row[20] = String(price);
+      row[21] = compareAtPrice;
+      row[22] = cost;
+      row[23] = 'TRUE';
+      row[29] = 'shopify';
+      row[30] = String(parent.STOCK ?? 0);
+      row[31] = 'DENY';
+      row[34] = 'TRUE';
+      row[35] = 'manual';
+      if (variantImg) {
+        row[39] = variantImg; // Variant image URL
+      } else {
+        row[36] = mainImg; // Product image URL
+        row[37] = mainImg ? '1' : '';
+      }
+      row[40] = 'FALSE';
+
+      rows.push(row);
+
+      // Add extra images if not a variant
+      if (!isVariant) {
+        let imgPos = 2;
+        [parent.IMAGEURL2, parent.IMAGEURL3].filter(Boolean).forEach(url => {
+          const imgRow = Array(57).fill('');
+          imgRow[1] = handle;
+          imgRow[36] = url;
+          imgRow[37] = String(imgPos++);
+          rows.push(imgRow);
+        });
+      }
+    };
+
+    // Process standalone
+    standalone.forEach(p => {
+      addProductRows(p, false);
+    });
+
+    // Process grouped variants
+    Object.values(groups).forEach(group => {
+      if (group.length === 0) return;
+      const parent = group[0];
+      
+      // Main row (Variant 1)
+      addProductRows(parent, false, parent.NAME, parent.IMAGEURL || '');
+
+      // Subsequent variant rows
+      group.slice(1).forEach(v => {
+        addProductRows(v, true, v.NAME, v.IMAGEURL || '');
+      });
+    });
+
+    const csvContent = [headers, ...rows]
+      .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `shopify_export_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const getSku = (p: Product) =>
     getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku) || p.$id;
 
@@ -1546,6 +1705,9 @@ export default function ProductsPage() {
           </button>
           <button onClick={exportXLSX} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm font-medium hover:bg-green-100 transition disabled:opacity-50">
             <Download className="w-4 h-4" />XLSX
+          </button>
+          <button onClick={exportShopifyCSV} disabled={products.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-100 transition disabled:opacity-50" title="Exportar productos en formato CSV compatible con Shopify">
+            <Download className="w-4 h-4" /> Shopify CSV
           </button>
           <button onClick={() => setAiCategorizeModal(true)} className="flex items-center gap-1.5 px-3 py-2 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-700 transition shadow-sm" title="Categorizar productos usando IA">
             <Sparkles className="w-4 h-4" /> Categorizar con Yexy
