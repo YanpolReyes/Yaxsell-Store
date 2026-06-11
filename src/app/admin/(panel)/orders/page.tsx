@@ -197,7 +197,7 @@ function OrdersContent() {
         o.REGION || '',
         o.COMUNA || '',
         o.TOTAL,
-        STATUS_CONFIG[o.STATUS]?.label || o.STATUS,
+        (o.STATUS === 'ready_to_ship' && o.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA') ? 'Listo para retirar' : (STATUS_CONFIG[o.STATUS]?.label || o.STATUS),
         o.PAYMENTMETHOD || '',
         (o as any).COUPONCODE || '',
         itemCount,
@@ -394,7 +394,7 @@ function OrdersContent() {
                       <span className="font-mono text-xs text-indigo-600 font-bold hover:underline">{order.ORDERCODE || '—'}</span>
                     </div>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_CONFIG[order.STATUS]?.bg || 'bg-gray-100'} ${STATUS_CONFIG[order.STATUS]?.text || 'text-gray-700'}`}>
-                      {STATUS_CONFIG[order.STATUS]?.label}
+                      {(order.STATUS === 'ready_to_ship' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA') ? 'Listo para retirar' : (STATUS_CONFIG[order.STATUS]?.label || order.STATUS)}
                     </span>
                   </div>
 
@@ -554,9 +554,11 @@ function OrdersContent() {
                             disabled={isUpdating}
                             className={`appearance-none text-xs font-medium px-2.5 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 pr-6 ${STATUS_CONFIG[order.STATUS]?.bg || 'bg-gray-100'} ${STATUS_CONFIG[order.STATUS]?.text || 'text-gray-700'}`}
                           >
-                            {Object.entries(STATUS_CONFIG).filter(([k]) => k !== 'all').map(([k, v]) => (
-                              <option key={k} value={k}>{v.label}</option>
-                            ))}
+                            {Object.entries(STATUS_CONFIG).filter(([k]) => k !== 'all').map(([k, v]) => {
+                              const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+                              const label = (k === 'ready_to_ship' && isRetiro) ? 'Listo para retirar' : v.label;
+                              return <option key={k} value={k}>{label}</option>;
+                            })}
                           </select>
                           <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" />
                         </div>

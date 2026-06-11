@@ -557,7 +557,12 @@ export default function OrderDetailPage() {
   const date = order.CREATEDAT ? new Date(order.CREATEDAT) : new Date(order.$createdAt);
   const ageMs = Date.now() - date.getTime();
   const isOverdue = order.STATUS === 'pending' && ageMs > 3 * 86400000;
-  const sc = STATUS_CONFIG[order.STATUS] || STATUS_CONFIG.pending;
+  const scRaw = STATUS_CONFIG[order.STATUS] || STATUS_CONFIG.pending;
+  const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+  const sc = {
+    ...scRaw,
+    label: (order.STATUS === 'ready_to_ship' && isRetiro) ? 'Listo para retirar' : scRaw.label
+  };
   const customerNote = (order as any).CUSTOMERNOTE;
   const isGift = (order as any).ISGIFT;
   const isLive = (order as any).PURCHASEDFROMLIVE;
@@ -941,9 +946,11 @@ export default function OrderDetailPage() {
             <div className="no-print relative">
               <select value={order.STATUS} onChange={e => handleStatusChange(e.target.value)} disabled={updating}
                 className="appearance-none text-xs sm:text-sm font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 pr-7 sm:pr-8 bg-white text-gray-800 border-gray-200 disabled:opacity-50">
-                {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-                  <option key={k} value={k}>{v.icon} {v.label}</option>
-                ))}
+                {Object.entries(STATUS_CONFIG).map(([k, v]) => {
+                  const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+                  const label = (k === 'ready_to_ship' && isRetiro) ? 'Listo para retirar' : v.label;
+                  return <option key={k} value={k}>{v.icon} {label}</option>;
+                })}
               </select>
               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 sm:w-4 h-3 sm:h-4 pointer-events-none text-gray-400" />
             </div>
@@ -951,7 +958,12 @@ export default function OrderDetailPage() {
           {/* Progress bar */}
           <div className="flex items-center gap-0.5 sm:gap-1">
             {STATUS_FLOW.map((step, i) => {
-              const stepCfg = STATUS_CONFIG[step];
+              const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+              const stepCfgRaw = STATUS_CONFIG[step];
+              const stepCfg = {
+                ...stepCfgRaw,
+                label: (step === 'ready_to_ship' && isRetiro) ? 'Listo para retirar' : stepCfgRaw.label
+              };
               const isCompleted = i <= currentStepIdx;
               const isCurrent = i === currentStepIdx;
               return (
@@ -990,9 +1002,11 @@ export default function OrderDetailPage() {
           <div className="no-print relative">
             <select value={order.STATUS} onChange={e => handleStatusChange(e.target.value)} disabled={updating}
               className="appearance-none text-xs sm:text-sm font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 pr-7 sm:pr-8 bg-white text-gray-800 border-gray-200">
-              {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-                <option key={k} value={k}>{v.icon} {v.label}</option>
-              ))}
+              {Object.entries(STATUS_CONFIG).map(([k, v]) => {
+                const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+                const label = (k === 'ready_to_ship' && isRetiro) ? 'Listo para retirar' : v.label;
+                return <option key={k} value={k}>{v.icon} {label}</option>;
+              })}
             </select>
           </div>
         </div>
@@ -1074,9 +1088,13 @@ export default function OrderDetailPage() {
                   {order.SHIPPINGPROOFURL && (
                     <TimelineEntry dot="bg-violet-400" title="Comprobante de envío subido" icon={<Truck className="w-3 h-3" />} />
                   )}
-                  {order.UPDATEDAT && order.STATUS !== 'pending' && (
-                    <TimelineEntry dot={STATUS_CONFIG[order.STATUS]?.dot || 'bg-gray-400'} title={`Estado → ${STATUS_CONFIG[order.STATUS]?.label}`} date={`${fmtDate(order.UPDATEDAT)} ${fmtTime(order.UPDATEDAT)}`} />
-                  )}
+                  {order.UPDATEDAT && order.STATUS !== 'pending' && (() => {
+                    const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+                    const title = `Estado → ${(order.STATUS === 'ready_to_ship' && isRetiro) ? 'Listo para retirar' : (STATUS_CONFIG[order.STATUS]?.label || order.STATUS)}`;
+                    return (
+                      <TimelineEntry dot={STATUS_CONFIG[order.STATUS]?.dot || 'bg-gray-400'} title={title} date={`${fmtDate(order.UPDATEDAT)} ${fmtTime(order.UPDATEDAT)}`} />
+                    );
+                  })()}
                   {isCancelled && (
                     <TimelineEntry dot="bg-red-400" title="Pedido cancelado — stock devuelto" />
                   )}
@@ -1272,7 +1290,9 @@ export default function OrderDetailPage() {
               </a>
             )}
             <button onClick={() => {
-              const text = `Pedido: ${order.ORDERCODE}\nCliente: ${order.CUSTOMERNAME}\nRUT: ${order.CUSTOMERRUT || '-'}\nTeléfono: ${order.CUSTOMERPHONE || '-'}\nDirección: ${order.ADDRESS}, ${order.COMUNA}, ${order.REGION}\nAgencia: ${order.SHIPPINGAGENCY || '-'}\nTotal: ${fmt(order.TOTAL)}\nEstado: ${STATUS_CONFIG[order.STATUS]?.label}`;
+              const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
+              const statusLabel = (order.STATUS === 'ready_to_ship' && isRetiro) ? 'Listo para retirar' : (STATUS_CONFIG[order.STATUS]?.label || order.STATUS);
+              const text = `Pedido: ${order.ORDERCODE}\nCliente: ${order.CUSTOMERNAME}\nRUT: ${order.CUSTOMERRUT || '-'}\nTeléfono: ${order.CUSTOMERPHONE || '-'}\nDirección: ${order.ADDRESS}, ${order.COMUNA}, ${order.REGION}\nAgencia: ${order.SHIPPINGAGENCY || '-'}\nTotal: ${fmt(order.TOTAL)}\nEstado: ${statusLabel}`;
               copyText(text, 'all');
             }}
               className="flex items-center gap-2 w-full p-2 sm:p-2.5 bg-gray-50 border border-gray-200 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-100 transition">

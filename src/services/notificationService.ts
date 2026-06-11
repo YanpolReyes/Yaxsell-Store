@@ -186,9 +186,17 @@ export async function notifyOrderStatusChange(
 
   if (await existsByRefKey(refKey, userId)) return;
 
+  let title = copy.title;
+  let message = copy.buildMessage(code);
+
+  if (newStatus === 'ready_to_ship' && order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA') {
+    title = 'Listo para retirar';
+    message = `Tu pedido ${code} está listo para ser retirado en tienda.`;
+  }
+
   await createNotificationClient({
-    title: copy.title,
-    message: copy.buildMessage(code),
+    title,
+    message,
     type: 'order',
     userId,
     link: `/cuenta/pedidos`,
