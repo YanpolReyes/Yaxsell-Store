@@ -175,19 +175,16 @@ export default function BulkAddPage() {
           let product: any = null;
           if (row.sku) {
             const cleanSku = row.sku.trim();
-            const queryAttempts = [
-              [Query.equal('sku', cleanSku)],
-              [Query.contains('FEATURES', `SKU: ${cleanSku}`)],
-              [Query.equal('jumpseller_id', cleanSku)]
-            ];
-            for (const qry of queryAttempts) {
-              try {
-                const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [...qry, Query.limit(1)]);
-                if (resp.documents.length > 0) {
-                  product = resp.documents[0];
-                  break;
-                }
-              } catch {}
+            try {
+              const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+                Query.equal('sku', cleanSku),
+                Query.limit(1)
+              ]);
+              if (resp.documents.length > 0) {
+                product = resp.documents[0];
+              }
+            } catch (err: any) {
+              console.error('Error checking SKU:', err);
             }
           }
 
