@@ -819,7 +819,7 @@ export default function PedidoPage() {
   const showTimer = isPending && order.EXPIRESAT && !uploaded;
   const isSuccess = uploaded || order.STATUS !== 'pending';
   const customerEditCount = getCustomerEditCount(order);
-  const canCustomerModify = customerEditCount < 2 && !['paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'].includes(order.STATUS);
+  const canCustomerModify = !['paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'].includes(order.STATUS);
   // Allow replacement selection even for 'paid'/'processing' orders if there are missing items
   const hasMissingItems = items.some(it => !!(it as any).missing);
   const canChooseReplacement = hasMissingItems && !['shipped', 'delivered', 'cancelled'].includes(order.STATUS);
