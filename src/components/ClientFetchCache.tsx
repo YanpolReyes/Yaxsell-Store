@@ -3,11 +3,11 @@
 import { useEffect } from 'react';
 
 const CACHE_RULES: Record<string, number> = {
-  '/api/public-data/products': 180000, // 3 minutes
-  '/api/public-data/catalog': 300000,  // 5 minutes
-  '/api/agencies': 300000,             // 5 minutes
-  '/api/public-data/hotspots': 180000, // 3 minutes
-  '/api/public-data/home': 180000,     // 3 minutes
+  '/api/public-data/products': 300000, // 5 minutes
+  '/api/public-data/catalog': 600000,  // 10 minutes
+  '/api/agencies': 600000,             // 10 minutes
+  '/api/public-data/hotspots': 300000, // 5 minutes
+  '/api/public-data/home': 300000,     // 5 minutes
 };
 
 export default function ClientFetchCache() {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServices, getAppwriteConfig, SUBCATEGORIES_COLLECTION } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 export async function GET(request: NextRequest) {
   try {

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, BANNERS_COLLECTION, TIMED_OFFERS_COLLECTION } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 
-export const revalidate = 60; // Cache for 60 seconds across all users
+export const revalidate = 300; // Cache for 5 minutes across all users
 
 export async function GET() {
   try {

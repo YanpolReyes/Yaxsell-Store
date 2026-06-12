@@ -31,11 +31,11 @@ let memoryCacheAperturaSettingsTime = 0;
 
 let memoryCacheLiveProducts: Record<string, { data: any[]; timestamp: number }> = {};
 
-// Cache all active products for 60 seconds
+// Cache all active products for 300 seconds
 const getCachedAllProducts = unstable_cache(
   async () => {
     const now = Date.now();
-    if (memoryCacheAllProducts && (now - memoryCacheAllProductsTime < 60000)) {
+    if (memoryCacheAllProducts && (now - memoryCacheAllProductsTime < 300000)) {
       return memoryCacheAllProducts;
     }
 
@@ -75,14 +75,14 @@ const getCachedAllProducts = unstable_cache(
     return normalized;
   },
   ['all-public-products-cache-v3'],
-  { revalidate: 60, tags: ['products'] }
+  { revalidate: 300, tags: ['products'] }
 );
 
 // Cache active offer target IDs
 const getCachedActiveOffers = unstable_cache(
   async () => {
     const now = Date.now();
-    if (memoryCacheActiveOffers && (now - memoryCacheActiveOffersTime < 60000)) {
+    if (memoryCacheActiveOffers && (now - memoryCacheActiveOffersTime < 300000)) {
       return memoryCacheActiveOffers;
     }
 
@@ -99,14 +99,14 @@ const getCachedActiveOffers = unstable_cache(
     return ids;
   },
   ['active-offers-cache-v3'],
-  { revalidate: 60, tags: ['offers'] }
+  { revalidate: 300, tags: ['offers'] }
 );
 
 // Cache apertura settings
 const getCachedAperturaSettings = unstable_cache(
   async () => {
     const now = Date.now();
-    if (memoryCacheAperturaSettings && (now - memoryCacheAperturaSettingsTime < 60000)) {
+    if (memoryCacheAperturaSettings && (now - memoryCacheAperturaSettingsTime < 300000)) {
       return memoryCacheAperturaSettings;
     }
 
@@ -116,15 +116,15 @@ const getCachedAperturaSettings = unstable_cache(
     return settings;
   },
   ['apertura-settings-cache-v3'],
-  { revalidate: 60, tags: ['settings'] }
+  { revalidate: 300, tags: ['settings'] }
 );
 
-// Cache live products for 30 seconds
+// Cache live products for 60 seconds
 const getCachedLiveProducts = unstable_cache(
   async (thresholdIso: string) => {
     const now = Date.now();
     const cached = memoryCacheLiveProducts[thresholdIso];
-    if (cached && (now - cached.timestamp < 30000)) {
+    if (cached && (now - cached.timestamp < 60000)) {
       return cached.data;
     }
 
@@ -144,7 +144,7 @@ const getCachedLiveProducts = unstable_cache(
     return normalized;
   },
   ['live-products-cache-v3'],
-  { revalidate: 30, tags: ['products', 'live'] }
+  { revalidate: 60, tags: ['products', 'live'] }
 );
 
 export async function GET(request: NextRequest) {
