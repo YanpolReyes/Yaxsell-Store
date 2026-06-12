@@ -696,84 +696,18 @@ export default function PedidoPage() {
     setEditError('');
 
     try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-
-      // Releer doc para evitar carreras (estado/contador/stock)
-      const latestDoc = await databases.getDocument(databaseId, ORDERS_COLLECTION, id);
-      const latest = latestDoc as unknown as Order;
-
-      const editCount = getCustomerEditCount(latest);
-      const unmodifiableStatuses = ['paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'];
-      if (unmodifiableStatuses.includes(latest.STATUS)) {
-        alert('No puedes modificar el pedido si ya está verificado, en proceso de preparación o anulado.');
-        return;
-      }
-
-      let oldItems: OrderItem[] = [];
-      try { oldItems = JSON.parse((latest as any).ITEMS || '[]'); } catch {}
-      const oldQty = new Map<string, number>();
-      for (const it of oldItems) oldQty.set(it.id, Number(it.qty) || 0);
-
-      // Normalizar draft + recalcular totales por línea
-      const normalizedDraft: OrderItem[] = draftItems.map(it => {
-        const qty = Math.max(1, Number(it.qty) || 1);
-        const price = Number(it.price) || 0;
-        return { ...it, qty, price, total: price * qty };
+      const res = await fetch('/api/public-data/edit-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: id,
+          draftItems
+        })
       });
 
-      // IDs a tocar en stock
-      const ids = new Set<string>([...oldItems.map(i => i.id), ...normalizedDraft.map(i => i.id)]);
-
-      // 1) Validar primero TODO (sin tocar stock)
-      const validation: { pid: string; currentStock: number; prevQty: number; nextQty: number; delta: number; name: string }[] = [];
-      for (const pid of ids) {
-        const prevQty = oldQty.get(pid) || 0;
-        const nextQty = normalizedDraft.find(x => x.id === pid)?.qty || 0;
-        const delta = nextQty - prevQty;
-        if (delta === 0) continue;
-        const productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, pid);
-        const currentStock = Number((productDoc as any).STOCK ?? 0);
-        const name = String((productDoc as any).NAME || pid);
-        if (delta > 0 && currentStock < delta) {
-          throw new Error(`Stock insuficiente para "${name}". Disponible: ${currentStock}, necesitas: ${delta}.`);
-        }
-        validation.push({ pid, currentStock, prevQty, nextQty, delta, name });
-      }
-
-      // 2) Aplicar cambios con rollback si algo falla a mitad
-      const applied: { pid: string; prevStock: number }[] = [];
-      try {
-        for (const v of validation) {
-          const newStock = v.currentStock - v.delta;
-          applied.push({ pid: v.pid, prevStock: v.currentStock });
-          await databases.updateDocument(databaseId, PRODUCTS_COLLECTION, v.pid, { STOCK: newStock });
-        }
-      } catch (err) {
-        for (const a of applied) {
-          try { await databases.updateDocument(databaseId, PRODUCTS_COLLECTION, a.pid, { STOCK: a.prevStock }); } catch {}
-        }
-        throw err;
-      }
-
-      const newSubtotal = computeSubtotal(normalizedDraft);
-      const discount = Number((latest as any).DISCOUNT ?? 0) || 0;
-      const newTotal = Math.max(0, newSubtotal - discount);
-
-      try {
-        await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, {
-          ITEMS: JSON.stringify(normalizedDraft),
-          SUBTOTAL: newSubtotal,
-          TOTAL: newTotal,
-          UPDATEDAT: Date.now(),
-          CUSTOMEREDITCOUNT: editCount + 1,
-        });
-      } catch (err) {
-        // Si el update del pedido falla, revertimos stock ya aplicado
-        for (const a of applied) {
-          try { await databases.updateDocument(databaseId, PRODUCTS_COLLECTION, a.pid, { STOCK: a.prevStock }); } catch {}
-        }
-        throw err;
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Error al guardar los cambios del pedido.');
       }
 
       closeEditor();
