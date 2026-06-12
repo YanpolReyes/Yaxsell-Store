@@ -41,33 +41,32 @@ export default function CarritoPage() {
 
         // 1. Try USERID
         let res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
-          Query.equal('STATUS', 'pending'),
           Query.equal('USERID', user.id),
           Query.orderDesc('$createdAt'),
-          Query.limit(5),
+          Query.limit(50),
         ]);
 
         // 2. Try CUSTOMEREMAIL
         if (res.documents.length === 0 && user.email) {
           res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
-            Query.equal('STATUS', 'pending'),
             Query.equal('CUSTOMEREMAIL', user.email),
             Query.orderDesc('$createdAt'),
-            Query.limit(5),
+            Query.limit(50),
           ]);
         }
 
         // 3. Fallback to userId
         if (res.documents.length === 0) {
           res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
-            Query.equal('STATUS', 'pending'),
             Query.equal('userId', user.id),
             Query.orderDesc('$createdAt'),
-            Query.limit(5),
+            Query.limit(50),
           ]);
         }
 
-        setPendingOrders(res.documents);
+        // Filter status === 'pending' in memory to bypass Appwrite composite index restrictions
+        const pending = res.documents.filter((doc: any) => doc.STATUS === 'pending');
+        setPendingOrders(pending);
       } catch (err) {
         console.error('Error fetching pending orders for cart:', err);
       } finally {
