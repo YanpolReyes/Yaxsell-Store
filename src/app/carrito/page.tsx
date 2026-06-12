@@ -1,21 +1,145 @@
 'use client';
 
 import Link from 'next/link';
-import { ShoppingCart, Truck, Shield, ChevronRight, ArrowLeft, Sparkles } from 'lucide-react';
+import { ShoppingCart, Truck, Shield, ChevronRight, ArrowLeft, Sparkles, Package } from 'lucide-react';
 import LottieCart from '@/components/LottieCart';
 import { useCart } from '@/context/CartContext';
-import { formatPrice } from '@/lib/appwrite';
+import { formatPrice, getServices, getAppwriteConfig, ORDERS_COLLECTION } from '@/lib/appwrite';
 import RecentlyViewed from '@/components/RecentlyViewed';
 import CartLineRow from '@/components/CartLineRow';
 import { MINIMUM_ORDER_CLP, isBelowMinimumOrder, minimumOrderMessage } from '@/lib/order-rules';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
+import { Query } from 'appwrite';
+import { useState, useEffect } from 'react';
 
 const PINK = '#e396bf';
 const FF = '"DM Sans",system-ui,sans-serif';
 
 export default function CarritoPage() {
-  const { items, removeItem, updateQuantity, subtotal, totalItems, aperturaSavings } = useCart();
+  const { items, removeItem, updateQuantity, subtotal, totalItems, aperturaSavings, getEffectivePrice, clearCart } = useCart();
 
   const belowMinimum = isBelowMinimumOrder(subtotal);
+
+  const { user, isLoggedIn } = useAuth();
+  const router = useRouter();
+  const [pendingOrders, setPendingOrders] = useState<any[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [addingToOrder, setAddingToOrder] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isLoggedIn || !user) {
+      setPendingOrders([]);
+      return;
+    }
+
+    (async () => {
+      setLoadingOrders(true);
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+
+        // 1. Try USERID
+        let res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
+          Query.equal('STATUS', 'pending'),
+          Query.equal('USERID', user.id),
+          Query.orderDesc('$createdAt'),
+          Query.limit(5),
+        ]);
+
+        // 2. Try CUSTOMEREMAIL
+        if (res.documents.length === 0 && user.email) {
+          res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
+            Query.equal('STATUS', 'pending'),
+            Query.equal('CUSTOMEREMAIL', user.email),
+            Query.orderDesc('$createdAt'),
+            Query.limit(5),
+          ]);
+        }
+
+        // 3. Fallback to userId
+        if (res.documents.length === 0) {
+          res = await databases.listDocuments(databaseId, ORDERS_COLLECTION, [
+            Query.equal('STATUS', 'pending'),
+            Query.equal('userId', user.id),
+            Query.orderDesc('$createdAt'),
+            Query.limit(5),
+          ]);
+        }
+
+        setPendingOrders(res.documents);
+      } catch (err) {
+        console.error('Error fetching pending orders for cart:', err);
+      } finally {
+        setLoadingOrders(false);
+      }
+    })();
+  }, [isLoggedIn, user]);
+
+  const handleAddToOrder = async (orderDoc: any) => {
+    if (items.length === 0 || addingToOrder) return;
+
+    if (!confirm(`¿Estás seguro que deseas añadir los productos de tu carrito al pedido #${orderDoc.ORDERCODE}?`)) {
+      return;
+    }
+
+    setAddingToOrder(orderDoc.$id);
+    try {
+      let currentItems: any[] = [];
+      try {
+        currentItems = JSON.parse(orderDoc.ITEMS || '[]');
+      } catch {}
+
+      const mergedItems = [...currentItems];
+
+      for (const cartItem of items) {
+        const existingIdx = mergedItems.findIndex(it => it.id === cartItem.product.$id);
+        if (existingIdx >= 0) {
+          const prev = mergedItems[existingIdx];
+          const nextQty = (prev.qty || 1) + cartItem.quantity;
+          mergedItems[existingIdx] = {
+            ...prev,
+            qty: nextQty,
+            total: prev.price * nextQty
+          };
+        } else {
+          const price = getEffectivePrice(cartItem);
+          mergedItems.push({
+            id: cartItem.product.$id,
+            name: cartItem.product.NAME,
+            price: price,
+            qty: cartItem.quantity,
+            img: cartItem.product.IMAGEURL || '',
+            total: price * cartItem.quantity,
+            sku: cartItem.product.SKU || ''
+          });
+        }
+      }
+
+      const res = await fetch('/api/public-data/edit-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: orderDoc.$id,
+          draftItems: mergedItems
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Error al actualizar el pedido pendiente.');
+      }
+
+      clearCart();
+      router.push(`/pedido/${orderDoc.$id}`);
+      alert(`¡Productos añadidos con éxito al pedido #${orderDoc.ORDERCODE}!`);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Ocurrió un error al añadir los productos al pedido.');
+    } finally {
+      setAddingToOrder(null);
+    }
+  };
 
   /* ── EMPTY STATE ── */
   if (totalItems === 0) return (
@@ -214,6 +338,54 @@ export default function CarritoPage() {
                   <p style={{ margin: '0 0 12px', fontSize: 12, color: '#b91c1c', background: '#fef2f2', padding: '10px 12px', borderRadius: 10, border: '1px solid #fecaca', lineHeight: 1.45 }}>
                     ⚠ {minimumOrderMessage(subtotal)}
                   </p>
+                )}
+
+                {/* Pedidos pendientes */}
+                {pendingOrders.length > 0 && (
+                  <div style={{ borderTop: '1px dashed #f3f4f6', paddingTop: 14, marginBottom: 14 }}>
+                    <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 800, color: '#111827', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Package size={14} color={PINK} /> ¿Añadir a un pedido pendiente?
+                    </p>
+                    <p style={{ margin: '0 0 10px', fontSize: 10, color: '#6b7280', lineHeight: 1.4 }}>
+                      Tienes pedidos pendientes. Puedes consolidar esta compra añadiendo estos productos a uno de ellos:
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {pendingOrders.map((order) => (
+                        <button
+                          key={order.$id}
+                          onClick={() => handleAddToOrder(order)}
+                          disabled={addingToOrder !== null}
+                          style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '8px 10px',
+                            background: '#fff',
+                            border: '1px solid #fce7f3',
+                            borderRadius: 10,
+                            textAlign: 'left',
+                            fontSize: 11,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            boxSizing: 'border-box'
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.background = '#fdf2f8'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = '#fce7f3'; e.currentTarget.style.background = '#fff'; }}
+                        >
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <strong style={{ color: '#111827' }}>#{order.ORDERCODE}</strong>
+                            <span style={{ display: 'block', fontSize: 9, color: '#9ca3af', marginTop: 1 }}>
+                              Total actual: {formatPrice(order.TOTAL)}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: 9, fontWeight: 800, color: PINK, background: '#fdf2f8', padding: '3px 8px', borderRadius: 6, marginLeft: 6 }}>
+                            {addingToOrder === order.$id ? '...' : '+ Añadir'}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
 
                 {belowMinimum ? (
