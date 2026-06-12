@@ -60,6 +60,11 @@ export async function POST(req: NextRequest) {
     }
 
     const editCount = getCustomerEditCount(latest);
+    if (editCount >= 2) {
+      return NextResponse.json({
+        error: 'Has alcanzado el límite máximo de 2 modificaciones permitidas para este pedido.'
+      }, { status: 400 });
+    }
 
     let oldItems: any[] = [];
     try {
