@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Package, Search, RefreshCw, AlertTriangle, Check, Trash2 } from 'lucide-react';
 import { Product } from '@/types';
 import { formatPrice } from '@/lib/appwrite';
+import { getSkuFromFeatures } from '@/lib/product-features';
 
 export default function OfertasAdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -83,8 +84,12 @@ export default function OfertasAdminPage() {
 
   // Filter products based on search and wholesale toggles
   const filteredProducts = products.filter(p => {
+    const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES || '';
+    const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS || '';
+    const resolvedSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
+
     const matchesSearch = p.NAME.toLowerCase().includes(search.toLowerCase()) || 
-                          (p.SKU || '').toLowerCase().includes(search.toLowerCase());
+                          resolvedSku.toLowerCase().includes(search.toLowerCase());
     
     const hasWholesale = p.WHOLESALEPRICE && p.WHOLESALEPRICE > 0 && 
                          p.WHOLESALEMINQUANTITY && p.WHOLESALEMINQUANTITY > 0;
@@ -144,35 +149,41 @@ export default function OfertasAdminPage() {
             ⭐ Productos Seleccionados ({selectedProducts.length})
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {selectedProducts.map(p => (
-              <div key={`sel-${p.$id}`} className="bg-white p-3 rounded-xl border border-gray-100 flex items-center gap-3 relative group">
-                <div className="w-12 h-12 rounded-lg bg-gray-50 border border-gray-150 overflow-hidden shrink-0">
-                  {p.IMAGEURL ? (
-                    <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300">📦</div>
-                  )}
+            {selectedProducts.map(p => {
+              const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES || '';
+              const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS || '';
+              const resolvedSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
+
+              return (
+                <div key={`sel-${p.$id}`} className="bg-white p-3 rounded-xl border border-gray-100 flex items-center gap-3 relative group">
+                  <div className="w-12 h-12 rounded-lg bg-gray-50 border border-gray-150 overflow-hidden shrink-0">
+                    {p.IMAGEURL ? (
+                      <img src={p.IMAGEURL} alt={p.NAME} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300">📦</div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-gray-900 truncate">{p.NAME}</p>
+                    <p className="text-[10px] text-gray-400 font-mono">SKU: {resolvedSku || 'N/A'}</p>
+                    {p.WHOLESALEPRICE && p.WHOLESALEMINQUANTITY ? (
+                      <p className="text-[10px] text-pink-600 font-bold mt-0.5">
+                        Mayorista: {formatPrice(p.WHOLESALEPRICE)} x{p.WHOLESALEMINQUANTITY}+
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-amber-500 font-bold mt-0.5">Sin precio mayorista</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleToggleSelect(p.$id)}
+                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition shadow-md hover:bg-red-600"
+                    title="Quitar de la lista"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-gray-900 truncate">{p.NAME}</p>
-                  <p className="text-[10px] text-gray-400 font-mono">SKU: {p.SKU || 'N/A'}</p>
-                  {p.WHOLESALEPRICE && p.WHOLESALEMINQUANTITY ? (
-                    <p className="text-[10px] text-pink-600 font-bold mt-0.5">
-                      Mayorista: {formatPrice(p.WHOLESALEPRICE)} x{p.WHOLESALEMINQUANTITY}+
-                    </p>
-                  ) : (
-                    <p className="text-[10px] text-amber-500 font-bold mt-0.5">Sin precio mayorista</p>
-                  )}
-                </div>
-                <button
-                  onClick={() => handleToggleSelect(p.$id)}
-                  className="absolute -top-1.5 -right-1.5 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition shadow-md hover:bg-red-600"
-                  title="Quitar de la lista"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -238,6 +249,10 @@ export default function OfertasAdminPage() {
                   const hasWholesale = p.WHOLESALEPRICE && p.WHOLESALEPRICE > 0 && 
                                        p.WHOLESALEMINQUANTITY && p.WHOLESALEMINQUANTITY > 0;
                   
+                  const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES || '';
+                  const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS || '';
+                  const resolvedSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
+                  
                   return (
                     <tr 
                       key={p.$id} 
@@ -267,7 +282,7 @@ export default function OfertasAdminPage() {
                       </td>
                       <td className="px-4 py-3">
                         <span className="font-mono text-xs font-bold text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
-                          {p.SKU || 'S/N'}
+                          {resolvedSku || 'S/N'}
                         </span>
                       </td>
                       <td className="px-4 py-3 font-semibold text-gray-900 max-w-sm truncate" title={p.NAME}>
