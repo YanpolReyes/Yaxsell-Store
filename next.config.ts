@@ -20,8 +20,8 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // API routes — nunca cachear
-        source: '/api/:path*',
+        // API routes — nunca cachear, excepto las optimizadas para Edge Caching público
+        source: '/api/((?!public-data|version|template|store-settings|theme-config).*)',
         headers: [
           {
             key: 'Cache-Control',
