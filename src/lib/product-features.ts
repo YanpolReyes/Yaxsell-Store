@@ -182,3 +182,19 @@ export function setCustomTabsInFeatures(features: string | string[] | null, conf
   const json = JSON.stringify(config);
   return base ? `${base}\nCustomTabs: ${json}` : `CustomTabs: ${json}`;
 }
+
+export function getExactWholesaleFromFeatures(features?: string | string[] | null): boolean {
+  const featuresStr = resolveFeaturesString(features);
+  return /ExactWholesale:\s*true/i.test(featuresStr);
+}
+
+export function setExactWholesaleInFeatures(features: string | string[] | null, isExact: boolean): string {
+  const featuresStr = resolveFeaturesString(features);
+  let base = featuresStr
+    .replace(/\r\n/g, '\n')
+    .replace(/\n?ExactWholesale:\s*(true|false)/gi, '')
+    .replace(/^ExactWholesale:\s*(true|false)\n?/gi, '')
+    .trim();
+  if (!isExact) return base;
+  return base ? `${base}\nExactWholesale: true` : `ExactWholesale: true`;
+}

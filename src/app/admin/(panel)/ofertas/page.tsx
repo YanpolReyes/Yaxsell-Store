@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { Package, Search, RefreshCw, AlertTriangle, Check, Trash2 } from 'lucide-react';
 import { Product } from '@/types';
 import { formatPrice } from '@/lib/appwrite';
-import { getSkuFromFeatures } from '@/lib/product-features';
+import { getSkuFromFeatures, getExactWholesaleFromFeatures, setExactWholesaleInFeatures } from '@/lib/product-features';
+import { getServices, getAppwriteConfig } from '@/lib/appwrite-admin';
 
 export default function OfertasAdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -14,6 +15,7 @@ export default function OfertasAdminPage() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [wholesaleOnly, setWholesaleOnly] = useState(true);
+  const [updatingProductId, setUpdatingProductId] = useState<string | null>(null);
 
   // Load configuration and products
   const loadData = useCallback(async () => {
@@ -57,6 +59,38 @@ export default function OfertasAdminPage() {
         return [...prev, productId];
       }
     });
+  };
+
+  // Handle Toggle Exact Wholesale
+  const handleToggleExactWholesale = async (product: Product) => {
+    setUpdatingProductId(product.$id);
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      const pFeatures = Array.isArray(product.FEATURES) ? product.FEATURES.join('\n') : product.FEATURES || '';
+      const isCurrentlyExact = getExactWholesaleFromFeatures(pFeatures);
+      const newFeaturesStr = setExactWholesaleInFeatures(product.FEATURES || [], !isCurrentlyExact);
+      const newFeaturesArray = newFeaturesStr.split('\n').filter(Boolean);
+
+      const PRODUCTS_COLLECTION_ID = 'products';
+
+      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, product.$id, {
+        FEATURES: newFeaturesArray,
+      });
+
+      // Update local state
+      setProducts(prev => prev.map(p => {
+        if (p.$id === product.$id) {
+          return { ...p, FEATURES: newFeaturesArray };
+        }
+        return p;
+      }));
+    } catch (err: any) {
+      alert('Error al actualizar la lógica mayorista: ' + err.message);
+    } finally {
+      setUpdatingProductId(null);
+    }
   };
 
   // Handle Save
@@ -224,6 +258,7 @@ export default function OfertasAdminPage() {
                 <th className="px-4 py-3 text-left">Nombre</th>
                 <th className="px-4 py-3 text-left w-28">Precio Normal</th>
                 <th className="px-4 py-3 text-left w-52">Lógica Mayorista</th>
+                <th className="px-4 py-3 text-center w-40">Tipo de Lógica</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -308,6 +343,26 @@ export default function OfertasAdminPage() {
                             ⚠️ Sin precio mayorista
                           </span>
                         )}
+                      </td>
+                      <td className="px-4 py-3 text-center" onClick={e => e.stopPropagation()}>
+                        <button
+                          disabled={!hasWholesale || updatingProductId === p.$id}
+                          onClick={() => handleToggleExactWholesale(p)}
+                          className={`text-[10px] font-black px-2.5 py-1.5 rounded-lg border transition tracking-wider uppercase ${
+                            getExactWholesaleFromFeatures(pFeatures)
+                              ? 'bg-amber-500 border-amber-500 text-white hover:bg-amber-600'
+                              : 'bg-indigo-50 border-indigo-150 text-indigo-700 hover:bg-indigo-100'
+                          } disabled:opacity-50`}
+                          title={getExactWholesaleFromFeatures(pFeatures) ? "Se aplica solo si la cantidad es exactamente igual al mínimo" : "Se aplica si la cantidad es mayor o igual al mínimo"}
+                        >
+                          {updatingProductId === p.$id ? (
+                            'Actualizando...'
+                          ) : getExactWholesaleFromFeatures(pFeatures) ? (
+                            '🎯 Cantidad Exacta'
+                          ) : (
+                            '📈 Rango Mínimo'
+                          )}
+                        </button>
                       </td>
                     </tr>
                   );

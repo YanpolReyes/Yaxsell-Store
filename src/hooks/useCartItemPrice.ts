@@ -25,9 +25,17 @@ export function useCartItemPrice(item: CartItem): {
         },
       };
     }
-    const effectiveWholesale = (item.product.WHOLESALEPRICE && item.product.WHOLESALEMINQUANTITY && item.quantity >= item.product.WHOLESALEMINQUANTITY) 
+    const pFeatures = Array.isArray(item.product.FEATURES) ? item.product.FEATURES.join('\n') : item.product.FEATURES || '';
+    const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
+    const minQty = item.product.WHOLESALEMINQUANTITY || 0;
+    const qtyMatches = isExact 
+      ? item.quantity === minQty 
+      : item.quantity >= minQty;
+
+    const hasConfiguredWholesale = !!(item.product.WHOLESALEPRICE && item.product.WHOLESALEMINQUANTITY);
+    const effectiveWholesale = (hasConfiguredWholesale && qtyMatches) 
       ? item.product.WHOLESALEPRICE 
-      : item.wholesalePrice;
+      : (hasConfiguredWholesale ? undefined : item.wholesalePrice);
 
     if (effectiveWholesale) {
       return {
@@ -56,11 +64,19 @@ export function useCartPricing(items: CartItem[]) {
     for (const item of items) {
       const now = Date.now();
       let unit = item.product.PRICE;
+      const pFeatures = Array.isArray(item.product.FEATURES) ? item.product.FEATURES.join('\n') : item.product.FEATURES || '';
+      const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
+      const minQty = item.product.WHOLESALEMINQUANTITY || 0;
+      const qtyMatches = isExact 
+        ? item.quantity === minQty 
+        : item.quantity >= minQty;
+
+      const hasConfiguredWholesale = !!(item.product.WHOLESALEPRICE && item.product.WHOLESALEMINQUANTITY);
       if (item.timedOfferPrice && item.timedOfferExpiresAt && now < item.timedOfferExpiresAt) {
         unit = item.timedOfferPrice;
-      } else if (item.product.WHOLESALEPRICE && item.product.WHOLESALEMINQUANTITY && item.quantity >= item.product.WHOLESALEMINQUANTITY) {
-        unit = item.product.WHOLESALEPRICE;
-      } else if (item.wholesalePrice) {
+      } else if (hasConfiguredWholesale && qtyMatches) {
+        unit = item.product.WHOLESALEPRICE!;
+      } else if (!hasConfiguredWholesale && item.wholesalePrice) {
         unit = item.wholesalePrice;
       } else {
         unit = resolveProductDisplayPrice(item.product, apertura).displayPrice;

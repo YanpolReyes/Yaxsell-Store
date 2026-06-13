@@ -8,7 +8,7 @@ import { Product, Category, Subcategory } from '@/types/admin';
 import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff, Eye } from 'lucide-react';
 import ImageUploadField from '@/components/admin/ImageUploadField';
 import { generateProductTitle, generateProductDescription } from '@/lib/aiAdmin';
-import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures, setSectionInFeatures, getCustomTabsFromFeatures, setCustomTabsInFeatures } from '@/lib/product-features';
+import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures, setSectionInFeatures, getCustomTabsFromFeatures, setCustomTabsInFeatures, getExactWholesaleFromFeatures, setExactWholesaleInFeatures } from '@/lib/product-features';
 import Lottie from 'lottie-react';
 import iaAnimation from '@/ia.json';
 
@@ -815,7 +815,7 @@ export default function ProductsPage() {
             ingredients: d._ingredients || '',
           };
           features = setCustomTabsInFeatures(features, tabs);
-          return features;
+          return typeof features === 'string' ? features.split('\n').filter(Boolean) : features;
         })(),
         barcode: d._barcode || '',
         sku: d._sku || '',
@@ -1535,6 +1535,26 @@ export default function ProductsPage() {
                     <label className="block text-xs font-medium text-gray-600 mb-1">Cant. Mínima Mayorista</label>
                     <input type="number" value={modal.data.WHOLESALEMINQUANTITY ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEMINQUANTITY: Number(e.target.value) } } : m)}
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Lógica Mayorista</label>
+                    <div className="relative">
+                      <select value={getExactWholesaleFromFeatures(modal.data.FEATURES) ? 'exact' : 'range'}
+                        onChange={e => {
+                          const isExact = e.target.value === 'exact';
+                          setModal(m => {
+                            if (!m) return m;
+                            const currentFeatures = m.data.FEATURES || [];
+                            const newFeaturesStr = setExactWholesaleInFeatures(currentFeatures, isExact);
+                            return { ...m, data: { ...m.data, FEATURES: newFeaturesStr } };
+                          });
+                        }}
+                        className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="range">Rango Mínimo (o más)</option>
+                        <option value="exact">Cantidad Exacta</option>
+                      </select>
+                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Cant. por paquete</label>

@@ -314,7 +314,16 @@ function CheckoutInner() {
       const eligibleSubtotal = items.reduce((acc, i) => {
         const isOfferActive = i.timedOfferPrice && i.timedOfferExpiresAt && now < i.timedOfferExpiresAt;
         if (isOfferActive) return acc;
-        const effectiveWholesale = (i.product.WHOLESALEPRICE && i.product.WHOLESALEMINQUANTITY && i.quantity >= i.product.WHOLESALEMINQUANTITY) ? i.product.WHOLESALEPRICE : i.wholesalePrice;
+        
+        const pFeatures = Array.isArray(i.product.FEATURES) ? i.product.FEATURES.join('\n') : i.product.FEATURES || '';
+        const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
+        const minQty = i.product.WHOLESALEMINQUANTITY || 0;
+        const qtyMatches = isExact 
+          ? i.quantity === minQty 
+          : i.quantity >= minQty;
+
+        const hasConfiguredWholesale = !!(i.product.WHOLESALEPRICE && i.product.WHOLESALEMINQUANTITY);
+        const effectiveWholesale = (hasConfiguredWholesale && qtyMatches) ? i.product.WHOLESALEPRICE : (hasConfiguredWholesale ? undefined : i.wholesalePrice);
         const itemPrice = effectiveWholesale || resolveProductDisplayPrice(i.product, apertura).displayPrice;
         return acc + itemPrice * i.quantity;
       }, 0);
@@ -381,7 +390,16 @@ function CheckoutInner() {
       const expiresAt = now + 3 * 60 * 60 * 1000;
       const itemsData = items.map(i => {
         const hasActiveOffer = i.timedOfferPrice && i.timedOfferExpiresAt && now < i.timedOfferExpiresAt;
-        const effectiveWholesale = (i.product.WHOLESALEPRICE && i.product.WHOLESALEMINQUANTITY && i.quantity >= i.product.WHOLESALEMINQUANTITY) ? i.product.WHOLESALEPRICE : i.wholesalePrice;
+        
+        const pFeatures = Array.isArray(i.product.FEATURES) ? i.product.FEATURES.join('\n') : i.product.FEATURES || '';
+        const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
+        const minQty = i.product.WHOLESALEMINQUANTITY || 0;
+        const qtyMatches = isExact 
+          ? i.quantity === minQty 
+          : i.quantity >= minQty;
+
+        const hasConfiguredWholesale = !!(i.product.WHOLESALEPRICE && i.product.WHOLESALEMINQUANTITY);
+        const effectiveWholesale = (hasConfiguredWholesale && qtyMatches) ? i.product.WHOLESALEPRICE : (hasConfiguredWholesale ? undefined : i.wholesalePrice);
         const price = hasActiveOffer ? i.timedOfferPrice! : (effectiveWholesale || resolveProductDisplayPrice(i.product, apertura).displayPrice);
         const originalPrice = i.product.PRICE !== price ? i.product.PRICE : null;
         const note = itemNotes[i.product.$id] || '';

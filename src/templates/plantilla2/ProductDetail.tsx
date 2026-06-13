@@ -217,7 +217,9 @@ export default function ProductDetailPlantilla2({ previewProductId }: { previewP
   const priceOriginal = priceResolved.originalPrice;
   const hasWholesale = !!(product.WHOLESALEPRICE && product.WHOLESALEMINQUANTITY && product.WHOLESALEPRICE > 0);
   const isWholesaleUser = user?.isWholesale || false;
-  const isWholesaleQty = hasWholesale && qty >= (product.WHOLESALEMINQUANTITY || 0);
+  const pFeatures = Array.isArray(product.FEATURES) ? product.FEATURES.join('\n') : product.FEATURES || '';
+  const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
+  const isWholesaleQty = hasWholesale && (isExact ? qty === (product.WHOLESALEMINQUANTITY || 0) : qty >= (product.WHOLESALEMINQUANTITY || 0));
   const effectivePrice = isWholesaleQty && isWholesaleUser ? product.WHOLESALEPRICE! : displayPrice;
   const lineTotal = effectivePrice * qty;
   const isLimitedStock = product.STOCK !== undefined && product.STOCK !== null && product.STOCK < 99999;
@@ -483,7 +485,7 @@ export default function ProductDetailPlantilla2({ previewProductId }: { previewP
               {isWholesaleQty && <p style={{ margin: '4px 0 0', fontSize: 13, color: '#00a650', fontWeight: 500 }}>✓ Precio mayorista aplicado</p>}
               {hasWholesale && !isWholesaleQty && (
                 <p style={{ margin: '8px 0 0', fontSize: 13, color: '#3483fa' }}>
-                  Comprando {product.WHOLESALEMINQUANTITY}+ unidades: <strong>{formatPrice(product.WHOLESALEPRICE!)}</strong> c/u
+                  {isExact ? `Comprando exactamente ${product.WHOLESALEMINQUANTITY} unidades:` : `Comprando ${product.WHOLESALEMINQUANTITY}+ unidades:`} <strong>{formatPrice(product.WHOLESALEPRICE!)}</strong> c/u
                   <br />
                   <span style={{ fontSize: 12, color: '#666' }}>A partir de {formatPrice(product.WHOLESALEPRICE! * product.WHOLESALEMINQUANTITY!)} en el total del pedido</span>
                 </p>

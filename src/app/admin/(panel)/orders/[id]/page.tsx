@@ -81,6 +81,7 @@ export default function OrderDetailPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
+  const [isSimilarSearch, setIsSimilarSearch] = useState(false);
   const [notifyingIdx, setNotifyingIdx] = useState<number | null>(null);
   const [notifiedIndices, setNotifiedIndices] = useState<Set<number>>(new Set());
 
@@ -174,6 +175,145 @@ export default function OrderDetailPage() {
     }
   };
 
+  const handleOpenSimilarSearch = async (index: number) => {
+    setReplacingIdx(index);
+    setIsSimilarSearch(true);
+    setSearching(true);
+    setSearchQuery('');
+    setSearchResults([]);
+
+    const oldItem = items[index];
+    if (!oldItem) {
+      setSearching(false);
+      return;
+    }
+
+    const targetPrice = oldItem.price || 0;
+
+    try {
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+
+      // 1. Query products with price in a ±30% range
+      let prods: any[] = [];
+      try {
+        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+          Query.greaterThanEqual('PRICE', Math.round(targetPrice * 0.7)),
+          Query.lessThanEqual('PRICE', Math.round(targetPrice * 1.3)),
+          Query.limit(100)
+        ]);
+        prods = res.documents;
+      } catch (err) {
+        console.error("Error querying by price range:", err);
+      }
+
+      // 2. Fallback to general list if no products found in range
+      if (prods.length === 0) {
+        try {
+          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+            Query.limit(100)
+          ]);
+          prods = res.documents;
+        } catch (err) {
+          console.error("Fallback query error:", err);
+        }
+      }
+
+      // 3. Sort by absolute difference to target price
+      const sorted = [...prods].sort((a: any, b: any) => {
+        const priceA = a.CURRENTPRICE ?? a.PRICE ?? 0;
+        const priceB = b.CURRENTPRICE ?? b.PRICE ?? 0;
+        const diffA = Math.abs(priceA - targetPrice);
+        const diffB = Math.abs(priceB - targetPrice);
+        return diffA - diffB;
+      });
+
+      // Filter out the product itself from the results if it matches oldItem.id
+      const filtered = sorted.filter((p: any) => p.$id !== oldItem.id);
+
+      setSearchResults(filtered);
+    } catch (e) {
+      console.error("Error finding similar products:", e);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleDownloadSimilarCatalog = () => {
+    if (replacingIdx === null || !items[replacingIdx]) return;
+    const oldItem = items[replacingIdx];
+    const catalogHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Catálogo de Alternativas - Yaxsell</title>
+        <meta charset="utf-8" />
+        <style>
+          body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1f2937; margin: 30px; }
+          .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #f3f4f6; padding-bottom: 20px; }
+          .header h1 { margin: 0; font-size: 24px; color: #1e1b4b; font-weight: 800; }
+          .header p { margin: 8px 0 0; font-size: 14px; color: #6b7280; }
+          .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+          .card { border: 1px solid #e5e7eb; border-radius: 16px; padding: 18px; display: flex; gap: 15px; page-break-inside: avoid; break-inside: avoid; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+          .img-box { width: 90px; height: 90px; border-radius: 12px; overflow: hidden; background: #f9fafb; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: 1px solid #f3f4f6; }
+          .img-box img { width: 100%; height: 100%; object-fit: cover; }
+          .img-placeholder { font-size: 30px; color: #d1d5db; }
+          .info { flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
+          .name { font-weight: 700; font-size: 14px; margin: 0 0 4px; color: #111827; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
+          .sku { font-family: monospace; font-size: 10px; color: #9ca3af; margin: 0 0 8px; text-transform: uppercase; }
+          .price { font-size: 18px; font-weight: 800; color: #10b981; }
+          @media print {
+            body { margin: 15px; background: #fff; }
+            .card { border-color: #d1d5db; box-shadow: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Sugerencias de Reemplazo</h1>
+          <p>Alternativas de precio similar seleccionadas para tu producto: <strong>${oldItem.name}</strong></p>
+        </div>
+        <div class="grid">
+          ${searchResults.map(p => {
+            const price = p.CURRENTPRICE ?? p.PRICE ?? 0;
+            const pSku = p.sku || '';
+            const priceFormatted = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(price);
+            return `
+              <div class="card">
+                <div class="img-box">
+                  ${p.IMAGEURL ? `<img src="${p.IMAGEURL}" alt="${p.NAME}" />` : `<span class="img-placeholder">📦</span>`}
+                </div>
+                <div class="info">
+                  <div>
+                    <h3 class="name">${p.NAME}</h3>
+                    ${pSku ? `<div class="sku">SKU: ${pSku}</div>` : ''}
+                  </div>
+                  <div class="price">${priceFormatted}</div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 600);
+          }
+        </script>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(catalogHtml);
+      printWindow.document.close();
+    } else {
+      alert('Por favor permite las ventanas emergentes (popups) para descargar el catálogo.');
+    }
+  };
+
   const replaceItem = async (newProduct: any) => {
     if (!order || replacingIdx === null) return;
     let parsedItems: any[] = [];
@@ -259,6 +399,7 @@ export default function OrderDetailPage() {
       setReplacingIdx(null);
       setSearchQuery('');
       setSearchResults([]);
+      setIsSimilarSearch(false);
       await load();
       alert('Producto reemplazado y bloqueado exitosamente.');
     } catch (e: any) {
@@ -762,17 +903,29 @@ export default function OrderDetailPage() {
             {/* Modal Header */}
             <div className="p-4 border-b border-gray-150 flex items-center justify-between bg-gray-50">
               <div>
-                <h3 className="font-bold text-gray-900 text-sm sm:text-base">Reemplazar Producto</h3>
+                <h3 className="font-bold text-gray-900 text-sm sm:text-base">
+                  {isSimilarSearch ? 'Buscar Productos Similares' : 'Reemplazar Producto'}
+                </h3>
                 <p className="text-xs text-gray-500">
-                  Reemplazando: <span className="font-semibold text-gray-700">{items[replacingIdx]?.name}</span>
+                  Reemplazando: <span className="font-semibold text-gray-700">{items[replacingIdx]?.name}</span> ({fmt(items[replacingIdx]?.price)})
                 </p>
               </div>
-              <button
-                onClick={() => { setReplacingIdx(null); setSearchQuery(''); setSearchResults([]); }}
-                className="text-gray-400 hover:text-gray-600 transition"
-              >
-                <XCircle className="w-6 h-6" />
-              </button>
+              <div className="flex items-center gap-2">
+                {isSimilarSearch && searchResults.length > 0 && (
+                  <button
+                    onClick={handleDownloadSimilarCatalog}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm mr-2"
+                  >
+                    <Printer className="w-3.5 h-3.5" /> PDF Catálogo
+                  </button>
+                )}
+                <button
+                  onClick={() => { setReplacingIdx(null); setSearchQuery(''); setSearchResults([]); setIsSimilarSearch(false); }}
+                  className="text-gray-400 hover:text-gray-600 transition"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
             </div>
 
             {/* Modal Body */}
@@ -783,7 +936,10 @@ export default function OrderDetailPage() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     value={searchQuery}
-                    onChange={e => handleSearchProducts(e.target.value)}
+                    onChange={e => {
+                      setIsSimilarSearch(false);
+                      handleSearchProducts(e.target.value);
+                    }}
                     placeholder="Buscar por nombre o SKU..."
                     className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
@@ -1414,7 +1570,7 @@ export default function OrderDetailPage() {
                 </div>
 
                 {/* Actions row for this product inside order */}
-                {['pending', 'processing'].includes(order.STATUS) && (
+                {['pending', 'processing', 'paid'].includes(order.STATUS) && (
                   <div className="flex items-center gap-2 mt-1 sm:pl-18 no-print flex-wrap">
                     <button
                       onClick={() => toggleMissingItem(i)}
@@ -1444,7 +1600,16 @@ export default function OrderDetailPage() {
                           )}
                         </button>
                         <button
-                          onClick={() => setReplacingIdx(i)}
+                          onClick={() => handleOpenSimilarSearch(i)}
+                          className="text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition flex items-center gap-1"
+                        >
+                          <Search className="w-3 h-3" /> Buscar Similares
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsSimilarSearch(false);
+                            setReplacingIdx(i);
+                          }}
                           className="text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
                         >
                           Reemplazar Producto

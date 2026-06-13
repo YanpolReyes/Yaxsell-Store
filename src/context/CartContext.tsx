@@ -64,9 +64,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (item.timedOfferPrice && item.timedOfferExpiresAt && now < item.timedOfferExpiresAt) {
       return item.timedOfferPrice;
     }
-    const effectiveWholesale = (item.product.WHOLESALEPRICE && item.product.WHOLESALEMINQUANTITY && item.quantity >= item.product.WHOLESALEMINQUANTITY) 
+    const pFeatures = Array.isArray(item.product.FEATURES) ? item.product.FEATURES.join('\n') : item.product.FEATURES || '';
+    const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
+    const minQty = item.product.WHOLESALEMINQUANTITY || 0;
+    
+    const qtyMatches = isExact 
+      ? item.quantity === minQty 
+      : item.quantity >= minQty;
+
+    const hasConfiguredWholesale = !!(item.product.WHOLESALEPRICE && item.product.WHOLESALEMINQUANTITY);
+    const effectiveWholesale = (hasConfiguredWholesale && qtyMatches) 
       ? item.product.WHOLESALEPRICE 
-      : item.wholesalePrice;
+      : (hasConfiguredWholesale ? undefined : item.wholesalePrice);
 
     if (effectiveWholesale) {
       return effectiveWholesale;

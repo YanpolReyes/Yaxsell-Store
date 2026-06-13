@@ -278,7 +278,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const discPct = priceResolved.discountPercent;
   const priceOriginal = priceResolved.originalPrice;
   const hasWholesale = !!(product.WHOLESALEPRICE && product.WHOLESALEMINQUANTITY && product.WHOLESALEPRICE > 0);
-  const isWholesaleQty = hasWholesale && qty >= (product.WHOLESALEMINQUANTITY || 0);
+  const pFeatures = Array.isArray(product.FEATURES) ? product.FEATURES.join('\n') : product.FEATURES || '';
+  const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
+  const isWholesaleQty = hasWholesale && (isExact ? qty === (product.WHOLESALEMINQUANTITY || 0) : qty >= (product.WHOLESALEMINQUANTITY || 0));
   const effectivePrice = isWholesaleQty ? product.WHOLESALEPRICE! : displayPrice;
   const lineTotal = effectivePrice * qty;
   const isLimitedStock = product.STOCK !== undefined && product.STOCK !== null && product.STOCK < 99999;
@@ -745,10 +747,15 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
                     ) : (
                       <>
                         <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#92400e' }}>
-                          Lleva {product.WHOLESALEMINQUANTITY! - qty} unidad{product.WHOLESALEMINQUANTITY! - qty !== 1 ? 'es' : ''} más para precio mayorista
+                          {isExact
+                            ? qty < product.WHOLESALEMINQUANTITY!
+                              ? `Lleva exactamente ${product.WHOLESALEMINQUANTITY} unidades para precio mayorista (te faltan ${product.WHOLESALEMINQUANTITY! - qty})`
+                              : `El precio mayorista solo aplica para exactamente ${product.WHOLESALEMINQUANTITY} unidades (llevas ${qty})`
+                            : `Lleva ${product.WHOLESALEMINQUANTITY! - qty} unidad${product.WHOLESALEMINQUANTITY! - qty !== 1 ? 'es' : ''} más para precio mayorista`
+                          }
                         </p>
                         <p style={{ margin: '2px 0 0', fontSize: 12, color: '#78350f' }}>
-                          {formatPrice(product.WHOLESALEPRICE!)} c/u comprando {product.WHOLESALEMINQUANTITY}+ · ¡Ahorras {formatPrice(displayPrice - product.WHOLESALEPRICE!)} por unidad!
+                          {formatPrice(product.WHOLESALEPRICE!)} c/u {isExact ? `llevando exactamente ${product.WHOLESALEMINQUANTITY}` : `comprando ${product.WHOLESALEMINQUANTITY}+`} · ¡Ahorras {formatPrice(displayPrice - product.WHOLESALEPRICE!)} por unidad!
                         </p>
                       </>
                     )}

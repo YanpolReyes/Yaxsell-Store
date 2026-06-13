@@ -104,6 +104,9 @@ export default function WholesaleOffersSection() {
                                p.WHOLESALEMINQUANTITY && p.WHOLESALEMINQUANTITY > 0;
           const wholesalePrice = p.WHOLESALEPRICE || 0;
           const wholesaleMinQty = p.WHOLESALEMINQUANTITY || 1;
+
+          const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES || '';
+          const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
           
           const discountPercent = hasWholesale 
             ? Math.round(((normalDisplayPrice - wholesalePrice) / normalDisplayPrice) * 100) 
@@ -170,7 +173,7 @@ export default function WholesaleOffersSection() {
                             {formatPrice(wholesalePrice)}
                           </span>
                           <span className="text-[10px] sm:text-xs font-bold text-pink-500">
-                            c/u desde {wholesaleMinQty} unidades
+                            {isExact ? `llevando exactamente ${wholesaleMinQty} un.` : `c/u desde ${wholesaleMinQty} unidades`}
                           </span>
                         </div>
                       </div>
