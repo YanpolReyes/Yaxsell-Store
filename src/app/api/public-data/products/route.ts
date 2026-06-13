@@ -31,11 +31,11 @@ let memoryCacheAperturaSettingsTime = 0;
 
 let memoryCacheLiveProducts: Record<string, { data: any[]; timestamp: number }> = {};
 
-// Cache all active products for 300 seconds
+// Cache all active products for 60 seconds
 const getCachedAllProducts = unstable_cache(
   async () => {
     const now = Date.now();
-    if (memoryCacheAllProducts && (now - memoryCacheAllProductsTime < 3600000)) {
+    if (memoryCacheAllProducts && (now - memoryCacheAllProductsTime < 60000)) {
       return memoryCacheAllProducts;
     }
 
@@ -75,14 +75,14 @@ const getCachedAllProducts = unstable_cache(
     return normalized;
   },
   ['all-public-products-cache-v3'],
-  { revalidate: 3600, tags: ['products'] }
+  { revalidate: 60, tags: ['products'] }
 );
 
 // Cache active offer target IDs
 const getCachedActiveOffers = unstable_cache(
   async () => {
     const now = Date.now();
-    if (memoryCacheActiveOffers && (now - memoryCacheActiveOffersTime < 3600000)) {
+    if (memoryCacheActiveOffers && (now - memoryCacheActiveOffersTime < 60000)) {
       return memoryCacheActiveOffers;
     }
 
@@ -99,7 +99,7 @@ const getCachedActiveOffers = unstable_cache(
     return ids;
   },
   ['active-offers-cache-v3'],
-  { revalidate: 3600, tags: ['offers'] }
+  { revalidate: 60, tags: ['offers'] }
 );
 
 // Cache apertura settings
@@ -263,6 +263,12 @@ export async function GET(request: NextRequest) {
     // Sort Products
     if (sortBy === 'newest') {
       filtered.sort((a, b) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime());
+    } else if (sortBy === 'updated') {
+      filtered.sort((a, b) => {
+        const timeA = new Date(a.$updatedAt || a.$createdAt).getTime();
+        const timeB = new Date(b.$updatedAt || b.$createdAt).getTime();
+        return timeB - timeA;
+      });
     } else if (sortBy === 'price_asc') {
       filtered.sort((a, b) => {
         const pa = resolveProductDisplayPrice(a, apertura).displayPrice;

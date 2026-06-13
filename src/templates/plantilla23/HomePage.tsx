@@ -15,6 +15,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import RecentProductsSection from '@/components/RecentProductsSection';
+import LatestProductsCarousel from '@/components/LatestProductsCarousel';
 import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, PRODUCTS_COLLECTION, TIMED_OFFERS_COLLECTION, Query, formatPrice } from '@/lib/appwrite';
 import { Category, Subcategory, Product } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
@@ -204,6 +205,7 @@ export default function HomePage23() {
   const [isAppwriteLoaded, setIsAppwriteLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [liveShoppingContainer, setLiveShoppingContainer] = useState<Element | null>(null);
+  const [latestProductsContainer, setLatestProductsContainer] = useState<Element | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -1791,6 +1793,20 @@ export default function HomePage23() {
           --spacer-height-mobile: 20px !important;
         }
       }
+
+      /* Fades for herobanner and latest products section */
+      .tpl23-shopify-root .slideshow__background,
+      .tpl23-shopify-root custom-slideshow {
+        -webkit-mask-image: linear-gradient(to bottom, black 75%, transparent 100%) !important;
+        mask-image: linear-gradient(to bottom, black 75%, transparent 100%) !important;
+      }
+      #yaxsell-latest-products-root {
+        position: relative !important;
+        padding-top: 40px !important;
+        padding-bottom: 40px !important;
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%) !important;
+        mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%) !important;
+      }
     `;
     document.head.appendChild(overrideStyle);
   }, []);
@@ -1950,6 +1966,14 @@ export default function HomePage23() {
       `;
     }
 
+    // Insert Latest Products placeholder right after the Hero banner (slideshow)
+    const heroBannerSection = tempDiv.querySelector('#shopify-section-template--27304712470809__slideshow_FBfKC8');
+    if (heroBannerSection) {
+      const latestProductsRoot = document.createElement('div');
+      latestProductsRoot.id = 'yaxsell-latest-products-root';
+      heroBannerSection.insertAdjacentElement('afterend', latestProductsRoot);
+    }
+
     // Insert Live Shopping placeholder right after the categories slider
     const categoriesSection = tempDiv.querySelector('#shopify-section-template--27304712470809__collection_list_slider_YAxwGw');
     if (categoriesSection) {
@@ -1960,6 +1984,11 @@ export default function HomePage23() {
 
     containerRef.current.innerHTML = tempDiv.innerHTML;
     containerRef.current.dataset.htmlSet = '1';
+
+    const latestProductsEl = document.getElementById('yaxsell-latest-products-root');
+    if (latestProductsEl) {
+      setLatestProductsContainer(latestProductsEl);
+    }
 
     const liveShoppingEl = document.getElementById('yaxsell-live-shopping-root');
     if (liveShoppingEl) {
@@ -4259,6 +4288,11 @@ export default function HomePage23() {
         ref={containerRef}
         className="tpl23-shopify-root template-index"
       />
+
+      {latestProductsContainer && createPortal(
+        <LatestProductsCarousel />,
+        latestProductsContainer
+      )}
 
       {liveShoppingContainer && createPortal(
         <RecentProductsSection />,

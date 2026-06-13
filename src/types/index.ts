@@ -29,6 +29,8 @@ export interface Product {
   DATE_ADDED?: string;
   imported_at?: string;
   section?: number;
+  $createdAt?: string;
+  $updatedAt?: string;
 }
 
 export interface Review {
