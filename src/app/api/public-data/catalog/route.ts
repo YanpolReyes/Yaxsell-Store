@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, TIMED_OFFERS_COLLECTION } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 
-export const revalidate = 300; // Cache for 5 minutes
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
@@ -17,9 +17,14 @@ export async function GET() {
     return NextResponse.json({
       categories: catDocs.documents,
       offers: offDocs.documents
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600'
+      }
     });
   } catch (error: any) {
     console.error('[API public-data/catalog] Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
