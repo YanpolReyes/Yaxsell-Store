@@ -39,6 +39,21 @@ export async function serverListDocuments(
   return res.json();
 }
 
+export async function serverGetDocument(
+  collectionId: string,
+  documentId: string
+): Promise<Record<string, unknown>> {
+  const res = await fetch(
+    `${APPWRITE_ENDPOINT}/databases/${DATABASE_ID}/collections/${collectionId}/documents/${documentId}`,
+    { headers: headers() }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || `getDocument failed: ${res.status}`);
+  }
+  return res.json();
+}
+
 export async function serverCreateDocument(
   collectionId: string,
   documentId: string,

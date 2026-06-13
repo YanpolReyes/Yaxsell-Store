@@ -1,53 +1,41 @@
 import { NextResponse } from 'next/server';
-import { serverListDocuments } from '@/lib/appwrite-server';
+import { serverListDocuments, serverGetDocument } from '@/lib/appwrite-server';
 
-// Global memory cache for the proxy
-// Valid across the lifetime of the Node.js process / Serverless function instance
-const cache = new Map<string, { expiresAt: number; data: any }>();
-
-// TTL in milliseconds (60 seconds)
-const CACHE_TTL = 60 * 1000;
+// Let the Edge network/CDN handle the caching instead of a Serverless ephemeral Node.js map.
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const colId = url.searchParams.get('colId');
+    const docId = url.searchParams.get('docId');
     const queriesStr = url.searchParams.get('queries') || '[]';
 
     if (!colId) {
       return NextResponse.json({ error: 'Missing colId' }, { status: 400 });
     }
 
-    const cacheKey = `${colId}-${queriesStr}`;
-    const now = Date.now();
+    let data;
 
-    // Check memory cache
-    if (cache.has(cacheKey)) {
-      const cached = cache.get(cacheKey)!;
-      if (cached.expiresAt > now) {
-        return NextResponse.json(cached.data);
-      } else {
-        // Clear expired
-        cache.delete(cacheKey);
+    if (docId) {
+      // Support for getDocument proxying
+      data = await serverGetDocument(colId, docId);
+    } else {
+      let parsedQueries: string[] = [];
+      try {
+        parsedQueries = JSON.parse(decodeURIComponent(queriesStr));
+      } catch (e) {
+        console.warn('[appwrite-proxy] Invalid queries format:', queriesStr);
       }
+      data = await serverListDocuments(colId, parsedQueries);
     }
 
-    // Parse queries
-    let parsedQueries: string[] = [];
-    try {
-      parsedQueries = JSON.parse(decodeURIComponent(queriesStr));
-    } catch (e) {
-      console.warn('[appwrite-proxy] Invalid queries format:', queriesStr);
-    }
-
-    // Fetch from Appwrite using server SDK (bypasses permissions if necessary, 
-    // but these are public collections anyway).
-    const data = await serverListDocuments(colId, parsedQueries);
-
-    // Save to cache
-    cache.set(cacheKey, { expiresAt: now + CACHE_TTL, data });
-
-    return NextResponse.json(data);
+    // Return the response with strict Cache-Control headers so Vercel Edge caches it for 60 seconds
+    return NextResponse.json(data, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+      },
+    });
   } catch (error: any) {
     console.error('[appwrite-proxy] Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

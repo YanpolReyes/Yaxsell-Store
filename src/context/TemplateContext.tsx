@@ -43,7 +43,7 @@ export function TemplateProvider({ children }: { children: ReactNode }) {
 
       // 1. Fetch template configuration from the database first
       try {
-        const res = await fetch(`/api/template?_t=${Date.now()}`, { cache: 'no-store' });
+        const res = await fetch(`/api/template`);
         if (res.ok) {
           const data = await res.json();
           dbGlobal = Number(data.template) || 1;

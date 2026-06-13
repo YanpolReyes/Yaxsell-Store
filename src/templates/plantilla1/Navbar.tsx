@@ -67,7 +67,7 @@ export default function Navbar1() {
     let destroyed = false;
     Promise.all([
       import('lottie-web'),
-      fetch(`/button.json?t=${Date.now()}`).then(r => r.json())
+      fetch(`/button.json`).then(r => r.json())
     ]).then(([lottieModule, data]) => {
       if (destroyed || !lottieRef.current) return;
       anim = lottieModule.default.loadAnimation({

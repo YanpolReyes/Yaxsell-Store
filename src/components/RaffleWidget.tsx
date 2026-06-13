@@ -95,70 +95,27 @@ export default function RaffleWidget({ liveStreamId }: Props) {
   // Realtime usa WebSocket - 0 lecturas adicionales mientras está conectado.
   useEffect(() => {
     loadRaffle();
+    
+    // En lugar de usar WebSockets (que satura las conexiones simultáneas)
+    // o un polling agresivo, actualizamos suavemente cada 60 segundos
+    const interval = setInterval(() => {
+      loadRaffle();
+    }, 60000);
 
-    const { endpoint, projectId, databaseId } = getAppwriteConfig();
-    const realtimeClient = new Client().setEndpoint(endpoint).setProject(projectId);
-
-    // Suscripción a cambios en la colección de sorteos
-    const unsubRaffles = realtimeClient.subscribe(
-      `databases.${databaseId}.collections.${RAFFLES_COLLECTION}.documents`,
-      (response: any) => {
-        const events: string[] = response.events || [];
-        const isCreate = events.some(e => e.endsWith('.create'));
-        const isUpdate = events.some(e => e.endsWith('.update'));
-        const isDelete = events.some(e => e.endsWith('.delete'));
-        const doc = response.payload as any;
-
-        if (isCreate || isUpdate) {
-          // Filtrar por liveStreamId si aplica
-          if (liveStreamId && doc.liveId !== liveStreamId) return;
-          // Solo aceptar sorteos activos o completados (con winner)
-          if (doc.isActive || doc.winnerId) {
-            setRaffle(doc as LiveRaffle);
-            setLoading(false);
-          } else if (raffle?.$id === doc.$id) {
-            // El sorteo actual se desactivó: recargar para obtener el siguiente
-            loadRaffle();
-          }
-        } else if (isDelete && raffle?.$id === doc.$id) {
-          loadRaffle();
-        }
-      }
-    );
-
-    return () => {
-      try { unsubRaffles(); } catch {}
-    };
+    return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveStreamId]);
 
-  // Realtime para participantes (actualiza contador sin polling)
   useEffect(() => {
     if (!raffle) return;
-    const { endpoint, projectId, databaseId } = getAppwriteConfig();
-    const realtimeClient = new Client().setEndpoint(endpoint).setProject(projectId);
+    
+    // Refresco de participantes cada 60 segundos también
+    const interval = setInterval(() => {
+      loadParticipants(raffle.$id);
+    }, 60000);
 
-    const unsubParticipants = realtimeClient.subscribe(
-      `databases.${databaseId}.collections.${RAFFLE_PARTICIPANTS_COLLECTION}.documents`,
-      (response: any) => {
-        const events: string[] = response.events || [];
-        const doc = response.payload as any;
-        if (doc.raffleId !== raffle.$id) return;
-
-        if (events.some(e => e.endsWith('.create'))) {
-          setParticipantCount(prev => prev + 1);
-          if (user && doc.userId === user.id) setJoined(true);
-        } else if (events.some(e => e.endsWith('.delete'))) {
-          setParticipantCount(prev => Math.max(0, prev - 1));
-          if (user && doc.userId === user.id) setJoined(false);
-        }
-      }
-    );
-
-    return () => {
-      try { unsubParticipants(); } catch {}
-    };
-  }, [raffle, user]);
+    return () => clearInterval(interval);
+  }, [raffle, loadParticipants]);
 
   async function handleJoin() {
     if (!raffle || !user || !isLoggedIn || joining || joined) return;

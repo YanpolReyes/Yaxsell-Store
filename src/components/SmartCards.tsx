@@ -5,9 +5,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/context/FavoritesContext';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, formatPrice } from '@/lib/appwrite';
-import { normalizeProductImages, resolveStorageImageUrl } from '@/lib/product-images';
-import { Query } from 'appwrite';
+import { formatPrice } from '@/lib/appwrite';
+import { resolveStorageImageUrl } from '@/lib/product-images';
 import { Product } from '@/types';
 import gsap from 'gsap';
 
@@ -44,18 +43,17 @@ export default function SmartCards() {
     if (typeof window === 'undefined') return;
     const ids = getRecentIds().slice(0, 3);
     if (ids.length === 0) return;
-    (async () => {
-      try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-          Query.equal('$id', ids),
-          Query.limit(3),
-        ]);
-        const map = new Map(res.documents.map(d => [d.$id, d as unknown as Product]));
-        setRecentProducts(ids.map(id => map.get(id)).filter(Boolean) as Product[]);
-      } catch {}
-    })();
+    fetch(`/api/public-data/products?ids=${ids.join(',')}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch recent products');
+        return res.json();
+      })
+      .then(data => {
+        if (data && data.products) {
+          setRecentProducts(data.products as Product[]);
+        }
+      })
+      .catch(e => console.error(e));
   }, []);
 
   // Build cards based on user state

@@ -25,7 +25,7 @@ export default function UpdateNotifier() {
       .catch(() => {});
   }, []);
 
-  // Poll cada 30s para detectar cambios
+  // Poll cada 5 minutos (300,000ms) en lugar de 30s para ahorrar cientos de miles de reads diarios
   useEffect(() => {
     if (initialTimestamp === 0) return;
 
@@ -38,30 +38,9 @@ export default function UpdateNotifier() {
           }
         })
         .catch(() => {});
-    }, 30000);
+    }, 300000);
 
     return () => clearInterval(interval);
-  }, [initialTimestamp]);
-
-  // Verificar cuando la pestaña vuelve a ser visible
-  useEffect(() => {
-    if (initialTimestamp === 0) return;
-
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        fetch('/api/version')
-          .then(r => r.json())
-          .then(data => {
-            if (data.updatedAt && data.updatedAt > initialTimestamp) {
-              setShowUpdate(true);
-            }
-          })
-          .catch(() => {});
-      }
-    };
-
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
   }, [initialTimestamp]);
 
   const handleReload = useCallback(() => {

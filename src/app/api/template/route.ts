@@ -16,10 +16,14 @@ const headers = {
 const noStoreHeaders = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
 };
-
-export const dynamic = 'force-dynamic';
-
+// Permitir caché de 1 minuto para evitar 7 lecturas a la BD por cada vista de página
+export const revalidate = 60;
 import { Client, Databases, Query } from 'node-appwrite';
+
+// Fallback in-memory cache to guarantee database reads stay low even under high concurrent load
+let memoryCacheAllTemplates: any = null;
+let memoryCacheAllTemplatesTime = 0;
+const TEMPLATE_CACHE_TTL = 300_000; // 5 minutes cache
 
 const client = new Client()
   .setEndpoint(APPWRITE_ENDPOINT)
@@ -74,28 +78,30 @@ async function writeKey(key: string, value: number): Promise<boolean> {
 export async function GET(req: NextRequest) {
   try {
     const section = req.nextUrl.searchParams.get('section');
+    const now = Date.now();
+
+    // Populate or refresh the cache if expired
+    if (!memoryCacheAllTemplates || (now - memoryCacheAllTemplatesTime >= TEMPLATE_CACHE_TTL)) {
+      const global = await readKey(TEMPLATE_KEY) || 1;
+      const sections = ['landing', 'collections', 'catalog', 'productDetail', 'cart', 'checkout'] as const;
+      const result: Record<string, number> = { landing: global, collections: global, catalog: global, productDetail: global, cart: global, checkout: global };
+
+      for (const sec of sections) {
+        const val = await readKey(`${TEMPLATE_KEY}_${sec}`);
+        if (val) result[sec] = val;
+      }
+
+      memoryCacheAllTemplates = { template: global, sections: result };
+      memoryCacheAllTemplatesTime = now;
+    }
 
     if (section) {
-      // Return a single section
-      const key = `${TEMPLATE_KEY}_${section}`;
-      let val = await readKey(key);
-      // Fallback to global template if section not configured
-      if (!val) val = await readKey(TEMPLATE_KEY) || 1;
+      const global = memoryCacheAllTemplates.template;
+      const val = memoryCacheAllTemplates.sections[section] || global;
       return NextResponse.json({ template: val, section });
     }
 
-    // Return all sections
-    const global = await readKey(TEMPLATE_KEY) || 1;
-    const sections = ['landing', 'collections', 'catalog', 'productDetail', 'cart', 'checkout'] as const;
-    const result: Record<string, number> = { landing: global, collections: global, catalog: global, productDetail: global, cart: global, checkout: global };
-
-    // Override with section-specific values if they exist
-    for (const sec of sections) {
-      const val = await readKey(`${TEMPLATE_KEY}_${sec}`);
-      if (val) result[sec] = val;
-    }
-
-    return NextResponse.json({ template: global, sections: result });
+    return NextResponse.json(memoryCacheAllTemplates);
   } catch (error: any) {
     console.error('[API template] Exception:', error);
     return NextResponse.json({ template: 1, sections: { landing: 1, collections: 1, catalog: 1, productDetail: 1, cart: 1, checkout: 1 }, error: error.message }, { status: 200 });
@@ -125,6 +131,10 @@ export async function POST(req: NextRequest) {
     if (!ok) {
       return NextResponse.json({ success: false, error: 'Failed to write template' }, { status: 500 });
     }
+
+    // Invalidate in-memory cache on update so changes take effect immediately
+    memoryCacheAllTemplates = null;
+    memoryCacheAllTemplatesTime = 0;
 
     return NextResponse.json({ success: true, template, section: section || null }, { headers: noStoreHeaders });
   } catch (error: any) {

@@ -4,9 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Clock } from 'lucide-react';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, formatPrice } from '@/lib/appwrite';
-import { normalizeProductImages, getProductImageUrl } from '@/lib/product-images';
-import { Query } from 'appwrite';
+import { formatPrice } from '@/lib/appwrite';
+import { getProductImageUrl } from '@/lib/product-images';
 import { Product } from '@/types';
 
 const STORAGE_KEY = 'recently_viewed';
@@ -30,22 +29,21 @@ export default function RecentlyViewed({ excludeId }: { excludeId?: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
-      const ids = getRecentIds().filter(id => id !== excludeId).slice(0, 8);
-      if (ids.length === 0) { setLoading(false); return; }
-      try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-          Query.equal('$id', ids),
-          Query.limit(8),
-        ]);
-        // Sort to match recency order
-        const map = new Map(res.documents.map(d => [d.$id, normalizeProductImages(d as unknown as Product)]));
-        setProducts(ids.map(id => map.get(id)).filter(Boolean) as Product[]);
-      } catch (e) { console.error(e); }
-      finally { setLoading(false); }
-    })();
+    const ids = getRecentIds().filter(id => id !== excludeId).slice(0, 8);
+    if (ids.length === 0) { setLoading(false); return; }
+
+    fetch(`/api/public-data/products?ids=${ids.join(',')}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch recent products');
+        return res.json();
+      })
+      .then(data => {
+        if (data && data.products) {
+          setProducts(data.products as Product[]);
+        }
+      })
+      .catch(e => console.error(e))
+      .finally(() => setLoading(false));
   }, [excludeId]);
 
   if (loading || products.length === 0) return null;

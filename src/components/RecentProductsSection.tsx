@@ -99,69 +99,6 @@ export default function RecentProductsSection() {
     };
 
     loadRecent();
-
-    // 2. Subscribe to Realtime Updates (WebSocket)
-    const { endpoint, projectId, databaseId } = getAppwriteConfig();
-    const realtimeClient = new Client().setEndpoint(endpoint).setProject(projectId);
-
-    const unsubscribe = realtimeClient.subscribe(
-      `databases.${databaseId}.collections.${PRODUCTS_COLLECTION}.documents`,
-      (response: any) => {
-        const events: string[] = response.events || [];
-        const isCreate = events.some(e => e.endsWith('.create'));
-        const isUpdate = events.some(e => e.endsWith('.update'));
-        const isDelete = events.some(e => e.endsWith('.delete'));
-        const doc = response.payload as any;
-
-        if (isDelete) {
-          setProducts(prev => prev.filter(p => p.$id !== doc.$id));
-        } else if (isCreate || isUpdate) {
-          const isStockActive = (doc.STOCK !== undefined && doc.STOCK !== null && doc.STOCK >= 0) && doc.ISACTIVE !== false;
-          const threshold = getLiveShoppingThreshold();
-          const isImportedToday = doc.imported_at && new Date(doc.imported_at).getTime() >= threshold.getTime();
-
-          if (!isStockActive || !isImportedToday) {
-            // Remove from list if stock is gone, deactivated, or not imported today
-            setProducts(prev => prev.filter(p => p.$id !== doc.$id));
-          } else {
-            // Insert or update and sort
-            setProducts(prev => {
-              const filtered = prev.filter(p => p.$id !== doc.$id);
-              const updated = [doc, ...filtered];
-              return updated
-                .sort((a, b) => {
-                  const dateA = a.imported_at ? new Date(a.imported_at).getTime() : 0;
-                  const dateB = b.imported_at ? new Date(b.imported_at).getTime() : 0;
-                  return dateB - dateA;
-                });
-            });
-          }
-        }
-      }
-    );
-
-    // 3. Periodically sweep products to enforce 7am threshold (in case user leaves page open past 7am)
-    const sweepInterval = setInterval(() => {
-      const threshold = getLiveShoppingThreshold();
-      setProducts(prev => {
-        const filtered = prev.filter(p => {
-          return p.imported_at && new Date(p.imported_at).getTime() >= threshold.getTime();
-        });
-        if (filtered.length !== prev.length) {
-          return filtered;
-        }
-        return prev;
-      });
-    }, 30000); // check every 30 seconds
-
-    return () => {
-      clearInterval(sweepInterval);
-      try {
-        unsubscribe();
-      } catch (e) {
-        console.error('[RecentProducts] Unsubscribe error:', e);
-      }
-    };
   }, []);
 
   useEffect(() => {

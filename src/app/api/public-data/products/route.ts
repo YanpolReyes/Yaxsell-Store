@@ -35,7 +35,7 @@ let memoryCacheLiveProducts: Record<string, { data: any[]; timestamp: number }> 
 const getCachedAllProducts = unstable_cache(
   async () => {
     const now = Date.now();
-    if (memoryCacheAllProducts && (now - memoryCacheAllProductsTime < 300000)) {
+    if (memoryCacheAllProducts && (now - memoryCacheAllProductsTime < 3600000)) {
       return memoryCacheAllProducts;
     }
 
@@ -75,14 +75,14 @@ const getCachedAllProducts = unstable_cache(
     return normalized;
   },
   ['all-public-products-cache-v3'],
-  { revalidate: 300, tags: ['products'] }
+  { revalidate: 3600, tags: ['products'] }
 );
 
 // Cache active offer target IDs
 const getCachedActiveOffers = unstable_cache(
   async () => {
     const now = Date.now();
-    if (memoryCacheActiveOffers && (now - memoryCacheActiveOffersTime < 300000)) {
+    if (memoryCacheActiveOffers && (now - memoryCacheActiveOffersTime < 3600000)) {
       return memoryCacheActiveOffers;
     }
 
@@ -99,14 +99,14 @@ const getCachedActiveOffers = unstable_cache(
     return ids;
   },
   ['active-offers-cache-v3'],
-  { revalidate: 300, tags: ['offers'] }
+  { revalidate: 3600, tags: ['offers'] }
 );
 
 // Cache apertura settings
 const getCachedAperturaSettings = unstable_cache(
   async () => {
     const now = Date.now();
-    if (memoryCacheAperturaSettings && (now - memoryCacheAperturaSettingsTime < 300000)) {
+    if (memoryCacheAperturaSettings && (now - memoryCacheAperturaSettingsTime < 3600000)) {
       return memoryCacheAperturaSettings;
     }
 
@@ -116,7 +116,7 @@ const getCachedAperturaSettings = unstable_cache(
     return settings;
   },
   ['apertura-settings-cache-v3'],
-  { revalidate: 300, tags: ['settings'] }
+  { revalidate: 3600, tags: ['settings'] }
 );
 
 // Cache live products for 60 seconds
@@ -157,6 +157,22 @@ export async function GET(request: NextRequest) {
       const threshold = getLiveShoppingThreshold();
       const liveProducts = await getCachedLiveProducts(threshold.toISOString());
       return NextResponse.json({ products: liveProducts });
+    }
+
+    const idsParam = searchParams.get('ids');
+    if (idsParam) {
+      const ids = idsParam.split(',').filter(Boolean);
+      if (ids.length === 0) {
+        return NextResponse.json({ products: [] });
+      }
+      const [allProductsRaw] = await Promise.all([
+        getCachedAllProducts()
+      ]);
+      const allProducts = allProductsRaw as any[];
+      const filtered = allProducts.filter(p => ids.includes(p.$id));
+      const map = new Map(filtered.map(p => [p.$id, p]));
+      const sorted = ids.map(id => map.get(id)).filter(Boolean);
+      return NextResponse.json({ products: sorted });
     }
 
     // 2. Standard Catalog Filters (Memory-based query)

@@ -32,7 +32,7 @@ export async function GET() {
         { updatedAt },
         {
           headers: {
-            'Cache-Control': 'no-store, no-cache, must-revalidate',
+            'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
             'Access-Control-Allow-Origin': '*',
           },
         }

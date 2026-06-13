@@ -1448,6 +1448,119 @@ let dashboardCache: {
   data: DashboardCacheData;
 } | null = null;
 
+function TestPeriodBanner() {
+  const [timeLeft, setTimeLeft] = useState('');
+  const [percent, setPercent] = useState(0);
+  const [isFinished, setIsFinished] = useState(false);
+
+  useEffect(() => {
+    const START_TIME = new Date('2026-06-12T19:58:15-04:00').getTime();
+    const END_TIME = new Date('2026-06-13T19:58:15-04:00').getTime();
+    const TOTAL_DURATION = END_TIME - START_TIME;
+
+    const update = () => {
+      const now = Date.now();
+      if (now >= END_TIME) {
+        setTimeLeft('00:00:00');
+        setPercent(100);
+        setIsFinished(true);
+        return;
+      }
+      
+      const elapsed = Math.max(0, now - START_TIME);
+      const calculatedPct = Math.min(100, (elapsed / TOTAL_DURATION) * 100);
+      setPercent(calculatedPct);
+
+      const remaining = END_TIME - now;
+      const hours = Math.floor(remaining / 3600000);
+      const minutes = Math.floor((remaining % 3600000) / 60000);
+      const seconds = Math.floor((remaining % 60000) / 1000);
+
+      const formatNum = (num: number) => String(num).padStart(2, '0');
+      setTimeLeft(`${formatNum(hours)}:${formatNum(minutes)}:${formatNum(seconds)}`);
+    };
+
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, #1e1b4b 0%, #311042 100%)',
+      borderRadius: 14,
+      border: '1px solid rgba(168, 85, 247, 0.2)',
+      padding: '16px 20px',
+      marginBottom: 20,
+      color: '#fff',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      {/* Subtle glow in background */}
+      <div style={{
+        position: 'absolute',
+        top: -50,
+        right: -50,
+        width: 150,
+        height: 150,
+        borderRadius: '50%',
+        background: 'rgba(168, 85, 247, 0.15)',
+        filter: 'blur(30px)',
+        pointerEvents: 'none'
+      }} />
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            background: 'rgba(168, 85, 247, 0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <span style={{ fontSize: 16 }}>⏱️</span>
+          </div>
+          <div>
+            <h4 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#f3e8ff', letterSpacing: '0.02em' }}>
+              PERIODO DE PRUEBA DE 24 HORAS: OPTIMIZACIÓN APPWRITE
+            </h4>
+            <p style={{ margin: '2px 0 0', fontSize: 11, color: '#d8b4fe' }}>
+              Monitoreo del consumo de lecturas para validar la efectividad de las soluciones aplicadas.
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+          <span style={{ fontSize: 10, color: '#a78bfa', fontWeight: 600, textTransform: 'uppercase' }}>Tiempo Restante</span>
+          <span style={{ fontSize: 20, fontWeight: 800, color: '#f3e8ff', fontFamily: 'monospace', letterSpacing: '1px' }}>
+            {timeLeft}
+          </span>
+        </div>
+      </div>
+
+      {/* Progress Bar Container */}
+      <div style={{ width: '100%', height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 10, overflow: 'hidden', position: 'relative', marginBottom: 8 }}>
+        <div style={{
+          width: `${percent}%`,
+          height: '100%',
+          background: 'linear-gradient(90deg, #8b5cf6, #ec4899)',
+          borderRadius: 10,
+          transition: 'width 1s linear'
+        }} />
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#c084fc', fontWeight: 500 }}>
+        <span>Inicio: 12 Jun, 19:58</span>
+        <span>{isFinished ? 'Prueba Finalizada 🎉' : 'Meta: Mantener lecturas < 60k'}</span>
+        <span>Fin: 13 Jun, 19:58</span>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({ totalProducts: 0, totalOrders: 0, pendingOrders: 0, totalRevenue: 0, lowStockCount: 0, todayOrders: 0, avgTicket: 0, avgDailyRevenue: 0 });
@@ -2273,6 +2386,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div style={{ position: 'relative', zIndex: 10 }}>
+            <TestPeriodBanner />
             {/* KPI Cards Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
               

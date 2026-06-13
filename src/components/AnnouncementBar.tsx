@@ -4,8 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Phone, Mail, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getSectionSettings, isSectionEnabled, SectionConfig } from '@/lib/section-config';
-import { getServices, DATABASE_ID } from '@/lib/appwrite-admin';
-import { Query } from 'appwrite';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
 
 const STORAGE_KEY = 'announcement_dismissed';
 const DEFAULT_TEXT = '🔥 Envío gratis en compras sobre $30.000 — ¡Aprovecha!';
@@ -65,33 +64,23 @@ export default function AnnouncementBar({ sectionCfg, navbarGradient }: Props) {
   const [dismissed, setDismissed] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null);
+  const { settings: storeSettings } = useStoreSettings();
 
   useEffect(() => {
     setMounted(true);
-    loadStoreInfo();
   }, []);
 
-  async function loadStoreInfo() {
-    try {
-      const { databases } = getServices();
-      const response = await databases.listDocuments(DATABASE_ID, 'store_settings', [
-        Query.limit(1)
-      ]);
-      
-      if (response.documents.length > 0) {
-        const doc = response.documents[0];
-        setStoreInfo({
-          storeName: doc.STORENAME || '',
-          phone: doc.PHONE || '',
-          email: doc.EMAIL || '',
-          address: doc.ADDRESS || '',
-          showInAnnouncementBar: doc.SHOWINANNOUNCEMENTBAR ?? false,
-        });
-      }
-    } catch (error) {
-      console.error('Error loading store info:', error);
+  useEffect(() => {
+    if (storeSettings) {
+      setStoreInfo({
+        storeName: storeSettings.storeName || '',
+        phone: storeSettings.phone || '',
+        email: storeSettings.email || '',
+        address: storeSettings.address || '',
+        showInAnnouncementBar: storeSettings.showInAnnouncementBar ?? false,
+      });
     }
-  }
+  }, [storeSettings]);
 
   const settings = sectionCfg ? getSectionSettings(sectionCfg, 'announcement_bar') : {};
   const text = settings.title || DEFAULT_TEXT;

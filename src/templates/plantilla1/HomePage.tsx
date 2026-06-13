@@ -323,22 +323,7 @@ export default function HomePage1() {
     getSectionConfigAsync().then(setSectionCfg).catch(() => setSectionCfg(getSectionConfig()));
   }, []);
 
-  /* Recargar config cuando el usuario vuelve a la pestaña (editor → vivo) */
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') {
-        invalidateSectionCache();
-        // Invalidar caches de localStorage para forzar re-fetch de datos frescos
-        try {
-          const keys = Object.keys(localStorage);
-          keys.forEach(k => { if (k.startsWith('yaxsel_cache:')) localStorage.removeItem(k); });
-        } catch {}
-        getSectionConfigAsync().then(setSectionCfg).catch(() => setSectionCfg(getSectionConfig()));
-      }
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
-  }, []);
+  // cache wiping logic on visibilitychange removed for performance and cost reduction
 
   /* Reaplicar visibilidad de secciones (después de otros effects que tocan display) */
   useEffect(() => {
@@ -6529,17 +6514,14 @@ export default function HomePage1() {
     if (address || mapEmbed) {
       renderMap(address);
     } else {
-      // Fallback: leer de store_settings
-      try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        databases.listDocuments(databaseId, 'store_settings', [Query.limit(1)]).then(res => {
-          if (res.documents.length > 0) {
-            const storeAddr = (res.documents[0] as any).ADDRESS || '';
-            if (storeAddr) renderMap(storeAddr);
-          }
-        }).catch(() => {});
-      } catch {}
+      // Fallback: leer de store_settings usando la API cacheable
+      fetch('/api/store-settings')
+        .then(res => res.json())
+        .then(settings => {
+          const storeAddr = settings.address || '';
+          if (storeAddr) renderMap(storeAddr);
+        })
+        .catch(() => {});
     }
   }, [bodyHtml, sectionCfg]);
 
@@ -7939,34 +7921,7 @@ export default function HomePage1() {
 
           console.log('[HEADING-GSAP] built, heading letters:', headingLetters.length, 'sub letters:', subLetters.length);
 
-          // DEBUG: monitor what kills the animation
-          let checkCount = 0;
-          const debugInterval = setInterval(() => {
-            checkCount++;
-            const as = document.querySelector('.musk-banner-slider .swiper-slide-active');
-            const h = as?.querySelector('.banner-main-title.enlarge_text') as HTMLElement | null
-              || document.getElementById('enlarge_heading');
-            if (!h) {
-              console.log('[HEADING-GSAP] CHECK #' + checkCount + ' heading element GONE from DOM');
-              clearInterval(debugInterval);
-              return;
-            }
-            const hasSpans = h.querySelectorAll('span span').length;
-            const stList = ScrollTrigger.getAll();
-            const relevantST = stList.filter(st => {
-              const vars = st.vars as Record<string, unknown>;
-              return vars.trigger === h;
-            });
-            if (hasSpans === 0) {
-              console.log('[HEADING-GSAP] CHECK #' + checkCount + ' SPANS LOST! innerHTML:', h.innerHTML.substring(0, 100));
-              clearInterval(debugInterval);
-            } else if (relevantST.length === 0 && checkCount > 3) {
-              console.log('[HEADING-GSAP] CHECK #' + checkCount + ' SCROLLTRIGGER GONE! Total STs:', stList.length, 'spans:', hasSpans);
-              clearInterval(debugInterval);
-            } else if (checkCount % 5 === 0) {
-              console.log('[HEADING-GSAP] CHECK #' + checkCount + ' OK spans=' + hasSpans + ' STs=' + relevantST.length + ' totalSTs=' + stList.length);
-            }
-          }, 1000);
+          // debug interval removed for performance
 
         });
       } finally {

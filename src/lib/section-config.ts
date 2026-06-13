@@ -1467,7 +1467,7 @@ export async function getSectionConfigAsync(): Promise<SectionConfig[]> {
   pendingConfigPromise = (async () => {
     // Intentar leer del API server-side (que usa API key)
     try {
-      const res = await fetch(`${API_ENDPOINT}?_t=${Date.now()}`, { cache: 'no-store' });
+      const res = await fetch(API_ENDPOINT);
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.sections) {

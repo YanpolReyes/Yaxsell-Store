@@ -21,7 +21,7 @@ let pendingPromise: Promise<StoreSettings> | null = null;
 
 async function fetchStoreSettings(): Promise<StoreSettings> {
   try {
-    const response = await fetch(`/api/store-settings?_t=${Date.now()}`, { cache: 'no-store' });
+    const response = await fetch(`/api/store-settings`);
     if (response.ok) {
       return await response.json();
     }

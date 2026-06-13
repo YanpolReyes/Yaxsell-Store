@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Ticket, Copy, Check, Sparkles, Zap, ChevronRight, Flame, Award, Scissors, Tag, Star } from 'lucide-react';
-import { getServices, getAppwriteConfig } from '@/lib/appwrite';
-import { Query } from 'appwrite';
+// Removed Appwrite imports to use cached API endpoint instead
 import type { SectionSettings } from '@/lib/section-config';
 
 const COUPONS_COLLECTION = 'discount_coupons';
@@ -60,26 +59,29 @@ export default function CouponBanner({ settings: s }: Props) {
   };
 
   useEffect(() => {
-    (async () => {
-      try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
+    const url = couponId 
+      ? `/api/public-data/coupons?id=${couponId}`
+      : '/api/public-data/coupons';
+
+    fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch coupons');
+        return res.json();
+      })
+      .then(data => {
         if (couponId) {
-          const doc = await databases.getDocument(databaseId, COUPONS_COLLECTION, couponId) as unknown as Coupon;
-          if (doc) { setCoupon(doc); return; }
+          if (data) setCoupon(data as Coupon);
+        } else {
+          const list = data as Coupon[];
+          const valid = list.find(c => {
+            const expiresAt = c.expiresAt || null;
+            if (expiresAt && new Date(expiresAt * 1000) < new Date()) return false;
+            return true;
+          });
+          if (valid) setCoupon(valid);
         }
-        const res = await databases.listDocuments(databaseId, COUPONS_COLLECTION, [
-          Query.equal('isActive', true),
-          Query.limit(5),
-        ]);
-        const valid = (res.documents as unknown as Coupon[]).find(c => {
-          const expiresAt = c.expiresAt || null;
-          if (expiresAt && new Date(expiresAt * 1000) < new Date()) return false;
-          return true;
-        });
-        if (valid) setCoupon(valid);
-      } catch (e) { console.error(e); }
-    })();
+      })
+      .catch(e => console.error(e));
   }, [couponId]);
 
   useEffect(() => {

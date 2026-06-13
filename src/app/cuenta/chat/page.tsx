@@ -43,15 +43,8 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Poll for new messages every 30s, only if visible
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        loadMessages();
-      }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [isLoggedIn, user?.id]);
+  // 🚀 Bucle de recarga de chat eliminado por petición del administrador (ahorra miles de reads diarios)
+  // Si el usuario quiere ver nuevos mensajes, simplemente recarga la página o entra y sale.
 
   const sendMessage = async () => {
     if (!user || !draft.trim()) return;
