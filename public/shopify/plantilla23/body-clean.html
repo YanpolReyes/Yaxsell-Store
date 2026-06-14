@@ -4984,84 +4984,66 @@
       <canvas id="yaxsell-hero-particles" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;"></canvas>
 
     <style>
-      /* ── Shimmer sweep ── */
-      @keyframes hero-shimmer-sweep {
-        0%   { transform: translateX(-100%) skewX(-12deg); }
-        100% { transform: translateX(220%)  skewX(-12deg); }
+      /*
+       * Seamless shimmer: symmetric gradient (same color at 0% and 100%)
+       * animated with background-position + linear timing = zero visible cut.
+       */
+      @keyframes hero-sk-shimmer {
+        0%   { background-position: 100% 0; }
+        100% { background-position: -100% 0; }
       }
-      /* ── Soft pulse on the base ── */
-      @keyframes hero-skeleton-pulse {
-        0%, 100% { opacity: 1; }
-        50%       { opacity: 0.82; }
-      }
-      /* ── Wrapper ── */
-      .hero-skeleton-wrap {
-        position: relative;
-        overflow: hidden;
-        background: linear-gradient(135deg,
-          #f9c8d8 0%,
-          #fce4ec 30%,
-          #f5b3cc 55%,
-          #fce4ec 75%,
-          #f9c8d8 100%);
-        animation: hero-skeleton-pulse 2.8s ease-in-out infinite;
-      }
-      /* ── Moving sheen layer ── */
-      .hero-skeleton-wrap::after {
-        content: '';
+      .hero-skeleton-overlay {
         position: absolute;
         inset: 0;
+        z-index: 3;
+        pointer-events: none;
         background: linear-gradient(
-          100deg,
-          rgba(255,255,255,0)    0%,
-          rgba(255,255,255,0.55) 45%,
-          rgba(255,243,247,0.72) 55%,
-          rgba(255,255,255,0)    100%
+          90deg,
+          #f5b8cc 0%,
+          #fce4ec 20%,
+          #ffe0ef 40%,
+          #fff0f6 50%,
+          #ffe0ef 60%,
+          #fce4ec 80%,
+          #f5b8cc 100%
         );
-        animation: hero-shimmer-sweep 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        pointer-events: none;
+        background-size: 200% 100%;
+        animation: hero-sk-shimmer 2.6s linear infinite;
+        transition: opacity 0.55s ease;
       }
-      /* ── Radial centre glow ── */
-      .hero-skeleton-wrap::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(ellipse 60% 50% at 50% 50%,
-          rgba(255,255,255,0.22) 0%,
-          transparent 70%);
+      .hero-skeleton-overlay.hidden-sk {
+        opacity: 0;
         pointer-events: none;
-        z-index: 1;
       }
 
-      /* ── Reveal animation ── */
-      @keyframes hero-fade-in {
-        0%   { opacity: 0; filter: blur(6px); transform: scale(1.025); }
-        60%  { filter: blur(0px); }
-        100% { opacity: 1; filter: blur(0px); transform: scale(1); }
+      /* Reveal: cross-fade from transparent */
+      @keyframes hero-reveal {
+        from { opacity: 0; }
+        to   { opacity: 1; }
       }
       .hero-img-enter {
-        animation: hero-fade-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+        animation: hero-reveal 0.6s ease both;
       }
     </style>
 
-    <!-- DESKTOP: static image with skeleton loader -->
+    <!-- DESKTOP: image always in layout; skeleton sits absolute on top -->
     <div class="hidden lg:block w-full" style="position: relative;">
-      <div id="hero-skeleton-desktop" class="hero-skeleton-wrap w-full" style="aspect-ratio: 1440/600; width: 100%;"></div>
       <img id="hero1-image-desktop"
            src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2Fx.jpeg?alt=media&token=0ad04776-0001-40f0-a7c3-a811c5cce0e7"
            class="block w-full h-auto pointer-events-none"
-           style="display: none; width: 100%; height: auto;"
+           style="width: 100%; height: auto; display: block; opacity: 0;"
            alt="Hero banner" />
+      <div id="hero-skeleton-desktop" class="hero-skeleton-overlay"></div>
     </div>
 
-    <!-- MOBILE: static image with skeleton loader -->
+    <!-- MOBILE: image always in layout; skeleton sits absolute on top -->
     <div class="block lg:hidden w-full" style="position: relative;">
-      <div id="hero-skeleton-mobile" class="hero-skeleton-wrap w-full" style="aspect-ratio: 9/16; width: 100%;"></div>
       <img id="hero1-image-mobile"
            src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1781404655085-pegada-1781404653623.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=AoMmXhZykJXHuRUbi6kN90211xsIcYZjusKCSZK4ebs2iyXidYeEJWJCvJyaynUTEUcC1VHJo%2FhCnE6cvrTGAGa9IhLOt6sOrpI%2Fr4XuRwVMVeNaanueVgoLg1yRj29zWHhEfXcZ5KbWtT2tJ%2FS6hlyU0z62ichXNvys%2FSn2%2FI%2Bj4OBgMN03lPZT7daOc8RzERbDU19piSeu0Zyy5wvTWWuIa4ySVI7IlmxcbzMQPd3KVX8x7ehOVU67U32C1msMyudocbczpbUFSZiShuu5FqDfCfn4Yrcztl%2Fv9f%2FSIf1PTwAWTc3SrWpsl7%2FZzdCY%2BD3i60ByaI%2Bn3Vwok3AE0Q%3D%3D"
            class="block w-full h-auto pointer-events-none"
-           style="display: none; width: 100%; height: auto;"
+           style="width: 100%; height: auto; display: block; opacity: 0;"
            alt="Hero banner móvil" />
+      <div id="hero-skeleton-mobile" class="hero-skeleton-overlay"></div>
     </div>
 
     <script>
@@ -5071,22 +5053,23 @@
         var sk  = document.getElementById(skeletonId);
         if (!img) return;
         function onLoad() {
-          if (sk) {
-            sk.style.transition = 'opacity 0.4s ease';
-            sk.style.opacity = '0';
-            setTimeout(function() { sk.style.display = 'none'; }, 420);
-          }
-          img.style.display = 'block';
+          /* 1. Fade image in */
+          img.style.transition = 'opacity 0.6s ease';
+          img.style.opacity = '1';
           img.classList.add('hero-img-enter');
+          /* 2. Fade skeleton out simultaneously */
+          if (sk) {
+            sk.classList.add('hidden-sk');
+            setTimeout(function() {
+              if (sk && sk.parentNode) sk.parentNode.removeChild(sk);
+            }, 650);
+          }
         }
         if (img.complete && img.naturalWidth > 0) {
           onLoad();
         } else {
-          img.addEventListener('load', onLoad, { once: true });
-          img.addEventListener('error', function() {
-            if (sk) sk.style.display = 'none';
-            img.style.display = 'block';
-          }, { once: true });
+          img.addEventListener('load',  onLoad, { once: true });
+          img.addEventListener('error', onLoad, { once: true });
         }
       }
       if (document.readyState === 'loading') {
