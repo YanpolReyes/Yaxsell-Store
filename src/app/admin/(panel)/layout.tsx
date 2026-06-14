@@ -701,9 +701,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
     /* ── Responsive admin layout ── */
     @media (min-width: 1024px) {
-      .admin-content-wrap { border-radius: 24px !important; border: 3px solid #000000 !important; }
+      .admin-body-wrap {
+        height: calc(100vh - 64px) !important;
+        height: calc(100dvh - 64px) !important;
+        min-height: 0 !important;
+      }
+      .admin-content-wrap {
+        border-radius: 24px !important;
+        border: 3px solid #000000 !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+      }
       .admin-main-content { padding: 24px 24px 40px !important; border-radius: 24px; }
       .admin-sidebar { position: relative !important; }
+      .admin-main-scroll {
+        flex: 1 !important;
+        height: 100% !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+      }
     }
     @media (max-width: 1023px) {
       .admin-topbar { height: 60px !important; padding: 0 8px !important; gap: 6px !important; }
@@ -992,15 +1011,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </header>
 
       {/* ═══ Body: sidebar + content ═══ */}
-      <div className="admin-body-wrap" ref={bodyWrapRef} style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0, background: '#1a1a1a' }}>
+      <div className="admin-body-wrap" ref={bodyWrapRef} style={{ display: 'flex', height: 'calc(100vh - 64px)', height: 'calc(100dvh - 64px)', overflow: 'hidden', minHeight: 0, background: '#1a1a1a' }}>
         {sidebarOpen && <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 20 }} className="lg:hidden" onClick={() => setSidebarOpen(false)} />}
         {sidebarJsx}
         {/* Main content area — clean, centered */}
         <div className="admin-content-wrap" ref={contentWrapRef} style={{
-          flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0, background: '#ffffff',
+          flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0, height: '100%', background: '#ffffff',
+          display: 'flex', flexDirection: 'column',
         }}>
           <main ref={contentRef} className="admin-main-content admin-main-scroll" style={{
-            position: 'relative', zIndex: 1, height: '100%',
+            position: 'relative', zIndex: 1, flex: 1, height: '100%',
             overflowY: 'auto', overflowX: 'hidden',
             WebkitOverflowScrolling: 'touch',
             padding: '16px 12px 32px', background: '#ffffff',

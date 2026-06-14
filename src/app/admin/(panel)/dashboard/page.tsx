@@ -1452,8 +1452,8 @@ function TestPeriodBanner() {
   const [timeLeft, setTimeLeft] = useState('00:00:00');
 
   useEffect(() => {
-    const START_TIME = new Date('2026-06-12T19:58:15-04:00').getTime();
-    const END_TIME = new Date('2026-06-13T19:58:15-04:00').getTime();
+    const START_TIME = new Date('2026-06-14T05:45:00-04:00').getTime();
+    const END_TIME = new Date('2026-06-15T05:45:00-04:00').getTime();
     const TOTAL_DURATION = END_TIME - START_TIME;
 
     const update = () => {
@@ -1551,9 +1551,9 @@ function TestPeriodBanner() {
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#c084fc', fontWeight: 500 }}>
-        <span>Inicio: 12 Jun, 19:58</span>
+        <span>Inicio: 14 Jun, 05:45</span>
         <span>{isFinished ? 'Prueba Finalizada 🎉' : 'Meta: Mantener lecturas < 60k'}</span>
-        <span>Fin: 13 Jun, 19:58</span>
+        <span>Fin: 15 Jun, 05:45</span>
       </div>
     </div>
   );
