@@ -3763,12 +3763,21 @@ export default function HomePage23() {
         (wrapper as HTMLElement).style.setProperty('flex-shrink', '0', 'important');
       }
 
+      // Fix Mobile padding issue (remove px-[3rem] which is 48px padding on mobile)
+      if (wrapper.classList.contains('md:hidden')) {
+        wrapper.querySelectorAll('.px-\\[3rem\\]').forEach(el => {
+          el.classList.remove('px-[3rem]');
+          el.classList.add('px-4'); // Use px-4 (16px) instead
+        });
+      }
+
       const gridId = `pk-rec-grid-${index}`;
       let gridEl = wrapper.querySelector(`#${gridId}`) as HTMLElement | null;
       if (!gridEl) {
         gridEl = document.createElement('div');
         gridEl.id = gridId;
-        gridEl.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px 24px;';
+        // On mobile, use auto-fill for better responsive sizing instead of rigid 1fr 1fr
+        gridEl.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill, minmax(130px, 1fr));gap:12px;padding:0 16px 24px;';
         // Remove existing swiper markup or custom-list to avoid conflicts
         const existingList = wrapper.querySelector('.swiper-container, ul.custom-list');
         if (existingList) existingList.replaceWith(gridEl);
@@ -4224,17 +4233,26 @@ export default function HomePage23() {
           }
 
         }
-        /* No hover shadows for drawer cards */
-        .pk-drawer-rec-card:hover {
+        /* No hover shadows for drawer cards, force globally for the drawer */
+        cart-drawer * {
+          -webkit-tap-highlight-color: transparent !important;
+        }
+        cart-drawer .pk-drawer-rec-card:hover,
+        cart-drawer .pk-drawer-rec-card:active,
+        cart-drawer .pk-drawer-rec-card:focus,
+        cart-drawer .cart-item:hover,
+        cart-drawer .cart-item:active,
+        cart-drawer .cart-item:focus {
           border-color: #d1d5db !important;
           box-shadow: none !important;
           transform: none !important;
+          outline: none !important;
         }
-        .pk-drawer-rec-card .pk-grid-add-to-cart:hover {
+        cart-drawer .pk-drawer-rec-card .pk-grid-add-to-cart:hover,
+        cart-drawer .pk-drawer-rec-card .pk-grid-add-to-cart:active {
           background: #374151 !important;
-        }
-        .cart-item:hover {
-          border-color: #d1d5db !important;
+          box-shadow: none !important;
+          transform: none !important;
         }
       `}</style>
 
