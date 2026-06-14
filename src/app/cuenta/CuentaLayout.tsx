@@ -41,6 +41,7 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [hasGifts, setHasGifts] = useState(false);
   const bgUrl = useCuentaBgUrl();
+  const isPerfil = pathname === '/cuenta/perfil';
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -76,8 +77,8 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
     <div style={{ minHeight: '100vh', position: 'relative', fontFamily: FF }}>
       {/* Background image with blur */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden' }}>
-        {bgUrl && <img key={bgUrl} src={bgUrl} alt="" className="cl-bg-fade" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(4px) brightness(1.1)', transform: 'scale(1.15)', animation: 'bgFloat 20s ease-in-out infinite, bgCrossFade 0.5s ease-out' }} />}
-        <div style={{ position: 'absolute', inset: 0, background: bgUrl ? 'linear-gradient(180deg,rgba(255,255,255,0.75) 0%,rgba(255,255,255,0.85) 100%)' : 'linear-gradient(180deg,#ffffff 0%,#fff 100%)' }} />
+        {bgUrl && !isPerfil && <img key={bgUrl} src={bgUrl} alt="" className="cl-bg-fade" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(4px) brightness(1.1)', transform: 'scale(1.15)', animation: 'bgFloat 20s ease-in-out infinite, bgCrossFade 0.5s ease-out' }} />}
+        <div style={{ position: 'absolute', inset: 0, background: (bgUrl && !isPerfil) ? 'linear-gradient(180deg,rgba(255,255,255,0.75) 0%,rgba(255,255,255,0.85) 100%)' : '#ffffff' }} />
       </div>
       <div style={{ position: 'relative', zIndex: 1 }}>
       <style>{`

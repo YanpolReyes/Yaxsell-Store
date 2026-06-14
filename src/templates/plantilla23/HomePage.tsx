@@ -4320,24 +4320,85 @@ export default function HomePage23() {
           display: none !important;
         }
 
-        /* --- PREMIUM CART DRAWER OVERRIDES --- */
-        cart-drawer.cart-drawer, .added-to-cart-popup {
+        /* --- PREMIUM CART & SEARCH DRAWER OVERRIDES & ANIMATIONS --- */
+        .added-to-cart-popup {
           z-index: 10005 !important;
         }
-        cart-drawer {
+        cart-drawer.cart-drawer, search-drawer.search-drawer,
+        .cart-drawer, .search-drawer {
+          position: fixed !important;
+          inset: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          height: 100dvh !important;
+          background-color: rgba(0, 0, 0, 0) !important;
+          transition: background-color 0.4s ease, visibility 0.4s !important;
+          z-index: 10005 !important;
+          display: block !important;
+          left: auto !important;
+          right: 0 !important;
+          overflow: visible !important;
+        }
+
+        /* Hidden states */
+        cart-drawer[data-hidden="true"], search-drawer[data-hidden="true"],
+        .cart-drawer[data-hidden="true"], .search-drawer[data-hidden="true"],
+        cart-drawer:not([open]):not(.active):not(.is-active), search-drawer:not([open]):not(.active):not(.is-active) {
+          visibility: hidden !important;
+          pointer-events: none !important;
+          background-color: rgba(0, 0, 0, 0) !important;
+          transition: background-color 0.4s ease, visibility 0.4s !important;
+        }
+
+        /* Visible states */
+        cart-drawer[data-hidden="false"], search-drawer[data-hidden="false"],
+        .cart-drawer[data-hidden="false"], .search-drawer[data-hidden="false"],
+        cart-drawer[open], search-drawer[open],
+        cart-drawer.active, search-drawer.active,
+        cart-drawer.is-active, search-drawer.is-active {
+          visibility: visible !important;
+          pointer-events: auto !important;
+          background-color: rgba(0, 0, 0, 0.4) !important;
+        }
+
+        cart-drawer, search-drawer, .cart-drawer, .search-drawer {
           font-family: 'Outfit', 'Inter', sans-serif !important;
         }
-        cart-drawer .drawer__inner {
+
+        cart-drawer .drawer__inner, search-drawer .drawer__inner,
+        .cart-drawer .drawer__inner, .search-drawer .drawer__inner {
           background-color: #ffffff !important;
           border-left: none !important;
           box-shadow: -16px 0 48px rgba(0,0,0,0.1) !important;
           max-width: 420px !important;
+          width: 420px !important;
           display: flex !important;
           flex-direction: column !important;
           padding-top: 20px !important;
+          height: 100% !important;
+          position: absolute !important;
+          top: 0 !important;
+          right: 0 !important;
+          transform: translateX(100%) !important;
+          transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
         }
+
+        /* Inner translated visible states */
+        cart-drawer[data-hidden="false"] .drawer__inner, search-drawer[data-hidden="false"] .drawer__inner,
+        .cart-drawer[data-hidden="false"] .drawer__inner, .search-drawer[data-hidden="false"] .drawer__inner,
+        cart-drawer[open] .drawer__inner, search-drawer[open] .drawer__inner,
+        cart-drawer.active .drawer__inner, search-drawer.active .drawer__inner,
+        cart-drawer.is-active .drawer__inner, search-drawer.is-active .drawer__inner {
+          transform: translateX(0) !important;
+        }
+
+        search-drawer .drawer__inner, .search-drawer .drawer__inner {
+          padding-top: 0 !important;
+        }
+
         @media (max-width: 480px) {
-          cart-drawer .drawer__inner {
+          cart-drawer .drawer__inner, search-drawer .drawer__inner,
+          .cart-drawer .drawer__inner, .search-drawer .drawer__inner {
             max-width: 100vw !important;
             width: 100vw !important;
           }
@@ -4408,17 +4469,7 @@ export default function HomePage23() {
           border-radius: 50px !important;
         }
 
-        /* --- PREMIUM SEARCH DRAWER OVERRIDES --- */
-        search-drawer.search-drawer {
-          z-index: 10005 !important;
-        }
-        search-drawer {
-          font-family: 'Outfit', 'Inter', sans-serif !important;
-        }
-        search-drawer .drawer__inner {
-          box-shadow: -16px 0 48px rgba(0,0,0,0.1) !important;
-          padding-top: 0 !important;
-        }
+
         search-drawer #pk-search-input {
           outline: none !important;
           box-shadow: none !important;
