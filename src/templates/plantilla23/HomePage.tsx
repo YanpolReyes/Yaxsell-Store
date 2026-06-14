@@ -162,6 +162,7 @@ export default function HomePage23() {
   const [isAppwriteLoaded, setIsAppwriteLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [liveShoppingContainer, setLiveShoppingContainer] = useState<Element | null>(null);
+  const [htmlInjected, setHtmlInjected] = useState(false);
   const [latestProductsContainer, setLatestProductsContainer] = useState<Element | null>(null);
   const [wholesaleOffersContainer, setWholesaleOffersContainer] = useState<Element | null>(null);
 
@@ -376,7 +377,6 @@ export default function HomePage23() {
       }
     };
   }, [bodyHtml]);
-
 
   /* 🪄🤖 Tabbed FAQ JS Logic 🤖🪄 */
   useEffect(() => {
@@ -1923,6 +1923,180 @@ export default function HomePage23() {
 
     containerRef.current.innerHTML = tempDiv.innerHTML;
     containerRef.current.dataset.htmlSet = '1';
+    setHtmlInjected(true);
+
+    // ✨ Hero Banner — Premium Particle System (lag-free via pre-rendered textures)
+    const heroParticlesCanvas = containerRef.current.querySelector('#yaxsell-hero-particles') as HTMLCanvasElement;
+    if (heroParticlesCanvas && !heroParticlesCanvas.dataset.particlesBound) {
+      heroParticlesCanvas.dataset.particlesBound = '1';
+      const heroParent = heroParticlesCanvas.parentElement as HTMLElement;
+      if (heroParent) {
+        const pDpr = Math.min(window.devicePixelRatio || 1, 2);
+        const pCtx = heroParticlesCanvas.getContext('2d');
+        if (pCtx) {
+          let pw = 0, ph = 0, pAnimId = 0;
+          let pmx = -9999, pmy = -9999;
+          const pMobile = window.innerWidth < 768;
+
+          const pResize = () => {
+            const r = heroParent.getBoundingClientRect();
+            pw = r.width; ph = r.height;
+            heroParticlesCanvas.width = pw * pDpr;
+            heroParticlesCanvas.height = ph * pDpr;
+            pCtx.setTransform(pDpr, 0, 0, pDpr, 0, 0);
+          };
+          pResize();
+          const pRo = new ResizeObserver(pResize);
+          pRo.observe(heroParent);
+
+          const makeGlow = (r: number, g: number, b: number, radius: number) => {
+            const s = Math.ceil(radius * 4);
+            const off = document.createElement('canvas');
+            off.width = s; off.height = s;
+            const c = off.getContext('2d')!;
+            const gr = c.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+            gr.addColorStop(0, `rgba(${r},${g},${b},1)`);
+            gr.addColorStop(0.25, `rgba(${r},${g},${b},0.35)`);
+            gr.addColorStop(0.6, `rgba(${r},${g},${b},0.08)`);
+            gr.addColorStop(1, `rgba(${r},${g},${b},0)`);
+            c.fillStyle = gr;
+            c.fillRect(0, 0, s, s);
+            return off;
+          };
+
+          const PTEX = [
+            makeGlow(255, 255, 255, 12),
+            makeGlow(251, 202, 201, 14),
+            makeGlow(244, 114, 182, 10),
+            makeGlow(255, 223, 186, 9),
+            makeGlow(251, 207, 232, 16),
+            makeGlow(255, 255, 255, 6),
+          ];
+
+          const PCOUNT = pMobile ? 30 : 55;
+
+          const mkP = (init: boolean) => {
+            const depth = Math.random();
+            const baseSize = 1.5 + depth * 5.5;
+            const speed = 0.12 + (1 - depth) * 0.3;
+            return {
+              x: Math.random() * pw,
+              y: init ? Math.random() * ph : ph + Math.random() * 60,
+              vx: (Math.random() - 0.5) * 0.25,
+              vy: -(speed + Math.random() * 0.15),
+              size: baseSize, baseSize,
+              opacity: 0,
+              baseOpacity: 0.12 + depth * 0.48,
+              tex: Math.floor(Math.random() * PTEX.length),
+              phase: Math.random() * Math.PI * 2,
+              phaseSpd: 0.004 + Math.random() * 0.012,
+              sparkle: Math.random() * Math.PI * 2,
+              sparkleSpd: 0.018 + Math.random() * 0.055,
+              depth,
+              wobbleAmp: 0.25 + Math.random() * 0.7,
+              life: init ? Math.floor(Math.random() * 500) : 0,
+              maxLife: 350 + Math.floor(Math.random() * 350),
+            };
+          };
+
+          const pts = Array.from({ length: PCOUNT }, () => mkP(true));
+
+          let star: { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; trail: { x: number; y: number }[] } | null = null;
+          let starCooldown = 200 + Math.floor(Math.random() * 300);
+
+          const onPMove = (e: MouseEvent) => {
+            const r = heroParent.getBoundingClientRect();
+            pmx = e.clientX - r.left; pmy = e.clientY - r.top;
+          };
+          const onPLeave = () => { pmx = -9999; pmy = -9999; };
+          heroParent.addEventListener('mousemove', onPMove);
+          heroParent.addEventListener('mouseleave', onPLeave);
+
+          const pLoop = () => {
+            pCtx.clearRect(0, 0, pw, ph);
+
+            for (let i = 0; i < pts.length; i++) {
+              const p = pts[i];
+              p.life++;
+              const fadeIn = Math.min(p.life / 50, 1);
+              const fadeOut = p.life > p.maxLife - 50 ? (p.maxLife - p.life) / 50 : 1;
+              p.sparkle += p.sparkleSpd;
+              const sp = 0.5 + 0.5 * Math.sin(p.sparkle);
+              p.phase += p.phaseSpd;
+              p.x += p.vx + Math.sin(p.phase * p.wobbleAmp * 8) * 0.06;
+              p.y += p.vy;
+
+              const dx = p.x - pmx, dy = p.y - pmy;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              const rr = 70 + p.depth * 35;
+              if (dist < rr && dist > 0) {
+                const f = ((rr - dist) / rr) * (0.4 + p.depth * 0.4);
+                p.x += (dx / dist) * f * 1.8;
+                p.y += (dy / dist) * f * 1.8;
+              }
+
+              p.opacity = p.baseOpacity * fadeIn * fadeOut * (0.35 + sp * 0.65);
+              p.size = p.baseSize * (0.82 + sp * 0.36);
+
+              if (p.y < -25 || p.x < -25 || p.x > pw + 25 || p.life >= p.maxLife) {
+                Object.assign(p, mkP(false));
+                p.x = Math.random() * pw;
+                continue;
+              }
+              if (p.opacity < 0.015) continue;
+
+              const tex = PTEX[p.tex];
+              const ds = p.size * 4;
+              pCtx.globalAlpha = p.opacity;
+              pCtx.drawImage(tex, p.x - ds / 2, p.y - ds / 2, ds, ds);
+            }
+
+            if (!star) {
+              starCooldown--;
+              if (starCooldown <= 0 && !pMobile) {
+                const fromLeft = Math.random() > 0.5;
+                star = {
+                  x: fromLeft ? -10 : pw + 10,
+                  y: Math.random() * ph * 0.5,
+                  vx: (fromLeft ? 1 : -1) * (3 + Math.random() * 3),
+                  vy: 1.5 + Math.random() * 2,
+                  life: 0, maxLife: 60 + Math.floor(Math.random() * 40), trail: [],
+                };
+                starCooldown = 400 + Math.floor(Math.random() * 500);
+              }
+            }
+            if (star) {
+              star.x += star.vx; star.y += star.vy; star.life++;
+              star.trail.push({ x: star.x, y: star.y });
+              if (star.trail.length > 18) star.trail.shift();
+              const sFade = star.life > star.maxLife - 15 ? (star.maxLife - star.life) / 15 : Math.min(star.life / 8, 1);
+              for (let t = 0; t < star.trail.length; t++) {
+                const tp = star.trail[t];
+                const tAlpha = (t / star.trail.length) * 0.5 * sFade;
+                const tSize = 1.5 + (t / star.trail.length) * 2.5;
+                pCtx.globalAlpha = tAlpha;
+                pCtx.drawImage(PTEX[0], tp.x - tSize * 2, tp.y - tSize * 2, tSize * 4, tSize * 4);
+              }
+              pCtx.globalAlpha = 0.9 * sFade;
+              pCtx.drawImage(PTEX[0], star.x - 10, star.y - 10, 20, 20);
+              if (star.life >= star.maxLife || star.x < -50 || star.x > pw + 50 || star.y > ph + 50) star = null;
+            }
+
+            pCtx.globalAlpha = 1;
+            pAnimId = requestAnimationFrame(pLoop);
+          };
+          pAnimId = requestAnimationFrame(pLoop);
+
+          // Store cleanup refs on canvas element for unmount
+          (heroParticlesCanvas as any)._particleCleanup = () => {
+            cancelAnimationFrame(pAnimId);
+            pRo.disconnect();
+            heroParent.removeEventListener('mousemove', onPMove);
+            heroParent.removeEventListener('mouseleave', onPLeave);
+          };
+        }
+      }
+    }
 
     const wholesaleOffersEl = document.getElementById('yaxsell-wholesale-offers-root');
     if (wholesaleOffersEl) {
