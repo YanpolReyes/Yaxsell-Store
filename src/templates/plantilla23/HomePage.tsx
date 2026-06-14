@@ -1868,7 +1868,7 @@ export default function HomePage23() {
         const targetUrl = offer.targetId ? `/productos/${offer.targetId}` : '#';
 
         return `
-          <div style="background: #ffffff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); padding: 16px; width: calc(50% - 10px); display: flex; flex-direction: column; gap: 12px; transition: transform 0.3s ease, box-shadow 0.3s ease; box-sizing: border-box;" class="offer-card-hover hover:scale-[1.02] hover:shadow-lg">
+          <div style="background: #ffffff; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); padding: 16px; width: calc(50% - 10px); display: flex; flex-direction: column; gap: 12px; transition: border-color 0.3s ease; box-sizing: border-box; border: 1px solid #f3f4f6;" class="offer-card-hover hover:border-gray-300">
             <a href="${targetUrl}" style="text-decoration: none; color: inherit; display: block; position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: #fdf2f8;">
               <img src="${imgUrl}" alt="${productName}" style="width: 100%; height: 100%; object-fit: cover;" />
               <div style="position: absolute; top: 8px; left: 8px; background: #ef4444; color: #ffffff; font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 8px;">
@@ -2825,7 +2825,7 @@ export default function HomePage23() {
         }
 
         return `
-          <product-card class="group block w-full bg-white transition-all duration-300 hover:-translate-y-1" style="max-width: 280px; margin: 0 auto;">
+          <product-card class="group block w-full bg-white transition-colors duration-300 border border-transparent hover:border-gray-200 rounded-xl" style="max-width: 280px; margin: 0 auto; overflow: hidden;">
             <!-- Contenedor de Imagen Cuadrado y Limpio -->
             <div class="relative w-full bg-[#f8f9fa] overflow-hidden" style="aspect-ratio: 1/1;">
               <a href="${pLink}" title="${pName}" aria-label="${pName}" class="block w-full h-full">
@@ -4264,6 +4264,26 @@ export default function HomePage23() {
           background: #374151 !important;
           box-shadow: none !important;
           transform: none !important;
+        }
+
+        /* Force recommendation wrapper to have white background and better header */
+        cart-drawer .drawer__recommendation-wrapper {
+          background-color: #ffffff !important;
+          padding-top: 24px !important;
+        }
+        cart-drawer .drawer__recommendation-wrapper h6.heading {
+          font-size: 16px !important;
+          font-weight: 800 !important;
+          color: #111827 !important;
+          padding-bottom: 16px !important;
+          margin-bottom: 0 !important;
+          border-bottom: 1px solid #f3f4f6 !important;
+          margin-left: 16px !important;
+          margin-right: 16px !important;
+          text-align: left !important;
+        }
+        cart-drawer .drawer__recommendation-wrapper h6.heading span {
+          color: #111827 !important;
         }
       `}</style>
 
