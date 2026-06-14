@@ -167,6 +167,38 @@ export default function HomePage23() {
   const [wholesaleOffersContainer, setWholesaleOffersContainer] = useState<Element | null>(null);
 
   useEffect(() => {
+    // Override/disable FocusTrap to prevent screen lock bugs when opening/closing drawers
+    try {
+      const globalObj = window as any;
+      const disableTrap = (obj: any) => {
+        if (obj && typeof obj === 'object') {
+          obj.activate = () => {};
+          obj.deactivate = () => {};
+        }
+      };
+
+      if (globalObj.FocusTrap) {
+        disableTrap(globalObj.FocusTrap);
+      }
+
+      // Check periodically for 10 seconds to catch it if loaded asynchronously
+      const interval = setInterval(() => {
+        try {
+          if (globalObj.FocusTrap) {
+            disableTrap(globalObj.FocusTrap);
+          }
+          // @ts-ignore
+          if (typeof FocusTrap !== 'undefined') {
+            // @ts-ignore
+            disableTrap(FocusTrap);
+          }
+        } catch {}
+      }, 100);
+      setTimeout(() => clearInterval(interval), 10000);
+    } catch (e) {
+      console.log('FocusTrap bypass error:', e);
+    }
+
     const timer = setTimeout(() => {
       setShowSplash(false);
     }, 2500);
@@ -431,11 +463,12 @@ export default function HomePage23() {
 
     const handleDrawerClose = (e: Event) => {
       const target = e.target as HTMLElement;
-      // Only handle cart-drawer globally to avoid breaking Shopify native menu-drawer and search-drawer
-      const clickedOutside = target.matches('cart-drawer') && !target.closest('.drawer__inner');
-      const isCloseBtn = !!target.closest('cart-drawer .button-close, cart-drawer .drawer__close, cart-drawer [data-close]');
       
-      if (isCloseBtn || clickedOutside) {
+      // Handle cart-drawer
+      const clickedOutsideCart = target.matches('cart-drawer') && !target.closest('.drawer__inner');
+      const isCartCloseBtn = !!target.closest('cart-drawer .button-close, cart-drawer .drawer__close, cart-drawer [data-close]');
+      
+      if (isCartCloseBtn || clickedOutsideCart) {
         const activeDrawers = document.querySelectorAll('cart-drawer');
         let closedAny = false;
         activeDrawers.forEach(drawer => {
@@ -444,6 +477,34 @@ export default function HomePage23() {
             drawer.setAttribute('inert', '');
             drawer.classList.remove('active', 'is-active');
             drawer.removeAttribute('open');
+            closedAny = true;
+          }
+        });
+        if (closedAny) {
+          e.preventDefault();
+          e.stopPropagation();
+          document.documentElement.style.overflow = '';
+          document.body.classList.remove('overflow-hidden');
+        }
+      }
+
+      // Handle search-drawer
+      const clickedOutsideSearch = target.matches('search-drawer') && !target.closest('.drawer__inner');
+      const isSearchCloseBtn = !!target.closest('search-drawer .button-close, search-drawer .drawer__close, search-drawer [data-close]');
+      
+      if (isSearchCloseBtn || clickedOutsideSearch) {
+        const activeDrawers = document.querySelectorAll('search-drawer');
+        let closedAny = false;
+        activeDrawers.forEach(drawer => {
+          if (drawer.getAttribute('data-hidden') !== 'true' || drawer.classList.contains('active') || drawer.classList.contains('is-active') || drawer.hasAttribute('open')) {
+            if (typeof (drawer as any).closeDrawer === 'function') {
+              (drawer as any).closeDrawer();
+            } else {
+              drawer.setAttribute('data-hidden', 'true');
+              drawer.setAttribute('inert', '');
+              drawer.classList.remove('active', 'is-active');
+              drawer.removeAttribute('open');
+            }
             closedAny = true;
           }
         });
@@ -466,8 +527,12 @@ export default function HomePage23() {
     };
   }, [bodyHtml]);
 
-  /* ── Fetch categories, subcategories & products from Appwrite API (CACHED) ── */
+  /* ── Fetch categories, subcategories & products from Appwrite API (CACHED) with robust retries ── */
   useEffect(() => {
+    let active = true;
+    let retryCount = 0;
+    const maxRetries = 5;
+
     const fetchData = async () => {
       if (isEditorMockEnabled()) {
         const mock = getTpl23MockData();
@@ -480,9 +545,18 @@ export default function HomePage23() {
       }
       try {
         const res = await fetch('/api/public-data/home', { cache: 'no-store' });
-        if (!res.ok) throw new Error('Error fetching home data');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         
+        if (!active) return;
+
+        // Verify that we actually received valid non-empty data
+        const hasCategories = data.categories && data.categories.length > 0;
+        const hasProducts = data.products && data.products.length > 0;
+        if (!hasCategories || !hasProducts) {
+          throw new Error('Received empty categories or products from database');
+        }
+
         setCategories(data.categories || []);
         setSubcategories(data.subcategories || []);
         setProducts(data.products || []);
@@ -490,13 +564,25 @@ export default function HomePage23() {
         setDestacadoTemporal(data.destacadoTemporal || null);
         setPackTimer(data.packTimer || null);
         setTimedOffers(data.timedOffers || []);
+        setIsAppwriteLoaded(true);
       } catch (err) {
         console.error('[Plantilla23] Error fetching cached home data:', err);
-      } finally {
-        setIsAppwriteLoaded(true);
+        if (active && retryCount < maxRetries) {
+          retryCount++;
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+          console.warn(`[Plantilla23] Retrying data fetch in ${delay}ms... (Attempt ${retryCount}/${maxRetries})`);
+          setTimeout(fetchData, delay);
+        } else if (active) {
+          console.error('[Plantilla23] Max retries reached or component unmounted. Falling back to empty state.');
+          setIsAppwriteLoaded(true);
+        }
       }
     };
+
     fetchData();
+    return () => {
+      active = false;
+    };
   }, []);
 
   /* ── Mark template attribute on document for CSS scoping ── */
@@ -1917,6 +2003,20 @@ export default function HomePage23() {
       liveShoppingRoot.id = 'yaxsell-live-shopping-root';
       categoriesSection.insertAdjacentElement('afterend', liveShoppingRoot);
     }
+
+    // Clear mockup product listings to prevent flashing native Shopify products
+    tempDiv.querySelectorAll('.featured-collection__products').forEach(section => {
+      const firstWrapper = section.querySelector('.featured-collection__first-product-wrapper');
+      const swiperWrapper = section.querySelector('.featured-collection__product-by-collection .swiper-wrapper');
+      if (firstWrapper) firstWrapper.innerHTML = '';
+      if (swiperWrapper) swiperWrapper.innerHTML = '';
+    });
+    tempDiv.querySelectorAll('.product-columns-block .swiper-container .swiper-wrapper, product-columns .swiper-container .swiper-wrapper').forEach(wrapper => {
+      wrapper.innerHTML = '';
+    });
+    tempDiv.querySelectorAll('featured-product').forEach(block => {
+      block.innerHTML = '';
+    });
 
     containerRef.current.innerHTML = tempDiv.innerHTML;
     containerRef.current.dataset.htmlSet = '1';
@@ -3762,6 +3862,28 @@ export default function HomePage23() {
           cartDrawer.removeAttribute('inert');
           document.documentElement.style.overflow = 'hidden';
         }
+        return;
+      }
+
+      const searchIcon = target.closest('[data-object="search"], .search-icon');
+      if (searchIcon && !target.closest('search-drawer')) {
+        e.preventDefault();
+        e.stopPropagation();
+        const searchDrawer = document.querySelector('search-drawer');
+        if (searchDrawer) {
+          if (typeof (searchDrawer as any).openDrawer === 'function') {
+            (searchDrawer as any).openDrawer(e, searchIcon as HTMLElement);
+          } else {
+            searchDrawer.setAttribute('data-hidden', 'false');
+            searchDrawer.removeAttribute('inert');
+            document.documentElement.style.overflow = 'hidden';
+            const searchInput = searchDrawer.querySelector('#pk-search-input') as HTMLInputElement | null;
+            if (searchInput) {
+              setTimeout(() => searchInput.focus(), 150);
+            }
+          }
+        }
+        return;
       }
     };
 
@@ -4331,23 +4453,17 @@ export default function HomePage23() {
           width: 100vw !important;
           height: 100vh !important;
           height: 100dvh !important;
-          background-color: rgba(0, 0, 0, 0) !important;
-          transition: background-color 0.4s ease, visibility 0.4s !important;
           z-index: 10005 !important;
           display: block !important;
           left: auto !important;
           right: 0 !important;
           overflow: visible !important;
-        }
+          transition: background-color 0.4s ease, visibility 0.4s !important;
 
-        /* Hidden states */
-        cart-drawer[data-hidden="true"], search-drawer[data-hidden="true"],
-        .cart-drawer[data-hidden="true"], .search-drawer[data-hidden="true"],
-        cart-drawer:not([open]):not(.active):not(.is-active), search-drawer:not([open]):not(.active):not(.is-active) {
+          /* Default state: hidden */
           visibility: hidden !important;
           pointer-events: none !important;
           background-color: rgba(0, 0, 0, 0) !important;
-          transition: background-color 0.4s ease, visibility 0.4s !important;
         }
 
         /* Visible states */

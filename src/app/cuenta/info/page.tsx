@@ -92,7 +92,7 @@ export default function InfoPage() {
         <div style={{ background: '#fff', borderRadius: 12, padding: '20px', marginBottom: 16, boxShadow: '0 1px 4px rgba(0,0,0,.08)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #f0f0f0' }}>
             <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#3483fa', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 18, fontWeight: 700 }}>
-              {user.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}
+              {(user?.name || 'Usuario').split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase() || 'U'}
             </div>
             <div>
               <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#333' }}>{user.name}</p>

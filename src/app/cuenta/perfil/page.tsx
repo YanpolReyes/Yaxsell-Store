@@ -38,7 +38,8 @@ export default function PerfilPage() {
     return null;
   }
 
-  const initials = user.name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
+  const userName = user?.name || 'Usuario';
+  const initials = userName.split(' ').filter(Boolean).map((w: string) => w[0]).slice(0, 2).join('').toUpperCase() || 'U';
 
   function getFilePreviewUrl(fileId: string): string {
     const { endpoint, projectId } = getAppwriteConfig();

@@ -121,6 +121,8 @@ export default function LoyaltyLevel() {
   const [levelHistory, setLevelHistory] = useState<any[]>([]);
   const [showConfetti, setShowConfetti] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [medalImageError, setMedalImageError] = useState(false);
+  const [trophyImageError, setTrophyImageError] = useState(false);
   const [showCurrentBenefits, setShowCurrentBenefits] = useState(true);
   const [showNextBenefits, setShowNextBenefits] = useState(true);
   const [showSilverBenefits, setShowSilverBenefits] = useState(false);
@@ -136,43 +138,73 @@ export default function LoyaltyLevel() {
   }, []);
 
   useEffect(() => {
-    if (!isLoggedIn || !user) return;
+    console.log('[LoyaltyLevel] useEffect trigger. isLoggedIn:', isLoggedIn, 'user:', user);
+    if (!isLoggedIn || !user) {
+      console.log('[LoyaltyLevel] isLoggedIn or user is falsey, skipping loadUserData');
+      return;
+    }
     loadUserData();
   }, [isLoggedIn, user]);
 
   async function loadUserData() {
-    if (!user || !user.id) return;
+    console.log('[LoyaltyLevel] loadUserData started for user.id:', user?.id);
+    if (!user || !user.id) {
+      console.log('[LoyaltyLevel] No user or user.id, setting loading false');
+      setLoading(false);
+      return;
+    }
     try {
-      const loyaltyData = await LoyaltyService.getLoyaltyData(user.id);
+      console.log('[LoyaltyLevel] Calling LoyaltyService.getLoyaltyData...');
       
-      setPaidOrdersCount(loyaltyData.paidOrdersCount);
-      setTotalSpent(loyaltyData.totalSpent);
-      setPoints(loyaltyData.points);
-      setLevelHistory(loyaltyData.levelHistory);
+      const getLoyaltyDataPromise = LoyaltyService.getLoyaltyData(user.id);
+      const timeoutPromise = new Promise<any>((resolve) => {
+        setTimeout(() => {
+          console.warn('[LoyaltyLevel] Loyalty data fetch timed out. Falling back.');
+          resolve({
+            userId: user.id,
+            currentLevel: 'bronze',
+            paidOrdersCount: 0,
+            totalSpent: 0,
+            points: 0,
+            levelHistory: [],
+          });
+        }, 4000);
+      });
+      
+      const loyaltyData = await Promise.race([getLoyaltyDataPromise, timeoutPromise]);
+      console.log('[LoyaltyLevel] Loyalty data received:', loyaltyData);
+      
+      setPaidOrdersCount(loyaltyData.paidOrdersCount || 0);
+      setTotalSpent(loyaltyData.totalSpent || 0);
+      setPoints(loyaltyData.points || 0);
+      const history = loyaltyData.levelHistory || [];
+      setLevelHistory(history);
 
-      const levelIndex = LEVELS.findIndex(l => l.id === loyaltyData.currentLevel);
-      const level = LEVELS[levelIndex];
+      const levelIndex = LEVELS.findIndex(l => l.id === (loyaltyData.currentLevel || 'bronze'));
+      const activeLevelIndex = levelIndex >= 0 ? levelIndex : 0;
+      const level = LEVELS[activeLevelIndex];
       setCurrentLevel(level);
 
-      if (levelIndex < LEVELS.length - 1) {
-        const next = LEVELS[levelIndex + 1];
+      if (activeLevelIndex < LEVELS.length - 1) {
+        const next = LEVELS[activeLevelIndex + 1];
         setNextLevel(next);
-        const progress = ((loyaltyData.paidOrdersCount - level.requiredOrders) / (next.requiredOrders - level.requiredOrders)) * 100;
+        const progress = (((loyaltyData.paidOrdersCount || 0) - level.requiredOrders) / (next.requiredOrders - level.requiredOrders)) * 100;
         setProgressPercent(Math.min(Math.max(progress, 0), 100));
       } else {
         setNextLevel(null);
         setProgressPercent(100);
       }
 
-      const lastHistory = loyaltyData.levelHistory[loyaltyData.levelHistory.length - 1];
-      if (lastHistory && lastHistory.level === loyaltyData.currentLevel) {
+      const lastHistory = history[history.length - 1];
+      if (lastHistory && lastHistory.level === (loyaltyData.currentLevel || 'bronze')) {
         setCouponGenerated(lastHistory.couponGenerated);
         setCouponCode(lastHistory.couponCode || '');
       }
 
     } catch (err) {
-      console.error('Error loading loyalty data:', err);
+      console.error('[LoyaltyLevel] Error loading loyalty data:', err);
     } finally {
+      console.log('[LoyaltyLevel] loadUserData finished, setting loading false');
       setLoading(false);
     }
   }
@@ -307,11 +339,16 @@ export default function LoyaltyLevel() {
               position: 'relative'
             }}
           >
-            <img 
-              src={currentLevel.image || ''}
-              alt="Medalla"
-              style={{ width: isMobile ? 52 : 90, height: isMobile ? 52 : 90, objectFit: 'contain' }}
-            />
+            {!medalImageError && currentLevel.image ? (
+              <img 
+                src={currentLevel.image}
+                alt="Medalla"
+                onError={() => setMedalImageError(true)}
+                style={{ width: isMobile ? 52 : 90, height: isMobile ? 52 : 90, objectFit: 'contain' }}
+              />
+            ) : (
+              <CurrentIcon size={isMobile ? 32 : 56} color={currentLevel.color} fill={currentLevel.color} />
+            )}
             <motion.div 
               animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 2 }}
               style={{ position: 'absolute', bottom: isMobile ? -5 : -8, right: isMobile ? -5 : -8, background: '#fff', borderRadius: '50%', padding: isMobile ? 3 : 6, boxShadow: `0 4px 15px ${currentLevel.color}40` }}
@@ -442,11 +479,16 @@ export default function LoyaltyLevel() {
               transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
               style={{ width: isMobile ? 120 : 160, height: isMobile ? 120 : 160, borderRadius: '50%', background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '1px solid rgba(227,150,191,0.15)', position: 'relative' }}
             >
-              <img 
-                src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778908676990-pegada-1778908675560.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=XTruju4f9iSTg6NKqqLaNvhH9sAfmLilJfIit%2B53j3p9KTQzlM%2FRtZfUAvA9WK8NgqCv8dj0tN0vUWVJvtTsvNN%2BXEsZbwofb%2BOmSO6sksZHfA4rxeGeqxAtO2DpPG0jJljedbKrdDKAxxhk%2FTwNkODeLLHm17%2BePMmMjhHfYoMH69jejOZK2Cu5MdRqwsVPANwuyNFvldcDSIkBdkHip36pwPZ4ir2vmGS2eExJQ826tUXcoM%2BtVp2S5uWyFcXv0DyFVwvRstLMiDAl4JLZqHInSOYtSpw06uhBDoXnoMgoD%2F1fY25idknEAiBmHV%2FpkfiO%2FpcqzVURY2lo85ffXQ%3D%3D"
-                alt="Trofeo"
-                style={{ width: isMobile ? 100 : 136, height: isMobile ? 100 : 136, objectFit: 'contain' }}
-              />
+              {!trophyImageError ? (
+                <img 
+                  src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778908676990-pegada-1778908675560.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=XTruju4f9iSTg6NKqqLaNvhH9sAfmLilJfIit%2B53j3p9KTQzlM%2FRtZfUAvA9WK8NgqCv8dj0tN0vUWVJvtTsvNN%2BXEsZbwofb%2BOmSO6sksZHfA4rxeGeqxAtO2DpPG0jJljedbKrdDKAxxhk%2FTwNkODeLLHm17%2BePMmMjhHfYoMH69jejOZK2Cu5MdRqwsVPANwuyNFvldcDSIkBdkHip36pwPZ4ir2vmGS2eExJQ826tUXcoM%2BtVp2S5uWyFcXv0DyFVwvRstLMiDAl4JLZqHInSOYtSpw06uhBDoXnoMgoD%2F1fY25idknEAiBmHV%2FpkfiO%2FpcqzVURY2lo85ffXQ%3D%3D"
+                  alt="Trofeo"
+                  onError={() => setTrophyImageError(true)}
+                  style={{ width: isMobile ? 100 : 136, height: isMobile ? 100 : 136, objectFit: 'contain' }}
+                />
+              ) : (
+                <Trophy size={isMobile ? 64 : 96} color={PINK} />
+              )}
               {/* Confeti mejorado */}
               {[...Array(20)].map((_, i) => {
                 const colors = ['#f472b6', '#fbbf24', '#34d399', '#60a5fa', '#a78bfa', '#fb7185', '#fcd34d', '#4ade80', '#f87171', '#818cf8'];

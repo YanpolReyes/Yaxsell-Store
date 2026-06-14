@@ -52,7 +52,16 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
         const prefs = (acc as any).prefs || {};
         if (prefs.avatarFileId) setAvatarUrl(getFilePreviewUrl(prefs.avatarFileId));
         setHasGifts(!prefs.welcomeGiftClaimed);
-      } catch {}
+      } catch (err) {
+        console.error('[CuentaLayout] Error fetching account:', err);
+        const errStr = String(err);
+        if (errStr.includes('401') || errStr.includes('unauthorized') || errStr.includes('Unauthorized') || (err as any).code === 401) {
+          console.log('[CuentaLayout] Session unauthorized, logging out...');
+          logout().then(() => {
+            window.location.href = '/login';
+          });
+        }
+      }
     })();
   }, [isLoggedIn]);
 
@@ -66,7 +75,8 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const initials = user.name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
+  const userName = user?.name || 'Usuario';
+  const initials = userName.split(' ').filter(Boolean).map((w: string) => w[0]).slice(0, 2).join('').toUpperCase() || 'U';
 
   async function handleLogout() {
     await logout();
@@ -75,13 +85,13 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div style={{ minHeight: '100vh', position: 'relative', fontFamily: FF }}>
-      {/* Background image with blur */}
+      {/* Solid white background */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden' }}>
-        {bgUrl && !isPerfil && <img key={bgUrl} src={bgUrl} alt="" className="cl-bg-fade" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(4px) brightness(1.1)', transform: 'scale(1.15)', animation: 'bgFloat 20s ease-in-out infinite, bgCrossFade 0.5s ease-out' }} />}
-        <div style={{ position: 'absolute', inset: 0, background: (bgUrl && !isPerfil) ? 'linear-gradient(180deg,rgba(255,255,255,0.75) 0%,rgba(255,255,255,0.85) 100%)' : '#ffffff' }} />
+        <div style={{ position: 'absolute', inset: 0, background: '#ffffff' }} />
       </div>
       <div style={{ position: 'relative', zIndex: 1 }}>
       <style>{`
+        body { background-color: #ffffff !important; }
         .cl-sidebar { display: none }
         @media (min-width: 900px) {
           .cl-sidebar { display: flex !important }
@@ -97,18 +107,12 @@ function CuentaLayoutInner({ children }: { children: React.ReactNode }) {
         .sb-link:hover { background: #f9fafb; color: #1a1a1a; }
         .sb-link.active { background: #fdf2f8; color: ${PINK}; font-weight: 700; }
         .sb-link-content { display: flex; align-items: center; gap: 14px; }
-        @keyframes bgFloat { 0%,100%{transform:scale(1.1) translate(0,0)} 25%{transform:scale(1.15) translate(1%,-1%)} 50%{transform:scale(1.1) translate(-1%,1%)} 75%{transform:scale(1.15) translate(1%,1%)} }
         @keyframes pageSlideIn {
           0% { opacity: 0; transform: translateX(24px) scale(0.98); filter: blur(4px); }
           40% { opacity: 0.6; filter: blur(2px); }
           100% { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
         }
-        @keyframes bgCrossFade {
-          0% { opacity: 0; transform: scale(1.2); }
-          100% { opacity: 1; transform: scale(1.15); }
-        }
         .cl-content-fade { animation: pageSlideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
-        .cl-bg-fade { animation: bgCrossFade 0.5s ease-out; }
       `}</style>
 
       {/* ── Main content (flex layout on desktop) ── */}

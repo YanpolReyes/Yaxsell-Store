@@ -8,6 +8,7 @@ import {
   ShoppingBag, Bell, Heart, ShoppingCart, MessageCircle,
   User, MapPin, Receipt, HelpCircle, Phone,
   Loader2, ChevronRight, LogOut, Building2, Trophy, Tag, Star, Settings, Ticket, Gift, Pencil, Sparkles, PackageSearch,
+  Award, Crown, Gem,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -69,6 +70,14 @@ const MEDAL_IMAGES: Record<string, string> = {
   ruby: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778908226958-pegada-1778908225905.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=BqPLV4aHi9DTpG6dmp8HQD%2FPK%2BiL2gnkClQ3ZaSF1oyhQHyyTgBBu8l%2B43gHdJqACfsNv7SO0JJKxhRUNXbrUyu0hAZkGwlwLHgRfIOq%2BEEbE%2Brfrnz%2BJ5vBydNAFo3jdian%2Fd5Qx0G6pQ3cs45r%2BvI9ttjuz%2Fm%2FDhXoOWJqFk6APK43kC69by2GiW%2FVJ7SL%2BQ0Dj07MelRAdhiVWBT%2BIQhuhJ6w4TstSrUqHvkgBi4SqVN2gNQVQD1MHWQ4T0AJ8O8qXVvm96poxdusTPkzusKMZRGn7yglXGqNAn7ImNKKQ2CUNB6NEeoNSRquYckAVngc5ug8Xzza7JG6uhCDHQ%3D%3D',
 };
 
+const FALLBACK_MEDAL_ICONS: Record<string, { icon: any; color: string; bg: string }> = {
+  bronze: { icon: Award, color: '#cd7f32', bg: '#fef3c7' },
+  silver: { icon: Star, color: '#9ca3af', bg: '#f3f4f6' },
+  gold: { icon: Crown, color: '#fbbf24', bg: '#fef3c7' },
+  diamond: { icon: Gem, color: '#60a5fa', bg: '#eff6ff' },
+  ruby: { icon: Sparkles, color: '#f43f5e', bg: '#ffe4e6' },
+};
+
 export default function CuentaPage() {
   const { user, isLoggedIn, isLoading, logout } = useAuth();
   useCuentaBg(BG_CUENTA);
@@ -77,13 +86,18 @@ export default function CuentaPage() {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [hasGifts, setHasGifts] = useState(false);
   const [currentLevel, setCurrentLevel] = useState<string>('bronze');
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [medalError, setMedalError] = useState(false);
 
   useEffect(() => {
+    console.log('[CuentaPage] useEffect trigger. isLoggedIn:', isLoggedIn, 'user.id:', user?.id);
     if (!isLoggedIn) return;
     (async () => {
       try {
+        console.log('[CuentaPage] Fetching account details...');
         const { account } = getServices();
         const acc = await account.get();
+        console.log('[CuentaPage] Account details received:', acc);
         const prefs = (acc as any).prefs || {};
         if (prefs.avatarFileId) setAvatarUrl(getFilePreviewUrl(prefs.avatarFileId));
         if (prefs.coverFileId) setCoverUrl(getFilePreviewUrl(prefs.coverFileId));
@@ -92,10 +106,21 @@ export default function CuentaPage() {
         
         // Load loyalty data
         if (user?.id) {
+          console.log('[CuentaPage] Fetching loyalty data for user:', user.id);
           const loyaltyData = await LoyaltyService.getLoyaltyData(user.id);
+          console.log('[CuentaPage] Loyalty data received:', loyaltyData);
           setCurrentLevel(loyaltyData.currentLevel);
         }
-      } catch {}
+      } catch (err) {
+        console.error('[CuentaPage] Error loading details:', err);
+        const errStr = String(err);
+        if (errStr.includes('401') || errStr.includes('unauthorized') || errStr.includes('Unauthorized') || (err as any).code === 401) {
+          console.log('[CuentaPage] Unauthorized session detected, logging out...');
+          logout().then(() => {
+            window.location.href = '/login';
+          });
+        }
+      }
     })();
   }, [isLoggedIn, user?.id]);
 
@@ -137,8 +162,9 @@ export default function CuentaPage() {
     );
   }
 
-  const initials = user.name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
-  const firstName = user.name.split(' ')[0];
+  const userName = user?.name || 'Usuario';
+  const initials = userName.split(' ').filter(Boolean).map((w: string) => w[0]).slice(0, 2).join('').toUpperCase() || 'U';
+  const firstName = userName.split(' ')[0] || 'Usuario';
 
   return (
     <>
@@ -260,14 +286,13 @@ export default function CuentaPage() {
         <div style={{ background: '#fff', borderRadius: 22, marginBottom: 24, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', position: 'relative' }}>
           <div style={{
             height: 160,
-            backgroundImage: coverUrl ? 'none' : `url(${BG_CUENTA})`,
+            backgroundImage: coverUrl ? `url(${coverUrl})` : 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
             position: 'relative',
             overflow: 'hidden'
           }}>
-            {coverUrl && <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
             <Link href="/cuenta/perfil" style={{ position: 'absolute', top: 12, right: 12, width: 34, height: 34, borderRadius: 12, background: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
               <Pencil size={15} color="#374151" style={{ opacity: 0.8 }} />
             </Link>
@@ -278,20 +303,47 @@ export default function CuentaPage() {
               <div style={{ width: 130, height: 130, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, fontWeight: 800, color: PINK, flexShrink: 0, overflow: 'hidden', border: '4px solid #fff', boxShadow: '0 0 0 3px rgba(227,150,191,0.15), 0 4px 6px -1px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.15)' }}>
                 {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
               </div>
-              <img 
-                src={MEDAL_IMAGES[currentLevel] || MEDAL_IMAGES.bronze}
-                alt="Insignia"
-                style={{ 
-                  position: 'absolute', 
-                  bottom: -2, 
-                  right: -2, 
-                  width: 40, 
-                  height: 40, 
-                  objectFit: 'contain',
-                  zIndex: 10,
-                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
-                }}
-              />
+              {!medalError ? (
+                <img 
+                  src={MEDAL_IMAGES[currentLevel] || MEDAL_IMAGES.bronze}
+                  alt="Insignia"
+                  onError={() => setMedalError(true)}
+                  style={{ 
+                    position: 'absolute', 
+                    bottom: -2, 
+                    right: -2, 
+                    width: 40, 
+                    height: 40, 
+                    objectFit: 'contain',
+                    zIndex: 10,
+                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                  }}
+                />
+              ) : (
+                (() => {
+                  const info = FALLBACK_MEDAL_ICONS[currentLevel] || FALLBACK_MEDAL_ICONS.bronze;
+                  const FallbackIcon = info.icon;
+                  return (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: -2,
+                      right: -2,
+                      width: 40,
+                      height: 40,
+                      borderRadius: '50%',
+                      background: info.bg,
+                      border: `2.5px solid #fff`,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 10,
+                    }}>
+                      <FallbackIcon size={20} color={info.color} fill={info.color} />
+                    </div>
+                  );
+                })()
+              )}
             </div>
             <div style={{ paddingBottom: 6, flex: 1 }}>
               <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.02em' }}>¡Hola, {firstName}!</h1>
@@ -325,6 +377,7 @@ export default function CuentaPage() {
           ].map((sc, idx) => {
             const Icon = sc.icon;
             const shouldAnimate = sc.label === 'Regalos' && hasGifts;
+            const hasError = imageErrors[sc.label];
             return (
               <motion.div
                 key={sc.label}
@@ -339,21 +392,22 @@ export default function CuentaPage() {
                     whileTap={{ scale: 0.9 }}
                     animate={shouldAnimate ? { rotate: [0, 12, -12, 12, -12, 0] } : {}}
                     transition={shouldAnimate ? { duration: 2.5, repeat: Infinity, ease: 'easeInOut' } : {}}
-                    className={sc.image ? 'qa-desk-glow' : ''}
+                    className={(sc.image && !hasError) ? 'qa-desk-glow' : ''}
                     style={{
                       width: 64, height: 64, borderRadius: 18, position: 'relative',
-                      background: sc.image ? 'transparent' : sc.g,
-                      boxShadow: sc.image ? 'none' : `0 6px 20px ${sc.shadow}`,
+                      background: (sc.image && !hasError) ? 'transparent' : sc.g,
+                      boxShadow: (sc.image && !hasError) ? 'none' : `0 6px 20px ${sc.shadow}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      border: sc.image ? 'none' : '1.5px solid rgba(255,255,255,0.25)',
+                      border: (sc.image && !hasError) ? 'none' : '1.5px solid rgba(255,255,255,0.25)',
                     }}
                   >
-                    {sc.image ? (
+                    {sc.image && !hasError ? (
                       <img
                         src={sc.image}
                         alt={sc.label}
                         className="qa-desk-glow"
                         style={{ width: 140, height: 140, objectFit: 'contain' }}
+                        onError={() => setImageErrors(prev => ({ ...prev, [sc.label]: true }))}
                       />
                     ) : (
                       <Icon size={28} color="#fff" strokeWidth={2} />
@@ -451,14 +505,13 @@ export default function CuentaPage() {
             {/* Cover image */}
             <div style={{
               height: 130,
-              backgroundImage: coverUrl ? 'none' : `url(${BG_CUENTA})`,
+              backgroundImage: coverUrl ? `url(${coverUrl})` : 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',
               position: 'relative',
               overflow: 'hidden'
             }}>
-              {coverUrl && <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
               <Link href="/cuenta/perfil" style={{ position: 'absolute', top: 10, right: 10, width: 30, height: 30, borderRadius: 10, background: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
                 <Pencil size={13} color="#374151" style={{ opacity: 0.8 }} />
               </Link>
@@ -478,9 +531,11 @@ export default function CuentaPage() {
                 <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 800, color: PINK, overflow: 'hidden', border: '3px solid #fff', boxShadow: '0 0 0 2px rgba(227,150,191,0.15), 0 4px 6px -1px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.12)' }}>
                   {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
                 </div>
+              {!medalError ? (
                 <img 
                   src={MEDAL_IMAGES[currentLevel] || MEDAL_IMAGES.bronze}
                   alt="Insignia"
+                  onError={() => setMedalError(true)}
                   style={{ 
                     position: 'absolute', 
                     bottom: -2, 
@@ -492,6 +547,31 @@ export default function CuentaPage() {
                     filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
                   }}
                 />
+              ) : (
+                (() => {
+                  const info = FALLBACK_MEDAL_ICONS[currentLevel] || FALLBACK_MEDAL_ICONS.bronze;
+                  const FallbackIcon = info.icon;
+                  return (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: -2,
+                      right: -2,
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      background: info.bg,
+                      border: `2px solid #fff`,
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 10,
+                    }}>
+                      <FallbackIcon size={14} color={info.color} fill={info.color} />
+                    </div>
+                  );
+                })()
+              )}
               </div>
               <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 14, width: '100%', maxWidth: 280, padding: '11px 16px', background: PINK, color: '#fff', fontSize: 12, fontWeight: 700, borderRadius: 12, textDecoration: 'none', boxShadow: '0 4px 14px rgba(227,150,191,0.2)' }}>
                 <Trophy size={13} /> Tienda de puntos
@@ -511,6 +591,7 @@ export default function CuentaPage() {
             ].map((sc, idx) => {
               const Icon = sc.icon;
               const shouldAnimate = sc.label === 'Regalos' && hasGifts;
+              const hasError = imageErrors[sc.label];
               return (
                 <motion.div
                   key={sc.label}
@@ -528,17 +609,18 @@ export default function CuentaPage() {
                       transition={shouldAnimate ? { duration: 2.5, repeat: Infinity, ease: 'easeInOut' } : {}}
                       style={{
                         width: 54, height: 54, borderRadius: 17,
-                        background: sc.image ? 'transparent' : sc.g,
-                        boxShadow: sc.image ? 'none' : `0 6px 18px ${sc.shadow}`,
+                        background: (sc.image && !hasError) ? 'transparent' : sc.g,
+                        boxShadow: (sc.image && !hasError) ? 'none' : `0 6px 18px ${sc.shadow}`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        border: sc.image ? 'none' : '1.5px solid rgba(255,255,255,0.25)',
+                        border: (sc.image && !hasError) ? 'none' : '1.5px solid rgba(255,255,255,0.25)',
                       }}
                     >
-                      {sc.image ? (
+                      {sc.image && !hasError ? (
                         <img
                           src={sc.image}
                           alt={sc.label}
                           style={{ width: 128, height: 128, objectFit: 'contain' }}
+                          onError={() => setImageErrors(prev => ({ ...prev, [sc.label]: true }))}
                         />
                       ) : (
                         <Icon size={24} color="#fff" strokeWidth={2} />
