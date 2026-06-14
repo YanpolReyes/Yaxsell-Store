@@ -4983,43 +4983,79 @@
     <div class="slideshow__background w-full h-auto relative overflow-hidden" style="background-color: #FBCAC9;">
       <canvas id="yaxsell-hero-particles" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;"></canvas>
 
-    <!-- DESKTOP: video -->
-    <div class="hidden lg:block w-full">
-      <video id="hero1-video-desktop" class="block w-full h-auto pointer-events-none" autoplay loop muted playsinline style="display: block; width: 100%; height: auto; object-fit: cover;">
-        <source src="/video/portada.mp4" type="video/mp4" />
-      </video>
+    <style>
+      @keyframes hero-shimmer {
+        0%   { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+      }
+      .hero-skeleton {
+        background: linear-gradient(90deg, #f7b8c8 0%, #fce4ec 40%, #f7a8bf 60%, #fce4ec 100%);
+        background-size: 200% 100%;
+        animation: hero-shimmer 1.6s ease-in-out infinite;
+      }
+      @keyframes hero-fadeInUp {
+        from { opacity: 0; transform: translateY(22px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .hero-img-enter {
+        animation: hero-fadeInUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+    </style>
+
+    <!-- DESKTOP: static image with skeleton loader -->
+    <div class="hidden lg:block w-full" style="position: relative;">
+      <div id="hero-skeleton-desktop" class="hero-skeleton w-full" style="aspect-ratio: 1440/600; width: 100%;"></div>
+      <img id="hero1-image-desktop"
+           src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2Fx.jpeg?alt=media&token=0ad04776-0001-40f0-a7c3-a811c5cce0e7"
+           class="block w-full h-auto pointer-events-none"
+           style="display: none; width: 100%; height: auto;"
+           alt="Hero banner" />
     </div>
 
-    <!-- MOBILE: video -->
-    <div class="block lg:hidden w-full">
-      <video id="hero1-video-mobile" class="block w-full h-auto pointer-events-none" autoplay loop muted playsinline style="display: block; width: 100%; height: auto; object-fit: cover;">
-        <source src="/video/portada.mp4" type="video/mp4" />
-      </video>
+    <!-- MOBILE: static image with skeleton loader -->
+    <div class="block lg:hidden w-full" style="position: relative;">
+      <div id="hero-skeleton-mobile" class="hero-skeleton w-full" style="aspect-ratio: 9/16; width: 100%;"></div>
+      <img id="hero1-image-mobile"
+           src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2Fxm.jpg?alt=media&token=44b5a0aa-9d1a-450f-999f-7adb7e0b93d5"
+           class="block w-full h-auto pointer-events-none"
+           style="display: none; width: 100%; height: auto;"
+           alt="Hero banner móvil" />
     </div>
 
     <script>
     (function() {
-      function initHero() {
-        var vid = document.getElementById('hero1-video-desktop');
-        if (vid) {
-          vid.play().catch(function() {});
+      function revealHeroImg(imgId, skeletonId) {
+        var img = document.getElementById(imgId);
+        var sk  = document.getElementById(skeletonId);
+        if (!img) return;
+        function onLoad() {
+          if (sk) sk.style.display = 'none';
+          img.style.display = 'block';
+          img.classList.add('hero-img-enter');
         }
-        var mVid = document.getElementById('hero1-video-mobile');
-        if (mVid) {
-          mVid.play().catch(function() {});
+        if (img.complete && img.naturalWidth > 0) {
+          onLoad();
+        } else {
+          img.addEventListener('load', onLoad, { once: true });
+          img.addEventListener('error', function() {
+            if (sk) sk.style.display = 'none';
+            img.style.display = 'block';
+          }, { once: true });
         }
       }
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initHero);
+        document.addEventListener('DOMContentLoaded', function() {
+          revealHeroImg('hero1-image-desktop', 'hero-skeleton-desktop');
+          revealHeroImg('hero1-image-mobile',  'hero-skeleton-mobile');
+        });
       } else {
-        initHero();
-        setTimeout(initHero, 300);
+        revealHeroImg('hero1-image-desktop', 'hero-skeleton-desktop');
+        revealHeroImg('hero1-image-mobile',  'hero-skeleton-mobile');
       }
     })();
     </script>
 
-
-    <!-- Bottom fade: blend hero into countdown section below — raised higher -->
+    <!-- Bottom fade: blend hero into countdown section below -->
     <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 25%; background: linear-gradient(to bottom, transparent 0%, transparent 50%, #ffc9e0 100%); pointer-events: none; z-index: 20;"></div>
 
     </div>
@@ -5027,7 +5063,7 @@
 
     </div>
 
-    <!-- overlay hidden so it doesn't block the hero video -->
+    <!-- overlay hidden so it doesn't block the hero -->
     <div class="overlay absolute top-0 left-0 w-full h-full" style="display:none;"></div>
 
     
