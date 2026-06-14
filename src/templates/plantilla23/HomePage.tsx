@@ -668,12 +668,9 @@ export default function HomePage23() {
       }
 
       /* FIX 10: Remove ugly rectangular selection/border from search input */
-      input[type="search"],
-      input[type="search"]:focus,
-      input[type="search"]:focus-visible,
-      .search-drawer input,
-      .search-drawer input:focus,
-      .search-drawer input:focus-visible,
+      input[type="search"]:not(#pk-search-input),
+      input[type="search"]:not(#pk-search-input):focus,
+      input[type="search"]:not(#pk-search-input):focus-visible,
       #drawer-input-search,
       #drawer-input-search:focus,
       #drawer-input-search:focus-visible {
@@ -3394,19 +3391,7 @@ export default function HomePage23() {
         }
       }
 
-      // Intercept clicks on cart and search icons on mobile header to redirect directly and avoid broken overlays
-      if (mobileHeaderActions) {
-        // Removed cart redirect to allow native drawer to open
-        const mobileSearchIcon = mobileHeaderActions.querySelector('[data-object="search-drawer"]');
-        if (mobileSearchIcon && !(mobileSearchIcon as HTMLElement).dataset.redirectInjected) {
-          (mobileSearchIcon as HTMLElement).dataset.redirectInjected = '1';
-          mobileSearchIcon.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            window.location.href = '/productos';
-          }, true);
-        }
-      }
+      // Allow search drawer to open natively (no redirect)
     }
 
     // ═══ Replace "Buscar", "Carrito" text with SVGs in PC & Mobile header ═══
@@ -3795,19 +3780,28 @@ export default function HomePage23() {
 
     if (cartItems.length === 0) {
       cartWrapper.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px; border-bottom: 1px solid #f3f4f6; padding-bottom: 16px;">
-          <h5 style="margin:0; font-size: 20px; font-weight: 800; color: #111827; letter-spacing: -0.5px;">Tu Carrito</h5>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 2px solid #FBCAC9;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:36px; height:36px; background: linear-gradient(135deg, #FBCAC9 0%, #f9a8a8 100%); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            </div>
+            <h5 style="margin:0; font-size: 18px; font-weight: 800; color: #111827; letter-spacing: -0.3px;">Mi Carrito</h5>
+          </div>
         </div>
-        <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 40px 20px; text-align:center; background: #f9fafb; border-radius: 16px; border: 1px dashed #d1d5db; margin-bottom: 24px;">
-            <div style="width: 64px; height: 64px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 16px;">
-              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 32px; color: #9ca3af;">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+        <div class="pk-empty-cart" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 48px 24px; text-align:center; background: linear-gradient(145deg, #fdf2f2 0%, #fef7f7 50%, #fff5f5 100%); border-radius: 20px; margin-bottom: 24px; position:relative; overflow:hidden;">
+            <div style="position:absolute; top:-20px; right:-20px; width:100px; height:100px; background: radial-gradient(circle, rgba(251,202,201,0.3) 0%, transparent 70%); border-radius:50%;"></div>
+            <div style="position:absolute; bottom:-15px; left:-15px; width:80px; height:80px; background: radial-gradient(circle, rgba(251,202,201,0.2) 0%, transparent 70%); border-radius:50%;"></div>
+            <div class="pk-empty-icon" style="width: 80px; height: 80px; background: linear-gradient(135deg, #FBCAC9 0%, #f4a8a7 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(251,202,201,0.4); position:relative; z-index:1;">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <path d="M16 10a4 4 0 0 1-8 0"/>
               </svg>
             </div>
-            <h6 style="margin:0 0 8px 0; font-size: 16px; font-weight: 700; color: #374151;">Tu carrito está vacío</h6>
-            <p style="margin:0 0 20px 0; font-size: 13px; color: #6b7280; max-width: 200px; line-height: 1.5;">¡Parece que aún no has añadido nada! Descubre nuestros productos.</p>
-            <button class="drawer__close" data-close="" style="background: #111827; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s;">
-              Explorar productos
+            <h6 style="margin:0 0 8px 0; font-size: 17px; font-weight: 800; color: #1f2937; letter-spacing:-0.3px; position:relative; z-index:1;">Tu carrito está vacío</h6>
+            <p style="margin:0 0 24px 0; font-size: 13px; color: #9ca3af; max-width: 220px; line-height: 1.6; position:relative; z-index:1;">Descubre productos increíbles y agrélos a tu carrito.</p>
+            <button class="drawer__close pk-explore-btn" data-close="" style="background: linear-gradient(135deg, #FBCAC9 0%, #f4a8a7 100%); color: #fff; border: none; padding: 13px 32px; border-radius: 50px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 16px rgba(251,202,201,0.4); letter-spacing: 0.3px; position:relative; z-index:1;">
+              Explorar Productos
             </button>
         </div>
       `;
@@ -3816,35 +3810,43 @@ export default function HomePage23() {
       // Sort items: newest added at the top
       const sortedItems = [...cartItems].reverse();
 
+      const totalItems = cartItems.reduce((acc: any, curr: any) => acc + curr.quantity, 0);
       cartWrapper.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px; border-bottom: 1px solid #f3f4f6; padding-bottom: 16px;">
-          <h5 style="margin:0; font-size: 20px; font-weight: 800; color: #111827; letter-spacing: -0.5px;">Tu Carrito</h5>
-          <span style="font-size: 13px; font-weight: 600; color: #6b7280; background: #f3f4f6; padding: 4px 10px; border-radius: 12px;">\${cartItems.reduce((acc: any, curr: any) => acc + curr.quantity, 0)} items</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 2px solid #FBCAC9;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:36px; height:36px; background: linear-gradient(135deg, #FBCAC9 0%, #f9a8a8 100%); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            </div>
+            <h5 style="margin:0; font-size: 18px; font-weight: 800; color: #111827; letter-spacing: -0.3px;">Mi Carrito</h5>
+          </div>
+          <span style="font-size: 12px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #FBCAC9 0%, #f4a8a7 100%); padding: 4px 12px; border-radius: 50px; min-width:20px; text-align:center;">\${totalItems}</span>
         </div>
-        <div class="flex flex-col gap-[0.5rem] pt-2" style="max-height: 48vh; overflow-y: auto;">
+        <div class="pk-cart-items-list" style="display:flex; flex-direction:column; gap:12px; padding-top:4px; max-height: 48vh; overflow-y: auto;">
            ${sortedItems.map((item: any) => {
              const price = getEffectivePrice(item);
              return `
-               <div class="cart-item" style="display:flex; align-items:center; gap:16px; padding:12px; background:#fff; border:1px solid #f3f4f6; border-radius:12px; margin-bottom:10px; position:relative; transition:border-color 0.2s;">
-                  <a href="/productos/${item.product.$id}" style="width:72px; height:72px; min-width:72px; border-radius:8px; overflow:hidden; background:#f9fafb; display:flex; align-items:center; justify-content:center;">
-                      <img src="${item.product.IMAGEURL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png'}" style="width:100%; height:100%; object-fit:contain; mix-blend-mode:multiply;" />
+               <div class="cart-item" style="display:flex; align-items:flex-start; gap:14px; padding:14px; background:#fafafa; border-radius:14px; position:relative; transition: all 0.2s;">
+                  <a href="/productos/${item.product.$id}" style="width:76px; height:76px; min-width:76px; border-radius:12px; overflow:hidden; background:#fff; display:flex; align-items:center; justify-content:center; border: 1px solid #f0f0f0;">
+                      <img src="${item.product.IMAGEURL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png'}" style="width:100%; height:100%; object-fit:contain; mix-blend-mode:multiply; padding:4px;" />
                   </a>
-                  <div class="cart-item__details flex-1" style="min-width: 0; padding-right:16px;">
+                  <div class="cart-item__details" style="flex:1; min-width:0; padding-right:20px;">
                       <a href="/productos/${item.product.$id}" style="text-decoration: none;">
-                          <h6 style="margin: 0 0 6px 0; font-size: 13px; font-weight: 600; color: #111827; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                          <h6 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600; color: #374151; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
                             ${item.product.NAME}
                           </h6>
                       </a>
-                      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px;">
-                          <div style="font-weight:800; font-size:14px; color:#111827;">$${price.toLocaleString()}</div>
-                          <div style="display:flex; align-items:center; background:#f3f4f6; border-radius:8px; padding:4px;">
-                              <button class="cart-qty-btn" data-action="minus" data-id="${item.product.$id}" style="width:24px; height:24px; display:flex; align-items:center; justify-content:center; border:none; background:#fff; border-radius:6px; cursor:pointer; font-weight:bold; color:#4b5563; box-shadow:0 1px 2px rgba(0,0,0,0.05);">-</button>
-                              <span style="font-size:12px; font-weight:700; width:28px; text-align:center; color:#111827;">${item.quantity}</span>
-                              <button class="cart-qty-btn" data-action="plus" data-id="${item.product.$id}" style="width:24px; height:24px; display:flex; align-items:center; justify-content:center; border:none; background:#fff; border-radius:6px; cursor:pointer; font-weight:bold; color:#4b5563; box-shadow:0 1px 2px rgba(0,0,0,0.05);">+</button>
+                      <div style="display:flex; align-items:center; justify-content:space-between;">
+                          <div style="font-weight:800; font-size:15px; color:#111827;">$${price.toLocaleString()}</div>
+                          <div style="display:flex; align-items:center; background:#fff; border-radius:50px; padding:3px; border: 1px solid #e5e7eb;">
+                              <button class="cart-qty-btn" data-action="minus" data-id="${item.product.$id}" style="width:26px; height:26px; display:flex; align-items:center; justify-content:center; border:none; background:transparent; border-radius:50%; cursor:pointer; font-weight:600; font-size:15px; color:#9ca3af; transition:all 0.15s;">−</button>
+                              <span style="font-size:13px; font-weight:700; width:24px; text-align:center; color:#111827;">${item.quantity}</span>
+                              <button class="cart-qty-btn" data-action="plus" data-id="${item.product.$id}" style="width:26px; height:26px; display:flex; align-items:center; justify-content:center; border:none; background:transparent; border-radius:50%; cursor:pointer; font-weight:600; font-size:15px; color:#9ca3af; transition:all 0.15s;">+</button>
                           </div>
                       </div>
                   </div>
-                  <button class="cart-remove-btn" data-id="${item.product.$id}" style="position:absolute; top:12px; right:12px; background:transparent; border:none; width:24px; height:24px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#9ca3af; transition:color 0.2s; font-size:16px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#9ca3af'">✕</button>
+                  <button class="cart-remove-btn" data-id="${item.product.$id}" style="position:absolute; top:10px; right:10px; background:transparent; border:none; width:22px; height:22px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#d1d5db; transition:all 0.2s; border-radius:50%;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+                  </button>
                </div>
              `;
            }).join('')}
@@ -3853,47 +3855,67 @@ export default function HomePage23() {
 
       // Hydrate subtotal and checkout buttons
       checkoutWrapper.style.display = 'block';
+      const freeShippingThreshold = 25000;
+      const progress = Math.min((cartTotal || 0) / freeShippingThreshold * 100, 100);
+      const remaining = freeShippingThreshold - (cartTotal || 0);
       checkoutWrapper.innerHTML = `
-        <div style="border-top: 1px solid #f3f4f6; padding-top: 16px; margin-bottom: 16px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-            <span style="font-size: 14px; font-weight: 600; color: #4b5563;">Subtotal</span>
-            <span style="font-size: 18px; font-weight: 800; color: #111827;">$${(cartTotal || 0).toLocaleString()}</span>
+        ${remaining > 0 ? `
+        <div style="background: linear-gradient(135deg, #fdf2f2 0%, #fff5f5 100%); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FBCAC9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            <span style="font-size:12px; color:#6b7280; font-weight:600;">¡Te faltan <strong style="color:#e88b8a;">$${remaining.toLocaleString()}</strong> para envío gratis!</span>
           </div>
-          <p style="font-size: 11px; color: #9ca3af; margin: 0;">Impuestos y envío calculados al pagar</p>
+          <div style="width:100%; height:6px; background:#fce4e4; border-radius:50px; overflow:hidden;">
+            <div style="width:${progress}%; height:100%; background: linear-gradient(90deg, #FBCAC9, #f4a8a7); border-radius:50px; transition: width 0.5s ease;"></div>
+          </div>
         </div>
-        
-        <div style="display: flex; flex-direction: column; gap: 8px;">
+        ` : `
+        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #f7fef9 100%); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; display:flex; align-items:center; gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span style="font-size:12px; color:#16a34a; font-weight:700;">¡Envío gratis desbloqueado!</span>
+        </div>
+        `}
+        <div style="padding: 14px 0 12px; border-top: 1px solid #f3f4f6;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 13px; font-weight: 600; color: #6b7280;">Subtotal</span>
+            <span style="font-size: 20px; font-weight: 800; color: #111827;">$${(cartTotal || 0).toLocaleString()}</span>
+          </div>
+          <p style="font-size: 11px; color: #b0b0b0; margin: 0;">Impuestos y envío calculados al pagar</p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; padding-top:4px;">
           <button type="button" class="checkout-redirect-btn" style="
             width: 100%;
-            padding: 12px 0;
-            background: #111827;
+            padding: 14px 0;
+            background: linear-gradient(135deg, #FBCAC9 0%, #f4a8a7 100%);
             color: #fff;
             border: none;
-            border-radius: 8px;
-            font-size: 13px;
+            border-radius: 50px;
+            font-size: 14px;
             font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.3s;
+            box-shadow: 0 4px 16px rgba(251,202,201,0.4);
           ">
-            Proceder al Checkout
+            Proceder al Pago
           </button>
-          
+
           <a href="/carrito" style="
             display: block;
             width: 100%;
-            padding: 10px 0;
-            background: #fff;
-            color: #4b5563;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
+            padding: 11px 0;
+            background: transparent;
+            color: #6b7280;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 50px;
             font-size: 12px;
             font-weight: 600;
             text-align: center;
             text-decoration: none;
             cursor: pointer;
             transition: all 0.2s;
+            box-sizing: border-box;
           ">
             Ver Carrito Completo
           </a>
@@ -3975,20 +3997,20 @@ export default function HomePage23() {
         const pLink = `/productos/${p.$id}`;
         const currentPrice = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
         return `
-          <div class="pk-drawer-rec-card" style="background:#fff; border-radius:12px; overflow:hidden; border: 1px solid #f3f4f6; display:flex; flex-direction:column; transition: border-color 0.2s;">
+          <div class="pk-drawer-rec-card" style="background:#fff; border-radius:14px; overflow:hidden; border: 1px solid #f0f0f0; display:flex; flex-direction:column; transition: all 0.2s;">
             <a href="${pLink}" style="display:block; padding:10px 10px 0;">
-              <div style="width:100%; aspect-ratio: 1/1; background:#f9fafb; border-radius:8px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
-                <img src="${pImg}" alt="${pName}" style="width:100%; height:100%; object-fit:contain; display:block; mix-blend-mode: multiply;">
+              <div style="width:100%; aspect-ratio: 1/1; background: linear-gradient(145deg, #fafafa 0%, #f5f5f5 100%); border-radius:10px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                <img src="${pImg}" alt="${pName}" style="width:100%; height:100%; object-fit:contain; display:block; mix-blend-mode: multiply; padding:6px;">
               </div>
             </a>
             <div style="padding:10px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
               <a href="${pLink}" style="text-decoration:none; color:#111;">
-                <p style="margin:0; font-size:12px; font-weight:600; line-height:1.4; color:#374151; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${pName}</p>
+                <p style="margin:0; font-size:11.5px; font-weight:600; line-height:1.4; color:#4b5563; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${pName}</p>
               </a>
               <div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;">
                 <span style="font-size:14px; font-weight:800; color:#111827;">$${(currentPrice||0).toLocaleString()}</span>
-                <button class="pk-grid-add-to-cart" data-product-id="${p.$id}" style="background:#111827; border:none; border-radius:8px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition: background 0.2s;" aria-label="Agregar al carrito">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:#fff;"><path d="M5 9h14l1.5 10H3.5L5 9z"/><path d="M9 9V5a3 3 0 0 1 6 0v4"/></svg>
+                <button class="pk-grid-add-to-cart" data-product-id="${p.$id}" style="background: linear-gradient(135deg, #FBCAC9 0%, #f4a8a7 100%); border:none; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition: all 0.2s; box-shadow: 0 2px 8px rgba(251,202,201,0.3);" aria-label="Agregar al carrito">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
               </div>
             </div>
@@ -3998,39 +4020,180 @@ export default function HomePage23() {
     });
 
     // Hydrate "Trending Search" with real products
-    const searchProductsList = root.querySelector('.search-drawer-initial-content .pt-10 ul.custom-list');
-    const searchHeadings = root.querySelectorAll('.search-drawer-initial-content h5.heading');
-    searchHeadings.forEach(h => {
-      if (h.textContent?.trim().toLowerCase().includes('trending') || h.textContent?.trim().toLowerCase().includes('tendencia')) {
-        h.textContent = 'Búsquedas Populares';
-      }
-    });
+    // ═══ SEARCH DRAWER REDESIGN ═══
+    const searchDrawer = root.querySelector('search-drawer') as HTMLElement;
+    if (searchDrawer && !(searchDrawer as any)._pkSearchHydrated) {
+      (searchDrawer as any)._pkSearchHydrated = true;
+      const drawerInner = searchDrawer.querySelector('.drawer__inner') as HTMLElement;
+      if (drawerInner) {
+        drawerInner.style.cssText = 'position:relative; width:100%; max-width:450px; background:#fff; min-height:100%; height:100%; margin-left:auto; margin-right:0; transition:all 0.7s ease-in-out; overflow-y:auto; padding-top:0;';
+        const popularTerms = ['Skincare', 'Maquillaje', 'Labiales', 'Mascarillas', 'Serum', 'Limpiador'];
+        const topProducts = products.slice(0, 6);
 
-    if (searchProductsList) {
-      searchProductsList.innerHTML = products.slice(0, 6).map((p: any) => {
-        const pImg = p.IMAGEURL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';
-        const pName = p.NAME || 'Producto';
-        const pLink = `/productos/${p.$id}`;
-        const currentPrice = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
-        const hasDiscount = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
-        
-        return `
-          <li class="py-3 flex leading-[1]">
-              <a href="${pLink}" title="${pName}" class="block h-[70px] w-[70px] min-h-[70px] min-w-[70px] mr-5 overflow-hidden rounded-md border border-gray-100">
-                  <img src="${pImg}" alt="${pName}" loading="lazy" class="object-cover h-full w-full" />
-              </a>
-              <div class="flex-1">
-                  <a href="${pLink}" title="${pName}" class="link" style="text-decoration:none;">
-                      <h6 class="heading pb-1 text-sm font-semibold text-gray-800 line-clamp-2">${pName}</h6>
-                  </a>
-                  <div class="price flex gap-[5px] flex-wrap mt-1">
-                      <span class="font-bold text-gray-900">$${(currentPrice||0).toLocaleString()}</span>
-                      ${hasDiscount ? `<span class="text-xs text-gray-400 line-through mt-[2px]">$${p.PRICE.toLocaleString()}</span>` : ''}
-                  </div>
+        const renderProduct = (p: any) => {
+          const pImg = p.IMAGEURL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';
+          const pName = p.NAME || 'Producto';
+          const pLink = `/productos/${p.$id}`;
+          const currentPrice = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
+          const hasDiscount = p.CURRENTPRICE && p.CURRENTPRICE < p.PRICE;
+          return `
+            <a href="${pLink}" class="pk-search-result" style="display:flex; align-items:center; gap:14px; padding:12px; border-radius:14px; text-decoration:none; transition:background 0.15s; cursor:pointer;">
+              <div style="width:64px; height:64px; min-width:64px; border-radius:12px; overflow:hidden; background:#f9fafb; border:1px solid #f0f0f0; display:flex; align-items:center; justify-content:center;">
+                <img src="${pImg}" alt="${pName}" style="width:100%; height:100%; object-fit:contain; mix-blend-mode:multiply; padding:4px;" loading="lazy" />
               </div>
-          </li>
+              <div style="flex:1; min-width:0;">
+                <p style="margin:0 0 4px; font-size:13px; font-weight:600; color:#374151; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${pName}</p>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:14px; font-weight:800; color:#111827;">$${(currentPrice||0).toLocaleString()}</span>
+                  ${hasDiscount ? `<span style="font-size:11px; color:#9ca3af; text-decoration:line-through;">$${p.PRICE.toLocaleString()}</span>` : ''}
+                </div>
+              </div>
+              <div style="width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg, #FBCAC9 0%, #f4a8a7 100%); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+            </a>`;
+        };
+
+        drawerInner.innerHTML = `
+          <div style="padding:24px 24px 0; position:sticky; top:0; background:#fff; z-index:10;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:36px; height:36px; background:linear-gradient(135deg, #FBCAC9 0%, #f9a8a8 100%); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </div>
+                <h5 style="margin:0; font-size:18px; font-weight:800; color:#111827; letter-spacing:-0.3px;">Buscar</h5>
+              </div>
+              <button class="button-close" data-close="" style="width:34px; height:34px; border-radius:10px; background:#fdf2f2; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#e88b8a; transition:all 0.2s;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div style="position:relative; margin-bottom:16px;">
+              <div style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#FBCAC9;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </div>
+              <input type="search" id="pk-search-input" placeholder="¿Qué estás buscando?" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="width:100%; padding:13px 44px 13px 44px; border:1.5px solid #f0f0f0; border-radius:50px; font-size:14px; font-weight:500; color:#111827; background:#fafafa; outline:none; transition:all 0.2s; box-sizing:border-box;" />
+              <button id="pk-search-clear" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:#d1d5db; display:none; padding:2px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6"/><path d="M9 9l6 6"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div id="pk-search-initial" style="padding:0 24px 24px;">
+            <div style="margin-bottom:24px;">
+              <h6 style="margin:0 0 12px; font-size:13px; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:0.8px;">Búsquedas populares</h6>
+              <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                ${popularTerms.map(t => `
+                  <button class="pk-search-term" data-term="${t}" style="padding:8px 16px; border-radius:50px; border:1.5px solid #f0f0f0; background:#fff; font-size:12px; font-weight:600; color:#6b7280; cursor:pointer; transition:all 0.2s; white-space:nowrap;">
+                    ${t}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+            <div>
+              <h6 style="margin:0 0 14px; font-size:13px; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:0.8px; display:flex; align-items:center; gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FBCAC9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Productos destacados
+              </h6>
+              <div id="pk-search-popular-list" style="display:flex; flex-direction:column; gap:4px;">
+                ${topProducts.map(renderProduct).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div id="pk-search-results" style="padding:0 24px 24px; display:none;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <h6 id="pk-results-count" style="margin:0; font-size:13px; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:0.8px;">Resultados</h6>
+            </div>
+            <div id="pk-results-list" style="display:flex; flex-direction:column; gap:4px;"></div>
+            <div id="pk-no-results" style="display:none; text-align:center; padding:40px 20px;">
+              <div style="width:64px; height:64px; background:linear-gradient(135deg, #fdf2f2 0%, #fff5f5 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FBCAC9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+              </div>
+              <p style="margin:0 0 4px; font-size:15px; font-weight:700; color:#374151;">Sin resultados</p>
+              <p style="margin:0; font-size:13px; color:#9ca3af;">Intenta con otro término de búsqueda</p>
+            </div>
+          </div>
         `;
-      }).join('');
+
+        // Wire up search functionality
+        const input = drawerInner.querySelector('#pk-search-input') as HTMLInputElement;
+        const clearBtn = drawerInner.querySelector('#pk-search-clear') as HTMLElement;
+        const initialSection = drawerInner.querySelector('#pk-search-initial') as HTMLElement;
+        const resultsSection = drawerInner.querySelector('#pk-search-results') as HTMLElement;
+        const resultsList = drawerInner.querySelector('#pk-results-list') as HTMLElement;
+        const resultsCount = drawerInner.querySelector('#pk-results-count') as HTMLElement;
+        const noResults = drawerInner.querySelector('#pk-no-results') as HTMLElement;
+
+        let debounceTimer: any = null;
+
+        const doSearch = (query: string) => {
+          const q = query.toLowerCase().trim();
+          if (!q) {
+            initialSection.style.display = 'block';
+            resultsSection.style.display = 'none';
+            clearBtn.style.display = 'none';
+            return;
+          }
+          clearBtn.style.display = 'block';
+          initialSection.style.display = 'none';
+          resultsSection.style.display = 'block';
+
+          const matches = products.filter((p: any) => {
+            const name = (p.NAME || '').toLowerCase();
+            const desc = (p.DESCRIPTION || '').toLowerCase();
+            return name.includes(q) || desc.includes(q);
+          }).slice(0, 12);
+
+          if (matches.length === 0) {
+            resultsList.innerHTML = '';
+            noResults.style.display = 'block';
+            resultsCount.textContent = 'Sin resultados';
+          } else {
+            noResults.style.display = 'none';
+            resultsCount.textContent = matches.length + ' resultado' + (matches.length !== 1 ? 's' : '');
+            resultsList.innerHTML = matches.map(renderProduct).join('');
+          }
+        };
+
+        input?.addEventListener('input', () => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => doSearch(input.value), 200);
+        });
+
+        input?.addEventListener('focus', () => {
+          input.style.borderColor = '#FBCAC9';
+          input.style.background = '#fff';
+        });
+        input?.addEventListener('blur', () => {
+          input.style.borderColor = '#f0f0f0';
+          input.style.background = '#fafafa';
+        });
+
+        clearBtn?.addEventListener('click', () => {
+          input.value = '';
+          doSearch('');
+          input.focus();
+        });
+
+        drawerInner.querySelectorAll('.pk-search-term').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const term = (btn as HTMLElement).dataset.term || '';
+            input.value = term;
+            doSearch(term);
+          });
+        });
+
+        // Prevent form submission (search inline)
+        const oldForm = drawerInner.querySelector('form#search-form');
+        if (oldForm) oldForm.addEventListener('submit', (e) => e.preventDefault());
+
+        // Close button
+        drawerInner.querySelector('.button-close')?.addEventListener('click', () => {
+          searchDrawer.setAttribute('data-hidden', 'true');
+          searchDrawer.setAttribute('inert', '');
+          document.documentElement.style.overflow = '';
+        });
+      }
     }
 
   }, [cartItems, cartTotal, bodyHtml, updateQuantity, removeItem, products]);
@@ -4166,9 +4329,9 @@ export default function HomePage23() {
         }
         cart-drawer .drawer__inner {
           background-color: #ffffff !important;
-          border-left: 1px solid #f3f4f6 !important;
-          box-shadow: -10px 0 30px rgba(0,0,0,0.08) !important;
-          max-width: 400px !important;
+          border-left: none !important;
+          box-shadow: -16px 0 48px rgba(0,0,0,0.1) !important;
+          max-width: 420px !important;
           display: flex !important;
           flex-direction: column !important;
           padding-top: 20px !important;
@@ -4180,114 +4343,152 @@ export default function HomePage23() {
           }
         }
         cart-drawer .button-close {
-          top: 15px !important;
-          right: 15px !important;
-          width: 36px !important;
-          height: 36px !important;
-          border-radius: 50% !important;
-          background: #f9fafb !important;
-          border: 1px solid #f3f4f6 !important;
+          top: 16px !important;
+          right: 16px !important;
+          width: 34px !important;
+          height: 34px !important;
+          border-radius: 10px !important;
+          background: #fdf2f2 !important;
+          border: none !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
           padding: 0 !important;
-          color: #4b5563 !important;
+          color: #e88b8a !important;
           transition: all 0.2s !important;
         }
         cart-drawer .button-close:hover {
-          background: #f3f4f6 !important;
-          color: #111827 !important;
-          transform: scale(1.05) !important;
+          background: #FBCAC9 !important;
+          color: #fff !important;
+        }
+        cart-drawer .button-close svg {
+          width: 16px !important;
+          height: 16px !important;
         }
         cart-drawer .cart-items-wrapper {
-          padding-left: 24px !important;
-          padding-right: 24px !important;
+          padding-left: 20px !important;
+          padding-right: 20px !important;
           padding-top: 10px !important;
         }
-        cart-drawer .cart-items-wrapper .headding {
-          font-size: 20px !important;
-          font-weight: 800 !important;
-          letter-spacing: -0.5px !important;
-          color: #111827 !important;
-          border-bottom: 2px solid #111827 !important;
-          padding-bottom: 12px !important;
-          margin-bottom: 20px !important;
-        }
         cart-drawer .cart-item {
-          display: flex !important;
-          align-items: center !important;
-          gap: 16px !important;
-          padding: 16px 0 !important;
-          border-bottom: 1px solid #f3f4f6 !important;
-          position: relative !important;
-        }
-        cart-drawer .cart-item .image-wrapper {
-          border-radius: 12px !important;
-          border: 1px solid #f3f4f6 !important;
-          overflow: hidden !important;
-          background: #fafafa !important;
-          transition: transform 0.2s !important;
-        }
-        cart-drawer .cart-item:hover .image-wrapper {
-          transform: scale(1.02) !important;
-        }
-        cart-drawer .cart-item__details h6 {
-          font-size: 13px !important;
-          font-weight: 600 !important;
-          color: #374151 !important;
-          line-height: 1.4 !important;
-          margin: 0 0 6px 0 !important;
-        }
-        cart-drawer .cart-item__details .price {
-          font-size: 14px !important;
-          font-weight: 800 !important;
-          color: #111827 !important;
-        }
-        cart-drawer .cart-qty-container {
-          display: flex !important;
-          align-items: center !important;
-          border: 1px solid #e5e7eb !important;
-          border-radius: 20px !important;
-          background: #fff !important;
-          overflow: hidden !important;
-          padding: 2px 6px !important;
-        }
-        cart-drawer .cart-qty-btn {
-          font-size: 14px !important;
-          font-weight: 600 !important;
-          color: #9ca3af !important;
-          background: none !important;
           border: none !important;
-          width: 24px !important;
-          height: 24px !important;
-          cursor: pointer !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          transition: color 0.15s !important;
+          border-radius: 14px !important;
+        }
+        cart-drawer .cart-item:hover {
+          background: #f5f5f5 !important;
         }
         cart-drawer .cart-qty-btn:hover {
-          color: #111827 !important;
+          color: #FBCAC9 !important;
+          background: #fdf2f2 !important;
         }
         cart-drawer .cart-remove-btn {
-          top: 16px !important;
-          right: 0px !important;
-          width: 24px !important;
-          height: 24px !important;
-          border-radius: 50% !important;
-          background: none !important;
-          border: none !important;
-          color: #9ca3af !important;
-          font-size: 14px !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          cursor: pointer !important;
+          color: #d1d5db !important;
           transition: all 0.15s !important;
         }
         cart-drawer .cart-remove-btn:hover {
           color: #ef4444 !important;
           background: #fef2f2 !important;
+        }
+        cart-drawer .checkout-redirect-btn:hover {
+          box-shadow: 0 6px 24px rgba(251,202,201,0.5) !important;
+          transform: translateY(-1px) !important;
+        }
+        cart-drawer .pk-explore-btn:hover {
+          box-shadow: 0 6px 24px rgba(251,202,201,0.5) !important;
+          transform: translateY(-1px) !important;
+        }
+        cart-drawer .pk-cart-items-list::-webkit-scrollbar {
+          width: 4px !important;
+        }
+        cart-drawer .pk-cart-items-list::-webkit-scrollbar-track {
+          background: transparent !important;
+        }
+        cart-drawer .pk-cart-items-list::-webkit-scrollbar-thumb {
+          background: #FBCAC9 !important;
+          border-radius: 50px !important;
+        }
+
+        /* --- PREMIUM SEARCH DRAWER OVERRIDES --- */
+        search-drawer.search-drawer {
+          z-index: 10005 !important;
+        }
+        search-drawer {
+          font-family: 'Outfit', 'Inter', sans-serif !important;
+        }
+        search-drawer .drawer__inner {
+          box-shadow: -16px 0 48px rgba(0,0,0,0.1) !important;
+          padding-top: 0 !important;
+        }
+        search-drawer #pk-search-input {
+          outline: none !important;
+          box-shadow: none !important;
+        }
+        search-drawer #pk-search-input:focus {
+          border-color: #FBCAC9 !important;
+          background: #fff !important;
+          box-shadow: 0 0 0 3px rgba(251,202,201,0.15) !important;
+        }
+        search-drawer .pk-search-term:hover {
+          background: linear-gradient(135deg, #FBCAC9 0%, #f4a8a7 100%) !important;
+          color: #fff !important;
+          border-color: transparent !important;
+        }
+        search-drawer .pk-search-result:hover {
+          background: #f9fafb !important;
+        }
+        search-drawer .button-close:hover {
+          background: #FBCAC9 !important;
+          color: #fff !important;
+        }
+        @media (max-width: 480px) {
+          search-drawer .drawer__inner {
+            max-width: 100vw !important;
+            width: 100vw !important;
+          }
+        }
+
+        /* --- KILL STICKY HOVER SHADOWS ON TOUCH/MOBILE --- */
+        @media (hover: none), (max-width: 768px) {
+          .tpl23-shopify-root *:hover {
+            --tw-shadow: 0 0 #0000 !important;
+          }
+          .tpl23-shopify-root .card-hover:hover,
+          .tpl23-shopify-root [class*="hover:shadow"]:hover,
+          .tpl23-shopify-root .group:hover [class*="group-hover:shadow"] {
+            box-shadow: none !important;
+          }
+          .tpl23-shopify-root [class*="hover:scale"]:hover,
+          .tpl23-shopify-root [class*="hover:-translate"]:hover,
+          .tpl23-shopify-root [class*="hover:translate"]:hover {
+            transform: none !important;
+          }
+          .tpl23-shopify-root .latest-product-card:hover,
+          .tpl23-shopify-root .kc-accordion-item:hover,
+          .tpl23-shopify-root .pk-drawer-rec-card:hover {
+            box-shadow: none !important;
+            transform: none !important;
+          }
+          .tpl23-shopify-root h1:hover,
+          .tpl23-shopify-root h2:hover,
+          .tpl23-shopify-root h3:hover,
+          .tpl23-shopify-root h4:hover,
+          .tpl23-shopify-root h5:hover,
+          .tpl23-shopify-root h6:hover,
+          .tpl23-shopify-root p:hover,
+          .tpl23-shopify-root span:hover,
+          .tpl23-shopify-root div:hover,
+          .tpl23-shopify-root section:hover,
+          .tpl23-shopify-root a:hover,
+          .tpl23-shopify-root button:hover,
+          .tpl23-shopify-root .heading:hover,
+          .tpl23-shopify-root .section-heading:hover {
+            box-shadow: none !important;
+          }
+          cart-drawer .pk-drawer-rec-card:hover {
+            border-color: #f0f0f0 !important;
+            box-shadow: none !important;
+            transform: none !important;
+          }
         }
 
         /* --- SPLASH SCREEN --- */
@@ -4418,46 +4619,54 @@ export default function HomePage23() {
           }
 
         }
-        /* No hover shadows for drawer cards, force globally for the drawer */
         cart-drawer * {
           -webkit-tap-highlight-color: transparent !important;
         }
-        cart-drawer .pk-drawer-rec-card:hover,
+        cart-drawer .pk-drawer-rec-card:hover {
+          border-color: #FBCAC9 !important;
+          box-shadow: 0 4px 16px rgba(251,202,201,0.15) !important;
+          transform: translateY(-2px) !important;
+        }
         cart-drawer .pk-drawer-rec-card:active,
-        cart-drawer .pk-drawer-rec-card:focus,
-        cart-drawer .cart-item:hover,
-        cart-drawer .cart-item:active,
-        cart-drawer .cart-item:focus {
-          border-color: #d1d5db !important;
+        cart-drawer .pk-drawer-rec-card:focus {
+          border-color: #FBCAC9 !important;
           box-shadow: none !important;
           transform: none !important;
           outline: none !important;
         }
-        cart-drawer .pk-drawer-rec-card .pk-grid-add-to-cart:hover,
+        cart-drawer .pk-drawer-rec-card .pk-grid-add-to-cart:hover {
+          background: linear-gradient(135deg, #f4a8a7 0%, #e89695 100%) !important;
+          box-shadow: 0 4px 12px rgba(251,202,201,0.4) !important;
+          transform: scale(1.1) !important;
+        }
         cart-drawer .pk-drawer-rec-card .pk-grid-add-to-cart:active {
-          background: #374151 !important;
-          box-shadow: none !important;
-          transform: none !important;
+          transform: scale(0.95) !important;
         }
 
-        /* Force recommendation wrapper to have white background and better header */
         cart-drawer .drawer__recommendation-wrapper {
           background-color: #ffffff !important;
           padding-top: 24px !important;
         }
         cart-drawer .drawer__recommendation-wrapper h6.heading {
-          font-size: 16px !important;
+          font-size: 15px !important;
           font-weight: 800 !important;
           color: #111827 !important;
-          padding-bottom: 16px !important;
+          padding-bottom: 14px !important;
           margin-bottom: 0 !important;
-          border-bottom: 1px solid #f3f4f6 !important;
+          border-bottom: 2px solid #FBCAC9 !important;
           margin-left: 16px !important;
           margin-right: 16px !important;
           text-align: left !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 8px !important;
         }
         cart-drawer .drawer__recommendation-wrapper h6.heading span {
           color: #111827 !important;
+        }
+        cart-drawer .drawer__recommendation-wrapper h6.heading::before {
+          content: '✨' !important;
+          font-size: 14px !important;
         }
       `}</style>
 
