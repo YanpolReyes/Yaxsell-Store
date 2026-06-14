@@ -87,10 +87,10 @@ export default function HomePage() {
         if (!res.ok) throw new Error('API Error');
         const data = await res.json();
         
-        setProducts((data.products as Product[]).filter(p => (p.STOCK || 0) > 0));
-        setCategories(data.categories as Category[]);
-        setBanners(data.banners as Banner[]);
-        setOffers((data.offers as TimedOffer[]).filter(isOfferActive));
+        setProducts(((data.products || []) as Product[]).filter(p => (p.STOCK || 0) > 0));
+        setCategories((data.categories || []) as Category[]);
+        setBanners((data.banners || []) as Banner[]);
+        setOffers(((data.offers || []) as TimedOffer[]).filter(isOfferActive));
       } catch (e) {
         console.error('Appwrite error:', e);
         setConfigError(true);

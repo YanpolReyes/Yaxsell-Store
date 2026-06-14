@@ -65,9 +65,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="es">
+      <head>
         {/* Importmap para el tema Pebble (Plantilla 5) — resuelve @theme/ a archivos locales */}
         {/* biome-ignore lint: intentional dangerouslySetInnerHTML for importmap */}
         <script type="importmap" dangerouslySetInnerHTML={{ __html: pebbleImportMap }} />
+      </head>
       <body>
         <ClientFetchCache />
         <AuthProvider>

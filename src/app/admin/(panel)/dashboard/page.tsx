@@ -1449,6 +1449,7 @@ function TestPeriodBanner() {
   const [salesData, setSalesData] = useState<Order[]>([]);
   const [percent, setPercent] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
+  const [timeLeft, setTimeLeft] = useState('00:00:00');
 
   useEffect(() => {
     const START_TIME = new Date('2026-06-12T19:58:15-04:00').getTime();
@@ -1592,6 +1593,7 @@ export default function DashboardPage() {
   const [duplicateSkusList, setDuplicateSkusList] = useState<string[]>([]);
   const [isScanningDuplicates, setIsScanningDuplicates] = useState(false);
   const [lastDuplicateScanTime, setLastDuplicateScanTime] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const scanDuplicateSkus = useCallback(async (force = false) => {
     // Duplicate SKU scanning disabled to save Appwrite requests quota
@@ -1724,7 +1726,7 @@ export default function DashboardPage() {
           todayOrders,
           lowStockProducts: lowStockDocs,
           topProducts: topProdDocs,
-          pageViews: { totalViews: pv.totalViews, todayViews: pv.todayViews, topPages: pv.topPages, topComunas: pv.topComunas, visitorMarkers: pv.visitorMarkers },
+          pageViews: { totalViews: 0, todayViews: 0, topPages: [], topComunas: [], visitorMarkers: [] },
           topViewedProducts: computedTopViewed,
           lastRefresh: refreshDate,
           costStats: costData,

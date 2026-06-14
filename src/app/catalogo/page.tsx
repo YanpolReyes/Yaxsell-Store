@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { Search, Package, ArrowRight, Heart, Bell, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getServices, getAppwriteConfig, CATALOG_PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, STOCK_ALERTS_COLLECTION, formatPrice, ID } from '@/lib/appwrite';
