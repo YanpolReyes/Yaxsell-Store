@@ -507,7 +507,6 @@ export default function Navbar1() {
         .tpl1-nav-mobile-fab--cb { background: linear-gradient(135deg, #3483fa, #6366f1) !important; }
         @media (max-width: 768px) {
           .tpl1-bottom-nav { display: block; }
-          body { overflow-x: hidden; }
         }
 
         @keyframes tpl1AuthSheetIn { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
@@ -538,8 +537,10 @@ export default function Navbar1() {
             z-index: 10050 !important;
             animation: dropdownIn 0.2s ease !important;
           }
-          .tpl1-nav { min-height: 48px !important; height: auto !important; background: rgba(255,255,255,0.98) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border-bottom: none !important; border-radius: 999px !important; box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important; margin: 6px 80px 0 !important; position: absolute !important; top: 24px !important; left: 0 !important; right: 0 !important; z-index: 9999 !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
-          .tpl1-nav.scrolled { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; margin: 0 !important; border-radius: 0 !important; min-height: 48px !important; box-shadow: 0 2px 16px rgba(0,0,0,0.08) !important; }
+          .tpl1-nav { min-height: 48px !important; height: auto !important; background: rgba(255,255,255,0.98) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border-bottom: none !important; z-index: 9999 !important; transition: all 0.35s cubic-bezier(0.4,0,0.2,1) !important; }
+          .tpl1-nav.tpl1-nav-home { border-radius: 999px !important; box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important; margin: 6px 80px 0 !important; position: absolute !important; top: 24px !important; left: 0 !important; right: 0 !important; }
+          .tpl1-nav.tpl1-nav-home.scrolled { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; margin: 0 !important; border-radius: 0 !important; min-height: 48px !important; box-shadow: 0 2px 16px rgba(0,0,0,0.08) !important; }
+          .tpl1-nav.tpl1-nav-page { display: none !important; }
           .tpl1-nav.scrolled .tpl1-nav-inner { height: 48px !important; min-height: 48px !important; padding: 0 12px !important; }
           .tpl1-nav.scrolled .tpl1-nav-btn { width: 34px !important; height: 34px !important; }
           .tpl1-nav.scrolled .tpl1-nav-btn svg { width: 17px !important; height: 17px !important; }
@@ -605,9 +606,8 @@ export default function Navbar1() {
       <div className={`tpl1-nav-mobile-overlay ${menuOpen ? 'open' : ''}`} onClick={() => setMenuOpen(false)} />
 
       {/* Top navbar: on mobile only show on homepage */}
-      {!(isMobile && !isHome) && (
       <nav
-        className={`tpl1-nav ${scrolled ? 'scrolled' : ''}`}
+        className={`tpl1-nav ${scrolled ? 'scrolled' : ''} ${isHome ? 'tpl1-nav-home' : 'tpl1-nav-page'}`}
         style={{
           background: scrolled ? 'rgba(255,255,255,0.95)' : '#fff',
           borderBottom: `1px solid ${scrolled ? '#fce7f3' : '#f5f5f5'}`,
@@ -795,7 +795,6 @@ export default function Navbar1() {
           )}
         </div>
       </nav>
-      )}
 
       {/* â”€â”€ Cart Drawer â”€â”€ */}
       {cartOpen && (

@@ -16,7 +16,7 @@
 
 * { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; height: auto; }
+html { scroll-behavior: smooth; height: auto; overflow: visible !important; contain: none !important; }
 
 body {
   background: #f0f0f8;
@@ -25,7 +25,8 @@ body {
   -webkit-font-smoothing: antialiased;
   min-height: 0 !important;
   height: auto !important;
-  overflow-x: clip; /* clip instead of hidden: prevents page-level horizontal scroll WITHOUT blocking nested horizontal scrollers (carousels) */
+  overflow: visible !important;
+  contain: none !important;
 }
 
 /* Hide Shopify leftover elements after footer that cause blank scroll space */
@@ -491,4 +492,18 @@ select option { background: #fff; color: #111; }
     animation: none !important;
     display: none !important;
   }
+}
+
+/* Prevent page transitions from breaking position: sticky elements */
+.page-transition-container {
+  will-change: opacity !important;
+  transform: none !important;
+  contain: none !important;
+  clip-path: none !important;
+}
+
+main, .page-transition-container, .pk-products-container, .pk-page, .pk-content-wrap {
+  overflow: visible !important;
+  contain: none !important;
+  clip-path: none !important;
 }

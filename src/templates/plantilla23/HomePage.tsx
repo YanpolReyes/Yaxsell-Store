@@ -1735,6 +1735,15 @@ export default function HomePage23() {
       }
     `;
     document.head.appendChild(overrideStyle);
+
+    return () => {
+      const st = document.getElementById('tpl23-overrides');
+      if (st) st.remove();
+      CSS_FILES.forEach(href => {
+        const el = document.querySelector(`link[data-tpl23="${href}"]`);
+        if (el) el.remove();
+      });
+    };
   }, []);
 
   /* ── Fetch the cleaned HTML body content ── */
@@ -3631,26 +3640,26 @@ export default function HomePage23() {
            ${sortedItems.map((item: any) => {
              const price = getEffectivePrice(item);
              return `
-               <div class="cart-item">
-                  <a href="/productos/${item.product.$id}" class="image-wrapper block h-[64px] w-[64px] min-h-[64px] min-w-[64px] relative">
-                      <img src="${item.product.IMAGEURL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png'}" class="object-cover w-full h-full" />
+               <div class="cart-item" style="display:flex; align-items:center; gap:16px; padding:12px; background:#fff; border:1px solid #f3f4f6; border-radius:12px; margin-bottom:10px; position:relative; transition:border-color 0.2s;">
+                  <a href="/productos/${item.product.$id}" style="width:72px; height:72px; min-width:72px; border-radius:8px; overflow:hidden; background:#f9fafb; display:flex; align-items:center; justify-content:center;">
+                      <img src="${item.product.IMAGEURL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png'}" style="width:100%; height:100%; object-fit:contain; mix-blend-mode:multiply;" />
                   </a>
-                  <div class="cart-item__details flex-1" style="min-width: 0;">
-                      <a href="/productos/${item.product.$id}" class="link" style="text-decoration: none;">
-                          <h6 class="heading" style="margin: 0 0 4px 0; font-size: 13px; font-weight: 600; color: #374151; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                  <div class="cart-item__details flex-1" style="min-width: 0; padding-right:16px;">
+                      <a href="/productos/${item.product.$id}" style="text-decoration: none;">
+                          <h6 style="margin: 0 0 6px 0; font-size: 13px; font-weight: 600; color: #111827; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
                             ${item.product.NAME}
                           </h6>
                       </a>
-                      <div class="flex items-center justify-between mt-2">
-                          <div class="price font-bold text-[14px]">$${price.toLocaleString()}</div>
-                          <div class="cart-qty-container">
-                              <button class="cart-qty-btn" data-action="minus" data-id="${item.product.$id}">-</button>
-                              <span class="text-xs font-semibold w-5 text-center">${item.quantity}</span>
-                              <button class="cart-qty-btn" data-action="plus" data-id="${item.product.$id}">+</button>
+                      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px;">
+                          <div style="font-weight:800; font-size:14px; color:#111827;">$${price.toLocaleString()}</div>
+                          <div style="display:flex; align-items:center; background:#f3f4f6; border-radius:8px; padding:4px;">
+                              <button class="cart-qty-btn" data-action="minus" data-id="${item.product.$id}" style="width:24px; height:24px; display:flex; align-items:center; justify-content:center; border:none; background:#fff; border-radius:6px; cursor:pointer; font-weight:bold; color:#4b5563; box-shadow:0 1px 2px rgba(0,0,0,0.05);">-</button>
+                              <span style="font-size:12px; font-weight:700; width:28px; text-align:center; color:#111827;">${item.quantity}</span>
+                              <button class="cart-qty-btn" data-action="plus" data-id="${item.product.$id}" style="width:24px; height:24px; display:flex; align-items:center; justify-content:center; border:none; background:#fff; border-radius:6px; cursor:pointer; font-weight:bold; color:#4b5563; box-shadow:0 1px 2px rgba(0,0,0,0.05);">+</button>
                           </div>
                       </div>
                   </div>
-                  <button class="cart-remove-btn" data-id="${item.product.$id}">✕</button>
+                  <button class="cart-remove-btn" data-id="${item.product.$id}" style="position:absolute; top:12px; right:12px; background:transparent; border:none; width:24px; height:24px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#9ca3af; transition:color 0.2s; font-size:16px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#9ca3af'">✕</button>
                </div>
              `;
            }).join('')}
@@ -3772,18 +3781,20 @@ export default function HomePage23() {
         const pLink = `/productos/${p.$id}`;
         const currentPrice = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
         return `
-          <div style="background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);display:flex;flex-direction:column;">
-            <a href="${pLink}" style="display:block;padding:8px;">
-              <img src="${pImg}" alt="${pName}" style="width:100%;height:80px;object-fit:contain;display:block;">
+          <div class="pk-drawer-rec-card" style="background:#fff; border-radius:12px; overflow:hidden; border: 1px solid #f3f4f6; display:flex; flex-direction:column; transition: border-color 0.2s;">
+            <a href="${pLink}" style="display:block; padding:10px 10px 0;">
+              <div style="width:100%; aspect-ratio: 1/1; background:#f9fafb; border-radius:8px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                <img src="${pImg}" alt="${pName}" style="width:100%; height:100%; object-fit:contain; display:block; mix-blend-mode: multiply;">
+              </div>
             </a>
-            <div style="padding:6px 8px 8px;flex:1;display:flex;flex-direction:column;justify-content:space-between;">
-              <a href="${pLink}" style="text-decoration:none;color:#111;">
-                <p style="margin:0;font-size:11px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${pName}</p>
+            <div style="padding:10px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+              <a href="${pLink}" style="text-decoration:none; color:#111;">
+                <p style="margin:0; font-size:12px; font-weight:600; line-height:1.4; color:#374151; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${pName}</p>
               </a>
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
-                <span style="font-size:12px;font-weight:700;color:#111;">$${(currentPrice||0).toLocaleString()}</span>
-                <button class="pk-grid-add-to-cart" data-product-id="${p.$id}" style="background:var(--color-button,#e396bf);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;" aria-label="Agregar al carrito">
-                  <svg width="13" height="13" viewBox="0 0 32 32" fill="currentColor" style="color:#fff;"><path d="M30.622 9.602h-22.407l-1.809-7.464h-5.027v1.066h4.188l5.198 21.443c-1.108 0.323-1.923 1.334-1.923 2.547 0 1.472 1.193 2.666 2.666 2.666s2.666-1.194 2.666-2.666c0-0.603-0.208-1.153-0.545-1.599h7.487c-0.337 0.446-0.545 0.997-0.545 1.599 0 1.472 1.193 2.666 2.665 2.666s2.666-1.194 2.666-2.666c0-1.473-1.193-2.665-2.666-2.666v0h-11.403l-0.517-2.133h14.968l4.337-12.795z"/></svg>
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;">
+                <span style="font-size:14px; font-weight:800; color:#111827;">$${(currentPrice||0).toLocaleString()}</span>
+                <button class="pk-grid-add-to-cart" data-product-id="${p.$id}" style="background:#111827; border:none; border-radius:8px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition: background 0.2s;" aria-label="Agregar al carrito">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:#fff;"><path d="M5 9h14l1.5 10H3.5L5 9z"/><path d="M9 9V5a3 3 0 0 1 6 0v4"/></svg>
                 </button>
               </div>
             </div>
@@ -4212,6 +4223,18 @@ export default function HomePage23() {
             font-size: clamp(1.4rem, 6vw, 2.2rem) !important;
           }
 
+        }
+        /* No hover shadows for drawer cards */
+        .pk-drawer-rec-card:hover {
+          border-color: #d1d5db !important;
+          box-shadow: none !important;
+          transform: none !important;
+        }
+        .pk-drawer-rec-card .pk-grid-add-to-cart:hover {
+          background: #374151 !important;
+        }
+        .cart-item:hover {
+          border-color: #d1d5db !important;
         }
       `}</style>
 

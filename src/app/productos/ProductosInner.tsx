@@ -60,6 +60,15 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 120);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
   
   const { addItem } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -517,8 +526,8 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
         </div>
 
         {/* Top toolbar */}
-        <div className="pk-toolbar" style={{ position: 'sticky', top: 10, zIndex: 20, display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20, alignItems: 'center', padding: 12, borderRadius: 22, background: 'rgba(255,255,255,0.74)', border: '1px solid rgba(229, 231, 235, 0.9)', backdropFilter: 'blur(16px)', boxShadow: 'rgba(227,150,191,0.1) 0px 10px 34px' }}>
-          <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+        <div className={`pk-toolbar ${isScrolled ? 'pk-toolbar-scrolled' : ''}`} style={{ position: 'sticky', top: 10, zIndex: 20, display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20, alignItems: 'center', padding: 12, borderRadius: 22, background: 'rgba(255,255,255,0.74)', border: '1px solid rgba(229, 231, 235, 0.9)', backdropFilter: 'blur(16px)', boxShadow: 'rgba(227,150,191,0.1) 0px 10px 34px' }}>
+          <div className="pk-toolbar-search" style={{ position: 'relative', flex: 1, minWidth: 0 }}>
             <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#e396bf' }} />
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Buscar productos..."
@@ -730,7 +739,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                       <div className="pk-card-body" style={{ padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
                           <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                            {cardSku && <span>SKU: {cardSku}</span>}
+                            {cardSku && <span className="pk-card-sku">SKU: {cardSku}</span>}
                             <ProductBadges product={p} />
                           </div>
                           <button
@@ -759,7 +768,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                           {price > 0 ? (
                             <>
                               <span className="pk-price" style={{ fontSize: 19, fontWeight: 800, color: hasDisc ? '#d97bb0' : '#111', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
-                              {hasDisc && pricing.originalPrice != null && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500 }}>{formatPrice(pricing.originalPrice)}</span>}
+                              {hasDisc && pricing.originalPrice != null && <span className="pk-price-old" style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500 }}>{formatPrice(pricing.originalPrice)}</span>}
                               {hasDisc && <AperturaDiscountBadge percent={disc} size="sm" />}
                             </>
                           ) : (
@@ -797,7 +806,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                         {getProductImageUrl(p) ? <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="110px" unoptimized /> : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 36 }}>📦</div>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        {cardSku && <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2, fontWeight: 700 }}>SKU: {cardSku}</div>}
+                        {cardSku && <div className="pk-card-sku" style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2, fontWeight: 700 }}>SKU: {cardSku}</div>}
                         <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{p.NAME}</p>
                         </Link>
@@ -806,8 +815,8 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                           {price > 0 ? (
                             <>
-                              <span style={{ fontSize: 18, fontWeight: 800, color: hasDisc ? '#d97bb0' : '#111' }}>{formatPrice(price)}</span>
-                              {hasDisc && pricing.originalPrice != null && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</span>}
+                              <span className="pk-price" style={{ fontSize: 18, fontWeight: 800, color: hasDisc ? '#d97bb0' : '#111' }}>{formatPrice(price)}</span>
+                              {hasDisc && pricing.originalPrice != null && <span className="pk-price-old" style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</span>}
                             </>
                           ) : (
                             <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>
@@ -876,12 +885,104 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
       {zoomImage && <ImageZoomModal src={zoomImage.src} alt={zoomImage.alt} onClose={() => setZoomImage(null)} />}
 
       <style>{`
+        /* Card Hover/Touch Reset: completely disable any hover state changes */
+        .pk-card, .pk-card *, .pk-card-list, .pk-card-list * {
+          -webkit-tap-highlight-color: transparent !important;
+          -webkit-focus-ring-color: transparent !important;
+          outline: none !important;
+        }
+
+        .pk-card a, .pk-card-list a {
+          outline: none !important;
+          text-decoration: none !important;
+        }
+
+        .pk-card:hover, .pk-card-list:hover {
+          transform: none !important;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.03) !important;
+          border-color: rgba(229,231,235,0.6) !important;
+        }
+
+        .pk-card:hover *, .pk-card-list:hover * {
+          transform: none !important;
+          box-shadow: none !important;
+          text-shadow: none !important;
+          outline: none !important;
+        }
+
+        .pk-card:hover .pk-card-sku,
+        .pk-card-list:hover .pk-card-sku,
+        .pk-card .pk-card-sku:hover,
+        .pk-card-list .pk-card-sku:hover {
+          color: #9ca3af !important;
+        }
+
+        .pk-card:hover .pk-price-old,
+        .pk-card-list:hover .pk-price-old,
+        .pk-card .pk-price-old:hover,
+        .pk-card-list .pk-price-old:hover {
+          color: #9ca3af !important;
+        }
+
+        /* Direct and parent-hover resets for badges to prevent any change or highlights */
+        .pk-card:hover .pk-badge,
+        .pk-card-list:hover .pk-badge,
+        .pk-card .pk-badge:hover,
+        .pk-card .pk-badge:active,
+        .pk-card .pk-badge:focus,
+        .pk-card-list .pk-badge:hover,
+        .pk-card-list .pk-badge:active,
+        .pk-card-list .pk-badge:focus,
+        .pk-card:hover .apertura-disc-badge,
+        .pk-card-list:hover .apertura-disc-badge,
+        .pk-card .apertura-disc-badge:hover,
+        .pk-card .apertura-disc-badge:active,
+        .pk-card .apertura-disc-badge:focus,
+        .pk-card-list .apertura-disc-badge:hover,
+        .pk-card-list .apertura-disc-badge:active,
+        .pk-card-list .apertura-disc-badge:focus {
+          box-shadow: none !important;
+          outline: none !important;
+          border: none !important;
+          transform: none !important;
+          text-shadow: none !important;
+          opacity: 1 !important;
+        }
+        .pk-card .apertura-disc-badge:hover,
+        .pk-card-list .apertura-disc-badge:hover {
+          background: linear-gradient(135deg, #f5a8cf 0%, #e396bf 50%, #c0547a 100%) !important;
+          box-shadow: 0 2px 8px rgba(227,150,191,0.2), 0 0 0 1px rgba(255,255,255,0.35) inset !important;
+        }
+
         @keyframes pkShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         @keyframes pkBgFloat { 0%,100% { transform: scale(1.15) translateY(0); } 50% { transform: scale(1.18) translateY(-10px); } }
         @keyframes pkDrawerUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
         .pk-page { background: #ffffff !important; }
         .pk-bg-fixed { display: none !important; }
+        .pk-toolbar {
+          position: -webkit-sticky !important;
+          position: sticky !important;
+          top: 86px !important;
+          z-index: 20 !important;
+          transition: all 0.3s ease;
+        }
+        .pk-toolbar.pk-toolbar-scrolled {
+          position: fixed !important;
+          top: 12px !important;
+          left: 16px !important;
+          right: 16px !important;
+          width: auto !important;
+          z-index: 999 !important;
+          max-width: 1568px;
+          margin: 0 auto;
+        }
+        .pk-toolbar.pk-toolbar-scrolled .pk-toolbar-select-wrap,
+        .pk-toolbar.pk-toolbar-scrolled .pk-filters-btn,
+        .pk-toolbar.pk-toolbar-scrolled .pk-sort-wrap,
+        .pk-toolbar.pk-toolbar-scrolled .pk-view-toggle {
+          display: none !important;
+        }
         .pk-desktop-only { display: block; }
         .pk-mobile-only { display: none; }
         .pk-filters-btn { display: none; }
@@ -940,9 +1041,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
         .pk-card-fav { display: flex; align-items: center; justify-content: center; }
 
         @media (hover: hover) and (pointer: fine) and (min-width: 769px) {
-          .pk-card:hover { box-shadow: 0 16px 40px rgba(227,150,191,0.15); border-color: #fbcfe8; }
           .pk-card:hover .pk-card-actions { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
-          .pk-card-list:hover { border-color: #fbcfe8; box-shadow: 0 8px 24px rgba(227,150,191,0.1); }
         }
 
         @media (max-width: 1024px) {
@@ -974,8 +1073,24 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
 
           /* Sticky toolbar: remove overrides to preserve user's inline styles */
           .pk-toolbar {
+            position: -webkit-sticky !important;
+            position: sticky !important;
+            top: 10px !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
+          }
+          .pk-toolbar.pk-toolbar-scrolled {
+            position: fixed !important;
+            top: 10px !important;
+            left: 12px !important;
+            right: 12px !important;
+            z-index: 999 !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+          }
+          .pk-toolbar-search {
+            flex: 0 0 100% !important;
+            width: 100% !important;
           }
 
           .pk-filter-chips { margin-bottom: 14px !important; padding-bottom: 2px !important; }
@@ -988,8 +1103,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             background: #ffffff !important;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03) !important;
             border: 1px solid rgba(229, 231, 235, 0.6) !important;
-            content-visibility: auto;
-            contain-intrinsic-size: auto 280px;
+            transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
           }
           .pk-card-fav {
             display: flex !important;

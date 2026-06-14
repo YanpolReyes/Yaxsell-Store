@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import '@/templates/plantilla1/mobile-responsive.css';
 
 import { CartProvider } from '@/context/CartContext';
 import { TemplateProvider } from '@/context/TemplateContext';

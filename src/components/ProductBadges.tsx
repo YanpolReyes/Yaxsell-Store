@@ -41,7 +41,7 @@ export default function ProductBadges({ product, style }: Props) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, ...style }}>
       {badges.map((b, i) => (
-        <span key={i} style={{
+        <span key={i} className="pk-badge" style={{
           fontSize: 10, fontWeight: 700, padding: '2px 6px',
           borderRadius: 4, background: b.bg, color: b.color,
           lineHeight: 1.4, whiteSpace: 'nowrap',
