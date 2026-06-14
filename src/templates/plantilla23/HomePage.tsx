@@ -535,7 +535,7 @@ export default function HomePage23() {
           databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
             Query.greaterThan('STOCK', 0),
             Query.orderDesc('SOLDQUANTITY'),
-            Query.limit(500)
+            Query.limit(80)
           ]),
           databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
             Query.equal('offerType', 'destacado_temporal'),

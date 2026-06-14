@@ -3,6 +3,8 @@ import { getServices, getAppwriteConfig, SUBCATEGORIES_COLLECTION } from '@/lib/
 import { Query } from 'appwrite';
 
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const categoryId = request.nextUrl.searchParams.get('categoryId');
