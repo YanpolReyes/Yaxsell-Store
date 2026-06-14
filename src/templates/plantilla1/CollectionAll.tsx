@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -44,6 +45,12 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
   const catParam = lockCategoryId || searchParams.get('categoria') || '';
   const qParam = searchParams.get('q') || '';
   const [products, setProducts] = useState<Product[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState(qParam);
   const [selectedCat, setSelectedCat] = useState(lockCategoryId || '');
@@ -413,8 +420,8 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
 
   return (
     <div className="pk-page" style={{ fontFamily: FF, minHeight: '100vh', position: 'relative' }}>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden' }}>
-        {catalogCover.image && <img src={catalogCover.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(4px) brightness(1.08) saturate(1.08)', transform: 'scale(1.15)', animation: 'pkBgFloat 20s ease-in-out infinite, pkCoverFadeIn 0.6s ease forwards' }} />}
+      <div className="pk-bg-fixed" style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden' }}>
+        {catalogCover.image && <img className="pk-bg-image" src={catalogCover.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(4px) brightness(1.08) saturate(1.08)', transform: 'scale(1.15)', animation: 'pkBgFloat 20s ease-in-out infinite, pkCoverFadeIn 0.6s ease forwards' }} />}
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 15% 10%,rgba(227,150,191,0.16),transparent 32%), linear-gradient(180deg,rgba(248,249,250,0.72) 0%,rgba(255,255,255,0.92) 100%)' }} />
       </div>
       <div className="pk-products-container" style={{ position: 'relative', zIndex: 1, maxWidth: 1600, margin: '0 auto', padding: '32px 20px 60px' }}>
@@ -422,7 +429,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
         <div className="pk-hero-header" style={{ marginBottom: 24, borderRadius: 28, border: '1px solid rgba(229,231,235,0.9)', boxShadow: '0 18px 50px rgba(227,150,191,0.12)', overflow: 'hidden', background: '#fff' }}>
           <div className="pk-hero-banner" style={{ position: 'relative' }}>
             {/* Bubble particles */}
-            <div className="pk-bubbles" style={{ position: 'absolute', inset: 0, zIndex: 3, overflow: 'hidden', pointerEvents: 'none' }}>
+            <div className="pk-bubbles pk-desktop-only" style={{ position: 'absolute', inset: 0, zIndex: 3, overflow: 'hidden', pointerEvents: 'none' }}>
               {[{w:28,h:28,l:'5%',d:'6s',dl:'0s',b:'25%',sw:18},{w:16,h:16,l:'18%',d:'7.5s',dl:'1.2s',b:'55%',sw:10},{w:36,h:36,l:'32%',d:'8s',dl:'0.5s',b:'15%',sw:22},{w:12,h:12,l:'45%',d:'5.5s',dl:'2s',b:'65%',sw:8},{w:26,h:26,l:'58%',d:'7s',dl:'0.8s',b:'30%',sw:16},{w:20,h:20,l:'72%',d:'9s',dl:'1.5s',b:'45%',sw:12},{w:10,h:10,l:'12%',d:'5s',dl:'3s',b:'60%',sw:6},{w:22,h:22,l:'52%',d:'8.5s',dl:'2.5s',b:'20%',sw:14},{w:32,h:32,l:'65%',d:'7.2s',dl:'0.3s',b:'35%',sw:20},{w:14,h:14,l:'82%',d:'6.5s',dl:'1.8s',b:'50%',sw:9},{w:8,h:8,l:'25%',d:'4.8s',dl:'3.5s',b:'70%',sw:5},{w:18,h:18,l:'88%',d:'6.8s',dl:'2.8s',b:'22%',sw:11},{w:40,h:40,l:'20%',d:'10s',dl:'0.2s',b:'10%',sw:24},{w:6,h:6,l:'38%',d:'4.2s',dl:'4s',b:'75%',sw:4},{w:24,h:24,l:'75%',d:'8.2s',dl:'1s',b:'28%',sw:15},{w:34,h:34,l:'48%',d:'9.5s',dl:'0.7s',b:'12%',sw:21},{w:11,h:11,l:'92%',d:'5.8s',dl:'2.2s',b:'58%',sw:7},{w:30,h:30,l:'8%',d:'8.8s',dl:'1.8s',b:'18%',sw:18}].map((b,i) => (
                 <div key={i} className="pk-bubble" style={{
                   width: b.w, height: b.h, left: b.l, bottom: b.b,
@@ -620,24 +627,6 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
             </div>
           </aside>
 
-          {/* Mobile filters drawer */}
-          {mobileFiltersOpen && (
-            <>
-              <div className="pk-filters-backdrop pk-mobile-only" onClick={() => setMobileFiltersOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', zIndex: 998 }} />
-              <div className="pk-filters-drawer pk-mobile-only">
-                <div className="pk-filters-drawer-handle" />
-                <div className="pk-filters-drawer-header">
-                  <h2>Filtros</h2>
-                  <button type="button" onClick={() => setMobileFiltersOpen(false)} aria-label="Cerrar filtros"><X size={18} /></button>
-                </div>
-                <FiltersSidebar />
-                <button type="button" className="pk-filters-apply" onClick={() => setMobileFiltersOpen(false)}>
-                  Ver {filtered.length} producto{filtered.length !== 1 ? 's' : ''}
-                </button>
-              </div>
-            </>
-          )}
-
           {/* Products */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="pk-result-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, margin: '0 0 14px', padding: '10px 14px', borderRadius: 16, background: 'rgba(255,255,255,0.72)', border: '1px solid #e5e7eb', backdropFilter: 'blur(10px)' }}>
@@ -703,52 +692,47 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
                           ) : (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 48, color: '#c7d2fe' }}>📦</div>
                           )}
-                          <ProductBadges product={p} style={{ position: 'absolute', top: 10, left: 10, zIndex: 2 }} />
-
-                          {hasDisc && (
-                            <div className="pk-disc-badge" style={{ position: 'absolute', top: 8, right: 8, zIndex: 3 }}>
-                              <AperturaDiscountBadge percent={disc} size="md" />
-                            </div>
-                          )}
                           {p.STOCK === 0 && (
                             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
                               <span style={{ padding: '6px 14px', background: '#fff', color: '#ef4444', borderRadius: 999, fontSize: 12, fontWeight: 800, border: '1.5px solid #fee2e2' }}>Sin stock</span>
                             </div>
                           )}
-                          {/* Hover overlay buttons */}
-                          <div className="pk-card-actions pk-card-actions--desktop" style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%) translateY(20px)', opacity: 0, display: 'flex', gap: 6, zIndex: 4, transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', pointerEvents: 'none' }}>
-                            <button onClick={e => { e.preventDefault(); e.stopPropagation(); setPreviewProduct(p); }}
-                              title="Vista rápida"
-                              style={{ width: 36, height: 36, borderRadius: '50%', background: '#fff', border: 'none', color: '#e396bf', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,0.12)', transition: 'all 0.2s' }}>
-                              <Search size={15} />
-                            </button>
-                            <button onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorite(p.$id); }}
-                              title={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
-                              style={{ width: 36, height: 36, borderRadius: '50%', background: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,0.12)', transition: 'all 0.2s' }}>
-                              <AnimHeart filled={fav} size={24} />
-                            </button>
-                            <button onClick={e => { e.preventDefault(); e.stopPropagation(); if (p.STOCK !== 0) addItem(p, 1, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined); }}
-                              disabled={p.STOCK === 0}
-                              title="Agregar al carrito"
-                              style={{ width: 36, height: 36, borderRadius: '50%', background: p.STOCK === 0 ? '#e5e7eb' : 'linear-gradient(135deg,#e396bf,#d97bb0)', border: 'none', color: '#fff', cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(227,150,191,0.35)', transition: 'all 0.2s' }}>
-                              <ShoppingCart size={15} />
-                            </button>
-                          </div>
                         </div>
                       </div>
                       <div className="pk-card-body" style={{ padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                        {cardSku && <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4, fontWeight: 700 }}>SKU: {cardSku}</div>}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                          <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            {cardSku && <span>SKU: {cardSku}</span>}
+                            <ProductBadges product={p} />
+                          </div>
+                          <button
+                            type="button"
+                            className="pk-card-fav"
+                            aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                            onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorite(p.$id); }}
+                            style={{
+                              width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              background: '#f8f9fa',
+                              color: '#e396bf',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+                            }}
+                          >
+                            <AnimHeart filled={fav} size={20} />
+                          </button>
+                        </div>
                         <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 36, lineHeight: 1.4, transition: 'color 0.2s' }}>
                             {p.NAME}
                           </p>
                         </Link>
                         {p.PACKQTY && p.PACKQTY > 1 ? <div style={{ fontSize: 11, color: '#db2777', fontWeight: 800, marginTop: -4, marginBottom: 8 }}>{p.PACKQTY} UNIDADES POR PAQUETE</div> : null}
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 'auto' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 'auto', flexWrap: 'wrap' }}>
                           {price > 0 ? (
                             <>
                               <span className="pk-price" style={{ fontSize: 19, fontWeight: 800, color: hasDisc ? '#d97bb0' : '#111', letterSpacing: '-0.02em' }}>{formatPrice(price)}</span>
                               {hasDisc && pricing.originalPrice != null && <span style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'line-through', fontWeight: 500 }}>{formatPrice(pricing.originalPrice)}</span>}
+                              {hasDisc && <AperturaDiscountBadge percent={disc} size="sm" />}
                             </>
                           ) : (
                             <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>Consultar precio</span>
@@ -802,10 +786,14 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
                   const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
                   const cardSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
                   return (
-                    <div key={p.$id} className="pk-card-list" style={{ background: '#fff', borderRadius: 18, border: '1px solid #e5e7eb', display: 'flex', gap: 16, padding: 12, transition: 'all 0.2s', alignItems: 'center' }}>
+                    <div key={p.$id} className="pk-card-list" style={{ position: 'relative', background: '#fff', borderRadius: 18, border: '1px solid #e5e7eb', display: 'flex', gap: 16, padding: 12, transition: 'all 0.2s', alignItems: 'center' }}>
+                      {hasDisc && (
+                        <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 3 }}>
+                          <AperturaDiscountBadge percent={disc} size="sm" />
+                        </div>
+                      )}
                       <div className="pk-card-list-media" onClick={() => handleCardImageClick(p)} style={{ position: 'relative', width: 110, height: 110, borderRadius: 14, overflow: 'hidden', background: '#f8f9fa', flexShrink: 0, cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
                         {getProductImageUrl(p) ? <Image src={getProductImageUrl(p)} alt={p.NAME} fill style={{ objectFit: 'cover' }} sizes="110px" unoptimized /> : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 36 }}>📦</div>}
-                        {hasDisc && <div style={{ position: 'absolute', top: 6, left: 6, zIndex: 3 }}><AperturaDiscountBadge percent={disc} size="sm" /></div>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         {cardSku && <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2, fontWeight: 700 }}>SKU: {cardSku}</div>}
@@ -813,7 +801,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{p.NAME}</p>
                         </Link>
                         {p.PACKQTY && p.PACKQTY > 1 ? <div style={{ fontSize: 11, color: '#db2777', fontWeight: 800, marginBottom: 6 }}>{p.PACKQTY} UNIDADES POR PAQUETE</div> : null}
-                        <p style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>{p.DESCRIPTION}</p>
+                        <p className="pk-card-list-desc" style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>{p.DESCRIPTION}</p>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                           {price > 0 ? (
                             <>
@@ -853,8 +841,8 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
                           style={{ width: 40, height: 40, borderRadius: '50%', background: '#f8f9fa', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <AnimHeart filled={fav} size={24} />
                         </button>
-                        <button onClick={() => p.STOCK !== 0 && addItem(p, 1, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined)} disabled={p.STOCK === 0} title="Agregar al carrito"
-                          style={{ width: 40, height: 40, borderRadius: '50%', background: p.STOCK === 0 ? '#e5e7eb' : 'linear-gradient(135deg,#e396bf,#d97bb0)', border: 'none', color: '#fff', cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: p.STOCK === 0 ? 'none' : '0 4px 14px rgba(227,150,191,0.3)' }}>
+                        <button className="pk-list-cart-btn" onClick={() => p.STOCK !== 0 && addItem(p, 1, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined)} disabled={p.STOCK === 0} title="Agregar al carrito"
+                          style={{ width: 40, height: 40, borderRadius: '50%', background: p.STOCK === 0 ? '#e5e7eb' : '#fdf2f8', border: p.STOCK === 0 ? 'none' : '1.5px solid #fce7f3', color: p.STOCK === 0 ? '#9ca3af' : '#e396bf', cursor: p.STOCK === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: p.STOCK === 0 ? 'none' : '0 2px 8px rgba(227,150,191,0.15)' }}>
                           <ShoppingCart size={16} />
                         </button>
                       </div>
@@ -873,6 +861,25 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
           </div>
         </div>
       </div>
+
+      {/* Mobile filters drawer */}
+      {mounted && mobileFiltersOpen && createPortal(
+        <>
+          <div className="pk-filters-backdrop pk-mobile-only" onClick={() => setMobileFiltersOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', zIndex: 10000 }} />
+          <div className="pk-filters-drawer pk-mobile-only">
+            <div className="pk-filters-drawer-handle" />
+            <div className="pk-filters-drawer-header">
+              <h2>Filtros</h2>
+              <button type="button" onClick={() => setMobileFiltersOpen(false)} aria-label="Cerrar filtros"><X size={18} /></button>
+            </div>
+            <FiltersSidebar />
+            <button type="button" className="pk-filters-apply" onClick={() => setMobileFiltersOpen(false)}>
+              Ver {filtered.length} producto{filtered.length !== 1 ? 's' : ''}
+            </button>
+          </div>
+        </>,
+        document.body
+      )}
 
       {/* Quick View Modal */}
       {previewProduct && <ProductCardPreview product={previewProduct} onClose={() => setPreviewProduct(null)} />}
@@ -920,6 +927,8 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
           transform: rotate(20deg);
         }
 
+        .pk-page { background: #ffffff !important; }
+        .pk-bg-fixed { display: none !important; }
         .pk-desktop-only { display: block; }
         .pk-mobile-only { display: none; }
         .pk-filters-btn { display: none; }
@@ -1007,26 +1016,136 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
           .pk-hero-body { flex-direction: column !important; align-items: stretch !important; gap: 14px !important; }
           .pk-hero-logo-wrap { align-self: center !important; order: -1 !important; width: 100% !important; }
           .pk-hero-logo-img { height: 96px !important; max-width: min(220px, 78vw) !important; }
-          .pk-toolbar { top: 0 !important; padding: 10px !important; border-radius: 16px !important; gap: 8px !important; margin-bottom: 14px !important; }
-          .pk-toolbar > div:first-child { flex: 1 1 100% !important; min-width: 100% !important; order: 1; }
-          .pk-filters-btn { order: 2; flex: 1; justify-content: center; min-height: 44px; }
-          .pk-sort-wrap { order: 3; flex: 1.4; min-width: 0; }
-          .pk-sort-wrap .pk-sort-btn { width: 100% !important; min-width: 0 !important; font-size: 12px !important; padding: 11px 32px 11px 12px !important; }
-          .pk-view-toggle { order: 4; flex-shrink: 0; }
+          
+          /* Background performance optimization */
+          .pk-bg-fixed { display: none !important; }
+          .pk-bg-image { animation: none !important; transform: none !important; }
+
+          /* Sticky toolbar: remove overrides to preserve user's inline styles */
+          .pk-toolbar {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+          }
+
           .pk-filter-chips { margin-bottom: 14px !important; padding-bottom: 2px !important; }
           .pk-filter-chips span { flex-shrink: 0; font-size: 11px !important; }
-          .pk-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
-          .pk-card { border-radius: 0 0 18px 18px !important; }
-          .pk-card-fav { display: flex !important; }
+          .pk-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important; }
+          .pk-card {
+            border-radius: 0 0 18px 18px !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            background: #ffffff !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03) !important;
+            border: 1px solid rgba(229, 231, 235, 0.6) !important;
+            content-visibility: auto;
+            contain-intrinsic-size: auto 280px;
+          }
+          .pk-card-fav {
+            display: flex !important;
+            width: 28px !important;
+            height: 28px !important;
+            top: 6px !important;
+            right: 6px !important;
+            background: rgba(255, 255, 255, 0.9) !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08) !important;
+          }
+          .pk-card-fav svg {
+            width: 15px !important;
+            height: 15px !important;
+          }
+          .pk-disc-badge {
+            top: 6px !important;
+            left: 6px !important;
+            right: auto !important;
+          }
+          .pk-card-badges {
+            top: auto !important;
+            bottom: 6px !important;
+            left: 6px !important;
+          }
+          .pk-card-badges span {
+            font-size: 8px !important;
+            padding: 1.5px 4px !important;
+            border-radius: 3px !important;
+          }
           .pk-card-actions--desktop { display: none !important; }
-          .pk-card-list-actions { display: none !important; }
-          .pk-card .pk-card-body { padding: 10px 10px 12px !important; }
-          .pk-card .pk-card-body p { font-size: 12px !important; min-height: 32px !important; line-height: 1.35 !important; }
-          .pk-card .pk-price { font-size: 16px !important; }
-          .pk-card .pk-add-btn { padding: 8px 10px !important; font-size: 11px !important; border-radius: 10px !important; margin-top: 8px !important; }
-          .pk-card-list { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; padding: 10px !important; }
-          .pk-card-list > a { width: 100% !important; height: 160px !important; }
-          .pk-card-list > div:last-child { flex-direction: row !important; justify-content: center; gap: 8px !important; }
+          
+          .pk-card .pk-card-body { padding: 8px 8px 10px !important; }
+          .pk-card .pk-card-body p { font-size: 11px !important; min-height: 28px !important; line-height: 1.3 !important; margin-bottom: 4px !important; }
+          .pk-card .pk-price { font-size: 14px !important; }
+          .pk-card .pk-add-btn { padding: 6px 8px !important; font-size: 10px !important; border-radius: 8px !important; margin-top: 6px !important; }
+
+          /* Redesigned horizontal list card on mobile */
+          .pk-card-list {
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 12px !important;
+            padding: 10px !important;
+            border-radius: 14px !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            background: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04) !important;
+            border-color: rgba(229, 231, 235, 0.5) !important;
+          }
+          .pk-card-list > a {
+            width: auto !important;
+            height: auto !important;
+            display: block !important;
+          }
+          .pk-card-list-media {
+            width: 90px !important;
+            height: 90px !important;
+            border-radius: 10px !important;
+            flex-shrink: 0 !important;
+          }
+          .pk-card-list-desc {
+            display: none !important;
+          }
+          .pk-card-list-actions {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 6px !important;
+            align-self: flex-end !important;
+            margin-top: 6px !important;
+            padding: 0 !important;
+            background: transparent !important;
+          }
+          .pk-card-list-actions button {
+            width: 32px !important;
+            height: 32px !important;
+            border-radius: 50% !important;
+            padding: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background: #f8f9fa !important;
+            border: none !important;
+          }
+          .pk-card-list-actions button svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
+          /* Pink cart icon in list view on mobile */
+          .pk-card-list-actions .pk-list-cart-btn {
+            background: #fdf2f8 !important;
+            border: 1.5px solid #fce7f3 !important;
+            color: #e396bf !important;
+          }
+          .pk-card-list-actions .pk-list-cart-btn svg {
+            color: #e396bf !important;
+            stroke: #e396bf !important;
+          }
+          .pk-card-list > div:last-child {
+            flex-direction: row !important;
+            justify-content: flex-end !important;
+            gap: 6px !important;
+          }
+
+          .pk-filters-drawer {
+            z-index: 10001 !important;
+          }
+
           .pk-result-bar { padding: 8px 10px !important; flex-wrap: wrap; }
           .pk-result-bar p { font-size: 12px !important; }
         }

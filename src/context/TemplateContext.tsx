@@ -33,13 +33,13 @@ export function useTemplate() {
 
 export function TemplateProvider({ children }: { children: ReactNode }) {
   const [template, setTemplate] = useState(23);
-  const [sections, setSections] = useState<SectionTemplates>({ landing: 23, collections: 23, catalog: 23, productDetail: 23, cart: 23, checkout: 23 });
+  const [sections, setSections] = useState<SectionTemplates>({ landing: 23, collections: 23, catalog: 23, productDetail: 1, cart: 23, checkout: 23 });
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     async function load() {
       let dbGlobal = 23;
-      let dbSections = { landing: 23, collections: 23, catalog: 23, productDetail: 23, cart: 23, checkout: 23 };
+      let dbSections = { landing: 23, collections: 23, catalog: 23, productDetail: 1, cart: 23, checkout: 23 };
 
       // 1. Fetch template configuration from the database first (Bypassed to reduce requests)
       /*

@@ -853,8 +853,7 @@
   .pk-page .pk-card-fav {
     display: flex !important;
   }
-  .pk-page .pk-card-actions--desktop,
-  .pk-page .pk-card-list-actions {
+  .pk-page .pk-card-actions--desktop {
     display: none !important;
   }
   .pk-page .pk-card .pk-disc-badge {
