@@ -71,8 +71,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const checkRewards = useCallback(async () => {
     if (!isLoggedIn || !user) return;
     try {
-      const acc = await getServices().account.get();
-      const prefs = (acc as { prefs?: Record<string, unknown> }).prefs || {};
       await fetch('/api/notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -80,8 +78,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           action: 'check-rewards',
           userId: user.id,
           email: user.email,
-          welcomeGiftClaimed: !!prefs.welcomeGiftClaimed,
-          welcomeCouponCode: prefs.welcomeCouponCode || null,
+          // El backend debe comprobar prefs directamente o asumir defaults
+          welcomeGiftClaimed: false, 
+          welcomeCouponCode: null,
         }),
       });
       // Invalidar caché para forzar refresh
@@ -99,25 +98,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     checkRewards();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn, user?.id]);
-
-  // 🔥 Polling automático eliminado para ahorrar peticiones a la BD de Appwrite.
-  // Ahora solo se actualiza al entrar a la página o al recuperar el foco de la pestaña.
-  useEffect(() => {
-    // Polling desactivado
-  }, [isLoggedIn]);
-
-  // Refresh al volver el foco — con throttle de 30s
-  useEffect(() => {
-    if (!isLoggedIn) return;
-    const onFocus = () => {
-      if (Date.now() - notifCacheTimestamp > 300 * 1000) { // 5 minutos throttle
-        refreshCount();
-      }
-    };
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoggedIn]);
 
   return React.createElement(
     NotificationContext.Provider,

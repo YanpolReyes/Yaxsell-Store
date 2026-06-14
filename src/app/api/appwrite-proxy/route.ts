@@ -7,7 +7,7 @@ const getCachedList = unstable_cache(
     return await serverListDocuments(colId, parsedQueries);
   },
   ['appwrite-list-documents'],
-  { revalidate: 60, tags: ['appwrite-proxy'] }
+  { revalidate: 86400, tags: ['appwrite-proxy'] }
 );
 
 const getCachedDoc = unstable_cache(
@@ -15,7 +15,7 @@ const getCachedDoc = unstable_cache(
     return await serverGetDocument(colId, docId);
   },
   ['appwrite-get-document'],
-  { revalidate: 60, tags: ['appwrite-proxy'] }
+  { revalidate: 86400, tags: ['appwrite-proxy'] }
 );
 
 export async function GET(req: Request) {
@@ -46,7 +46,7 @@ export async function GET(req: Request) {
     // Still return Edge cache headers just in case
     return NextResponse.json(data, {
       headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=172800',
       },
     });
   } catch (error: any) {

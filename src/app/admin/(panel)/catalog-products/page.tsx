@@ -95,7 +95,7 @@ export default function CatalogProductsPage() {
         try {
           const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
             Query.equal('$id', chunk),
-            Query.limit(100),
+            Query.limit(20),
           ]);
           res.documents.forEach((p: any) => {
             const skuVal = getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
@@ -126,7 +126,7 @@ export default function CatalogProductsPage() {
         try {
           const res = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, [
             Query.equal('$id', chunk),
-            Query.limit(100),
+            Query.limit(20),
           ]);
           res.documents.forEach((p: any) => {
             const skuVal = getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
@@ -160,7 +160,7 @@ export default function CatalogProductsPage() {
         try {
           const res = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, [
             Query.equal('$id', chunk),
-            Query.limit(100),
+            Query.limit(20),
           ]);
           res.documents.forEach((p: any) => {
             const skuVal = getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
@@ -213,7 +213,7 @@ export default function CatalogProductsPage() {
            const chunk = skusToSearch.slice(i, i + 100);
            try {
              const skuRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-               Query.equal('sku', chunk), Query.limit(100),
+               Query.equal('sku', chunk), Query.limit(20),
              ]);
              skuRes.documents.forEach((d: any) => batchMap.set(norm(d.sku), d));
            } catch (e) {}
@@ -227,7 +227,7 @@ export default function CatalogProductsPage() {
            const chunk = namesToSearch.slice(i, i + 100);
            try {
              const nameRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-               Query.equal('NAME', chunk), Query.limit(100),
+               Query.equal('NAME', chunk), Query.limit(20),
              ]);
              nameRes.documents.forEach((d: any) => batchNameMap.set(d.NAME.toLowerCase().trim(), d));
            } catch (e) {}
@@ -277,7 +277,7 @@ export default function CatalogProductsPage() {
         try {
           const res = await databases.listDocuments(databaseId, USERS_COLLECTION_ID, [
             Query.equal('userId', chunk),
-            Query.limit(100),
+            Query.limit(20),
           ]);
           res.documents.forEach((u: any) => {
             userMap[u.userId] = {
@@ -1178,3 +1178,4 @@ export default function CatalogProductsPage() {
     </div>
   );
 }
+

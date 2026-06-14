@@ -25,7 +25,7 @@ export default function UpdateNotifier() {
       .catch(() => {});
   }, []);
 
-  // Poll cada 5 minutos (300,000ms) en lugar de 30s para ahorrar cientos de miles de reads diarios
+  // Poll cada 12 horas (43,200,000ms) a petición del administrador para ahorrar llamadas
   useEffect(() => {
     if (initialTimestamp === 0) return;
 
@@ -38,7 +38,7 @@ export default function UpdateNotifier() {
           }
         })
         .catch(() => {});
-    }, 300000);
+    }, 43200000);
 
     return () => clearInterval(interval);
   }, [initialTimestamp]);

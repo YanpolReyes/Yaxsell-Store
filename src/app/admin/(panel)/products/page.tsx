@@ -561,10 +561,10 @@ export default function ProductsPage() {
 
       const [cr, subRes] = await Promise.all([
         cached('categories:all', TTL.categories, async () => {
-          return await databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(100)]);
+          return await databases.listDocuments(databaseId, CATEGORIES_COLLECTION_ID, [Query.limit(20)]);
         }),
         cached('subcategories:all', TTL.categories, async () => {
-          return await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.limit(500)]);
+          return await databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION_ID, [Query.limit(20)]);
         }),
       ]);
       
@@ -2666,3 +2666,4 @@ export default function ProductsPage() {
     </div>
   );
 }
+

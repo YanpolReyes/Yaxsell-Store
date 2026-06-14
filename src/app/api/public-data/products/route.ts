@@ -75,14 +75,14 @@ const getCachedAllProducts = unstable_cache(
     return normalized;
   },
   ['all-public-products-cache-v3'],
-  { revalidate: 60, tags: ['products'] }
+  { revalidate: 86400, tags: ['products'] }
 );
 
 // Cache active offer target IDs
 const getCachedActiveOffers = unstable_cache(
   async () => {
     const now = Date.now();
-    if (memoryCacheActiveOffers && (now - memoryCacheActiveOffersTime < 60000)) {
+    if (memoryCacheActiveOffers && (now - memoryCacheActiveOffersTime < 86400000)) {
       return memoryCacheActiveOffers;
     }
 
@@ -99,7 +99,7 @@ const getCachedActiveOffers = unstable_cache(
     return ids;
   },
   ['active-offers-cache-v3'],
-  { revalidate: 60, tags: ['offers'] }
+  { revalidate: 86400, tags: ['offers'] }
 );
 
 // Cache apertura settings
@@ -236,15 +236,23 @@ export async function GET(request: NextRequest) {
       });
     }
     if (search) {
-      const q = search.toLowerCase().trim();
-      filtered = filtered.filter(p => {
-        const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
-        const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
-        const pSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
-        return p.NAME.toLowerCase().includes(q) ||
-          (p.DESCRIPTION || '').toLowerCase().includes(q) ||
-          pSku.toLowerCase().includes(q);
-      });
+      const normalizeText = (text: string) => 
+        text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s]/g, "").toLowerCase();
+      
+      const qTokens = normalizeText(search).trim().split(/\s+/).filter(Boolean);
+      
+      if (qTokens.length > 0) {
+        filtered = filtered.filter(p => {
+          const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
+          const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
+          const pSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
+          
+          const searchSpace = normalizeText(`${p.NAME} ${p.DESCRIPTION || ''} ${pSku}`);
+          
+          // Must contain ALL tokens (AND logic)
+          return qTokens.every(token => searchSpace.includes(token));
+        });
+      }
     }
 
     // Calculate dynamic price range (min/max price matching current category/search criteria)
@@ -294,6 +302,10 @@ export async function GET(request: NextRequest) {
       categoryCounts,
       subcategoryCounts,
       subSubcategoryCounts
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=86400'
+      }
     });
 
   } catch (error: any) {

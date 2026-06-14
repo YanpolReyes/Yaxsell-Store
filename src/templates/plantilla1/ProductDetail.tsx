@@ -93,64 +93,27 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   useEffect(() => {
     async function load() {
       try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        const doc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, id);
-        const p = normalizeProductImages(doc as unknown as Product);
-        setProduct(p);
-        trackView(p.$id);
-
-        // Fetch timed offers for this product
-        try {
-          const offerRes = await databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
-            Query.equal('targetId', p.$id),
-            Query.equal('isActive', true),
-            Query.equal('status', 'active'),
-            Query.limit(1),
-          ]);
-          const active = (offerRes.documents as unknown as TimedOffer[]).filter(o => {
-            if (!o.isActive || o.status !== 'active') return false;
-            if (o.timeType === 'endDateTime' && o.endDateTime) {
-              return new Date(o.endDateTime) > new Date();
-            }
-            if (o.timeType === 'duration' && o.durationHours) {
-              const start = o.activatedAt || (o as any).$createdAt;
-              if (start) {
-                return (new Date(start).getTime() + o.durationHours * 3600000) > Date.now();
-              }
-            }
-            return true;
-          });
-          if (active.length > 0) {
-            setActiveOffer(active[0]);
-          }
-        } catch (offerErr) {
-          console.error('Error fetching timed offer:', offerErr);
-        }
-
-        if (p.CATEGORYID) {
-          try {
-            const [catDoc, relRes] = await Promise.all([
-              databases.getDocument(databaseId, CATEGORIES_COLLECTION, p.CATEGORYID),
-              databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-                Query.equal('CATEGORYID', p.CATEGORYID),
-                Query.limit(9),
-              ]),
-            ]);
-            const cat = catDoc as any;
-            setCategoryName(cat.name || '');
-            setCategoryBg(cat.BACKGROUND_IMAGE_URL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/young-asian-woman-sunglasses-going-shopping-holding-bags-from-malls-stores-smiling-standi.jpg?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=Kriv9I1%2BxlaQ82%2Fe3rYaugEThNVyRAfMagiNC6isWPR5mNdXx0WaR4y1vLh5hQ4dmePjvlnq4M9QLS4Q0IReBjghaydSO8rWXbyJvc6823UgzvzZxChCZeYWjy0bBJ9EtW%2Bc5NN1YT%2B%2B5nW7k5DZW5aTZH%2F7np5s2NTquTvxGzxGzpefVaylS4KJc19%2FLVuaznxVuOfYWpKoMM6XScrcwQwwD8ir51EW9XFwLdN528WtGF%2FCspzulD%2BVDC4VYHD0EVurQiAGNhSzeFExCT2byhbijHmJgnxWEM6SR%2BZWaBoYxFTbDIkSNbzU736uiNbaM%2BKrxzF9bZSjgtfI947A5g%3D%3D');
-            setCategoryColor(cat.COLOR || ORANGE_PRIMARY);
-            setCategoryIcon(cat.iconUrl || '');
-            setRelated((relRes.documents as unknown as Product[]).filter(r => r.$id !== id).slice(0, 6));
-          } catch { /* non-critical */ }
-        }
+        const res = await fetch(`/api/public-data/product-detail?id=${id}`);
+        if (!res.ok) throw new Error('Product not found');
+        const data = await res.json();
+        
+        setProduct(data.product);
+        setActiveOffer(data.activeOffer);
+        setCategoryName(data.categoryName);
+        setCategoryBg(data.categoryBg || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/young-asian-woman-sunglasses-going-shopping-holding-bags-from-malls-stores-smiling-standi.jpg?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=Kriv9I1%2BxlaQ82%2Fe3rYaugEThNVyRAfMagiNC6isWPR5mNdXx0WaR4y1vLh5hQ4dmePjvlnq4M9QLS4Q0IReBjghaydSO8rWXbyJvc6823UgzvzZxChCZeYWjy0bBJ9EtW%2Bc5NN1YT%2B%2B5nW7k5DZW5aTZH%2F7np5s2NTquTvxGzxGzpefVaylS4KJc19%2FLVuaznxVuOfYWpKoMM6XScrcwQwwD8ir51EW9XFwLdN528WtGF%2FCspzulD%2BVDC4VYHD0EVurQiAGNhSzeFExCT2byhbijHmJgnxWEM6SR%2BZWaBoYxFTbDIkSNbzU736uiNbaM%2BKrxzF9bZSjgtfI947A5g%3D%3D');
+        setCategoryColor(data.categoryColor || ORANGE_PRIMARY);
+        setCategoryIcon(data.categoryIcon);
+        setRelated(data.related);
+        
+        trackView(data.product.$id);
 
         // Check if user has a pending stock request for this product
         if (user) {
           try {
+            const { databases } = getServices();
+            const { databaseId } = getAppwriteConfig();
             const reqs = await databases.listDocuments(databaseId, STOCK_REQUESTS_COLLECTION, [
-              Query.equal('productId', p.$id),
+              Query.equal('productId', data.product.$id),
               Query.equal('userId', user.id),
               Query.equal('status', 'pending')
             ]);
@@ -833,42 +796,6 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           </div>
         )}
 
-        {/* Related products */}
-        {related.length > 0 && (
-          <div className="pd-section" style={{ background: '#fff', borderRadius: 24, padding: '32px 36px', marginBottom: 20, boxShadow: '0 6px 24px rgba(227,150,191,0.06)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
-              <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: TEXT_DARK }}>Productos relacionados</h2>
-              {categoryName && (
-                <Link href={`/productos?categoria=${encodeURIComponent(categoryName)}`} style={{ fontSize: 14, color: ORANGE_PRIMARY, textDecoration: 'none', fontWeight: 600 }}>Ver más →</Link>
-              )}
-            </div>
-            <div className="pd-related-scroll pd-h-scroll" style={{ display: 'flex', gap: 18 }}>
-              {related.map(p => {
-                const rPricing = resolveProductDisplayPrice(p, apertura);
-                const rprice = rPricing.displayPrice;
-                const rhasDisc = rPricing.hasDiscount;
-                const rdisc = rPricing.discountPercent;
-                return (
-                  <Link key={p.$id} href={`/productos/${p.$id}`} className="pd-related-card" style={{ flexShrink: 0, width: 180, textDecoration: 'none', border: `1.5px solid ${PINK_BG_DARK}`, borderRadius: 16, overflow: 'hidden', background: '#fff', display: 'block', transition: 'all .25s' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 28px rgba(227,150,191,0.18)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLElement).style.borderColor = PINK_LIGHT; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.borderColor = PINK_BG_DARK; }}
-                  >
-                    <div style={{ position: 'relative', height: 158, background: '#fff' }}>
-                      {getProductImageUrl(p) ? <Image src={getProductImageUrl(p)} alt={p.NAME} fill className="object-contain p-2" unoptimized /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44 }}>💄</span>}
-                      {rhasDisc && <span style={{ position: 'absolute', top: 8, left: 8, background: `linear-gradient(135deg, ${ORANGE_PRIMARY}, ${PINK_LIGHT})`, color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 12 }}>-{rdisc}%</span>}
-                    </div>
-                    <div style={{ padding: '12px 14px 16px' }}>
-                      <p style={{ margin: '0 0 8px', fontSize: 13, color: TEXT_DARK, lineHeight: 1.4, fontWeight: 500, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.NAME}</p>
-                      {rhasDisc && rPricing.originalPrice != null && <p style={{ margin: '0 0 2px', fontSize: 11, color: '#9ca3af', textDecoration: 'line-through' }}>{formatPrice(rPricing.originalPrice)}</p>}
-                      <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: ORANGE_PRIMARY }}>{formatPrice(rprice)}</p>
-                      {rhasDisc && <p style={{ margin: '2px 0 0', fontSize: 11, color: '#10b981', fontWeight: 700 }}>{rdisc}% OFF</p>}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {/* Tabs */}
         <ProductTabs tabs={[

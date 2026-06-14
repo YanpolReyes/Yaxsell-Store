@@ -15,7 +15,7 @@ export async function GET() {
       const productIds = JSON.parse(doc.SECTIONS || '[]');
       return NextResponse.json(
         { success: true, productIds },
-        { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } }
+        { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' } }
       );
     } catch (e: any) {
       // If it doesn't exist, create it empty
@@ -24,7 +24,10 @@ export async function GET() {
           NAME: 'ofertas_section',
           SECTIONS: '[]',
         });
-        return NextResponse.json({ success: true, productIds: [] });
+        return NextResponse.json(
+          { success: true, productIds: [] },
+          { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' } }
+        );
       }
       throw e;
     }
@@ -33,7 +36,6 @@ export async function GET() {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
-
 // POST - Update list of selected product IDs
 export async function POST(req: NextRequest) {
   try {

@@ -40,7 +40,7 @@ export default function StockEditorPage() {
       const all: Product[] = [];
       let cursor: string | undefined;
       while (true) {
-        const queries: string[] = [Query.limit(200)];
+        const queries: string[] = [Query.limit(20)];
         if (cursor) queries.push(Query.cursorAfter(cursor));
         const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
         all.push(...(res.documents as unknown as Product[]));
@@ -368,3 +368,4 @@ export default function StockEditorPage() {
     </div>
   );
 }
+

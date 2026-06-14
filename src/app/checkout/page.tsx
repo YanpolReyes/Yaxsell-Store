@@ -40,7 +40,7 @@ function CheckoutInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const discountParam = parseFloat(searchParams.get('discount') || '0');
-  const { items, subtotal, clearCart, catalogSubtotal, aperturaSavings } = useCart();
+  const { items, subtotal, clearCart, catalogSubtotal, aperturaSavings, updateCartWithLiveProducts } = useCart();
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const { unlimitedStock } = useStoreSettings();
   const { settings: apertura, isActive: aperturaActive, discountPercent: aperturaPct } = useAperturaPromotion();
@@ -58,6 +58,35 @@ function CheckoutInner() {
   const [error, setError] = useState('');
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+
+  // Live validation on mount
+  const [isValidatingCart, setIsValidatingCart] = useState(true);
+  useEffect(() => {
+    if (items.length === 0) {
+      setIsValidatingCart(false);
+      return;
+    }
+    const validateCart = async () => {
+      try {
+        const { databases } = getServices();
+        const { databaseId } = getAppwriteConfig();
+        const ids = items.map(i => i.product.$id);
+        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+          Query.equal('$id', ids),
+          Query.limit(100)
+        ]);
+        if (res.documents.length > 0) {
+          updateCartWithLiveProducts(res.documents as any);
+        }
+      } catch (err) {
+        console.error('Error live validating cart', err);
+      } finally {
+        setIsValidatingCart(false);
+      }
+    };
+    validateCart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [showingNewAddress, setShowingNewAddress] = useState(false);
   const submittedRef = useRef(false);
 

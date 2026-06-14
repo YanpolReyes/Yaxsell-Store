@@ -16,6 +16,7 @@ interface CartContextType {
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, qty: number) => void;
   clearCart: () => void;
+  updateCartWithLiveProducts: (liveProducts: Product[]) => void;
   totalItems: number;
   subtotal: number;
   catalogSubtotal: number;
@@ -113,6 +114,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const updateCartWithLiveProducts = (liveProducts: Product[]) => {
+    setItems(prev => {
+      const newItems = prev.map(item => {
+        const liveMatch = liveProducts.find(p => p.$id === item.product.$id);
+        if (!liveMatch) return item; // If not found, keep as is or we could remove it, but safer to keep.
+        
+        // Update product data
+        const updatedItem = { ...item, product: liveMatch };
+        
+        // Verify stock limits
+        const isLimited = liveMatch.STOCK !== undefined && liveMatch.STOCK !== null && liveMatch.STOCK < 99999;
+        const maxStock = isLimited ? liveMatch.STOCK : 99999;
+        
+        // If live stock is 0 and we enforce stock, qty becomes 0 (which might look weird, but let's just clamp)
+        if (!unlimitedStock && isLimited && updatedItem.quantity > maxStock) {
+          updatedItem.quantity = Math.max(0, maxStock);
+        }
+        
+        return updatedItem;
+      });
+      return newItems.filter(i => i.quantity > 0);
+    });
+  };
+
   const clearCart = () => {
     setItems([]);
   };
@@ -132,7 +157,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, totalItems, subtotal, catalogSubtotal, aperturaSavings, getEffectivePrice }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, updateCartWithLiveProducts, totalItems, subtotal, catalogSubtotal, aperturaSavings, getEffectivePrice }}>
       {children}
     </CartContext.Provider>
   );

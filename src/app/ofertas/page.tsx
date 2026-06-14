@@ -103,12 +103,10 @@ export default function OfertasPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // 🔥 Refresco solo al volver el foco a la pestaña (antes: cada 30s = 2,880 reads/día/usuario)
+  // 🔥 Refresco onFocus eliminado a petición del administrador para ahorrar llamadas
   useEffect(() => {
-    const onFocus = () => { load(); };
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, [load]);
+    // Ya no se recarga al hacer focus
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10 animate-fade-in">

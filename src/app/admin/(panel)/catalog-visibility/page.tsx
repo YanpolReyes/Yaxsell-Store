@@ -83,7 +83,7 @@ export default function CatalogVisibilityPage() {
       const all: any[] = [];
       let cursor: string | undefined;
       while (true) {
-        const queries: any[] = [Query.limit(500)];
+        const queries: any[] = [Query.limit(20)];
         if (cursor) queries.push(Query.cursorAfter(cursor));
         try {
           const res = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, queries);
@@ -180,7 +180,7 @@ export default function CatalogVisibilityPage() {
       
       while (true) {
         const res = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, [
-          Query.limit(100), Query.offset(offsetInv)
+          Query.limit(20), Query.offset(offsetInv)
         ]);
         allInventory.push(...res.documents);
         setProgress({ total: res.total, done: allInventory.length, activated: 0, deactivated: 0 });
@@ -238,7 +238,7 @@ export default function CatalogVisibilityPage() {
       let offsetInv = 0;
       while (true) {
         const res = await databases.listDocuments(databaseId, INVENTORY_PRODUCTS_COLLECTION_ID, [
-          Query.limit(100), Query.offset(offsetInv)
+          Query.limit(20), Query.offset(offsetInv)
         ]);
         allInventory.push(...res.documents);
         if (res.documents.length < 100) break;
@@ -250,7 +250,7 @@ export default function CatalogVisibilityPage() {
       let offsetCat = 0;
       while (true) {
         const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-          Query.limit(100), Query.offset(offsetCat)
+          Query.limit(20), Query.offset(offsetCat)
         ]);
         allCatalog.push(...res.documents);
         if (res.documents.length < 100) break;
@@ -263,7 +263,7 @@ export default function CatalogVisibilityPage() {
       while (true) {
         try {
           const res = await databases.listDocuments(databaseId, CATALOG_PRODUCTS_COLLECTION_ID, [
-            Query.limit(100), Query.offset(offsetCP)
+            Query.limit(20), Query.offset(offsetCP)
           ]);
           allCatalogProducts.push(...res.documents);
           if (res.documents.length < 100) break;
@@ -420,7 +420,7 @@ export default function CatalogVisibilityPage() {
       let offset = 0;
       while (true) {
         const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-          Query.limit(100), Query.offset(offset)
+          Query.limit(20), Query.offset(offset)
         ]);
         allCatalog.push(...res.documents);
         if (res.documents.length < 100) break;
@@ -945,3 +945,4 @@ export default function CatalogVisibilityPage() {
     </div>
   );
 }
+

@@ -32,7 +32,7 @@ export async function GET() {
         { updatedAt },
         {
           headers: {
-            'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
+            'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
             'Access-Control-Allow-Origin': '*',
           },
         }
@@ -43,7 +43,7 @@ export async function GET() {
       { updatedAt: 0 },
       {
         headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
         },
       }
     );
@@ -52,7 +52,7 @@ export async function GET() {
       { updatedAt: 0 },
       {
         headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
         },
       }
     );

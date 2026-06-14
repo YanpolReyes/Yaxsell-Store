@@ -30,7 +30,7 @@ export async function GET() {
       const doc = await res.json();
       return NextResponse.json(
         { success: true, sections: doc.SECTIONS || doc.sections },
-        { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } },
+        { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' } },
       );
     }
 
@@ -53,7 +53,7 @@ export async function GET() {
     if (createRes.ok) {
       return NextResponse.json(
         { success: true, sections: '[]' },
-        { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } },
+        { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' } },
       );
     }
   } catch (error: any) {
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     if (updateRes.ok) {
       return NextResponse.json(
         { success: true },
-        { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } },
+        { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' } },
       );
     }
     
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
     if (createRes.ok) {
       return NextResponse.json(
         { success: true },
-        { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } },
+        { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' } },
       );
     }
     

@@ -243,12 +243,11 @@ export class AuthService {
     }
   }
 
-  // Obtener usuario actual
-  static async getCurrentUser(): Promise<User | null> {
+  // Background fetch
+  private static async _fetchAndCacheUser(): Promise<User | null> {
     try {
       const currentUser = await account.get();
       
-      // Obtener datos adicionales de la base de datos users
       let isWholesale = false;
       try {
         const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a0a58ca001798410d86';
@@ -264,7 +263,6 @@ export class AuthService {
         console.log('Error fetching user from database:', dbError);
       }
       
-      // Crear objeto de usuario con datos de Auth
       const user: User = {
         id: currentUser.$id,
         email: currentUser.email,
@@ -275,11 +273,39 @@ export class AuthService {
         updatedAt: currentUser.$updatedAt || new Date().toISOString()
       };
 
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('yaxsel_auth_user', JSON.stringify(user));
+        localStorage.setItem('yaxsel_auth_time', Date.now().toString());
+      }
       return user;
     } catch (error: any) {
-      console.error('Get current user error:', error);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('yaxsel_auth_user');
+        localStorage.removeItem('yaxsel_auth_time');
+      }
       return null;
     }
+  }
+
+  // Obtener usuario actual
+  static async getCurrentUser(): Promise<User | null> {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('yaxsel_auth_user');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          const lastFetch = Number(localStorage.getItem('yaxsel_auth_time') || '0');
+          // Update background only if older than 1 hour (3600 seconds)
+          if (Date.now() - lastFetch > 3600 * 1000) {
+            this._fetchAndCacheUser().catch(() => {});
+          }
+          return parsed;
+        } catch {
+          /* ignore JSON parse errors */
+        }
+      }
+    }
+    return await this._fetchAndCacheUser();
   }
 
   // Verificar si está logueado

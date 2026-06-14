@@ -14,7 +14,7 @@ const headers = {
 };
 
 const noStoreHeaders = {
-  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
 };
 // Permitir caché de 1 minuto para evitar 7 lecturas a la BD por cada vista de página
 import { Client, Databases, Query } from 'node-appwrite';

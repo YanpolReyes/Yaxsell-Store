@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { isAdminEmail } from '@/lib/admin-access';
-import { LogOut, Menu, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { LogOut, Menu, X, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react';
 import GlobalSearch from '@/components/admin/GlobalSearch';
 import AISidekick from '@/components/admin/AISidekick';
 import gsap from 'gsap';
@@ -853,6 +853,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           {/* IA Sidekick button with typing phrases */}
           <IATopBarButton isOpen={sidekickOpen} onClick={() => setSidekickOpen(o => !o)} />
+
+          {/* Limpiar Caché Button */}
+          <button 
+            onClick={async () => {
+              try {
+                await fetch('/api/revalidate?tag=products');
+                alert('¡Caché limpiado con éxito! La tienda está actualizada para todos.');
+              } catch (e) {
+                alert('Error al limpiar caché');
+              }
+            }}
+            title="Limpiar Caché de Tienda"
+            style={{
+              height: 32, padding: '0 12px', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', 
+              cursor: 'pointer', fontSize: 12, fontWeight: 600, transition: 'all .2s'
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)'; }}
+            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; }}
+          >
+            <RefreshCw size={14} />
+            <span className="hidden sm:inline">Limpiar Caché</span>
+          </button>
 
           {/* Notifications */}
           <Link href="/admin/notifications" style={{

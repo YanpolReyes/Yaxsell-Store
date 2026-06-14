@@ -1597,69 +1597,8 @@ export default function DashboardPage() {
   const [lastDuplicateScanTime, setLastDuplicateScanTime] = useState<string | null>(null);
 
   const scanDuplicateSkus = useCallback(async (force = false) => {
-    if (typeof window === 'undefined') return;
-    const cachedData = localStorage.getItem('yaxsel_dup_skus_data');
-    const cachedTime = localStorage.getItem('yaxsel_dup_skus_time');
-    
-    if (!force && cachedData && cachedTime) {
-      const age = Date.now() - Number(cachedTime);
-      const twelveHours = 12 * 60 * 60 * 1000;
-      if (age < twelveHours) {
-        setDuplicateSkusList(JSON.parse(cachedData));
-        setLastDuplicateScanTime(new Date(Number(cachedTime)).toLocaleString());
-        return;
-      }
-    }
-
-    setIsScanningDuplicates(true);
-    try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-      
-      const allProducts: Product[] = [];
-      let lastId: string | null = null;
-      let hasMore = true;
-      let limit = 500;
-      
-      while (hasMore && allProducts.length < 6000) {
-        const queries = [Query.limit(limit)];
-        if (lastId) {
-          queries.push(Query.cursorAfter(lastId));
-        }
-        const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, queries);
-        const docs = resp.documents as unknown as Product[];
-        allProducts.push(...docs);
-        if (docs.length < limit) {
-          hasMore = false;
-        } else {
-          lastId = docs[docs.length - 1].$id;
-        }
-      }
-
-      const skuCounts: Record<string, number> = {};
-      allProducts.forEach(p => {
-        const rawSku = (p as any).sku || p.jumpseller_id || '';
-        const features = p.FEATURES || '';
-        const match = features.match(/SKU:\s*(.+)/i);
-        const sku = (match ? match[1].trim().split('\n')[0] : rawSku).trim().toLowerCase();
-        
-        if (sku && sku !== '—' && sku !== '') {
-          skuCounts[sku] = (skuCounts[sku] || 0) + 1;
-        }
-      });
-
-      const duplicates = Object.keys(skuCounts).filter(sku => skuCounts[sku] > 1);
-      
-      localStorage.setItem('yaxsel_dup_skus_data', JSON.stringify(duplicates));
-      localStorage.setItem('yaxsel_dup_skus_time', String(Date.now()));
-      
-      setDuplicateSkusList(duplicates);
-      setLastDuplicateScanTime(new Date().toLocaleString());
-    } catch (err) {
-      console.error('Error scanning duplicate SKUs:', err);
-    } finally {
-      setIsScanningDuplicates(false);
-    }
+    // Duplicate SKU scanning disabled to save Appwrite requests quota
+    return;
   }, []);
 
   useEffect(() => {
@@ -1704,11 +1643,11 @@ export default function DashboardPage() {
         databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(1)]),
         databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.greaterThan('STOCK', 0), Query.lessThan('STOCK', 3), Query.limit(5)]),
         databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.orderDesc('SOLDQUANTITY'), Query.limit(6)]),
-        databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [Query.orderDesc('CREATEDAT'), Query.limit(500)]),
+        databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [Query.orderDesc('CREATEDAT'), Query.limit(100)]),
         databases.listDocuments(databaseId, WHOLESALE_REQUESTS_COLLECTION_ID, [Query.equal('status', 'pending'), Query.limit(50)]),
         databases.listDocuments(databaseId, SUPPORT_TICKETS_COLLECTION_ID, [Query.notEqual('status', 'closed'), Query.limit(50)]),
         databases.listDocuments(databaseId, NOTIFICATIONS_COLLECTION_ID, [Query.equal('isRead', false), Query.limit(1)]),
-        listAllUserProfiles(500),
+        listAllUserProfiles(100),
       ]);
       setPendingWholesale(wholesaleResp.total);
       setOpenSupport(supportResp.total);
@@ -1730,11 +1669,11 @@ export default function DashboardPage() {
       const refreshDate = new Date();
       setLastRefresh(refreshDate);
 
-      // Page views
+      // Page views tracking disabled
+      /*
       const pv = await getPageViewStats(30);
       setPageViews({ totalViews: pv.totalViews, todayViews: pv.todayViews, topPages: pv.topPages, topComunas: pv.topComunas, visitorMarkers: pv.visitorMarkers });
       
-      // Compute most viewed products from page_views
       const productPageViews: Record<string, number> = {};
       pv.topPages.forEach(tp => {
         const match = tp.page.match(/^\/productos?\/([a-zA-Z0-9_-]+)/);
@@ -1757,6 +1696,10 @@ export default function DashboardPage() {
       } else {
         setTopViewedProducts([]);
       }
+      */
+      const computedTopViewed: any[] = [];
+      setTopViewedProducts([]);
+
 
       // Fetch cost statistics from API route
       let costData = null;

@@ -135,7 +135,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
   useEffect(() => {
     const t = setTimeout(() => {
       setDebouncedSearch(search);
-    }, 400);
+    }, 300);
     return () => clearTimeout(t);
   }, [search]);
 
@@ -183,9 +183,46 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
         url.searchParams.set('priceMax', debouncedPriceRange[1].toString());
       }
       
-      const prodRes = await fetch(url.toString());
-      if (prodRes.ok) {
-        const prodData = await prodRes.json();
+      const cacheKey = 'yaxsel_cache_' + url.toString();
+      
+      // Version check logic
+      try {
+        const vRes = await fetch('/api/public-data/version');
+        if (vRes.ok) {
+          const vData = await vRes.json();
+          const currentVersion = vData.version;
+          const storedVersion = localStorage.getItem('yaxsel_catalog_version');
+          if (storedVersion !== currentVersion) {
+            Object.keys(localStorage).forEach(k => {
+              if (k.startsWith('yaxsel_cache_')) localStorage.removeItem(k);
+            });
+            localStorage.setItem('yaxsel_catalog_version', currentVersion);
+          }
+        }
+      } catch (err) {
+        console.error('Error checking version', err);
+      }
+
+      let prodData = null;
+      const cachedResponse = localStorage.getItem(cacheKey);
+      
+      if (cachedResponse) {
+        try {
+          prodData = JSON.parse(cachedResponse);
+        } catch (e) {
+          localStorage.removeItem(cacheKey);
+        }
+      }
+      
+      if (!prodData) {
+        const prodRes = await fetch(url.toString());
+        if (prodRes.ok) {
+          prodData = await prodRes.json();
+          localStorage.setItem(cacheKey, JSON.stringify(prodData));
+        }
+      }
+
+      if (prodData) {
         const newProducts = prodData.products as Product[];
         
         if (isLoadMore) {

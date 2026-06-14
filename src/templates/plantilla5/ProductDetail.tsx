@@ -151,114 +151,24 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
 
   /* ── Fetch Product from Appwrite ── */
+  /* ── Fetch Product from Appwrite API (CACHED) ── */
   useEffect(() => {
     async function load() {
       try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        const doc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, id);
-        const p = normalizeProductImages(doc as unknown as Product);
-        setProduct(p);
+        const res = await fetch(`/api/public-data/product-detail?id=${id}`, { cache: 'no-store' });
+        if (!res.ok) throw new Error('Error fetching product data');
+        const data = await res.json();
+        
+        setProduct(data.product || null);
+        setLinkedProducts(data.linkedProducts || []);
+        setActiveVariantId(data.product?.$id || '');
+        setVariantLabels(data.variantLabels || {});
+        setCategoryName(data.categoryName || '');
+        setRelated(data.relatedProducts || []);
+        setActiveOffer(data.activeOffer || null);
 
-        // Fetch linked products (Variantes / Modelos)
-        if (p.GROUPID) {
-          try {
-            const linkedRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-              Query.equal('GROUPID', p.GROUPID),
-              Query.limit(20)
-            ]);
-            const linked = linkedRes.documents as unknown as Product[];
-            setLinkedProducts(linked);
-            setActiveVariantId(p.$id);
-
-            // Try to fetch group metadata (GROUP_NAME, VARIANT_LABELS) from product_groups collection
-            try {
-              const grpRes = await databases.listDocuments(databaseId, 'product_groups', [
-                Query.equal('GROUPID', p.GROUPID),
-                Query.limit(1)
-              ]);
-              if (grpRes.documents.length > 0) {
-                const grpDoc = grpRes.documents[0] as any;
-                if (grpDoc.VARIANT_LABELS) {
-                  try {
-                    const labels = JSON.parse(grpDoc.VARIANT_LABELS);
-                    setVariantLabels(labels);
-                  } catch {}
-                }
-              }
-            } catch (grpErr) {
-              // product_groups lookup failed gracefully
-            }
-          } catch (linkErr) {
-            console.warn('Error fetching linked products:', linkErr);
-          }
-        } else {
-          setActiveVariantId(p.$id);
-        }
-
-        // Fetch category name and related products
-        if (p.CATEGORYID) {
-          try {
-            const catDoc = await databases.getDocument(databaseId, CATEGORIES_COLLECTION, p.CATEGORYID);
-            setCategoryName((catDoc as any).name || '');
-            
-            const relRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-              Query.equal('CATEGORYID', p.CATEGORYID),
-              Query.limit(9),
-            ]);
-            setRelated((relRes.documents as unknown as Product[]).filter(r => r.$id !== id).slice(0, 6));
-          } catch (catErr) {
-            console.warn('Error fetching category / related (handled gracefully):', catErr);
-          }
-        }
-
-        // Fetch timed offers for this product
-        try {
-          const [offerRes, packRes] = await Promise.all([
-            databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
-              Query.equal('targetId', p.$id),
-              Query.equal('isActive', true),
-              Query.equal('status', 'active'),
-              Query.limit(1),
-            ]),
-            databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
-              Query.equal('offerType', 'pack_timer'),
-              Query.equal('isActive', true),
-              Query.limit(1),
-            ]).catch(() => ({ documents: [] }))
-          ]);
-          
-          const active = (offerRes.documents as unknown as TimedOffer[]).filter(o => {
-            if (!o.isActive || o.status !== 'active') return false;
-            if (o.timeType === 'endDateTime' && o.endDateTime) {
-              return new Date(o.endDateTime) > new Date();
-            }
-            if (o.timeType === 'duration' && o.durationHours) {
-              const start = o.activatedAt || (o as any).$createdAt;
-              if (start) {
-                return (new Date(start).getTime() + o.durationHours * 3600000) > Date.now();
-              }
-            }
-            return true;
-          });
-
-          if (active.length > 0) {
-            let resolvedOffer = active[0];
-            if (packRes.documents && packRes.documents.length > 0) {
-              const packDoc = packRes.documents[0] as any;
-              resolvedOffer = {
-                ...resolvedOffer,
-                timeType: 'endDateTime',
-                endDateTime: packDoc.endDateTime,
-              };
-            }
-            setActiveOffer(resolvedOffer);
-          }
-        } catch (offerErr) {
-          console.warn('Error fetching timed offer (handled gracefully):', offerErr);
-        }
       } catch (err) {
-        console.warn('Error fetching product from Appwrite (handled gracefully):', err);
+        console.warn('Error fetching product from backend API:', err);
         setLoadError('Error fetching product: ' + (err as Error).message);
       } finally {
         setIsLoading(false);
@@ -754,37 +664,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       });
     }
 
-    // 7. Tarjetas de Productos Relacionados
-    if (related && related.length > 0) {
-      const cards = root.querySelectorAll('product-card, .product-card');
-      cards.forEach((card: any, idx) => {
-        const relProduct = related[idx % related.length];
-        if (!relProduct) return;
+    // 7. Tarjetas de Productos Relacionados (Desactivado)
+    root.querySelectorAll('product-recommendations, .related-products').forEach((el: any) => el.remove());
 
-        card.querySelectorAll('.product-card__link, a').forEach((link: any) => {
-          link.href = `/productos/${relProduct.$id}`;
-        });
-
-        card.querySelectorAll('.reversed-link__text, .product-card__title').forEach((title: any) => {
-          title.textContent = relProduct.NAME;
-        });
-
-        const formattedRelPrice = formatPrice(relProduct.PRICE);
-        card.querySelectorAll('.price, .price-item').forEach((priceEl: any) => {
-          priceEl.textContent = formattedRelPrice;
-        });
-
-        const relImageUrl = resolveStorageImageUrl(relProduct.IMAGEURL);
-        if (relImageUrl) {
-          card.querySelectorAll('img').forEach((img: any) => {
-            img.src = relImageUrl;
-            if (img.srcset) {
-              img.srcset = relImageUrl;
-            }
-          });
-        }
-      });
-    }
 
     // 9. Reconstruir Breadcrumbs
     root.querySelectorAll('.breadcrumbs, nav[aria-label="breadcrumbs"]').forEach((nav: any) => {

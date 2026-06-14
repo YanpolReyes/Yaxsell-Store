@@ -133,7 +133,7 @@ export default function InventoryPage() {
 
       for (const qry of queries) {
         try {
-          const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [...qry, Query.limit(100)]);
+          const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [...qry, Query.limit(20)]);
           if (resp.documents.length > 0) {
             found.push(...(resp.documents as unknown as Product[]));
             break;
@@ -143,7 +143,7 @@ export default function InventoryPage() {
 
       if (found.length === 0) {
         try {
-          const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.contains('FEATURES', q), Query.limit(100)]);
+          const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.contains('FEATURES', q), Query.limit(20)]);
           if (resp.documents.length > 0) {
             found.push(...(resp.documents as unknown as Product[]));
           }
@@ -856,3 +856,4 @@ export default function InventoryPage() {
     </div>
   );
 }
+

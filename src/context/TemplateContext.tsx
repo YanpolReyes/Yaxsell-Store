@@ -32,21 +32,22 @@ export function useTemplate() {
 }
 
 export function TemplateProvider({ children }: { children: ReactNode }) {
-  const [template, setTemplate] = useState(1);
-  const [sections, setSections] = useState<SectionTemplates>(DEFAULT_SECTIONS);
-  const [isLoading, setIsLoading] = useState(true);
+  const [template, setTemplate] = useState(23);
+  const [sections, setSections] = useState<SectionTemplates>({ landing: 23, collections: 23, catalog: 23, productDetail: 23, cart: 23, checkout: 23 });
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     async function load() {
-      let dbGlobal = 1;
-      let dbSections = { ...DEFAULT_SECTIONS };
+      let dbGlobal = 23;
+      let dbSections = { landing: 23, collections: 23, catalog: 23, productDetail: 23, cart: 23, checkout: 23 };
 
-      // 1. Fetch template configuration from the database first
+      // 1. Fetch template configuration from the database first (Bypassed to reduce requests)
+      /*
       try {
         const res = await fetch(`/api/template`);
         if (res.ok) {
           const data = await res.json();
-          dbGlobal = Number(data.template) || 1;
+          dbGlobal = Number(data.template) || 23;
           if (data.sections) {
             dbSections = {
               landing: Number(data.sections.landing) || dbGlobal,
@@ -63,6 +64,7 @@ export function TemplateProvider({ children }: { children: ReactNode }) {
       } catch (err) {
         console.error('[TemplateContext] failed to load template from API:', err);
       }
+      */
 
       // 2. Check for _tpl override or pathname match to apply target section override
       if (typeof window !== 'undefined') {

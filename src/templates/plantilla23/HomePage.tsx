@@ -31,53 +31,9 @@ import { useStoreSettings } from '@/hooks/useStoreSettings';
 
 const SHOPIFY_BASE = '/shopify/plantilla23/assets';
 
-/* ── CSS files: ORDEN CRÍTICO — inline primero, luego core, luego secciones ── */
+/* ── CSS files: pre-bundled into a single file to avoid 45 network requests and layout thrashes ── */
 const CSS_FILES = [
-  `/shopify/plantilla23/assets/css/inline/index-inline-1.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/swiper-bundle.min.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shopifycloud/portable-wallets/latest/accelerated-checkout-backwards-compat.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/compiled_assets/styles.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/base.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/animation.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/styles.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/utility-bar.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/announcement-bar.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/header.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/slideshow.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/block-video.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/collection-list.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/multimedia-collage.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-card.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/featured-collection.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/split-hero.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/media-columns.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-columns.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/media-with-text.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/bundle-products.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/variant-selector.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/flexible-columns.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/horizontal-testimonials.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/marquee.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/featured-product.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/article-card.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/featured-blog-posts.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/gallery.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/gallery-popup.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/faq.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/store-locator.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/editorial-banner.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/variant-popup.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/added-to-cart-popup.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/localization-popup.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/localization.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/search-drawer.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/cart-drawer.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/newsletter.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/newsletter-popup.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-compare-bottom-sheet.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/product-compare-popup.css`,
-  `/shopify/plantilla23/assets/css/k-me-store-2.myshopify.com/cdn/shop/t/7/assets/footer.css`
+  `/shopify/plantilla23/assets/css/bundle-all.css`
 ];
 
 /* ── JS files: solo los críticos del tema ── */
@@ -510,7 +466,7 @@ export default function HomePage23() {
     };
   }, [bodyHtml]);
 
-  /* ── Fetch categories, subcategories & products from Appwrite ── */
+  /* ── Fetch categories, subcategories & products from Appwrite API (CACHED) ── */
   useEffect(() => {
     const fetchData = async () => {
       if (isEditorMockEnabled()) {
@@ -519,62 +475,23 @@ export default function HomePage23() {
         setSubcategories(mock.subcategories);
         setProducts(mock.products);
         setCheapestProducts(mock.products);
+        setIsAppwriteLoaded(true);
         return;
       }
       try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        const [cRes, scRes, pRes, dtRes, ptRes, toRes, cheapRes] = await Promise.all([
-          databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [
-            Query.orderAsc('order'),
-            Query.limit(100)
-          ]),
-          databases.listDocuments(databaseId, SUBCATEGORIES_COLLECTION, [
-            Query.limit(200)
-          ]),
-          databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-            Query.greaterThan('STOCK', 0),
-            Query.orderDesc('SOLDQUANTITY'),
-            Query.limit(80)
-          ]),
-          databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
-            Query.equal('offerType', 'destacado_temporal'),
-            Query.equal('isActive', true),
-            Query.limit(1)
-          ]).catch(() => ({ documents: [] })),
-          databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
-            Query.equal('offerType', 'pack_timer'),
-            Query.equal('isActive', true),
-            Query.limit(1)
-          ]).catch(() => ({ documents: [] })),
-          databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
-            Query.equal('offerType', 'product'),
-            Query.equal('isActive', true),
-            Query.equal('status', 'active'),
-            Query.limit(5)
-          ]).catch(() => ({ documents: [] })),
-          databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-            Query.greaterThan('STOCK', 0),
-            Query.equal('ISACTIVE', true),
-            Query.orderAsc('PRICE'),
-            Query.limit(12)
-          ]).catch(() => ({ documents: [] }))
-        ]);
-        setCategories(cRes.documents as unknown as Category[]);
-        setSubcategories(scRes.documents as unknown as Subcategory[]);
-        setProducts(pRes.documents as unknown as Product[]);
-        setCheapestProducts(cheapRes && cheapRes.documents ? (cheapRes.documents as unknown as Product[]) : []);
-        if (dtRes.documents && dtRes.documents.length > 0) {
-          setDestacadoTemporal(dtRes.documents[0]);
-        }
-        if (ptRes.documents && ptRes.documents.length > 0) {
-          setPackTimer(ptRes.documents[0]);
-        }
-        if (toRes.documents && toRes.documents.length > 0) {
-          setTimedOffers(toRes.documents);
-        }
+        const res = await fetch('/api/public-data/home', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Error fetching home data');
+        const data = await res.json();
+        
+        setCategories(data.categories || []);
+        setSubcategories(data.subcategories || []);
+        setProducts(data.products || []);
+        setCheapestProducts(data.cheapestProducts || []);
+        setDestacadoTemporal(data.destacadoTemporal || null);
+        setPackTimer(data.packTimer || null);
+        setTimedOffers(data.timedOffers || []);
       } catch (err) {
-        console.error('[Plantilla23] Error fetching categories/subcategories/products:', err);
+        console.error('[Plantilla23] Error fetching cached home data:', err);
       } finally {
         setIsAppwriteLoaded(true);
       }
@@ -1799,15 +1716,15 @@ export default function HomePage23() {
       /* Fades for herobanner and latest products section */
       .tpl23-shopify-root .slideshow__background,
       .tpl23-shopify-root custom-slideshow {
-        -webkit-mask-image: linear-gradient(to bottom, black 75%, transparent 100%) !important;
-        mask-image: linear-gradient(to bottom, black 75%, transparent 100%) !important;
+        -webkit-mask-image: linear-gradient(to bottom, black 92%, transparent 100%) !important;
+        mask-image: linear-gradient(to bottom, black 92%, transparent 100%) !important;
       }
       #yaxsell-wholesale-offers-root {
         position: relative !important;
         padding-top: 30px !important;
         padding-bottom: 30px !important;
-        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%) !important;
-        mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%) !important;
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 2%, black 98%, transparent 100%) !important;
+        mask-image: linear-gradient(to bottom, transparent 0%, black 2%, black 98%, transparent 100%) !important;
       }
       #yaxsell-latest-products-root {
         position: relative !important;
@@ -1823,7 +1740,7 @@ export default function HomePage23() {
   /* ── Fetch the cleaned HTML body content ── */
   useEffect(() => {
     let aborted = false;
-    fetch('/shopify/plantilla23/body-clean.html', { cache: 'no-cache' })
+    fetch('/shopify/plantilla23/body-clean.html')
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.text();
