@@ -17,7 +17,6 @@ const noStoreHeaders = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
 };
 // Permitir caché de 1 minuto para evitar 7 lecturas a la BD por cada vista de página
-export const revalidate = 60;
 import { Client, Databases, Query } from 'node-appwrite';
 
 // Fallback in-memory cache to guarantee database reads stay low even under high concurrent load
