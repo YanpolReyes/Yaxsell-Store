@@ -55,37 +55,63 @@ export function getServices() {
       'store_settings'
     ];
 
-    // Monkey-patch listDocuments to route public queries through our caching proxy
+    const pendingListRequests = new Map<string, Promise<any>>();
     const originalListDocuments = _databases.listDocuments.bind(_databases);
+    
     _databases.listDocuments = async (dbId, colId, queries) => {
-      // Only intercept on the browser for GET requests to public collections
       if (typeof window !== 'undefined' && PUBLIC_CACHEABLE_COLLECTIONS.includes(colId)) {
-        try {
-          const qStr = encodeURIComponent(JSON.stringify(queries || []));
-          const res = await fetch(`/api/appwrite-proxy?colId=${colId}&queries=${qStr}`);
-          if (res.ok) {
-            return await res.json();
-          }
-          // If proxy fails, fall back to original
-        } catch (e) {
-          console.warn('[CachedAppwrite] Proxy failed for listDocuments, falling back to direct Appwrite', e);
+        const cacheKey = colId + '-' + JSON.stringify(queries || []);
+        if (pendingListRequests.has(cacheKey)) {
+          return pendingListRequests.get(cacheKey);
         }
+        
+        const promise = (async () => {
+          try {
+            const qStr = encodeURIComponent(JSON.stringify(queries || []));
+            const res = await fetch(`/api/appwrite-proxy?colId=${colId}&queries=${qStr}`);
+            if (res.ok) {
+              return await res.json();
+            }
+          } catch (e) {
+            console.warn('[CachedAppwrite] Proxy failed for listDocuments, falling back to direct Appwrite', e);
+          } finally {
+            setTimeout(() => pendingListRequests.delete(cacheKey), 500);
+          }
+          return originalListDocuments(dbId, colId, queries);
+        })();
+        
+        pendingListRequests.set(cacheKey, promise);
+        return promise;
       }
       return originalListDocuments(dbId, colId, queries);
     };
 
-    // Monkey-patch getDocument to route public queries through our caching proxy
+    const pendingGetRequests = new Map<string, Promise<any>>();
     const originalGetDocument = _databases.getDocument.bind(_databases);
+    
     _databases.getDocument = async (dbId, colId, docId, queries) => {
       if (typeof window !== 'undefined' && PUBLIC_CACHEABLE_COLLECTIONS.includes(colId)) {
-        try {
-          const res = await fetch(`/api/appwrite-proxy?colId=${colId}&docId=${docId}`);
-          if (res.ok) {
-            return await res.json();
-          }
-        } catch (e) {
-          console.warn('[CachedAppwrite] Proxy failed for getDocument, falling back to direct Appwrite', e);
+        const cacheKey = colId + '-' + docId;
+        if (pendingGetRequests.has(cacheKey)) {
+          return pendingGetRequests.get(cacheKey);
         }
+        
+        const promise = (async () => {
+          try {
+            const res = await fetch(`/api/appwrite-proxy?colId=${colId}&docId=${docId}`);
+            if (res.ok) {
+              return await res.json();
+            }
+          } catch (e) {
+            console.warn('[CachedAppwrite] Proxy failed for getDocument, falling back to direct Appwrite', e);
+          } finally {
+            setTimeout(() => pendingGetRequests.delete(cacheKey), 500);
+          }
+          return originalGetDocument(dbId, colId, docId, queries);
+        })();
+        
+        pendingGetRequests.set(cacheKey, promise);
+        return promise;
       }
       return originalGetDocument(dbId, colId, docId, queries);
     };

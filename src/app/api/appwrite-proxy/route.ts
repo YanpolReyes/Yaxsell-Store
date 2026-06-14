@@ -1,8 +1,22 @@
 import { NextResponse } from 'next/server';
 import { serverListDocuments, serverGetDocument } from '@/lib/appwrite-server';
+import { unstable_cache } from 'next/cache';
 
-// Let the Edge network/CDN handle the caching instead of a Serverless ephemeral Node.js map.
-export const dynamic = 'force-dynamic';
+const getCachedList = unstable_cache(
+  async (colId: string, parsedQueries: string[]) => {
+    return await serverListDocuments(colId, parsedQueries);
+  },
+  ['appwrite-list-documents'],
+  { revalidate: 60, tags: ['appwrite-proxy'] }
+);
+
+const getCachedDoc = unstable_cache(
+  async (colId: string, docId: string) => {
+    return await serverGetDocument(colId, docId);
+  },
+  ['appwrite-get-document'],
+  { revalidate: 60, tags: ['appwrite-proxy'] }
+);
 
 export async function GET(req: Request) {
   try {
@@ -18,8 +32,7 @@ export async function GET(req: Request) {
     let data;
 
     if (docId) {
-      // Support for getDocument proxying
-      data = await serverGetDocument(colId, docId);
+      data = await getCachedDoc(colId, docId);
     } else {
       let parsedQueries: string[] = [];
       try {
@@ -27,10 +40,10 @@ export async function GET(req: Request) {
       } catch (e) {
         console.warn('[appwrite-proxy] Invalid queries format:', queriesStr);
       }
-      data = await serverListDocuments(colId, parsedQueries);
+      data = await getCachedList(colId, parsedQueries);
     }
 
-    // Return the response with strict Cache-Control headers so Vercel Edge caches it for 60 seconds
+    // Still return Edge cache headers just in case
     return NextResponse.json(data, {
       headers: {
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
@@ -41,3 +54,4 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
