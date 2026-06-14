@@ -1011,7 +1011,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </header>
 
       {/* ═══ Body: sidebar + content ═══ */}
-      <div className="admin-body-wrap" ref={bodyWrapRef} style={{ display: 'flex', height: 'calc(100vh - 64px)', height: 'calc(100dvh - 64px)', overflow: 'hidden', minHeight: 0, background: '#1a1a1a' }}>
+      <div className="admin-body-wrap" ref={bodyWrapRef} style={{ display: 'flex', height: 'calc(100dvh - 64px)', overflow: 'hidden', minHeight: 0, background: '#1a1a1a' }}>
         {sidebarOpen && <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 20 }} className="lg:hidden" onClick={() => setSidebarOpen(false)} />}
         {sidebarJsx}
         {/* Main content area — clean, centered */}
