@@ -9,11 +9,7 @@ import { Package, ShoppingCart, Clock, DollarSign, TrendingUp, TrendingDown, Ale
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { getPageViewStats } from '@/hooks/usePageViewTracker';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import SANTIAGO_COMUNAS from './santiago_comunas.json';
-
-if (typeof window !== 'undefined') gsap.registerPlugin(ScrollTrigger);
 
 /* ─── SVG Line / Area Chart ─── */
 function AreaChart({ data, color = '#6366f1', height = 120 }: { data: number[]; color?: string; height?: number }) {
@@ -1449,7 +1445,8 @@ let dashboardCache: {
 } | null = null;
 
 function TestPeriodBanner() {
-  const [timeLeft, setTimeLeft] = useState('');
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [salesData, setSalesData] = useState<Order[]>([]);
   const [percent, setPercent] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
 
@@ -1771,103 +1768,10 @@ export default function DashboardPage() {
 
   const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
 
-  /* ── GSAP Dashboard Animations ── */
+  /* ── CSS Dashboard Animations ── */
   useEffect(() => {
     if (typeof window === 'undefined' || isLoading) return;
-    const t = setTimeout(() => {
-      const ctx = gsap.context(() => {
-        /* KPI cards — stagger slide up with counter animation */
-        gsap.from('.db-kpi-item', {
-          y: 25, opacity: 0, duration: 0.5, stagger: 0.06, ease: 'power3.out', clearProps: 'transform,opacity',
-        });
-
-        /* KPI value numbers — counter from 0 */
-        document.querySelectorAll('.db-kpi-value').forEach(el => {
-          const text = el.textContent || '';
-          const numMatch = text.replace(/[^0-9]/g, '');
-          const target = parseInt(numMatch) || 0;
-          if (target === 0) return;
-          const prefix = text.match(/^[^0-9]*/)?.[0] || '';
-          const suffix = text.match(/[^0-9]*$/)?.[0] || '';
-          const isPrice = text.includes('$');
-          const obj = { val: 0 };
-          gsap.to(obj, {
-            val: target, duration: 1.2, ease: 'power2.out',
-            onUpdate: () => {
-              if (isPrice) {
-                (el as HTMLElement).textContent = fmt(Math.round(obj.val));
-              } else {
-                (el as HTMLElement).textContent = `${prefix}${Math.round(obj.val)}${suffix}`;
-              }
-            },
-          });
-        });
-
-        /* Stats panel — scale entrance */
-        gsap.from('.db-stats-panel', {
-          y: 30, opacity: 0, scale: 0.98, duration: 0.6, ease: 'power3.out', clearProps: 'transform,opacity',
-        });
-
-        /* Chart SVG lines — draw stroke animation */
-        document.querySelectorAll('.db-chart-line').forEach(path => {
-          const len = (path as SVGPathElement).getTotalLength?.() || 500;
-          gsap.fromTo(path,
-            { strokeDasharray: len, strokeDashoffset: len },
-            { strokeDashoffset: 0, duration: 1.5, ease: 'power2.inOut', delay: 0.3 }
-          );
-        });
-
-        /* Chart area fill — fade in */
-        gsap.from('.db-chart-area', {
-          opacity: 0, duration: 0.8, delay: 0.8, ease: 'power2.out',
-        });
-
-        /* Chart dots — scale pop stagger */
-        gsap.from('.db-chart-dot', {
-          scale: 0, opacity: 0, duration: 0.3, stagger: 0.04, ease: 'back.out(2)', delay: 1.0, clearProps: 'transform,opacity',
-        });
-
-        /* KPI sparklines — draw */
-        document.querySelectorAll('.db-kpi-spark polyline').forEach(poly => {
-          const len = (poly as SVGGeometryElement).getTotalLength?.() || 100;
-          gsap.fromTo(poly,
-            { strokeDasharray: len, strokeDashoffset: len },
-            { strokeDashoffset: 0, duration: 1.0, ease: 'power2.out', delay: 0.5 }
-          );
-        });
-
-        /* Donut chart segments — draw stroke */
-        document.querySelectorAll('.db-donut-seg').forEach((seg, i) => {
-          const len = (seg as SVGCircleElement).getTotalLength?.() || 200;
-          gsap.fromTo(seg,
-            { strokeDashoffset: len },
-            { strokeDashoffset: -(parseFloat((seg as SVGCircleElement).style.strokeDashoffset || '0')), duration: 1.0, ease: 'power3.out', delay: 0.3 + i * 0.1 }
-          );
-        });
-
-        /* Recent orders table rows — stagger */
-        gsap.from('.db-order-row', {
-          x: -20, opacity: 0, duration: 0.35, stagger: 0.04, ease: 'power2.out', delay: 0.2, clearProps: 'transform,opacity',
-        });
-
-        /* Side panels (globe, map, top products) — stagger entrance */
-        gsap.from('.db-side-panel', {
-          y: 40, opacity: 0, duration: 0.6, stagger: 0.12, ease: 'power3.out', delay: 0.15, clearProps: 'transform,opacity',
-        });
-
-        /* Quick action cards — scale pop */
-        gsap.from('.db-quick-action', {
-          scale: 0.9, opacity: 0, duration: 0.4, stagger: 0.06, ease: 'back.out(1.5)', delay: 0.3, clearProps: 'transform,opacity',
-        });
-
-        /* Top products progress bars — width animation */
-        document.querySelectorAll('.db-progress-bar').forEach(bar => {
-          const targetW = (bar as HTMLElement).style.width;
-          gsap.fromTo(bar, { width: '0%' }, { width: targetW, duration: 0.8, ease: 'power2.out', delay: 0.5 });
-        });
-      });
-      return () => ctx.revert();
-    }, 80);
+    const t = setTimeout(() => setIsLoaded(true), 100);
     return () => clearTimeout(t);
   }, [isLoading]);
 
@@ -2868,7 +2772,7 @@ export default function DashboardPage() {
                         <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.NAME}</p>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
                           <div style={{ flex: 1, height: 5, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
-                            <div className="db-progress-bar" style={{ height: '100%', width: `${pct}%`, background: colors[i] || '#6366f1', borderRadius: 4, transition: 'width .6s cubic-bezier(0.16,1,0.3,1)' }} />
+                            <div className="db-progress-bar" style={{ height: '100%', width: isLoaded ? `${pct}%` : '0%', background: colors[i] || '#6366f1', borderRadius: 4, transition: 'width .6s cubic-bezier(0.16,1,0.3,1)' }} />
                           </div>
                           <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', flexShrink: 0 }}>{p.SOLDQUANTITY ?? 0} vendidos</span>
                         </div>
@@ -2900,7 +2804,7 @@ export default function DashboardPage() {
                       <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.NAME}</p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
                         <div style={{ flex: 1, height: 5, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
-                          <div className="db-progress-bar" style={{ height: '100%', width: `${pct}%`, background: colors[i] || '#0d9488', borderRadius: 4, transition: 'width .6s cubic-bezier(0.16,1,0.3,1)' }} />
+                          <div className="db-progress-bar" style={{ height: '100%', width: isLoaded ? `${pct}%` : '0%', background: colors[i] || '#0d9488', borderRadius: 4, transition: 'width .6s cubic-bezier(0.16,1,0.3,1)' }} />
                         </div>
                         <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 2 }}><Eye size={10} />{p.viewCount}</span>
                       </div>

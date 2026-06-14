@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, Package, ArrowRight, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getServices, getAppwriteConfig, INVENTORY_PRODUCTS_COLLECTION, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, formatPrice } from '@/lib/appwrite';
 import { normalizeProductImages, resolveStorageImageUrl, getProductImageUrl } from '@/lib/product-images';
@@ -17,6 +18,9 @@ import ImageZoomModal from '@/components/ImageZoomModal';
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 
 export default function LleganProntoPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
@@ -260,13 +264,13 @@ export default function LleganProntoPage() {
           <>
         <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
           <button
-            onClick={() => { const el = document.getElementById('lp-scroll'); if (el) el.scrollBy({ left: -200, behavior: 'smooth' }); }}
+            onClick={() => { if (scrollRef.current) scrollRef.current.scrollBy({ left: -200, behavior: 'smooth' }); }}
             style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(90deg, rgba(255,255,255,0.9) 60%, transparent)', border: 'none', cursor: 'pointer', zIndex: 5, color: '#999' }}
             className="lp-scroll-arrow"
           >
             <ChevronLeft size={18} />
           </button>
-          <div id="lp-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '14px 24px 14px 44px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', width: '100%' }}>
+          <div id="lp-scroll" ref={scrollRef} style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '14px 24px 14px 44px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', width: '100%' }}>
             <button className="lp-pill" onClick={() => { setSelectedCat(''); setSelectedSub(''); }} style={{
               padding: '9px 22px', borderRadius: 50, cursor: 'pointer', fontFamily: FF, fontSize: 12,
               fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: '1px', textTransform: 'uppercase',
@@ -295,7 +299,7 @@ export default function LleganProntoPage() {
             ))}
           </div>
           <button
-            onClick={() => { const el = document.getElementById('lp-scroll'); if (el) el.scrollBy({ left: 200, behavior: 'smooth' }); }}
+            onClick={() => { if (scrollRef.current) scrollRef.current.scrollBy({ left: 200, behavior: 'smooth' }); }}
             style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(270deg, rgba(255,255,255,0.9) 60%, transparent)', border: 'none', cursor: 'pointer', zIndex: 5, color: '#999' }}
             className="lp-scroll-arrow"
           >

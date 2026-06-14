@@ -23,6 +23,8 @@ const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif
 
 export default function CatalogoPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const scrollRef = useRef<HTMLDivElement>(null);
   const { unlimitedStock } = useStoreSettings();
 
   useEffect(() => {
@@ -371,15 +373,14 @@ export default function CatalogoPage() {
         <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
           <button
             onClick={() => {
-              const el = document.getElementById('cat-scroll');
-              if (el) el.scrollBy({ left: -200, behavior: 'smooth' });
+              if (scrollRef.current) scrollRef.current.scrollBy({ left: -200, behavior: 'smooth' });
             }}
             style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(90deg, #fff 60%, transparent)', border: 'none', cursor: 'pointer', zIndex: 5, color: '#999' }}
             className="cat-scroll-arrow"
           >
             <ChevronLeft size={18} />
           </button>
-          <div id="cat-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '14px 24px 14px 44px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', width: '100%' }}>
+          <div id="cat-scroll" ref={scrollRef} style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '14px 24px 14px 44px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', width: '100%' }}>
             <button className="cat-pill" onClick={() => { setSelectedCat(''); setSelectedSub(''); }} style={{
               padding: '9px 22px', borderRadius: 50, cursor: 'pointer', fontFamily: FF, fontSize: 12,
               fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: '1px', textTransform: 'uppercase',
@@ -407,8 +408,7 @@ export default function CatalogoPage() {
           </div>
           <button
             onClick={() => {
-              const el = document.getElementById('cat-scroll');
-              if (el) el.scrollBy({ left: 200, behavior: 'smooth' });
+              if (scrollRef.current) scrollRef.current.scrollBy({ left: 200, behavior: 'smooth' });
             }}
             style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(270deg, #fff 60%, transparent)', border: 'none', cursor: 'pointer', zIndex: 5, color: '#999' }}
             className="cat-scroll-arrow"

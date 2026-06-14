@@ -368,9 +368,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   /* ── Fix overflow for multi-page printing ── */
   useEffect(() => {
-    const mainEl = document.querySelector('.admin-main-scroll') as HTMLElement | null;
-    const bodyWrap = document.querySelector('.admin-body-wrap') as HTMLElement | null;
-    const contentWrap = document.querySelector('.admin-content-wrap') as HTMLElement | null;
+    const mainEl = contentRef.current;
+    const bodyWrap = bodyWrapRef.current;
+    const contentWrap = contentWrapRef.current;
 
     // Save original styles
     const originalStyles = {
@@ -415,6 +415,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   /* ── GSAP page transition on route change ── */
   const contentRef = useRef<HTMLDivElement>(null);
+  const bodyWrapRef = useRef<HTMLDivElement>(null);
+  const contentWrapRef = useRef<HTMLDivElement>(null);
   const prevPathRef = useRef(pathname);
   useEffect(() => {
     if (prevPathRef.current === pathname || !contentRef.current) {
@@ -978,11 +980,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </header>
 
       {/* ═══ Body: sidebar + content ═══ */}
-      <div className="admin-body-wrap" style={{ display: 'flex', flex: 1, overflow: 'hidden', background: '#1a1a1a' }}>
+      <div className="admin-body-wrap" ref={bodyWrapRef} style={{ display: 'flex', flex: 1, overflow: 'hidden', background: '#1a1a1a' }}>
         {sidebarOpen && <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 20 }} className="lg:hidden" onClick={() => setSidebarOpen(false)} />}
         {sidebarJsx}
         {/* Main content area — clean, centered */}
-        <div className="admin-content-wrap" style={{
+        <div className="admin-content-wrap" ref={contentWrapRef} style={{
           flex: 1, position: 'relative', overflow: 'hidden', background: '#ffffff',
         }}>
           <main ref={contentRef} className="admin-main-content admin-main-scroll" style={{
