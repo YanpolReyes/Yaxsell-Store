@@ -26,7 +26,12 @@ export function saveAddressesLocal(userId: string, list: StoredAddress[]) {
   localStorage.setItem(`addr_${userId}`, JSON.stringify(list));
 }
 
+// Track 404 to avoid hammering a non-existent collection on every page load
+let addressesCollectionUnavailable = false;
+
 export async function loadAddressesFromDB(userId: string): Promise<StoredAddress[]> {
+  // If we already got a 404 for this collection, don't retry until next page load
+  if (addressesCollectionUnavailable) return [];
   try {
     const { databases } = getServices();
     const { databaseId } = getAppwriteConfig();
@@ -45,7 +50,13 @@ export async function loadAddressesFromDB(userId: string): Promise<StoredAddress
       lat: (doc.lat as number) || 0,
       lng: (doc.lng as number) || 0,
     }));
-  } catch {
+  } catch (err: any) {
+    // 404 = collection not yet created in Appwrite — suppress further calls
+    const code = err?.code ?? err?.status ?? (err?.response?.code);
+    if (code === 404) {
+      addressesCollectionUnavailable = true;
+      console.warn('[addresses] Collection not found (404). Addresses will use localStorage only.');
+    }
     return [];
   }
 }

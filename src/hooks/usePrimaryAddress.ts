@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import {
   syncAddressesForUser,
@@ -19,6 +19,9 @@ export function usePrimaryAddress() {
   const [primaryAddress, setPrimaryAddress] = useState<string | null>(
     addrCacheUserId === user?.id ? addrCacheLabel : null
   );
+  // Guard to avoid self-triggering: refresh() dispatches TPL1_ADDRESS_UPDATED
+  // which would cause the onCustom listener below to call refresh() again.
+  const isRefreshing = useRef(false);
 
   const refresh = useCallback(async () => {
     if (!isLoggedIn || !user?.id) {
@@ -31,15 +34,20 @@ export function usePrimaryAddress() {
       setPrimaryAddress(addrCacheLabel);
       return;
     }
-    const list = await syncAddressesForUser(user.id);
-    const label = getPrimaryAddressLabel(list);
-    setPrimaryAddress(label);
-    addrCacheLabel = label;
-    addrCacheTimestamp = Date.now();
-    addrCacheUserId = user.id;
-    window.dispatchEvent(
-      new CustomEvent(TPL1_ADDRESS_UPDATED, { detail: { label } })
-    );
+    isRefreshing.current = true;
+    try {
+      const list = await syncAddressesForUser(user.id);
+      const label = getPrimaryAddressLabel(list);
+      setPrimaryAddress(label);
+      addrCacheLabel = label;
+      addrCacheTimestamp = Date.now();
+      addrCacheUserId = user.id;
+      window.dispatchEvent(
+        new CustomEvent(TPL1_ADDRESS_UPDATED, { detail: { label } })
+      );
+    } finally {
+      isRefreshing.current = false;
+    }
   }, [isLoggedIn, user?.id]);
 
   useEffect(() => {
@@ -51,7 +59,8 @@ export function usePrimaryAddress() {
     const onStorage = (e: StorageEvent) => {
       if (e.key === `addr_${user.id}`) { addrCacheTimestamp = 0; refresh(); }
     };
-    const onCustom = () => { refresh(); };
+    // Skip if this hook itself dispatched the event (prevents recursive loop)
+    const onCustom = () => { if (!isRefreshing.current) refresh(); };
     // Throttle focus: solo refrescar si pasaron más de 30s desde la última llamada
     const onFocus = () => {
       if (Date.now() - addrCacheTimestamp > 30 * 1000) { refresh(); }
