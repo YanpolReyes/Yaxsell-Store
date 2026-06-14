@@ -847,7 +847,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <>
       <style>{topbarShineCss}</style>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', height: '100dvh', background: '#1a1a1a', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#1a1a1a', overflow: 'hidden' }}>
       {/* ═══ Top bar — unified with sidebar ═══ */}
       <header style={{
         height: 64,
