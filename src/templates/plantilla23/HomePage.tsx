@@ -3621,12 +3621,20 @@ export default function HomePage23() {
 
     if (cartItems.length === 0) {
       cartWrapper.innerHTML = `
-        <h5 class="headding mb-3">Carrito</h5>
-        <div class="flex items-center pt-10 mt-10 flex-col">
-            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[25px]">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-            </svg>
-            <h6 class="heading pt-3">Tu carrito está vacío</h6>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px; border-bottom: 1px solid #f3f4f6; padding-bottom: 16px;">
+          <h5 style="margin:0; font-size: 20px; font-weight: 800; color: #111827; letter-spacing: -0.5px;">Tu Carrito</h5>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 40px 20px; text-align:center; background: #f9fafb; border-radius: 16px; border: 1px dashed #d1d5db; margin-bottom: 24px;">
+            <div style="width: 64px; height: 64px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 16px;">
+              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 32px; color: #9ca3af;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+              </svg>
+            </div>
+            <h6 style="margin:0 0 8px 0; font-size: 16px; font-weight: 700; color: #374151;">Tu carrito está vacío</h6>
+            <p style="margin:0 0 20px 0; font-size: 13px; color: #6b7280; max-width: 200px; line-height: 1.5;">¡Parece que aún no has añadido nada! Descubre nuestros productos.</p>
+            <button class="drawer__close" data-close="" style="background: #111827; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s;">
+              Explorar productos
+            </button>
         </div>
       `;
       checkoutWrapper.style.display = 'none';
@@ -3635,7 +3643,10 @@ export default function HomePage23() {
       const sortedItems = [...cartItems].reverse();
 
       cartWrapper.innerHTML = `
-        <h5 class="headding mb-3">Carrito</h5>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px; border-bottom: 1px solid #f3f4f6; padding-bottom: 16px;">
+          <h5 style="margin:0; font-size: 20px; font-weight: 800; color: #111827; letter-spacing: -0.5px;">Tu Carrito</h5>
+          <span style="font-size: 13px; font-weight: 600; color: #6b7280; background: #f3f4f6; padding: 4px 10px; border-radius: 12px;">\${cartItems.reduce((acc: any, curr: any) => acc + curr.quantity, 0)} items</span>
+        </div>
         <div class="flex flex-col gap-[0.5rem] pt-2" style="max-height: 48vh; overflow-y: auto;">
            ${sortedItems.map((item: any) => {
              const price = getEffectivePrice(item);
