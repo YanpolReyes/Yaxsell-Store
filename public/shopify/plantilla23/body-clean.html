@@ -4980,89 +4980,65 @@
     
 >
     
-    <div class="slideshow__background w-full h-auto relative overflow-hidden" style="background-color: #FBCAC9;">
+    <div class="slideshow__background w-full relative overflow-hidden" style="background-color: #FBCAC9; min-height: 300px;">
       <canvas id="yaxsell-hero-particles" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;"></canvas>
 
     <style>
-      /* Seamless shimmer */
+      /* ── Seamless shimmer skeleton ── */
       @keyframes hero-sk-shimmer {
         0%   { background-position: 100% 0; }
         100% { background-position: -100% 0; }
       }
-      /* CSS-only auto-dismiss after 2s: no JS needed */
       @keyframes hero-sk-fadeout {
-        0%   { opacity: 1; }
-        100% { opacity: 0; pointer-events: none; }
+        to { opacity: 0; pointer-events: none; }
       }
-      .hero-skeleton-overlay {
+      .hero-sk {
         position: absolute;
         inset: 0;
         z-index: 4;
         pointer-events: none;
-        background: linear-gradient(
-          90deg,
-          #f5b8cc 0%,
-          #fce4ec 20%,
-          #ffe0ef 40%,
-          #fff0f6 50%,
-          #ffe0ef 60%,
-          #fce4ec 80%,
-          #f5b8cc 100%
-        );
+        background: linear-gradient(90deg,
+          #f5b8cc 0%, #fce4ec 20%, #ffe0ef 40%,
+          #fff0f6 50%, #ffe0ef 60%, #fce4ec 80%, #f5b8cc 100%);
         background-size: 200% 100%;
-        /* shimmer + auto-fade: after 2s starts fading over 0.8s, then stays gone */
         animation:
           hero-sk-shimmer 2.6s linear infinite,
-          hero-sk-fadeout 0.8s ease 2s forwards;
+          hero-sk-fadeout 0.7s ease 1.8s forwards;
+      }
+      /* ── Hero image containers ── */
+      /* Desktop: wide image, shown only at ≥993px */
+      #hero-bg-desktop {
+        display: none;
+        width: 100%;
+        padding-bottom: 41.67%;   /* 600/1440 */
+        background-image: url('https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2Fx.jpeg?alt=media&token=0ad04776-0001-40f0-a7c3-a811c5cce0e7');
+        background-size: cover;
+        background-position: center top;
+        background-repeat: no-repeat;
+      }
+      /* Mobile: tall image, shown below 993px */
+      #hero-bg-mobile {
+        display: block;
+        width: 100%;
+        padding-bottom: 177.78%;  /* 16/9 */
+        background-image: url('https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1781404655085-pegada-1781404653623.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=AoMmXhZykJXHuRUbi6kN90211xsIcYZjusKCSZK4ebs2iyXidYeEJWJCvJyaynUTEUcC1VHJo%2FhCnE6cvrTGAGa9IhLOt6sOrpI%2Fr4XuRwVMVeNaanueVgoLg1yRj29zWHhEfXcZ5KbWtT2tJ%2FS6hlyU0z62ichXNvys%2FSn2%2FI%2Bj4OBgMN03lPZT7daOc8RzERbDU19piSeu0Zyy5wvTWWuIa4ySVI7IlmxcbzMQPd3KVX8x7ehOVU67U32C1msMyudocbczpbUFSZiShuu5FqDfCfn4Yrcztl%2Fv9f%2FSIf1PTwAWTc3SrWpsl7%2FZzdCY%2BD3i60ByaI%2Bn3Vwok3AE0Q%3D%3D');
+        background-size: cover;
+        background-position: center top;
+        background-repeat: no-repeat;
+      }
+      @media (min-width: 993px) {
+        #hero-bg-desktop { display: block; }
+        #hero-bg-mobile  { display: none; }
       }
     </style>
 
-    <!-- DESKTOP: image always visible, skeleton sits on top and auto-fades via CSS -->
-    <div class="hidden lg:block w-full" style="position: relative;">
-      <img id="hero1-image-desktop"
-           src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/KEVINCOCO%2Fx.jpeg?alt=media&token=0ad04776-0001-40f0-a7c3-a811c5cce0e7"
-           class="block w-full h-auto pointer-events-none"
-           style="width: 100%; height: auto; display: block;"
-           alt="Hero banner" />
-      <div id="hero-skeleton-desktop" class="hero-skeleton-overlay"></div>
-    </div>
+    <!-- DESKTOP bg-image div (always has height from padding-bottom trick) -->
+    <div id="hero-bg-desktop"></div>
+    <div id="hero-sk-desktop"  class="hero-sk"></div>
 
-    <!-- MOBILE: image always visible, skeleton sits on top and auto-fades via CSS -->
-    <div class="block lg:hidden w-full" style="position: relative;">
-      <img id="hero1-image-mobile"
-           src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1781404655085-pegada-1781404653623.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=AoMmXhZykJXHuRUbi6kN90211xsIcYZjusKCSZK4ebs2iyXidYeEJWJCvJyaynUTEUcC1VHJo%2FhCnE6cvrTGAGa9IhLOt6sOrpI%2Fr4XuRwVMVeNaanueVgoLg1yRj29zWHhEfXcZ5KbWtT2tJ%2FS6hlyU0z62ichXNvys%2FSn2%2FI%2Bj4OBgMN03lPZT7daOc8RzERbDU19piSeu0Zyy5wvTWWuIa4ySVI7IlmxcbzMQPd3KVX8x7ehOVU67U32C1msMyudocbczpbUFSZiShuu5FqDfCfn4Yrcztl%2Fv9f%2FSIf1PTwAWTc3SrWpsl7%2FZzdCY%2BD3i60ByaI%2Bn3Vwok3AE0Q%3D%3D"
-           class="block w-full h-auto pointer-events-none"
-           style="width: 100%; height: auto; display: block;"
-           alt="Hero banner móvil" />
-      <div id="hero-skeleton-mobile" class="hero-skeleton-overlay"></div>
-    </div>
-
-    <script>
-    /* Progressive enhancement: dismiss skeleton earlier if image loads before the CSS timer */
-    (function() {
-      function quickDismiss(imgId, skId) {
-        var img = document.getElementById(imgId);
-        var sk  = document.getElementById(skId);
-        if (!img || !sk) return;
-        function dismiss() {
-          sk.style.animation = 'hero-sk-fadeout 0.5s ease forwards';
-          setTimeout(function() { if (sk && sk.parentNode) sk.parentNode.removeChild(sk); }, 550);
-        }
-        if (img.complete) { dismiss(); return; }
-        img.addEventListener('load',  dismiss, { once: true });
-        img.addEventListener('error', dismiss, { once: true });
-      }
-      function init() {
-        quickDismiss('hero1-image-desktop', 'hero-skeleton-desktop');
-        quickDismiss('hero1-image-mobile',  'hero-skeleton-mobile');
-      }
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-      } else {
-        init();
-      }
-    })();
-    </script>
+    <!-- MOBILE bg-image div (always has height from padding-bottom trick) -->
+    <div id="hero-bg-mobile"></div>
+    <div id="hero-sk-mobile"   class="hero-sk"></div>
 
     <!-- Bottom fade -->
     <div style="position:absolute; bottom:0; left:0; right:0; height:25%; background:linear-gradient(to bottom, transparent 0%, transparent 50%, #ffc9e0 100%); pointer-events:none; z-index:20;"></div>
