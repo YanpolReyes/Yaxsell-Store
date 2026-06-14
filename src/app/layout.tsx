@@ -66,14 +66,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="es">
-      {/* eslint-disable-next-line @next/next/no-head-element */}
-      <head>
-        {/* Viewport meta — critical for mobile responsiveness */}
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         {/* Importmap para el tema Pebble (Plantilla 5) — resuelve @theme/ a archivos locales */}
         {/* biome-ignore lint: intentional dangerouslySetInnerHTML for importmap */}
         <script type="importmap" dangerouslySetInnerHTML={{ __html: pebbleImportMap }} />
-      </head>
       <body>
         <ClientFetchCache />
         <AuthProvider>
