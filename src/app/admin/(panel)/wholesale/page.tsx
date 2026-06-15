@@ -13,6 +13,8 @@ interface WholesaleRequest {
   businessName?: string;
   companyName?: string;
   businessRut?: string;
+  rut?: string;
+  email?: string;
   phone?: string;
   message?: string;
   adminNotes?: string;
@@ -135,8 +137,8 @@ export default function WholesalePage() {
               // Crear documento de usuario si no existe
               await databases.createDocument(databaseId, USERS_COLLECTION_ID, ID.unique(), {
                 userId: request.userId,
-                email: request.userEmail || '',
-                name: request.userName || '',
+                email: request.email || request.userEmail || '',
+                name: request.companyName || request.userName || '',
                 phone: request.phone || '',
                 isWholesale: true,
                 createdAt: new Date().toISOString(),

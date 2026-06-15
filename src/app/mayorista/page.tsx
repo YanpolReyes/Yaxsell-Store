@@ -60,13 +60,12 @@ export default function MayoristaPage() {
       const { databaseId } = getAppwriteConfig();
       await databases.createDocument(databaseId, WHOLESALE_COLLECTION, ID.unique(), {
         userId: user.id,
-        userName: form.name.trim(),
-        userEmail: form.email.trim(),
-        businessRut: form.rut.trim() || undefined,
-        phone: form.phone.trim() || undefined,
-        businessName: form.businessName.trim() || undefined,
         companyName: form.businessName.trim() || 'Sin Nombre',
+        rut: form.rut.trim() || 'Sin RUT',
+        email: form.email.trim(),
+        phone: form.phone.trim() || 'Sin Teléfono',
         status: 'pending',
+        createdAt: Date.now()
       });
       setSubmitted(true);
     } catch (err) {
