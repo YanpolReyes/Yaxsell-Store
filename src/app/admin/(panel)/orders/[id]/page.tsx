@@ -85,6 +85,7 @@ export default function OrderDetailPage() {
   const [isSimilarSearch, setIsSimilarSearch] = useState(false);
   const [notifyingIdx, setNotifyingIdx] = useState<number | null>(null);
   const [notifiedIndices, setNotifiedIndices] = useState<Set<number>>(new Set());
+  const [missingQty, setMissingQty] = useState<number>(1);
 
   const toggleMissingItem = async (index: number) => {
     if (!order) return;
@@ -177,21 +178,37 @@ export default function OrderDetailPage() {
   };
 
   const handleOpenSimilarSearch = async (index: number) => {
+    const oldItem = items[index];
+    if (!oldItem) return;
+
+    let initialMissing = oldItem.qty || 1;
+    if (oldItem.qty > 1) {
+      const input = prompt(`¿Cuántas unidades faltan de "${oldItem.name}"? (Máx: ${oldItem.qty})`, oldItem.qty.toString());
+      if (input === null) return; // cancelado
+      const parsed = parseInt(input, 10);
+      if (isNaN(parsed) || parsed <= 0 || parsed > oldItem.qty) {
+        alert("Cantidad inválida");
+        return;
+      }
+      initialMissing = parsed;
+    }
+
+    setMissingQty(initialMissing);
     setReplacingIdx(index);
     setIsSimilarSearch(true);
     setSearching(true);
     setSearchQuery('');
     setSearchResults([]);
 
-    const oldItem = items[index];
-    if (!oldItem) {
-      setSearching(false);
-      return;
-    }
-
     const targetPrice = oldItem.price || 0;
-    const minPriceLimit = Math.round((targetPrice * 0.7) / 0.8);
-    const maxPriceLimit = Math.round((targetPrice * 1.3) / 0.8);
+    const totalMissingPrice = targetPrice * initialMissing;
+
+    // Rango de consulta cubriendo desde precio unitario hasta el valor total de las faltantes
+    const lowerPrice = Math.min(targetPrice, totalMissingPrice);
+    const upperPrice = Math.max(targetPrice, totalMissingPrice);
+
+    const minPriceLimit = Math.round((lowerPrice * 0.7) / 0.8);
+    const maxPriceLimit = Math.round((upperPrice * 1.3) / 0.8);
 
     try {
       const { databases } = getServices();
@@ -222,13 +239,29 @@ export default function OrderDetailPage() {
         }
       }
 
-      // 3. Sort by absolute difference to target price (accounting for 20% discount)
+      // 3. Sort by absolute difference: first close to total missing price, then close to unit price
       const sorted = [...prods].sort((a: any, b: any) => {
         const priceA = Math.round((a.CURRENTPRICE ?? a.PRICE ?? 0) * 0.8);
         const priceB = Math.round((b.CURRENTPRICE ?? b.PRICE ?? 0) * 0.8);
-        const diffA = Math.abs(priceA - targetPrice);
-        const diffB = Math.abs(priceB - targetPrice);
-        return diffA - diffB;
+
+        const distTotalA = Math.abs(priceA - totalMissingPrice);
+        const distTotalB = Math.abs(priceB - totalMissingPrice);
+        const distUnitA = Math.abs(priceA - targetPrice);
+        const distUnitB = Math.abs(priceB - targetPrice);
+
+        // Grupo 1: Más cercanos al valor total de las faltantes (distTotal <= distUnit)
+        // Grupo 2: Más cercanos al valor unitario
+        const isCloseToTotalA = distTotalA <= distUnitA;
+        const isCloseToTotalB = distTotalB <= distUnitB;
+
+        if (isCloseToTotalA && !isCloseToTotalB) return -1;
+        if (!isCloseToTotalA && isCloseToTotalB) return 1;
+
+        if (isCloseToTotalA) {
+          return distTotalA - distTotalB;
+        } else {
+          return distUnitA - distUnitB;
+        }
       });
 
       // Filter out the product itself from the results if it matches oldItem.id
@@ -369,14 +402,19 @@ export default function OrderDetailPage() {
       const newPrice = Math.round((newProduct.CURRENTPRICE ?? newProduct.PRICE ?? 0) * 0.8);
       const newSku = newProduct.sku || getSkuFromFeatures(newProduct.FEATURES, newProduct.TAGS, newProduct.jumpseller_id, newProduct.sku);
 
-      parsedItems[replacingIdx] = {
+      const totalMissingPrice = missingQty * (oldItem.price || 0);
+      const isCloserToTotal = Math.abs(newPrice - totalMissingPrice) < Math.abs(newPrice - (oldItem.price || 0));
+      const newQty = isCloserToTotal ? 1 : missingQty;
+
+      const newReplacedItem = {
         ...oldItem,
         id: newProduct.$id,
         name: newProduct.NAME,
         price: newPrice,
         img: newProduct.IMAGEURL || '',
         sku: newSku,
-        total: newPrice * oldItem.qty,
+        qty: newQty,
+        total: newPrice * newQty,
         missing: false,
         replaced: true,
         originalItem: {
@@ -387,6 +425,20 @@ export default function OrderDetailPage() {
           sku: oldSku
         }
       };
+
+      if (missingQty < oldItem.qty) {
+        // Reducir la cantidad del item original
+        parsedItems[replacingIdx] = {
+          ...oldItem,
+          qty: oldItem.qty - missingQty,
+          total: oldItem.price * (oldItem.qty - missingQty)
+        };
+        // Agregar el nuevo producto de reemplazo a la lista
+        parsedItems.push(newReplacedItem);
+      } else {
+        // Reemplazo total
+        parsedItems[replacingIdx] = newReplacedItem;
+      }
 
       const newSubtotal = parsedItems.reduce((s, it) => s + (it.price * it.qty), 0);
       const newTotal = newSubtotal + (order.SHIPPINGCOST || 0) - (order.DISCOUNTAMOUNT || 0);
