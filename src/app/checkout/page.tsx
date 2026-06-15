@@ -40,7 +40,7 @@ function CheckoutInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const discountParam = parseFloat(searchParams.get('discount') || '0');
-  const { items, subtotal, clearCart, catalogSubtotal, aperturaSavings, updateCartWithLiveProducts } = useCart();
+  const { items, subtotal, clearCart, catalogSubtotal, aperturaSavings, updateCartWithLiveProducts, removeItem } = useCart();
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const { unlimitedStock } = useStoreSettings();
   const { settings: apertura, isActive: aperturaActive, discountPercent: aperturaPct } = useAperturaPromotion();
@@ -75,8 +75,20 @@ function CheckoutInner() {
           Query.equal('$id', ids),
           Query.limit(100)
         ]);
-        if (res.documents.length > 0) {
-          updateCartWithLiveProducts(res.documents as any);
+        
+        const validDocs = res.documents as any[];
+        const validIds = new Set(validDocs.map(d => d.$id));
+        
+        const deletedProducts = items.filter(it => !validIds.has(it.product.$id));
+        if (deletedProducts.length > 0) {
+          for (const dp of deletedProducts) {
+            removeItem(dp.product.$id);
+          }
+          setError(`Algunos productos de tu carrito ya no están disponibles en la tienda y fueron removidos.`);
+        }
+        
+        if (validDocs.length > 0) {
+          updateCartWithLiveProducts(validDocs);
         }
       } catch (err) {
         console.error('Error live validating cart', err);
@@ -461,7 +473,10 @@ function CheckoutInner() {
             throw new Error(`Stock insuficiente para "${(productDoc as any).NAME || it.product.NAME}". Disponible: ${currentStock}, necesitas: ${it.quantity}.`);
           }
         } catch (stockErr: any) {
-          const msg = stockErr?.message || 'No pudimos validar stock. Intenta de nuevo.';
+          let msg = stockErr?.message || 'No pudimos validar stock. Intenta de nuevo.';
+          if (stockErr?.code === 404 || String(stockErr?.message).includes('not be found') || String(stockErr?.message).includes('not found')) {
+            msg = `El producto "${it.product.NAME}" ya no está disponible en la tienda. Por favor, elimínalo de tu carrito para continuar.`;
+          }
           setError(msg);
           setSubmitting(false);
           return;
@@ -488,8 +503,16 @@ function CheckoutInner() {
       const stockRollback: { productId: string; prevStock: number }[] = [];
       try {
         for (const item of items) {
-          const productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.product.$id);
-          const currentStock = Number((productDoc as any).STOCK ?? 0);
+          let currentStock = 0;
+          try {
+            const productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.product.$id);
+            currentStock = Number((productDoc as any).STOCK ?? 0);
+          } catch (docErr: any) {
+            if (docErr?.code === 404 || String(docErr?.message).includes('not be found') || String(docErr?.message).includes('not found')) {
+              throw new Error(`El producto "${item.product.NAME}" ya no está disponible en la tienda.`);
+            }
+            throw docErr;
+          }
           // Stock ilimitado → no descontar
           if (currentStock === 99999) {
             continue;
