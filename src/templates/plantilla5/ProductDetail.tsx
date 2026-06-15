@@ -2752,10 +2752,13 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             width: 48px !important;
             height: 48px !important;
             left: 16px !important;
+<<<<<<< HEAD
           }
           .help-desk-link img {
             transform: scale(1.4) !important;
             margin-right: 12px !important;
+=======
+>>>>>>> d5d633e215e4f0eb3d586cbd61bd24406b75482d
           }
         }
       `}</style>
