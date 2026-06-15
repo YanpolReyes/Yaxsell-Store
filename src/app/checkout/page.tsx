@@ -504,8 +504,9 @@ function CheckoutInner() {
       try {
         for (const item of items) {
           let currentStock = 0;
+          let productDoc: any = null;
           try {
-            const productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.product.$id);
+            productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.product.$id);
             currentStock = Number((productDoc as any).STOCK ?? 0);
           } catch (docErr: any) {
             if (docErr?.code === 404 || String(docErr?.message).includes('not be found') || String(docErr?.message).includes('not found')) {
