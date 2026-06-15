@@ -835,6 +835,104 @@ export default function LiveShoppingAdminPage() {
         </span>
       </div>
 
+      {/* Add by SKU block */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-3">
+        <div className="flex items-center gap-2">
+          <Zap className="w-4 h-4 text-pink-500" />
+          <h2 className="text-sm font-bold text-gray-800">Agregar productos existentes al Live por SKU</h2>
+        </div>
+        <p className="text-xs text-gray-500">
+          Ingresa uno o más SKUs (separados por coma o salto de línea). El sistema buscará los productos en el inventario general, los activará y los colocará en primer lugar en el Live Shopping de hoy.
+        </p>
+        <div className="flex gap-3 items-end">
+          <textarea
+            id="liveshopping-sku-input"
+            placeholder="Ej: SKU100, SKU101, SKU102"
+            rows={2}
+            className="flex-1 p-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 font-mono text-gray-800"
+          />
+          <button
+            type="button"
+            id="btn-add-sku-live"
+            onClick={async () => {
+              const el = document.getElementById('liveshopping-sku-input') as HTMLInputElement;
+              const text = el?.value || '';
+              const skus = text
+                .split(/[\n,]+/)
+                .map(s => s.trim())
+                .filter(Boolean);
+              if (skus.length === 0) {
+                alert('Ingresa al menos un SKU');
+                return;
+              }
+
+              const btn = document.getElementById('btn-add-sku-live') as HTMLButtonElement;
+              if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Cargando...';
+              }
+              
+              try {
+                const { databases } = getServices();
+                const { databaseId } = getAppwriteConfig();
+                
+                let foundCount = 0;
+                const notFoundSkus: string[] = [];
+                const errorSkus: string[] = [];
+
+                for (const sku of skus) {
+                  try {
+                    const resp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+                      Query.equal('sku', sku),
+                      Query.limit(1)
+                    ]);
+                    
+                    if (resp.documents.length > 0) {
+                      const prod = resp.documents[0];
+                      const newStock = (prod.STOCK || 0) > 0 ? prod.STOCK : 1;
+                      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, prod.$id, {
+                        imported_at: new Date().toISOString(),
+                        ISACTIVE: true,
+                        STOCK: newStock
+                      });
+                      foundCount++;
+                    } else {
+                      notFoundSkus.push(sku);
+                    }
+                    await new Promise(r => setTimeout(r, 150));
+                  } catch (err) {
+                    console.error('Error adding SKU to Live:', sku, err);
+                    errorSkus.push(sku);
+                  }
+                }
+
+                let msg = `Carga finalizada.\n\n✅ ${foundCount} producto(s) agregados/actualizados para el Live de hoy.`;
+                if (notFoundSkus.length > 0) {
+                  msg += `\n\n⚠️ Los siguientes SKUs no se encontraron en el inventario:\n${notFoundSkus.join(', ')}`;
+                }
+                if (errorSkus.length > 0) {
+                  msg += `\n\n❌ Hubo errores al procesar los siguientes SKUs:\n${errorSkus.join(', ')}`;
+                }
+                
+                alert(msg);
+                if (el) el.value = '';
+                load();
+              } catch (e: any) {
+                alert('Error general: ' + e.message);
+              } finally {
+                if (btn) {
+                  btn.disabled = false;
+                  btn.innerText = 'Agregar a Live';
+                }
+              }
+            }}
+            className="px-5 py-2.5 bg-pink-500 hover:bg-pink-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl shrink-0 h-10 transition"
+          >
+            Agregar a Live
+          </button>
+        </div>
+      </div>
+
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex gap-2">
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />{error}
