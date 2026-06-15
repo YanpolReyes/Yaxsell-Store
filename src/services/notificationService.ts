@@ -56,6 +56,7 @@ const ORDER_NOTIFY_STATUSES: OrderStatus[] = [
   'processing',
   'paid',
   'assembling',
+  'negotiation',
   'preparing_shipping',
   'ready_to_ship',
   'shipped',
@@ -79,6 +80,10 @@ const ORDER_STATUS_COPY: Record<
   assembling: {
     title: 'Pedido armándose',
     buildMessage: (c) => `Tu pedido ${c} está siendo armado en nuestro almacén.`,
+  },
+  negotiation: {
+    title: 'Pedido en negociación',
+    buildMessage: (c) => `Tu pedido ${c} está en proceso de negociación. Te contactaremos pronto.`,
   },
   preparing_shipping: {
     title: 'Preparando etiqueta de envío',

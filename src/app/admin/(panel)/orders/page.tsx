@@ -15,6 +15,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
   processing:         { label: 'Pago a Verificar',          bg: 'bg-blue-100',    text: 'text-blue-700' },
   paid:               { label: 'Pago Verificado',           bg: 'bg-emerald-100', text: 'text-emerald-700' },
   assembling:         { label: 'Armando',                   bg: 'bg-indigo-100',  text: 'text-indigo-700' },
+  negotiation:        { label: 'Negociación',                bg: 'bg-pink-100',    text: 'text-pink-700' },
   preparing_shipping: { label: 'Preparando Etiqueta Envío', bg: 'bg-orange-100', text: 'text-orange-700' },
   ready_to_ship:      { label: 'Etiqueta Lista',            bg: 'bg-cyan-100',    text: 'text-cyan-700' },
   shipped:            { label: 'Enviado',                   bg: 'bg-violet-100',  text: 'text-violet-700' },
@@ -348,7 +349,7 @@ function OrdersContent() {
           <span className="text-sm font-medium text-indigo-700">{selected.size} seleccionado{selected.size !== 1 ? 's' : ''}</span>
           <span className="text-indigo-300">|</span>
           <span className="text-xs text-indigo-600">Cambiar a:</span>
-          {(['pending', 'processing', 'paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'] as const).map(s => (
+          {(['pending', 'processing', 'paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'] as const).map(s => (
             <button key={s} onClick={() => bulkUpdateStatus(s)} disabled={bulkUpdating}
               className={`px-3 py-1 rounded-xl text-xs font-medium transition disabled:opacity-60 ${STATUS_CONFIG[s].bg} ${STATUS_CONFIG[s].text} hover:opacity-80`}>
               {STATUS_CONFIG[s].label}

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package, Truck, Shield, FileText, RefreshCw, Pencil, X, Plus, Minus, Trash2, Search, Tag, Receipt, ExternalLink } from 'lucide-react';
+import { CheckCircle, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package, Truck, Shield, FileText, RefreshCw, Pencil, X, Plus, Minus, Trash2, Search, Tag, Receipt, ExternalLink, MessageSquare } from 'lucide-react';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION, PRODUCTS_COLLECTION, MEDIA_BUCKET_ID, formatPrice, Query, ID } from '@/lib/appwrite';
 import { resolveStorageImageUrl } from '@/lib/product-images';
 import { Order, OrderItem, Product } from '@/types';
@@ -47,6 +47,7 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   processing:         { label: 'Pago a verificar',          color: '#1558b0', bg: '#e8f0fe' },
   paid:               { label: 'Pago verificado',           color: '#166534', bg: '#f0fdf4' },
   assembling:         { label: 'Armando',                   color: '#7b1fa2', bg: '#f3e5f5' },
+  negotiation:        { label: 'Negociación',                color: '#be185d', bg: '#fdf2f8' },
   preparing_shipping: { label: 'Preparando etiqueta',        color: '#5d4037', bg: '#efebe9' },
   ready_to_ship:      { label: 'Etiqueta lista',            color: '#00838f', bg: '#e0f7fa' },
   shipped:            { label: 'Enviado',                   color: '#6b21a8', bg: '#faf5ff' },
@@ -74,6 +75,11 @@ const STATUS_DESCRIPTIONS: Record<string, { title: string; desc: string; alertTy
     title: 'Armando tu Pedido',
     desc: 'Nuestro equipo en bodega está seleccionando y empaquetando tus productos con mucho cuidado. ¡Pronto estará listo para el despacho!',
     alertType: 'indigo'
+  },
+  negotiation: {
+    title: 'Pedido en Negociación',
+    desc: 'Estamos revisando la disponibilidad de algunos productos de tu pedido. Te contactaremos pronto con las novedades.',
+    alertType: 'warning'
   },
   preparing_shipping: {
     title: 'Preparando Etiqueta de Despacho',
@@ -733,7 +739,7 @@ export default function PedidoPage() {
       const latest = latestDoc as unknown as Order;
 
       const editCount = getCustomerEditCount(latest);
-      const unmodifiableStatuses = ['paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'];
+      const unmodifiableStatuses = ['paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'];
       if (unmodifiableStatuses.includes(latest.STATUS)) {
         alert('No puedes anular el pedido si ya está verificado, en proceso de preparación o anulado.');
         return;
@@ -819,7 +825,7 @@ export default function PedidoPage() {
   const showTimer = isPending && order.EXPIRESAT && !uploaded;
   const isSuccess = uploaded || order.STATUS !== 'pending';
   const customerEditCount = getCustomerEditCount(order);
-  const canCustomerModify = !['paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'].includes(order.STATUS);
+  const canCustomerModify = !['paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'].includes(order.STATUS);
   // Allow replacement selection even for 'paid'/'processing' orders if there are missing items
   const hasMissingItems = items.some(it => !!(it as any).missing);
   const canChooseReplacement = hasMissingItems && !['shipped', 'delivered', 'cancelled'].includes(order.STATUS);
@@ -887,6 +893,7 @@ export default function PedidoPage() {
                 {order.STATUS === 'processing' && <Upload size={24} />}
                 {order.STATUS === 'paid' && <CheckCircle size={24} />}
                 {order.STATUS === 'assembling' && <Package size={24} />}
+                {order.STATUS === 'negotiation' && <MessageSquare size={24} />}
                 {order.STATUS === 'preparing_shipping' && <Tag size={24} />}
                 {order.STATUS === 'ready_to_ship' && <Receipt size={24} />}
                 {order.STATUS === 'shipped' && <Truck size={24} />}
@@ -909,12 +916,13 @@ export default function PedidoPage() {
             { key: 'processing',         label: 'Verificando',  icon: <Upload size={15} /> },
             { key: 'paid',               label: 'Verificado',   icon: <CheckCircle size={15} /> },
             { key: 'assembling',         label: 'Armando',      icon: <Package size={15} /> },
+            { key: 'negotiation',        label: 'Negociación',  icon: <MessageSquare size={15} /> },
             { key: 'preparing_shipping', label: 'Prep. Envío',  icon: <Tag size={15} /> },
             { key: 'ready_to_ship',      label: isRetiro ? 'Retiro' : 'Etiqueta',     icon: <Receipt size={15} /> },
             { key: 'shipped',            label: 'Enviado',      icon: <Truck size={15} /> },
             { key: 'delivered',          label: 'Entregado',    icon: <CheckCircle size={15} /> },
           ];
-          const statusOrder = ['pending', 'processing', 'paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
+          const statusOrder = ['pending', 'processing', 'paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
           const currentIdx = statusOrder.indexOf(order.STATUS);
           if (order.STATUS === 'cancelled') return null;
           return (

@@ -20,6 +20,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; b
   processing:         { label: 'Pago a Verificar',          bg: 'bg-blue-50',    text: 'text-blue-700',     border: 'border-blue-200',    dot: 'bg-blue-400',    icon: '🔍' },
   paid:               { label: 'Pago Verificado',           bg: 'bg-emerald-50', text: 'text-emerald-700',  border: 'border-emerald-200', dot: 'bg-emerald-400', icon: '💰' },
   assembling:         { label: 'Armando',                   bg: 'bg-indigo-50',  text: 'text-indigo-700',   border: 'border-indigo-200',  dot: 'bg-indigo-400',  icon: '📦' },
+  negotiation:        { label: 'Negociación',                bg: 'bg-pink-50',    text: 'text-pink-700',     border: 'border-pink-200',    dot: 'bg-pink-400',    icon: '🤝' },
   preparing_shipping: { label: 'Preparando Etiqueta Envío', bg: 'bg-orange-50',  text: 'text-orange-700',   border: 'border-orange-200',  dot: 'bg-orange-400',  icon: '🏷️' },
   ready_to_ship:      { label: 'Etiqueta Lista',            bg: 'bg-cyan-50',    text: 'text-cyan-700',     border: 'border-cyan-200',    dot: 'bg-cyan-400',    icon: '📋' },
   shipped:            { label: 'Enviado',                   bg: 'bg-violet-50',  text: 'text-violet-700',   border: 'border-violet-200',  dot: 'bg-violet-400',  icon: '🚚' },
@@ -27,7 +28,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; b
   cancelled:          { label: 'Cancelado',                 bg: 'bg-red-50',     text: 'text-red-700',      border: 'border-red-200',     dot: 'bg-red-400',     icon: '❌' },
 };
 
-const STATUS_FLOW = ['pending', 'processing', 'paid', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
+const STATUS_FLOW = ['pending', 'processing', 'paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
 
 const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
 
@@ -1570,7 +1571,7 @@ export default function OrderDetailPage() {
                 </div>
 
                 {/* Actions row for this product inside order */}
-                {['pending', 'processing', 'paid'].includes(order.STATUS) && (
+                {['pending', 'processing', 'paid', 'assembling', 'negotiation'].includes(order.STATUS) && (
                   <div className="flex items-center gap-2 mt-1 sm:pl-18 no-print flex-wrap">
                     <button
                       onClick={() => toggleMissingItem(i)}

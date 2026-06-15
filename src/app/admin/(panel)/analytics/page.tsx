@@ -57,7 +57,7 @@ export default function AnalyticsPage() {
   const fmtN = (n: number) => new Intl.NumberFormat('es-CL').format(n);
 
   // KPIs
-  const revenueStatuses = ['paid', 'processing', 'assembling', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
+  const revenueStatuses = ['paid', 'processing', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
   const paidOrders = orders.filter(o => revenueStatuses.includes(o.STATUS));
   const totalRevenue = paidOrders.reduce((s, o) => s + o.TOTAL, 0);
   const avgOrderValue = paidOrders.length > 0 ? totalRevenue / paidOrders.length : 0;
