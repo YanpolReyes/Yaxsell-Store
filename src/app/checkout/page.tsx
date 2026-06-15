@@ -114,6 +114,13 @@ function CheckoutInner() {
   // Agency dropdown state
   const [agencyDropdownOpen, setAgencyDropdownOpen] = useState(false);
 
+  // Geolocation state
+  const [showGeoModal, setShowGeoModal] = useState(false);
+  const [isGeolocating, setIsGeolocating] = useState(false);
+  const [geoSkipped, setGeoSkipped] = useState(false);
+  const [geoCoords, setGeoCoords] = useState<{lat: number, lng: number} | null>(null);
+  const [geoError, setGeoError] = useState('');
+
   const comunas = form.region ? CHILE_REGIONES[form.region] || [] : [];
   const totalDiscount = discountParam + couponDiscount;
   const total = Math.max(0, subtotal - totalDiscount);
@@ -421,6 +428,47 @@ function CheckoutInner() {
       setError(minimumOrderMessage(total));
       return;
     }
+    
+    // Si no se ha decidido sobre geolocalización, mostrar modal
+    if (!geoSkipped && !geoCoords) {
+      setShowGeoModal(true);
+      return;
+    }
+
+    createOrder(geoCoords);
+  }
+
+  const handleGeolocate = () => {
+    setIsGeolocating(true);
+    setGeoError('');
+    if (!navigator.geolocation) {
+      setGeoError('Tu navegador no soporta geolocalización.');
+      setIsGeolocating(false);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setGeoCoords(coords);
+        setIsGeolocating(false);
+        setShowGeoModal(false);
+        createOrder(coords);
+      },
+      (err) => {
+        setGeoError('No se pudo obtener tu ubicación automáticamente: ' + err.message);
+        setIsGeolocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  };
+
+  const handleSkipGeo = () => {
+    setGeoSkipped(true);
+    setShowGeoModal(false);
+    createOrder(null);
+  };
+
+  async function createOrder(coords: {lat: number, lng: number} | null) {
     setSubmitting(true); setError('');
     try {
       const { databases } = getServices();
@@ -502,10 +550,15 @@ function CheckoutInner() {
         }
       }
 
+      const finalAddress = form.address;
+      const additionalInfoWithGeo = coords 
+        ? `${form.additionalInfo ? form.additionalInfo + '\\n' : ''}[GEO:${coords.lat},${coords.lng}]`
+        : form.additionalInfo;
+
       const docId = await databases.createDocument(databaseId, ORDERS_COLLECTION_ID, ID.unique(), {
         USERID: user?.id || 'guest', ITEMS: JSON.stringify(itemsData),
         CUSTOMERNAME: form.name, CUSTOMERRUT: form.rut, CUSTOMERPHONE: form.phone, CUSTOMEREMAIL: form.email,
-        REGION: form.region, COMUNA: form.comuna, ADDRESS: form.address, ADDITIONALINFO: form.additionalInfo,
+        REGION: form.region, COMUNA: form.comuna, ADDRESS: finalAddress, ADDITIONALINFO: additionalInfoWithGeo,
         PAYMENTMETHOD: 'Transferencia Bancaria', SHIPPINGAGENCY: agency,
         SUBTOTAL: subtotal, SHIPPINGCOST: 0, TOTAL: total,
         ORDERCODE: orderCode, ORDERINDEX: orderIndex,
@@ -1173,6 +1226,48 @@ function CheckoutInner() {
 
           </div>
         </form>
+
+        {/* Modal de Geolocalización (Pro) */}
+        {showGeoModal && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', padding: 20 }}>
+            <div style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 420, overflow: 'hidden', boxShadow: '0 24px 50px rgba(0,0,0,0.15)', animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+              <div style={{ padding: '32px 24px 24px', textAlign: 'center', position: 'relative' }}>
+                <div style={{ width: 64, height: 64, background: PINK_BG, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: `1px solid ${PINK_LIGHT}`, boxShadow: `0 8px 24px rgba(227,150,191,0.2)` }}>
+                  <MapPin size={32} color={PINK} strokeWidth={2.5} />
+                </div>
+                <h3 style={{ margin: '0 0 12px', fontSize: 22, fontWeight: 800, color: '#111', fontFamily: FF, lineHeight: 1.2 }}>Mejora la precisión<br/>de tu envío 📍</h3>
+                <p style={{ margin: '0 0 24px', fontSize: 14, color: '#6b7280', fontFamily: FF, lineHeight: 1.5 }}>
+                  ¿Deseas geolocalizar tu dirección actual? Esto nos ayudará a obtener una ubicación exacta para que el repartidor encuentre tu destino sin problemas y tu pedido llegue más rápido.
+                </p>
+                {geoError && (
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '10px 14px', marginBottom: 20 }}>
+                    <p style={{ margin: 0, fontSize: 12, color: '#ef4444', fontFamily: FF, fontWeight: 500 }}>{geoError}</p>
+                  </div>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <button onClick={handleGeolocate} disabled={isGeolocating}
+                    style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #fbcfe8, #f5a8cf, #e396bf)', color: '#fff', border: 'none', borderRadius: 16, fontSize: 15, fontWeight: 800, cursor: isGeolocating ? 'not-allowed' : 'pointer', fontFamily: FF, boxShadow: '0 8px 20px rgba(227,150,191,0.3)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    {isGeolocating ? (
+                      <><RefreshCw size={18} className="animate-spin" /> Obteniendo ubicación...</>
+                    ) : (
+                      <><MapPin size={18} /> Sí, usar mi ubicación actual</>
+                    )}
+                  </button>
+                  <button onClick={handleSkipGeo} disabled={isGeolocating}
+                    style={{ width: '100%', padding: '16px', background: '#f9fafb', color: '#4b5563', border: '1px solid #e5e7eb', borderRadius: 16, fontSize: 14, fontWeight: 700, cursor: isGeolocating ? 'not-allowed' : 'pointer', fontFamily: FF, transition: 'all 0.2s' }}>
+                    No, continuar con la dirección escrita
+                  </button>
+                </div>
+              </div>
+            </div>
+            <style>{`
+              @keyframes slideUp {
+                from { opacity: 0; transform: translateY(20px) scale(0.95); }
+                to { opacity: 1; transform: translateY(0) scale(1); }
+              }
+            `}</style>
+          </div>
+        )}
       </div>
       </div>
     </div>

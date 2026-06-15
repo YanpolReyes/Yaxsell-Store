@@ -770,6 +770,15 @@ export default function OrderDetailPage() {
   const currentStepIdx = STATUS_FLOW.indexOf(order.STATUS);
   const isCancelled = order.STATUS === 'cancelled';
 
+  const rawAdditionalInfo = order.ADDITIONALINFO || '';
+  const geoMatch = rawAdditionalInfo.match(/\[GEO:(-?\d+(\.\d+)?),(-?\d+(\.\d+)?)\]/);
+  const isGeolocated = !!geoMatch;
+  const geoLat = geoMatch ? geoMatch[1] : null;
+  const geoLng = geoMatch ? geoMatch[3] : null;
+  const displayAdditionalInfo = geoMatch 
+    ? rawAdditionalInfo.replace(geoMatch[0], '').trim()
+    : rawAdditionalInfo;
+
   const handleStatusChange = (newStatus: string) => {
     if (newStatus === 'cancelled' && !confirm('¿Cancelar este pedido? El stock será devuelto.')) return;
     updateStatus(newStatus);
@@ -1252,7 +1261,10 @@ export default function OrderDetailPage() {
             <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-2">
                 <MapPinned className="w-4 h-4 text-indigo-500" />
-                <p className="font-semibold text-gray-900 text-xs sm:text-sm">Ubicación de entrega</p>
+                <p className="font-semibold text-gray-900 text-xs sm:text-sm">
+                  Ubicación de entrega 
+                  {isGeolocated && <span className="ml-2 text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-bold border border-indigo-100">📍 Geolocalizado (GPS)</span>}
+                </p>
               </div>
               <div className="aspect-[21/9] w-full">
                 <iframe
@@ -1262,7 +1274,7 @@ export default function OrderDetailPage() {
                   loading="lazy"
                   allowFullScreen
                   referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(`${order.ADDRESS}, ${order.COMUNA}, ${order.REGION}, Chile`)}`}>
+                  src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${isGeolocated ? `${geoLat},${geoLng}` : encodeURIComponent(`${order.ADDRESS}, ${order.COMUNA}, ${order.REGION}, Chile`)}`}>
                 </iframe>
               </div>
             </div>
@@ -1384,10 +1396,10 @@ export default function OrderDetailPage() {
               )}
               <p className="text-xs sm:text-sm font-medium text-gray-900">{order.ADDRESS || 'Sin dirección'}</p>
               <p className="text-[10px] sm:text-xs text-gray-500">{order.COMUNA}{order.COMUNA && order.REGION ? ', ' : ''}{order.REGION}</p>
-              {order.ADDITIONALINFO && (
+              {displayAdditionalInfo && (
                 <div className="mt-1.5 sm:mt-2 p-2 bg-gray-50 rounded-lg border border-gray-100">
                   <p className="text-[10px] sm:text-xs text-gray-400 font-medium">Info adicional</p>
-                  <p className="text-[10px] sm:text-xs text-gray-600">{order.ADDITIONALINFO}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-600 whitespace-pre-wrap">{displayAdditionalInfo}</p>
                 </div>
               )}
               {(order as any).ADDRESSPHOTOURL && (
