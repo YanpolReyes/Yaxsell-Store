@@ -244,10 +244,19 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const { userId, targetPoints } = body;
+    console.log('[PATCH API] Received body:', body);
 
-    if (!userId || typeof targetPoints !== 'number') {
-      return NextResponse.json({ error: 'Faltan parámetros obligatorios: userId o targetPoints' }, { status: 400 });
+    const userId = body.userId || body.id || body.uid;
+    const targetPointsRaw = body.targetPoints;
+
+    const targetPoints = typeof targetPointsRaw === 'number'
+      ? targetPointsRaw
+      : parseInt(String(targetPointsRaw || '0'), 10);
+
+    if (!userId || isNaN(targetPoints)) {
+      return NextResponse.json({
+        error: `Faltan parámetros obligatorios. userId recibido: "${userId || ''}", targetPoints recibido: "${targetPointsRaw ?? ''}"`
+      }, { status: 400 });
     }
 
     const { users, databases, databaseId } = getServerDb();

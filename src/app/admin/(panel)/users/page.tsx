@@ -544,7 +544,7 @@ function CustomerDetailModal({
                       const res = await fetch('/api/admin/customers', {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId: u.userId, targetPoints: val }),
+                        body: JSON.stringify({ userId: u.userId || u.$id, targetPoints: val }),
                       }).then(r => r.json());
                       if (res.error) throw new Error(res.error);
                       alert('Puntos actualizados con éxito.');
