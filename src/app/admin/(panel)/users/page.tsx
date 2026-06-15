@@ -521,12 +521,13 @@ function CustomerDetailModal({
 
             {/* Manual points adjustment control */}
             <div className="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-              <p className="text-xs font-bold text-gray-700 mb-1.5">Ajustar puntos manualmente</p>
+              <p className="text-xs font-bold text-gray-700 mb-1.5">Establecer total de puntos manualmente</p>
               <div className="flex gap-2">
                 <input
                   type="number"
-                  placeholder="Ej: 50 o -50"
+                  placeholder="Ej: 50"
                   id="pts-adj-input"
+                  min="0"
                   className="w-24 px-2.5 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-800"
                 />
                 <button
@@ -534,19 +535,21 @@ function CustomerDetailModal({
                   onClick={async () => {
                     const el = document.getElementById('pts-adj-input') as HTMLInputElement;
                     const val = parseInt(el?.value || '0', 10);
-                    if (isNaN(val) || val === 0) return;
-                    if (!confirm(`¿Deseas ajustar los puntos de este cliente por ${val > 0 ? '+' : ''}${val} pts?`)) return;
+                    if (isNaN(val) || val < 0) {
+                      alert('Ingresa un número válido de puntos (0 o más)');
+                      return;
+                    }
+                    if (!confirm(`¿Deseas establecer los puntos de este cliente en exactamente ${val} pts?`)) return;
                     try {
                       const res = await fetch('/api/admin/customers', {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId: u.userId, pointsAdjustment: val }),
+                        body: JSON.stringify({ userId: u.userId, targetPoints: val }),
                       }).then(r => r.json());
                       if (res.error) throw new Error(res.error);
                       alert('Puntos actualizados con éxito.');
                       if (el) el.value = '';
-                      u.pointsEstimate += val;
-                      u.prefs.pointsAdjustment = (Number(u.prefs.pointsAdjustment || 0) + val);
+                      u.pointsEstimate = val;
                       if (onRefresh) onRefresh();
                       onClose();
                     } catch (err: any) {
@@ -555,7 +558,7 @@ function CustomerDetailModal({
                   }}
                   className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold"
                 >
-                  Aplicar
+                  Establecer
                 </button>
               </div>
             </div>

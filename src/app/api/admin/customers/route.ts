@@ -244,19 +244,53 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const { userId, pointsAdjustment } = body;
+    const { userId, targetPoints } = body;
 
-    if (!userId || typeof pointsAdjustment !== 'number') {
-      return NextResponse.json({ error: 'Faltan parámetros obligatorios: userId o pointsAdjustment' }, { status: 400 });
+    if (!userId || typeof targetPoints !== 'number') {
+      return NextResponse.json({ error: 'Faltan parámetros obligatorios: userId o targetPoints' }, { status: 400 });
     }
 
-    const { users } = getServerDb();
+    const { users, databases, databaseId } = getServerDb();
+
+    // 1. Calcular basePoints para el usuario basado en sus pedidos
+    const ordersRes = await databases.listDocuments(databaseId, 'orders', [
+      Query.equal('USERID', userId),
+      Query.equal('STATUS', ['paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered']),
+    ]);
+
+    const paidOrdersCount = ordersRes.total;
+    const totalSpent = ordersRes.documents.reduce((sum: number, order: any) => sum + (Number(order.TOTAL) || 0), 0);
+
+    const LEVELS = [
+      { id: 'bronze', name: 'Bronce', requiredOrders: 0, pointsMultiplier: 1 },
+      { id: 'silver', name: 'Plata', requiredOrders: 5, pointsMultiplier: 1.5 },
+      { id: 'gold', name: 'Oro', requiredOrders: 10, pointsMultiplier: 2 },
+      { id: 'diamond', name: 'Diamante', requiredOrders: 20, pointsMultiplier: 3 },
+      { id: 'ruby', name: 'Ruby', requiredOrders: 30, pointsMultiplier: 5 },
+    ];
+
+    let calculatedLevel = 'bronze';
+    for (let i = LEVELS.length - 1; i >= 0; i--) {
+      if (paidOrdersCount >= LEVELS[i].requiredOrders) {
+        calculatedLevel = LEVELS[i].id;
+        break;
+      }
+    }
+
+    const levelIndex = LEVELS.findIndex(l => l.id === calculatedLevel);
+    const pointsMultiplier = LEVELS[levelIndex >= 0 ? levelIndex : 0].pointsMultiplier;
+    const basePoints = Math.floor((totalSpent / 1000) * pointsMultiplier);
+
+    // 2. El ajuste necesario es el total objetivo menos los puntos base
+    const pointsAdjustment = targetPoints - basePoints;
+
+    // 3. Obtener prefs y actualizar
     const user = await users.get(userId);
     const currentPrefs = user.prefs || {};
     
     const newPrefs = {
       ...currentPrefs,
-      pointsAdjustment: (Number(currentPrefs.pointsAdjustment || 0) + pointsAdjustment)
+      pointsAdjustment: pointsAdjustment
     };
 
     const updatedUser = await users.updatePrefs(userId, newPrefs);
