@@ -1213,12 +1213,31 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
         });
 
+        // Allow the user to type freely; only validate on blur/change
         qtyInput.addEventListener('input', () => {
-          let val = parseInt(qtyInput.value) || 1;
+          // Do nothing while typing – let the user type freely
+        });
+
+        const commitQty = () => {
+          const raw = parseInt(qtyInput.value);
           const maxLimit = parseInt(qtyInput.dataset.maxStock || '99999') || 99999;
+          let val = isNaN(raw) ? 1 : raw;
           if (val < 1) val = 1;
           if (val > maxLimit) val = maxLimit;
           qtyInput.value = String(val);
+          setQty(val);
+          qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
+        };
+
+        qtyInput.addEventListener('blur', commitQty);
+        qtyInput.addEventListener('change', () => {
+          // Triggered programmatically by +/- buttons; commit then too
+          const raw = parseInt(qtyInput.value);
+          const maxLimit = parseInt(qtyInput.dataset.maxStock || '99999') || 99999;
+          let val = isNaN(raw) ? 1 : raw;
+          if (val < 1) val = 1;
+          if (val > maxLimit) val = maxLimit;
+          if (parseInt(qtyInput.value) !== val) qtyInput.value = String(val);
           setQty(val);
         });
       }
