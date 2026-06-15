@@ -11,7 +11,7 @@ import {
   ArrowLeft, Package, User, MapPin, CreditCard, Truck, Clock, FileText,
   Phone, Mail, Hash, ChevronDown, Save, CheckCircle, Copy, Check,
   AlertTriangle, ExternalLink, Image as ImageIcon, MessageSquare, Calendar, DollarSign,
-  Printer, Send, Ban, StickyNote, MapPinned, Receipt, Tag, XCircle, Upload, Search,
+  Printer, Send, Ban, StickyNote, MapPinned, Receipt, Tag, XCircle, Upload, Search, Download
 } from 'lucide-react';
 import { getWarehouseLocationFromFeatures, getSkuFromFeatures, getBarcodeFromFeatures, type ProductWarehouseLocation } from '@/lib/product-features';
 
@@ -203,12 +203,12 @@ export default function OrderDetailPage() {
     const targetPrice = oldItem.price || 0;
     const totalMissingPrice = targetPrice * initialMissing;
 
-    // Rango de consulta cubriendo desde precio unitario hasta el valor total de las faltantes
-    const lowerPrice = Math.min(targetPrice, totalMissingPrice);
-    const upperPrice = Math.max(targetPrice, totalMissingPrice);
+    // Rango de consulta: Nunca menos a 100 pesos ni mayor a 1000 pesos de diferencia
+    const minDiscounted = Math.max(0, totalMissingPrice - 100);
+    const maxDiscounted = totalMissingPrice + 1000;
 
-    const minPriceLimit = Math.round((lowerPrice * 0.7) / 0.8);
-    const maxPriceLimit = Math.round((upperPrice * 1.3) / 0.8);
+    const minPriceLimit = Math.round(minDiscounted / 0.8);
+    const maxPriceLimit = Math.round(maxDiscounted / 0.8);
 
     try {
       const { databases } = getServices();
@@ -227,41 +227,11 @@ export default function OrderDetailPage() {
         console.error("Error querying by price range:", err);
       }
 
-      // 2. Fallback to general list if no products found in range
-      if (prods.length === 0) {
-        try {
-          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-            Query.limit(100)
-          ]);
-          prods = res.documents;
-        } catch (err) {
-          console.error("Fallback query error:", err);
-        }
-      }
-
-      // 3. Sort by absolute difference: first close to total missing price, then close to unit price
+      // 2. Sort by price descending (siempre primero lo mayor)
       const sorted = [...prods].sort((a: any, b: any) => {
         const priceA = Math.round((a.CURRENTPRICE ?? a.PRICE ?? 0) * 0.8);
         const priceB = Math.round((b.CURRENTPRICE ?? b.PRICE ?? 0) * 0.8);
-
-        const distTotalA = Math.abs(priceA - totalMissingPrice);
-        const distTotalB = Math.abs(priceB - totalMissingPrice);
-        const distUnitA = Math.abs(priceA - targetPrice);
-        const distUnitB = Math.abs(priceB - targetPrice);
-
-        // Grupo 1: Más cercanos al valor total de las faltantes (distTotal <= distUnit)
-        // Grupo 2: Más cercanos al valor unitario
-        const isCloseToTotalA = distTotalA <= distUnitA;
-        const isCloseToTotalB = distTotalB <= distUnitB;
-
-        if (isCloseToTotalA && !isCloseToTotalB) return -1;
-        if (!isCloseToTotalA && isCloseToTotalB) return 1;
-
-        if (isCloseToTotalA) {
-          return distTotalA - distTotalB;
-        } else {
-          return distUnitA - distUnitB;
-        }
+        return priceB - priceA;
       });
 
       // Filter out the product itself from the results if it matches oldItem.id
@@ -277,75 +247,29 @@ export default function OrderDetailPage() {
 
   const handleDownloadSimilarCatalog = () => {
     if (replacingIdx === null || !items[replacingIdx]) return;
-    const oldItem = items[replacingIdx];
-    const catalogHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Alternativas de Reemplazo - Kevin & Coco</title>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <style>
-          body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1f2937; margin: 15px; background-color: #fafafa; }
-          .banner { background: #db2777; color: #ffffff; padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-          .header { text-align: center; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; padding-bottom: 16px; background: #fff; padding: 16px; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-          .header h1 { margin: 0; font-size: 20px; color: #1e1b4b; font-weight: 800; }
-          .header p { margin: 6px 0 0; font-size: 12px; color: #6b7280; }
-          .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-          @media (max-width: 480px) {
-            .grid { grid-template-columns: 1fr; }
-          }
-          .card { border: 1px solid #e5e7eb; border-radius: 16px; padding: 12px; display: flex; gap: 12px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-          .img-box { width: 80px; height: 80px; border-radius: 10px; overflow: hidden; background: #f9fafb; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: 1px solid #f3f4f6; }
-          .img-box img { width: 100%; height: 100%; object-fit: cover; }
-          .img-placeholder { font-size: 24px; color: #d1d5db; }
-          .info { flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
-          .name { font-weight: 700; font-size: 13px; margin: 0 0 4px; color: #111827; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
-          .sku { font-family: monospace; font-size: 9px; color: #9ca3af; margin: 0 0 6px; text-transform: uppercase; }
-          .price { font-size: 16px; font-weight: 850; color: #db2777; }
-        </style>
-      </head>
-      <body>
-        <div class="banner">
-          📸 Saca una captura de pantalla a estas opciones y envíaselas al cliente por WhatsApp
-        </div>
-        <div class="header">
-          <h1>Alternativas para Reemplazo</h1>
-          <p>Opciones sugeridas para: <strong>${oldItem.name}</strong></p>
-        </div>
-        <div class="grid">
-          ${searchResults.map(p => {
-            const originalPrice = p.CURRENTPRICE ?? p.PRICE ?? 0;
-            const price = Math.round(originalPrice * 0.8);
-            const pSku = p.sku || '';
-            const priceFormatted = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(price);
-            return `
-              <div class="card">
-                <div class="img-box">
-                  ${p.IMAGEURL ? `<img src="${p.IMAGEURL}" alt="${p.NAME}" />` : `<span class="img-placeholder">📦</span>`}
-                </div>
-                <div class="info">
-                  <div>
-                    <h3 class="name">${p.NAME}</h3>
-                    ${pSku ? `<div class="sku">SKU: ${pSku}</div>` : ''}
-                  </div>
-                  <div class="price">${priceFormatted}</div>
-                </div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      </body>
-      </html>
-    `;
-
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(catalogHtml);
-      printWindow.document.close();
-    } else {
-      alert('Por favor permite las ventanas emergentes (popups) para abrir la vista de alternativas.');
+    if (searchResults.length === 0) {
+      alert("No hay opciones disponibles para descargar.");
+      return;
     }
+
+    const topResults = searchResults.slice(0, 4); // Max 4 opciones
+    
+    topResults.forEach(p => {
+      if (p.IMAGEURL) {
+        // Change Appwrite /view endpoint to /download to force browser download
+        const downloadUrl = p.IMAGEURL.replace('/view?', '/download?');
+        const price = Math.round((p.CURRENTPRICE ?? p.PRICE ?? 0) * 0.8);
+        
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.target = '_blank';
+        // Optional: you can include the price in the downloaded filename
+        a.download = `${p.NAME.replace(/[^a-zA-Z0-9]/g, '_')}_$${price}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    });
   };
 
   const replaceItem = async (newProduct: any) => {
@@ -978,7 +902,7 @@ export default function OrderDetailPage() {
                     onClick={handleDownloadSimilarCatalog}
                     className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition shadow-sm mr-2"
                   >
-                    <ImageIcon className="w-3.5 h-3.5" /> Ver Alternativas (Imagen)
+                    <Download className="w-3.5 h-3.5" /> Descargar Imágenes
                   </button>
                 )}
                 <button
