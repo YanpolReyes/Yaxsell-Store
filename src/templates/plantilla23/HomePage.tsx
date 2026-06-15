@@ -211,20 +211,10 @@ export default function HomePage23() {
     const root = containerRef.current;
     if (!root) return;
 
-    // 1. Timer Setup
-    let targetTime = Date.now() + (3 * 24 * 3600) * 1000;
+    // 1. Timer Setup (Target midnight CLT on June 15, 2026 -> 2026-06-16T00:00:00-04:00)
+    const targetTime = new Date('2026-06-16T00:00:00-04:00').getTime();
     try {
-      const cached = localStorage.getItem('yaxsell_offers_timer_3d');
-      if (cached) {
-        const parsed = parseInt(cached);
-        if (parsed > Date.now()) {
-          targetTime = parsed;
-        } else {
-          localStorage.setItem('yaxsell_offers_timer_3d', targetTime.toString());
-        }
-      } else {
-        localStorage.setItem('yaxsell_offers_timer_3d', targetTime.toString());
-      }
+      localStorage.removeItem('yaxsell_offers_timer_3d');
     } catch (e) {
       console.error(e);
     }
