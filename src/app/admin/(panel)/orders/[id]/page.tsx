@@ -1510,6 +1510,12 @@ export default function OrderDetailPage() {
                 <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> WhatsApp
               </a>
             )}
+            {order.CUSTOMERPHONE && (
+              <a href={`https://wa.me/${order.CUSTOMERPHONE.replace(/[^0-9+]/g, '')}?text=${encodeURIComponent(`¡Hola ${order.CUSTOMERNAME}! Te escribimos de Kevin & Coco Chile. 😊 Queríamos contarte que ya tenemos reservado tu pedido ${order.ORDERCODE || '#' + order.$id.slice(-6)} por un total de ${fmt(order.TOTAL)}. Escríbenos por aquí cuando tengas listo tu comprobante de transferencia para poder procesarlo y comenzar a prepararlo hoy mismo. ¡Muchas gracias por tu preferencia!`)}`} target="_blank" rel="noreferrer"
+                className="flex items-center gap-2 w-full p-2 sm:p-2.5 bg-amber-50 border border-amber-200 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium text-amber-800 hover:bg-amber-100 transition">
+                <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600" /> WhatsApp Pago Pendiente
+              </a>
+            )}
             <button onClick={() => {
               const isRetiro = order.SHIPPINGAGENCY?.toUpperCase() === 'RETIRO EN TIENDA';
               const statusLabel = (order.STATUS === 'ready_to_ship' && isRetiro) ? 'Listo para retirar' : (STATUS_CONFIG[order.STATUS]?.label || order.STATUS);
