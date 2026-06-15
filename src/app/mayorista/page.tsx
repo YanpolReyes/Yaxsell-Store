@@ -65,6 +65,7 @@ export default function MayoristaPage() {
         businessRut: form.rut.trim() || undefined,
         phone: form.phone.trim() || undefined,
         businessName: form.businessName.trim() || undefined,
+        companyName: form.businessName.trim() || 'Sin Nombre',
         status: 'pending',
       });
       setSubmitted(true);

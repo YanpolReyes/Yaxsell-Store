@@ -11,6 +11,7 @@ interface WholesaleRequest {
   userName?: string;
   userEmail?: string;
   businessName?: string;
+  companyName?: string;
   businessRut?: string;
   phone?: string;
   message?: string;
@@ -46,7 +47,7 @@ export default function WholesalePage() {
   const exportCSV = () => {
     const headers = ['Empresa', 'RUT', 'Nombre', 'Email', 'Teléfono', 'Estado', 'Mensaje', 'Razón rechazo', 'Notas admin', 'Días pendiente', 'Fecha'];
     const rows = requests.map(r => [
-      r.businessName || '', r.businessRut || '', r.userName || '', r.userEmail || '',
+      r.businessName || r.companyName || '', r.businessRut || '', r.userName || '', r.userEmail || '',
       r.phone || '', r.status, r.message || '',
       r.rejectionReason || '', r.adminNotes || '',
       r.status === 'pending' ? Math.floor((Date.now() - new Date(r.$createdAt).getTime()) / 86400000) : '',
@@ -164,6 +165,7 @@ export default function WholesalePage() {
       r.userName?.toLowerCase().includes(q) ||
       r.userEmail?.toLowerCase().includes(q) ||
       r.businessName?.toLowerCase().includes(q) ||
+      r.companyName?.toLowerCase().includes(q) ||
       r.businessRut?.includes(q)
     );
   })].sort((a, b) => {
@@ -266,7 +268,7 @@ export default function WholesalePage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-medium text-gray-900 text-sm">{r.businessName || r.userName || 'Sin nombre'}</p>
+                        <p className="font-medium text-gray-900 text-sm">{r.businessName || r.companyName || r.userName || 'Sin nombre'}</p>
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>{cfg.label}</span>
                       </div>
                       <p className="text-xs text-gray-400 mt-0.5">

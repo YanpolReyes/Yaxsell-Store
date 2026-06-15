@@ -107,16 +107,36 @@ export function aggregateOrdersForUser(
     stats.revenueAll += total;
 
     switch (status) {
-      case 'pending': stats.pending += 1; break;
-      case 'paid': stats.paid += 1; break;
-      case 'processing': stats.processing += 1; break;
-      case 'shipped': stats.shipped += 1; break;
-      case 'delivered': stats.delivered += 1; break;
-      case 'cancelled': stats.cancelled += 1; break;
-      default: stats.pending += 1; break;
+      case 'pending':
+      case 'verification_pending':
+        stats.pending += 1;
+        break;
+      case 'paid':
+        stats.paid += 1;
+        break;
+      case 'processing':
+      case 'assembling':
+      case 'negotiation':
+      case 'preparing_shipping':
+      case 'ready_to_ship':
+        stats.processing += 1;
+        break;
+      case 'shipped':
+        stats.shipped += 1;
+        break;
+      case 'delivered':
+        stats.delivered += 1;
+        break;
+      case 'cancelled':
+        stats.cancelled += 1;
+        break;
+      default:
+        stats.pending += 1;
+        break;
     }
 
-    if (status === 'paid' || status === 'delivered') {
+    const isPaidStatus = ['paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'].includes(status);
+    if (isPaidStatus) {
       stats.revenuePaid += total;
     }
 

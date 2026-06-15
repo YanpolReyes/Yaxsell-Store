@@ -147,7 +147,10 @@ function buildCustomerRow(
   const prefs = pickPrefs(prefsRaw);
 
   const orderStats = aggregateOrdersForUser(orders, uid);
-  const paidCount = orderStats.paid + orderStats.delivered;
+  const paidCount = orders.filter(o => 
+    o.USERID === uid && 
+    ['paid', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'].includes((o.STATUS || '').toLowerCase())
+  ).length;
   const loyaltyCalculated = calculateLoyaltyFromPaidOrders(paidCount);
   const loyaltyStored = (String(prefs.loyaltyLevel || 'bronze') as LoyaltyLevelId);
   const loyaltyEffective = loyaltyCalculated;
