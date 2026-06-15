@@ -1984,24 +1984,20 @@ export default function HomePage23() {
       `;
     }
 
-    // Insert Wholesale Offers and Latest Products placeholders right after the Hero banner (slideshow)
+    // Insert Live Shopping, Wholesale Offers and Latest Products placeholders right after the Hero banner (slideshow)
     const heroBannerSection = tempDiv.querySelector('#shopify-section-template--27304712470809__slideshow_FBfKC8');
     if (heroBannerSection) {
+      const liveShoppingRoot = document.createElement('div');
+      liveShoppingRoot.id = 'yaxsell-live-shopping-root';
+      heroBannerSection.insertAdjacentElement('afterend', liveShoppingRoot);
+
       const wholesaleOffersRoot = document.createElement('div');
       wholesaleOffersRoot.id = 'yaxsell-wholesale-offers-root';
-      heroBannerSection.insertAdjacentElement('afterend', wholesaleOffersRoot);
+      liveShoppingRoot.insertAdjacentElement('afterend', wholesaleOffersRoot);
 
       const latestProductsRoot = document.createElement('div');
       latestProductsRoot.id = 'yaxsell-latest-products-root';
       wholesaleOffersRoot.insertAdjacentElement('afterend', latestProductsRoot);
-    }
-
-    // Insert Live Shopping placeholder right after the categories slider
-    const categoriesSection = tempDiv.querySelector('#shopify-section-template--27304712470809__collection_list_slider_YAxwGw');
-    if (categoriesSection) {
-      const liveShoppingRoot = document.createElement('div');
-      liveShoppingRoot.id = 'yaxsell-live-shopping-root';
-      categoriesSection.insertAdjacentElement('afterend', liveShoppingRoot);
     }
 
     // Clear mockup product listings to prevent flashing native Shopify products

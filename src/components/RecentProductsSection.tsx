@@ -86,7 +86,7 @@ export default function RecentProductsSection() {
     // 1. Fetch initial recent products with stock via API
     const loadRecent = async () => {
       try {
-        const res = await fetch('/api/public-data/products?live=true');
+        const res = await fetch('/api/public-data/products?live=true', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           setProducts((data.products || []) as Product[]);
@@ -132,49 +132,8 @@ export default function RecentProductsSection() {
     }, 850);
   };
 
-  if (loading) {
-    return (
-      <div className="py-12 flex flex-col items-center justify-center min-h-[200px]">
-        <div className="w-8 h-8 border-2 border-pink-200 border-t-pink-500 rounded-full animate-spin" />
-        <p className="text-xs text-black/40 mt-3 font-medium">Buscando novedades en stock...</p>
-      </div>
-    );
-  }
-
-  if (products.length === 0) {
-    return (
-      <section className="py-8 sm:py-14 max-w-7xl mx-auto px-4 sm:px-6 relative overflow-hidden">
-        {/* Title block with glassmorphism */}
-        <div className="flex items-center justify-between mb-6 sm:mb-8 bg-white/40 backdrop-blur-md border border-white/60 p-3 sm:p-4 rounded-2xl sm:rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-          <div className="flex items-center gap-3">
-            {/* Offline indicator dot */}
-            <div className="relative flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 bg-gray-100 rounded-full flex-shrink-0">
-              <span className="relative inline-flex rounded-full h-3 w-3 sm:h-3.5 sm:w-3.5 bg-gray-400"></span>
-            </div>
-            <div>
-              <h2 className="text-base sm:text-xl md:text-2xl font-black tracking-tight sm:tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 drop-shadow-sm uppercase">
-                Live Shopping
-              </h2>
-              <p className="text-[10px] sm:text-[11px] md:text-xs text-pink-600 font-bold uppercase tracking-wide sm:tracking-widest mt-0">
-                Próximamente • Productos en Vivo
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Beautiful Placeholder Banner */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-pink-50/60 via-purple-50/40 to-indigo-50/50 border border-pink-100/50 p-8 sm:p-12 text-center shadow-sm flex flex-col items-center justify-center min-h-[220px]">
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-pink-200/20 via-transparent to-transparent pointer-events-none" />
-          <div className="w-14 h-14 rounded-2xl bg-white shadow-md border border-pink-100/30 flex items-center justify-center text-pink-500 mb-4">
-            <Sparkles size={28} className="animate-pulse" />
-          </div>
-          <h3 className="text-base sm:text-lg font-extrabold text-gray-900 mb-2">Próximo Live Shopping</h3>
-          <p className="text-xs sm:text-sm text-gray-500 max-w-md leading-relaxed">
-            Actualmente no hay transmisiones o productos en vivo activos. ¡Atento a nuestras redes sociales para no perderte el próximo evento!
-          </p>
-        </div>
-      </section>
-    );
+  if (loading || products.length === 0) {
+    return null;
   }
 
   return (

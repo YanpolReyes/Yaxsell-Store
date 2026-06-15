@@ -152,11 +152,26 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const isLive = searchParams.get('live') === 'true';
 
-    // 1. Live Shopping (Cached query)
+    // 1. Live Shopping (Real-time DB query)
     if (isLive) {
       const threshold = getLiveShoppingThreshold();
-      const liveProducts = await getCachedLiveProducts(threshold.toISOString());
-      return NextResponse.json({ products: liveProducts });
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+        Query.greaterThanEqual('imported_at', threshold.toISOString()),
+        Query.greaterThanEqual('STOCK', 0),
+        Query.orderDesc('imported_at'),
+        Query.limit(500),
+      ]);
+      const normalized = res.documents.map(p => normalizeProductImages(p as any));
+      return NextResponse.json(
+        { products: normalized },
+        {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          },
+        }
+      );
     }
 
     const idsParam = searchParams.get('ids');
