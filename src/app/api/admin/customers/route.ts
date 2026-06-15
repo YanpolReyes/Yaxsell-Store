@@ -261,7 +261,7 @@ export async function PATCH(request: Request) {
 
     const updatedUser = await users.updatePrefs(userId, newPrefs);
 
-    return NextResponse.json({ success: true, prefs: updatedUser.prefs });
+    return NextResponse.json({ success: true, prefs: updatedUser });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : 'Error al actualizar puntos' },

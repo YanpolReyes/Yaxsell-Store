@@ -160,7 +160,7 @@ export function pickPrefs(raw: unknown): AdminCustomerPrefs {
   const keys = [
     'loyaltyLevel', 'welcomeGiftClaimed', 'welcomeCouponCode', 'autoApplyCoupon',
     'rut', 'phone', 'region', 'comuna', 'address', 'avatarFileId', 'coverFileId',
-    'levelHistory',
+    'levelHistory', 'pointsAdjustment',
   ];
   for (const k of keys) {
     if (p[k] !== undefined && p[k] !== null && p[k] !== '') out[k] = p[k];
