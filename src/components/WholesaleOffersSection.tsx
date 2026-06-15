@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getServices, formatPrice } from '@/lib/appwrite';
+import { formatPrice } from '@/lib/appwrite';
 import { Product } from '@/types';
 import { useCart } from '@/context/CartContext';
-import { Tag, ShoppingCart, Check, Percent, ArrowRight } from 'lucide-react';
+import { Tag, ShoppingCart, Check, Percent } from 'lucide-react';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 
@@ -29,12 +29,12 @@ export default function WholesaleOffersSection() {
           return;
         }
 
-        // Fetch product details for these IDs
         const prodRes = await fetch(`/api/public-data/products?ids=${productIds.join(',')}`);
         if (prodRes.ok) {
           const prodData = await prodRes.json();
-          // Filter to show only active products with stock
-          const filtered = (prodData.products || []).filter((p: Product) => p.STOCK !== undefined && p.STOCK > 0);
+          const filtered = (prodData.products || []).filter(
+            (p: Product) => p.STOCK !== undefined && p.STOCK > 0
+          );
           setProducts(filtered);
         }
       } catch (err) {
@@ -70,7 +70,9 @@ export default function WholesaleOffersSection() {
     return (
       <div className="w-full max-w-7xl mx-auto px-4 py-12 flex flex-col items-center justify-center min-h-[250px]">
         <div className="animate-spin rounded-full h-9 w-9 border-b-2 border-pink-500"></div>
-        <p className="text-xs text-gray-500 mt-4 font-semibold uppercase tracking-wider">Cargando ofertas al por mayor...</p>
+        <p className="text-xs text-gray-500 mt-4 font-semibold uppercase tracking-wider">
+          Cargando ofertas al por mayor...
+        </p>
       </div>
     );
   }
@@ -99,40 +101,44 @@ export default function WholesaleOffersSection() {
         {products.map(p => {
           const pricing = resolveProductDisplayPrice(p, apertura);
           const normalDisplayPrice = pricing.displayPrice;
-          
-          const hasWholesale = p.WHOLESALEPRICE && p.WHOLESALEPRICE > 0 && 
-                               p.WHOLESALEMINQUANTITY && p.WHOLESALEMINQUANTITY > 0;
+
+          const hasWholesale =
+            p.WHOLESALEPRICE && p.WHOLESALEPRICE > 0 &&
+            p.WHOLESALEMINQUANTITY && p.WHOLESALEMINQUANTITY > 0;
           const wholesalePrice = p.WHOLESALEPRICE || 0;
           const wholesaleMinQty = p.WHOLESALEMINQUANTITY || 1;
 
           const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES || '';
           const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
-          
-          const discountPercent = hasWholesale 
-            ? Math.round(((normalDisplayPrice - wholesalePrice) / normalDisplayPrice) * 100) 
+
+          const discountPercent = hasWholesale
+            ? Math.round(((normalDisplayPrice - wholesalePrice) / normalDisplayPrice) * 100)
             : 0;
 
           const isAddingSingle = addingId === `${p.$id}-1`;
           const isAddingWholesale = addingId === `${p.$id}-${wholesaleMinQty}`;
+          const productUrl = `/producto/${p.$id}`;
 
           return (
-            <div 
-              key={`wholesale-offer-${p.$id}`} 
+            <a
+              key={`wholesale-offer-${p.$id}`}
+              href={productUrl}
               className="bg-white rounded-3xl border border-gray-100/80 shadow-[0_8px_30px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_40px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-500 flex flex-col sm:flex-row overflow-hidden group min-h-[220px]"
+              style={{ textDecoration: 'none', color: 'inherit', display: 'flex' }}
             >
               {/* Product Image Column */}
               <div className="relative w-full sm:w-2/5 aspect-video sm:aspect-square bg-gray-50 overflow-hidden shrink-0 border-b sm:border-b-0 sm:border-r border-gray-100">
                 {p.IMAGEURL ? (
-                  <img 
-                    src={p.IMAGEURL} 
-                    alt={p.NAME} 
-                    loading="lazy" 
-                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" 
+                  <img
+                    src={p.IMAGEURL}
+                    alt={p.NAME}
+                    loading="lazy"
+                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-300 text-4xl">📦</div>
                 )}
-                
+
                 {/* Floating Discount Tag */}
                 {hasWholesale && discountPercent > 0 && (
                   <div className="absolute top-4 left-4 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-black text-[10px] sm:text-xs px-3 py-1.5 rounded-2xl shadow-md z-10 flex items-center gap-1">
@@ -150,10 +156,10 @@ export default function WholesaleOffersSection() {
                       SKU: {p.SKU}
                     </span>
                   )}
-                  <h3 className="font-black text-gray-900 text-base sm:text-lg hover:text-pink-600 line-clamp-2 transition-colors duration-200 leading-snug">
+                  <h3 className="font-black text-gray-900 text-base sm:text-lg group-hover:text-pink-600 line-clamp-2 transition-colors duration-200 leading-snug">
                     {p.NAME}
                   </h3>
-                  
+
                   {/* Prices Display */}
                   <div className="flex flex-col gap-1.5 py-1">
                     <div className="flex items-center gap-2">
@@ -173,7 +179,9 @@ export default function WholesaleOffersSection() {
                             {formatPrice(wholesalePrice)}
                           </span>
                           <span className="text-[10px] sm:text-xs font-bold text-pink-500">
-                            {isExact ? `llevando exactamente ${wholesaleMinQty} un.` : `c/u desde ${wholesaleMinQty} unidades`}
+                            {isExact
+                              ? `llevando exactamente ${wholesaleMinQty} un.`
+                              : `c/u desde ${wholesaleMinQty} unidades`}
                           </span>
                         </div>
                       </div>
@@ -228,7 +236,7 @@ export default function WholesaleOffersSection() {
                   </button>
                 </div>
               </div>
-            </div>
+            </a>
           );
         })}
       </div>
