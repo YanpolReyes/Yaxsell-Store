@@ -74,7 +74,9 @@ export class LoyaltyService {
       // Calcular puntos
       const levelIndex = LEVELS.findIndex(l => l.id === currentLevel);
       const pointsMultiplier = LEVELS[levelIndex >= 0 ? levelIndex : 0].pointsMultiplier;
-      const points = Math.floor((totalSpent / 1000) * pointsMultiplier);
+      const basePoints = Math.floor((totalSpent / 1000) * pointsMultiplier);
+      const pointsAdjustment = Number(prefs.pointsAdjustment || 0);
+      const points = Math.max(0, basePoints + pointsAdjustment);
 
       // Obtener historial de niveles
       const levelHistory: LevelUpgrade[] = prefs.levelHistory || [];

@@ -181,7 +181,7 @@ function buildCustomerRow(
     loyaltyStored,
     loyaltyCalculated,
     loyaltyName: meta.name,
-    pointsEstimate: estimatePoints(orderStats.revenuePaid, loyaltyEffective),
+    pointsEstimate: estimatePoints(orderStats.revenuePaid, loyaltyEffective) + Number(prefs.pointsAdjustment || 0),
     orders: orderStats,
     hasProfileDoc: !profile.$id.startsWith('auth:'),
     isAuthOnly: profile.$id.startsWith('auth:'),
@@ -233,6 +233,39 @@ export async function GET() {
     return NextResponse.json(
       { users: [], error: e instanceof Error ? e.message : 'Error al cargar clientes' },
       { status: 500 },
+    );
+  }
+}
+
+export async function PATCH(request: Request) {
+  if (!process.env.APPWRITE_API_KEY) {
+    return NextResponse.json({ error: 'Falta APPWRITE_API_KEY' }, { status: 400 });
+  }
+
+  try {
+    const body = await request.json();
+    const { userId, pointsAdjustment } = body;
+
+    if (!userId || typeof pointsAdjustment !== 'number') {
+      return NextResponse.json({ error: 'Faltan parámetros obligatorios: userId o pointsAdjustment' }, { status: 400 });
+    }
+
+    const { users } = getServerDb();
+    const user = await users.get(userId);
+    const currentPrefs = user.prefs || {};
+    
+    const newPrefs = {
+      ...currentPrefs,
+      pointsAdjustment: (Number(currentPrefs.pointsAdjustment || 0) + pointsAdjustment)
+    };
+
+    const updatedUser = await users.updatePrefs(userId, newPrefs);
+
+    return NextResponse.json({ success: true, prefs: updatedUser.prefs });
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : 'Error al actualizar puntos' },
+      { status: 500 }
     );
   }
 }
