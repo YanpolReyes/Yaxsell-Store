@@ -1901,18 +1901,26 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           el.removeAttribute('data-mode');
         });
 
-        // Fix main gallery slider images
-        root.querySelectorAll('.media-gallery__carousel-container img').forEach((el: any, idx: number) => {
-          if (el.closest('.media-gallery__carousel-thumbnails') || el.closest('.media-gallery__grid-thumbnails')) return;
+        // Fix main gallery slider images and their container elements
+        root.querySelectorAll('.media-gallery__carousel-container .media-gallery__item').forEach((item: any, idx: number) => {
+          if (item.closest('.media-gallery__carousel-thumbnails') || item.closest('.media-gallery__grid-thumbnails')) return;
           const imgUrl = pImages[idx % pImages.length] || pImages[0];
-          el.src = imgUrl;
-          el.srcset = imgUrl;
-          el.setAttribute('src', imgUrl);
-          el.setAttribute('srcset', imgUrl);
-          el.removeAttribute('is');
-          el.removeAttribute('data-mode');
-          el.removeAttribute('loading');
-          el.classList.add('loaded', 'is-revealed');
+          
+          // Fix data attributes for Photoswipe zoom
+          item.setAttribute('data-media-src', imgUrl);
+          item.setAttribute('data-media-id', imgUrl);
+          
+          const el = item.querySelector('img');
+          if (el) {
+            el.src = imgUrl;
+            el.srcset = imgUrl;
+            el.setAttribute('src', imgUrl);
+            el.setAttribute('srcset', imgUrl);
+            el.removeAttribute('is');
+            el.removeAttribute('data-mode');
+            el.removeAttribute('loading');
+            el.classList.add('loaded', 'is-revealed');
+          }
         });
       }
     }
