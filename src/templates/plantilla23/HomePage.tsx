@@ -3068,6 +3068,92 @@ export default function HomePage23() {
     if (products.length > 0) {
       const formatCLP = (val: number) => '$' + Math.round(val).toLocaleString('es-CL');
 
+      const initSwiperIfField = (swiperContainer: any) => {
+        if (!swiperContainer || swiperContainer.swiper) return;
+        const SwiperClass = (window as any).Swiper;
+        if (!SwiperClass) return;
+
+        const parent = swiperContainer.closest('.featured-collection__product-by-collection') || swiperContainer.closest('.product-columns-block') || swiperContainer.closest('product-columns');
+        if (!parent) return;
+
+        const itemsPerView = parseInt(swiperContainer.dataset.itemsPerView) || 3;
+        const itemsPerViewMobile = parseInt(swiperContainer.dataset.itemsPerViewMobile) || 1;
+        const totalSlides = swiperContainer.querySelectorAll('.swiper-slide').length;
+        const autoplay = swiperContainer.dataset.autoplay === 'true';
+        const speed = parseInt(swiperContainer.dataset.speed) || 5000;
+        const loop = swiperContainer.dataset.loop === 'true';
+        const spaceBetween = parseInt(swiperContainer.dataset.gap) || 10;
+
+        const visibleItemsPerView = itemsPerView && totalSlides > itemsPerView ? itemsPerView : totalSlides;
+        
+        const breakpoints = {
+          0: { slidesPerView: itemsPerViewMobile },
+          500: { slidesPerView: 2 },
+          768: { slidesPerView: visibleItemsPerView > 3 ? 3 : visibleItemsPerView },
+          1400: { slidesPerView: visibleItemsPerView > 4 ? 4 : visibleItemsPerView }
+        };
+
+        const swiperSettings: any = {
+          init: false,
+          initialSlide: 0,
+          loop,
+          centeredSlides: false,
+          speed: 500,
+          watchOverflow: true,
+          breakpoints,
+          observer: true,
+          observeSlideChildren: true,
+          watchSlidesProgress: true,
+          autoHeight: false,
+          spaceBetween,
+          on: {
+            init: () => {
+              const paginationBullets = parent.querySelectorAll('.swiper-pagination:not(.swiper-pagination--product-card) .swiper-pagination-bullet');
+              if (paginationBullets && paginationBullets.length > 0) {
+                parent.style.setProperty('--pagination-width', `calc(100% / ${paginationBullets.length})`);
+                paginationBullets.forEach((item: any, index: number) => {
+                  item.setAttribute('data-index', String(index));
+                });
+                setTimeout(() => {
+                  parent.querySelector('.swiper-pagination:not(.swiper-pagination--product-card)')?.classList.add('loaded');
+                }, 500);
+              }
+            },
+            slideChange: () => {
+              const activePagination = parent.querySelector('.swiper-pagination:not(.swiper-pagination--product-card) .swiper-pagination-bullet-active') as any;
+              if (activePagination) {
+                const activePaginationIndex = parseInt(activePagination.dataset.index);
+                parent.style.setProperty('--pagination-translate-x', `calc(100% * ${activePaginationIndex})`);
+              }
+            }
+          }
+        };
+
+        if (parent.querySelector('.swiper-navigation-wrapper:not(.swiper-navigation-wrapper--product-card)')) {
+          swiperSettings.navigation = {
+            nextEl: parent.querySelector('.button-next:not(.button-next--product-card)'),
+            prevEl: parent.querySelector('.button-previous:not(.button-previous--product-card)')
+          };
+        }
+
+        if (parent.querySelector('.swiper-pagination:not(.swiper-pagination--product-card)')) {
+          swiperSettings.pagination = {
+            el: parent.querySelector('.swiper-pagination:not(.swiper-pagination--product-card)')
+          };
+        }
+
+        if (autoplay && !isNaN(speed)) {
+          swiperSettings.autoplay = { delay: speed };
+        }
+
+        try {
+          const swiper = new SwiperClass(swiperContainer, swiperSettings);
+          swiper.init();
+        } catch (err) {
+          console.warn('Error initializing swiper manually:', err);
+        }
+      };
+
       const createCardHtml = (product: Product) => {
         const pLink = `/productos/${product.$id}`;
         const pImg = product.IMAGEURL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/gold_eyepatch.png';
@@ -3147,104 +3233,114 @@ export default function HomePage23() {
 
       // Push heavy hydration task to next tick to prevent mobile freezing on load
       setTimeout(() => {
-      // 1. Populate Tab 1: Productos baratos para empezar a emprender (cheapest in-stock)
-      const tab1Products = [...cheapestProducts]
-        .filter(p => p.STOCK && p.STOCK > 0)
-        .sort((a: any, b: any) => {
-          const priceA = a.CURRENTPRICE && a.CURRENTPRICE > 0 ? a.CURRENTPRICE : (a.PRICE || 0);
-          const priceB = b.CURRENTPRICE && b.CURRENTPRICE > 0 ? b.CURRENTPRICE : (b.PRICE || 0);
-          return priceA - priceB;
-        })
-        .slice(0, 4);
+        // 1. Populate Tab 1: Productos baratos para empezar a emprender (cheapest in-stock)
+        const tab1Products = [...cheapestProducts]
+          .filter(p => p.STOCK && p.STOCK > 0)
+          .sort((a: any, b: any) => {
+            const priceA = a.CURRENTPRICE && a.CURRENTPRICE > 0 ? a.CURRENTPRICE : (a.PRICE || 0);
+            const priceB = b.CURRENTPRICE && b.CURRENTPRICE > 0 ? b.CURRENTPRICE : (b.PRICE || 0);
+            return priceA - priceB;
+          })
+          .slice(0, 4);
 
-      const section1 = root.querySelector('.featured-collection__products[data-index="1"]');
-      if (section1 && tab1Products.length > 0) {
-        const firstWrapper = section1.querySelector('.featured-collection__first-product-wrapper');
-        const swiperWrapper = section1.querySelector('.featured-collection__product-by-collection .swiper-wrapper');
-        
-        if (firstWrapper) {
-          firstWrapper.innerHTML = createCardHtml(tab1Products[0]);
-        }
-        
-        if (swiperWrapper) {
-          swiperWrapper.innerHTML = '';
-          const sliderProducts = tab1Products.slice(1, 4);
-          sliderProducts.forEach((prod, idx) => {
-            const slide = document.createElement('div');
-            slide.className = `swiper-slide h-auto w-full items-center flex animation-element fade-in animation-delay-${(idx + 2) * 100} py-3`;
-            slide.innerHTML = createCardHtml(prod);
-            swiperWrapper.appendChild(slide);
-          });
-        }
-
-        const swiperEl1 = section1.querySelector('.featured-collection__product-by-collection .swiper-container') as any;
-        if (swiperEl1 && swiperEl1.swiper) {
-          swiperEl1.swiper.update();
-        }
-      }
-
-      // 2. Populate Tab 2: TIENDA
-      const tab2Products = [...products]
-        .sort((a, b) => {
-          const aBest = a.TAGS?.some(t => t.toLowerCase() === 'best-seller') ? 1 : 0;
-          const bBest = b.TAGS?.some(t => t.toLowerCase() === 'best-seller') ? 1 : 0;
-          if (aBest !== bBest) return bBest - aBest;
-          return (b.SOLDQUANTITY || 0) - (a.SOLDQUANTITY || 0);
-        })
-        .slice(0, 4);
-
-      const section2 = root.querySelector('.featured-collection__products[data-index="2"]');
-      if (section2 && tab2Products.length > 0) {
-        const firstWrapper = section2.querySelector('.featured-collection__first-product-wrapper');
-        const swiperWrapper = section2.querySelector('.featured-collection__product-by-collection .swiper-wrapper');
-        
-        if (firstWrapper) {
-          firstWrapper.innerHTML = createCardHtml(tab2Products[0]);
-        }
-        
-        if (swiperWrapper) {
-          swiperWrapper.innerHTML = '';
-          const sliderProducts = tab2Products.slice(1, 4);
-          sliderProducts.forEach((prod, idx) => {
-            const slide = document.createElement('div');
-            slide.className = `swiper-slide h-auto w-full items-center flex animation-element fade-in animation-delay-${(idx + 2) * 100} py-3`;
-            slide.innerHTML = createCardHtml(prod);
-            swiperWrapper.appendChild(slide);
-          });
-        }
-
-        const swiperEl2 = section2.querySelector('.featured-collection__product-by-collection .swiper-container') as any;
-        if (swiperEl2 && swiperEl2.swiper) {
-          swiperEl2.swiper.update();
-        }
-      }
-
-      // 3. Populate ALL .product-columns-block and product-columns .swiper-container with random in-stock products
-      const columnBlocks = root.querySelectorAll('.product-columns-block .swiper-container, product-columns .swiper-container');
-      columnBlocks.forEach((swiperContainer: any) => {
-        const wrapper = swiperContainer.querySelector('.swiper-wrapper');
-        if (wrapper) {
-          const availableProducts = products.filter(p => p.STOCK && p.STOCK > 0);
-          const shuffled = availableProducts.sort(() => 0.5 - Math.random());
+        const section1 = root.querySelector('.featured-collection__products[data-index="1"]');
+        if (section1 && tab1Products.length > 0) {
+          const firstWrapper = section1.querySelector('.featured-collection__first-product-wrapper');
+          const swiperWrapper = section1.querySelector('.featured-collection__product-by-collection .swiper-wrapper');
           
-          const itemsTotalStr = swiperContainer.getAttribute('data-items-total');
-          const itemsNeeded = itemsTotalStr ? parseInt(itemsTotalStr, 10) : 8;
+          if (firstWrapper) {
+            firstWrapper.innerHTML = createCardHtml(tab1Products[0]);
+          }
           
-          const selected = shuffled.slice(0, itemsNeeded);
-          
-          wrapper.innerHTML = '';
-          selected.forEach((prod) => {
-            const slide = document.createElement('div');
-            slide.className = 'swiper-slide product-card-wrapper w-full py-3';
-            slide.innerHTML = createCardHtml(prod);
-            wrapper.appendChild(slide);
-          });
+          if (swiperWrapper) {
+            swiperWrapper.innerHTML = '';
+            const sliderProducts = tab1Products.slice(1, 4);
+            sliderProducts.forEach((prod, idx) => {
+              const slide = document.createElement('div');
+              slide.className = `swiper-slide h-auto w-full items-center flex animation-element fade-in animation-delay-${(idx + 2) * 100} py-3`;
+              slide.innerHTML = createCardHtml(prod);
+              swiperWrapper.appendChild(slide);
+            });
+          }
 
-          if (swiperContainer.swiper) {
-            swiperContainer.swiper.update();
+          const swiperEl1 = section1.querySelector('.featured-collection__product-by-collection .swiper-container') as any;
+          if (swiperEl1) {
+            if (swiperEl1.swiper) {
+              swiperEl1.swiper.update();
+            } else {
+              initSwiperIfField(swiperEl1);
+            }
           }
         }
-      });
+
+        // 2. Populate Tab 2: TIENDA
+        const tab2Products = [...products]
+          .sort((a, b) => {
+            const aBest = a.TAGS?.some(t => t.toLowerCase() === 'best-seller') ? 1 : 0;
+            const bBest = b.TAGS?.some(t => t.toLowerCase() === 'best-seller') ? 1 : 0;
+            if (aBest !== bBest) return bBest - aBest;
+            return (b.SOLDQUANTITY || 0) - (a.SOLDQUANTITY || 0);
+          })
+          .slice(0, 4);
+
+        const section2 = root.querySelector('.featured-collection__products[data-index="2"]');
+        if (section2 && tab2Products.length > 0) {
+          const firstWrapper = section2.querySelector('.featured-collection__first-product-wrapper');
+          const swiperWrapper = section2.querySelector('.featured-collection__product-by-collection .swiper-wrapper');
+          
+          if (firstWrapper) {
+            firstWrapper.innerHTML = createCardHtml(tab2Products[0]);
+          }
+          
+          if (swiperWrapper) {
+            swiperWrapper.innerHTML = '';
+            const sliderProducts = tab2Products.slice(1, 4);
+            sliderProducts.forEach((prod, idx) => {
+              const slide = document.createElement('div');
+              slide.className = `swiper-slide h-auto w-full items-center flex animation-element fade-in animation-delay-${(idx + 2) * 100} py-3`;
+              slide.innerHTML = createCardHtml(prod);
+              swiperWrapper.appendChild(slide);
+            });
+          }
+
+          const swiperEl2 = section2.querySelector('.featured-collection__product-by-collection .swiper-container') as any;
+          if (swiperEl2) {
+            if (swiperEl2.swiper) {
+              swiperEl2.swiper.update();
+            } else {
+              initSwiperIfField(swiperEl2);
+            }
+          }
+        }
+
+        // 3. Populate ALL .product-columns-block and product-columns .swiper-container with random in-stock products
+        const columnBlocks = root.querySelectorAll('.product-columns-block .swiper-container, product-columns .swiper-container');
+        columnBlocks.forEach((swiperContainer: any) => {
+          const wrapper = swiperContainer.querySelector('.swiper-wrapper');
+          if (wrapper) {
+            const availableProducts = products.filter(p => p.STOCK && p.STOCK > 0);
+            const shuffled = availableProducts.sort(() => 0.5 - Math.random());
+            
+            const itemsTotalStr = swiperContainer.getAttribute('data-items-total');
+            const itemsNeeded = itemsTotalStr ? parseInt(itemsTotalStr, 10) : 8;
+            
+            const selected = shuffled.slice(0, itemsNeeded);
+            
+            wrapper.innerHTML = '';
+            selected.forEach((prod) => {
+              const slide = document.createElement('div');
+              slide.className = 'swiper-slide product-card-wrapper w-full py-3';
+              slide.innerHTML = createCardHtml(prod);
+              wrapper.appendChild(slide);
+            });
+
+            if (swiperContainer.swiper) {
+              swiperContainer.swiper.update();
+            } else {
+              initSwiperIfField(swiperContainer);
+            }
+          }
+        });
 
       // 4. Populate featured-product blocks with random in-stock products
       const featuredProductBlocks = root.querySelectorAll('featured-product');
@@ -4740,17 +4836,22 @@ export default function HomePage23() {
           }
 
           /* Pack timer / offer carousel: full width on mobile */
-          #yaxsell-homepage-offers-carousel,
-          #yaxsell-homepage-offers-carousel > div {
+          #yaxsell-homepage-offers-carousel {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 8px !important;
+            box-sizing: border-box !important;
+          }
+          #yaxsell-homepage-offers-carousel > div:not(.yxs-offers-header):not(.yxs-offers-grid):not(.yxs-offers-divider) {
             width: 100% !important;
             max-width: 100% !important;
             padding: 0 8px !important;
             box-sizing: border-box !important;
           }
           /* Offer cards: 1 column on mobile (2 per row was crowding) */
-          #yaxsell-homepage-offers-carousel > div > div {
-            width: calc(50% - 8px) !important;
-            min-width: calc(50% - 8px) !important;
+          #yaxsell-homepage-offers-carousel .offer-card-hover {
+            width: 100% !important;
+            min-width: 100% !important;
           }
           /* Reduce offer card padding on mobile */
           .offer-card-hover {
@@ -4835,6 +4936,53 @@ export default function HomePage23() {
           content: '✨' !important;
           font-size: 14px !important;
         }
+
+        /* Diseño responsivo de Featured Collection en Móviles (apilar verticalmente) */
+        @media (max-width: 767.98px) {
+          .featured-collection__products-inner {
+            flex-direction: column !important;
+            gap: 20px !important;
+          }
+          .featured-collection__first-product-wrapper {
+            max-width: 100% !important;
+            width: 100% !important;
+          }
+        }
+
+        /* Botón flotante de WhatsApp a la izquierda */
+        .whatsapp-floating-btn {
+          position: fixed !important;
+          left: 24px !important;
+          bottom: 24px !important;
+          width: 56px !important;
+          height: 56px !important;
+          border-radius: 50% !important;
+          background-color: #25d366 !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          z-index: 99999 !important;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        .whatsapp-floating-btn:hover {
+          transform: scale(1.1) !important;
+          box-shadow: 0 6px 16px rgba(37, 211, 102, 0.3) !important;
+        }
+        .whatsapp-floating-btn img {
+          width: 100% !important;
+          height: 100% !important;
+          border-radius: 50% !important;
+          object-fit: cover !important;
+        }
+        @media (max-width: 767.98px) {
+          .whatsapp-floating-btn {
+            bottom: 90px !important; /* Evitar que el menú de navegación móvil lo tape */
+            width: 48px !important;
+            height: 48px !important;
+            left: 16px !important;
+          }
+        }
       `}</style>
 
       <div className={`splash-screen ${!showSplash ? 'hidden' : ''}`}>
@@ -4845,6 +4993,19 @@ export default function HomePage23() {
         ref={containerRef}
         className="tpl23-shopify-root template-index"
       />
+
+      {/* Floating WhatsApp Button */}
+      <a
+        href="https://wa.me/56999149712"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="whatsapp-floating-btn"
+      >
+        <img
+          src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRAZfIMxTRshRuJdTJu-mi52yWPxiF3ghQsSw&s"
+          alt="WhatsApp"
+        />
+      </a>
 
       {wholesaleOffersContainer && createPortal(
         <WholesaleOffersSection />,

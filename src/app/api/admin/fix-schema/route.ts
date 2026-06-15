@@ -11,12 +11,15 @@ interface AttrDef {
   size?: number;
   required?: boolean;
   default?: string | number | boolean | null;
+  array?: boolean;
 }
 
 const FIXES: Record<string, AttrDef[]> = {
   products: [
     { key: 'IMAGEURL4', type: 'string', size: 2048, required: false, default: null },
     { key: 'IMAGEURL5', type: 'string', size: 2048, required: false, default: null },
+    { key: 'TAGS', type: 'string', size: 512, required: false, default: null, array: true },
+    { key: 'FEATURES', type: 'string', size: 15000, required: false, default: null, array: true },
   ],
   points_store_items: [
     { key: 'SORTORDER', type: 'integer', required: false, default: 0 },
@@ -83,6 +86,7 @@ async function createAttribute(collectionId: string, attr: AttrDef): Promise<{ c
   const body: Record<string, unknown> = { key: attr.key, required: attr.required ?? false };
   if (attr.type === 'string') body.size = attr.size ?? 256;
   if (attr.default !== undefined && attr.default !== null) body.default = attr.default;
+  if (attr.array !== undefined) body.array = attr.array;
 
   try {
     const res = await fetch(url, {

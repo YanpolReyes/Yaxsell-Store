@@ -9,8 +9,7 @@ import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, Che
 import ImageUploadField from '@/components/admin/ImageUploadField';
 import { generateProductTitle, generateProductDescription } from '@/lib/aiAdmin';
 import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures, setSectionInFeatures, getCustomTabsFromFeatures, setCustomTabsInFeatures, getExactWholesaleFromFeatures, setExactWholesaleInFeatures } from '@/lib/product-features';
-import Lottie from 'lottie-react';
-import iaAnimation from '@/ia.json';
+// Lottie imports removed to prevent React 19 crashes
 
 type ProductModalData = Partial<Product> & { _barcode?: string; _sku?: string; _details?: string; _usage?: string; _ingredients?: string };
 
@@ -801,7 +800,7 @@ export default function ProductsPage() {
       };
       // Campos opcionales que pueden no existir en el schema
       const optionalFields: Record<string, any> = {
-        TAGS: d.TAGS || '',
+        TAGS: typeof d.TAGS === 'string' ? d.TAGS.split(',').map((t: string) => t.trim()).filter(Boolean) : (d.TAGS || []),
         FEATURES: (() => {
           let features = d.FEATURES || '';
           features = setSkuInFeatures(features, d._sku || '');
@@ -1250,13 +1249,15 @@ export default function ProductsPage() {
 
   const filtered = products.filter(p => {
     const q = search.toLowerCase();
+    const tagsStr = Array.isArray(p.TAGS) ? p.TAGS.join(', ') : (p.TAGS || '');
+    const featuresStr = Array.isArray(p.FEATURES) ? p.FEATURES.join(', ') : (p.FEATURES || '');
     const matchSearch = !search || (
       p.NAME?.toLowerCase().includes(q) ||
       p.DESCRIPTION?.toLowerCase().includes(q) ||
-      p.TAGS?.toLowerCase().includes(q) ||
+      tagsStr.toLowerCase().includes(q) ||
       getSku(p).toLowerCase().includes(q) ||
       getBarcode(p).toLowerCase().includes(q) ||
-      p.FEATURES?.toLowerCase().includes(q)
+      featuresStr.toLowerCase().includes(q)
     );
     const matchCat = !catFilter || p.CATEGORYID === catFilter;
     const matchSubCat = !subCatFilter || p.SUBCATEGORYID === subCatFilter;
@@ -1586,12 +1587,12 @@ export default function ProductsPage() {
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Tags (separados por coma)</label>
-                    <input type="text" value={modal.data.TAGS || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, TAGS: e.target.value } } : m)}
+                    <input type="text" value={Array.isArray(modal.data.TAGS) ? modal.data.TAGS.join(', ') : (modal.data.TAGS || '')} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, TAGS: e.target.value } } : m)}
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="tag1, tag2, tag3" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Características (otras)</label>
-                    <input type="text" value={modal.data.FEATURES || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, FEATURES: e.target.value } } : m)}
+                    <input type="text" value={Array.isArray(modal.data.FEATURES) ? modal.data.FEATURES.join('\n') : (modal.data.FEATURES || '')} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, FEATURES: e.target.value } } : m)}
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                     <p className="text-[10px] text-gray-400 mt-1">SKU y código de barras se guardan en los campos de arriba.</p>
                   </div>
@@ -2110,8 +2111,8 @@ export default function ProductsPage() {
                           className="relative shrink-0 group"
                           title="Preguntar a Yexy AI"
                         >
-                          <div className="w-10 h-10">
-                            <Lottie animationData={iaAnimation} loop={true} autoplay={true} className="w-full h-full" />
+                          <div className="w-10 h-10 flex items-center justify-center bg-violet-50 rounded-xl hover:bg-violet-100 transition-colors border border-violet-200 text-violet-600">
+                            <Sparkles className="w-5 h-5 animate-pulse" />
                           </div>
                           <span className="absolute -top-1 -right-1 text-[8px] font-bold bg-violet-600 text-white rounded px-1 leading-tight">
                             IA
@@ -2176,11 +2177,11 @@ export default function ProductsPage() {
                           </div>
                           {p.TAGS && (
                             <div className="flex flex-wrap gap-1 mt-0.5">
-                              {p.TAGS.split(',')
-                                .map(t => t.trim())
+                              {((Array.isArray(p.TAGS) ? p.TAGS : String(p.TAGS).split(',')) as string[])
+                                .map((t: string) => t.trim())
                                 .filter(Boolean)
                                 .slice(0, 3)
-                                .map(t => (
+                                .map((t: string) => (
                                   <button
                                     key={t}
                                     onClick={e => {

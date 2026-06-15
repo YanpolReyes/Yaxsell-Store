@@ -5380,7 +5380,317 @@
     </div>
 
     <!-- Dynamic Product Cards Showcase -->
-    <div id="yaxsell-homepage-offers-carousel" style="margin-top: 40px; display: flex; flex-direction: column; align-items: center; width: 100%;"></div>
+    <div id="yaxsell-homepage-offers-carousel" style="margin-top: 40px; display: flex; flex-direction: column; align-items: center; width: 100%;">
+
+      <!-- ===== TARJETAS DE OFERTA MAYORISTA (mejoradas) ===== -->
+      <style>
+        /* Grid de tarjetas */
+        .yxs-offers-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 16px;
+          width: 100%;
+          max-width: 760px;
+        }
+        @media (min-width: 640px) {
+          .yxs-offers-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+          }
+        }
+
+        /* Tarjeta individual */
+        .yxs-offer-card {
+          display: flex;
+          flex-direction: column;
+          background: #ffffff;
+          border-radius: 20px;
+          overflow: hidden;
+          box-shadow: 0 4px 20px rgba(219,39,119,0.10), 0 1px 4px rgba(0,0,0,0.06);
+          border: 1px solid rgba(219,39,119,0.10);
+          transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.35s ease;
+          cursor: pointer;
+          text-decoration: none;
+          color: inherit;
+          position: relative;
+        }
+        .yxs-offer-card:hover {
+          transform: translateY(-6px) scale(1.012);
+          box-shadow: 0 16px 40px rgba(219,39,119,0.18), 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        /* Imagen */
+        .yxs-offer-card__img-wrap {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 4/3;
+          overflow: hidden;
+          background: #fdf2f8;
+          flex-shrink: 0;
+        }
+        .yxs-offer-card__img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94);
+          display: block;
+        }
+        .yxs-offer-card:hover .yxs-offer-card__img {
+          transform: scale(1.08);
+        }
+
+        /* Degradado inferior sobre imagen */
+        .yxs-offer-card__img-wrap::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to top, rgba(0,0,0,0.28) 0%, transparent 50%);
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        /* Badge de descuento */
+        .yxs-offer-badge {
+          position: absolute;
+          top: 12px;
+          left: 12px;
+          z-index: 3;
+          background: linear-gradient(135deg, #db2777, #be185d);
+          color: #fff;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          padding: 5px 11px;
+          border-radius: 999px;
+          box-shadow: 0 4px 12px rgba(219,39,119,0.4);
+        }
+
+        /* Badge mayorista */
+        .yxs-offer-badge-wholesale {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          z-index: 3;
+          background: rgba(255,255,255,0.92);
+          backdrop-filter: blur(6px);
+          color: #9d174d;
+          font-size: 9.5px;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          padding: 4px 9px;
+          border-radius: 999px;
+          border: 1px solid rgba(219,39,119,0.2);
+        }
+
+        /* Contenido */
+        .yxs-offer-card__body {
+          padding: 16px 18px 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          flex: 1;
+        }
+        .yxs-offer-card__category {
+          font-size: 10.5px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: #db2777;
+          opacity: 0.85;
+        }
+        .yxs-offer-card__name {
+          font-size: 15px;
+          font-weight: 800;
+          color: #111827;
+          line-height: 1.3;
+          margin: 0;
+        }
+        .yxs-offer-card__desc {
+          font-size: 12px;
+          color: #6b7280;
+          line-height: 1.45;
+          margin: 0;
+        }
+        .yxs-offer-card__footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-top: 10px;
+          padding-top: 10px;
+          border-top: 1px solid rgba(219,39,119,0.08);
+        }
+        .yxs-offer-card__prices {
+          display: flex;
+          align-items: baseline;
+          gap: 7px;
+        }
+        .yxs-offer-card__price-now {
+          font-size: 18px;
+          font-weight: 900;
+          color: #db2777;
+          letter-spacing: -0.02em;
+        }
+        .yxs-offer-card__price-was {
+          font-size: 12px;
+          font-weight: 500;
+          color: #9ca3af;
+          text-decoration: line-through;
+        }
+        .yxs-offer-card__cta {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 12px;
+          font-weight: 700;
+          color: #fff;
+          background: linear-gradient(135deg, #db2777, #be185d);
+          border: none;
+          border-radius: 999px;
+          padding: 8px 16px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-decoration: none;
+          box-shadow: 0 4px 12px rgba(219,39,119,0.30);
+          white-space: nowrap;
+        }
+        .yxs-offer-card__cta:hover {
+          background: linear-gradient(135deg, #be185d, #9d174d);
+          box-shadow: 0 6px 18px rgba(219,39,119,0.40);
+          transform: scale(1.04);
+        }
+
+        /* Encabezado de la sección de tarjetas */
+        .yxs-offers-header {
+          text-align: center;
+          margin-bottom: 24px;
+          width: 100%;
+        }
+        .yxs-offers-header__eyebrow {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 10.5px;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: #db2777;
+          background: rgba(219,39,119,0.08);
+          border: 1px solid rgba(219,39,119,0.14);
+          border-radius: 999px;
+          padding: 5px 14px;
+          margin-bottom: 10px;
+        }
+        .yxs-offers-header__title {
+          font-size: clamp(1.15rem, 3.5vw, 1.55rem);
+          font-weight: 900;
+          color: #111827;
+          margin: 0;
+          letter-spacing: -0.025em;
+          line-height: 1.2;
+        }
+        .yxs-offers-header__sub {
+          font-size: 12.5px;
+          color: #6b7280;
+          margin: 6px 0 0;
+          line-height: 1.5;
+        }
+
+        /* Separador decorativo */
+        .yxs-offers-divider {
+          width: 100%;
+          max-width: 760px;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(219,39,119,0.20), transparent);
+          margin: 0 auto 32px;
+        }
+      </style>
+
+      <!-- Separador -->
+      <div class="yxs-offers-divider"></div>
+
+      <!-- Encabezado de tarjetas -->
+      <div class="yxs-offers-header">
+        <div class="yxs-offers-header__eyebrow">
+          🛒 Ofertas por Mayor
+        </div>
+        <h4 class="yxs-offers-header__title">Grandes Ofertas Mayoristas</h4>
+        <p class="yxs-offers-header__sub">Precios especiales al comprar en cantidad · desde $20.000</p>
+      </div>
+
+      <!-- Grid de tarjetas -->
+      <div class="yxs-offers-grid">
+
+        <!-- Tarjeta 1: Brillo Labial Corazón Sugar Dew -->
+        <a href="/productos/6a1a4dac001885b6b069" class="yxs-offer-card" aria-label="Brillo Labial Corazón Sugar Dew">
+          <div class="yxs-offer-card__img-wrap">
+            <span class="yxs-offer-badge">x12+ $1.000 c/u</span>
+            <span class="yxs-offer-badge-wholesale">Mayor</span>
+            <img
+              loading="lazy"
+              alt="Brillo Labial Corazón Sugar Dew Hidratante y Glossy"
+              class="yxs-offer-card__img"
+              src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1781382997424-pegada-1781382994712.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=HLc2fc52tRTasJ7W8b6kNqzVw9j769Q9tosx4WhCx3r5tpOGpBSp%2BI6%2BiW1Iqh8iow5EqyXs6xyCyTo25PESb2VGRFZpEewDoDQ1sU5gWUlBz4YfuCNo958uvlt9U5MSeaMncwa0TCZ6KDf0lgdzXm0R7MDR9QjJXuQuLOlokLpifc9sUj8PVKxeWecbqJtzUFd0o7mYMPfOQmaSfXhO27Frz0ksQV9vW6scFPmMqgHyuLrVe6o7gdefaDWbDOtVI%2FKRKlLsOnJqrjIEmtch5%2B7VANK2KnOGC1qXY7RAI86wdxFQSYzNXhgW5%2FMUfje993OuIJC67HiDAWD5VAE44A%3D%3D"
+            >
+          </div>
+          <div class="yxs-offer-card__body">
+            <span class="yxs-offer-card__category">SKU: KC1641</span>
+            <p class="yxs-offer-card__name">Brillo Labial Corazón Sugar Dew Hidratante y Glossy</p>
+            <p class="yxs-offer-card__desc">Acabado glossy de alto impacto con fórmula ultra hidratante. Sin sensación pegajosa. Diseño corazón icónico.</p>
+            <div class="yxs-offer-card__footer">
+              <div class="yxs-offer-card__prices">
+                <span class="yxs-offer-card__price-now">$1.000 c/u</span>
+                <span class="yxs-offer-card__price-was">$2.000</span>
+              </div>
+              <span class="yxs-offer-card__cta">
+                Ver oferta
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Tarjeta 2: Rizador de Pestañas -->
+        <a href="/productos/6a1a4d1000173cabe6b1" class="yxs-offer-card" aria-label="Rizador de Pestañas">
+          <div class="yxs-offer-card__img-wrap">
+            <span class="yxs-offer-badge">x12+ $790 c/u</span>
+            <span class="yxs-offer-badge-wholesale">Mayor</span>
+            <img
+              loading="lazy"
+              alt="RIZADOR DE PESTAÑAS"
+              class="yxs-offer-card__img"
+              src="https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1781383687501-pegada-1781383685873.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=dIjZbhGsJRWog%2BdkmV%2F%2FyHiUEIEvfBMCZKzNALcRQUT3u6KXv9W6fXsawj8Rc6MGgcFVJg8pe%2FFuhRUdv3DammwF%2BnGkk%2F7x2fmhrIGwc%2BKU4HGbXgfgBnpz6f3LHqSCs2%2FanVlUIwpnqm465WYSnWckMzUdqqEA4n2fL4BjrVEsVeZ6jLbhx%2FzLW8If9%2BAgv9%2B3DyBBxhScIwMQda6zQ5JY6NFEuoaD11bjgOAyuVxuaZwg0imAmLWMEz5AWo6mqlrOKwcvrukwb1BHKbeC8crKsLoxb27cvlHAn0GiprA9cakluHDb7pyq1IWlX2NFrOFpjho0fgzbSGDAe3x3Xw%3D%3D"
+            >
+          </div>
+          <div class="yxs-offer-card__body">
+            <span class="yxs-offer-card__category">SKU: 1020</span>
+            <p class="yxs-offer-card__name">Rizador de Pestañas</p>
+            <p class="yxs-offer-card__desc">Riza y define tus pestañas de forma duradera. Precio mayorista disponible al comprar 12 o más unidades.</p>
+            <div class="yxs-offer-card__footer">
+              <div class="yxs-offer-card__prices">
+                <span class="yxs-offer-card__price-now">$790 c/u</span>
+                <span class="yxs-offer-card__price-was">$950</span>
+              </div>
+              <span class="yxs-offer-card__cta">
+                Ver oferta
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </span>
+            </div>
+          </div>
+        </a>
+
+      </div><!-- /yxs-offers-grid -->
+
+      <!-- Botón ver todas -->
+      <div style="margin-top: 28px; text-align: center;">
+        <a href="/mayorista" style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #db2777; border: 1.5px solid rgba(219,39,119,0.30); border-radius: 999px; padding: 11px 28px; background: rgba(255,255,255,0.85); backdrop-filter: blur(8px); text-decoration: none; transition: all 0.25s ease; letter-spacing: 0.04em;" onmouseover="this.style.background='rgba(219,39,119,0.07)';this.style.borderColor='rgba(219,39,119,0.55)'" onmouseout="this.style.background='rgba(255,255,255,0.85)';this.style.borderColor='rgba(219,39,119,0.30)'">
+          Ver todas las ofertas mayoristas
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+
+    </div><!-- /#yaxsell-homepage-offers-carousel -->
   </div>
 
   <!-- Smooth feathered blur transition at the bottom to blend with white background -->
@@ -23069,7 +23379,7 @@
             <span class="icon"><img src="https://cdn-icons-png.flaticon.com/512/3557/3557614.png" width="24" height="24" alt="VIP" /></span> Beneficios VIP
          </button>
          <button class="kc-tab-btn" data-target="faq-cupones">
-            <span class="icon"><img src="https://www.svgrepo.com/show/425564/discount-ticket-coupon-ticket-voucher.svg" width="24" height="24" alt="Cupones" /></span> Cupones y Ofertas
+            <span class="icon"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSpVrOEOLlJKtZ0myIO2KT1qm7LYJqnnH22Tg&s" width="24" height="24" alt="Cupones" /></span> Cupones y Ofertas
          </button>
          <button class="kc-tab-btn" data-target="faq-envios">
             <span class="icon"><img src="https://cdn-icons-png.flaticon.com/512/1950/1950321.png" width="24" height="24" alt="Envíos" /></span> Envíos y Garantías

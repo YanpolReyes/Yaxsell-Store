@@ -145,12 +145,70 @@ export default function HomePage5() {
   useEffect(() => {
     if (!bodyHtml || !containerRef.current) return;
     if (containerRef.current.dataset.htmlSet) return;
-    containerRef.current.innerHTML = bodyHtml;
+    
+    let processedHtml = bodyHtml;
+    processedHtml = processedHtml.replace(/Pebble\s*Little/gi, 'Yaxsell');
+    processedHtml = processedHtml.replace(/pebble-little/gi, 'yaxsell');
+    processedHtml = processedHtml.replaceAll('Home', 'Inicio');
+    processedHtml = processedHtml.replaceAll('New', 'Nuevo');
+    processedHtml = processedHtml.replaceAll('Popular', 'Popular');
+    processedHtml = processedHtml.replaceAll('Add to cart', 'Agregar al carrito');
+    processedHtml = processedHtml.replaceAll('Buy it now', 'Comprar ahora');
+    processedHtml = processedHtml.replaceAll('Free shipping', 'ENVIO SEGURO');
+    processedHtml = processedHtml.replaceAll('Easy return', 'COMPRA PROTEGIDA');
+    processedHtml = processedHtml.replaceAll('Safe checkout', 'PAGO GARANTIZADO');
+    processedHtml = processedHtml.replaceAll('Need help ?', '¿Necesitas ayuda?');
+    processedHtml = processedHtml.replaceAll('Need help?', '¿Necesitas ayuda?');
+    processedHtml = processedHtml.replaceAll('Outfit Inspiration', '✨ Élígete Bella');
+    processedHtml = processedHtml.replaceAll('Ideas to refresh your everyday wardrobe', 'Porque cuidarte es quererte. Brilla siempre.');
+    processedHtml = processedHtml.replaceAll('Over 500 Happy Reviews', 'Más de 500 opiniones felices');
+    
+    processedHtml = processedHtml.replaceAll('Learn more', 'Comprar ahora');
+    processedHtml = processedHtml.replaceAll('Learn More', 'Comprar ahora');
+    processedHtml = processedHtml.replaceAll('Shop Now', 'Comprar ahora');
+    processedHtml = processedHtml.replaceAll('Shop now', 'Comprar ahora');
+    processedHtml = processedHtml.replaceAll('Contact us', 'Contáctanos');
+    processedHtml = processedHtml.replaceAll('Contact Us', 'Contáctanos');
+    processedHtml = processedHtml.replaceAll('Continue shopping', 'Continuar comprando');
+    processedHtml = processedHtml.replaceAll('Continue Shopping', 'Continuar comprando');
+
+    containerRef.current.innerHTML = processedHtml;
     containerRef.current.dataset.htmlSet = '1';
 
     // Remove leftover Shopify elements
     const root = containerRef.current;
     root.querySelectorAll('.fusion-overlay-custom, .fusion-scroll-top, .quickView-popup').forEach(el => el.remove());
+
+    // Bloquear botones de compartir si existen
+    root.querySelectorAll('.social-sharing a').forEach((el: any) => {
+      el.setAttribute('href', '#');
+      el.removeAttribute('target');
+      el.addEventListener('click', (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    });
+    const shareText = root.querySelector('.social-sharing p');
+    if (shareText) {
+      shareText.textContent = 'Compartir:';
+    }
+
+    // Configurar el botón "¿Necesitas ayuda?" para WhatsApp si existe
+    const helpBtn = root.querySelector('.help-desk-link');
+    if (helpBtn) {
+      helpBtn.setAttribute('href', 'https://wa.me/56999149712');
+      helpBtn.setAttribute('target', '_blank');
+      helpBtn.setAttribute('rel', 'noopener noreferrer');
+      helpBtn.innerHTML = `
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRAZfIMxTRshRuJdTJu-mi52yWPxiF3ghQsSw&s" 
+             style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; margin-right: 8px; display: inline-block; vertical-align: middle;" 
+             alt="WhatsApp" />
+        <span style="vertical-align: middle;">¿Necesitas ayuda?</span>
+      `;
+      (helpBtn as HTMLElement).style.display = 'inline-flex';
+      (helpBtn as HTMLElement).style.alignItems = 'center';
+      (helpBtn as HTMLElement).style.justifyContent = 'center';
+    }
   }, [bodyHtml]);
 
   /* ── Inject window.Shopify stub BEFORE loading JS ── */
@@ -350,11 +408,92 @@ export default function HomePage5() {
           opacity: 1 !important;
           visibility: visible !important;
         }
+
+        /* Darle espacio al pie de página en móviles para que no quede tapado por la barra de navegación fija */
+        @media (max-width: 767.98px) {
+          #shopify-section-sections--20816632381578__footer,
+          .shopify-section-group-footer-group,
+          footer,
+          [class*="footer-group"] {
+            padding-bottom: 90px !important;
+          }
+        }
+
+        /* Separar más los enlaces legales del pie de página */
+        .footer__links, [class*="footer__links"] {
+          gap: 12px 32px !important;
+          display: flex !important;
+          flex-wrap: wrap !important;
+        }
+        .footer__links li, [class*="footer__links"] li {
+          margin-right: 0 !important;
+          margin-left: 0 !important;
+        }
+
+        /* Reposicionar el botón "Comprar ahora" en el banner del FAQ para ponerlo más abajo */
+        #shopify-section-template--20816638607498__custom_section_FXkPhr .image-card__inner {
+          height: 100% !important;
+          display: flex !important;
+          flex-direction: column !important;
+        }
+        #shopify-section-template--20816638607498__custom_section_FXkPhr .image-card__button {
+          margin-top: auto !important;
+          padding-bottom: 24px !important;
+          pointer-events: auto !important;
+        }
+
+        /* Botón flotante de WhatsApp a la izquierda */
+        .whatsapp-floating-btn {
+          position: fixed !important;
+          left: 24px !important;
+          bottom: 24px !important;
+          width: 56px !important;
+          height: 56px !important;
+          border-radius: 50% !important;
+          background-color: #25d366 !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          z-index: 99999 !important;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        .whatsapp-floating-btn:hover {
+          transform: scale(1.1) !important;
+          box-shadow: 0 6px 16px rgba(37, 211, 102, 0.3) !important;
+        }
+        .whatsapp-floating-btn img {
+          width: 100% !important;
+          height: 100% !important;
+          border-radius: 50% !important;
+          object-fit: cover !important;
+        }
+        @media (max-width: 767.98px) {
+          .whatsapp-floating-btn {
+            bottom: 90px !important; /* Evitar que el menú de navegación móvil lo tape */
+            width: 48px !important;
+            height: 48px !important;
+            left: 16px !important;
+          }
+        }
       `}</style>
       <div
         ref={containerRef}
         className="tpl5-shopify-root template-index"
       />
+
+      {/* Floating WhatsApp Button */}
+      <a
+        href="https://wa.me/56999149712"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="whatsapp-floating-btn"
+      >
+        <img
+          src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRAZfIMxTRshRuJdTJu-mi52yWPxiF3ghQsSw&s"
+          alt="WhatsApp"
+        />
+      </a>
     </div>
   );
 }
