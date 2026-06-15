@@ -26,6 +26,7 @@ import { useStoreSettings } from '@/hooks/useStoreSettings';
 import ReviewSection from '@/components/ReviewSection';
 import ProductQuestions from '@/components/ProductQuestions';
 import { getCustomTabsFromFeatures } from '@/lib/product-features';
+import { createPortal } from 'react-dom';
 
 function getExpiresAtEpochSeconds(offer: TimedOffer): number | null {
   if (offer.timeType === 'endDateTime' && offer.endDateTime) {
@@ -125,6 +126,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const { unlimitedStock } = useStoreSettings();
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [qty, setQty] = useState(1);
+  const [isLocalPickupOpen, setIsLocalPickupOpen] = useState(false);
   const [activeOffer, setActiveOffer] = useState<TimedOffer | null>(null);
   const { settings: apertura, isActive: aperturaActive, discountPercent: aperturaPct } = useAperturaPromotion();
   
@@ -142,6 +145,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const [refElement, setRefElement] = useState<HTMLDivElement | null>(null);
   const [bodyHtml, setBodyHtml] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [reviewsTarget, setReviewsTarget] = useState<HTMLElement | null>(null);
 
   // Stock Requests state
   const { user } = useAuth();
@@ -149,6 +153,15 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
   const [stockRequestQty, setStockRequestQty] = useState(1);
   const [isRequestingStock, setIsRequestingStock] = useState(false);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
+
+  // Reset quantity when active variant changes
+  useEffect(() => {
+    setQty(1);
+    const qtyInput = refElement?.querySelector('input[name="quantity"]') as HTMLInputElement;
+    if (qtyInput) {
+      qtyInput.value = '1';
+    }
+  }, [activeVariantId, refElement]);
 
   /* ── Fetch Product from Appwrite ── */
   /* ── Fetch Product from Appwrite API (CACHED) ── */
@@ -259,11 +272,11 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     const vImages = [targetProduct.IMAGEURL, (targetProduct as any).IMAGEURL2, (targetProduct as any).IMAGEURL3].filter(Boolean).map((v: string) => resolveStorageImageUrl(v)) as string[];
 
     // Update main gallery images (excluding thumbnails to prevent overwriting thumbnail row)
-    root.querySelectorAll('.product__media img, .global-media-settings img, img[src*="LogoPoloRed"], .product__media-list img, .media img').forEach((img: any) => {
+    root.querySelectorAll('.product__media img, .global-media-settings img, img[src*="LogoPoloRed"], .product__media-list img, .media img').forEach((img: any, idx: number) => {
       if (img.closest('.carousel__thumbnail') || img.closest('.media-gallery__grid-thumbnails') || img.closest('.media-gallery__carousel-thumbnails')) {
         return;
       }
-      const targetImg = vImages[0];
+      const targetImg = vImages[idx % vImages.length] || vImages[0];
       if (!targetImg) return;
       
       img.src = targetImg;
@@ -272,6 +285,11 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       img.setAttribute('srcset', targetImg);
       img.setAttribute('data-media-src', targetImg);
       img.setAttribute('data-src', targetImg);
+      
+      const mediaContainer = img.closest('.product-media, .media-gallery__item, .media-zoom-reveal');
+      if (mediaContainer) {
+        mediaContainer.setAttribute('data-media-src', targetImg);
+      }
       
       const picture = img.closest('picture');
       if (picture) {
@@ -317,7 +335,12 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         e.preventDefault();
         e.stopPropagation();
         const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
-        addItem(targetProduct, qty);
+        const hasWholesaleTarget = !!(targetProduct.WHOLESALEPRICE && targetProduct.WHOLESALEMINQUANTITY && targetProduct.WHOLESALEPRICE > 0);
+        const pFeaturesTarget = Array.isArray(targetProduct.FEATURES) ? targetProduct.FEATURES.join('\n') : targetProduct.FEATURES || '';
+        const isExactTarget = /ExactWholesale:\s*true/i.test(pFeaturesTarget);
+        const isWholesaleQtyTarget = hasWholesaleTarget && (isExactTarget ? qty === (targetProduct.WHOLESALEMINQUANTITY || 0) : qty >= (targetProduct.WHOLESALEMINQUANTITY || 0));
+
+        addItem(targetProduct, qty, undefined, undefined, isWholesaleQtyTarget ? targetProduct.WHOLESALEPRICE : undefined);
         const textContent = newBtn.querySelector('.add-to-cart-text__content');
         if (textContent) {
           const originalText = textContent.textContent;
@@ -336,7 +359,12 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         e.preventDefault();
         e.stopPropagation();
         const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
-        addItem(targetProduct, qty);
+        const hasWholesaleTarget = !!(targetProduct.WHOLESALEPRICE && targetProduct.WHOLESALEMINQUANTITY && targetProduct.WHOLESALEPRICE > 0);
+        const pFeaturesTarget = Array.isArray(targetProduct.FEATURES) ? targetProduct.FEATURES.join('\n') : targetProduct.FEATURES || '';
+        const isExactTarget = /ExactWholesale:\s*true/i.test(pFeaturesTarget);
+        const isWholesaleQtyTarget = hasWholesaleTarget && (isExactTarget ? qty === (targetProduct.WHOLESALEMINQUANTITY || 0) : qty >= (targetProduct.WHOLESALEMINQUANTITY || 0));
+
+        addItem(targetProduct, qty, undefined, undefined, isWholesaleQtyTarget ? targetProduct.WHOLESALEPRICE : undefined);
         router.push('/carrito');
       });
     }
@@ -348,6 +376,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       btn.style.transform = isActive ? 'translateY(-2px)' : 'translateY(0)';
       btn.style.boxShadow = isActive ? '0 6px 12px rgba(17, 24, 39, 0.12)' : 'none';
       btn.style.opacity = isActive ? '1' : '0.85';
+      btn.style.borderRadius = '16px'; // Prevent global button CSS from overriding this on hover
     });
 
     // Update the variant label display
@@ -364,13 +393,63 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     if (!product || !refElement) return;
     
     const root = refElement;
+
+    // Ensure reviews placeholder exists and is placed before the footer (el pie de pagina al ultimo)
+    let placeholder = root.querySelector('#yaxsell-reviews-container-placeholder') as HTMLElement | null;
+    if (!placeholder) {
+      placeholder = document.createElement('div');
+      placeholder.id = 'yaxsell-reviews-container-placeholder';
+      placeholder.className = 'page-width';
+      placeholder.style.cssText = 'max-width: 1200px; margin: 60px auto; padding: 0 20px; font-family: system-ui, sans-serif;';
+    }
+    
+    const footerSec = root.querySelector('#shopify-section-sections--20816632381578__footer, footer, [class*="footer-group"]');
+    if (footerSec && placeholder.nextSibling !== footerSec) {
+      footerSec.parentNode?.insertBefore(placeholder, footerSec);
+    } else if (!footerSec && !root.contains(placeholder)) {
+      root.appendChild(placeholder);
+    }
+    
+    if (!reviewsTarget) {
+      setReviewsTarget(placeholder);
+    }
+
+    // 0. Move the thumbnails container outside carousel-slider to prevent Swiper from breaking it or clipping it on mobile
+    const thumbs = root.querySelector('.media-gallery__carousel-thumbnails');
+    // Mover thumbs dentro del carrusel de imagen, para que el absolute quede SOBRE la imagen en la parte inferior
+    const galleryCarousel = root.querySelector('.media-gallery__carousel') || root.querySelector('.media-gallery__carousel-container');
+    if (thumbs && galleryCarousel && thumbs.parentNode !== galleryCarousel) {
+      galleryCarousel.appendChild(thumbs);
+    }
+
+    // 🔑 Fix huge blank gap: Shopify reserves space via padding-bottom/aspect-ratio before images load.
+    // Override inline styles on media items so the space collapses once the img is present.
+    if (window.innerWidth < 768) {
+      root.querySelectorAll('.product-media.media:not(.carousel__thumbnail):not(.media-gallery__grid-thumbnails .product-media)').forEach((el: any) => {
+        el.style.setProperty('padding-bottom', '0', 'important');
+        el.style.setProperty('aspect-ratio', 'unset', 'important');
+        el.style.setProperty('height', 'auto', 'important');
+        el.style.setProperty('min-height', 'unset', 'important');
+      });
+      // Also fix the swiper slide that wraps the main image
+      root.querySelectorAll('.media-gallery__carousel .swiper-slide:not(.media-gallery__carousel-thumbnails .swiper-slide)').forEach((el: any) => {
+        el.style.setProperty('height', 'auto', 'important');
+        el.style.setProperty('padding-bottom', '0', 'important');
+        el.style.setProperty('aspect-ratio', 'unset', 'important');
+      });
+    }
     
     // Use the currently active variant product data (or fall back to base product)
     const displayProduct = (activeVariantId && activeVariantId !== product.$id)
       ? (linkedProducts.find(lp => lp.$id === activeVariantId) || product)
       : product;
 
-    // Resolve prices
+    // Resolve prices and wholesale rules
+    const hasWholesale = !!(displayProduct.WHOLESALEPRICE && displayProduct.WHOLESALEMINQUANTITY && displayProduct.WHOLESALEPRICE > 0);
+    const pFeatures = Array.isArray(displayProduct.FEATURES) ? displayProduct.FEATURES.join('\n') : displayProduct.FEATURES || '';
+    const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
+    const isWholesaleQty = hasWholesale && (isExact ? qty === (displayProduct.WHOLESALEMINQUANTITY || 0) : qty >= (displayProduct.WHOLESALEMINQUANTITY || 0));
+
     const priceResolved = activeOffer ? {
       displayPrice: activeOffer.discountPrice,
       originalPrice: activeOffer.originalPrice,
@@ -379,7 +458,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       fromApertura: false
     } : resolveProductDisplayPrice(displayProduct, apertura);
     const displayPrice = priceResolved.displayPrice;
-    const formattedPrice = formatPrice(displayPrice);
+    const effectivePrice = (isWholesaleQty ? displayProduct.WHOLESALEPRICE! : displayPrice) * qty;
+    const formattedPrice = formatPrice(effectivePrice);
 
     // 1. Inject variant thumbnails — clicking switches inline, no navigation
     root.querySelectorAll('variant-picker, .variant-picker').forEach(el => {
@@ -448,46 +528,123 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     });
 
     // 1b. Bind click handlers for mobile thumbnails to allow switching images on mobile
-    root.querySelectorAll('.media-gallery__carousel-thumbnails .carousel__thumbnail').forEach((thumb: any, idx: number) => {
-      if (thumb.dataset.thumbBound) return;
-      thumb.dataset.thumbBound = '1';
-      thumb.style.cursor = 'pointer';
+    // First: inject the correct product images into all thumbnail img elements (overwriting the broken Shopify defaults)
+    const pImagesForThumb = [
+      displayProduct.IMAGEURL,
+      (displayProduct as any).IMAGEURL2,
+      (displayProduct as any).IMAGEURL3,
+      (displayProduct as any).IMAGEURL4,
+      (displayProduct as any).IMAGEURL5
+    ].filter(Boolean).map((v: string) => resolveStorageImageUrl(v)) as string[];
+
+    if (pImagesForThumb.length > 0) {
+      // 🔑 REAL FIX: The problem is Swiper applies overflow:hidden to .swiper container
+      // which clips our thumbnails even though the HTML is correct.
+      // Solution: Inject a brand new element DIRECTLY into the media-gallery container
+      // (bypassing ALL Swiper wrappers entirely)
       
-      thumb.addEventListener('click', (e: Event) => {
-        e.preventDefault();
-        e.stopPropagation();
+      const galleryAnchor = root.querySelector('.media-gallery__carousel') || root.querySelector('media-gallery') || root.querySelector('.media-gallery');
+      
+      if (galleryAnchor && window.innerWidth < 768) {
+        // Ensure anchor is position:relative so our absolute bar sits inside it
+        (galleryAnchor as HTMLElement).style.setProperty('position', 'relative', 'important');
         
-        // Try Swiper transition first
-        const swiperContainer = root.querySelector('.media-gallery__carousel-container') as any;
-        if (swiperContainer && swiperContainer.swiper) {
-          swiperContainer.swiper.slideTo(idx);
-        } else {
-          // Fallback: manually update the main display image
-          const vImages = [displayProduct.IMAGEURL, (displayProduct as any).IMAGEURL2, (displayProduct as any).IMAGEURL3].filter(Boolean).map((v: string) => resolveStorageImageUrl(v)) as string[];
-          const targetImg = vImages[idx % vImages.length] || vImages[0];
-          root.querySelectorAll('.product__media img, .global-media-settings img, .product__media-list img, .media img').forEach((img: any) => {
-            if (img.closest('.carousel__thumbnail') || img.closest('.media-gallery__grid-thumbnails') || img.closest('.media-gallery__carousel-thumbnails')) {
-              return;
-            }
-            img.src = targetImg;
-            if (img.srcset) img.srcset = targetImg;
+        // Hide the original Shopify thumbnail container to avoid duplication
+        if (thumbs) (thumbs as HTMLElement).style.setProperty('display', 'none', 'important');
+        
+        const alreadyBuilt = galleryAnchor.querySelector('#yaxsell-thumbs-bar');
+        
+        if (!alreadyBuilt) {
+          const bar = document.createElement('div');
+          bar.id = 'yaxsell-thumbs-bar';
+          bar.style.cssText = `
+            position: absolute !important;
+            bottom: 14px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 8px !important;
+            padding: 8px 14px !important;
+            background: rgba(255,255,255,0.55) !important;
+            backdrop-filter: blur(10px) !important;
+            -webkit-backdrop-filter: blur(10px) !important;
+            border-radius: 999px !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.3) inset !important;
+            z-index: 9999 !important;
+            pointer-events: auto !important;
+            width: max-content !important;
+            max-width: 90vw !important;
+            overflow: visible !important;
+          `;
+          
+          pImagesForThumb.forEach((imgUrl, idx) => {
+            const slide = document.createElement('div');
+            slide.style.cssText = `
+              width: 44px !important;
+              height: 44px !important;
+              border-radius: 50% !important;
+              overflow: hidden !important;
+              cursor: pointer !important;
+              flex-shrink: 0 !important;
+              border: 2.5px solid ${idx === 0 ? '#db2777' : 'rgba(255,255,255,0.9)'} !important;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+              transition: all 0.2s ease !important;
+              opacity: ${idx === 0 ? '1' : '0.75'} !important;
+              transform: ${idx === 0 ? 'scale(1.12)' : 'scale(1)'} !important;
+            `;
+            
+            const img = document.createElement('img');
+            img.src = imgUrl;
+            img.alt = `Foto ${idx + 1}`;
+            img.style.cssText = `
+              width: 100% !important;
+              height: 100% !important;
+              object-fit: cover !important;
+              display: block !important;
+              border-radius: 50% !important;
+              pointer-events: none !important;
+            `;
+            slide.appendChild(img);
+            
+            slide.addEventListener('click', (e: Event) => {
+              e.preventDefault();
+              e.stopPropagation();
+              
+              // Update main image
+              root.querySelectorAll('img').forEach((mainImg: any) => {
+                if (mainImg.closest('#yaxsell-thumbs-bar') || mainImg.closest('.media-gallery__grid-thumbnails') || mainImg.closest('.media-gallery__carousel-thumbnails')) return;
+                if (!mainImg.closest('.media-gallery__carousel') && !mainImg.closest('media-gallery')) return;
+                mainImg.src = imgUrl;
+                mainImg.srcset = imgUrl;
+                mainImg.setAttribute('src', imgUrl);
+              });
+              
+              // Update active states
+              bar.querySelectorAll('div').forEach((t: any, tIdx: number) => {
+                if (tIdx === idx) {
+                  t.style.setProperty('opacity', '1', 'important');
+                  t.style.setProperty('transform', 'scale(1.12)', 'important');
+                  t.style.setProperty('border-color', '#db2777', 'important');
+                } else {
+                  t.style.setProperty('opacity', '0.75', 'important');
+                  t.style.setProperty('transform', 'scale(1)', 'important');
+                  t.style.setProperty('border-color', 'rgba(255,255,255,0.9)', 'important');
+                }
+              });
+            });
+            
+            bar.appendChild(slide);
           });
+          
+          galleryAnchor.appendChild(bar);
         }
-        
-        // Update active class highlights
-        root.querySelectorAll('.media-gallery__carousel-thumbnails .carousel__thumbnail').forEach((t: any, tIdx: number) => {
-          if (tIdx === idx) {
-            t.classList.add('swiper-slide-active');
-            t.style.borderColor = '#db2777';
-            t.style.opacity = '1';
-          } else {
-            t.classList.remove('swiper-slide-active');
-            t.style.borderColor = '#e5e7eb';
-            t.style.opacity = '0.75';
-          }
-        });
-      });
-    });
+      }
+    }
+
+
 
     // 2. Inyectar Bloque Informativo de Envío y Stock (estilo Yaxsell / Plantilla 1) usando la estructura exacta de local-pickup
     const isLimitedStock = displayProduct ? (displayProduct.STOCK !== undefined && displayProduct.STOCK !== null && displayProduct.STOCK < 99999) : false;
@@ -501,7 +658,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       (localPickup as HTMLElement).style.display = 'block';
       localPickup.innerHTML = `
         <div class="pickup-availabilities__info" style="margin-top: 16px;">
-          <div class="pickup-availabilities__info-wrapper" style="position: relative; border-radius: 12px; overflow: hidden; background: linear-gradient(145deg, #ffffff, #f9fafb); border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); width: 100%; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+          <div id="yaxsell-local-pickup-trigger" class="pickup-availabilities__info-wrapper" style="position: relative; border-radius: 12px; overflow: hidden; background: linear-gradient(145deg, #ffffff, #f9fafb); border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); width: 100%; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;">
             <!-- Barra decorativa superior -->
             <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #111827, #4b5563);"></div>
             
@@ -518,12 +675,12 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
 
               <!-- Contenido principal -->
               <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px;">
-                <h4 style="margin: 0; font-weight: 700; color: #111827; font-size: 15px; letter-spacing: -0.01em; line-height: 1.2;">Sale entre hoy y mañana</h4>
+                <h4 style="margin: 0; font-weight: 700; color: #111827; font-size: 15px; letter-spacing: -0.01em; line-height: 1.2; font-family: 'Bricolage Grotesque', sans-serif;">¿Deseas retirar en tienda?</h4>
                 
                 <div style="display: flex; flex-direction: column; gap: 4px; color: #4b5563; font-size: 13px; line-height: 1.4;">
                   <div style="display: flex; align-items: center; gap: 6px;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #6b7280;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                    <span>Envío disponible a todo Chile</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #db2777;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    <span style="text-decoration: underline; font-weight: 500; font-family: 'Bricolage Grotesque', sans-serif;">Conoce el punto de retiro en nuestra tienda</span>
                   </div>
                   
                   <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
@@ -532,7 +689,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
                       <span style="position: absolute; display: inline-flex; height: 100%; width: 100%; border-radius: 50%; background-color: ${stockColor}; opacity: 0.75; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></span>
                       <span style="position: relative; display: inline-flex; border-radius: 50%; width: 8px; height: 8px; background-color: ${stockColor};"></span>
                     </span>
-                    <span style="font-weight: 600; color: ${stockColor};">${stockLabel}</span>
+                    <span style="font-weight: 600; color: ${stockColor}; font-family: 'Bricolage Grotesque', sans-serif;">${stockLabel}</span>
                   </div>
                 </div>
               </div>
@@ -556,6 +713,17 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           </div>
         </div>
       `;
+
+      // Bind click handler to trigger React dialog
+      const trigger = localPickup.querySelector('#yaxsell-local-pickup-trigger') as HTMLElement | null;
+      if (trigger && !trigger.dataset.clickBound) {
+        trigger.dataset.clickBound = '1';
+        trigger.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsLocalPickupOpen(true);
+        });
+      }
     }
 
     // 3. Título del Producto
@@ -570,71 +738,322 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     });
 
     // 4. Precios
+    const priceContainers = Array.from(root.querySelectorAll('.yaxsell-product-price-container, product-price, .product-price'));
+    const mainPriceContainer = priceContainers.find(el => !el.closest('.product-card') && !el.closest('.quick-add') && !el.closest('#quick-add-drawer')) || priceContainers[0];
+
+    const originalVal = (priceResolved.originalPrice || Math.round((displayProduct.PRICE || 0) / 0.8)) * qty;
+    const originalFormatted = formatPrice(originalVal);
+    const effectiveDiscountPercent = Math.round((1 - effectivePrice / originalVal) * 100) || 20;
+
+    if (mainPriceContainer) {
+      const priceHtml = `
+        <div class="yaxsell-price-container-custom" style="display: flex !important; align-items: center !important; gap: 10px !important; flex-wrap: wrap !important; font-family: 'Bricolage Grotesque', sans-serif !important;">
+          <span class="yaxsell-price-sale-custom" style="font-size: 36px !important; font-weight: 800 !important; color: #db2777 !important; display: inline-block !important;">
+            ${formattedPrice}
+          </span>
+          <span class="yaxsell-price-regular-custom" style="font-size: 14px !important; color: #000000 !important; text-decoration: line-through !important; margin: 0 !important; display: inline-block !important; visibility: visible !important; opacity: 1 !important;">
+            ${originalFormatted}
+          </span>
+          <span class="yaxsell-apertura-disc-badge-custom" style="display: inline-flex !important; align-items: center !important; gap: 4px !important; padding: 4px 10px !important; border-radius: 999px !important; font-size: 12px !important; font-weight: 900 !important; letter-spacing: 0.04em !important; color: #fff !important; background: linear-gradient(135deg, #f472b6 0%, #db2777 100%) !important; box-shadow: 0 2px 8px rgba(219,39,119,0.2), 0 0 0 1px rgba(255,255,255,0.35) inset !important; text-transform: uppercase !important; line-height: 1 !important; visibility: visible !important; opacity: 1 !important;">
+            <span class="apertura-disc-spark">✦</span>-${effectiveDiscountPercent}%
+          </span>
+        </div>
+      `;
+      mainPriceContainer.innerHTML = priceHtml;
+    }
+
     root.querySelectorAll('.price, .price-item, .price__regular span, .price__sale span, .product-card__price').forEach(el => {
+      if (el.closest('product-price.product-price, .product-price, .yaxsell-product-price-container')) return;
       if (el.textContent?.includes('$') || el.textContent?.includes('CLP') || el.textContent?.trim() === '$0' || el.textContent?.trim() === '') {
         el.textContent = formattedPrice;
       }
     });
 
-    // 5. Descripción y Custom Tabs
-    // Eliminar el acordeón original
-    root.querySelectorAll('accordion-component, .accordion, .block-accordion').forEach(el => el.remove());
+    // 4b. Inject/Update Wholesale Box & Badge
+    // Use mainPriceContainer directly as anchor — no .price child since we replaced innerHTML with yaxsell classes
+    const priceAnchor = mainPriceContainer as HTMLElement | null;
+    if (priceAnchor) {
+      // Notice Box - wholesale progress
+      let wholesaleBox = root.querySelector('#yaxsell-wholesale-box') as HTMLElement | null;
+      if (hasWholesale) {
+        if (!wholesaleBox) {
+          wholesaleBox = document.createElement('div');
+          wholesaleBox.id = 'yaxsell-wholesale-box';
+          // Place it right after the price container
+          priceAnchor.parentNode?.insertBefore(wholesaleBox, priceAnchor.nextSibling);
+        }
 
-    // Inyectar la descripción y las pestañas técnicas
-    root.querySelectorAll('div[class*="product_description"]').forEach(el => {
-      if ((el as any).dataset.yaxsellInjected) return;
-      (el as any).dataset.yaxsellInjected = 'true';
-
-      const customTabs = getCustomTabsFromFeatures(product.FEATURES) ?? {};
-      const techDetails = customTabs.details || '';
-      const usageInstructions = customTabs.usage || '';
-      const ingredientsList = customTabs.ingredients || '';
-
-      let specsHtml = '';
-      if (techDetails || usageInstructions || ingredientsList) {
-        specsHtml = `
-          <div class="yaxsell-product-details-specs" style="margin-top: 32px; display: flex; flex-direction: column; gap: 20px; width: 100%;">
-            <!-- Detalles del Producto -->
-            ${techDetails ? `
-              <div style="background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); border: 1.5px solid #fbcfe8; border-radius: 18px; padding: 20px; box-shadow: 0 4px 20px rgba(219,39,119,0.03); transition: transform 0.2s ease;">
-                <h3 style="font-size: 14px; font-weight: 800; color: #db2777; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px;">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #db2777;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                  Detalles del Producto
-                </h3>
-                <div style="font-size: 13.5px; line-height: 1.6; color: #4b5563; margin: 0; white-space: pre-line;">${techDetails}</div>
-              </div>
-            ` : ''}
-
-            <!-- Modo de Uso -->
-            ${usageInstructions ? `
-              <div style="background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); border: 1.5px solid #fbcfe8; border-radius: 18px; padding: 20px; box-shadow: 0 4px 20px rgba(219,39,119,0.03); transition: transform 0.2s ease;">
-                <h3 style="font-size: 14px; font-weight: 800; color: #db2777; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px;">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #db2777;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                  Modo de Uso
-                </h3>
-                <div style="font-size: 13.5px; line-height: 1.6; color: #4b5563; margin: 0; white-space: pre-line;">${usageInstructions}</div>
-              </div>
-            ` : ''}
-
-            <!-- Ingredientes -->
-            ${ingredientsList ? `
-              <div style="background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); border: 1.5px solid #fbcfe8; border-radius: 18px; padding: 20px; box-shadow: 0 4px 20px rgba(219,39,119,0.03); transition: transform 0.2s ease;">
-                <h3 style="font-size: 14px; font-weight: 800; color: #db2777; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px;">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #db2777;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
-                  Ingredientes y Composición
-                </h3>
-                <div style="font-size: 13.5px; line-height: 1.6; color: #4b5563; margin: 0; white-space: pre-line;">${ingredientsList}</div>
-              </div>
-            ` : ''}
-          </div>
+        const progressPercent = Math.min(100, (qty / displayProduct.WHOLESALEMINQUANTITY!) * 100);
+        
+        wholesaleBox.style.cssText = `
+          width: 100%;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         `;
+        
+        if (isWholesaleQty) {
+          wholesaleBox.innerHTML = `
+            <div style="margin-top: 20px; padding: 4px 0; width: 100%;">
+              <!-- Minimal Success Indicator inline -->
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; background: #d1fae5; color: #065f46; padding: 4px 10px; border-radius: 99px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">
+                  🎉 Mayorista Activado
+                </span>
+                <span style="font-size: 13px; font-weight: 700; color: #047857;">
+                  ¡Ahorras ${formatPrice(displayPrice - displayProduct.WHOLESALEPRICE!)} por unidad!
+                </span>
+              </div>
+              
+              <!-- Glow Progress Bar (100% full) -->
+              <div style="position: relative; width: 100%; height: 6px; background: #e5e7eb; border-radius: 99px; overflow: visible; margin-bottom: 8px; margin-top: 10px; pointer-events: none !important; user-select: none !important;">
+                <div style="width: 100%; height: 100%; background: linear-gradient(90deg, #10b981, #059669); border-radius: 99px; box-shadow: 0 0 8px rgba(16, 185, 129, 0.5); pointer-events: none !important;"></div>
+                <!-- Floating Pin -->
+                <div style="position: absolute; left: 100%; top: 50%; transform: translate(-50%, -50%); width: 12px; height: 12px; background: #059669; border: 2.5px solid #ffffff; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.15); pointer-events: none !important;"></div>
+              </div>
+              
+              <p style="margin: 0; font-size: 14px; font-weight: 700; color: #1f2937; font-family: 'Bricolage Grotesque', sans-serif;">
+                Llevas ${qty} un. — Cada una a <span style="color: #059669; font-weight: 900; font-size: 15px;">${formatPrice(displayProduct.WHOLESALEPRICE!)}</span>
+              </p>
+            </div>
+          `;
+        } else {
+          const needed = displayProduct.WHOLESALEMINQUANTITY! - qty;
+          const message = isExact
+            ? `Lleva ${displayProduct.WHOLESALEMINQUANTITY} unidades para activar`
+            : `Lleva ${needed} más y paga solo`;
+          
+          wholesaleBox.innerHTML = `
+            <div style="margin-top: 20px; padding: 4px 0; width: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+              <!-- Header info, no surrounding box -->
+              <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px;">
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <span style="display: inline-flex; align-items: center; justify-content: center; width: max-content; background: #db2777; color: #ffffff; padding: 3px 8px; border-radius: 99px; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">
+                    🏷️ Oferta Mayorista
+                  </span>
+                  <span style="font-size: 13px; font-weight: 700; color: #374151;">
+                    Paga solo <span style="color: #db2777; font-weight: 900; font-size: 15px;">${formatPrice(displayProduct.WHOLESALEPRICE!)} c/u</span> comprando ${displayProduct.WHOLESALEMINQUANTITY}+
+                  </span>
+                </div>
+                <span style="font-size: 12px; font-weight: 800; color: #9ca3af;">
+                  <span style="color: #db2777; font-size: 13px;">${qty}</span> / ${displayProduct.WHOLESALEMINQUANTITY} un.
+                </span>
+              </div>
+              
+              <!-- Floating Slider Progress Bar -->
+              <div style="position: relative; width: 100%; height: 6px; background: #e5e7eb; border-radius: 99px; overflow: visible; margin-bottom: 12px; margin-top: 24px; pointer-events: none !important; user-select: none !important;">
+                <!-- Filled track -->
+                <div style="width: ${progressPercent}%; height: 100%; background: linear-gradient(90deg, #f472b6, #db2777); border-radius: 999px; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 6px rgba(219, 39, 119, 0.35); pointer-events: none !important;"></div>
+                
+                <!-- Floating sliding tooltip/badge -->
+                <div style="position: absolute; left: ${progressPercent}%; top: -22px; transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; align-items: center; pointer-events: none !important; z-index: 10;">
+                  <span style="background: #db2777; color: white; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 4px; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase;">
+                    TE FALTAN ${needed}
+                  </span>
+                  <div style="width: 0; height: 0; border-left: 3px solid transparent; border-right: 3px solid transparent; border-top: 3px solid #db2777; margin-top: -1px;"></div>
+                </div>
+                
+                <!-- Floating Pin on track edge -->
+                <div style="position: absolute; left: ${progressPercent}%; top: 50%; transform: translate(-50%, -50%); transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1); width: 12px; height: 12px; background: #db2777; border: 2.5px solid #ffffff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2); pointer-events: none !important;"></div>
+              </div>
+              
+              <!-- Footer checkpoint note -->
+              <div style="display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #6b7280; margin-top: 6px;">
+                <span>🎯</span>
+                <span>${message} <strong>${formatPrice(displayProduct.WHOLESALEPRICE!)}</strong></span>
+              </div>
+            </div>
+          `;
+        }
+      } else if (wholesaleBox) {
+        wholesaleBox.remove();
+      }
+    }
+
+    // Helper to clean description of custom tab headers/panes if they are injected there
+    const cleanDescription = (desc: string) => {
+      if (!desc) return '';
+      let cleaned = desc.replace(/<div class="yaxsell-product-details-specs"[\s\S]*?<\/div>\s*<\/div>/g, '');
+      cleaned = cleaned.replace(/<div class="yaxsell-product-details-specs"[\s\S]*?<\/div>/g, '');
+      return cleaned.trim();
+    };
+
+    const cleanedDesc = cleanDescription(product.DESCRIPTION || '');
+
+    // 5. Descripción y Custom Tabs (Uso de los acordeones originales de Shopify)
+    const customTabs = getCustomTabsFromFeatures(product.FEATURES) ?? {};
+    let techDetails = cleanedDesc;
+    let usageInstructions = customTabs.usage || '';
+    let ingredientsList = customTabs.ingredients || '';
+
+    // Si estamos en modo Vista Previa y no hay datos reales, inyectamos datos demo
+    const isPreview = typeof window !== 'undefined' && window.location.pathname.includes('/preview/');
+    if (isPreview && !techDetails && !usageInstructions && !ingredientsList) {
+      techDetails = '• Tipo de Producto: Espuma de Limpieza Facial\n• Ingrediente Principal: Extracto de Fresa Silvestre & Aminoácidos\n• Beneficio: Limpia profundamente los poros, controla el exceso de grasa.';
+      usageInstructions = '1. Humedecer la piel con agua tibia.\n2. Presionar el dosificador 1-2 veces para liberar la espuma de aminoácidos.\n3. Masajear suavemente sobre el rostro con movimientos circulares durante 30 a 60 segundos.\n4. Enjuagar completamente con agua y secar con toalla limpia.';
+      ingredientsList = 'Aqua, Strawberry Fruit Extract, Amino Acids (Sodium Lauroyl Glutamate, Glycine), Glycerin, Sodium Hyaluronate, Lauric Acid, Potassium Hydroxide, Parfum.';
+    }
+
+    root.querySelectorAll('accordion-component, .accordion--standard, .block-accordion').forEach(accordion => {
+      // Evitar tocar el acordeón de FAQ en el footer
+      if (accordion.getAttribute('data-section-id')?.includes('footer') || accordion.getAttribute('data-section-id')?.includes('FXkPhr')) {
+        return;
       }
 
+      const sectionId = accordion.getAttribute('data-section-id') || '';
+      const isMainAccordion = sectionId.includes('__main');
+
+      const rows = Array.from(accordion.querySelectorAll('.accordion__row'));
+
+      if (isMainAccordion) {
+        // ── ACORDEÓN PRINCIPAL (template--...__main) ──
+        
+        // Row 1: Garantía de Satisfacción
+        const row1 = rows[0] as HTMLElement | undefined;
+        if (row1) {
+          const textSpan = row1.querySelector('.accordion__summary-text');
+          if (textSpan) {
+            for (let node of Array.from(textSpan.childNodes)) {
+              if (node.nodeType === 3 && node.textContent && node.textContent.trim().length > 0) {
+                node.textContent = 'Garantía de Satisfacción';
+              }
+            }
+          }
+          const contentEl = row1.querySelector('.accordion__content .rte') || row1.querySelector('.accordion__content') || row1.querySelector('[ref="content[]"]');
+          if (contentEl) {
+            contentEl.innerHTML = `<div style="white-space: pre-line; font-size: 14px; line-height: 1.6; color: #4b5563; padding: 10px 0;">En Kevin&Coco Chile nos esmeramos por entregarte la mejor experiencia de compra. Todos nuestros productos cuentan con garantía de calidad y soporte post-venta personalizado.</div>`;
+          }
+        }
+
+        // Row 2: Métodos de Despacho
+        const row2 = rows[1] as HTMLElement | undefined;
+        if (row2) {
+          const textSpan = row2.querySelector('.accordion__summary-text');
+          if (textSpan) {
+            for (let node of Array.from(textSpan.childNodes)) {
+              if (node.nodeType === 3 && node.textContent && node.textContent.trim().length > 0) {
+                node.textContent = 'Métodos de Despacho';
+              }
+            }
+          }
+          const contentEl = row2.querySelector('.accordion__content .rte') || row2.querySelector('.accordion__content') || row2.querySelector('[ref="content[]"]');
+          if (contentEl) {
+            contentEl.innerHTML = `<div style="white-space: pre-line; font-size: 14px; line-height: 1.6; color: #4b5563; padding: 10px 0;">Despachamos de forma segura a todo Chile. Trabajamos con las agencias líderes: <strong>Bluexpress, Starken, Varmontt, Cruz del Sur, Chevalier y CYC</strong>, garantizando que tu pedido llegue rápido y protegido.</div>`;
+          }
+        }
+
+        // Row 3: Tiempos de Entrega
+        const row3 = rows[2] as HTMLElement | undefined;
+        if (row3) {
+          const textSpan = row3.querySelector('.accordion__summary-text');
+          if (textSpan) {
+            for (let node of Array.from(textSpan.childNodes)) {
+              if (node.nodeType === 3 && node.textContent && node.textContent.trim().length > 0) {
+                node.textContent = 'Tiempos de Entrega';
+              }
+            }
+          }
+          const contentEl = row3.querySelector('.accordion__content .rte') || row3.querySelector('.accordion__content') || row3.querySelector('[ref="content[]"]');
+          if (contentEl) {
+            contentEl.innerHTML = `<div style="white-space: pre-line; font-size: 14px; line-height: 1.6; color: #4b5563; padding: 10px 0;">Tu pedido se procesa y despacha dentro de 24 a 48 horas hábiles. El plazo de entrega es de 1 a 4 días hábiles dependiendo de tu región de despacho.</div>`;
+          }
+        }
+
+      } else {
+        // ── ACORDEÓN DE DETALLES TÉCNICOS (template--...__custom_section_E89GLr) ──
+        
+        // Row 1 (first row): Detalles del Producto (Especificaciones / Características)
+        const row1 = rows[0] as HTMLElement | undefined;
+        if (row1) {
+          if (techDetails) {
+            const textSpan = row1.querySelector('.accordion__summary-text');
+            if (textSpan) {
+              for (let node of Array.from(textSpan.childNodes)) {
+                if (node.nodeType === 3 && node.textContent && node.textContent.trim().length > 0) {
+                  node.textContent = 'Detalles del Producto (Especificaciones / Características)';
+                }
+              }
+            }
+            const contentEl = row1.querySelector('.accordion__content .rte') || row1.querySelector('.accordion__content') || row1.querySelector('[ref="content[]"]');
+            if (contentEl) {
+              contentEl.innerHTML = `<div style="white-space: pre-line; font-size: 14px; line-height: 1.6; color: #4b5563; padding: 10px 0;">${techDetails}</div>`;
+            }
+          } else {
+            row1.remove();
+          }
+        }
+
+        // Row 2 (second row): Modo de Uso (Instrucciones)
+        const row2 = rows[1] as HTMLElement | undefined;
+        if (row2) {
+          if (usageInstructions) {
+            const textSpan = row2.querySelector('.accordion__summary-text');
+            if (textSpan) {
+              for (let node of Array.from(textSpan.childNodes)) {
+                if (node.nodeType === 3 && node.textContent && node.textContent.trim().length > 0) {
+                  node.textContent = 'Modo de Uso (Instrucciones)';
+                }
+              }
+            }
+            const contentEl = row2.querySelector('.accordion__content .rte') || row2.querySelector('.accordion__content') || row2.querySelector('[ref="content[]"]');
+            if (contentEl) {
+              contentEl.innerHTML = `<div style="white-space: pre-line; font-size: 14px; line-height: 1.6; color: #4b5563; padding: 10px 0;">${usageInstructions}</div>`;
+            }
+          } else {
+            row2.remove();
+          }
+        }
+
+        // Row 3 (third row): Ingredientes (Composición / Tabla Nutricional)
+        const row3 = rows[2] as HTMLElement | undefined;
+        if (row3) {
+          if (ingredientsList) {
+            const textSpan = row3.querySelector('.accordion__summary-text');
+            if (textSpan) {
+              for (let node of Array.from(textSpan.childNodes)) {
+                if (node.nodeType === 3 && node.textContent && node.textContent.trim().length > 0) {
+                  node.textContent = 'Ingredientes (Composición / Tabla Nutricional)';
+                }
+              }
+            }
+            const contentEl = row3.querySelector('.accordion__content .rte') || row3.querySelector('.accordion__content') || row3.querySelector('[ref="content[]"]');
+            if (contentEl) {
+              contentEl.innerHTML = `<div style="white-space: pre-line; font-size: 14px; line-height: 1.6; color: #4b5563; padding: 10px 0;">${ingredientsList}</div>`;
+            }
+          } else {
+            row3.remove();
+          }
+        }
+      }
+
+      // Si no quedan filas de información en este acordeón, lo removemos
+      const remainingRows = accordion.querySelectorAll('.accordion__row');
+      if (remainingRows.length === 0) {
+        accordion.remove();
+      }
+    });
+
+    // Eliminar el resto de los acordeones originales (ej. FAQ o acordiones duplicados)
+    root.querySelectorAll('accordion-component, .accordion, .block-accordion').forEach(el => {
+      if (el.classList.contains('accordion--standard') || el.closest('.yaxsell-product-details-specs') || el.getAttribute('data-section-id')?.includes('FXkPhr')) return;
+      el.remove();
+    });
+
+    // Personalizar los textos decorativos o de relleno (mock) del tema sobre ropa de niños
+    root.querySelectorAll('p, span').forEach(el => {
+      if (el.children.length > 0) return;
+      const txt = el.textContent || '';
+      if (txt.includes('Style & Comfort') || txt === 'Ficha Técnica') {
+        el.textContent = 'Ficha Técnica';
+      } else if (txt.includes('Elastic waistband') || txt === product.NAME) {
+        el.textContent = product.NAME;
+      }
+    });
+
+    // Inyectar solo la descripción en el elemento original
+    root.querySelectorAll('div[class*="product_description"]').forEach(el => {
       el.innerHTML = `
         <div class="product-description-content" style="font-size: 14px; line-height: 1.7; color: #374151; margin-bottom: 24px;">
-          ${product.DESCRIPTION || ''}
+          ${cleanedDesc}
         </div>
-        ${specsHtml}
       `;
     });
 
@@ -666,6 +1085,64 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
 
     // 7. Tarjetas de Productos Relacionados (Desactivado)
     root.querySelectorAll('product-recommendations, .related-products').forEach((el: any) => el.remove());
+
+    // 8. Reemplazar "Video Feedbacks" (Opiniones en video) por "Algunas agencias con las que trabajamos"
+    root.querySelectorAll('.video-testimonials-block, [class*="video-testimonials"]').forEach((el: any) => {
+      el.style.setProperty('display', 'block', 'important');
+      el.innerHTML = `
+        <h2 class="video-testimonials__heading h5" style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #111827; margin-bottom: 12px;">
+          Algunas agencias con las que trabajamos
+        </h2>
+        <div style="display: flex; gap: 16px 12px; flex-wrap: wrap; align-items: flex-start; justify-content: flex-start; background: #ffffff; border: 1.5px solid #e5e7eb; border-radius: 20px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);">
+          
+          <div style="display: flex; flex-direction: column; align-items: center; width: 70px; gap: 6px;" title="Bluexpress">
+            <div style="display: flex; align-items: center; justify-content: center; width: 56px; height: 56px; background: #ffffff; border-radius: 50%; overflow: hidden; border: 1px solid #e5e7eb; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+              <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS-Hc519osiibNq3LaG5QyIOkWEp7cUZqSu_OSFEv6i9zOx6Y1zzK5dnw1f&s=10" alt="Bluexpress" style="width: 100%; height: 100%; object-fit: contain; transform: scale(1.15);" />
+            </div>
+            <span style="font-size: 9px; font-weight: 700; color: #4b5563; text-align: center; font-family: 'Bricolage Grotesque', sans-serif; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.1;">Bluexpress</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; align-items: center; width: 70px; gap: 6px;" title="Starken">
+            <div style="display: flex; align-items: center; justify-content: center; width: 56px; height: 56px; background: #ffffff; border-radius: 50%; overflow: hidden; border: 1px solid #e5e7eb; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+              <img src="https://pbs.twimg.com/profile_images/1275538706787717122/N-FmcdAp_400x400.jpg" alt="Starken" style="width: 100%; height: 100%; object-fit: cover;" />
+            </div>
+            <span style="font-size: 9px; font-weight: 700; color: #4b5563; text-align: center; font-family: 'Bricolage Grotesque', sans-serif; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.1;">Starken</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; align-items: center; width: 70px; gap: 6px;" title="Varmontt">
+            <div style="display: flex; align-items: center; justify-content: center; width: 56px; height: 56px; background: #ffffff; border-radius: 50%; overflow: hidden; border: 1px solid #e5e7eb; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+              <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRXEnhvSY8qCumnADJcC_SNl1fqFnKuYKsQhuygDA5o-RCraqCNStogGqQ&s=10" alt="Varmontt" style="width: 100%; height: 100%; object-fit: contain; padding: 2px;" />
+            </div>
+            <span style="font-size: 9px; font-weight: 700; color: #4b5563; text-align: center; font-family: 'Bricolage Grotesque', sans-serif; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.1;">Varmontt</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; align-items: center; width: 70px; gap: 6px;" title="Cruz del Sur">
+            <div style="display: flex; align-items: center; justify-content: center; width: 56px; height: 56px; background: #ffffff; border-radius: 50%; overflow: hidden; border: 1px solid #e5e7eb; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+              <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSY3g8yA344EfyJPWRxv9b-QQ1PF1J99PsXdq8h7pepF-w-TDNEKfZAaO1t&s=10" alt="Cruz del Sur" style="width: 100%; height: 100%; object-fit: contain; transform: scale(1.35);" />
+            </div>
+            <span style="font-size: 9px; font-weight: 700; color: #4b5563; text-align: center; font-family: 'Bricolage Grotesque', sans-serif; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.1;">Cruz del Sur</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; align-items: center; width: 70px; gap: 6px;" title="Chevalier">
+            <div style="display: flex; align-items: center; justify-content: center; width: 56px; height: 56px; background: #ffffff; border-radius: 50%; overflow: hidden; border: 1px solid #e5e7eb; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+              <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYGjXaR9Hi073KA5Gzr9eVpvQS4KOOoM7NnI4PLU48K1b0qQ2ftyYyk3NE&s=10" alt="Chevalier" style="width: 100%; height: 100%; object-fit: contain; padding: 2px;" />
+            </div>
+            <span style="font-size: 9px; font-weight: 700; color: #4b5563; text-align: center; font-family: 'Bricolage Grotesque', sans-serif; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.1;">Chevalier</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; align-items: center; width: 70px; gap: 6px;" title="CYC">
+            <div style="display: flex; align-items: center; justify-content: center; width: 56px; height: 56px; background: #ffffff; border-radius: 50%; overflow: hidden; border: 1px solid #e5e7eb; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+              <img src="https://www.cyccargo.cl/wp-content/uploads/2023/05/brand.png" alt="CYC" style="width: 100%; height: 100%; max-width: 100%; max-height: 100%; object-fit: contain; padding: 3px; transform: none !important; scale: none !important;" />
+            </div>
+            <span style="font-size: 9px; font-weight: 700; color: #4b5563; text-align: center; font-family: 'Bricolage Grotesque', sans-serif; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.1;">CYC</span>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: center; height: 56px; padding-left: 8px;">
+            <span style="font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'Bricolage Grotesque', sans-serif;">y muchas otras más...</span>
+          </div>
+        </div>
+      `;
+    });
 
 
     // 9. Reconstruir Breadcrumbs
@@ -715,23 +1192,25 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           e.preventDefault();
           e.stopPropagation();
           if (isSoldOut) return;
-          const currentVal = parseInt(qtyInput.value) || 1;
-          if (currentVal > 1) {
-            qtyInput.value = String(currentVal - 1);
-            qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
-          }
+          setQty(q => {
+            const next = Math.max(1, q - 1);
+            qtyInput.value = String(next);
+            return next;
+          });
+          qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
         });
 
         newPlus.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
           if (isSoldOut) return;
-          const currentVal = parseInt(qtyInput.value) || 1;
           const maxLimit = parseInt(qtyInput.dataset.maxStock || '99999') || 99999;
-          if (currentVal < maxLimit) {
-            qtyInput.value = String(currentVal + 1);
-            qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
-          }
+          setQty(q => {
+            const next = Math.min(maxLimit, q + 1);
+            qtyInput.value = String(next);
+            return next;
+          });
+          qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
         });
 
         qtyInput.addEventListener('input', () => {
@@ -740,6 +1219,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           if (val < 1) val = 1;
           if (val > maxLimit) val = maxLimit;
           qtyInput.value = String(val);
+          setQty(val);
         });
       }
     }
@@ -782,7 +1262,12 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           if (isCurrentSoldOut) return;
 
           const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
-          addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined);
+          const hasWholesaleCurrent = !!(currentProduct.WHOLESALEPRICE && currentProduct.WHOLESALEMINQUANTITY && currentProduct.WHOLESALEPRICE > 0);
+          const pFeaturesCurrent = Array.isArray(currentProduct.FEATURES) ? currentProduct.FEATURES.join('\n') : currentProduct.FEATURES || '';
+          const isExactCurrent = /ExactWholesale:\s*true/i.test(pFeaturesCurrent);
+          const isWholesaleQtyCurrent = hasWholesaleCurrent && (isExactCurrent ? qty === (currentProduct.WHOLESALEMINQUANTITY || 0) : qty >= (currentProduct.WHOLESALEMINQUANTITY || 0));
+
+          addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQtyCurrent ? currentProduct.WHOLESALEPRICE : undefined);
           
           const textContent = newBtn.querySelector('.add-to-cart-text__content');
           if (textContent) {
@@ -822,11 +1307,6 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           customBuyBtn.className = 'shopify-payment-button__button shopify-payment-button__button--unbranded yaxsell-custom-buy-button';
           customBuyBtn.textContent = 'Comprar ahora';
           
-          customBuyBtn.style.width = '100%';
-          customBuyBtn.style.background = '#000000';
-          customBuyBtn.style.color = '#ffffff';
-          customBuyBtn.style.border = '1px solid #000000';
-          
           // Make it match the size and shape of the Add to Cart button
           const addToCartBtn = root.querySelector('.add-to-cart-button') as HTMLElement | null;
           if (addToCartBtn) {
@@ -846,19 +1326,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             customBuyBtn.style.fontWeight = '400';
           }
           
-          customBuyBtn.style.cursor = 'pointer';
-          customBuyBtn.style.transition = 'all 0.2s ease';
           customBuyBtn.style.marginTop = '10px';
           customBuyBtn.style.display = 'block';
-
-          customBuyBtn.onmouseenter = () => {
-            customBuyBtn!.style.background = '#ffffff';
-            customBuyBtn!.style.color = '#000000';
-          };
-          customBuyBtn.onmouseleave = () => {
-            customBuyBtn!.style.background = '#000000';
-            customBuyBtn!.style.color = '#ffffff';
-          };
           
           paymentButtonContainer.appendChild(customBuyBtn);
           
@@ -872,7 +1341,13 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
             const currentProduct = (activeVariantId && activeVariantId !== product.$id)
               ? (linkedProducts.find(lp => lp.$id === activeVariantId) || product)
               : product;
-            addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined);
+            
+            const hasWholesaleCurrent = !!(currentProduct.WHOLESALEPRICE && currentProduct.WHOLESALEMINQUANTITY && currentProduct.WHOLESALEPRICE > 0);
+            const pFeaturesCurrent = Array.isArray(currentProduct.FEATURES) ? currentProduct.FEATURES.join('\n') : currentProduct.FEATURES || '';
+            const isExactCurrent = /ExactWholesale:\s*true/i.test(pFeaturesCurrent);
+            const isWholesaleQtyCurrent = hasWholesaleCurrent && (isExactCurrent ? qty === (currentProduct.WHOLESALEMINQUANTITY || 0) : qty >= (currentProduct.WHOLESALEMINQUANTITY || 0));
+
+            addItem(currentProduct, qty, activeOffer?.discountPrice, activeOffer ? (getExpiresAtEpochSeconds(activeOffer) || 0) * 1000 : undefined, isWholesaleQtyCurrent ? currentProduct.WHOLESALEPRICE : undefined);
             
             router.push('/carrito');
           });
@@ -928,6 +1403,355 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       }
     }
 
+    // 12. Eliminar secciones genéricas del tema que no corresponden al producto
+    const slideshowSection = root.querySelector('#shopify-section-template--20816638607498__slideshow_Etij97') ||
+      Array.from(root.querySelectorAll('[id*="slideshow"]')).find(el => el.textContent?.includes('Made from a soft'));
+    if (slideshowSection) {
+      slideshowSection.remove();
+    }
+
+    // Eliminar la sección "product-combine" (outfits con productos genéricos del tema)
+    const productCombineSection = root.querySelector('#shopify-section-template--20816638607498__products_combine_UJYhfq') ||
+      root.querySelector('.product-combine')?.closest('[id*="shopify-section"]') ||
+      root.querySelector('.product-combine');
+    if (productCombineSection) {
+      productCombineSection.remove();
+    }
+    // Helper: forzar carga de img del tema Shopify (bypassea responsive-image lazy loader)
+    const forceImgLoad = (img: HTMLImageElement, imgUrl: string, altText: string) => {
+      img.classList.remove('no-js-hidden', 'lazy', 'loading');
+      img.classList.add('loaded');
+      img.src = imgUrl;
+      img.srcset = imgUrl;
+      img.setAttribute('src', imgUrl);
+      img.setAttribute('srcset', imgUrl);
+      img.setAttribute('data-srcset', imgUrl);
+      img.removeAttribute('is');
+      img.removeAttribute('data-mode');
+      img.removeAttribute('loading');
+      img.removeAttribute('data-src');
+      img.removeAttribute('data-default-sizes');
+      img.alt = altText;
+      img.style.setProperty('display', 'block', 'important');
+      img.style.setProperty('visibility', 'visible', 'important');
+      img.style.setProperty('opacity', '1', 'important');
+      img.style.setProperty('width', '100%', 'important');
+      img.style.setProperty('height', '100%', 'important');
+      img.style.setProperty('object-fit', 'cover', 'important');
+      // Forzar visibilidad en contenedor .media padre
+      const mediaDiv = img.closest('.media') as HTMLElement | null;
+      if (mediaDiv) {
+        mediaDiv.style.setProperty('visibility', 'visible', 'important');
+        mediaDiv.style.setProperty('opacity', '1', 'important');
+        mediaDiv.classList.add('loaded', 'in-view');
+      }
+    };
+
+    // 13a. Eliminar la sección "Feel good & enjoy every day" (card-layered, sección EPfJj3)
+    const feelGoodSection = root.querySelector('#shopify-section-template--20816638607498__custom_section_EPfJj3') ||
+      Array.from(root.querySelectorAll('[id*="custom_section"]')).find(el => el.textContent?.includes('Feel good') || el.textContent?.includes('enjoy every day'));
+    if (feelGoodSection) feelGoodSection.remove();
+
+
+    // Helper: traducir badges de inglés a español de maquillaje
+    const translateBadges = (section: Element) => {
+      const badgeMap: Record<string, string> = {
+        'Wow': 'Wow',
+        'Playful': 'Hermoso',
+        'Soft': 'Suave',
+        'Smooth': 'Lindo',
+        'Fresh': 'Fresco',
+        'Cute': 'Especial',
+        'Cool': 'Irresistible',
+      };
+      // Buscar en todos los elementos de texto dentro de badge-float
+      section.querySelectorAll('.badge-block__texts .text-block, badge-float .text-block, .badge-block__texts p, badge-float p, .badge-text').forEach((el: any) => {
+        const txt = el.textContent?.trim();
+        if (txt && badgeMap[txt]) el.textContent = badgeMap[txt];
+      });
+    };
+
+    // Helper: configurar botón para Comprar ahora y scroll to top
+    const setupScrollToTopButton = (btn: HTMLAnchorElement | null, text: string) => {
+      if (!btn) return;
+      btn.href = '#';
+      const btnText = btn.querySelector('.btn__text');
+      const btnIconText = btn.querySelector('.btn__icon-text');
+      if (btnText) btnText.textContent = text;
+      if (btnIconText) btnIconText.textContent = text;
+      if (!btnText && !btnIconText) {
+        btn.textContent = text;
+      }
+      btn.setAttribute('data-yaxsell-scroll-top', '1');
+      btn.onclick = (e: Event) => {
+        e.preventDefault();
+        const productTop = root.querySelector('.product-page, .product__wrapper, [class*="product-detail"]') as HTMLElement | null;
+        const target = productTop || root;
+        (target as HTMLElement).scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+    };
+
+    // 13b. Sección 1 de imagen con badge (custom_section_9gHFi9) → imagen 1 del producto
+    const imgBadgeSection = root.querySelector('#shopify-section-template--20816638607498__custom_section_9gHFi9') ||
+      Array.from(root.querySelectorAll('[id*="custom_section"]')).find(el => el.querySelector('.image-with-badges'));
+    if (imgBadgeSection && pImages && pImages.length > 0) {
+      const pName = product?.NAME || 'Producto';
+      const pDesc = product?.DESCRIPTION || '';
+      const descText = pDesc.replace(/<[^>]*>/g, '').trim().slice(0, 220);
+      const shortDesc = descText.length > 0 ? descText + (pDesc.replace(/<[^>]*>/g, '').length > 220 ? '…' : '') : 'Calidad premium para tu día a día.';
+
+      // Solo la primera imagen con badge (data-srcset específico)
+      const badgeImg1 = imgBadgeSection.querySelector('img[data-srcset*="image-with-badge"]') as HTMLImageElement | null;
+      if (badgeImg1) forceImgLoad(badgeImg1, pImages[0], pName);
+
+      // Actualizar textos laterales
+      const textBlocks = imgBadgeSection.querySelectorAll('motion-component p, .text-block p');
+      textBlocks.forEach((p: any, idx: number) => {
+        if (idx === 0) p.textContent = 'Para ti';
+        else if (idx === 1) p.textContent = pName;
+        else if (idx === 2) p.textContent = shortDesc;
+      });
+
+      // Actualizar enlace "Ver más" → scroll to top del producto (excluyendo el wrapper de imagen)
+      const learnMoreBtn = imgBadgeSection.querySelector('.image-card__button a.btn, a.btn, a.button') as HTMLAnchorElement | null;
+      setupScrollToTopButton(learnMoreBtn, 'Comprar ahora');
+
+      // Traducir badges a español de maquillaje
+      translateBadges(imgBadgeSection);
+
+    } else if (imgBadgeSection) {
+      imgBadgeSection.remove();
+    }
+
+    // 13c. Sección 2 de imagen con badge (custom_section_WB3EgX) → imagen 2 del producto (o eliminar)
+    const imgBadgeSection2 = root.querySelector('#shopify-section-template--20816638607498__custom_section_WB3EgX');
+    if (imgBadgeSection2 && pImages && pImages.length > 0) {
+      const pName = product?.NAME || 'Producto';
+      if (pImages.length >= 2) {
+        // Reemplazar imagen con la segunda del producto
+        const badgeImg2 = imgBadgeSection2.querySelector('img[data-srcset*="image-with-badge"], img.no-js-hidden, img[data-mode="js"]') as HTMLImageElement | null;
+        if (badgeImg2) forceImgLoad(badgeImg2, pImages[1], pName);
+        // Traducir badges a español de maquillaje
+        translateBadges(imgBadgeSection2);
+        // Actualizar textos laterales
+        const textBlocks2 = imgBadgeSection2.querySelectorAll('motion-component p, .text-block p');
+        textBlocks2.forEach((p: any, idx: number) => {
+          if (idx === 0) p.textContent = 'Exclusivo';
+          else if (idx === 1) p.textContent = pName;
+        });
+        // Configurar botón para scroll to top (excluyendo el wrapper de imagen)
+        const learnMoreBtn2 = imgBadgeSection2.querySelector('.image-card__button a.btn, a.btn, a.button') as HTMLAnchorElement | null;
+        setupScrollToTopButton(learnMoreBtn2, 'Comprar ahora');
+      } else {
+        // Solo 1 imagen → eliminar esta segunda sección
+        imgBadgeSection2.remove();
+      }
+    }
+
+    // 13d. Sección FAQ (custom_section_FXkPhr) → reemplazar imagen, traducir textos a español Kevin&Coco Chile
+    const faqSection = root.querySelector('#shopify-section-template--20816638607498__custom_section_FXkPhr');
+    if (faqSection) {
+      // 1. Reemplazar imagen del banner FAQ
+      const faqBannerImg = faqSection.querySelector('img[data-srcset*="FAQ-banner"], img[data-srcset*="faq-banner"], picture img') as HTMLImageElement | null;
+      const faqBannerSource = faqSection.querySelector('picture source') as HTMLSourceElement | null;
+      const faqImgUrl = 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/06/1781499936436-pegada-1781499934553.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=E7usYNVhdHKHMBTkbk41zENmNoMQpM25RB14tPh6y%2BmuTbknH%2FVy8O9LSzGrFU1J4J1s3nA%2BMyKJRDWCCFlLdinGQxgAZ1S81zIMgczSGFe%2F3xkfsDUBhu8X55HoSRl5q1tdNQnmmWEzUS0n0d4rRz9OGGZDvFVIwHaOS1TfLzCxIiXQ0aIE4rCbBzzTLbjh%2ByDMQlJXqP1hpQWb3zle0HndPSYibbtf6IS%2Fh9HV78dqxPMLi6igrl61kziwpOFepceXXfUNDg3hWBIwyle9QRa4tyk5ZY7LWNDgaEyHZ3og8d6TemM9y2%2FVJyImhT0BLBVaGOsy74i8cRhNl1Lm%2FA%3D%3D';
+      if (faqBannerImg) {
+        forceImgLoad(faqBannerImg, faqImgUrl, 'Kevin & Coco Chile');
+      }
+      if (faqBannerSource) {
+        faqBannerSource.srcset = faqImgUrl;
+        faqBannerSource.setAttribute('data-srcset', faqImgUrl);
+      }
+
+      // 2. Traducir textos del FAQ a español con brand Kevin&Coco Chile
+      const faqTranslations: Record<string, string> = {
+        'Still Need Help?': '¿Tienes más preguntas?',
+        'Shoot our team an email': 'Escríbenos y te respondemos',
+        "Shoot our team an email & we'll get": 'Escríbenos y te respondemos',
+        "Shoot our team an email & we'll get back to you ASAP": 'Escríbenos y te respondemos a la brevedad',
+        "Shoot our team an email & we'll get back to you asap": 'Escríbenos y te respondemos a la brevedad',
+        "we'll get back to you asap": 'te respondemos a la brevedad',
+        "we'll get back to you ASAP": 'te respondemos a la brevedad',
+        "we’ll get back to you asap": 'te respondemos a la brevedad',
+        "we’ll get back to you ASAP": 'te respondemos a la brevedad',
+        'get back to you asap': 'te respondemos a la brevedad',
+        'get back to you ASAP': 'te respondemos a la brevedad',
+        'Learn more': 'Más info',
+        'Contact us': 'Contáctanos',
+        'Frequently Asked Questions': 'Preguntas Frecuentes',
+        'How long does it take to process an order?': '¿Cuánto demora en procesarse mi pedido?',
+        'Orders are usually processed within 1–2 business days. You\'ll receive a confirmation email once your order is fully prepared and ready to ship.': 'Los pedidos se procesan en 1–2 días hábiles. Recibirás un correo de confirmación cuando tu pedido esté listo para despacho.',
+        'Orders are usually processed within 1': 'Los pedidos se procesan en 1',
+        'Do you ship internationally?': '¿Hacen envíos a regiones de Chile?',
+        'Yes, we ship to most countries worldwide. Shipping times and rates vary by location, and all available options will be shown at checkout.': 'El envío es con pago contra entrega (paga al recibir). Nosotros le enviaremos el comprobante de envío para que vea cuánto tiene que pagar y el número de seguimiento estará disponible en \'Mis pedidos\' de su perfil de usuario.',
+        'What is your return policy?': '¿Cuál es la política de devoluciones?',
+        'We accept returns within 30 days of purchase. Items must be unworn, unwashed, and in original condition with tags attached for a full refund.': 'Aceptamos devoluciones dentro de los 10 primeros días si el producto está dañado o roto. Podemos realizar una negociación o el cliente puede devolver el producto para realizarle el reembolso correspondiente.',
+        'What are your sizing options?': '¿Tienen retiro en tienda?',
+        'We offer a full range of sizes from XS to XL. Refer to our detailed size chart for accurate measurements to find your perfect fit.': 'Sí, contamos con retiro en tienda en nuestro local Kevin&amp;Coco Chile.<br><br><strong>Retiro disponible (Generalmente listo en 24 horas)</strong><br><strong>Dirección:</strong> Toesca 2537, 8370287 Santiago, Región Metropolitana<br><strong>Teléfono:</strong> 9 9914 9712<br><br><strong>Horarios de Atención:</strong><br>Lunes a Viernes: 10:00 – 19:00<br>Sábado: 10:00 – 17:00<br>Domingo: Cerrado',
+        'Manejamos tallas desde XS hasta XL. Consulta nuestra guía de tallas para encontrar tu medida perfecta.': 'Sí, contamos con retiro en tienda en nuestro local Kevin&amp;Coco Chile.<br><br><strong>Retiro disponible (Generalmente listo en 24 horas)</strong><br><strong>Dirección:</strong> Toesca 2537, 8370287 Santiago, Región Metropolitana<br><strong>Teléfono:</strong> 9 9914 9712<br><br><strong>Horarios de Atención:</strong><br>Lunes a Viernes: 10:00 – 19:00<br>Sábado: 10:00 – 17:00<br>Domingo: Cerrado',
+      };
+
+      // Reemplazar textos iterando sobre todos los nodos de texto
+      faqSection.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span.accordion__summary-text, .btn__text, .btn__icon-text').forEach((el: any) => {
+        const txt = el.textContent?.trim();
+        if (txt && faqTranslations[txt]) {
+          el.textContent = faqTranslations[txt];
+        }
+      });
+
+      // Reemplazar textos por replaceAll en el HTML del FAQ (para parrafos con texto exacto)
+      let faqHtml = faqSection.innerHTML;
+      Object.entries(faqTranslations).forEach(([en, es]) => {
+        faqHtml = faqHtml.split(en).join(es);
+        
+        // Manejar variaciones de apóstrofes (recto, curvo, entidades HTML)
+        const variations = [
+          en.replace(/'/g, '’'),
+          en.replace(/'/g, '&#39;'),
+          en.replace(/'/g, '&apos;'),
+          en.replace(/'/g, '&#x27;')
+        ];
+        variations.forEach(variant => {
+          if (variant !== en) {
+            faqHtml = faqHtml.split(variant).join(es);
+          }
+        });
+      });
+      faqSection.innerHTML = faqHtml;
+
+      // Volver a aplicar la imagen después de reemplazar innerHTML (se pierde el src)
+      const faqBannerImg2 = faqSection.querySelector('img[data-srcset*="FAQ-banner"], img[data-srcset*="faq-banner"], picture img') as HTMLImageElement | null;
+      if (faqBannerImg2) forceImgLoad(faqBannerImg2, faqImgUrl, 'Kevin & Coco Chile');
+      const faqBannerSource2 = faqSection.querySelector('picture source') as HTMLSourceElement | null;
+      if (faqBannerSource2) { faqBannerSource2.srcset = faqImgUrl; faqBannerSource2.setAttribute('data-srcset', faqImgUrl); }
+
+      // Configurar botón para scroll to top (excluyendo el wrapper de imagen)
+      const faqBtn = faqSection.querySelector('.image-card__button a.btn, a.btn, a.button') as HTMLAnchorElement | null;
+      setupScrollToTopButton(faqBtn, 'Comprar ahora');
+    }
+
+    // 13e. Bloquear botones de compartir
+    root.querySelectorAll('.social-sharing a').forEach((el: any) => {
+      el.setAttribute('href', '#');
+      el.removeAttribute('target');
+      el.addEventListener('click', (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    });
+    const shareText = root.querySelector('.social-sharing p');
+    if (shareText) {
+      shareText.textContent = 'Compartir:';
+    }
+
+    // 13f. Configurar el botón "¿Necesitas ayuda?" para WhatsApp
+    const helpBtn = root.querySelector('.help-desk-link');
+    if (helpBtn) {
+      helpBtn.setAttribute('href', 'https://wa.me/56999149712');
+      helpBtn.setAttribute('target', '_blank');
+      helpBtn.setAttribute('rel', 'noopener noreferrer');
+      helpBtn.innerHTML = `
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRAZfIMxTRshRuJdTJu-mi52yWPxiF3ghQsSw&s" 
+             style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; margin-right: 8px; display: inline-block; vertical-align: middle;" 
+             alt="WhatsApp" />
+        <span style="vertical-align: middle;">¿Necesitas ayuda?</span>
+      `;
+      (helpBtn as HTMLElement).style.display = 'inline-flex';
+      (helpBtn as HTMLElement).style.alignItems = 'center';
+      (helpBtn as HTMLElement).style.justifyContent = 'center';
+    }
+
+
+
+    const testimonialsSection = root.querySelector('#shopify-section-template--20816638607498__testimonials_parallax_jGpBe7') ||
+      root.querySelector('testimonial-parallax')?.closest('[id*="shopify-section"]') ||
+      root.querySelector('testimonial-parallax');
+    if (testimonialsSection) {
+      testimonialsSection.remove();
+    }
+
+    // 15. Marquee (custom_section_4XBchF) → textos KEVIN&COCO belleza + fondo rosa pastel + letra blanca
+    const marqueeSection = root.querySelector('#shopify-section-template--20816638607498__custom_section_4XBchF');
+    if (marqueeSection) {
+      // Cambiar fondo a rosa pastel
+      const marqueeWrapper = marqueeSection.querySelector('.marquee, .marquee__wrapper, [class*="marquee"]') as HTMLElement | null;
+      if (marqueeWrapper) {
+        marqueeWrapper.style.setProperty('background', '#f8bbd9', 'important');
+        marqueeWrapper.style.setProperty('background-color', '#f8bbd9', 'important');
+      }
+      // Aplicar estilos a la sección completa
+      (marqueeSection as HTMLElement).style.setProperty('background', '#f8bbd9', 'important');
+      (marqueeSection as HTMLElement).style.setProperty('background-color', '#f8bbd9', 'important');
+
+      // Inyectar CSS para sobreescribir el color de fondo del marquee
+      const marqueeStyle = root.querySelector('#yx-marquee-style') || document.createElement('style');
+      marqueeStyle.id = 'yx-marquee-style';
+      marqueeStyle.textContent = `
+        #shopify-section-template--20816638607498__custom_section_4XBchF,
+        #shopify-section-template--20816638607498__custom_section_4XBchF .section,
+        #shopify-section-template--20816638607498__custom_section_4XBchF .marquee,
+        #shopify-section-template--20816638607498__custom_section_4XBchF .marquee__wrapper {
+          background: #f8bbd9 !important;
+          background-color: #f8bbd9 !important;
+          color: #fff !important;
+        }
+        #shopify-section-template--20816638607498__custom_section_4XBchF p,
+        #shopify-section-template--20816638607498__custom_section_4XBchF span,
+        #shopify-section-template--20816638607498__custom_section_4XBchF .text-block {
+          color: #fff !important;
+        }
+        #shopify-section-template--20816638607498__custom_section_4XBchF .separator__shape {
+          background: rgba(255,255,255,0.5) !important;
+        }
+      `;
+      (root.querySelector('head') || document.head || root).appendChild(marqueeStyle);
+
+      // Reemplazar textos del marquee con contenido KEVIN&COCO belleza (usando módulo para asegurar reemplazo en elementos clonados)
+      const marqueeTexts = [
+        'KEVIN & COCO', 'Tu belleza primero', 'KEVIN & COCO', 'Brilla siempre',
+        'KEVIN & COCO', 'Confiá en ti', 'KEVIN & COCO', 'Cuida tu piel',
+      ];
+      const marqueeParas = Array.from(marqueeSection.querySelectorAll('.marquee__items p, .marquee p, [class*="marquee"] p'));
+      marqueeParas.forEach((p: any, idx: number) => {
+        p.textContent = marqueeTexts[idx % marqueeTexts.length];
+      });
+    }
+
+    // 16. Eliminar sección icon-box (custom_section_4yLVt7) — textos genéricos que no aplican
+    const iconBoxSection = root.querySelector('#shopify-section-sections--20816632381578__custom_section_4yLVt7') ||
+      root.querySelector('[id*="custom_section_4yLVt7"]');
+    if (iconBoxSection) iconBoxSection.remove();
+
+
+    // 14. Actualizar el botón del banner "Inspiración de Atuendos" para llevar a la categoría del producto
+    // Buscar el bloque promotion-alert que contiene el botón con href=/collections/all
+    const promotionAlerts = Array.from(root.querySelectorAll('.promotion-alert__wrapper, .promotion-alert'));
+    const outfitAlert = promotionAlerts.find(el => el.textContent?.includes('Inspiración de Atuendos') || el.textContent?.includes('Outfit Inspiration') || el.textContent?.includes('Armario') || el.textContent?.includes('wardrobe'));
+    if (outfitAlert) {
+      // Actualizar el enlace del botón para llevar a productos de la categoría
+      const alertBtn = outfitAlert.querySelector('a[href*="collections"], a[href*="products"], a[aria-label="Show now"]') as HTMLAnchorElement | null;
+      if (alertBtn && !alertBtn.dataset.yaxsellBtnPatched) {
+        alertBtn.dataset.yaxsellBtnPatched = '1';
+        const categorySlug = (categoryName || '').toLowerCase().replace(/\s+/g, '-');
+        alertBtn.href = `/collections/${categorySlug || 'all'}`;
+        alertBtn.setAttribute('aria-label', '¿Buscas algo similar?');
+        alertBtn.classList.remove('btn--icon-only');
+        alertBtn.style.cssText += '; display: inline-flex !important; align-items: center !important; gap: 6px !important; padding: 8px 16px !important; font-size: 13px !important; font-weight: 700 !important; white-space: nowrap !important;';
+        // Insertar texto antes del icono (solo una vez)
+        const iconSpan = alertBtn.querySelector('.icon');
+        const textNode = document.createElement('span');
+        textNode.textContent = '¿Buscas algo similar?';
+        textNode.style.cssText = 'font-size: 13px; font-weight: 700; color: inherit;';
+        if (iconSpan) {
+          alertBtn.insertBefore(textNode, iconSpan);
+        } else {
+          alertBtn.prepend(textNode);
+        }
+      }
+    }
+
+
     // Indicar que Yaxsell está listo
     root.dataset.yaxsellReady = 'true';
   };
@@ -952,6 +1776,14 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
     if (!root.dataset.htmlSet) {
       // Reemplazar imágenes principales y texto del producto en el string HTML crudo antes de la inyección
       let processedHtml = bodyHtml;
+
+      // Desactivar el componente de acordeón personalizado de Shopify para evitar que sobrescriba el DOM en el connectedCallback
+      processedHtml = processedHtml.replaceAll('<accordion-component', '<div');
+      processedHtml = processedHtml.replaceAll('</accordion-component>', '</div>');
+
+      // Desactivar el componente de precio personalizado de Shopify para evitar que su script connectedCallback sobrescriba el DOM
+      processedHtml = processedHtml.replaceAll('<product-price', '<div class="yaxsell-product-price-container"');
+      processedHtml = processedHtml.replaceAll('</product-price>', '</div>');
       
       processedHtml = processedHtml.replaceAll('Logo Polo Red', product.NAME);
       processedHtml = processedHtml.replaceAll('$45.00', formattedPrice);
@@ -974,9 +1806,9 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       processedHtml = processedHtml.replaceAll('Quantity', 'Cantidad');
       processedHtml = processedHtml.replaceAll('Add to cart', 'Agregar al carrito');
       processedHtml = processedHtml.replaceAll('Buy it now', 'Comprar ahora');
-      processedHtml = processedHtml.replaceAll('Free shipping', 'Envío gratis');
-      processedHtml = processedHtml.replaceAll('Easy return', 'Devolución gratis');
-      processedHtml = processedHtml.replaceAll('Safe checkout', 'Compra Protegida');
+      processedHtml = processedHtml.replaceAll('Free shipping', 'ENVIO SEGURO');
+      processedHtml = processedHtml.replaceAll('Easy return', 'COMPRA PROTEGIDA');
+      processedHtml = processedHtml.replaceAll('Safe checkout', 'PAGO GARANTIZADO');
       processedHtml = processedHtml.replaceAll('Product Details', 'Detalles del Producto');
       processedHtml = processedHtml.replaceAll('Video Feedbacks', 'Opiniones en Video');
       processedHtml = processedHtml.replaceAll('Materials', 'Materiales');
@@ -987,29 +1819,107 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       processedHtml = processedHtml.replaceAll('Share on X (Twitter)', 'Compartir en X (Twitter)');
       processedHtml = processedHtml.replaceAll('Need help ?', '¿Necesitas ayuda?');
       processedHtml = processedHtml.replaceAll('Need help?', '¿Necesitas ayuda?');
-      processedHtml = processedHtml.replaceAll('Outfit Inspiration', 'Inspiración de Atuendos');
-      processedHtml = processedHtml.replaceAll('Ideas to refresh your everyday wardrobe', 'Ideas para renovar tu armario todos los días');
+      processedHtml = processedHtml.replaceAll('Outfit Inspiration', '✨ Élígete Bella');
+      processedHtml = processedHtml.replaceAll('Ideas to refresh your everyday wardrobe', 'Porque cuidarte es quererte. Brilla siempre.');
       processedHtml = processedHtml.replaceAll('Over 500 Happy Reviews', 'Más de 500 opiniones felices');
+      
+      // Traducciones globales de botones y FAQ
+      processedHtml = processedHtml.replaceAll('Learn more', 'Comprar ahora');
+      processedHtml = processedHtml.replaceAll('Learn More', 'Comprar ahora');
+      processedHtml = processedHtml.replaceAll('Shop Now', 'Comprar ahora');
+      processedHtml = processedHtml.replaceAll('Shop now', 'Comprar ahora');
+      processedHtml = processedHtml.replaceAll('Contact us', 'Contáctanos');
+      processedHtml = processedHtml.replaceAll('Contact Us', 'Contáctanos');
+      processedHtml = processedHtml.replaceAll('Continue shopping', 'Continuar comprando');
+      processedHtml = processedHtml.replaceAll('Continue Shopping', 'Continuar comprando');
+      processedHtml = processedHtml.replaceAll('Still Need Help?', '¿Tienes más preguntas?');
+      processedHtml = processedHtml.replaceAll('Frequently Asked Questions', 'Preguntas Frecuentes');
+      processedHtml = processedHtml.replaceAll('How long does it take to process an order?', '¿Cuánto demora en procesarse mi pedido?');
+      processedHtml = processedHtml.replaceAll('Do you ship internationally?', '¿Hacen envíos a regiones de Chile?');
+      processedHtml = processedHtml.replaceAll('What is your return policy?', '¿Cuál es la política de devoluciones?');
+      processedHtml = processedHtml.replaceAll('What are your sizing options?', '¿Tienen envío express?');
       
       const pImages = [product.IMAGEURL, product.IMAGEURL2, product.IMAGEURL3, product.IMAGEURL4, product.IMAGEURL5].filter(Boolean).map(v => resolveStorageImageUrl(v)) as string[];
       if (pImages.length > 0) {
-        // Expresión regular para borrar de raíz cualquier URL con tamaños o v= del polo rojo de Pebble Little
-        processedHtml = processedHtml.replace(/(https?:)?\/\/pebble-little\.myshopify\.com\/cdn\/shop\/files\/LogoPoloRed-12([1-5])[^"'\s,]*/g, (match, p1) => {
-          const idx = parseInt(p1) - 1;
+        // Expresión regular para borrar de raíz cualquier URL con tamaños o v= del polo rojo
+        processedHtml = processedHtml.replace(/(https?:)?\/\/(pebble-little|yaxsell)\.myshopify\.com\/cdn\/shop\/files\/LogoPoloRed-12([1-5])[^"'\s,]*/g, (match, p1, p2, p3) => {
+          const idx = parseInt(p3) - 1;
           return pImages[idx] || pImages[0];
         });
-        processedHtml = processedHtml.replace(/(https?:)?\/\/pebble-little\.myshopify\.com\/cdn\/shop\/files\/LogoPoloRed[^"'\s,]*/g, pImages[0]);
+        processedHtml = processedHtml.replace(/(https?:)?\/\/(pebble-little|yaxsell)\.myshopify\.com\/cdn\/shop\/files\/LogoPoloRed[^"'\s,]*/g, pImages[0]);
       }
 
       root.innerHTML = processedHtml;
       root.dataset.htmlSet = '1';
       // Remove leftover Shopify elements
       root.querySelectorAll('.fusion-overlay-custom, .fusion-scroll-top, .quickView-popup').forEach(el => el.remove());
+
+      // 🔑 KEY FIX: Directly update every thumbnail img's src/srcset in the DOM after injection
+      // The regex approach misses images inside srcset with multiple resolutions separated by commas
+      if (pImages.length > 0) {
+        // Fix all thumbnail images directly in DOM after injection
+        // Also remove Shopify's responsive-image custom element ('is' attr) that overrides src after we set it
+        root.querySelectorAll('.media-gallery__carousel-thumbnails .carousel__thumbnail').forEach((thumb: any, tIdx: number) => {
+          const imgUrl = pImages[tIdx % pImages.length] || pImages[0];
+          thumb.style.setProperty('overflow', 'hidden', 'important');
+          thumb.style.setProperty('border-radius', '50%', 'important');
+          thumb.classList.remove('is-hidden');
+          thumb.classList.add('loaded', 'is-revealed');
+
+          thumb.querySelectorAll('img, source').forEach((el: any) => {
+            el.src = imgUrl;
+            el.srcset = imgUrl;
+            el.setAttribute('src', imgUrl);
+            el.setAttribute('srcset', imgUrl);
+            el.setAttribute('sizes', '80px');
+            el.removeAttribute('data-src');
+            el.removeAttribute('data-srcset');
+            el.removeAttribute('loading');
+            el.removeAttribute('is');
+            el.removeAttribute('data-mode');
+            el.classList.add('loaded');
+            el.classList.remove('lazy');
+            el.style.setProperty('width', '100%', 'important');
+            el.style.setProperty('height', '100%', 'important');
+            el.style.setProperty('object-fit', 'cover', 'important');
+            el.style.setProperty('border-radius', '50%', 'important');
+            el.style.setProperty('display', 'block', 'important');
+            el.style.setProperty('visibility', 'visible', 'important');
+            el.style.setProperty('opacity', '1', 'important');
+          });
+        });
+
+        // Also update grid thumbnails (desktop side panel)
+        root.querySelectorAll('.media-gallery__grid-thumbnails img, .media-gallery__grid-thumbnails source').forEach((el: any, idx: number) => {
+          const thumbIdx = Math.floor(idx / 2);
+          const imgUrl = pImages[thumbIdx % pImages.length] || pImages[0];
+          el.src = imgUrl;
+          el.srcset = imgUrl;
+          el.setAttribute('src', imgUrl);
+          el.setAttribute('srcset', imgUrl);
+          el.removeAttribute('is');
+          el.removeAttribute('data-mode');
+        });
+
+        // Fix main gallery slider images
+        root.querySelectorAll('.media-gallery__carousel-container img').forEach((el: any, idx: number) => {
+          if (el.closest('.media-gallery__carousel-thumbnails') || el.closest('.media-gallery__grid-thumbnails')) return;
+          const imgUrl = pImages[idx % pImages.length] || pImages[0];
+          el.src = imgUrl;
+          el.srcset = imgUrl;
+          el.setAttribute('src', imgUrl);
+          el.setAttribute('srcset', imgUrl);
+          el.removeAttribute('is');
+          el.removeAttribute('data-mode');
+          el.removeAttribute('loading');
+          el.classList.add('loaded', 'is-revealed');
+        });
+      }
     }
 
     // Apply replacements immediately
     applyYaxsellData();
-  }, [bodyHtml, product, refElement]);
+  }, [bodyHtml, product, refElement, apertura]);
 
   /* ── Force data updates on elements (cascade to override late-loading custom element lifecycle) ── */
   useEffect(() => {
@@ -1032,7 +1942,7 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       clearTimeout(t4);
       clearTimeout(t5);
     };
-  }, [product, bodyHtml, categoryName, related, refElement, activeVariantId, linkedProducts, variantLabels]);
+  }, [product, bodyHtml, categoryName, related, refElement, activeVariantId, linkedProducts, variantLabels, qty, apertura]);
 
   // Product Page countdown timer loop
   useEffect(() => {
@@ -1358,62 +2268,484 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           cursor: not-allowed !important;
         }
 
+        /* ── Quantity Selector Premium Design ── */
+        .tpl5-page-wrapper quantity-selector-component,
+        .tpl5-page-wrapper .quantity-selector {
+          display: inline-flex !important;
+          align-items: center !important;
+          background: #f9fafb !important;
+          border: 1.5px solid #e5e7eb !important;
+          border-radius: 99px !important;
+          overflow: hidden !important;
+          height: 48px !important;
+          min-width: 130px !important;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+        }
+        .tpl5-page-wrapper quantity-selector-component:focus-within,
+        .tpl5-page-wrapper .quantity-selector:focus-within {
+          border-color: #db2777 !important;
+          box-shadow: 0 0 0 3px rgba(219,39,119,0.1) !important;
+        }
+        
+        /* Minus / Plus buttons */
+        .tpl5-page-wrapper .quantity-minus,
+        .tpl5-page-wrapper .quantity-plus,
+        .tpl5-page-wrapper .quantity-button {
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          width: 44px !important;
+          height: 44px !important;
+          min-width: 44px !important;
+          background: transparent !important;
+          border: none !important;
+          cursor: pointer !important;
+          color: #374151 !important;
+          transition: color 0.15s ease, background 0.15s ease !important;
+          border-radius: 99px !important;
+          flex-shrink: 0 !important;
+          padding: 0 !important;
+          position: relative !important;
+        }
+        .tpl5-page-wrapper .quantity-minus:hover,
+        .tpl5-page-wrapper .quantity-plus:hover,
+        .tpl5-page-wrapper .quantity-button:hover {
+          color: #db2777 !important;
+          background: #fdf2f8 !important;
+        }
+        .tpl5-page-wrapper .quantity-minus svg,
+        .tpl5-page-wrapper .quantity-plus svg,
+        .tpl5-page-wrapper .quantity-button svg {
+          width: 18px !important;
+          height: 18px !important;
+          stroke-width: 2.5px !important;
+        }
+        
+        /* Number input */
+        .tpl5-page-wrapper input.quantity-input,
+        .tpl5-page-wrapper .quantity-selector input[type="number"] {
+          flex: 1 !important;
+          border: none !important;
+          background: transparent !important;
+          text-align: center !important;
+          font-size: 16px !important;
+          font-weight: 700 !important;
+          color: #111827 !important;
+          font-family: 'Bricolage Grotesque', sans-serif !important;
+          outline: none !important;
+          -moz-appearance: textfield !important;
+          padding: 0 4px !important;
+          width: 40px !important;
+          min-width: 32px !important;
+        }
+        .tpl5-page-wrapper input.quantity-input::-webkit-inner-spin-button,
+        .tpl5-page-wrapper input.quantity-input::-webkit-outer-spin-button {
+          -webkit-appearance: none !important;
+        }
+
         /* Fix mobile thumbnails shifting to the right and keep them compact */
         @media (max-width: 767.98px) {
+          media-gallery,
+          .media-gallery {
+            position: relative !important;
+            display: block !important; /* Changed from flex column to block to prevent flex bugs */
+          }
           .media-gallery__carousel {
             position: relative !important;
             overflow: hidden !important;
+            height: auto !important;
+            display: block !important; /* Force block to prevent row flex squishing */
           }
-          .media-gallery__carousel-thumbnails--inside.md\:hidden,
-          .media-gallery__carousel-thumbnails {
+          .media-gallery__carousel-container {
             display: block !important;
             position: relative !important;
-            margin: 16px auto 0 auto !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            left: 0 !important;
-            transform: none !important;
-            overflow: visible !important;
           }
-          .media-gallery__carousel-thumbnails .carousel__thumbnails-swiper {
-            overflow: visible !important;
-          }
-          .media-gallery__carousel-thumbnails .swiper-wrapper {
+          .media-gallery__carousel .swiper-slide {
+            height: auto !important;
             display: flex !important;
+            align-items: center !important;
             justify-content: center !important;
-            gap: 10px !important;
-            flex-wrap: nowrap !important;
-            transform: none !important;
-            width: auto !important;
           }
-          .media-gallery__carousel-thumbnails .carousel__thumbnail {
-            width: 44px !important;
-            height: 44px !important;
+          .product-media.media {
+            padding-bottom: 0 !important;
+            height: auto !important;
+            min-height: unset !important;
+            width: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+          }
+          .product-media.media picture,
+          .product-media.media img {
+            position: relative !important;
+            height: auto !important;
+            width: 100% !important;
+            max-height: 55vh !important;
+            object-fit: contain !important;
+          }
+          .tpl5-page-wrapper .media-gallery__carousel-thumbnails--inside,
+          .tpl5-page-wrapper .media-gallery__carousel-thumbnails {
+            display: flex !important;
+            position: absolute !important;
+            bottom: 16px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: max-content !important;
+            max-width: 90vw !important;
+            background: rgba(255, 255, 255, 0.6) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border-radius: 30px !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.25) inset !important;
+            padding: 6px 12px !important;
+            margin: 0 !important;
+            z-index: 999 !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            overflow-x: auto !important;
+            scrollbar-width: none !important;
+          }
+          .tpl5-page-wrapper .media-gallery__carousel-thumbnails::-webkit-scrollbar {
+            display: none !important;
+          }
+          .tpl5-page-wrapper .media-gallery__carousel-thumbnails .carousel__thumbnails-swiper {
+            display: block !important;
+            overflow: visible !important;
+            width: max-content !important;
+          }
+          .tpl5-page-wrapper .media-gallery__carousel-thumbnails .swiper-wrapper {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: center !important;
+            align-items: center !important;
+            gap: 10px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            transform: none !important;
+            width: max-content !important;
+          }
+          .tpl5-page-wrapper .media-gallery__carousel-thumbnails .carousel__thumbnail,
+          .tpl5-page-wrapper .media-gallery__carousel-thumbnails .swiper-slide {
+            width: 48px !important;
+            height: 48px !important;
             border-radius: 50% !important;
-            border: 2px solid #e5e7eb !important;
-            overflow: hidden !important;
+            border: 2px solid #ffffff !important;
             cursor: pointer !important;
             flex-shrink: 0 !important;
             margin: 0 !important;
             padding: 0 !important;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            opacity: 0.65 !important;
+            opacity: 0.85 !important;
             background: #ffffff !important;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
+            display: block !important;
+            visibility: visible !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
           }
-          .media-gallery__carousel-thumbnails .carousel__thumbnail img {
+          .tpl5-page-wrapper .media-gallery__carousel-thumbnails .carousel__thumbnail img,
+          .tpl5-page-wrapper .media-gallery__carousel-thumbnails .swiper-slide img {
             width: 100% !important;
             height: 100% !important;
             object-fit: cover !important;
             border-radius: 50% !important;
+            display: block !important;
+            visibility: visible !important;
           }
           /* Highlight active slide with pink color matching template aesthetic */
-          .media-gallery__carousel-thumbnails .swiper-slide-active,
-          .media-gallery__carousel-thumbnails .carousel__thumbnail:hover {
+          .tpl5-page-wrapper .media-gallery__carousel-thumbnails .swiper-slide-active,
+          .tpl5-page-wrapper .media-gallery__carousel-thumbnails .carousel__thumbnail.is-active,
+          .tpl5-page-wrapper .media-gallery__carousel-thumbnails .carousel__thumbnail:hover {
             border-color: #db2777 !important;
-            transform: scale(1.15) !important;
+            transform: scale(1.1) !important;
             opacity: 1 !important;
-            box-shadow: 0 4px 10px rgba(219, 39, 119, 0.2) !important;
+            box-shadow: 0 4px 12px rgba(219, 39, 119, 0.35) !important;
+          }
+        }
+
+        /* Hide mobile thumbnails on desktop sizes */
+        @media (min-width: 768px) {
+          .tpl5-page-wrapper .media-gallery__carousel-thumbnails {
+            display: none !important;
+          }
+        }
+
+        /* Evitar que las imágenes se recorten en los bordes (vistas completas) - Global para PC y Móvil */
+        .product__media img,
+        .global-media-settings img,
+        .product__media-list img,
+        .media img,
+        .media__image,
+        .product-media img,
+        .thumbnail img,
+        .thumbnail-list__item img,
+        img[data-media-src],
+        .media-gallery__carousel img,
+        .product__media-wrapper img {
+          object-fit: contain !important;
+          background-color: transparent !important;
+        }
+
+        /* Estilos para el Selector de Cantidad (Stock Selection) con botones + y - */
+        quantity-selector-component,
+        .quantity-selector {
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          position: relative !important;
+          border: 1.5px solid #e5e7eb !important;
+          border-radius: 9999px !important;
+          background: #ffffff !important;
+          width: 120px !important;
+          height: 46px !important;
+          overflow: hidden !important;
+        }
+
+        quantity-selector-component .quantity-input,
+        .quantity-selector .quantity-input {
+          width: 100% !important;
+          height: 100% !important;
+          border: none !important;
+          outline: none !important;
+          background: transparent !important;
+          font-size: 15px !important;
+          font-weight: 700 !important;
+          color: #111827 !important;
+          text-align: center !important;
+          padding: 0 32px !important;
+          margin: 0 !important;
+          -moz-appearance: textfield !important;
+        }
+
+        quantity-selector-component .quantity-input::-webkit-outer-spin-button,
+        quantity-selector-component .quantity-input::-webkit-inner-spin-button,
+        .quantity-selector .quantity-input::-webkit-outer-spin-button,
+        .quantity-selector .quantity-input::-webkit-inner-spin-button {
+          -webkit-appearance: none !important;
+          margin: 0 !important;
+        }
+
+        /* Botones de cantidad limpios y flotantes sin cuadrado ni bordes de tema */
+        quantity-selector-component button,
+        .quantity-selector button,
+        quantity-selector-component .quantity-button,
+        .quantity-selector .quantity-button {
+          position: absolute !important;
+          top: 0 !important;
+          height: 100% !important;
+          width: 36px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          border: none !important;
+          background: transparent !important;
+          color: #111827 !important;
+          cursor: pointer !important;
+          z-index: 10 !important;
+          transition: all 0.2s ease !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          min-width: 0 !important;
+          min-height: 0 !important;
+          box-shadow: none !important;
+          outline: none !important;
+          border-radius: 0 !important;
+        }
+
+        quantity-selector-component button::before,
+        quantity-selector-component button::after,
+        .quantity-selector button::before,
+        .quantity-selector button::after,
+        quantity-selector-component .quantity-button::before,
+        quantity-selector-component .quantity-button::after,
+        .quantity-selector .quantity-button::before,
+        .quantity-selector .quantity-button::after {
+          display: none !important;
+          content: none !important;
+          border: none !important;
+          background: transparent !important;
+        }
+
+        quantity-selector-component .quantity-minus,
+        .quantity-selector .quantity-minus {
+          left: 6px !important;
+          right: auto !important;
+        }
+
+        quantity-selector-component .quantity-plus,
+        .quantity-selector .quantity-plus {
+          right: 6px !important;
+          left: auto !important;
+        }
+
+        quantity-selector-component button:hover,
+        .quantity-selector button:hover,
+        quantity-selector-component .quantity-button:hover,
+        .quantity-selector .quantity-button:hover {
+          color: #db2777 !important; /* Cambia a rosa Yaxsell al pasar el cursor */
+          background-color: transparent !important;
+          border: none !important;
+          transform: scale(1.15) !important;
+        }
+
+        quantity-selector-component .quantity-button span,
+        .quantity-selector .quantity-button span {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          border: none !important;
+          background: transparent !important;
+          box-shadow: none !important;
+        }
+
+        quantity-selector-component .quantity-button svg,
+        .quantity-selector .quantity-button svg {
+          width: 14px !important;
+          height: 14px !important;
+          stroke: currentColor !important;
+          stroke-width: 2.5 !important;
+          display: block !important;
+          border: none !important;
+          background: transparent !important;
+        }
+
+        /* Botón de Comprar Ahora (Píldora negra, texto blanco, hover: fondo blanco y texto negro) */
+        .yaxsell-custom-buy-button {
+          background-color: #000000 !important;
+          color: #ffffff !important;
+          border: 1.5px solid #000000 !important;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          width: 100% !important;
+          cursor: pointer !important;
+        }
+
+        .yaxsell-custom-buy-button:hover {
+          background-color: #ffffff !important; /* Fondo blanco en hover */
+          color: #000000 !important; /* Texto negro */
+          border: 1.5px solid #000000 !important;
+        }
+
+        /* Bloquear hover gris del tema Shopify en el dialog de retiro local */
+        #local-pickup-dialog,
+        #local-pickup-dialog * {
+          -webkit-tap-highlight-color: transparent !important;
+        }
+        #local-pickup-dialog .pickup-location__wrapper:hover,
+        #local-pickup-dialog .pickup-location__address-wrapper:hover,
+        #local-pickup-dialog .pickup-location__address:hover,
+        #local-pickup-dialog span:hover,
+        #local-pickup-dialog p:hover,
+        #local-pickup-dialog strong:hover,
+        #local-pickup-dialog div:hover {
+          background: transparent !important;
+          background-color: transparent !important;
+          color: inherit !important;
+          box-shadow: none !important;
+        }
+        #local-pickup-dialog .dialog__close:hover {
+          background-color: #e5e7eb !important;
+          color: #1f2937 !important;
+        }
+
+        /* Quitar el neon/glow rosado del botón scroll-to-top de Shopify */
+        .back-to-top, .scroll-to-top, [class*="scroll-top"], [class*="back-to-top"] {
+          box-shadow: none !important;
+          filter: none !important;
+        }
+        .back-to-top svg, .scroll-to-top svg, [class*="scroll-top"] svg {
+          stroke: currentColor !important;
+          filter: none !important;
+        }
+
+        /* Drawer Responsivo para Local Pickup - aparece ENCIMA del navbar mobile */
+        @media (max-width: 767.98px) {
+          #local-pickup-dialog {
+            width: 100% !important;
+            height: auto !important;
+            max-height: calc(100vh - 60px) !important;
+            top: auto !important;
+            bottom: 60px !important;
+            border-radius: 20px 20px 0 0 !important;
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.15) !important;
+            animation: slideUp 0.3s ease-out !important;
+            overflow-y: auto !important;
+          }
+
+          /* Darle espacio al pie de página en móviles para que no quede tapado por la barra de navegación fija */
+          #shopify-section-sections--20816632381578__footer,
+          .shopify-section-group-footer-group,
+          footer,
+          [class*="footer-group"] {
+            padding-bottom: 90px !important;
+          }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
+
+        /* Separar más los enlaces legales del pie de página */
+        .footer__links, [class*="footer__links"] {
+          gap: 12px 32px !important;
+          display: flex !important;
+          flex-wrap: wrap !important;
+        }
+        .footer__links li, [class*="footer__links"] li {
+          margin-right: 0 !important;
+          margin-left: 0 !important;
+        }
+
+        /* Reposicionar el botón "Comprar ahora" en el banner del FAQ para ponerlo más abajo */
+        #shopify-section-template--20816638607498__custom_section_FXkPhr .image-card__inner {
+          height: 100% !important;
+          display: flex !important;
+          flex-direction: column !important;
+        }
+        #shopify-section-template--20816638607498__custom_section_FXkPhr .image-card__button {
+          margin-top: auto !important;
+          padding-bottom: 24px !important;
+          pointer-events: auto !important;
+        }
+
+        /* Botón flotante de WhatsApp a la izquierda */
+        .whatsapp-floating-btn {
+          position: fixed !important;
+          left: 24px !important;
+          bottom: 24px !important;
+          width: 56px !important;
+          height: 56px !important;
+          border-radius: 50% !important;
+          background-color: #25d366 !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          z-index: 99999 !important;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        .whatsapp-floating-btn:hover {
+          transform: scale(1.1) !important;
+          box-shadow: 0 6px 16px rgba(37, 211, 102, 0.3) !important;
+        }
+        .whatsapp-floating-btn img {
+          width: 100% !important;
+          height: 100% !important;
+          border-radius: 50% !important;
+          object-fit: cover !important;
+        }
+        @media (max-width: 767.98px) {
+          .whatsapp-floating-btn {
+            bottom: 90px !important; /* Evitar que el menú de navegación móvil lo tape */
+            width: 48px !important;
+            height: 48px !important;
+            left: 16px !important;
+          }
+          .help-desk-link img {
+            transform: scale(1.4) !important;
+            margin-right: 12px !important;
           }
         }
       `}</style>
@@ -1421,18 +2753,156 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         ref={setRefElement}
         className="tpl5-shopify-root template-product"
       />
+
+      {/* Floating WhatsApp Button */}
+      <a
+        href="https://wa.me/56999149712"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="whatsapp-floating-btn"
+      >
+        <img
+          src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRAZfIMxTRshRuJdTJu-mi52yWPxiF3ghQsSw&s"
+          alt="WhatsApp"
+        />
+      </a>
       
-      {/* Secciones de React nativas en la parte inferior */}
+      {/* Secciones de React nativas (se inyectan justo antes del footer mediante React Portals) */}
       {product && (
-        <div style={{ maxWidth: 1200, margin: '60px auto', padding: '0 20px', fontFamily: 'system-ui, sans-serif' }}>
-          <hr style={{ border: 'none', borderTop: '1px solid #fce7f3', margin: '40px 0' }} />
-          
-          <ReviewSection productId={product.$id} rating={product.RATING ?? 0} numReviews={product.NUMREVIEWS ?? 0} />
-          
-          <hr style={{ border: 'none', borderTop: '1px solid #fce7f3', margin: '40px 0' }} />
-          
-          <ProductQuestions productId={product.$id} />
-        </div>
+        reviewsTarget ? createPortal(
+          <>
+            <hr style={{ border: 'none', borderTop: '1px solid #fce7f3', margin: '40px 0' }} />
+            <ReviewSection productId={product.$id} rating={product.RATING ?? 0} numReviews={product.NUMREVIEWS ?? 0} />
+            <hr style={{ border: 'none', borderTop: '1px solid #fce7f3', margin: '40px 0' }} />
+            <ProductQuestions productId={product.$id} />
+          </>,
+          reviewsTarget
+        ) : (
+          <div style={{ maxWidth: 1200, margin: '60px auto', padding: '0 20px', fontFamily: 'system-ui, sans-serif' }}>
+            <hr style={{ border: 'none', borderTop: '1px solid #fce7f3', margin: '40px 0' }} />
+            <ReviewSection productId={product.$id} rating={product.RATING ?? 0} numReviews={product.NUMREVIEWS ?? 0} />
+            <hr style={{ border: 'none', borderTop: '1px solid #fce7f3', margin: '40px 0' }} />
+            <ProductQuestions productId={product.$id} />
+          </div>
+        )
+      )}
+
+      {/* Local Pickup Dialog */}
+      {isLocalPickupOpen && (
+        <>
+          {/* Backdrop Overlay */}
+          <div 
+            onClick={() => setIsLocalPickupOpen(false)} 
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.4)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+              zIndex: 99999,
+              transition: 'opacity 0.3s ease'
+            }}
+          />
+          {/* Drawer Dialog Container */}
+          <dialog 
+            id="local-pickup-dialog" 
+            className="dialog dialog--drawer dialog--local-pickup dialog--drawer-right dialog--drawer-mobile-bottom overflow-hidden color-scheme-1" 
+            style={{
+              display: 'block',
+              position: 'fixed',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: '440px',
+              maxWidth: '100%',
+              height: '100%',
+              background: '#ffffff',
+              boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.08)',
+              zIndex: 100000,
+              border: 'none',
+              padding: 0,
+              margin: 0,
+              fontFamily: 'system-ui, -apple-system, sans-serif'
+            }} 
+            open
+          >
+            <button 
+              className="dialog__close dialog__close--absolute" 
+              onClick={() => setIsLocalPickupOpen(false)} 
+              aria-label="Cerrar"
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: '#f3f4f6',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#4b5563',
+                zIndex: 10,
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <span className="icon icon--close icon--large" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" style={{ width: '16px', height: '16px', stroke: 'currentColor', strokeWidth: 2 }}>
+                  <path width="256" height="256" fill="none" d="M0 0H20V20H0V0z"></path>
+                  <path x1="200" y1="56" x2="56" y2="200" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" d="M15.625 4.375L4.375 15.625"></path>
+                  <path x1="200" y1="200" x2="56" y2="56" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" d="M15.625 15.625L4.375 4.375"></path>
+                </svg>
+              </span>
+            </button>
+            <div className="dialog__inner v-scrollable" style={{ height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+              <div className="dialog__content" style={{ padding: '32px 24px', flexGrow: 1 }}>
+                <div className="pickup-availabilities__dialog-header" style={{ marginBottom: '24px', borderBottom: '1px solid #f3f4f6', paddingBottom: '16px' }}>
+                  <h4 className="dialog__title" style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0, fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+                    {product?.NAME || 'Producto'}
+                  </h4>
+                  <p className="color-subtext text-body-sm" style={{ fontSize: '13px', color: '#6b7280', margin: '4px 0 0', fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+                    Punto de Retiro Oficial
+                  </p>
+                </div>
+                <div className="pickup-availabilities__dialog-content">
+                  <div className="pickup-location__wrapper flex flex-col gap-2" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <p className="h5" style={{ fontSize: '16px', fontWeight: 700, color: '#111827', margin: 0, fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+                      Kevin&Coco Chile
+                    </p>
+                    <div className="pickup-location__address-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <span className="pickup-location__availability-wrapper" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#166534', fontSize: '13px', fontWeight: 600 }}>
+                        <span className="icon icon--check icon--large" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', borderRadius: '50%', background: '#dcfce7', color: '#166534', padding: '3px' }}>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" style={{ width: '14px', height: '14px', stroke: 'currentColor', strokeWidth: 3 }}><path fill="none" d="M0 0h256v256H0z"></path><path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" d="m40 144 56 56L224 72"></path></svg>
+                        </span>
+                        Retiro disponible (Generalmente listo en 24 horas)
+                      </span>
+                      <span className="pickup-location__address text-body-sm color-subtext" style={{ fontSize: '13px', color: '#4b5563', lineHeight: '1.6' }}>
+                        <p style={{ margin: 0, fontWeight: 700, color: '#111827' }}>Dirección:</p>
+                        <p style={{ margin: '2px 0 12px' }}>Toesca 2537, 8370287 Santiago, Región Metropolitana</p>
+                        
+                        <p style={{ margin: 0, fontWeight: 700, color: '#111827' }}>Teléfono:</p>
+                        <p style={{ margin: '2px 0 12px' }}>9 9914 9712</p>
+
+                        <p style={{ margin: 0, fontWeight: 700, color: '#111827' }}>Horarios de Atención:</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: '6px 12px', marginTop: '8px', fontSize: '12px', color: '#4b5563' }}>
+                          <span>Lunes:</span><strong>10:00 – 19:00</strong>
+                          <span>Martes:</span><strong>10:00 – 19:00</strong>
+                          <span>Miércoles:</span><strong>10:00 – 19:00</strong>
+                          <span>Jueves:</span><strong>10:00 – 19:00</strong>
+                          <span>Viernes:</span><strong>10:00 – 19:00</strong>
+                          <span>Sábado:</span><strong>10:00 – 17:00</strong>
+                          <span>Domingo:</span><span style={{ color: '#ef4444', fontWeight: 600 }}>Cerrado</span>
+                        </div>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </dialog>
+        </>
       )}
 
     </div>

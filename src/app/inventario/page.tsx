@@ -117,7 +117,9 @@ function getSkuFromProduct(p: Product): string {
   const features = productFeaturesText(p);
   const featMatch = features.match(/SKU:\s*(.+)/i);
   if (featMatch) return featMatch[1].trim().split('\n')[0];
-  const tagParts = (p.TAGS || '').split(',').map(t => t.trim());
+  const tagParts = Array.isArray(p.TAGS)
+    ? p.TAGS
+    : (typeof p.TAGS === 'string' ? p.TAGS.split(',').map(t => t.trim()) : []);
   const skuTag = tagParts.find(t => /^[A-Z0-9]{4,}$/i.test(t));
   return p.jumpseller_id || skuTag || '';
 }

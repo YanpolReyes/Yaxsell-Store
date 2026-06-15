@@ -30,7 +30,9 @@ function getSkuFromProduct(p: Product): string {
   const features = typeof p.FEATURES === 'string' ? p.FEATURES : (p.FEATURES ? JSON.stringify(p.FEATURES) : '');
   const featMatch = features.match(/SKU:\s*(.+)/i);
   if (featMatch) return featMatch[1].trim().split('\n')[0];
-  const tagParts = ((p.TAGS as string) || '').split(',').map(t => t.trim());
+  const tagParts = Array.isArray(p.TAGS)
+    ? p.TAGS
+    : (typeof p.TAGS === 'string' ? (p.TAGS as string).split(',').map(t => t.trim()) : []);
   const skuTag = tagParts.find(t => /^[A-Z0-9]{4,}$/i.test(t));
   return (p as any).jumpseller_id || skuTag || '';
 }
@@ -136,11 +138,12 @@ export default function InventarioImagenesPage() {
         if (p.barcode) skuIndex.set(p.barcode.toLowerCase(), p);
         if ((p as any).jumpseller_id) skuIndex.set(String((p as any).jumpseller_id).toLowerCase(), p);
         skuIndex.set(p.$id, p);
-        if (p.TAGS && typeof p.TAGS === 'string') {
-          p.TAGS.split(',').map((t: string) => t.trim().toLowerCase()).filter(Boolean).forEach((t: string) => {
-            if (!skuIndex.has(t)) skuIndex.set(t, p);
-          });
-        }
+        const tagsArray = Array.isArray(p.TAGS)
+          ? p.TAGS
+          : (typeof p.TAGS === 'string' ? p.TAGS.split(',').map((t: string) => t.trim()) : []);
+        tagsArray.map((t: string) => t.toLowerCase()).filter(Boolean).forEach((t: string) => {
+          if (!skuIndex.has(t)) skuIndex.set(t, p);
+        });
       });
 
       // Match against inventory — try multiple strategies

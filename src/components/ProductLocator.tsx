@@ -27,7 +27,9 @@ const GONDOLAS = [
 function getSku(p: Product): string {
   const m = p.FEATURES?.match(/SKU:\s*(.+)/i);
   if (m) return m[1].trim();
-  const tags = (p.TAGS || '').split(',').map(t => t.trim());
+  const tags = Array.isArray(p.TAGS)
+    ? p.TAGS
+    : (typeof p.TAGS === 'string' ? p.TAGS.split(',').map(t => t.trim()) : []);
   const skuTag = tags.find(t => /^[A-Z0-9]{4,}$/i.test(t));
   const direct = (p as any).sku;
   if (direct && String(direct).trim()) return String(direct).trim();

@@ -13,7 +13,9 @@ import {
 function getSku(p: Product): string {
   const featMatch = p.FEATURES?.match(/SKU:\s*(.+)/i);
   if (featMatch) return featMatch[1].trim();
-  const tagParts = (p.TAGS || '').split(',').map(t => t.trim());
+  const tagParts = Array.isArray(p.TAGS)
+    ? p.TAGS
+    : (typeof p.TAGS === 'string' ? p.TAGS.split(',').map(t => t.trim()) : []);
   if (tagParts.length >= 1) return tagParts[0];
   return '';
 }
