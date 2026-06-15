@@ -456,28 +456,47 @@ function CheckoutInner() {
         };
       });
 
+      // ── Carga de documentos en lote para validación y descuento ──
+      const allProductDocs: Record<string, any> = {};
+      const productIds = items.map(it => it.product.$id);
+      
+      try {
+        for (let i = 0; i < productIds.length; i += 100) {
+          const chunk = productIds.slice(i, i + 100);
+          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
+            Query.equal('$id', chunk),
+            Query.limit(100)
+          ]);
+          for (const doc of res.documents) {
+            allProductDocs[doc.$id] = doc;
+          }
+        }
+      } catch (err: any) {
+        setError('Error al consultar disponibilidad de productos. Intenta de nuevo.');
+        setSubmitting(false);
+        return;
+      }
+
       // ── Validación de stock antes de crear pedido (evita oversell) ──
       // Regla: STOCK = 99999 = sentinel de "ilimitado", nunca se valida ni descuenta.
       // Si el admin puso un stock real (< 99999), siempre se valida y descuenta,
       // incluso en modo unlimitedStock de la tienda.
       for (const it of items) {
-        try {
-          const productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, it.product.$id);
-          const currentStock = Number((productDoc as any).STOCK ?? 0);
-          // Producto con stock ilimitado (sentinel 99999) → no validar
-          if (currentStock === 99999) {
-            continue;
-          }
-          // Producto con stock real asignado → validar aunque sea modo sin-stock
-          if (currentStock < it.quantity) {
-            throw new Error(`Stock insuficiente para "${(productDoc as any).NAME || it.product.NAME}". Disponible: ${currentStock}, necesitas: ${it.quantity}.`);
-          }
-        } catch (stockErr: any) {
-          let msg = stockErr?.message || 'No pudimos validar stock. Intenta de nuevo.';
-          if (stockErr?.code === 404 || String(stockErr?.message).includes('not be found') || String(stockErr?.message).includes('not found')) {
-            msg = `El producto "${it.product.NAME}" ya no está disponible en la tienda. Por favor, elimínalo de tu carrito para continuar.`;
-          }
-          setError(msg);
+        const productDoc = allProductDocs[it.product.$id];
+        if (!productDoc) {
+          setError(`El producto "${it.product.NAME}" ya no está disponible en la tienda. Por favor, elimínalo de tu carrito para continuar.`);
+          setSubmitting(false);
+          return;
+        }
+        
+        const currentStock = Number(productDoc.STOCK ?? 0);
+        // Producto con stock ilimitado (sentinel 99999) → no validar
+        if (currentStock === 99999) {
+          continue;
+        }
+        // Producto con stock real asignado → validar aunque sea modo sin-stock
+        if (currentStock < it.quantity) {
+          setError(`Stock insuficiente para "${productDoc.NAME || it.product.NAME}". Disponible: ${currentStock}, necesitas: ${it.quantity}.`);
           setSubmitting(false);
           return;
         }
@@ -503,24 +522,19 @@ function CheckoutInner() {
       const stockRollback: { productId: string; prevStock: number }[] = [];
       try {
         for (const item of items) {
-          let currentStock = 0;
-          let productDoc: any = null;
-          try {
-            productDoc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION_ID, item.product.$id);
-            currentStock = Number((productDoc as any).STOCK ?? 0);
-          } catch (docErr: any) {
-            if (docErr?.code === 404 || String(docErr?.message).includes('not be found') || String(docErr?.message).includes('not found')) {
-              throw new Error(`El producto "${item.product.NAME}" ya no está disponible en la tienda.`);
-            }
-            throw docErr;
+          const productDoc = allProductDocs[item.product.$id];
+          if (!productDoc) {
+             throw new Error(`El producto "${item.product.NAME}" ya no está disponible en la tienda.`);
           }
+          const currentStock = Number(productDoc.STOCK ?? 0);
+          
           // Stock ilimitado → no descontar
           if (currentStock === 99999) {
             continue;
           }
           // Stock real → siempre descontar (incluso en modo unlimitedStock de la tienda)
           if (currentStock < item.quantity) {
-            throw new Error(`Stock insuficiente para "${(productDoc as any).NAME || item.product.NAME}". Disponible: ${currentStock}, necesitas: ${item.quantity}.`);
+            throw new Error(`Stock insuficiente para "${productDoc.NAME || item.product.NAME}". Disponible: ${currentStock}, necesitas: ${item.quantity}.`);
           }
           stockRollback.push({ productId: item.product.$id, prevStock: currentStock });
           await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, item.product.$id, { STOCK: currentStock - item.quantity });
