@@ -1909,6 +1909,8 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
           // Fix data attributes for Photoswipe zoom
           item.setAttribute('data-media-src', imgUrl);
           item.setAttribute('data-media-id', imgUrl);
+          item.setAttribute('data-media-width', "3000");
+          item.setAttribute('data-media-height', "3000");
           
           const el = item.querySelector('img');
           if (el) {
