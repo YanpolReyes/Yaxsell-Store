@@ -190,17 +190,19 @@ export default function OrderDetailPage() {
     }
 
     const targetPrice = oldItem.price || 0;
+    const minPriceLimit = Math.round((targetPrice * 0.7) / 0.8);
+    const maxPriceLimit = Math.round((targetPrice * 1.3) / 0.8);
 
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
 
-      // 1. Query products with price in a ±30% range
+      // 1. Query products with price range (accounting for 20% discount)
       let prods: any[] = [];
       try {
         const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [
-          Query.greaterThanEqual('PRICE', Math.round(targetPrice * 0.7)),
-          Query.lessThanEqual('PRICE', Math.round(targetPrice * 1.3)),
+          Query.greaterThanEqual('PRICE', minPriceLimit),
+          Query.lessThanEqual('PRICE', maxPriceLimit),
           Query.limit(100)
         ]);
         prods = res.documents;
@@ -220,10 +222,10 @@ export default function OrderDetailPage() {
         }
       }
 
-      // 3. Sort by absolute difference to target price
+      // 3. Sort by absolute difference to target price (accounting for 20% discount)
       const sorted = [...prods].sort((a: any, b: any) => {
-        const priceA = a.CURRENTPRICE ?? a.PRICE ?? 0;
-        const priceB = b.CURRENTPRICE ?? b.PRICE ?? 0;
+        const priceA = Math.round((a.CURRENTPRICE ?? a.PRICE ?? 0) * 0.8);
+        const priceB = Math.round((b.CURRENTPRICE ?? b.PRICE ?? 0) * 0.8);
         const diffA = Math.abs(priceA - targetPrice);
         const diffB = Math.abs(priceB - targetPrice);
         return diffA - diffB;
@@ -247,36 +249,41 @@ export default function OrderDetailPage() {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Catálogo de Alternativas - Yaxsell</title>
+        <title>Alternativas de Reemplazo - Kevin & Coco</title>
         <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <style>
-          body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1f2937; margin: 30px; }
-          .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #f3f4f6; padding-bottom: 20px; }
-          .header h1 { margin: 0; font-size: 24px; color: #1e1b4b; font-weight: 800; }
-          .header p { margin: 8px 0 0; font-size: 14px; color: #6b7280; }
-          .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-          .card { border: 1px solid #e5e7eb; border-radius: 16px; padding: 18px; display: flex; gap: 15px; page-break-inside: avoid; break-inside: avoid; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-          .img-box { width: 90px; height: 90px; border-radius: 12px; overflow: hidden; background: #f9fafb; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: 1px solid #f3f4f6; }
-          .img-box img { width: 100%; height: 100%; object-fit: cover; }
-          .img-placeholder { font-size: 30px; color: #d1d5db; }
-          .info { flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
-          .name { font-weight: 700; font-size: 14px; margin: 0 0 4px; color: #111827; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
-          .sku { font-family: monospace; font-size: 10px; color: #9ca3af; margin: 0 0 8px; text-transform: uppercase; }
-          .price { font-size: 18px; font-weight: 800; color: #10b981; }
-          @media print {
-            body { margin: 15px; background: #fff; }
-            .card { border-color: #d1d5db; box-shadow: none; }
+          body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1f2937; margin: 15px; background-color: #fafafa; }
+          .banner { background: #db2777; color: #ffffff; padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+          .header { text-align: center; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; padding-bottom: 16px; background: #fff; padding: 16px; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+          .header h1 { margin: 0; font-size: 20px; color: #1e1b4b; font-weight: 800; }
+          .header p { margin: 6px 0 0; font-size: 12px; color: #6b7280; }
+          .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+          @media (max-width: 480px) {
+            .grid { grid-template-columns: 1fr; }
           }
+          .card { border: 1px solid #e5e7eb; border-radius: 16px; padding: 12px; display: flex; gap: 12px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+          .img-box { width: 80px; height: 80px; border-radius: 10px; overflow: hidden; background: #f9fafb; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: 1px solid #f3f4f6; }
+          .img-box img { width: 100%; height: 100%; object-fit: cover; }
+          .img-placeholder { font-size: 24px; color: #d1d5db; }
+          .info { flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
+          .name { font-weight: 700; font-size: 13px; margin: 0 0 4px; color: #111827; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
+          .sku { font-family: monospace; font-size: 9px; color: #9ca3af; margin: 0 0 6px; text-transform: uppercase; }
+          .price { font-size: 16px; font-weight: 850; color: #db2777; }
         </style>
       </head>
       <body>
+        <div class="banner">
+          📸 Saca una captura de pantalla a estas opciones y envíaselas al cliente por WhatsApp
+        </div>
         <div class="header">
-          <h1>Sugerencias de Reemplazo</h1>
-          <p>Alternativas de precio similar seleccionadas para tu producto: <strong>${oldItem.name}</strong></p>
+          <h1>Alternativas para Reemplazo</h1>
+          <p>Opciones sugeridas para: <strong>${oldItem.name}</strong></p>
         </div>
         <div class="grid">
           ${searchResults.map(p => {
-            const price = p.CURRENTPRICE ?? p.PRICE ?? 0;
+            const originalPrice = p.CURRENTPRICE ?? p.PRICE ?? 0;
+            const price = Math.round(originalPrice * 0.8);
             const pSku = p.sku || '';
             const priceFormatted = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(price);
             return `
@@ -295,13 +302,6 @@ export default function OrderDetailPage() {
             `;
           }).join('')}
         </div>
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-            }, 600);
-          }
-        </script>
       </body>
       </html>
     `;
@@ -311,7 +311,7 @@ export default function OrderDetailPage() {
       printWindow.document.write(catalogHtml);
       printWindow.document.close();
     } else {
-      alert('Por favor permite las ventanas emergentes (popups) para descargar el catálogo.');
+      alert('Por favor permite las ventanas emergentes (popups) para abrir la vista de alternativas.');
     }
   };
 
@@ -366,7 +366,7 @@ export default function OrderDetailPage() {
         } catch {}
       }
 
-      const newPrice = newProduct.CURRENTPRICE ?? newProduct.PRICE ?? 0;
+      const newPrice = Math.round((newProduct.CURRENTPRICE ?? newProduct.PRICE ?? 0) * 0.8);
       const newSku = newProduct.sku || getSkuFromFeatures(newProduct.FEATURES, newProduct.TAGS, newProduct.jumpseller_id, newProduct.sku);
 
       parsedItems[replacingIdx] = {
@@ -915,9 +915,9 @@ export default function OrderDetailPage() {
                 {isSimilarSearch && searchResults.length > 0 && (
                   <button
                     onClick={handleDownloadSimilarCatalog}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm mr-2"
+                    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition shadow-sm mr-2"
                   >
-                    <Printer className="w-3.5 h-3.5" /> PDF Catálogo
+                    <ImageIcon className="w-3.5 h-3.5" /> Ver Alternativas (Imagen)
                   </button>
                 )}
                 <button
@@ -959,7 +959,8 @@ export default function OrderDetailPage() {
                   </p>
                 ) : (
                   searchResults.map(p => {
-                    const price = p.CURRENTPRICE ?? p.PRICE ?? 0;
+                    const originalPrice = p.CURRENTPRICE ?? p.PRICE ?? 0;
+                    const price = Math.round(originalPrice * 0.8);
                     const pSku = p.sku || getSkuFromFeatures(p.FEATURES, p.TAGS, p.jumpseller_id, p.sku);
                     return (
                       <div
