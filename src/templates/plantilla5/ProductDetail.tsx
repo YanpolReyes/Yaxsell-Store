@@ -1902,22 +1902,27 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
         });
 
         // Fix main gallery slider images and their container elements
-        root.querySelectorAll('.media-gallery__carousel-container .media-gallery__item').forEach((item: any, idx: number) => {
+        root.querySelectorAll('.media-gallery__item').forEach((item: any, idx: number) => {
           if (item.closest('.media-gallery__carousel-thumbnails') || item.closest('.media-gallery__grid-thumbnails')) return;
-          const imgUrl = pImages[idx % pImages.length] || pImages[0];
+          
+          // To ensure we map the correct index even if mobile/desktop items are interleaved
+          // we use the index divided by however many image containers there are, but since we just
+          // want to loop through pImages, we can just use the index of the element relative to its parent.
+          const siblings = Array.from(item.parentNode.children);
+          const localIdx = siblings.indexOf(item) !== -1 ? siblings.indexOf(item) : idx;
+          const imgUrl = pImages[localIdx % pImages.length] || pImages[0];
           
           // Fix data attributes for Photoswipe zoom
           item.setAttribute('data-media-src', imgUrl);
-          item.setAttribute('data-media-id', imgUrl);
           item.setAttribute('data-media-width', "3000");
           item.setAttribute('data-media-height', "3000");
           
           const el = item.querySelector('img');
           if (el) {
             el.src = imgUrl;
-            el.srcset = imgUrl;
             el.setAttribute('src', imgUrl);
-            el.setAttribute('srcset', imgUrl);
+            el.removeAttribute('srcset');
+            el.removeAttribute('sizes');
             el.removeAttribute('is');
             el.removeAttribute('data-mode');
             el.removeAttribute('loading');
@@ -1953,6 +1958,105 @@ export default function ProductDetail({ previewProductId }: { previewProductId?:
       clearTimeout(t5);
     };
   }, [product, bodyHtml, categoryName, related, refElement, activeVariantId, linkedProducts, variantLabels, qty, apertura]);
+
+  /* ── Intercept zoom button clicks to show custom fullscreen image viewer (fixes mobile blank issue) ── */
+  useEffect(() => {
+    if (!product || !refElement) return;
+    const pImages = [product.IMAGEURL, product.IMAGEURL2, product.IMAGEURL3, product.IMAGEURL4, product.IMAGEURL5].filter(Boolean).map(v => resolveStorageImageUrl(v)) as string[];
+    if (pImages.length === 0) return;
+
+    // Remove Shopify's zoom handlers from buttons so PhotoSwipe never opens
+    const stripShopifyZoom = () => {
+      refElement.querySelectorAll('button[on\\:click*="openZoomDialog"]').forEach((btn: any) => {
+        btn.removeAttribute('on:click');
+      });
+    };
+    stripShopifyZoom();
+    const stripTimer1 = setTimeout(stripShopifyZoom, 200);
+    const stripTimer2 = setTimeout(stripShopifyZoom, 800);
+    const stripTimer3 = setTimeout(stripShopifyZoom, 1500);
+
+    const handleZoomClick = (e: Event) => {
+      const btn = (e.target as HTMLElement).closest('button[data-media-id]');
+      if (!btn) return;
+      // Only trigger for zoom buttons (they have the zoom spinner ref)
+      if (!btn.querySelector('[ref="zoomDialogSpinner"]') && !btn.classList.contains('media-gallery__zoom-btn')) return;
+
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      e.preventDefault();
+
+      // Figure out which image index
+      const mediaId = btn.getAttribute('data-media-id');
+      const gallery = btn.closest('media-gallery');
+      let imgIdx = 0;
+      if (gallery && mediaId) {
+        const slides = Array.from(gallery.querySelectorAll('.media-gallery__carousel-wrapper .media-gallery__item[data-media-id]'));
+        const found = slides.findIndex((s: any) => s.getAttribute('data-media-id') === mediaId);
+        if (found !== -1) imgIdx = found % pImages.length;
+      }
+
+      // Kill any existing PhotoSwipe overlay
+      document.querySelectorAll('.pswp, .pswp--open').forEach(el => el.remove());
+
+      const overlay = document.createElement('div');
+      overlay.id = 'yxs-zoom-overlay';
+      let currentIdx = imgIdx;
+
+      const svgPrev = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path fill="none" d="M0 0H20V20H0V0z"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.5 16.25L6.25 10L12.5 3.75"/></svg>';
+      const svgNext = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path fill="none" d="M0 0H20V20H0V0z"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7.5 3.75L13.75 10L7.5 16.25"/></svg>';
+      const svgClose = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path fill="none" d="M0 0H20V20H0V0z"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.625 4.375L4.375 15.625"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.625 15.625L4.375 4.375"/></svg>';
+
+      const render = () => {
+        overlay.innerHTML = `
+          <div style="position:fixed;inset:0;z-index:999999;background:#fff;display:flex;align-items:center;justify-content:center;">
+            <img src="${pImages[currentIdx]}" style="max-width:94vw;max-height:90vh;object-fit:contain;" />
+            <div style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center;">
+              ${pImages.length > 1 ? `<button id="yxs-zoom-prev" style="width:48px;height:48px;border-radius:50%;border:1px solid #e0e0e0;background:#fff;color:#333;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.08);transition:background .15s;">${svgPrev}</button>` : ''}
+              <button id="yxs-zoom-close" style="width:48px;height:48px;border-radius:50%;border:1px solid #e0e0e0;background:#fff;color:#333;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.08);transition:background .15s;">${svgClose}</button>
+              ${pImages.length > 1 ? `<button id="yxs-zoom-next" style="width:48px;height:48px;border-radius:50%;border:1px solid #e0e0e0;background:#fff;color:#333;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.08);transition:background .15s;">${svgNext}</button>` : ''}
+            </div>
+          </div>
+        `;
+      };
+
+      render();
+      document.body.appendChild(overlay);
+      document.body.style.overflow = 'hidden';
+
+      const closeOverlay = () => {
+        overlay.remove();
+        document.body.style.overflow = '';
+        // Also kill any PhotoSwipe that might have snuck in
+        document.querySelectorAll('.pswp, .pswp--open').forEach(el => el.remove());
+      };
+
+      overlay.addEventListener('click', (ev) => {
+        const target = ev.target as HTMLElement;
+        const clickedBtn = target.closest('button');
+        if (clickedBtn?.id === 'yxs-zoom-close') {
+          closeOverlay();
+        } else if (clickedBtn?.id === 'yxs-zoom-prev') {
+          currentIdx = (currentIdx - 1 + pImages.length) % pImages.length;
+          render();
+        } else if (clickedBtn?.id === 'yxs-zoom-next') {
+          currentIdx = (currentIdx + 1) % pImages.length;
+          render();
+        } else if (!target.closest('img') && !target.closest('button')) {
+          closeOverlay();
+        }
+      });
+    };
+
+    // Capture phase to intercept before Shopify's handler
+    refElement.addEventListener('click', handleZoomClick, true);
+    return () => {
+      refElement.removeEventListener('click', handleZoomClick, true);
+      clearTimeout(stripTimer1);
+      clearTimeout(stripTimer2);
+      clearTimeout(stripTimer3);
+    };
+  }, [product, refElement]);
 
   // Product Page countdown timer loop
   useEffect(() => {
