@@ -9,15 +9,16 @@ import {
 // ─── Config ────────────────────────────────────────────────────────────────────
 const WA_TOKEN        = process.env.WHATSAPP_ACCESS_TOKEN || '';
 const VERIFY_TOKEN    = process.env.WHATSAPP_VERIFY_TOKEN || 'yaxsel_webhook_2026';
-// Lista de números administradores (separados por coma en env var, o los fallbacks por defecto)
-const ADMIN_PHONES_RAW = process.env.ADMIN_WHATSAPP_NUMBER || '56936599658,56992139185,56935623858,56967115685';
+const ENV_ADMINS = process.env.ADMIN_WHATSAPP_NUMBER || '';
+const FALLBACK_ADMINS = '56936599658,56992139185,56935623858,56967115685';
+const ADMIN_PHONES_RAW = ENV_ADMINS ? `${ENV_ADMINS},${FALLBACK_ADMINS}` : FALLBACK_ADMINS;
 const ADMIN_PHONES     = ADMIN_PHONES_RAW.split(',').map(num => num.replace(/\D/g, '').trim());
 const GEMINI_KEY      = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyBFSkLS9QYq66R7rD9Tyhz1sU3yuMSdaUo';
 const GEMINI_MODELS   = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
 const SITE_URL        = process.env.NEXT_PUBLIC_SITE_URL || 'https://yaxsell.vercel.app';
 
 // ─── Admin system prompt ───────────────────────────────────────────────────────
-const ADMIN_PROMPT = `Eres Yexy IA, el asistente administrativo de Yaxsell por WhatsApp.
+const ADMIN_PROMPT = `Eres Yexy IA, el asistente administrativo de Kevin&Coco por WhatsApp.
 Estás hablando con el DUEÑO/ADMINISTRADOR de la tienda.
 
 ## Capacidades de Admin:
@@ -48,7 +49,7 @@ Estás hablando con el DUEÑO/ADMINISTRADOR de la tienda.
 Los datos de productos y pedidos te serán inyectados en el contexto.`;
 
 // ─── Customer system prompt ────────────────────────────────────────────────────
-const CUSTOMER_PROMPT = `Eres Yexy, la asistente virtual de Yaxsell, una tienda en línea chilena.
+const CUSTOMER_PROMPT = `Eres Yexy, la asistente virtual de Kevin&Coco, una tienda en línea chilena.
 Eres amigable, empática y profesional. Hablas en español chileno.
 
 ## Puedes ayudar con:
@@ -60,7 +61,7 @@ Eres amigable, empática y profesional. Hablas en español chileno.
 - Dudas generales sobre compras
 
 ## Información de la tienda:
-- Tienda: Yaxsell
+- Tienda: Kevin&Coco
 - Sitio web: ${SITE_URL}
 - País: Chile
 - Envíos: a todo Chile
