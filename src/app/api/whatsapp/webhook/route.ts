@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
       if (isAdmin) {
         // Admin: get pending orders + products
         const [ordersRes, productsRes] = await Promise.all([
-          serverListDocuments(ORDERS_COLLECTION_ID, ['orderBy("$createdAt", "DESC")', 'limit(15)']),
+          serverListDocuments(ORDERS_COLLECTION_ID, ['orderDesc("$createdAt")', 'limit(15)']),
           serverListDocuments(PRODUCTS_COLLECTION_ID, ['limit(30)']),
         ]);
 
