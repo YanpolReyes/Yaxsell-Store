@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendWhatsAppMessage, markAsRead, getHistory, addToHistory, clearHistory } from '@/lib/whatsapp';
-import { serverListDocuments } from '@/lib/appwrite-server';
+import { serverListDocuments, serverUpdateDocument } from '@/lib/appwrite-server';
 import {
   PRODUCTS_COLLECTION_ID,
   ORDERS_COLLECTION_ID,
@@ -22,29 +22,54 @@ const ADMIN_PROMPT = `Eres Yexy IA, el asistente administrativo de Kevin&Coco po
 Estás hablando con el DUEÑO/ADMINISTRADOR de la tienda.
 
 ## Capacidades de Admin:
-- Ver pedidos pendientes, en proceso, enviados
-- Consultar stock de productos
-- Ver resumen de ventas
-- Responder preguntas sobre la tienda y productos
-- Dar consejos de gestión
+- Ver pedidos pendientes de pago, en proceso, enviados, entregados, etc.
+- Consultar stock de productos.
+- Ver resumen de ventas.
+- Responder preguntas sobre la tienda y productos.
+- Dar consejos de gestión.
+- Manipular estados de pedidos (ej: cancelar, poner como pagado, en preparación, enviado, entregado, etc.).
 
 ## Comandos reconocidos (interpreta variaciones naturales):
-- "pedidos pendientes" → muestra los últimos pedidos con status pending
+- "pedidos pendientes" → muestra los últimos pedidos con estado pendiente de pago
 - "pedidos de hoy" → pedidos del día
 - "stock de [producto]" → consulta stock
 - "resumen del día / ventas" → resumen rápido
 - "limpiar historial" → borra la conversación
+- "cancela el pedido [código/número]" / "marca como pagado el pedido [código/número]" → modifica el estado de un pedido
+
+## Capacidad de Modificar Pedidos:
+Si el administrador te pide cancelar, marcar como pagado, despachado, etc., un pedido (ya sea usando el número de pedido tipo "ORD-00051" o la terminación del código tipo "63AD3A"), DEBES generar al final de tu respuesta el siguiente bloque de acción JSON exacto:
+[ACTION:UPDATE_ORDER]{"code":"CODIGO_O_NUMERO_PEDIDO","status":"NUEVO_ESTADO"}[/ACTION]
+
+Valores válidos para "status" en la acción JSON:
+- "pending" (Pendiente de pago)
+- "paid" (Pagado)
+- "assembling" (En preparación)
+- "preparing_shipping" (Preparando Despacho)
+- "ready_to_ship" (Etiqueta Lista / Listo para retirar)
+- "shipped" (Enviado)
+- "delivered" (Entregado)
+- "cancelled" (Cancelado)
+
+Ejemplo de respuesta si piden cancelar:
+"Entendido. He procedido a cancelar el pedido #ORD-00051.
+[ACTION:UPDATE_ORDER]{\"code\":\"ORD-00051\",\"status\":\"cancelled\"}[/ACTION]"
 
 ## Formato de respuesta:
-- Usa emojis con moderación para mayor claridad
-- Sé conciso y directo
-- Para listas de pedidos: muestra ID corto, cliente, total, estado
-- Máx 3-4 pedidos por mensaje para no saturar
+- Usa emojis con moderación para mayor claridad.
+- Sé conciso y directo.
+- Para las listas de pedidos, muestra SIEMPRE:
+  1. El número de pedido (ORDERCODE, ej: #ORD-00051) en lugar del código de documento.
+  2. El nombre real del cliente (CUSTOMERNAME).
+  3. El total de la compra en pesos chilenos.
+  4. El estado del pedido TRADUCIDO AL ESPAÑOL (ej: 'Pendiente de pago' en lugar de 'pending', 'Pagado' en lugar de 'paid', 'Enviado' en lugar de 'shipped', 'Cancelado' en lugar de 'cancelled').
+- NUNCA uses nombres de estados en inglés (como 'pending', 'paid', 'shipped') en tus textos ni listas. Menciónalos siempre en español.
+- Máx 3-4 pedidos por mensaje para no saturar.
 
 ## IMPORTANTE:
-- Siempre responde en español chileno, amigable y profesional
-- Si no puedes ejecutar algo, explica qué puede hacerse desde el panel admin web
-- No inventes datos. Solo muestra datos reales de la base de datos
+- Siempre responde en español chileno, amigable y profesional.
+- Si no puedes ejecutar algo, explica qué puede hacerse desde el panel admin web.
+- No inventes datos. Solo muestra datos reales de la base de datos.
 
 Los datos de productos y pedidos te serán inyectados en el contexto.`;
 
@@ -162,11 +187,25 @@ export async function POST(req: NextRequest) {
           serverListDocuments(PRODUCTS_COLLECTION_ID, [qLimit30]),
         ]);
 
+        const STATUS_LABELS: Record<string, string> = {
+          pending: 'Pendiente de pago',
+          processing: 'Procesando',
+          paid: 'Pagado',
+          assembling: 'En preparación',
+          negotiation: 'En negociación / mod.',
+          preparing_shipping: 'Preparando Despacho',
+          ready_to_ship: 'Etiqueta Lista',
+          shipped: 'Enviado',
+          delivered: 'Entregado',
+          cancelled: 'Cancelado'
+        };
+
         const orders = (ordersRes.documents || []).map((o: any) => {
-          const id    = String(o.$id || '').slice(-6).toUpperCase();
-          const name  = o.customerName || o.customer_name || o.NAME || 'Sin nombre';
+          const id    = o.ORDERCODE || String(o.$id || '').slice(-6).toUpperCase();
+          const name  = o.CUSTOMERNAME || 'Sin nombre';
           const total = o.total || o.TOTAL || 0;
-          const status = o.status || o.STATUS || 'pendiente';
+          const statusRaw = o.STATUS || o.status || 'pending';
+          const status = STATUS_LABELS[statusRaw] || statusRaw;
           const date  = o.$createdAt ? new Date(o.$createdAt).toLocaleDateString('es-CL') : '?';
           return `#${id} | ${name} | $${Number(total).toLocaleString('es-CL')} | ${status} | ${date}`;
         });
@@ -234,6 +273,7 @@ export async function POST(req: NextRequest) {
 
     // ── Call Gemini ────────────────────────────────────────────────────────────
     let aiReply = '❌ Lo siento, no pude procesar tu mensaje en este momento. Intenta de nuevo.';
+    let rawText = '';
     for (const model of GEMINI_MODELS) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
       const res = await fetch(url, {
@@ -245,6 +285,7 @@ export async function POST(req: NextRequest) {
         const data = await res.json();
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (text) {
+          rawText = text;
           aiReply = text
             .replace(/\[ACTION:[^\]]+\][\s\S]*?\[\/ACTION\]/g, '') // strip any action blocks
             .replace(/\*\*(.*?)\*\*/g, '*$1*') // convert **bold** to WA *bold*
@@ -253,6 +294,61 @@ export async function POST(req: NextRequest) {
         }
       }
       if (res.status !== 503) break;
+    }
+
+    // ── Action Parsing & Execution (UPDATE_ORDER) ──────────────────────────────
+    const actionRegex = /\[ACTION:UPDATE_ORDER\]([\s\S]*?)\[\/ACTION\]/;
+    const actionMatch = rawText.match(actionRegex);
+    if (actionMatch && isAdmin) {
+      try {
+        const actionData = JSON.parse(actionMatch[1]);
+        const { code, status } = actionData;
+        if (code && status) {
+          const codeUpper = String(code).toUpperCase().trim();
+          let matchedOrder: any = null;
+
+          // Search by ORDERCODE
+          const qCode = JSON.stringify({ method: 'equal', attribute: 'ORDERCODE', values: [codeUpper] });
+          const resCode = await serverListDocuments(ORDERS_COLLECTION_ID, [qCode, JSON.stringify({ method: 'limit', values: [1] })]);
+          
+          if (resCode.documents && resCode.documents.length > 0) {
+            matchedOrder = resCode.documents[0];
+          } else {
+            // Search last 100 orders for suffix of $id
+            const resRecent = await serverListDocuments(ORDERS_COLLECTION_ID, [JSON.stringify({ method: 'limit', values: [100] })]);
+            matchedOrder = resRecent.documents.find((o: any) => 
+              String(o.$id || '').toUpperCase().endsWith(codeUpper)
+            );
+          }
+
+          if (matchedOrder) {
+            try {
+              const oldStatus = matchedOrder.STATUS || matchedOrder.status || 'pending';
+              await serverUpdateDocument(ORDERS_COLLECTION_ID, matchedOrder.$id, {
+                STATUS: status,
+                UPDATEDAT: Date.now()
+              });
+
+              // Try notifying
+              try {
+                const { notifyOrderStatusChange } = await import('@/services/notificationService');
+                await notifyOrderStatusChange(matchedOrder, oldStatus, status);
+              } catch (errNotif) {
+                console.warn('[WhatsApp Webhook] Notification error:', errNotif);
+              }
+              console.log(`[WhatsApp Webhook] Order ${matchedOrder.$id} status updated to ${status}`);
+            } catch (updateErr: any) {
+              console.error('[WhatsApp Webhook] serverUpdateDocument failed:', updateErr);
+              aiReply = `❌ Hubo un error al intentar actualizar el estado del pedido #${codeUpper} en la base de datos. Detalle: ${updateErr?.message || String(updateErr)}`;
+            }
+          } else {
+            aiReply = `❌ No pude encontrar el pedido #${codeUpper} en la base de datos. Por favor verifica el código e inténtalo de nuevo.`;
+          }
+        }
+      } catch (actionErr) {
+        console.error('[WhatsApp Webhook] Action parsing/execution error:', actionErr);
+        aiReply = `❌ Hubo un error al procesar la acción del pedido. Por favor inténtalo de nuevo.`;
+      }
     }
 
     // Save assistant reply to history
