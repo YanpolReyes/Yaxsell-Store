@@ -9,7 +9,9 @@ import {
 // ─── Config ────────────────────────────────────────────────────────────────────
 const WA_TOKEN        = process.env.WHATSAPP_ACCESS_TOKEN || '';
 const VERIFY_TOKEN    = process.env.WHATSAPP_VERIFY_TOKEN || 'yaxsel_webhook_2026';
-const ADMIN_PHONE     = process.env.ADMIN_WHATSAPP_NUMBER || '56936599658'; // Tu número sin +
+// Lista de números administradores (separados por coma en env var, o los fallbacks por defecto)
+const ADMIN_PHONES_RAW = process.env.ADMIN_WHATSAPP_NUMBER || '56936599658,56992139185,56935623858,56967115685';
+const ADMIN_PHONES     = ADMIN_PHONES_RAW.split(',').map(num => num.replace(/\D/g, '').trim());
 const GEMINI_KEY      = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyBFSkLS9QYq66R7rD9Tyhz1sU3yuMSdaUo';
 const GEMINI_MODELS   = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
 const SITE_URL        = process.env.NEXT_PUBLIC_SITE_URL || 'https://yaxsell.vercel.app';
@@ -121,7 +123,8 @@ export async function POST(req: NextRequest) {
     const userText = (msg.text?.body as string || '').trim();
     if (!userText) return NextResponse.json({ status: 'empty_text' });
 
-    const isAdmin = fromPhone === ADMIN_PHONE;
+    const cleanedFrom = fromPhone.replace(/\D/g, '').trim();
+    const isAdmin = ADMIN_PHONES.includes(cleanedFrom);
 
     // Mark as read
     await markAsRead(msgId, WA_TOKEN);
