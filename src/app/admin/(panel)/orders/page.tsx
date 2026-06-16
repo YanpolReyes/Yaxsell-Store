@@ -8,6 +8,9 @@ import { Order, OrderStatus } from '@/types/admin';
 import { Search, RefreshCw, ChevronDown, Eye, AlertTriangle, X, Download, ArrowUpDown, ArrowUp, ArrowDown, MapPin } from 'lucide-react';
 import { getWarehouseLocationFromFeatures } from '@/lib/product-features';
 import Link from 'next/link';
+import EpicPagination from '@/components/admin/EpicPagination';
+
+const PAGE_SIZE = 30;
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
   all:                { label: 'Todos',                     bg: 'bg-gray-100',    text: 'text-gray-700' },
@@ -48,10 +51,10 @@ function OrdersContent() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [productLocations, setProductLocations] = useState<Record<string, { section: number | null; gondola: string | null }>>({}); // product id -> location
   const [agenciesList, setAgenciesList] = useState<any[]>([]);
-  const [cursor, setCursor] = useState<string | null>(null);
-  const cursorRef = React.useRef<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  // page cursors: key = page number, value = cursor to use to reach that page
+  const pageCursorsRef = React.useRef<Map<number, string | null>>(new Map([[1, null]]));
 
   // Load agencies list
   useEffect(() => {
@@ -79,48 +82,38 @@ function OrdersContent() {
     if (sortBy === col) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
     else { setSortBy(col); setSortDir('desc'); }
   };
-  const load = useCallback(async (isLoadMore = false) => {
-    if (isLoadMore) setIsLoadingMore(true);
-    else { setIsLoading(true); cursorRef.current = null; setCursor(null); setHasMore(true); }
+  const load = useCallback(async (page = 1) => {
+    setIsLoading(true);
     setError('');
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const queries = [Query.orderDesc('CREATEDAT'), Query.limit(10)];
+      const queries = [Query.orderDesc('CREATEDAT'), Query.limit(PAGE_SIZE)];
       if (activeFilter !== 'all') {
         queries.push(Query.equal('STATUS', activeFilter));
       } else {
-        // Exclude delivered and cancelled by default
         queries.push(Query.equal('STATUS', [
-          'pending',
-          'processing',
-          'paid',
-          'assembling',
-          'negotiation',
-          'preparing_shipping',
-          'ready_to_ship',
-          'shipped'
+          'processing', 'paid', 'assembling',
+          'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped'
         ]));
       }
-      if (isLoadMore && cursorRef.current) queries.push(Query.cursorAfter(cursorRef.current));
-      
+      // Use stored cursor for the requested page
+      const pageCursor = pageCursorsRef.current.get(page) ?? null;
+      if (pageCursor) queries.push(Query.cursorAfter(pageCursor));
+
       const resp = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, queries);
       const newOrders = resp.documents as unknown as Order[];
-      
-      if (isLoadMore) {
-        setOrders(prev => [...prev, ...newOrders]);
-      } else {
-        setOrders(newOrders);
-      }
-      
+      setOrders(newOrders);
+      setTotalCount(resp.total);
+      setCurrentPage(page);
+
+      // Store the last doc cursor so next page can use it
       if (newOrders.length > 0) {
-        cursorRef.current = newOrders[newOrders.length - 1].$id;
-        setCursor(newOrders[newOrders.length - 1].$id);
+        pageCursorsRef.current.set(page + 1, newOrders[newOrders.length - 1].$id);
       }
-      setHasMore(newOrders.length === 10);
     } catch (e: any) { setError(e.message); }
-    finally { setIsLoading(false); setIsLoadingMore(false); }
-  }, [activeFilter]); // Removed cursor from deps - using ref to avoid recreation on every load
+    finally { setIsLoading(false); }
+  }, [activeFilter]);
 
   const autoDeliverShippedOrders = useCallback(async () => {
     try {
@@ -155,21 +148,20 @@ function OrdersContent() {
         notifyOrderStatusChange(doc as unknown as Order, 'shipped', 'delivered').catch(() => {});
       }
       
-      load(false);
+      load(1);
     } catch (err) {
       console.error('Error auto-delivering orders:', err);
     }
   }, [load]);
 
-  // Load effect on mount and filter change
-  useEffect(() => { 
-    cursorRef.current = null;
-    setCursor(null);
-    setHasMore(true);
-    load(false);
+  // Reset pagination when filter changes
+  useEffect(() => {
+    pageCursorsRef.current = new Map([[1, null]]);
+    setCurrentPage(1);
+    load(1);
     autoDeliverShippedOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFilter]); // Run load when filter changes
+  }, [activeFilter]);
 
   const toggleSelect = (id: string) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleSelectAll = () => setSelected(s => s.size === filtered.length ? new Set() : new Set(filtered.map(o => o.$id)));
@@ -354,7 +346,7 @@ function OrdersContent() {
           <button onClick={exportCSV} disabled={filtered.length === 0} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50">
             <Download className="w-4 h-4" />CSV
           </button>
-          <button onClick={() => load(false)} disabled={isLoading} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-60">
+          <button onClick={() => { pageCursorsRef.current = new Map([[1, null]]); load(1); }} disabled={isLoading} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-60">
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />Actualizar
           </button>
         </div>
@@ -821,17 +813,15 @@ function OrdersContent() {
           </table>
         </div>
         
-        {hasMore && (
-          <div className="p-4 border-t border-gray-100 flex justify-center">
-            <button 
-              onClick={() => load(true)}
-              disabled={isLoadingMore}
-              className="px-6 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-semibold hover:bg-indigo-100 transition disabled:opacity-50"
-            >
-              {isLoadingMore ? 'Cargando...' : 'Cargar más pedidos'}
-            </button>
-          </div>
-        )}
+        <EpicPagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(totalCount / PAGE_SIZE)}
+          onPageChange={(page) => load(page)}
+          isLoading={isLoading}
+          pageSize={PAGE_SIZE}
+          totalItems={totalCount}
+          className="border-t border-gray-100"
+        />
       </div>
     </div>
   );

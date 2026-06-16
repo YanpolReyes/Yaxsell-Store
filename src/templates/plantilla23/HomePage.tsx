@@ -4059,26 +4059,12 @@ export default function HomePage23() {
 
       // Hydrate subtotal and checkout buttons
       checkoutWrapper.style.display = 'block';
-      const freeShippingThreshold = 25000;
-      const progress = Math.min((cartTotal || 0) / freeShippingThreshold * 100, 100);
-      const remaining = freeShippingThreshold - (cartTotal || 0);
+      checkoutWrapper.style.display = 'block';
       checkoutWrapper.innerHTML = `
-        ${remaining > 0 ? `
-        <div style="background: linear-gradient(135deg, #fdf2f2 0%, #fff5f5 100%); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FBCAC9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-            <span style="font-size:12px; color:#6b7280; font-weight:600;">¡Te faltan <strong style="color:#e88b8a;">$${remaining.toLocaleString()}</strong> para envío gratis!</span>
-          </div>
-          <div style="width:100%; height:6px; background:#fce4e4; border-radius:50px; overflow:hidden;">
-            <div style="width:${progress}%; height:100%; background: linear-gradient(90deg, #FBCAC9, #f4a8a7); border-radius:50px; transition: width 0.5s ease;"></div>
-          </div>
+        <div style="background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; display:flex; align-items:center; gap:8px; border: 1px solid #e5e7eb;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span style="font-size:12px; color:#4b5563; font-weight:600;">Pago 100% seguro y garantizado</span>
         </div>
-        ` : `
-        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #f7fef9 100%); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; display:flex; align-items:center; gap:8px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          <span style="font-size:12px; color:#16a34a; font-weight:700;">¡Envío gratis desbloqueado!</span>
-        </div>
-        `}
         <div style="padding: 14px 0 12px; border-top: 1px solid #f3f4f6;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
             <span style="font-size: 13px; font-weight: 600; color: #6b7280;">Subtotal</span>

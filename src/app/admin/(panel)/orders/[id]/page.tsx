@@ -1166,6 +1166,144 @@ export default function OrderDetailPage() {
         </div>
       )}
 
+      {/* ── Negociación de Faltantes Control Panel ── */}
+      {order.STATUS === 'negotiation' && (
+        <div className="no-print bg-white rounded-xl sm:rounded-2xl border border-pink-250 shadow-sm p-4 sm:p-5 space-y-4">
+          <div className="flex items-center gap-2 border-b border-pink-100 pb-3">
+            <span className="text-xl">🤝</span>
+            <div>
+              <h2 className="text-sm font-bold text-gray-800">Panel de Negociación por Productos Faltantes</h2>
+              <p className="text-xs text-gray-400">Selecciona qué productos faltan y en qué cantidad para coordinar con el cliente.</p>
+            </div>
+          </div>
+
+          <div className="divide-y divide-gray-100 max-h-[300px] overflow-y-auto">
+            {items.map((it, idx) => {
+              const isMissing = !!(it as any).missing;
+              const isReplaced = !!(it as any).replaced;
+              
+              return (
+                <div key={idx} className="py-2.5 flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-8 h-8 rounded bg-gray-50 border overflow-hidden shrink-0 flex items-center justify-center">
+                      {it.img ? <img src={it.img} className="w-full h-full object-contain" /> : <Package className="w-3 h-3 text-gray-300" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-800 truncate">{it.name}</p>
+                      <p className="text-gray-400 text-[10px]">Cantidad en pedido: {it.qty}</p>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 flex items-center gap-3">
+                    {isMissing ? (
+                      <>
+                        <span className="px-2 py-0.5 rounded-full font-bold bg-red-50 text-red-600 border border-red-100 text-[10px]">
+                          ⚠️ Faltante
+                        </span>
+                        <button
+                          onClick={async () => {
+                            if (!confirm('¿Marcar este producto como disponible?')) return;
+                            let parsedItems: any[] = [];
+                            try { parsedItems = JSON.parse(order.ITEMS || '[]'); } catch {}
+                            const itemToRestore = parsedItems[idx];
+                            if (!itemToRestore) return;
+
+                            const identicalIdx = parsedItems.findIndex((x, i) => 
+                              i !== idx && 
+                              x.id === itemToRestore.id && 
+                              !x.missing && 
+                              !x.replaced
+                            );
+
+                            if (identicalIdx !== -1) {
+                              parsedItems[identicalIdx].qty += itemToRestore.qty;
+                              parsedItems[identicalIdx].total = parsedItems[identicalIdx].qty * parsedItems[identicalIdx].price;
+                              parsedItems.splice(idx, 1);
+                            } else {
+                              itemToRestore.missing = false;
+                            }
+
+                            try {
+                              const { databases } = getServices();
+                              const { databaseId } = getAppwriteConfig();
+                              await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, order.$id, {
+                                ITEMS: JSON.stringify(parsedItems)
+                              });
+                              setOrder(prev => prev ? { ...prev, ITEMS: JSON.stringify(parsedItems) } : null);
+                            } catch (err: any) {
+                              alert('Error: ' + err.message);
+                            }
+                          }}
+                          className="px-2.5 py-1 bg-white border border-gray-250 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+                        >
+                          Marcar Disponible
+                        </button>
+                      </>
+                    ) : isReplaced ? (
+                      <span className="px-2 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-600 text-[10px]">
+                        🔄 Reemplazado
+                      </span>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-400 text-[10px]">Faltan:</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={it.qty}
+                          defaultValue={1}
+                          id={`missing-qty-${idx}`}
+                          className="w-12 px-1.5 py-0.5 border border-gray-300 rounded text-center focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                        />
+                        <button
+                          onClick={async () => {
+                            const inputEl = document.getElementById(`missing-qty-${idx}`) as HTMLInputElement;
+                            const mQty = parseInt(inputEl?.value || '1');
+                            if (isNaN(mQty) || mQty <= 0 || mQty > it.qty) return;
+
+                            let parsedItems: any[] = [];
+                            try { parsedItems = JSON.parse(order.ITEMS || '[]'); } catch {}
+                            const itemToMark = parsedItems[idx];
+                            if (!itemToMark) return;
+
+                            if (mQty === itemToMark.qty) {
+                              itemToMark.missing = true;
+                            } else {
+                              const newItem = {
+                                ...itemToMark,
+                                qty: mQty,
+                                total: itemToMark.price * mQty,
+                                missing: true
+                              };
+                              itemToMark.qty -= mQty;
+                              itemToMark.total = itemToMark.price * itemToMark.qty;
+                              parsedItems.push(newItem);
+                            }
+
+                            try {
+                              const { databases } = getServices();
+                              const { databaseId } = getAppwriteConfig();
+                              await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, order.$id, {
+                                ITEMS: JSON.stringify(parsedItems)
+                              });
+                              setOrder(prev => prev ? { ...prev, ITEMS: JSON.stringify(parsedItems) } : null);
+                            } catch (err: any) {
+                              alert('Error: ' + err.message);
+                            }
+                          }}
+                          className="px-2.5 py-1 bg-red-50 text-red-700 border border-red-100 rounded-lg font-medium hover:bg-red-100 transition"
+                        >
+                          Marcar Faltante
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-5">
         {/* ── PAGE 1: Info block (header + customer + shipping + totals) ── */}
         <div className="print-info-block lg:col-span-2 space-y-3 sm:space-y-5">
@@ -1489,6 +1627,12 @@ export default function OrderDetailPage() {
             const isMissing = !!(it as any).missing;
             const isReplaced = !!(it as any).replaced;
             const origItem = (it as any).originalItem;
+
+            // En modo negociación, si hay algún item marcado como faltante o reemplazado,
+            // ocultamos todos los que estén disponibles de forma normal.
+            const hasNegotiations = order.STATUS === 'negotiation' && items.some(x => x.missing || x.replaced);
+            if (hasNegotiations && !isMissing && !isReplaced) return null;
+
             return (
               <div key={i} className={`flex flex-col gap-2 px-3 sm:px-5 py-3.5 hover:bg-gray-50/50 transition border-b border-gray-100 last:border-0 ${isMissing ? 'bg-red-50/80 border-l-4 border-l-red-500' : isReplaced ? 'bg-emerald-50/40 border-l-4 border-l-emerald-400' : ''}`}>
                 <div className="flex items-center gap-2.5 sm:gap-4">

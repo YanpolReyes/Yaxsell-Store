@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback, Fragment } from 'react';
+import { useEffect, useState, useCallback, Fragment, useRef } from 'react';
+import EpicPagination from '@/components/admin/EpicPagination';
 import * as XLSX from 'xlsx';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
@@ -478,6 +479,11 @@ export default function ProductsPage() {
   };
 
   const [lastCursor, setLastCursor] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  // Map: page number -> cursor to reach it (page 1 = null cursor)
+  const pageCursorsRef = useRef<Map<number, string | null>>(new Map([[1, null]]));
+  const PAGE_SIZE = 50;
 
   const load = useCallback(async (isLoadMore = false, passedCursor: string | null = null, currentSearch = '', currentCat = '', currentSub = '', currentStock = 'instock') => {
     if (!isLoadMore) {
@@ -489,7 +495,7 @@ export default function ProductsPage() {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
       
-      const queries: any[] = [Query.limit(20), Query.orderDesc('$createdAt')];
+      const queries: any[] = [Query.limit(PAGE_SIZE), Query.orderDesc('$createdAt')];
       
       if (isLoadMore && passedCursor) {
         queries.push(Query.cursorAfter(passedCursor));
@@ -572,12 +578,14 @@ export default function ProductsPage() {
       } else {
         setProducts(docs);
       }
-      
-      if (docs.length === 20) {
+
+      if (docs.length === PAGE_SIZE) {
         setLastCursor((docs[docs.length - 1] as any).$id);
+        pageCursorsRef.current.set(currentPage + 1, (docs[docs.length - 1] as any).$id);
       } else {
         setLastCursor(null);
       }
+      setTotalCount(prev => isLoadMore ? prev + docs.length : docs.length);
       
       setCategories(cr.documents as unknown as Category[]);
       setSubcategories(subRes.documents as unknown as Subcategory[]);
@@ -2320,16 +2328,24 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {lastCursor && !isLoading && (
-        <div className="flex justify-center my-4">
-          <button
-            onClick={() => load(true, lastCursor, search, catFilter, subCatFilter, stockFilter)}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow-sm transition"
-          >
-            Cargar más productos
-          </button>
-        </div>
-      )}
+      <EpicPagination
+        currentPage={currentPage}
+        totalPages={lastCursor ? currentPage + 1 : currentPage}
+        onPageChange={(page) => {
+          if (page > currentPage && lastCursor) {
+            setCurrentPage(page);
+            load(true, lastCursor, search, catFilter, subCatFilter, stockFilter);
+          } else if (page < currentPage) {
+            // Going back — reload from page 1 up to target (simple approach: reload from scratch)
+            setCurrentPage(1);
+            pageCursorsRef.current = new Map([[1, null]]);
+            load(false, null, search, catFilter, subCatFilter, stockFilter);
+          }
+        }}
+        isLoading={isLoading}
+        pageSize={PAGE_SIZE}
+        totalItems={totalCount}
+      />
 
       {/* Bulk price modal */}
       {priceModal && (

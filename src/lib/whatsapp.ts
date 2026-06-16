@@ -6,29 +6,70 @@
 const WA_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID || '';
 const WA_API_BASE = `https://graph.facebook.com/v20.0`;
 
-// ─── In-memory conversation history per WhatsApp number ───────────────────────
-// Resets on redeploy – good enough for session context
-export const conversationHistory = new Map<string, { role: 'user' | 'assistant'; content: string }[]>();
+import { serverListDocuments, serverCreateDocument, serverDeleteDocument } from './appwrite-server';
+import { ADMIN_CHAT_COLLECTION_ID } from './appwrite-admin';
 
 const MAX_HISTORY = 20; // máx turnos a mantener por usuario
 
-export function getHistory(phone: string) {
-  return conversationHistory.get(phone) || [];
+export async function getHistory(phone: string): Promise<{ role: 'user' | 'assistant'; content: string }[]> {
+  try {
+    const qUserId = JSON.stringify({ method: 'equal', attribute: 'userId', values: [`whatsapp:${phone}`] });
+    const qOrder = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+    const qLimit = JSON.stringify({ method: 'limit', values: [MAX_HISTORY] });
+    
+    const res = await serverListDocuments(ADMIN_CHAT_COLLECTION_ID, [qUserId, qOrder, qLimit]);
+    
+    // The documents are returned in descending order, we want them ascending (chronological)
+    const reversedDocs = [...(res.documents || [])].reverse();
+    
+    return reversedDocs.map((doc: any) => ({
+      role: doc.senderRole === 'admin' ? 'assistant' : 'user',
+      content: doc.message || '',
+    }));
+  } catch (err) {
+    console.error('[WhatsApp] getHistory error:', err);
+    return [];
+  }
 }
 
-export function addToHistory(
+export async function addToHistory(
   phone: string,
   role: 'user' | 'assistant',
-  content: string
-) {
-  const hist = conversationHistory.get(phone) || [];
-  hist.push({ role, content });
-  if (hist.length > MAX_HISTORY) hist.splice(0, hist.length - MAX_HISTORY);
-  conversationHistory.set(phone, hist);
+  content: string,
+  msgId?: string
+): Promise<void> {
+  try {
+    const docId = msgId 
+      ? (role === 'user' ? `wa_msg_${msgId}` : `wa_reply_${msgId}`)
+      : `wa_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    
+    await serverCreateDocument(ADMIN_CHAT_COLLECTION_ID, docId, {
+      userId: `whatsapp:${phone}`,
+      senderRole: role === 'assistant' ? 'admin' : 'user',
+      message: content,
+      readByUser: true,
+      readByAdmin: true,
+    });
+  } catch (err) {
+    // If it's a duplicate document error, we just ignore it
+    console.error('[WhatsApp] addToHistory error:', err);
+  }
 }
 
-export function clearHistory(phone: string) {
-  conversationHistory.delete(phone);
+export async function clearHistory(phone: string): Promise<void> {
+  try {
+    const qUserId = JSON.stringify({ method: 'equal', attribute: 'userId', values: [`whatsapp:${phone}`] });
+    const qLimit = JSON.stringify({ method: 'limit', values: [100] });
+    
+    const res = await serverListDocuments(ADMIN_CHAT_COLLECTION_ID, [qUserId, qLimit]);
+    if (res.documents && res.documents.length > 0) {
+      await Promise.all(
+        res.documents.map((doc: any) => serverDeleteDocument(ADMIN_CHAT_COLLECTION_ID, doc.$id).catch(() => {}))
+      );
+    }
+  } catch (err) {
+    console.error('[WhatsApp] clearHistory error:', err);
+  }
 }
 
 // ─── Send a plain text message ─────────────────────────────────────────────────
@@ -100,4 +141,15 @@ function splitText(text: string, maxLen: number): string[] {
     start = end;
   }
   return chunks;
+}
+
+export function formatWhatsAppPhone(phone: string): string {
+  const cleaned = phone.replace(/\D/g, '').trim();
+  if (cleaned.startsWith('56')) {
+    return cleaned;
+  }
+  if (cleaned.length === 9 && cleaned.startsWith('9')) {
+    return '56' + cleaned;
+  }
+  return cleaned;
 }

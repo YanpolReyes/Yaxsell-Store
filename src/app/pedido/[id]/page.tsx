@@ -1083,6 +1083,12 @@ export default function PedidoPage() {
             {items.map((item, i) => {
               const isMissing = !!(item as any).missing;
               const isReplaced = !!(item as any).replaced;
+
+              // En modo negociación, si hay algún item marcado como faltante o reemplazado,
+              // ocultamos todos los que estén disponibles de forma normal.
+              const hasNegotiations = order?.STATUS === 'negotiation' && items.some(x => x.missing || x.replaced);
+              if (hasNegotiations && !isMissing && !isReplaced) return null;
+
               const hasDiscount = item.originalPrice && item.originalPrice > item.price;
               const discountPct = hasDiscount ? Math.round(((item.originalPrice! - item.price) / item.originalPrice!) * 100) : 0;
               return (

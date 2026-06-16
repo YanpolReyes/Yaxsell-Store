@@ -158,6 +158,18 @@ export async function POST(req: NextRequest) {
     const userText = (msg.text?.body as string || '').trim();
     if (!userText) return NextResponse.json({ status: 'empty_text' });
 
+    // Deduplication check
+    try {
+      const { serverGetDocument } = await import('@/lib/appwrite-server');
+      const { ADMIN_CHAT_COLLECTION_ID } = await import('@/lib/appwrite-admin');
+      // If we can find wa_msg_${msgId} in the database, it means we already processed this message.
+      await serverGetDocument(ADMIN_CHAT_COLLECTION_ID, `wa_msg_${msgId}`);
+      console.log(`[WhatsApp Webhook] Duplicate message ${msgId} detected. Skipping.`);
+      return NextResponse.json({ status: 'already_processed' });
+    } catch (e) {
+      // Document not found, proceed.
+    }
+
     const cleanedFrom = fromPhone.replace(/\D/g, '').trim();
     const isAdmin = ADMIN_PHONES.includes(cleanedFrom);
     console.log(`[WhatsApp Webhook] Msg from: ${fromPhone} (cleaned: ${cleanedFrom}) | isAdmin: ${isAdmin} | Admin list:`, ADMIN_PHONES);
@@ -167,7 +179,7 @@ export async function POST(req: NextRequest) {
 
     // Handle "limpiar historial" command
     if (userText.toLowerCase().includes('limpiar historial')) {
-      clearHistory(fromPhone);
+      await clearHistory(fromPhone);
       await sendWhatsAppMessage(fromPhone, '🗑️ Historial borrado. ¡Empezamos de cero!', WA_TOKEN);
       return NextResponse.json({ status: 'history_cleared' });
     }
@@ -252,8 +264,8 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Build conversation history for Gemini ─────────────────────────────────
-    const history = getHistory(fromPhone);
-    addToHistory(fromPhone, 'user', userText);
+    const history = await getHistory(fromPhone);
+    await addToHistory(fromPhone, 'user', userText, msgId);
 
     const systemPrompt = (isAdmin ? ADMIN_PROMPT : CUSTOMER_PROMPT) + contextBlock;
 
@@ -352,7 +364,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Save assistant reply to history
-    addToHistory(fromPhone, 'assistant', aiReply);
+    await addToHistory(fromPhone, 'assistant', aiReply, msgId);
 
     // ── Send reply to WhatsApp ─────────────────────────────────────────────────
     await sendWhatsAppMessage(fromPhone, aiReply, WA_TOKEN);
