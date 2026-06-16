@@ -168,7 +168,8 @@ function OrdersContent() {
       load(false);
       autoDeliverShippedOrders();
     }, 0);
-  }, [activeFilter, autoDeliverShippedOrders]); // Run load when filter changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeFilter]); // Run load when filter changes
 
   const toggleSelect = (id: string) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleSelectAll = () => setSelected(s => s.size === filtered.length ? new Set() : new Set(filtered.map(o => o.$id)));
