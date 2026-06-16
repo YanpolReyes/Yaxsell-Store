@@ -153,9 +153,13 @@ export async function POST(req: NextRequest) {
       try {
         if (isAdmin) {
         // Admin: get pending orders + products
+        const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+        const qLimit15 = JSON.stringify({ method: 'limit', values: [15] });
+        const qLimit30 = JSON.stringify({ method: 'limit', values: [30] });
+
         const [ordersRes, productsRes] = await Promise.all([
-          serverListDocuments(ORDERS_COLLECTION_ID, ['orderDesc("$createdAt")', 'limit(15)']),
-          serverListDocuments(PRODUCTS_COLLECTION_ID, ['limit(30)']),
+          serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit15]),
+          serverListDocuments(PRODUCTS_COLLECTION_ID, [qLimit30]),
         ]);
 
         const orders = (ordersRes.documents || []).map((o: any) => {
@@ -178,7 +182,8 @@ export async function POST(req: NextRequest) {
         const lowerText = userText.toLowerCase();
         const keywords  = lowerText.split(/\s+/).filter(w => w.length > 2);
 
-        const productsRes = await serverListDocuments(PRODUCTS_COLLECTION_ID, ['limit(50)']);
+        const qLimit50 = JSON.stringify({ method: 'limit', values: [50] });
+        const productsRes = await serverListDocuments(PRODUCTS_COLLECTION_ID, [qLimit50]);
         const allProducts = productsRes.documents || [];
 
         // Try to find relevant products
