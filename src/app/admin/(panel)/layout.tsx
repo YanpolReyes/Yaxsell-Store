@@ -320,10 +320,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         const data = await res.json();
         setPendingOrders(data.pendingOrders);
         setProcessingOrders(data.processingOrders || 0);
-        setUnreadNotifs(data.unreadNotifs);
-        setPendingWholesale(data.pendingWholesale);
-        setPendingRequests(data.pendingRequests || 0);
-        setPendingAlerts(data.pendingAlerts || 0);
       }
     } catch { /* silent */ }
   }, []);
@@ -339,31 +335,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       return;
     }
     
-    let lastFetched = 0;
+    // Ejecutar una única vez al montar el panel
+    fetchBadges();
     
-    // Ejecutar solo si la pestaña está visible y han pasado al menos 2 minutos
-    const fetchVisibleBadges = (force = false) => {
-      if (document.visibilityState === 'visible') {
-        const now = Date.now();
-        if (force || now - lastFetched > 120_000) {
-          fetchBadges();
-          lastFetched = now;
-        }
-      }
-    };
-
-    fetchVisibleBadges(true);
-    
-    // Polling cada 15 minutos (aumentado para ahorrar lecturas)
-    const id = setInterval(() => fetchVisibleBadges(false), 900_000);
-    
-    const handleVisibilityChange = () => fetchVisibleBadges(false);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      clearInterval(id);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+    // Sin temporizadores ni recargas en segundo plano.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, isLoggedIn, user?.email, fetchBadges, logout]);
 

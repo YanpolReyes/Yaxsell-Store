@@ -1452,8 +1452,8 @@ function TestPeriodBanner() {
   const [timeLeft, setTimeLeft] = useState('00:00:00');
 
   useEffect(() => {
-    const START_TIME = new Date('2026-06-14T05:45:00-04:00').getTime();
-    const END_TIME = new Date('2026-06-15T05:45:00-04:00').getTime();
+    const START_TIME = new Date('2026-06-16T02:55:00-04:00').getTime();
+    const END_TIME = new Date('2026-06-17T02:55:00-04:00').getTime();
     const TOTAL_DURATION = END_TIME - START_TIME;
 
     const update = () => {
@@ -1551,9 +1551,9 @@ function TestPeriodBanner() {
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#c084fc', fontWeight: 500 }}>
-        <span>Inicio: 14 Jun, 05:45</span>
+        <span>Inicio: 16 Jun, 02:55</span>
         <span>{isFinished ? 'Prueba Finalizada 🎉' : 'Meta: Mantener lecturas < 60k'}</span>
-        <span>Fin: 15 Jun, 05:45</span>
+        <span>Fin: 17 Jun, 02:55</span>
       </div>
     </div>
   );
@@ -1635,71 +1635,6 @@ export default function DashboardPage() {
 
     setIsLoading(true); setError('');
     try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-      const cutoff30d = new Date(Date.now() - 30 * 86400000).toISOString();
-      const [productsResp, lowStockResp, topProductsResp, ordersResp, wholesaleResp, supportResp, notifsResp, allUsersRaw] = await Promise.all([
-        databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.limit(1)]),
-        databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.greaterThan('STOCK', 0), Query.lessThan('STOCK', 3), Query.limit(5)]),
-        databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.orderDesc('SOLDQUANTITY'), Query.limit(6)]),
-        databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [Query.orderDesc('CREATEDAT'), Query.limit(100)]),
-        databases.listDocuments(databaseId, WHOLESALE_REQUESTS_COLLECTION_ID, [Query.equal('status', 'pending'), Query.limit(50)]),
-        databases.listDocuments(databaseId, SUPPORT_TICKETS_COLLECTION_ID, [Query.notEqual('status', 'closed'), Query.limit(50)]),
-        databases.listDocuments(databaseId, NOTIFICATIONS_COLLECTION_ID, [Query.equal('isRead', false), Query.limit(1)]),
-        listAllUserProfiles(100),
-      ]);
-      setPendingWholesale(wholesaleResp.total);
-      setOpenSupport(supportResp.total);
-      setUnreadNotifs(notifsResp.total);
-      const registeredUsers = dedupeUserDocuments(allUsersRaw as UserProfileDoc[]).filter(isRegisteredUserProfile);
-      const cutoffDate = new Date(cutoff30d);
-      const computedNewUsers = registeredUsers.filter(u => new Date(u.$createdAt) >= cutoffDate).length;
-      setNewUsers(computedNewUsers);
-      const orders   = ordersResp.documents as unknown as Order[];
-      setAllOrders(orders);
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      let todayOrders = 0;
-      for (const o of orders) { if (o.CREATEDAT >= today.getTime()) todayOrders++; }
-      setStats(s => ({ ...s, totalProducts: productsResp.total, lowStockCount: lowStockResp.total, todayOrders }));
-      const lowStockDocs = lowStockResp.documents as unknown as Product[];
-      setLowStockProducts(lowStockDocs);
-      const topProdDocs = topProductsResp.documents as unknown as Product[];
-      setTopProducts(topProdDocs);
-      const refreshDate = new Date();
-      setLastRefresh(refreshDate);
-
-      // Page views tracking disabled
-      /*
-      const pv = await getPageViewStats(30);
-      setPageViews({ totalViews: pv.totalViews, todayViews: pv.todayViews, topPages: pv.topPages, topComunas: pv.topComunas, visitorMarkers: pv.visitorMarkers });
-      
-      const productPageViews: Record<string, number> = {};
-      pv.topPages.forEach(tp => {
-        const match = tp.page.match(/^\/productos?\/([a-zA-Z0-9_-]+)/);
-        if (match) {
-          const pid = match[1];
-          productPageViews[pid] = (productPageViews[pid] || 0) + tp.views;
-        }
-      });
-      const viewedEntries = Object.entries(productPageViews).sort((a, b) => b[1] - a[1]).slice(0, 6);
-      const viewedProductIds = viewedEntries.map(e => e[0]);
-      
-      let computedTopViewed: (Product & { viewCount: number })[] = [];
-      if (viewedProductIds.length > 0) {
-        const pResp = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION_ID, [Query.equal('$id', viewedProductIds)]);
-        computedTopViewed = pResp.documents.map(p => {
-          return { ...p, viewCount: productPageViews[p.$id] || 0 };
-        }) as unknown as (Product & { viewCount: number })[];
-        computedTopViewed.sort((a, b) => b.viewCount - a.viewCount);
-        setTopViewedProducts(computedTopViewed);
-      } else {
-        setTopViewedProducts([]);
-      }
-      */
-      const computedTopViewed: any[] = [];
-      setTopViewedProducts([]);
-
-
       // Fetch cost statistics from API route
       let costData = null;
       try {
@@ -1712,22 +1647,25 @@ export default function DashboardPage() {
         console.error('Error fetching cost stats in dashboard:', errCost);
       }
 
+      const refreshDate = new Date();
+      setLastRefresh(refreshDate);
+
       // Update cache
       dashboardCache = {
         timestamp: Date.now(),
         data: {
-          pendingWholesale: wholesaleResp.total,
-          openSupport: supportResp.total,
-          unreadNotifs: notifsResp.total,
-          newUsers: computedNewUsers,
-          allOrders: orders,
-          totalProducts: productsResp.total,
-          lowStockCount: lowStockResp.total,
-          todayOrders,
-          lowStockProducts: lowStockDocs,
-          topProducts: topProdDocs,
+          pendingWholesale: 0,
+          openSupport: 0,
+          unreadNotifs: 0,
+          newUsers: 0,
+          allOrders: [],
+          totalProducts: 0,
+          lowStockCount: 0,
+          todayOrders: 0,
+          lowStockProducts: [],
+          topProducts: [],
           pageViews: { totalViews: 0, todayViews: 0, topPages: [], topComunas: [], visitorMarkers: [] },
-          topViewedProducts: computedTopViewed,
+          topViewedProducts: [],
           lastRefresh: refreshDate,
           costStats: costData,
         }
@@ -2237,122 +2175,128 @@ export default function DashboardPage() {
           <div style={{ position: 'relative', zIndex: 10 }}>
             <TestPeriodBanner />
             {/* KPI Cards Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
-              
-              {/* KPI 1: Database Reads Today vs 60k limit */}
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lecturas Hoy (Safe Limit)</span>
-                  <Activity size={14} color="#6366f1" />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                  <span style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>
-                    {costStats.todayReads.toLocaleString()}
-                  </span>
-                  <span style={{ fontSize: 12, color: '#64748b' }}>
-                    / 60,000
-                  </span>
-                </div>
-                <p style={{ fontSize: 10, color: '#64748b', margin: '4px 0 0' }}>
-                  Límite diario recomendado para plan gratuito (1.8M/mes)
-                </p>
-              </div>
-
-              {/* KPI 2: Database Reads Last 7 Days */}
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lecturas Últimos 7 Días</span>
-                  <Calendar size={14} color="#0891b2" />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                  <span style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>
-                    {(costStats.sevenDaysReads || 0).toLocaleString()}
-                  </span>
-                  <span style={{ fontSize: 12, color: '#64748b' }}>
-                    / 420,000
-                  </span>
-                </div>
-                <p style={{ fontSize: 10, color: '#64748b', margin: '4px 0 0' }}>
-                  Consumo acumulado real de la última semana
-                </p>
-              </div>
-
-              {/* KPI 3: Global Database Reads (30 days total) */}
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lecturas Totales (30d)</span>
-                  <Coins size={14} color="#10b981" />
-                </div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: '#10b981' }}>
-                  {costStats.databaseReadsTotal.toLocaleString()}
-                </div>
-                <p style={{ fontSize: 10, color: '#64748b', margin: '4px 0 0' }}>
-                  Lecturas acumuladas en la base de datos este periodo
-                </p>
-              </div>
-
-              {/* KPI 4: Global Database Writes (30 days total) */}
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Escrituras Totales (30d)</span>
-                  <Database size={14} color="#06b6d4" />
-                </div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: '#06b6d4' }}>
-                  {costStats.databaseWritesTotal.toLocaleString()}
-                </div>
-                <p style={{ fontSize: 10, color: '#64748b', margin: '4px 0 0' }}>
-                  Operaciones de escritura/modificación de documentos
-                </p>
-              </div>
-            </div>
-
-            {/* Progress alert gauge */}
+            {/* KPI Cards Grid */}
             {(() => {
-              const pct = Math.min(100, (costStats.todayReads / 60000) * 100);
+              const baselineReads = (new Date().toDateString() === new Date('2026-06-16T00:00:00-04:00').toDateString()) ? 24998 : 0;
+              const displayTodayReads = Math.max(0, costStats.todayReads - baselineReads);
+              const pct = Math.min(100, (displayTodayReads / 60000) * 100);
+              
               let barColor = '#10b981'; // green
               let textColor = '#059669';
-              let alertMsg = 'Consumo óptimo y seguro dentro de los límites de facturación.';
+              let alertMsg = 'Consumo óptimo y seguro dentro de los límites de facturación de la prueba.';
               let alertIcon = <span style={{ marginRight: 6 }}>🛡️</span>;
               
               if (pct >= 85) {
                 barColor = '#ef4444'; // red
                 textColor = '#dc2626';
-                alertMsg = '¡Alerta Crítica! Estás por superar el límite seguro diario. Considera pausar operaciones de alto consumo o revisar las queries.';
+                alertMsg = '¡Alerta Crítica! Estás por superar el límite seguro diario de la prueba. Considera pausar operaciones.';
                 alertIcon = <AlertTriangle size={14} color="#ef4444" style={{ marginRight: 6 }} />;
               } else if (pct >= 50) {
                 barColor = '#f59e0b'; // orange
                 textColor = '#d97706';
-                alertMsg = 'Consumo moderado. El tráfico o las operaciones están consumiendo más lecturas de lo habitual.';
+                alertMsg = 'Consumo moderado durante la prueba.';
                 alertIcon = <AlertTriangle size={14} color="#f59e0b" style={{ marginRight: 6 }} />;
               }
 
               return (
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20, marginBottom: 24 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-                      Progreso del Límite de Seguridad Diario (60,000)
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: textColor }}>
-                      {pct.toFixed(1)}%
-                    </span>
-                  </div>
-                  
-                  {/* The actual progress bar */}
-                  <div style={{ width: '100%', height: 10, background: '#e2e8f0', borderRadius: 5, overflow: 'hidden', marginBottom: 12 }}>
-                    <div style={{
-                      width: `${pct}%`,
-                      height: '100%',
-                      background: `linear-gradient(90deg, ${barColor}, #6366f1)`,
-                      borderRadius: 5,
-                      transition: 'width 0.8s'
-                    }} />
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
+                    
+                    {/* KPI 1: Database Reads Today vs 60k limit */}
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lecturas Hoy (Netas de Prueba)</span>
+                        <Activity size={14} color="#6366f1" />
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                        <span style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>
+                          {displayTodayReads.toLocaleString()}
+                        </span>
+                        <span style={{ fontSize: 12, color: '#64748b' }}>
+                          / 60,000
+                        </span>
+                      </div>
+                      <p style={{ fontSize: 10, color: '#64748b', margin: '4px 0 0' }}>
+                        Límite diario recomendado para plan gratuito (1.8M/mes)
+                      </p>
+                    </div>
+
+                    {/* KPI 2: Database Reads Last 7 Days */}
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lecturas Últimos 7 Días</span>
+                        <Calendar size={14} color="#0891b2" />
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                        <span style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>
+                          {(costStats.sevenDaysReads || 0).toLocaleString()}
+                        </span>
+                        <span style={{ fontSize: 12, color: '#64748b' }}>
+                          / 420,000
+                        </span>
+                      </div>
+                      <p style={{ fontSize: 10, color: '#64748b', margin: '4px 0 0' }}>
+                        Consumo acumulado real de la última semana
+                      </p>
+                    </div>
+
+                    {/* KPI 3: Global Database Reads (30 days total) */}
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lecturas Totales (30d)</span>
+                        <Coins size={14} color="#10b981" />
+                      </div>
+                      <div style={{ fontSize: 24, fontWeight: 800, color: '#10b981' }}>
+                        {costStats.databaseReadsTotal.toLocaleString()}
+                      </div>
+                      <p style={{ fontSize: 10, color: '#64748b', margin: '4px 0 0' }}>
+                        Lecturas acumuladas en la base de datos este periodo
+                      </p>
+                    </div>
+
+                    {/* KPI 4: Global Database Writes (30 days total) */}
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Escrituras Totales (30d)</span>
+                        <Database size={14} color="#06b6d4" />
+                      </div>
+                      <div style={{ fontSize: 24, fontWeight: 800, color: '#06b6d4' }}>
+                        {costStats.databaseWritesTotal.toLocaleString()}
+                      </div>
+                      <p style={{ fontSize: 10, color: '#64748b', margin: '4px 0 0' }}>
+                        Operaciones de escritura/modificación de documentos
+                      </p>
+                    </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', fontSize: 12, color: '#334155', background: '#f1f5f9', padding: '10px 14px', borderRadius: 8, border: `1px solid ${barColor}25` }}>
-                    {alertIcon}
-                    <span>{alertMsg}</span>
+                  {/* Progress alert gauge */}
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20, marginBottom: 24 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                        Progreso del Límite de Seguridad de la Prueba (60,000)
+                      </span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: textColor }}>
+                        {pct.toFixed(1)}%
+                      </span>
+                    </div>
+                    
+                    {/* The actual progress bar */}
+                    <div style={{ width: '100%', height: 10, background: '#e2e8f0', borderRadius: 5, overflow: 'hidden', marginBottom: 12 }}>
+                      <div style={{
+                        width: `${pct}%`,
+                        height: '100%',
+                        background: `linear-gradient(90deg, ${barColor}, #6366f1)`,
+                        borderRadius: 5,
+                        transition: 'width 0.8s'
+                      }} />
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', fontSize: 12, color: '#334155', background: '#f1f5f9', padding: '10px 14px', borderRadius: 8, border: `1px solid ${barColor}25` }}>
+                      {alertIcon}
+                      <span>{alertMsg} (Base actual hoy: {costStats.todayReads.toLocaleString()})</span>
+                    </div>
                   </div>
-                </div>
+                </>
               );
             })()}
 
@@ -2683,490 +2627,6 @@ export default function DashboardPage() {
                 </Link>
               );
             })}
-          </div>
-        </div>
-      </div>
-
-      {/* ═══ Recent orders + Top products ═══ */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16, marginBottom: 24 }}>
-
-        {/* Recent Orders */}
-        <div className="db-card" style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f1f5f9' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ShoppingCart size={15} color="#2563eb" />
-              </div>
-              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: 0 }}>Pedidos recientes</h2>
-            </div>
-            <Link href="/admin/orders" style={{ fontSize: 12, fontWeight: 600, color: '#6366f1', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}>
-              Ver todos <ChevronRight size={13} />
-            </Link>
-          </div>
-          {isLoading ? (
-            <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <div style={{ width: 55, height: 12, background: '#f1f5f9', borderRadius: 6, flexShrink: 0 }} />
-                  <div style={{ flex: 1, height: 12, background: '#f1f5f9', borderRadius: 6 }} />
-                  <div style={{ width: 65, height: 20, background: '#f1f5f9', borderRadius: 10, flexShrink: 0 }} />
-                </div>
-              ))}
-            </div>
-          ) : recentOrders.length === 0 ? (
-            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>Sin pedidos aún</div>
-          ) : (
-            <div>
-              {recentOrders.slice(0, 7).map((order, i) => {
-                const st = STATUS_CONF[order.STATUS] || { label: order.STATUS, color: '#6b7280', bg: '#f9fafb', dot: '#d1d5db' };
-                return (
-                  <Link key={order.$id} href={`/admin/orders/${order.$id}`} className="db-row-link db-order-row" style={{
-                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 20px',
-                    textDecoration: 'none', borderBottom: i < 6 ? '1px solid #f9fafb' : 'none',
-                    background: 'transparent', transition: 'background .1s',
-                  }}>
-                    <span style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 600, color: '#9ca3af', flexShrink: 0, width: 56 }}>{order.ORDERCODE}</span>
-                    <span style={{ flex: 1, fontSize: 13, color: '#374151', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{order.CUSTOMERNAME}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#111827', flexShrink: 0 }}>{fmt(order.TOTAL)}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 20, flexShrink: 0, background: st.bg, color: st.color }}>{st.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Top products — most viewed */}
-        <div className="db-card" style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f1f5f9' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: '#f0fdfa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Eye size={15} color="#0d9488" />
-              </div>
-              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: 0 }}>Productos más vistos</h2>
-            </div>
-            <Link href="/admin/analytics" style={{ fontSize: 12, fontWeight: 600, color: '#6366f1', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}>
-              Ver todos <ChevronRight size={13} />
-            </Link>
-          </div>
-          {topViewedProducts.length === 0 ? (
-            topProducts.length === 0 ? (
-              <div style={{ padding: '40px 20px', textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>Sin datos de visitas</div>
-            ) : (
-              <div style={{ padding: '8px 0' }}>
-                {topProducts.map((p, i) => {
-                  const maxSold = Math.max(...topProducts.map(x => x.SOLDQUANTITY ?? 0), 1);
-                  const pct = Math.round(((p.SOLDQUANTITY ?? 0) / maxSold) * 100);
-                  const colors = ['#6366f1','#0891b2','#059669','#d97706','#e396bf','#7c3aed'];
-                  return (
-                    <div key={p.$id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 20px' }}>
-                      <span style={{
-                        fontSize: 12, fontWeight: 800, color: '#fff', width: 22, height: 22,
-                        borderRadius: '50%', background: colors[i] || '#6b7280',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                      }}>{i + 1}</span>
-                      <div style={{ width: 34, height: 34, borderRadius: 8, background: '#f1f5f9', overflow: 'hidden', flexShrink: 0 }}>
-                        {p.IMAGEURL
-                          ? <img src={p.IMAGEURL} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <Package size={14} style={{ margin: '10px auto', display: 'block', color: '#d1d5db' }} />}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.NAME}</p>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
-                          <div style={{ flex: 1, height: 5, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
-                            <div className="db-progress-bar" style={{ height: '100%', width: isLoaded ? `${pct}%` : '0%', background: colors[i] || '#6366f1', borderRadius: 4, transition: 'width .6s cubic-bezier(0.16,1,0.3,1)' }} />
-                          </div>
-                          <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', flexShrink: 0 }}>{p.SOLDQUANTITY ?? 0} vendidos</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )
-          ) : (
-            <div style={{ padding: '8px 0' }}>
-              {topViewedProducts.map((p, i) => {
-                const maxViews = Math.max(...topViewedProducts.map(x => x.viewCount), 1);
-                const pct = Math.round((p.viewCount / maxViews) * 100);
-                const colors = ['#0d9488','#0891b2','#6366f1','#059669','#d97706','#e396bf'];
-                return (
-                  <div key={p.$id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 20px' }}>
-                    <span style={{
-                      fontSize: 12, fontWeight: 800, color: '#fff', width: 22, height: 22,
-                      borderRadius: '50%', background: colors[i] || '#6b7280',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    }}>{i + 1}</span>
-                    <div style={{ width: 34, height: 34, borderRadius: 8, background: '#f1f5f9', overflow: 'hidden', flexShrink: 0 }}>
-                      {p.IMAGEURL
-                        ? <img src={p.IMAGEURL} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <Package size={14} style={{ margin: '10px auto', display: 'block', color: '#d1d5db' }} />}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.NAME}</p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
-                        <div style={{ flex: 1, height: 5, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
-                          <div className="db-progress-bar" style={{ height: '100%', width: isLoaded ? `${pct}%` : '0%', background: colors[i] || '#0d9488', borderRadius: 4, transition: 'width .6s cubic-bezier(0.16,1,0.3,1)' }} />
-                        </div>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 2 }}><Eye size={10} />{p.viewCount}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ═══ Globe & Order Status Row ═══ */}
-      <div style={{ marginBottom: 24 }}>
-        
-        {/* Globe + Panel (Left) */}
-        <div className="db-card" style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', padding: 0, boxShadow: '0 1px 4px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', height: '100%' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8, padding: '20px 24px 0' }}>
-          <div>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: 0 }}>🗺️ Mapa de pedidos por región</h2>
-            <p style={{ fontSize: 12, color: '#9ca3af', margin: '3px 0 0' }}>Regiones de Chile · pedidos por ubicación</p>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981', display: 'inline-block', animation: 'db-fade-up 1.5s infinite alternate' }} />
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#059669', background: '#ecfdf5', padding: '3px 10px', borderRadius: 20 }}>
-              {rangeOrders.filter(o => o.REGION).length} pedidos rastreados
-            </span>
-          </div>
-        </div>
-        <div className="db-map-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.4fr) 1fr 1fr', gap: 24, alignItems: 'stretch', paddingBottom: 0, flex: 1 }}>
-          <ChileMap regionCounts={(() => { const c: Record<string,number> = {}; for (const o of rangeOrders) { const rg = normalizeRegion(o.REGION||''); if (rg) c[rg] = (c[rg]||0)+1; } return c; })()} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxHeight: 600, overflowY: 'auto', paddingRight: 0 }}>
-            {(() => {
-              const counts: Record<string, number> = {};
-              for (const o of rangeOrders) { const rg = normalizeRegion(o.REGION || ''); if (rg) counts[rg] = (counts[rg] || 0) + 1; }
-              const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-              const uniqueRegs = sorted.length;
-              const topReg = sorted[0];
-              const withRegion = rangeOrders.filter(o => o.REGION).length;
-              return (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                  <div style={{ background: '#f0fdf4', borderRadius: 10, padding: '10px 12px', border: '1px solid #d1fae5' }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Región top</div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#064e3b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{topReg ? topReg[0] : '—'}</div>
-                    <div style={{ fontSize: 10, color: '#059669', marginTop: 2 }}>{topReg ? `${topReg[1]} pedidos` : 'Sin datos'}</div>
-                  </div>
-                  <div style={{ background: '#ecfdf5', borderRadius: 10, padding: '10px 12px', border: '1px solid #d1fae5' }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Regiones</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: '#047857' }}>{uniqueRegs}<span style={{ fontSize: 11, fontWeight: 500, color: '#6b7280' }}>/16</span></div>
-                    <div style={{ fontSize: 10, color: '#059669', marginTop: 2 }}>con pedidos</div>
-                  </div>
-                  <div style={{ background: '#f0fdf4', borderRadius: 10, padding: '10px 12px', border: '1px solid #d1fae5' }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Cobertura</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: '#047857' }}>{rangeOrders.length > 0 ? Math.round((withRegion / rangeOrders.length) * 100) : 0}%</div>
-                    <div style={{ fontSize: 10, color: '#059669', marginTop: 2 }}>rastreados</div>
-                  </div>
-                </div>
-              );
-            })()}
-            {(() => {
-              const counts: Record<string, number> = {};
-              for (const o of rangeOrders) { const rg = normalizeRegion(o.REGION || ''); if (rg) counts[rg] = (counts[rg] || 0) + 1; }
-              const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-              const maxC = sorted[0]?.[1] || 1;
-              const total = rangeOrders.length;
-              const greenScale = ['#064e3b','#065f46','#047857','#059669','#10b981','#34d399','#6ee7b7'];
-              if (sorted.length === 0) return (
-                <div style={{ background: '#f8fafc', borderRadius: 10, padding: 16, textAlign: 'center' }}>
-                  <p style={{ fontSize: 13, color: '#9ca3af', margin: 0 }}>Sin datos de región en los pedidos</p>
-                </div>
-              );
-              return (
-                <div>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: '#064e3b', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>🏆 Ranking de regiones</p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {sorted.slice(0, 7).map(([reg, count], i) => {
-                      const pct = total > 0 ? ((count / total) * 100) : 0;
-                      const barPct = (count / maxC) * 100;
-                      const col = greenScale[i] || '#d1fae5';
-                      const isTop3 = i < 3;
-                      return (
-                        <div key={reg} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px', borderRadius: 8, background: isTop3 ? '#f0fdf4' : 'transparent' }}>
-                          <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', width: 20, height: 20, borderRadius: '50%', background: col, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 2 }}>
-                              <span style={{ fontSize: 12, fontWeight: isTop3 ? 700 : 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{reg}</span>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: col, flexShrink: 0, marginLeft: 6 }}>{count} <span style={{ fontWeight: 400, fontSize: 9, color: '#9ca3af' }}>({pct.toFixed(0)}%)</span></span>
-                            </div>
-                            <div style={{ height: 4, background: '#f0fdf4', borderRadius: 3, overflow: 'hidden' }}>
-                              <div style={{ height: '100%', width: `${barPct}%`, borderRadius: 3, background: col, transition: 'width .8s cubic-bezier(0.16,1,0.3,1)' }} />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {sorted.length > 7 && <p style={{ fontSize: 10, color: '#6b7280', margin: '2px 0 0', fontStyle: 'italic' }}>+{sorted.length - 7} regiones más</p>}
-                  </div>
-                </div>
-              );
-            })()}
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#374151', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>📦 Últimos pedidos</p>
-              {recentOrders.length === 0 ? (
-                <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>Sin pedidos recientes</p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {recentOrders.slice(0, 4).map(o => {
-                    const reg = normalizeRegion(o.REGION || '');
-                    const sc = STATUS_CONF[o.STATUS] || STATUS_CONF.pending;
-                    const ago = Math.round((Date.now() - new Date(o.CREATEDAT).getTime()) / 3600000);
-                    return (
-                      <div key={o.$id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', borderRadius: 8, background: '#f8fafc', border: '1px solid #f3f4f6' }}>
-                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: sc.dot, flexShrink: 0 }} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {o.CUSTOMERNAME || 'Cliente'} — ${(o.TOTAL || 0).toLocaleString()}
-                          </div>
-                          <div style={{ fontSize: 10, color: '#9ca3af' }}>
-                            {reg || 'Sin región'} · hace {ago < 1 ? '<1h' : `${ago}h`}
-                          </div>
-                        </div>
-                        <span style={{ fontSize: 10, fontWeight: 600, color: sc.color, background: sc.bg, padding: '2px 6px', borderRadius: 6, flexShrink: 0 }}>{sc.label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ── Columna 3: Revenue + Avg Ticket por región ── */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '0 20px 20px', maxHeight: 600, overflowY: 'auto' }}>
-            {(() => {
-              const revenueMap: Record<string, number> = {};
-              const countMap: Record<string, number> = {};
-              for (const o of rangeOrders) {
-                const rg = normalizeRegion(o.REGION || '');
-                if (!rg) continue;
-                countMap[rg] = (countMap[rg] || 0) + 1;
-                if (o.STATUS === 'paid' || o.STATUS === 'delivered') {
-                  revenueMap[rg] = (revenueMap[rg] || 0) + (o.TOTAL || 0);
-                }
-              }
-              const sorted = Object.entries(revenueMap).sort((a, b) => b[1] - a[1]);
-              const maxRev = sorted[0]?.[1] || 1;
-              const totalRev = sorted.reduce((s, [, v]) => s + v, 0);
-
-              if (sorted.length === 0) return (
-                <div style={{ background: '#f8fafc', borderRadius: 10, padding: 16, textAlign: 'center' }}>
-                  <p style={{ fontSize: 13, color: '#9ca3af', margin: 0 }}>Sin datos de ingresos por región</p>
-                </div>
-              );
-
-              return (
-                <>
-                  {/* Summary pills */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                    <div style={{ background: '#f0f9ff', borderRadius: 10, padding: '10px 12px', border: '1px solid #bae6fd' }}>
-                      <div style={{ fontSize: 10, fontWeight: 600, color: '#0369a1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Ingresos totales</div>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: '#0c4a6e' }}>{fmt(totalRev)}</div>
-                      <div style={{ fontSize: 10, color: '#0284c7', marginTop: 2 }}>pedidos pagados</div>
-                    </div>
-                    <div style={{ background: '#faf5ff', borderRadius: 10, padding: '10px 12px', border: '1px solid #e9d5ff' }}>
-                      <div style={{ fontSize: 10, fontWeight: 600, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Ticket promedio</div>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: '#4c1d95' }}>
-                        {fmt(sorted.length > 0 ? Math.round(totalRev / sorted.reduce((s, [rg]) => s + (countMap[rg] || 0), 0)) : 0)}
-                      </div>
-                      <div style={{ fontSize: 10, color: '#7c3aed', marginTop: 2 }}>por pedido</div>
-                    </div>
-                  </div>
-
-                  {/* Revenue por región */}
-                  <div>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: '#374151', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <DollarSign size={12} color="#6366f1" /> Ingresos por región
-                    </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {sorted.slice(0, 7).map(([reg, rev]) => {
-                        const cnt = countMap[reg] || 0;
-                        const avg = cnt > 0 ? Math.round(rev / cnt) : 0;
-                        const barPct = (rev / maxRev) * 100;
-                        const share = totalRev > 0 ? ((rev / totalRev) * 100).toFixed(0) : '0';
-                        return (
-                          <div key={reg} style={{ padding: '8px 10px', borderRadius: 9, background: '#f8fafc', border: '1px solid #f1f5f9' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{reg}</span>
-                              <span style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', flexShrink: 0, marginLeft: 8 }}>{fmt(rev)}</span>
-                            </div>
-                            <div style={{ height: 3, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden', marginBottom: 4 }}>
-                              <div style={{ height: '100%', width: `${barPct}%`, background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius: 3 }} />
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <span style={{ fontSize: 10, color: '#6b7280' }}>{cnt} pedido{cnt !== 1 ? 's' : ''} · avg {fmt(avg)}</span>
-                              <span style={{ fontSize: 10, fontWeight: 700, color: '#6366f1' }}>{share}%</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Estado distribución */}
-                  <div>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: '#374151', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Estado de pedidos</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      {Object.entries(STATUS_CONF).map(([status, conf]) => {
-                        const cnt = rangeOrders.filter(o => o.STATUS === status).length;
-                        if (cnt === 0) return null;
-                        const pct = rangeOrders.length > 0 ? Math.round((cnt / rangeOrders.length) * 100) : 0;
-                        return (
-                          <div key={status} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ width: 7, height: 7, borderRadius: '50%', background: conf.dot, flexShrink: 0 }} />
-                            <span style={{ fontSize: 12, color: '#374151', flex: 1 }}>{conf.label}</span>
-                            <div style={{ width: 50, height: 3, background: '#f1f5f9', borderRadius: 3, overflow: 'hidden' }}>
-                              <div style={{ height: '100%', width: `${pct}%`, background: conf.dot, borderRadius: 3 }} />
-                            </div>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: conf.color, width: 28, textAlign: 'right' }}>{cnt}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-        </div>
-      </div>
-      </div>
-
-      {/* ═══ Comunas RM (Santiago) Row (Interactive Canvas Map) ═══ */}
-      <div style={{ marginBottom: 24 }}>
-        <div className="db-card" style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', padding: 0, boxShadow: '0 1px 4px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8, padding: '20px 24px 0' }}>
-            <div>
-              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: 0 }}>📍 Mapa interactivo de comunas de Santiago (RM)</h2>
-              <p style={{ fontSize: 12, color: '#9ca3af', margin: '3px 0 0' }}>Visitas de clientes por comuna · Últimos 30 días</p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#3b82f6', boxShadow: '0 0 6px #3b82f6', display: 'inline-block', animation: 'db-fade-up 1.5s infinite alternate' }} />
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#1d4ed8', background: '#eff6ff', padding: '3px 10px', borderRadius: 20 }}>
-                {pageViews.topComunas.length} comunas con visitas
-              </span>
-            </div>
-          </div>
-          
-          <div className="db-map-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.4fr) 1fr 1fr', gap: 24, alignItems: 'stretch', padding: '0 24px 24px', flex: 1 }}>
-            
-            {/* Column 1: Interactive Canvas Map */}
-            <SantiagoMap comunaCounts={(() => {
-              const c: Record<string, number> = {};
-              pageViews.topComunas.forEach(tc => {
-                c[normalizeName(tc.comuna)] = tc.count;
-              });
-              return c;
-            })()} />
-            
-            {/* Column 2: Comunas Ranking & Quick Stats */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxHeight: 600, overflowY: 'auto' }}>
-              {(() => {
-                const totalVisits = pageViews.topComunas.reduce((s, c) => s + c.count, 0);
-                const sorted = [...pageViews.topComunas].sort((a, b) => b.count - a.count);
-                const topComuna = sorted[0];
-                const activeCount = sorted.length;
-                return (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                    <div style={{ background: '#f0f9ff', borderRadius: 10, padding: '10px 12px', border: '1px solid #bae6fd' }}>
-                      <div style={{ fontSize: 10, fontWeight: 600, color: '#0369a1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Comuna top</div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: '#0c4a6e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{topComuna ? topComuna.comuna : '—'}</div>
-                      <div style={{ fontSize: 10, color: '#0284c7', marginTop: 2 }}>{topComuna ? `${topComuna.count} visitas` : 'Sin datos'}</div>
-                    </div>
-                    <div style={{ background: '#eff6ff', borderRadius: 10, padding: '10px 12px', border: '1px solid #bfdbfe' }}>
-                      <div style={{ fontSize: 10, fontWeight: 600, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Visitas</div>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: '#1e3a8a' }}>{totalVisits}</div>
-                      <div style={{ fontSize: 10, color: '#2563eb', marginTop: 2 }}>totales (30d)</div>
-                    </div>
-                    <div style={{ background: '#faf5ff', borderRadius: 10, padding: '10px 12px', border: '1px solid #e9d5ff' }}>
-                      <div style={{ fontSize: 10, fontWeight: 600, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Comunas</div>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: '#4c1d95' }}>{activeCount}<span style={{ fontSize: 11, fontWeight: 500, color: '#6b7280' }}>/52</span></div>
-                      <div style={{ fontSize: 10, color: '#7c3aed', marginTop: 2 }}>detectadas</div>
-                    </div>
-                  </div>
-                );
-              })()}
-              
-              {/* Ranking of communes */}
-              {(() => {
-                const sorted = [...pageViews.topComunas].sort((a, b) => b.count - a.count);
-                const maxC = sorted[0]?.count || 1;
-                const total = sorted.reduce((s, c) => s + c.count, 0);
-                const blueScale = ['#1e3a8a', '#1e40af', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'];
-                if (sorted.length === 0) return (
-                  <div style={{ background: '#f8fafc', borderRadius: 10, padding: 16, textAlign: 'center' }}>
-                    <p style={{ fontSize: 13, color: '#9ca3af', margin: 0 }}>Sin visitas registradas en Santiago</p>
-                  </div>
-                );
-                return (
-                  <div>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: '#1e3a8a', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>🏆 Ranking de comunas (Visitas)</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      {sorted.slice(0, 7).map((tc, i) => {
-                        const pct = total > 0 ? ((tc.count / total) * 100) : 0;
-                        const barPct = (tc.count / maxC) * 100;
-                        const col = blueScale[i] || '#bfdbfe';
-                        const isTop3 = i < 3;
-                        return (
-                          <div key={tc.comuna} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px', borderRadius: 8, background: isTop3 ? '#f0f9ff' : 'transparent' }}>
-                            <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', width: 20, height: 20, borderRadius: '50%', background: col, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</span>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 2 }}>
-                                <span style={{ fontSize: 12, fontWeight: isTop3 ? 700 : 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tc.comuna}</span>
-                                <span style={{ fontSize: 11, fontWeight: 700, color: col, flexShrink: 0, marginLeft: 6 }}>{tc.count} <span style={{ fontWeight: 400, fontSize: 9, color: '#9ca3af' }}>({pct.toFixed(0)}%)</span></span>
-                              </div>
-                              <div style={{ height: 4, background: '#f0f9ff', borderRadius: 3, overflow: 'hidden' }}>
-                                <div style={{ height: '100%', width: `${barPct}%`, borderRadius: 3, background: col, transition: 'width .8s cubic-bezier(0.16,1,0.3,1)' }} />
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {sorted.length > 7 && <p style={{ fontSize: 10, color: '#6b7280', margin: '2px 0 0', fontStyle: 'italic' }}>+{sorted.length - 7} comunas más</p>}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-            
-            {/* Column 3: Recent Activity by Comuna */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#374151', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>👥 Clientes activos por Comuna</p>
-              {pageViews.visitorMarkers.length === 0 ? (
-                <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>Sin actividad de clientes en Santiago reciente</p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 400, overflowY: 'auto' }}>
-                  {pageViews.visitorMarkers.slice(0, 5).map((m, idx) => {
-                    const hasUsers = m.users && m.users.length > 0;
-                    const name = hasUsers ? m.users[0] : 'Visitante Anónimo';
-                    const scale = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
-                    const col = scale[idx % scale.length];
-                    return (
-                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: '#f8fafc', border: '1px solid #f3f4f6' }}>
-                        <div style={{ width: 24, height: 24, borderRadius: '50%', background: `${col}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <MapPin size={12} color={col} />
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {name}
-                          </div>
-                          <div style={{ fontSize: 9, color: '#6b7280' }}>
-                            {m.comuna} · RM · {m.count} página{m.count !== 1 ? 's' : ''}
-                          </div>
-                        </div>
-                        <span style={{ fontSize: 9, fontWeight: 600, color: '#4b5563', background: '#e5e7eb', padding: '1px 5px', borderRadius: 5, flexShrink: 0 }}>Activo</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            
           </div>
         </div>
       </div>

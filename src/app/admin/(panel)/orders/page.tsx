@@ -48,6 +48,9 @@ function OrdersContent() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [productLocations, setProductLocations] = useState<Record<string, { section: number | null; gondola: string | null }>>({}); // product id -> location
   const [agenciesList, setAgenciesList] = useState<any[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Load agencies list
   useEffect(() => {
@@ -75,21 +78,97 @@ function OrdersContent() {
     if (sortBy === col) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
     else { setSortBy(col); setSortDir('desc'); }
   };
-
-  const load = useCallback(async () => {
-    setIsLoading(true); setError('');
+  const load = useCallback(async (isLoadMore = false) => {
+    if (isLoadMore) setIsLoadingMore(true);
+    else { setIsLoading(true); setCursor(null); setHasMore(true); }
+    setError('');
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      const queries = [Query.orderDesc('CREATEDAT'), Query.limit(200)];
-      if (activeFilter !== 'all') queries.push(Query.equal('STATUS', activeFilter));
+      const queries = [Query.orderDesc('CREATEDAT'), Query.limit(10)];
+      if (activeFilter !== 'all') {
+        queries.push(Query.equal('STATUS', activeFilter));
+      } else {
+        // Exclude delivered and cancelled by default
+        queries.push(Query.equal('STATUS', [
+          'pending',
+          'processing',
+          'paid',
+          'assembling',
+          'negotiation',
+          'preparing_shipping',
+          'ready_to_ship',
+          'shipped'
+        ]));
+      }
+      if (isLoadMore && cursor) queries.push(Query.cursorAfter(cursor));
+      
       const resp = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, queries);
-      setOrders(resp.documents as unknown as Order[]);
+      const newOrders = resp.documents as unknown as Order[];
+      
+      if (isLoadMore) {
+        setOrders(prev => [...prev, ...newOrders]);
+      } else {
+        setOrders(newOrders);
+      }
+      
+      if (newOrders.length > 0) {
+        setCursor(newOrders[newOrders.length - 1].$id);
+      }
+      setHasMore(newOrders.length === 10);
     } catch (e: any) { setError(e.message); }
-    finally { setIsLoading(false); }
-  }, [activeFilter]);
+    finally { setIsLoading(false); setIsLoadingMore(false); }
+  }, [activeFilter, cursor]);
 
-  useEffect(() => { load(); }, [load]);
+  const autoDeliverShippedOrders = useCallback(async () => {
+    try {
+      const lastCheck = localStorage.getItem('yaxsel-last-auto-delivery-check');
+      const now = Date.now();
+      if (lastCheck && now - parseInt(lastCheck) < 4 * 60 * 60 * 1000) {
+        return;
+      }
+      
+      const { databases } = getServices();
+      const { databaseId } = getAppwriteConfig();
+      const twoDaysAgo = now - 2 * 24 * 60 * 60 * 1000;
+      
+      const resp = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, [
+        Query.equal('STATUS', 'shipped'),
+        Query.lessThan('UPDATEDAT', twoDaysAgo),
+        Query.limit(20)
+      ]);
+      
+      localStorage.setItem('yaxsel-last-auto-delivery-check', now.toString());
+      
+      if (resp.documents.length === 0) return;
+      
+      const { notifyOrderStatusChange } = await import('@/services/notificationService');
+      
+      for (const doc of resp.documents) {
+        const orderId = doc.$id;
+        await databases.updateDocument(databaseId, ORDERS_COLLECTION_ID, orderId, {
+          STATUS: 'delivered',
+          UPDATEDAT: now
+        });
+        notifyOrderStatusChange(doc as unknown as Order, 'shipped', 'delivered').catch(() => {});
+      }
+      
+      load(false);
+    } catch (err) {
+      console.error('Error auto-delivering orders:', err);
+    }
+  }, [load]);
+
+  // Load effect on mount and filter change
+  useEffect(() => { 
+    setCursor(null); // Reset cursor when filter changes
+    setHasMore(true);
+    // setTimeout to avoid race conditions with load memoization
+    setTimeout(() => {
+      load(false);
+      autoDeliverShippedOrders();
+    }, 0);
+  }, [activeFilter, autoDeliverShippedOrders]); // Run load when filter changes
 
   const toggleSelect = (id: string) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleSelectAll = () => setSelected(s => s.size === filtered.length ? new Set() : new Set(filtered.map(o => o.$id)));
@@ -740,6 +819,18 @@ function OrdersContent() {
             })()}
           </table>
         </div>
+        
+        {hasMore && (
+          <div className="p-4 border-t border-gray-100 flex justify-center">
+            <button 
+              onClick={() => load(true)}
+              disabled={isLoadingMore}
+              className="px-6 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-semibold hover:bg-indigo-100 transition disabled:opacity-50"
+            >
+              {isLoadingMore ? 'Cargando...' : 'Cargar más pedidos'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

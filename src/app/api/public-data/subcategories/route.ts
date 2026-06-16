@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServices, getAppwriteConfig, SUBCATEGORIES_COLLECTION } from '@/lib/appwrite';
 import { Query } from 'appwrite';
-
+import { unstable_cache } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
-  try {
-    const categoryId = request.nextUrl.searchParams.get('categoryId');
-    if (!categoryId) return NextResponse.json({ subcategories: [] });
+let memoryCacheSubcategories: Record<string, { data: any[]; timestamp: number }> = {};
+
+const getCachedSubcategories = (categoryId: string) => unstable_cache(
+  async () => {
+    const now = Date.now();
+    const cached = memoryCacheSubcategories[categoryId];
+    if (cached && (now - cached.timestamp < 3600000)) {
+      return cached.data;
+    }
 
     const { databases } = getServices();
     const { databaseId } = getAppwriteConfig();
@@ -19,7 +24,20 @@ export async function GET(request: NextRequest) {
       Query.limit(50),
     ]);
 
-    return NextResponse.json({ subcategories: res.documents });
+    memoryCacheSubcategories[categoryId] = { data: res.documents, timestamp: now };
+    return res.documents;
+  },
+  [`subcategories-${categoryId}`],
+  { revalidate: 3600, tags: [`subcategories-${categoryId}`, 'subcategories'] }
+)();
+
+export async function GET(request: NextRequest) {
+  try {
+    const categoryId = request.nextUrl.searchParams.get('categoryId');
+    if (!categoryId) return NextResponse.json({ subcategories: [] });
+
+    const subcategories = await getCachedSubcategories(categoryId);
+    return NextResponse.json({ subcategories });
   } catch (error: any) {
     console.error('[API public-data/subcategories] Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

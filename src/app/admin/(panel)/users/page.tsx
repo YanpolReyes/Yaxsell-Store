@@ -37,9 +37,17 @@ function getOnlineStatus(lastAccessAt?: string | null): { online: boolean; recen
 
 function UsersPageInner() {
   const searchParams = useSearchParams();
-  const [users, setUsers] = useState<AdminCustomerRow[]>([]);
+  const [users, setUsers] = useState<AdminCustomerRow[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cache = localStorage.getItem('admin_customers_cache');
+      if (cache) {
+        try { return JSON.parse(cache); } catch {}
+      }
+    }
+    return [];
+  });
   const [passwordNote, setPasswordNote] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [search, setSearch] = useState(() => searchParams.get('rut') || searchParams.get('search') || '');
   const [showWholesaleOnly, setShowWholesaleOnly] = useState(false);
@@ -138,7 +146,11 @@ function UsersPageInner() {
       const customersResp = await fetch('/api/admin/customers', { cache: 'no-store' }).then(r => r.json());
       if (customersResp?.error) setError(String(customersResp.error));
       if (customersResp?.passwordNote) setPasswordNote(String(customersResp.passwordNote));
-      setUsers(Array.isArray(customersResp?.users) ? customersResp.users : []);
+      const newUsers = Array.isArray(customersResp?.users) ? customersResp.users : [];
+      setUsers(newUsers);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('admin_customers_cache', JSON.stringify(newUsers));
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Error al cargar');
     } finally {
@@ -146,7 +158,7 @@ function UsersPageInner() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // useEffect(() => { load(); }, [load]); // Removido para carga manual
 
   const filtered = [...users.filter(u => {
     if (showWholesaleOnly && !u.isWholesale) return false;
@@ -233,8 +245,8 @@ function UsersPageInner() {
             <Download className="w-4 h-4" />CSV
           </button>
           <button type="button" onClick={load} disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium disabled:opacity-60">
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />Actualizar
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium disabled:opacity-60 hover:bg-indigo-700 transition">
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />Cargar últimos 10 clientes
           </button>
         </div>
       </div>

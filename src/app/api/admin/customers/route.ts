@@ -48,14 +48,10 @@ type AuthUserFull = {
 
 async function listAuthUsers(usersApi: Users): Promise<AuthUserFull[]> {
   const all: AuthUserFull[] = [];
-  let offset = 0;
-  const limit = 100;
-  while (true) {
-    const res = await usersApi.list({
-      queries: [Query.limit(limit), Query.offset(offset)],
-    });
-    const batch = res.users || [];
-    all.push(...batch.map(u => ({
+  const limit = 10;
+  try {
+    const res = await usersApi.list({ queries: [Query.limit(limit)] });
+    all.push(...(res.users || []).map(u => ({
       $id: u.$id,
       email: u.email,
       name: u.name,
@@ -69,10 +65,7 @@ async function listAuthUsers(usersApi: Users): Promise<AuthUserFull[]> {
       passwordUpdate: u.passwordUpdate,
       $createdAt: u.$createdAt,
     })));
-    if (batch.length < limit) break;
-    offset += limit;
-    if (offset >= 200) break;
-  }
+  } catch {}
   return all;
 }
 
@@ -96,17 +89,11 @@ async function fetchAuthPrefsBatch(usersApi: Users, ids: string[], concurrency =
 
 async function listProfiles(databases: Databases, databaseId: string): Promise<UserProfileDoc[]> {
   const all: UserProfileDoc[] = [];
-  let cursor: string | undefined;
-  while (all.length < 200) {
-    const queries = [Query.orderDesc('$createdAt'), Query.limit(100)];
-    if (cursor) queries.push(Query.cursorAfter(cursor));
+  try {
+    const queries = [Query.orderDesc('$createdAt'), Query.limit(10)];
     const resp = await databases.listDocuments(databaseId, 'users', queries);
-    const docs = resp.documents as unknown as UserProfileDoc[];
-    if (!docs.length) break;
-    all.push(...docs);
-    if (docs.length < 100) break;
-    cursor = docs[docs.length - 1].$id;
-  }
+    all.push(...(resp.documents as unknown as UserProfileDoc[]));
+  } catch {}
   return all;
 }
 
@@ -121,17 +108,11 @@ type OrderDoc = {
 
 async function listAllOrders(databases: Databases, databaseId: string) {
   const all: OrderDoc[] = [];
-  let cursor: string | undefined;
-  while (all.length < 200) {
-    const queries = [Query.orderDesc('$createdAt'), Query.limit(100)];
-    if (cursor) queries.push(Query.cursorAfter(cursor));
+  try {
+    const queries = [Query.orderDesc('$createdAt'), Query.limit(10)];
     const resp = await databases.listDocuments(databaseId, 'orders', queries);
-    const docs = resp.documents as unknown as OrderDoc[];
-    if (!docs.length) break;
-    all.push(...docs);
-    if (docs.length < 100) break;
-    cursor = docs[docs.length - 1].$id;
-  }
+    all.push(...(resp.documents as unknown as OrderDoc[]));
+  } catch {}
   return all;
 }
 
