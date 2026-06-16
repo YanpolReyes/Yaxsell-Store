@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Client, Databases, Query, ID } from 'node-appwrite';
+import { revalidatePath } from 'next/cache';
 
 const APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
 const PROJECT_ID = '6a0a4e8d0032177f3f90';
@@ -20,24 +21,26 @@ const databases = new Databases(client);
 export async function GET() {
   try {
     const res = await databases.listDocuments(DATABASE_ID, COLLECTION_ID, [
-      Query.equal('active', true),
-      Query.orderAsc('name'),
       Query.limit(100),
     ]);
 
-    const agencies = res.documents.map(doc => ({
-      id: doc.$id,
-      name: doc.name,
-      color: doc.color || '#3483fa',
-      bg: doc.bg || '#e8f0fe',
-      desc: doc.desc || '',
-      logo: doc.logo || '',
-      active: doc.active ?? true,
-    }));
+    // Filter active agencies in JS — avoids relying on Appwrite index on 'active' field
+    const agencies = res.documents
+      .filter(doc => doc.active !== false) // include active:true and undefined (default true)
+      .map(doc => ({
+        id: doc.$id,
+        name: doc.name,
+        color: doc.color || '#3483fa',
+        bg: doc.bg || '#e8f0fe',
+        desc: doc.desc || '',
+        logo: doc.logo || '',
+        active: doc.active ?? true,
+      }));
 
     return NextResponse.json({ agencies }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600'
+        // Cache for 5 minutes only — so new agencies appear quickly after admin saves
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60'
       }
     });
   } catch (e: any) {
@@ -96,6 +99,9 @@ export async function POST(req: NextRequest) {
         console.error('Error upserting agency:', agency.name, e?.message);
       }
     }
+
+    // Invalidate Vercel CDN + Next.js route cache so checkout sees the new agencies immediately
+    try { revalidatePath('/api/agencies'); } catch {}
 
     return NextResponse.json({ success: true, agencies: results });
   } catch (e: any) {

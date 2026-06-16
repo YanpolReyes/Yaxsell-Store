@@ -49,6 +49,7 @@ function OrdersContent() {
   const [productLocations, setProductLocations] = useState<Record<string, { section: number | null; gondola: string | null }>>({}); // product id -> location
   const [agenciesList, setAgenciesList] = useState<any[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
+  const cursorRef = React.useRef<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
@@ -80,7 +81,7 @@ function OrdersContent() {
   };
   const load = useCallback(async (isLoadMore = false) => {
     if (isLoadMore) setIsLoadingMore(true);
-    else { setIsLoading(true); setCursor(null); setHasMore(true); }
+    else { setIsLoading(true); cursorRef.current = null; setCursor(null); setHasMore(true); }
     setError('');
     try {
       const { databases } = getServices();
@@ -101,7 +102,7 @@ function OrdersContent() {
           'shipped'
         ]));
       }
-      if (isLoadMore && cursor) queries.push(Query.cursorAfter(cursor));
+      if (isLoadMore && cursorRef.current) queries.push(Query.cursorAfter(cursorRef.current));
       
       const resp = await databases.listDocuments(databaseId, ORDERS_COLLECTION_ID, queries);
       const newOrders = resp.documents as unknown as Order[];
@@ -113,12 +114,13 @@ function OrdersContent() {
       }
       
       if (newOrders.length > 0) {
+        cursorRef.current = newOrders[newOrders.length - 1].$id;
         setCursor(newOrders[newOrders.length - 1].$id);
       }
       setHasMore(newOrders.length === 10);
     } catch (e: any) { setError(e.message); }
     finally { setIsLoading(false); setIsLoadingMore(false); }
-  }, [activeFilter, cursor]);
+  }, [activeFilter]); // Removed cursor from deps - using ref to avoid recreation on every load
 
   const autoDeliverShippedOrders = useCallback(async () => {
     try {
@@ -161,13 +163,11 @@ function OrdersContent() {
 
   // Load effect on mount and filter change
   useEffect(() => { 
-    setCursor(null); // Reset cursor when filter changes
+    cursorRef.current = null;
+    setCursor(null);
     setHasMore(true);
-    // setTimeout to avoid race conditions with load memoization
-    setTimeout(() => {
-      load(false);
-      autoDeliverShippedOrders();
-    }, 0);
+    load(false);
+    autoDeliverShippedOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFilter]); // Run load when filter changes
 
