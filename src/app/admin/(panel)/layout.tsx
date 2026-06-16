@@ -364,7 +364,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       clearInterval(id);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isLoading, isLoggedIn, user?.email, router, fetchBadges, logout]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, isLoggedIn, user?.email, fetchBadges, logout]);
 
   /* ── Fix overflow for multi-page printing ── */
   useEffect(() => {
