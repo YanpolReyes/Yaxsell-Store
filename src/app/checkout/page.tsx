@@ -58,6 +58,7 @@ function CheckoutInner() {
   const [error, setError] = useState('');
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [deliveryType, setDeliveryType] = useState<'domicilio' | 'agencia'>('domicilio');
 
   // Live validation on mount
   const [isValidatingCart, setIsValidatingCart] = useState(true);
@@ -264,13 +265,21 @@ function CheckoutInner() {
   }, [user]);
 
   function fillFormFromAddress(addr: SavedAddress) {
+    const isSucursalAddress = (addr.fullAddress || '').startsWith('[SUCURSAL]');
+    const cleanAddress = isSucursalAddress
+      ? addr.fullAddress.replace('[SUCURSAL]', '').trim()
+      : addr.fullAddress;
+
+    setDeliveryType(isSucursalAddress ? 'agencia' : 'domicilio');
+
     setForm(f => ({
       ...f,
       name: addr.name || f.name,
       phone: addr.phone || f.phone,
       region: addr.region || f.region,
       comuna: addr.commune || f.comuna,
-      address: addr.fullAddress || f.address,
+      address: cleanAddress || f.address,
+      additionalInfo: '',
     }));
   }
 
@@ -550,7 +559,9 @@ function CheckoutInner() {
         }
       }
 
-      const finalAddress = form.address;
+      const finalAddress = (agency !== 'RETIRO EN TIENDA' && deliveryType === 'agencia' && !form.address.startsWith('[SUCURSAL]'))
+        ? `[SUCURSAL] ${form.address}`
+        : form.address;
       const additionalInfoWithGeo = coords 
         ? `${form.additionalInfo ? form.additionalInfo + '\\n' : ''}[GEO:${coords.lat},${coords.lng}]`
         : form.additionalInfo;
@@ -644,17 +655,17 @@ function CheckoutInner() {
           // Check if this address already exists for the user
           const existing = await databases.listDocuments(databaseId, ADDRESSES_COLLECTION_ID, [
             Query.equal('userId', user.id),
-            Query.equal('fullAddress', form.address),
+            Query.equal('fullAddress', finalAddress),
             Query.equal('commune', form.comuna),
             Query.limit(1),
           ]);
           if (existing.documents.length === 0) {
             await databases.createDocument(databaseId, ADDRESSES_COLLECTION_ID, ID.unique(), {
               userId: user.id,
-              alias: 'Otro',
+              alias: (agency !== 'RETIRO EN TIENDA' && deliveryType === 'agencia') ? 'Sucursal' : 'Otro',
               name: form.name,
               phone: form.phone,
-              fullAddress: form.address,
+              fullAddress: finalAddress,
               commune: form.comuna,
               region: form.region,
               lat: 0,
@@ -883,7 +894,7 @@ function CheckoutInner() {
                       );
                     })}
                   </div>
-                  <button type="button" onClick={() => { setShowingNewAddress(true); setSelectedAddressId(null); setForm({ name: '', rut: '', phone: '', email: '', region: '', comuna: '', address: '', additionalInfo: '' }); }}
+                  <button type="button" onClick={() => { setShowingNewAddress(true); setSelectedAddressId(null); setDeliveryType('domicilio'); setForm({ name: '', rut: '', phone: '', email: '', region: '', comuna: '', address: '', additionalInfo: '' }); }}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 16px', border: '1.5px dashed #f5a8cf', borderRadius: 12, color: PINK, fontSize: 13, fontWeight: 600, background: PINK_BG, transition: 'all .15s', cursor: 'pointer', fontFamily: FF }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = '#fce7f3'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = PINK_BG; }}>
@@ -942,6 +953,54 @@ function CheckoutInner() {
                       </button>
                     )}
                   </div>
+
+                  {agency !== 'RETIRO EN TIENDA' && (
+                    <div style={{ marginBottom: 16 }}>
+                      <label style={label}>Tipo de entrega *</label>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button
+                          type="button"
+                          onClick={() => setDeliveryType('domicilio')}
+                          style={{
+                            flex: 1,
+                            padding: '12px',
+                            border: `2px solid ${deliveryType === 'domicilio' ? PINK : '#fce7f3'}`,
+                            borderRadius: 12,
+                            background: deliveryType === 'domicilio' ? PINK_BG : '#fff',
+                            color: deliveryType === 'domicilio' ? PINK : '#6b7280',
+                            fontWeight: 700,
+                            fontSize: 13,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            textAlign: 'center',
+                            fontFamily: FF
+                          }}
+                        >
+                          🏠 Despacho a Domicilio
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeliveryType('agencia')}
+                          style={{
+                            flex: 1,
+                            padding: '12px',
+                            border: `2px solid ${deliveryType === 'agencia' ? PINK : '#fce7f3'}`,
+                            borderRadius: 12,
+                            background: deliveryType === 'agencia' ? PINK_BG : '#fff',
+                            color: deliveryType === 'agencia' ? PINK : '#6b7280',
+                            fontWeight: 700,
+                            fontSize: 13,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            textAlign: 'center',
+                            fontFamily: FF
+                          }}
+                        >
+                          🏢 Retiro en Sucursal / Agencia
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <div style={{ margin: '0 0 14px', padding: '8px 12px', borderRadius: 10, background: '#eff6ff', border: '1px solid #dbeafe', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: '#3b82f6', fontFamily: FF, fontWeight: 600 }}>
                     <MapPin size={13} /> Esta dirección quedará guardada en tu cuenta para futuros pedidos
                   </div>
@@ -967,9 +1026,19 @@ function CheckoutInner() {
                     <ChevronDown size={14} style={{ position: 'absolute', right: 10, bottom: 12, color: '#999', pointerEvents: 'none' }} />
                   </div>
                   <div style={{ gridColumn: '1/-1' }}>
-                    <label style={label}>Dirección *</label>
-                    <input required value={form.address} onChange={e => set('address', e.target.value)} placeholder="Calle, número, departamento" style={inp}
-                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(227,150,191,0.1)'; }} onBlur={e => { e.target.style.borderColor = '#fce7f3'; e.target.style.boxShadow = 'none'; }} />
+                    <label style={label}>
+                      {agency !== 'RETIRO EN TIENDA' && deliveryType === 'agencia' ? 'Sucursal o Agencia de Destino *' : 'Dirección Particular *'}
+                    </label>
+                    <input required value={form.address} onChange={e => set('address', e.target.value)}
+                      placeholder={agency !== 'RETIRO EN TIENDA' && deliveryType === 'agencia' ? 'Ej: Starken Sucursal Padre Las Casas (o dirección de la sucursal)' : 'Calle, número, departamento/casa'}
+                      style={inp}
+                      onFocus={e => { e.target.style.borderColor = PINK; e.target.style.boxShadow = '0 0 0 3px rgba(227,150,191,0.1)'; }}
+                      onBlur={e => { e.target.style.borderColor = '#fce7f3'; e.target.style.boxShadow = 'none'; }} />
+                    {agency !== 'RETIRO EN TIENDA' && deliveryType === 'agencia' && (
+                      <p style={{ margin: '6px 0 0', fontSize: 11, color: '#e06b9b', fontWeight: 600, fontFamily: FF }}>
+                        ⚠️ Indica claramente el nombre o dirección de la sucursal de destino. No ingreses tu dirección particular aquí para evitar confusiones de despacho.
+                      </p>
+                    )}
                   </div>
                   <div style={{ gridColumn: '1/-1' }}>
                     <label style={label}>Información adicional (opcional)</label>
