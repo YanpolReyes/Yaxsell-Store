@@ -125,6 +125,7 @@ export async function POST(req: NextRequest) {
 
     const cleanedFrom = fromPhone.replace(/\D/g, '').trim();
     const isAdmin = ADMIN_PHONES.includes(cleanedFrom);
+    console.log(`[WhatsApp Webhook] Msg from: ${fromPhone} (cleaned: ${cleanedFrom}) | isAdmin: ${isAdmin} | Admin list:`, ADMIN_PHONES);
 
     // Mark as read
     await markAsRead(msgId, WA_TOKEN);

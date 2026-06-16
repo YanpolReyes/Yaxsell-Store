@@ -138,12 +138,31 @@ export default function HomePage() {
           <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-orange-200/20 rounded-full blur-3xl" />
         </div>
 
-        {activeBanner ? (
-          <div className="absolute inset-0">
-            <Image src={activeBanner.IMAGEURL} alt="" fill sizes="100vw" className="object-cover opacity-30" />
-            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-transparent" />
+        <div className="absolute inset-0">
+          {/* Mobile banner */}
+          <div className="block md:hidden absolute inset-0">
+            <Image 
+              src="https://nyc.cloud.appwrite.io/v1/storage/buckets/6a15f9a5001070a3c408/files/6a30d3b00006861dc8fd/view?project=6a0a4e8d0032177f3f90&impersonateuserid=&mode=admin" 
+              alt="Hero Mobile" 
+              fill 
+              sizes="100vw" 
+              className="object-cover opacity-35" 
+              priority
+            />
           </div>
-        ) : null}
+          {/* Desktop/PC banner */}
+          <div className="hidden md:block absolute inset-0">
+            <Image 
+              src="https://nyc.cloud.appwrite.io/v1/storage/buckets/6a15f9a5001070a3c408/files/6a30dd06000106a7bb64/view?project=6a0a4e8d0032177f3f90&impersonateuserid=&mode=admin" 
+              alt="Hero PC" 
+              fill 
+              sizes="100vw" 
+              className="object-cover opacity-35" 
+              priority
+            />
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-b md:bg-gradient-to-r from-white via-white/95 to-transparent" />
+        </div>
 
         <div className="relative max-w-7xl mx-auto px-6 py-24">
           <div className="max-w-2xl">
