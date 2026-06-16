@@ -10,7 +10,7 @@ import {
 const WA_TOKEN        = process.env.WHATSAPP_ACCESS_TOKEN || '';
 const VERIFY_TOKEN    = process.env.WHATSAPP_VERIFY_TOKEN || 'yaxsel_webhook_2026';
 const ADMIN_PHONE     = process.env.ADMIN_WHATSAPP_NUMBER || '56936599658'; // Tu número sin +
-const GEMINI_KEY      = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyAPU7MGRQWFHHA1NhWD0rTfcVGOCVGOQok';
+const GEMINI_KEY      = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyBFSkLS9QYq66R7rD9Tyhz1sU3yuMSdaUo';
 const GEMINI_MODELS   = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
 const SITE_URL        = process.env.NEXT_PUBLIC_SITE_URL || 'https://yaxsell.vercel.app';
 
