@@ -1,7 +1,2 @@
 User-agent: *
-Disallow: /admin/
-Disallow: /cuenta/
-Disallow: /carrito/
-Disallow: /search
-Disallow: /api/
-Allow: /
+Disallow: /
