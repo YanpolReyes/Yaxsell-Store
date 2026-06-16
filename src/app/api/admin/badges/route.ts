@@ -16,13 +16,11 @@ export async function GET() {
     const qUnreadNotifs = JSON.stringify({ method: 'equal', attribute: 'isRead', values: [false] });
     const qPendingWholesale = JSON.stringify({ method: 'equal', attribute: 'status', values: ['pending'] });
     
-    // We try to query with STATUS first, and if that fails, we can query without filters or fallback to status
     let requestsTotal = 0;
     try {
       const qPendingRequests = JSON.stringify({ method: 'equal', attribute: 'status', values: ['pending'] });
-      const reqs = await serverListDocuments(STOCK_REQUESTS_COLLECTION_ID, [qPendingRequests, JSON.stringify({ method: 'limit', values: [5000] })]);
-      const uniqueUsersReq = new Set(reqs.documents.map((d: any) => d.userId || d.email || d.$id).filter(Boolean));
-      requestsTotal = uniqueUsersReq.size;
+      const reqs = await serverListDocuments(STOCK_REQUESTS_COLLECTION_ID, [qPendingRequests, qLimit1]);
+      requestsTotal = reqs.total || 0;
     } catch (err) {
       console.error('Error fetching stock requests badges:', err);
     }
@@ -30,9 +28,8 @@ export async function GET() {
     let alertsTotal = 0;
     try {
       const qPendingAlerts = JSON.stringify({ method: 'equal', attribute: 'status', values: ['pending'] });
-      const alts = await serverListDocuments(STOCK_ALERTS_COLLECTION_ID, [qPendingAlerts, JSON.stringify({ method: 'limit', values: [5000] })]);
-      const uniqueUsersAlt = new Set(alts.documents.map((d: any) => d.userId || d.email || d.$id).filter(Boolean));
-      alertsTotal = uniqueUsersAlt.size;
+      const alts = await serverListDocuments(STOCK_ALERTS_COLLECTION_ID, [qPendingAlerts, qLimit1]);
+      alertsTotal = alts.total || 0;
     } catch (err) {
       console.error('Error fetching stock alerts badges:', err);
     }

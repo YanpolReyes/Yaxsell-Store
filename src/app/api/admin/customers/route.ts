@@ -71,7 +71,7 @@ async function listAuthUsers(usersApi: Users): Promise<AuthUserFull[]> {
     })));
     if (batch.length < limit) break;
     offset += limit;
-    if (offset > 5000) break;
+    if (offset >= 200) break;
   }
   return all;
 }
@@ -97,7 +97,7 @@ async function fetchAuthPrefsBatch(usersApi: Users, ids: string[], concurrency =
 async function listProfiles(databases: Databases, databaseId: string): Promise<UserProfileDoc[]> {
   const all: UserProfileDoc[] = [];
   let cursor: string | undefined;
-  while (all.length < 2000) {
+  while (all.length < 200) {
     const queries = [Query.orderDesc('$createdAt'), Query.limit(100)];
     if (cursor) queries.push(Query.cursorAfter(cursor));
     const resp = await databases.listDocuments(databaseId, 'users', queries);
@@ -122,7 +122,7 @@ type OrderDoc = {
 async function listAllOrders(databases: Databases, databaseId: string) {
   const all: OrderDoc[] = [];
   let cursor: string | undefined;
-  while (all.length < 5000) {
+  while (all.length < 200) {
     const queries = [Query.orderDesc('$createdAt'), Query.limit(100)];
     if (cursor) queries.push(Query.cursorAfter(cursor));
     const resp = await databases.listDocuments(databaseId, 'orders', queries);

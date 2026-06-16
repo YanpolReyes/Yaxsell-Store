@@ -44,7 +44,7 @@ export async function GET() {
       all.push(...batch);
       if (batch.length < limit) break;
       offset += limit;
-      if (offset > 5000) break;
+      if (offset >= 200) break;
     }
 
     return NextResponse.json({ users: all });
