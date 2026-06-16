@@ -77,6 +77,15 @@ Eres amigable, empática y profesional. Hablas en español chileno.
 
 Los datos de productos disponibles te serán inyectados como contexto.`;
 
+// Helper to decide if user message needs Appwrite DB context to save reads
+function needsDbContext(text: string): boolean {
+  const cleaned = text.toLowerCase().trim();
+  if (cleaned.length < 3) return false;
+
+  const pureChitchat = /^(hola|buenos\s+dias|buenas\s+tardes|buenas\s+noches|gracias|muchas\s+gracias|adios|chao|ok|okay|listo|perfecto|super|genial|hola\s+yexy|yexy|como\s+estas|cómo\s+estás|que\s+tal|qué\s+tal)$/i;
+  return !pureChitchat.test(cleaned);
+}
+
 // ─── Webhook verification (GET) ────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -140,8 +149,9 @@ export async function POST(req: NextRequest) {
 
     // ── Fetch context from DB ──────────────────────────────────────────────────
     let contextBlock = '';
-    try {
-      if (isAdmin) {
+    if (needsDbContext(userText)) {
+      try {
+        if (isAdmin) {
         // Admin: get pending orders + products
         const [ordersRes, productsRes] = await Promise.all([
           serverListDocuments(ORDERS_COLLECTION_ID, ['orderDesc("$createdAt")', 'limit(15)']),
@@ -194,6 +204,7 @@ export async function POST(req: NextRequest) {
       }
     } catch (dbErr) {
       console.warn('[WhatsApp] DB context error:', dbErr);
+    }
     }
 
     // ── Build conversation history for Gemini ─────────────────────────────────

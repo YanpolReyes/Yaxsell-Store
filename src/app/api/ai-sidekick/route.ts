@@ -90,18 +90,28 @@ NOTA: La colección categories solo tiene los atributos: name, iconUrl, order, B
 - Los códigos de barras deben ser ÚNICOS (formato EAN-13, prefijo 770)
 - Usa emojis con moderación para hacer las respuestas más visuales`;
 
+// Helper to decide if user message needs Appwrite DB context to save reads
+function needsDbContext(text: string): boolean {
+  const cleaned = text.toLowerCase().trim();
+  if (cleaned.length < 3) return false;
+
+  const pureChitchat = /^(hola|buenos\s+dias|buenas\s+tardes|buenas\s+noches|gracias|muchas\s+gracias|adios|chao|ok|okay|listo|perfecto|super|genial|hola\s+yexy|yexy|como\s+estas|cómo\s+estás|que\s+tal|qué\s+tal)$/i;
+  return !pureChitchat.test(cleaned);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { messages } = await req.json();
 
     // ── Fetch real product data from database ──
     let productContext = '';
-    try {
-      const lastUserMsg = [...messages].reverse().find((m: { role: string }) => m.role === 'user');
-      const userText = (lastUserMsg?.content || '').toLowerCase();
+    const lastUserMsg = [...messages].reverse().find((m: { role: string }) => m.role === 'user');
+    const userText = (lastUserMsg?.content || '').toLowerCase();
 
-      // Always fetch all products for context (limited)
-      const result = await serverListDocuments(PRODUCTS_COLLECTION_ID);
+    if (needsDbContext(userText)) {
+      try {
+        // Always fetch all products for context (limited)
+        const result = await serverListDocuments(PRODUCTS_COLLECTION_ID);
       const docs = (result as any).documents || [];
 
       if (docs.length > 0) {
@@ -147,6 +157,7 @@ export async function POST(req: NextRequest) {
       }
     } catch (dbErr) {
       console.warn('Could not fetch product context:', dbErr);
+    }
     }
 
     const fullSystemPrompt = SYSTEM_PROMPT + productContext;
