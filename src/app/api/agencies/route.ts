@@ -35,7 +35,11 @@ export async function GET() {
       active: doc.active ?? true,
     }));
 
-    return NextResponse.json({ agencies });
+    return NextResponse.json({ agencies }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600'
+      }
+    });
   } catch (e: any) {
     // If collection doesn't exist yet, return empty
     if (e?.message?.includes('Collection not found') || e?.code === 404) {

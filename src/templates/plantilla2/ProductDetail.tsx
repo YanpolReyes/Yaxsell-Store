@@ -77,60 +77,36 @@ export default function ProductDetailPlantilla2({ previewProductId }: { previewP
   useEffect(() => {
     async function load() {
       try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        const doc = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, id);
-        const p = normalizeProductImages(doc as unknown as Product);
+        const res = await fetch(`/api/public-data/product-detail?id=${id}`);
+        if (!res.ok) throw new Error('Failed to fetch product detail');
+        const data = await res.json();
+        
+        if (!data.product) throw new Error('Product not found');
+        const p = data.product as Product;
         setProduct(p);
         trackView(p.$id);
 
-        // Fetch timed offers for this product
-        try {
-          const offerRes = await databases.listDocuments(databaseId, TIMED_OFFERS_COLLECTION, [
-            Query.equal('targetId', p.$id),
-            Query.equal('isActive', true),
-            Query.equal('status', 'active'),
-            Query.limit(1),
-          ]);
-          const active = (offerRes.documents as unknown as TimedOffer[]).filter(o => {
-            if (!o.isActive || o.status !== 'active') return false;
-            if (o.timeType === 'endDateTime' && o.endDateTime) {
-              return new Date(o.endDateTime) > new Date();
-            }
-            if (o.timeType === 'duration' && o.durationHours) {
-              const start = o.activatedAt || (o as any).$createdAt;
-              if (start) {
-                return (new Date(start).getTime() + o.durationHours * 3600000) > Date.now();
-              }
-            }
-            return true;
-          });
-          if (active.length > 0) {
-            setActiveOffer(active[0]);
-          }
-        } catch (offerErr) {
-          console.error('Error fetching timed offer:', offerErr);
+        if (data.activeOffer) {
+          setActiveOffer(data.activeOffer);
         }
 
-        if (p.CATEGORYID) {
-          try {
-            const [catDoc, relRes] = await Promise.all([
-              databases.getDocument(databaseId, CATEGORIES_COLLECTION, p.CATEGORYID),
-              databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-                Query.equal('CATEGORYID', p.CATEGORYID),
-                Query.limit(9),
-              ]),
-            ]);
-            const cat = catDoc as any;
-            setCategoryName(cat.name || '');
-            setCategoryBg(cat.BACKGROUND_IMAGE_URL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/young-asian-woman-sunglasses-going-shopping-holding-bags-from-malls-stores-smiling-standi.jpg?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=Kriv9I1%2BxlaQ82%2Fe3rYaugEThNVyRAfMagiNC6isWPR5mNdXx0WaR4y1vLh5hQ4dmePjvlnq4M9QLS4Q0IReBjghaydSO8rWXbyJvc6823UgzvzZxChCZeYWjy0bBJ9EtW%2Bc5NN1YT%2B%2B5nW7k5DZW5aTZH%2F7np5s2NTquTvxGzxGzpefVaylS4KJc19%2FLVuaznxVuOfYWpKoMM6XScrcwQwwD8ir51EW9XFwLdN528WtGF%2FCspzulD%2BVDC4VYHD0EVurQiAGNhSzeFExCT2byhbijHmJgnxWEM6SR%2BZWaBoYxFTbDIkSNbzU736uiNbaM%2BKrxzF9bZSjgtfI947A5g%3D%3D');
-            setCategoryColor(cat.COLOR || '#3483fa');
-            setCategoryIcon(cat.iconUrl || '');
-            setRelated((relRes.documents as unknown as Product[]).filter(r => r.$id !== id).slice(0, 6));
-          } catch { /* non-critical */ }
+        if (data.category) {
+          const cat = data.category;
+          setCategoryName(cat.name || '');
+          setCategoryBg(cat.BACKGROUND_IMAGE_URL || 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/KEVINCOCO/young-asian-woman-sunglasses-going-shopping-holding-bags-from-malls-stores-smiling-standi.jpg?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=Kriv9I1%2BxlaQ82%2Fe3rYaugEThNVyRAfMagiNC6isWPR5mNdXx0WaR4y1vLh5hQ4dmePjvlnq4M9QLS4Q0IReBjghaydSO8rWXbyJvc6823UgzvzZxChCZeYWjy0bBJ9EtW%2Bc5NN1YT%2B%2B5nW7k5DZW5aTZH%2F7np5s2NTquTvxGzxGzpefVaylS4KJc19%2FLVuaznxVuOfYWpKoMM6XScrcwQwwD8ir51EW9XFwLdN528WtGF%2FCspzulD%2BVDC4VYHD0EVurQiAGNhSzeFExCT2byhbijHmJgnxWEM6SR%2BZWaBoYxFTbDIkSNbzU736uiNbaM%2BKrxzF9bZSjgtfI947A5g%3D%3D');
+          setCategoryColor(cat.COLOR || '#3483fa');
+          setCategoryIcon(cat.iconUrl || '');
         }
-      } catch { router.push('/productos'); }
-      finally { setIsLoading(false); }
+
+        if (data.relatedProducts) {
+          setRelated(data.relatedProducts as Product[]);
+        }
+      } catch (err) {
+        console.error('Error loading product details via API:', err);
+        router.push('/productos');
+      } finally {
+        setIsLoading(false);
+      }
     }
     load();
   }, [id, router]);

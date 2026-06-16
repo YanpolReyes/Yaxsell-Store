@@ -1,31 +1,43 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// List of search engine indexers and SEO crawlers to block
-const BOT_USER_AGENTS = [
-  'googlebot',
-  'bingbot',
-  'yandexbot',
-  'baiduspider',
-  'ahrefsbot',
-  'semrushbot',
-  'dotbot',
-  'mj12bot',
+// Keywords to identify crawlers, bots, or scraping libraries
+const BOT_KEYWORDS = [
+  'bot',
+  'spider',
+  'crawler',
+  'scraper',
+  'archiver',
+  'curl',
+  'wget',
+  'python',
+  'node-fetch',
+  'mj12',
+  'semrush',
+  'ahrefs',
   'screaming frog',
-  'pinterest',
-  'applebot',
-  'rogerbot',
-  'exabot',
-  'feedburner',
-  'ia_archiver'
+  'pinterest'
+];
+
+// Explicitly allow social sharing previews that users might share (e.g. TikTok, WhatsApp, Telegram, Facebook)
+const ALLOWED_KEYWORDS = [
+  'tiktok',
+  'bytespider',
+  'whatsapp',
+  'telegram',
+  'facebookexternalhit',
+  'twitterbot',
+  'discordbot'
 ];
 
 export function middleware(request: NextRequest) {
-  const ua = request.headers.get('user-agent') || '';
-  const isBot = BOT_USER_AGENTS.some(bot => ua.toLowerCase().includes(bot));
+  const ua = (request.headers.get('user-agent') || '').toLowerCase();
+  
+  const isBot = BOT_KEYWORDS.some(keyword => ua.includes(keyword)) &&
+                !ALLOWED_KEYWORDS.some(allowed => ua.includes(allowed));
 
   if (isBot) {
-    console.log(`[Middleware] Blocked bot request. UA: ${ua} | Path: ${request.nextUrl.pathname}`);
+    console.log(`[Middleware] Blocked bot request. UA: ${request.headers.get('user-agent')} | Path: ${request.nextUrl.pathname}`);
     return new NextResponse('Access Denied (Crawlers Blocked)', { status: 403 });
   }
 

@@ -43,12 +43,12 @@ const getCachedProductDetail = unstable_cache(
       }
 
       // 3. Fetch Category and Related
-      let categoryName = '';
+      let category: any = null;
       let relatedProducts: any[] = [];
       if (product.CATEGORYID) {
         try {
           const catDoc = await databases.getDocument(databaseId, CATEGORIES_COLLECTION, product.CATEGORYID);
-          categoryName = (catDoc as any).name || '';
+          category = catDoc;
           
           const relRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
             Query.equal('CATEGORYID', product.CATEGORYID),
@@ -114,7 +114,7 @@ const getCachedProductDetail = unstable_cache(
         product,
         linkedProducts,
         variantLabels,
-        categoryName,
+        category,
         relatedProducts,
         activeOffer
       };
