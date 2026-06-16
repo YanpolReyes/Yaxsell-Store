@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serverListDocuments, serverUpdateDocument, serverGetDocument } from '@/lib/appwrite-server';
 import { ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { sendWhatsAppMessage, formatWhatsAppPhone } from '@/lib/whatsapp';
+import { sendWhatsAppMessage, formatWhatsAppPhone, addToHistory } from '@/lib/whatsapp';
 
 const CRON_SECRET = process.env.CRON_SECRET || 'negotiation_secret_key_2026';
 const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
@@ -177,7 +177,20 @@ El mensaje debe ser breve para que el cliente decida fácilmente. No pongas cód
 
       if (formattedPhone && WA_TOKEN) {
         try {
+          // If manually triggered (targetOrderId is present), send order details first
+          if (targetOrderId) {
+            const formattedTotal = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(order.TOTAL || 0);
+            const detailsMsg = `📄 *Detalles de tu pedido #${orderCode}:*\n• *Cliente:* ${order.CUSTOMERNAME}\n• *Teléfono:* ${order.CUSTOMERPHONE || 'No especificado'}\n• *Dirección:* ${order.ADDRESS || 'No especificada'}${order.COMUNA ? `, ${order.COMUNA}` : ''}${order.REGION ? `, ${order.REGION}` : ''}\n• *Envío:* ${order.SHIPPINGAGENCY || 'No especificado'}\n• *Total:* ${formattedTotal}`;
+            
+            await sendWhatsAppMessage(formattedPhone, detailsMsg, WA_TOKEN);
+            await addToHistory(formattedPhone, 'assistant', detailsMsg);
+            
+            // Wait 1 second before sending the second message to ensure correct ordering on WhatsApp
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+
           await sendWhatsAppMessage(formattedPhone, messageText, WA_TOKEN);
+          await addToHistory(formattedPhone, 'assistant', messageText);
           console.log(`[Cron Negotiation] WhatsApp sent successfully to ${formattedPhone} for order ${orderCode}`);
           
           // 5. Update order notes to mark as notified

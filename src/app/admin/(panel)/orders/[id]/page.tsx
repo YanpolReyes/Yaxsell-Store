@@ -1630,7 +1630,7 @@ export default function OrderDetailPage() {
 
             // En modo negociación, si hay algún item marcado como faltante o reemplazado,
             // ocultamos todos los que estén disponibles de forma normal.
-            const hasNegotiations = order.STATUS === 'negotiation' && items.some(x => x.missing || x.replaced);
+            const hasNegotiations = order.STATUS === 'negotiation' && items.some(x => (x as any).missing || (x as any).replaced);
             if (hasNegotiations && !isMissing && !isReplaced) return null;
 
             return (
