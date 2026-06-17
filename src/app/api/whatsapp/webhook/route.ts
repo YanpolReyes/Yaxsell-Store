@@ -66,6 +66,11 @@ Ejemplo de respuesta si piden cancelar:
 - NUNCA uses nombres de estados en inglés (como 'pending', 'paid', 'shipped') en tus textos ni listas. Menciónalos siempre en español.
 - Máx 3-4 pedidos por mensaje para no saturar.
 
+## 🧮 CÁLCULOS Y AGREGACIONES:
+- Tienes acceso a estadísticas agregadas de ventas (hoy, ayer, esta semana) en el bloque de contexto.
+- Si el usuario te pregunta por montos totales, ventas, sumas de pedidos o conteos, responde usando las estadísticas inyectadas o calcula la suma directamente de los pedidos listados.
+- Responde siempre con precisión y claridad al hablar de dinero o cantidades. Si te piden "que sumes", "suma los montos", "suba las cantidades" o "monto total", haz la suma matemática exacta de los montos de los pedidos en cuestión.
+
 ## IMPORTANTE:
 - Siempre responde en español chileno, amigable y profesional.
 - Si no puedes ejecutar algo, explica qué puede hacerse desde el panel admin web.
@@ -189,46 +194,176 @@ export async function POST(req: NextRequest) {
     if (needsDbContext(userText)) {
       try {
         if (isAdmin) {
-        // Admin: get pending orders + products
-        const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
-        const qLimit15 = JSON.stringify({ method: 'limit', values: [15] });
-        const qLimit30 = JSON.stringify({ method: 'limit', values: [30] });
+          // Admin: get recent orders (up to 100) + products
+          const qOrderDesc = JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' });
+          const qLimit100 = JSON.stringify({ method: 'limit', values: [100] });
+          const qLimit30 = JSON.stringify({ method: 'limit', values: [30] });
 
-        const [ordersRes, productsRes] = await Promise.all([
-          serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit15]),
-          serverListDocuments(PRODUCTS_COLLECTION_ID, [qLimit30]),
-        ]);
+          const [ordersRes, productsRes] = await Promise.all([
+            serverListDocuments(ORDERS_COLLECTION_ID, [qOrderDesc, qLimit100]),
+            serverListDocuments(PRODUCTS_COLLECTION_ID, [qLimit30]),
+          ]);
 
-        const STATUS_LABELS: Record<string, string> = {
-          pending: 'Pendiente de pago',
-          processing: 'Procesando',
-          paid: 'Pagado',
-          assembling: 'En preparación',
-          negotiation: 'En negociación / mod.',
-          preparing_shipping: 'Preparando Despacho',
-          ready_to_ship: 'Etiqueta Lista',
-          shipped: 'Enviado',
-          delivered: 'Entregado',
-          cancelled: 'Cancelado'
-        };
+          const recentOrders = ordersRes.documents || [];
 
-        const orders = (ordersRes.documents || []).map((o: any) => {
-          const id    = o.ORDERCODE || String(o.$id || '').slice(-6).toUpperCase();
-          const name  = o.CUSTOMERNAME || 'Sin nombre';
-          const total = o.total || o.TOTAL || 0;
-          const statusRaw = o.STATUS || o.status || 'pending';
-          const status = STATUS_LABELS[statusRaw] || statusRaw;
-          const date  = o.$createdAt ? new Date(o.$createdAt).toLocaleDateString('es-CL') : '?';
-          return `#${id} | ${name} | $${Number(total).toLocaleString('es-CL')} | ${status} | ${date}`;
-        });
+          // Helper to get local date string YYYY-MM-DD in America/Santiago timezone
+          const getChileDateStr = (dateInput: string | number | Date) => {
+            try {
+              return new Date(dateInput).toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
+            } catch {
+              return '';
+            }
+          };
 
-        const products = (productsRes.documents || []).slice(0, 20).map((p: any) =>
-          `${p.NAME} | Stock: ${p.STOCK ?? '?'} | Precio: $${p.PRICE ?? '?'}`
-        );
+          const todayStr = getChileDateStr(new Date());
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = getChileDateStr(yesterday);
+          const oneWeekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
-        contextBlock = `\n\n## 📦 ÚLTIMOS PEDIDOS (${ordersRes.total} total):\n${orders.join('\n') || 'Sin pedidos.'}\n\n## 🛍️ PRODUCTOS (${productsRes.total} total, top 20):\n${products.join('\n') || 'Sin productos.'}`;
+          const REVENUE_STATUSES = ['paid', 'processing', 'assembling', 'negotiation', 'preparing_shipping', 'ready_to_ship', 'shipped', 'delivered'];
+          const STATUS_LABELS: Record<string, string> = {
+            pending: 'Pendiente de pago',
+            processing: 'Procesando',
+            paid: 'Pagado',
+            assembling: 'En preparación',
+            negotiation: 'En negociación / mod.',
+            preparing_shipping: 'Preparando Despacho',
+            ready_to_ship: 'Etiqueta Lista',
+            shipped: 'Enviado',
+            delivered: 'Entregado',
+            cancelled: 'Cancelado'
+          };
 
-      } else {
+          // 1. Calculate sales statistics from the fetched 100 orders
+          let countTotalToday = 0;
+          let countPaidToday = 0;
+          let amountPaidToday = 0;
+
+          let countTotalYesterday = 0;
+          let countPaidYesterday = 0;
+          let amountPaidYesterday = 0;
+
+          let countTotalWeek = 0;
+          let countPaidWeek = 0;
+          let amountPaidWeek = 0;
+
+          let countPendingTotal = 0;
+
+          recentOrders.forEach((o: any) => {
+            const statusRaw = o.STATUS || o.status || 'pending';
+            const total = Number(o.total || o.TOTAL || 0);
+            const ts = o.CREATEDAT || (o.$createdAt ? new Date(o.$createdAt).getTime() : 0);
+            const orderDateStr = ts ? getChileDateStr(ts) : '';
+            const isPaid = REVENUE_STATUSES.includes(statusRaw);
+
+            if (statusRaw === 'pending') {
+              countPendingTotal++;
+            }
+
+            // Today
+            if (orderDateStr && orderDateStr === todayStr) {
+              countTotalToday++;
+              if (isPaid) {
+                countPaidToday++;
+                amountPaidToday += total;
+              }
+            }
+
+            // Yesterday
+            if (orderDateStr && orderDateStr === yesterdayStr) {
+              countTotalYesterday++;
+              if (isPaid) {
+                countPaidYesterday++;
+                amountPaidYesterday += total;
+              }
+            }
+
+            // This week (last 7 days)
+            if (ts && ts >= oneWeekAgoMs) {
+              countTotalWeek++;
+              if (isPaid) {
+                countPaidWeek++;
+                amountPaidWeek += total;
+              }
+            }
+          });
+
+          // 2. Search for a specific order if code is mentioned in userText
+          let queriedOrderBlock = '';
+          const potentialCode = userText.match(/(?:ord-)?(\d{2,8})/i) || userText.match(/\b([a-f0-9]{6})\b/i);
+          if (potentialCode) {
+            const codeUpper = potentialCode[1].toUpperCase().trim();
+            let matchedOrder = recentOrders.find((o: any) => {
+              const id = o.ORDERCODE || String(o.$id || '').slice(-6).toUpperCase();
+              return id.toUpperCase() === codeUpper || id.toUpperCase() === `ORD-${codeUpper}` || String(o.$id || '').toUpperCase().endsWith(codeUpper);
+            });
+
+            if (!matchedOrder) {
+              try {
+                const qCode = JSON.stringify({ method: 'equal', attribute: 'ORDERCODE', values: [codeUpper] });
+                const resCode = await serverListDocuments(ORDERS_COLLECTION_ID, [qCode, JSON.stringify({ method: 'limit', values: [1] })]);
+                if (resCode.documents && resCode.documents.length > 0) {
+                  matchedOrder = resCode.documents[0];
+                } else {
+                  const qCodePrefixed = JSON.stringify({ method: 'equal', attribute: 'ORDERCODE', values: [`ORD-${codeUpper}`] });
+                  const resCodePrefixed = await serverListDocuments(ORDERS_COLLECTION_ID, [qCodePrefixed, JSON.stringify({ method: 'limit', values: [1] })]);
+                  if (resCodePrefixed.documents && resCodePrefixed.documents.length > 0) {
+                    matchedOrder = resCodePrefixed.documents[0];
+                  }
+                }
+              } catch (errSearch) {
+                console.warn('[WhatsApp] Specific order search error:', errSearch);
+              }
+            }
+
+            if (matchedOrder) {
+              const statusRaw = matchedOrder.STATUS || matchedOrder.status || 'pending';
+              const statusLabel = STATUS_LABELS[statusRaw] || statusRaw;
+              const dateStr = matchedOrder.$createdAt ? new Date(matchedOrder.$createdAt).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' }) : '?';
+              
+              queriedOrderBlock = `\n\n## 🔍 PEDIDO CONSULTADO (Coincide con tu búsqueda):
+- Código/ID: #${matchedOrder.ORDERCODE || matchedOrder.$id}
+- Cliente: ${matchedOrder.CUSTOMERNAME || 'Sin nombre'}
+- RUT: ${matchedOrder.CUSTOMERRUT || '-'}
+- Teléfono: ${matchedOrder.CUSTOMERPHONE || '-'}
+- Dirección: ${matchedOrder.ADDRESS || '-'}, ${matchedOrder.COMUNA || '-'}, ${matchedOrder.REGION || '-'}
+- Agencia de Envío: ${matchedOrder.SHIPPINGAGENCY || '-'}
+- Total: $${Number(matchedOrder.total || matchedOrder.TOTAL || 0).toLocaleString('es-CL')}
+- Estado Actual: ${statusLabel} (${statusRaw})
+- Fecha: ${dateStr}`;
+            }
+          }
+
+          // 3. Format recent 15 orders list for context
+          const orders = recentOrders.slice(0, 15).map((o: any) => {
+            const id    = o.ORDERCODE || String(o.$id || '').slice(-6).toUpperCase();
+            const name  = o.CUSTOMERNAME || 'Sin nombre';
+            const total = o.total || o.TOTAL || 0;
+            const statusRaw = o.STATUS || o.status || 'pending';
+            const status = STATUS_LABELS[statusRaw] || statusRaw;
+            const date  = o.$createdAt ? new Date(o.$createdAt).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' }) : '?';
+            return `#${id} | ${name} | $${Number(total).toLocaleString('es-CL')} | ${status} | ${date}`;
+          });
+
+          const products = (productsRes.documents || []).slice(0, 20).map((p: any) =>
+            `${p.NAME} | Stock: ${p.STOCK ?? '?'} | Precio: $${p.PRICE ?? '?'}`
+          );
+
+          contextBlock = `\n\n## 📊 ESTADÍSTICAS DE VENTAS (Cálculo automático de la base de datos):
+- VENTAS HOY (Pagados/Completados): ${countPaidToday} pedidos | Monto total: $${amountPaidToday.toLocaleString('es-CL')} (Total pedidos recibidos hoy: ${countTotalToday})
+- VENTAS AYER (Pagados/Completados): ${countPaidYesterday} pedidos | Monto total: $${amountPaidYesterday.toLocaleString('es-CL')} (Total pedidos recibidos ayer: ${countTotalYesterday})
+- VENTAS ESTA SEMANA (Últimos 7 días): ${countPaidWeek} pedidos | Monto total: $${amountPaidWeek.toLocaleString('es-CL')} (Total pedidos recibidos esta semana: ${countTotalWeek})
+- TOTAL PEDIDOS PENDIENTES DE PAGO: ${countPendingTotal} pedidos
+${queriedOrderBlock}
+
+## 📦 ÚLTIMOS PEDIDOS (Mostrando top 15 más recientes):
+${orders.join('\n') || 'Sin pedidos.'}
+
+## 🛍️ PRODUCTOS (Top 20 en catálogo):
+${products.join('\n') || 'Sin productos.'}`;
+
+        } else {
         // Customer: get products only (no sensitive order data)
         const lowerText = userText.toLowerCase();
         const keywords  = lowerText.split(/\s+/).filter(w => w.length > 2);
@@ -267,7 +402,21 @@ export async function POST(req: NextRequest) {
     const history = await getHistory(fromPhone);
     await addToHistory(fromPhone, 'user', userText, msgId);
 
-    const systemPrompt = (isAdmin ? ADMIN_PROMPT : CUSTOMER_PROMPT) + contextBlock;
+    const nowChileStr = new Date().toLocaleString('es-CL', {
+      timeZone: 'America/Santiago',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const timeBlock = `\n\n## 📅 FECHA Y HORA ACTUAL (Chile):
+- ${nowChileStr}
+(Usa esta fecha como referencia absoluta de "hoy" para determinar qué pedidos corresponden a "hoy", "ayer", etc.)`;
+
+    const systemPrompt = (isAdmin ? ADMIN_PROMPT : CUSTOMER_PROMPT) + timeBlock + contextBlock;
 
     const contents = [
       ...history.map(m => ({
