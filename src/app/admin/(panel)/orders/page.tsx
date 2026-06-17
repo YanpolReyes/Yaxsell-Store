@@ -275,7 +275,7 @@ function OrdersContent() {
         (o as any).COUPONCODE || '',
         itemCount,
         (o as any).adminNotes || '',
-        o.CREATEDAT ? new Date(o.CREATEDAT).toLocaleDateString('es-CL') : new Date(o.$createdAt).toLocaleDateString('es-CL'),
+        o.CREATEDAT ? new Date(o.CREATEDAT).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' }) : new Date(o.$createdAt).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' }),
       ];
     });
     const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -651,7 +651,7 @@ function OrdersContent() {
                         </div>
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
-                        <p className="text-gray-500">{date.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}</p>
+                        <p className="text-gray-500">{date.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', timeZone: 'America/Santiago' })}</p>
                         <p className="text-[10px] text-gray-400 mt-0.5">
                           {Math.floor(ageMs / 86400000) === 0 ? 'Hoy' : `hace ${Math.floor(ageMs / 86400000)}d`}
                           {order.PAYMENTMETHOD ? ` · ${order.PAYMENTMETHOD}` : ''}
