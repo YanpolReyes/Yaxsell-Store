@@ -298,6 +298,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Calculate all available tags in the current filtered set
+    const allTags = Array.from(new Set(filtered.flatMap(p => {
+      if (!p.TAGS) return [];
+      if (typeof p.TAGS === 'string') return (p.TAGS as string).split(',').map(t => t.trim()).filter(Boolean);
+      return (p.TAGS as string[]).filter(Boolean);
+    }))).sort();
+
     // Sliced pagination
     const total = filtered.length;
     const paginatedProducts = filtered.slice(offset, offset + limit);
@@ -308,7 +315,8 @@ export async function GET(request: NextRequest) {
       priceRange: [minPrice, maxPrice],
       categoryCounts,
       subcategoryCounts,
-      subSubcategoryCounts
+      subSubcategoryCounts,
+      allTags
     }, {
       headers: {
         'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=86400'

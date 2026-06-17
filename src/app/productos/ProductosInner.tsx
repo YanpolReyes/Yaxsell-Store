@@ -21,6 +21,8 @@ import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 import { getSkuFromFeatures } from '@/lib/product-features';
+import { useProductsCache } from '@/hooks/useProductsCache';
+import GlobalCatalogLoader from '@/components/GlobalCatalogLoader';
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 
@@ -28,7 +30,6 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
   const searchParams = useSearchParams();
   const catParam = lockCategoryId || searchParams.get('categoria') || '';
   const qParam = searchParams.get('q') || '';
-  const [products, setProducts] = useState<Product[]>([]);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -44,17 +45,10 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
   const [selectedSubSubcat, setSelectedSubSubcat] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [view, setView] = useState<'grid' | 'list'>('grid');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isMoreLoading, setIsMoreLoading] = useState(false);
-  const [totalProducts, setTotalProducts] = useState(0);
-  const [serverCategoryCounts, setServerCategoryCounts] = useState<Record<string, number>>({});
-  const [serverSubcategoryCounts, setServerSubcategoryCounts] = useState<Record<string, number>>({});
-  const [serverSubSubcategoryCounts, setServerSubSubcategoryCounts] = useState<Record<string, number>>({});
   
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [zoomImage, setZoomImage] = useState<{ src: string; alt: string } | null>(null);
   const [selectedTag, setSelectedTag] = useState('');
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
   const [activePriceRange, setActivePriceRange] = useState<[number, number] | null>(null);
   const [debouncedPriceRange, setDebouncedPriceRange] = useState<[number, number] | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -87,10 +81,6 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     }
   }, [searchParams]);
 
-  const lockedCategory = lockCategoryId ? categories.find(c => c.$id === lockCategoryId) : null;
-  const categoryProductCount = lockCategoryId
-    ? products.filter(p => p.CATEGORYID === lockCategoryId).length
-    : products.length;
 
   const handleCardImageClick = (p: Product) => {
     const imgSrc = getProductImageUrl(p);
@@ -169,145 +159,69 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     activePriceRangeRef.current = activePriceRange;
   }, [activePriceRange]);
 
-  // Dynamic server-side loading logic
-  const loadProducts = useCallback(async (isLoadMore: boolean, currentOffset: number) => {
-    if (isLoadMore) {
-      setIsMoreLoading(true);
-    } else {
-      setIsLoading(true);
-    }
-    
-    try {
-      const url = new URL('/api/public-data/products', window.location.origin);
-      url.searchParams.set('sortBy', sortBy);
-      url.searchParams.set('limit', '20');
-      url.searchParams.set('offset', currentOffset.toString());
-      
-      const cid = lockCategoryId || selectedCat;
-      if (cid) url.searchParams.set('categoryId', cid);
-      if (selectedSubcat) url.searchParams.set('subcategoryId', selectedSubcat);
-      if (selectedSubSubcat) url.searchParams.set('subSubcategoryId', selectedSubSubcat);
-      if (selectedTag) url.searchParams.set('tag', selectedTag);
-      if (selectedOfertasOnly) url.searchParams.set('ofertasOnly', 'true');
-      
-      if (debouncedSearch) {
-        url.searchParams.set('search', debouncedSearch);
-      }
-      
-      if (debouncedPriceRange) {
-        url.searchParams.set('priceMin', debouncedPriceRange[0].toString());
-        url.searchParams.set('priceMax', debouncedPriceRange[1].toString());
-      }
-      
-      const cacheKey = 'yaxsel_cache_' + url.toString();
-      
-      // Version check logic
-      try {
-        const vRes = await fetch('/api/public-data/version');
-        if (vRes.ok) {
-          const vData = await vRes.json();
-          const currentVersion = vData.version;
-          const storedVersion = localStorage.getItem('yaxsel_catalog_version');
-          if (storedVersion !== currentVersion) {
-            Object.keys(localStorage).forEach(k => {
-              if (k.startsWith('yaxsel_cache_')) localStorage.removeItem(k);
-            });
-            localStorage.setItem('yaxsel_catalog_version', currentVersion);
-          }
-        }
-      } catch (err) {
-        console.error('Error checking version', err);
-      }
-
-      let prodData = null;
-      const cachedResponse = localStorage.getItem(cacheKey);
-      
-      if (cachedResponse) {
-        try {
-          prodData = JSON.parse(cachedResponse);
-        } catch (e) {
-          localStorage.removeItem(cacheKey);
-        }
-      }
-      
-      if (!prodData) {
-        const prodRes = await fetch(url.toString());
-        if (prodRes.ok) {
-          prodData = await prodRes.json();
-          localStorage.setItem(cacheKey, JSON.stringify(prodData));
-        }
-      }
-
-      if (prodData) {
-        const newProducts = prodData.products as Product[];
-        
-        if (isLoadMore) {
-          setProducts(prev => {
-            const existingIds = new Set(prev.map(p => p.$id));
-            const filteredNew = newProducts.filter(p => !existingIds.has(p.$id));
-            return [...prev, ...filteredNew];
-          });
-        } else {
-          setProducts(newProducts);
-          if (prodData.priceRange) {
-            setPriceRange(prodData.priceRange);
-            if (!activePriceRangeRef.current) {
-              setActivePriceRange(prodData.priceRange);
-            }
-          }
-        }
-        
-        setTotalProducts(prodData.total || 0);
-        if (prodData.categoryCounts) {
-          setServerCategoryCounts(prodData.categoryCounts);
-        }
-        if (prodData.subcategoryCounts) {
-          setServerSubcategoryCounts(prodData.subcategoryCounts);
-        }
-        if (prodData.subSubcategoryCounts) {
-          setServerSubSubcategoryCounts(prodData.subSubcategoryCounts);
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-      setIsMoreLoading(false);
-    }
-  }, [
-    selectedCat,
-    selectedSubcat,
-    selectedSubSubcat,
-    selectedTag,
-    debouncedSearch,
+  // Dynamic client-side loading and filtering via Cache Hook
+  const {
+    products: visibleProducts,
+    total: totalProducts,
+    priceRange,
+    categoryCounts: serverCategoryCounts,
+    subcategoryCounts: serverSubcategoryCounts,
+    subSubcategoryCounts: serverSubSubcategoryCounts,
+    allTags,
+    isLoadingInitialData: isLoading,
+    isLoadingMore: isMoreLoading,
+    isReachingEnd,
+    loadMore
+  } = useProductsCache({
+    categoryId: lockCategoryId || selectedCat || undefined,
+    subcategoryId: selectedSubcat || undefined,
+    subSubcategoryId: selectedSubSubcat || undefined,
     sortBy,
-    debouncedPriceRange,
-    selectedOfertasOnly,
-    lockCategoryId
-  ]);
+    search: debouncedSearch || undefined,
+    tag: selectedTag || undefined,
+    priceMin: debouncedPriceRange ? debouncedPriceRange[0] : undefined,
+    priceMax: debouncedPriceRange ? debouncedPriceRange[1] : undefined,
+    ofertasOnly: selectedOfertasOnly
+  });
 
-  // Trigger load when filters change
+  const products = visibleProducts;
+  const filtered = visibleProducts;
+  const hasMore = !isReachingEnd;
+
+  const lockedCategory = lockCategoryId ? categories.find(c => c.$id === lockCategoryId) : null;
+  const categoryProductCount = lockCategoryId
+    ? products.filter(p => p.CATEGORYID === lockCategoryId).length
+    : products.length;
+
   useEffect(() => {
-    loadProducts(false, 0);
-  }, [
-    selectedCat,
-    selectedSubcat,
-    selectedSubSubcat,
-    selectedTag,
-    debouncedSearch,
-    sortBy,
-    debouncedPriceRange,
-    selectedOfertasOnly,
-    lockCategoryId,
-    loadProducts
-  ]);
+    if (priceRange && priceRange[0] !== 0 && priceRange[1] !== 0) {
+      if (!activePriceRangeRef.current) {
+        setActivePriceRange(priceRange as [number, number]);
+      }
+    }
+  }, [priceRange]);
 
-  // Extract all unique tags from products displayed
-  const allTags = useMemo(() => Array.from(new Set(products.flatMap(p => {
-    if (!p.TAGS) return [];
-    if (typeof p.TAGS === 'string') return (p.TAGS as string).split(',').map(t => t.trim()).filter(Boolean);
-    return (p.TAGS as string[]).filter(Boolean);
-  }))).sort(), [products]);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const currentRef = loadMoreRef.current;
+    if (!currentRef) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (first.isIntersecting && hasMore && !isMoreLoading) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1, rootMargin: '200px' }
+    );
+
+    observer.observe(currentRef);
+    return () => {
+      if (currentRef) observer.unobserve(currentRef);
+    };
+  }, [hasMore, isMoreLoading, loadMore]);
 
   const hasActiveFilters = !!(
     (selectedCat && selectedCat !== lockCategoryId) || selectedSubcat || selectedSubSubcat || selectedTag || search || selectedOfertasOnly
@@ -322,14 +236,13 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     setSearch('');
     setDebouncedSearch('');
     setSelectedOfertasOnly(false);
-    setActivePriceRange(priceRange);
-    setDebouncedPriceRange(priceRange);
+    if (priceRange && (priceRange[0] !== 0 || priceRange[1] !== 0)) {
+      setActivePriceRange(priceRange as [number, number]);
+      setDebouncedPriceRange(priceRange as [number, number]);
+    }
   };
 
   const catCountMap = serverCategoryCounts;
-  const visibleProducts = products;
-  const filtered = products;
-  const hasMore = products.length < totalProducts;
 
   // Sidebar filters component (shared between desktop and mobile drawer)
   const FiltersSidebar = () => (
@@ -455,7 +368,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
               style={{ padding: '5px 11px', borderRadius: 999, fontSize: 11, fontWeight: 700, color: !selectedTag ? '#fff' : '#e396bf', background: !selectedTag ? 'linear-gradient(135deg,#e396bf,#f5a8cf)' : '#fdf2f8', border: 'none', cursor: 'pointer', transition: 'all 0.15s' }}>
               Todas
             </button>
-            {allTags.slice(0, 20).map(tag => (
+            {allTags.slice(0, 20).map((tag: string) => (
               <button key={tag} onClick={() => setSelectedTag(tag)}
                 style={{ padding: '5px 11px', borderRadius: 999, fontSize: 11, fontWeight: 700, color: selectedTag === tag ? '#fff' : '#e396bf', background: selectedTag === tag ? 'linear-gradient(135deg,#e396bf,#f5a8cf)' : '#fdf2f8', border: 'none', cursor: 'pointer', transition: 'all 0.15s' }}>
                 #{tag}
@@ -680,17 +593,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             </div>
 
             {isLoading && products.length === 0 ? (
-              <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
-                {[...Array(8)].map((_, i) => (
-                  <div key={i} style={{ background: '#fff', borderRadius: 18, overflow: 'hidden', border: '1px solid #fce7f3' }}>
-                    <div style={{ aspectRatio: '1/1', background: 'linear-gradient(90deg,#fdf2f8,#fce7f3,#fdf2f8)', backgroundSize: '200% 100%', animation: 'pkShimmer 1.4s ease infinite' }} />
-                    <div style={{ padding: 14 }}>
-                      <div style={{ height: 14, width: '80%', background: '#fce7f3', borderRadius: 6, marginBottom: 8 }} />
-                      <div style={{ height: 18, width: '50%', background: '#fce7f3', borderRadius: 6 }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <GlobalCatalogLoader />
             ) : products.length === 0 ? (
               <div className="pk-empty-state" style={{ textAlign: 'center', padding: '86px 20px', background: 'rgba(255,255,255,0.86)', borderRadius: 26, border: '1px solid #fce7f3', boxShadow: '0 14px 42px rgba(227,150,191,0.09)', backdropFilter: 'blur(14px)' }}>
                 <div className="pk-empty-icon" style={{ width: 96, height: 96, borderRadius: '50%', background: 'linear-gradient(135deg,#fdf2f8,#fce7f3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px', boxShadow: '0 10px 28px rgba(227,150,191,0.15)' }}>
@@ -844,17 +747,14 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             )}
           </div>
         )}
-            {hasMore && (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0 8px' }}>
-                <button
-                  onClick={() => !isMoreLoading && loadProducts(true, products.length)}
-                  disabled={isMoreLoading}
-                  style={{ padding: '12px 32px', background: 'linear-gradient(135deg,#e396bf,#f5a8cf)', color: '#fff', border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: isMoreLoading ? 'not-allowed' : 'pointer', boxShadow: '0 6px 20px rgba(227,150,191,0.25)', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8 }}
-                >
-                  {isMoreLoading ? 'Cargando...' : `Cargar más (${totalProducts - products.length} restantes)`}
-                </button>
-              </div>
-            )}
+            <div ref={loadMoreRef} style={{ display: 'flex', justifyContent: 'center', padding: '32px 0', width: '100%' }}>
+              {isMoreLoading && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#e396bf', fontWeight: 600, fontSize: 14 }}>
+                  <span style={{ display: 'inline-block', width: '18px', height: '18px', border: '2.5px solid #e396bf', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                  <span>Cargando más productos...</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

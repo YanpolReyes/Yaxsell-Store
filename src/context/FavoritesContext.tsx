@@ -1,149 +1,100 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { getServices, getAppwriteConfig, FAVORITES_COLLECTION, PRODUCTS_COLLECTION } from '@/lib/appwrite';
-import { Query, ID } from 'appwrite';
 import { useAuth } from '@/hooks/useAuth';
 import { Product } from '@/types';
 import { useToast } from '@/components/Toast';
+
+// ── Favoritos 100% localStorage ──
+// Sin llamadas a Appwrite. Como el carrito.
+// Si el usuario cambia de dispositivo, sus favoritos no se transfieren (intencional).
 
 interface FavoritesContextType {
   favorites: string[];
   favoriteProducts: Product[];
   isFavorite: (productId: string) => boolean;
-  toggleFavorite: (productId: string) => Promise<void>;
+  toggleFavorite: (productId: string, product?: Product) => void;
   loading: boolean;
 }
 
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
 
-// ── Caché singleton para favoritos ──
-let favCacheIds: string[] = [];
-let favCacheProducts: Product[] = [];
-let favCacheDocMap: Record<string, string> = {};
-let favCacheTimestamp = 0;
-let favCacheUserId: string | null = null;
-const FAV_CACHE_TTL = 2 * 60 * 1000; // 2 minutos
+const LS_FAV_IDS      = 'yaxsel_fav_ids';
+const LS_FAV_PRODUCTS = 'yaxsel_fav_products';
+const LS_FAV_USER     = 'yaxsel_fav_user';
+
+function loadFromStorage(userId: string): { ids: string[]; products: Product[] } {
+  try {
+    if (typeof window === 'undefined') return { ids: [], products: [] };
+    const storedUser = localStorage.getItem(LS_FAV_USER);
+    if (storedUser !== userId) return { ids: [], products: [] };
+    const ids      = JSON.parse(localStorage.getItem(LS_FAV_IDS)      || '[]');
+    const products = JSON.parse(localStorage.getItem(LS_FAV_PRODUCTS) || '[]');
+    return { ids, products };
+  } catch {
+    return { ids: [], products: [] };
+  }
+}
+
+function saveToStorage(userId: string, ids: string[], products: Product[]) {
+  try {
+    localStorage.setItem(LS_FAV_IDS,      JSON.stringify(ids));
+    localStorage.setItem(LS_FAV_PRODUCTS, JSON.stringify(products));
+    localStorage.setItem(LS_FAV_USER,     userId);
+  } catch { /* ignorar errores de cuota */ }
+}
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const { user, isLoggedIn } = useAuth();
   const { showToast } = useToast();
-  const [favorites, setFavorites] = useState<string[]>(favCacheUserId === user?.id ? favCacheIds : []);
-  const [favoriteProducts, setFavoriteProducts] = useState<Product[]>(favCacheUserId === user?.id ? favCacheProducts : []);
-  const [docMap, setDocMap] = useState<Record<string, string>>(favCacheUserId === user?.id ? favCacheDocMap : {});
-  const [loading, setLoading] = useState(false);
+  const [favorites,        setFavorites]        = useState<string[]>([]);
+  const [favoriteProducts, setFavoriteProducts] = useState<Product[]>([]);
 
-  const loadFavorites = useCallback(async () => {
-    if (!isLoggedIn || !user) { setFavorites([]); setFavoriteProducts([]); return; }
-    // Usar caché si es reciente y es el mismo usuario
-    const now = Date.now();
-    if (favCacheUserId === user.id && (now - favCacheTimestamp) < FAV_CACHE_TTL) {
-      setFavorites(favCacheIds);
-      setFavoriteProducts(favCacheProducts);
-      setDocMap(favCacheDocMap);
-      return;
-    }
-    setLoading(true);
-    try {
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-      const res = await databases.listDocuments(databaseId, FAVORITES_COLLECTION, [
-        Query.equal('userId', user.id),
-        Query.limit(100),
-      ]);
-      const ids: string[] = [];
-      const map: Record<string, string> = {};
-      res.documents.forEach((doc: any) => {
-        ids.push(doc.productId);
-        map[doc.productId] = doc.$id;
-      });
-      setFavorites(ids);
-      setDocMap(map);
-
-      // Load product details
-      let prods: Product[] = [];
-      if (ids.length > 0) {
-        const prodRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-          Query.equal('$id', ids),
-          Query.limit(100),
-        ]);
-        prods = prodRes.documents as unknown as Product[];
-        setFavoriteProducts(prods);
-      } else {
-        setFavoriteProducts([]);
-      }
-
-      // Actualizar caché
-      favCacheIds = ids;
-      favCacheProducts = prods;
-      favCacheDocMap = map;
-      favCacheTimestamp = Date.now();
-      favCacheUserId = user.id;
-    } catch (e) {
-      console.error('Error loading favorites:', e);
-    } finally {
-      setLoading(false);
-    }
-  }, [isLoggedIn, user]);
-
-  // Evitar loops: cargar favoritos solo cuando cambia el ID de usuario o login
+  // Cargar del localStorage cuando cambia el usuario
   useEffect(() => {
-    if (isLoggedIn && user?.id) {
-      loadFavorites();
-    } else if (!isLoggedIn) {
+    if (!isLoggedIn || !user) {
       setFavorites([]);
       setFavoriteProducts([]);
+      return;
     }
+    const { ids, products } = loadFromStorage(user.id);
+    setFavorites(ids);
+    setFavoriteProducts(products);
   }, [isLoggedIn, user?.id]);
 
-  const isFavorite = (productId: string) => favorites.includes(productId);
+  const isFavorite = useCallback(
+    (productId: string) => favorites.includes(productId),
+    [favorites]
+  );
 
-  const toggleFavorite = async (productId: string) => {
-    if (!isLoggedIn || !user) return;
-    const { databases } = getServices();
-    const { databaseId } = getAppwriteConfig();
+  const toggleFavorite = useCallback(
+    (productId: string, product?: Product) => {
+      if (!isLoggedIn || !user) return;
 
-    if (isFavorite(productId)) {
-      // Remove
-      const docId = docMap[productId];
-      if (docId) {
-        try {
-          await databases.deleteDocument(databaseId, FAVORITES_COLLECTION, docId);
-          showToast('Eliminado de favoritos', 'info');
-        } catch {}
-      }
-      setFavorites(prev => prev.filter(id => id !== productId));
-      setFavoriteProducts(prev => prev.filter(p => p.$id !== productId));
-      setDocMap(prev => { const n = { ...prev }; delete n[productId]; return n; });
-      // Invalidar caché
-      favCacheTimestamp = 0;
-    } else {
-      // Add
-      try {
-        const doc = await databases.createDocument(databaseId, FAVORITES_COLLECTION, ID.unique(), {
-          userId: user.id,
-          productId: productId,
-          createdAt: Math.floor(Date.now() / 1000),
-        });
-        setFavorites(prev => [...prev, productId]);
-        setDocMap(prev => ({ ...prev, [productId]: doc.$id }));
+      const isFav = favorites.includes(productId);
+
+      if (isFav) {
+        const newIds      = favorites.filter(id => id !== productId);
+        const newProducts = favoriteProducts.filter(p => p.$id !== productId);
+        setFavorites(newIds);
+        setFavoriteProducts(newProducts);
+        saveToStorage(user.id, newIds, newProducts);
+        showToast('Eliminado de favoritos', 'info');
+      } else {
+        const newIds      = [...favorites, productId];
+        const newProducts = product ? [...favoriteProducts, product] : favoriteProducts;
+        setFavorites(newIds);
+        setFavoriteProducts(newProducts);
+        saveToStorage(user.id, newIds, newProducts);
         showToast('❤️ Agregado a favoritos', 'success');
-        // Load product detail
-        try {
-          const p = await databases.getDocument(databaseId, PRODUCTS_COLLECTION, productId);
-          setFavoriteProducts(prev => [...prev, p as unknown as Product]);
-        } catch {}
-        // Invalidar caché
-        favCacheTimestamp = 0;
-      } catch (e) {
-        console.error('Error adding favorite:', e);
       }
-    }
-  };
+    },
+    [isLoggedIn, user, favorites, favoriteProducts, showToast]
+  );
 
   return React.createElement(
     FavoritesContext.Provider,
-    { value: { favorites, favoriteProducts, isFavorite, toggleFavorite, loading } },
+    { value: { favorites, favoriteProducts, isFavorite, toggleFavorite, loading: false } },
     children
   );
 }

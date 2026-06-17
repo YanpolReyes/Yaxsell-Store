@@ -1,13 +1,12 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, formatPrice } from '@/lib/appwrite';
+import { formatPrice } from '@/lib/appwrite';
 import { Product } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { Sparkles, ShoppingCart, Check, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
-import { getSkuFromFeatures } from '@/lib/product-features';
 
 export default function LatestProductsCarousel() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -19,15 +18,25 @@ export default function LatestProductsCarousel() {
   const [isHovered, setIsHovered] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const getScrollAmount = () => {
+    const container = containerRef.current;
+    if (!container) return 206;
+    const card = container.querySelector<HTMLElement>('[data-latest-card]');
+    if (!card) return 206;
+    const styles = window.getComputedStyle(container);
+    const gap = Number.parseFloat(styles.columnGap || styles.gap || '16') || 16;
+    return card.offsetWidth + gap;
+  };
+
   const handleScrollPrev = () => {
     if (containerRef.current) {
-      containerRef.current.scrollBy({ left: -206, behavior: 'smooth' });
+      containerRef.current.scrollBy({ left: -getScrollAmount(), behavior: 'smooth' });
     }
   };
 
   const handleScrollNext = () => {
     if (containerRef.current) {
-      containerRef.current.scrollBy({ left: 206, behavior: 'smooth' });
+      containerRef.current.scrollBy({ left: getScrollAmount(), behavior: 'smooth' });
     }
   };
 
@@ -49,7 +58,7 @@ export default function LatestProductsCarousel() {
     if (products.length === 0 || isHovered) return;
     const interval = setInterval(() => {
       if (containerRef.current) {
-        containerRef.current.scrollBy({ left: 206, behavior: 'smooth' });
+        containerRef.current.scrollBy({ left: getScrollAmount(), behavior: 'smooth' });
       }
     }, 3500);
     return () => clearInterval(interval);
@@ -112,7 +121,7 @@ export default function LatestProductsCarousel() {
       {/* Title section */}
       <div className="flex items-end justify-between mb-6">
         <div>
-          <div className="flex items-center gap-2 text-pink-600 font-bold text-xs uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider mb-1 bg-gradient-to-r from-pink-600 via-fuchsia-600 to-violet-600 bg-clip-text text-transparent">
             <Sparkles size={14} className="animate-pulse" />
             Novedades y Reingresos
           </div>
@@ -162,8 +171,11 @@ export default function LatestProductsCarousel() {
           display: none !important;
         }
         .latest-product-card {
-          width: 180px !important;
+          width: clamp(165px, 16vw, 226px) !important;
           flex-shrink: 0 !important;
+        }
+        .animate-spin-slow {
+          animation: spin 1.8s linear infinite;
         }
       `}} />
 
@@ -201,103 +213,99 @@ export default function LatestProductsCarousel() {
             const hasDiscount = pricing.hasDiscount;
             const isAdding = addingId === p.$id;
 
-            // Sophisticated logic: Check actual timestamps, with a reliable fallback
             const prodIdx = idx % products.length;
             const createdAt = new Date(p.$createdAt || '').getTime();
-            const updatedAt = new Date(p.$updatedAt || p.$createdAt || '').getTime();
             const now = Date.now();
             
-            // New if created in the last 7 days, or fallback if it is in the first 4 items of the list
             const isNew = (now - createdAt < 7 * 24 * 60 * 60 * 1000) || (prodIdx < 4);
-            // It's a restock/renovado if it has stock and either was updated recently or not brand new
             const isRestocked = !isNew && p.STOCK > 0;
 
             return (
               <div 
                 key={`latest-carousel-${p.$id}-${idx}`} 
-                className="latest-product-card snap-start bg-white rounded-2xl overflow-hidden border border-gray-100/50 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.07)] transition-all duration-300 group flex flex-col justify-between transform hover:-translate-y-1"
+                data-latest-card
+                className="latest-product-card snap-start group"
               >
-                <a href={`/productos/${p.$id}`} className="block relative overflow-hidden aspect-square bg-gray-50/50 p-1.5">
-                  <div className="w-full h-full rounded-xl overflow-hidden relative shadow-inner">
-                    {p.IMAGEURL ? (
-                      <img 
-                        src={p.IMAGEURL} 
-                        alt={p.NAME} 
-                        loading="lazy" 
-                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" 
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl bg-gray-100">
-                        📦
+                <div className="relative h-full rounded-2xl bg-gradient-to-br from-pink-500/35 via-fuchsia-500/10 to-violet-500/35 p-[1px] shadow-[0_6px_24px_rgba(0,0,0,0.06)] transition-all duration-300 hover:shadow-[0_14px_40px_rgba(0,0,0,0.10)] hover:-translate-y-1 will-change-transform">
+                  <div className="h-full rounded-[15px] bg-white/95 backdrop-blur overflow-hidden flex flex-col justify-between border border-white/60">
+                    <a href={`/productos/${p.$id}`} className="block relative overflow-hidden aspect-square bg-gradient-to-br from-pink-50 via-white to-violet-50 p-1.5">
+                      <div className="w-full h-full rounded-xl overflow-hidden relative">
+                        {p.IMAGEURL ? (
+                          <img 
+                            src={p.IMAGEURL} 
+                            alt={p.NAME} 
+                            loading="lazy" 
+                            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" 
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl bg-gray-100">
+                            📦
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  </div>
 
-                  {/* Badge top-left */}
-                  <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10">
-                    {isNew ? (
-                      <span className="bg-pink-600 text-white font-black text-[9px] px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm flex items-center gap-1 border border-pink-500">
-                        <Sparkles size={8} /> Nuevo
-                      </span>
-                    ) : (
-                      <span className="bg-emerald-600 text-white font-black text-[9px] px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm flex items-center gap-1 border border-emerald-500">
-                        <RefreshCw size={8} className="animate-spin-slow" /> Reingreso
-                      </span>
-                    )}
-                  </div>
+                      <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10">
+                        {isNew ? (
+                          <span className="bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white font-black text-[9px] px-2 py-0.5 rounded-md uppercase tracking-wider shadow-md flex items-center gap-1 border border-white/25">
+                            <Sparkles size={8} /> Nuevo
+                          </span>
+                        ) : (
+                          <span className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black text-[9px] px-2 py-0.5 rounded-md uppercase tracking-wider shadow-md flex items-center gap-1 border border-white/25">
+                            <RefreshCw size={8} className="animate-spin-slow" /> Reingreso
+                          </span>
+                        )}
+                      </div>
 
-                  {/* Discount percent badge */}
-                  {pricing.hasDiscount && (
-                    <span className="absolute top-2.5 right-2.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-extrabold text-[9px] px-2 py-0.5 rounded-md shadow-md z-10">
-                      -{pricing.discountPercent}% OFF
-                    </span>
-                  )}
-                </a>
-
-                {/* Details */}
-                <div className="p-3 flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-semibold text-gray-800 text-[11px] leading-[14px] h-[28px] line-clamp-2 mb-1.5 group-hover:text-pink-600 transition-colors">
-                      {p.NAME}
-                    </h3>
-
-                    {/* Price */}
-                    <div className="flex flex-col gap-0.5 mb-2.5">
-                      {hasDiscount && (
-                        <span className="text-[10px] text-gray-400 line-through leading-none">
-                          {formatPrice(p.PRICE)}
+                      {pricing.hasDiscount && (
+                        <span className="absolute top-2.5 right-2.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-extrabold text-[9px] px-2 py-0.5 rounded-md shadow-md z-10 border border-white/25">
+                          -{pricing.discountPercent}% OFF
                         </span>
                       )}
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-black text-gray-900 text-sm leading-none">
-                          {formatPrice(displayPrice)}
-                        </span>
+                    </a>
+
+                    <div className="p-3 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-[11px] leading-[14px] h-[28px] line-clamp-2 mb-1.5 group-hover:text-fuchsia-700 transition-colors">
+                          {p.NAME}
+                        </h3>
+
+                        <div className="flex flex-col gap-0.5 mb-2.5">
+                          {hasDiscount && (
+                            <span className="text-[10px] text-gray-400 line-through leading-none">
+                              {formatPrice(p.PRICE)}
+                            </span>
+                          )}
+                          <div className="flex items-end gap-1.5">
+                            <span className="font-black text-gray-950 text-sm leading-none">
+                              {formatPrice(displayPrice)}
+                            </span>
+                          </div>
+                        </div>
                       </div>
+
+                      <button
+                        onClick={(e) => handleAddToCart(e, p)}
+                        className={`w-full py-2.5 px-3 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+                          isAdding
+                            ? 'bg-emerald-500 text-white shadow-[0_10px_24px_rgba(16,185,129,0.25)]'
+                            : 'bg-gradient-to-r from-pink-600 to-violet-600 text-white shadow-[0_10px_24px_rgba(236,72,153,0.22)] hover:from-pink-500 hover:to-violet-500'
+                        }`}
+                      >
+                        {isAdding ? (
+                          <>
+                            <Check size={12} strokeWidth={3} />
+                            Listo
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingCart size={11} />
+                            Agregar
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
-
-                  {/* Add to Cart button */}
-                  <button
-                    onClick={(e) => handleAddToCart(e, p)}
-                    className={`w-full py-2.5 px-3 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.02)] active:scale-95 ${
-                      isAdding
-                        ? 'bg-emerald-500 text-white shadow-emerald-500/10'
-                        : 'bg-gray-950 text-white hover:bg-pink-600'
-                    }`}
-                  >
-                    {isAdding ? (
-                      <>
-                        <Check size={12} strokeWidth={3} />
-                        Listo
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingCart size={11} />
-                        Agregar
-                      </>
-                    )}
-                  </button>
                 </div>
               </div>
             );

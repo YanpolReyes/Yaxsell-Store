@@ -24,6 +24,7 @@ import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 import CountdownTimer from '@/components/CountdownTimer';
 import { getSkuFromFeatures } from '@/lib/product-features';
+import { useProductsCache } from '@/hooks/useProductsCache';
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 
@@ -44,7 +45,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
   const searchParams = useSearchParams();
   const catParam = lockCategoryId || searchParams.get('categoria') || '';
   const qParam = searchParams.get('q') || '';
-  const [products, setProducts] = useState<Product[]>([]);
+
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -59,7 +60,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
   const [selectedSubcat, setSelectedSubcat] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [view, setView] = useState<'grid' | 'list'>('grid');
-  const [isLoading, setIsLoading] = useState(true);
+
   const [catalogCover, setCatalogCover] = useState<{ image: string; title: string; subtitle: string; overlayEnabled: boolean; overlayOpacity: number; overlayColor: string }>({
     image: '', title: '', subtitle: '', overlayEnabled: true, overlayOpacity: 40, overlayColor: '#000000'
   });
@@ -84,7 +85,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [zoomImage, setZoomImage] = useState<{ src: string; alt: string } | null>(null);
   const [selectedTag, setSelectedTag] = useState('');
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
+
   const [activePriceRange, setActivePriceRange] = useState<[number, number] | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
@@ -98,10 +99,39 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  const [visibleCount, setVisibleCount] = useState(20);
+
   const { addItem } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { settings: apertura } = useAperturaPromotion();
+
+  const {
+    products,
+    total,
+    priceRange: fetchedPriceRange,
+    categoryCounts: catCountMap,
+    allTags,
+    isLoadingInitialData: isLoading,
+    isLoadingMore,
+    isReachingEnd,
+    loadMore,
+    isMobile
+  } = useProductsCache({
+    categoryId: lockCategoryId || selectedCat || undefined,
+    subcategoryId: selectedSubcat || undefined,
+    sortBy,
+    search: search || undefined,
+    tag: selectedTag || undefined,
+    priceMin: activePriceRange ? activePriceRange[0] : undefined,
+    priceMax: activePriceRange ? activePriceRange[1] : undefined
+  });
+
+  const priceRange = fetchedPriceRange;
+  const filtered = products;
+  const visibleProducts = products;
+  const hasMore = !isReachingEnd;
+
+
+
 
   const activeProducts = useMemo(() => products.filter(p => p.ISACTIVE !== false), [products]);
   const lockedCategory = lockCategoryId ? categories.find(c => c.$id === lockCategoryId) : null;
@@ -143,33 +173,6 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
     initLoad();
   }, [catParam]);
 
-  // Load products dynamically when selected category, subcategory, or sorting changes
-  useEffect(() => {
-    const loadProducts = async () => {
-      setIsLoading(true);
-      try {
-        const url = new URL('/api/public-data/products', window.location.origin);
-        url.searchParams.set('sortBy', sortBy);
-        const cid = lockCategoryId || selectedCat;
-        if (cid) {
-          url.searchParams.set('categoryId', cid);
-        }
-        if (selectedSubcat && selectedSubcat !== 'ofertas-temporales') {
-          url.searchParams.set('subcategoryId', selectedSubcat);
-        }
-        const prodRes = await fetch(url.toString());
-        if (prodRes.ok) {
-          const prodData = await prodRes.json();
-          setProducts((prodData.products as Product[]).map((p) => normalizeProductImages(p)));
-        }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadProducts();
-  }, [selectedCat, selectedSubcat, sortBy, lockCategoryId]);
 
   // Load subcategories separately when selectedCat changes
   useEffect(() => {
@@ -197,108 +200,10 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
     loadSubcategories();
   }, [selectedCat, lockCategoryId]);
 
-  // Extract all unique tags from products
-  const allTags = useMemo(() => Array.from(new Set(products.flatMap(p => {
-    if (!p.TAGS) return [];
-    if (typeof p.TAGS === 'string') return (p.TAGS as string).split(',').map(t => t.trim()).filter(Boolean);
-    return (p.TAGS as string[]).filter(Boolean);
-  }))).sort(), [products]);
 
-  // Compute price range
-  useEffect(() => {
-    if (products.length === 0) return;
-    const prices = products.map(p => resolveProductDisplayPrice(p, apertura).displayPrice).filter(p => p > 0);
-    if (prices.length === 0) return;
-    const min = Math.floor(Math.min(...prices));
-    const max = Math.ceil(Math.max(...prices));
-    setPriceRange([min, max]);
-    if (!activePriceRange) setActivePriceRange([min, max]);
-  }, [products, apertura]);
 
-  const filtered = useMemo(() => {
-    const list = products.filter(p => {
-      // Visibility filter (hide if ISACTIVE is explicitly false)
-      if (p.ISACTIVE === false) return false;
-      // Category filter (client-side)
-      if (selectedCat && p.CATEGORYID !== selectedCat) return false;
-      // Subcategory filter (client-side)
-      if (selectedSubcat) {
-        if (selectedSubcat === 'ofertas-temporales') {
-          if (!timedOffersMap[p.$id]) return false;
-        } else if (p.SUBCATEGORYID !== selectedSubcat) {
-          return false;
-        }
-      }
-      // Tag filter
-      if (selectedTag) {
-        const pTags = !p.TAGS ? [] : typeof p.TAGS === 'string' ? (p.TAGS as string).split(',').map(t => t.trim()) : (p.TAGS as string[]);
-        if (!pTags.some(t => t.toLowerCase() === selectedTag.toLowerCase())) return false;
-      }
-      // Price filter
-      if (activePriceRange) {
-        const price = resolveProductDisplayPrice(p, apertura).displayPrice;
-        if (price > 0) {
-          if (price < activePriceRange[0] || price > activePriceRange[1]) return false;
-        } else {
-          const isDefaultRange = activePriceRange[0] === priceRange[0] && activePriceRange[1] === priceRange[1];
-          if (!isDefaultRange) return false;
-        }
-      }
-      if (!search) return true;
-      const q = search.toLowerCase().trim();
-      const pFeatures = Array.isArray(p.FEATURES) ? p.FEATURES.join('\n') : p.FEATURES;
-      const pTags = Array.isArray(p.TAGS) ? p.TAGS.join(',') : p.TAGS;
-      const pSku = getSkuFromFeatures(pFeatures, pTags, (p as any).jumpseller_id, p.SKU || (p as any).sku);
-      return p.NAME.toLowerCase().includes(q) || 
-        (p.DESCRIPTION || '').toLowerCase().includes(q) ||
-        pSku.toLowerCase().includes(q);
-    });
 
-    // Sort client-side
-    const liveThresholdMs = (() => {
-      const now = new Date();
-      const today7Am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0, 0);
-      if (now.getTime() >= today7Am.getTime()) return today7Am.getTime();
-      const yesterday7Am = new Date(today7Am);
-      yesterday7Am.setDate(yesterday7Am.getDate() - 1);
-      return yesterday7Am.getTime();
-    })();
 
-    return [...list].sort((a, b) => {
-      // LiveShopping products always come first
-      const aIsLive = (a as any).imported_at && new Date((a as any).imported_at).getTime() >= liveThresholdMs;
-      const bIsLive = (b as any).imported_at && new Date((b as any).imported_at).getTime() >= liveThresholdMs;
-
-      if (aIsLive && !bIsLive) return -1;
-      if (!aIsLive && bIsLive) return 1;
-
-      if (aIsLive && bIsLive) {
-        // Both live: sort by imported_at descending
-        return new Date((b as any).imported_at).getTime() - new Date((a as any).imported_at).getTime();
-      }
-
-      if (sortBy === 'price_asc') {
-        const pA = resolveProductDisplayPrice(a, apertura).displayPrice;
-        const pB = resolveProductDisplayPrice(b, apertura).displayPrice;
-        return pA - pB;
-      }
-      if (sortBy === 'price_desc') {
-        const pA = resolveProductDisplayPrice(a, apertura).displayPrice;
-        const pB = resolveProductDisplayPrice(b, apertura).displayPrice;
-        return pB - pA;
-      }
-      // Default: 'newest'
-      const tA = new Date((a as any).$createdAt || 0).getTime();
-      const tB = new Date((b as any).$createdAt || 0).getTime();
-      return tB - tA;
-    });
-  }, [products, selectedCat, selectedSubcat, selectedTag, activePriceRange, search, sortBy, timedOffersMap, apertura, priceRange]);
-
-  const visibleProducts = filtered.slice(0, visibleCount);
-  const hasMore = visibleCount < filtered.length;
-
-  // Reset visible count when filters change
-  useEffect(() => { setVisibleCount(20); }, [selectedCat, selectedSubcat, selectedTag, search, sortBy, activePriceRange]);
 
   const hasActiveFilters = !!(
     (selectedCat && selectedCat !== lockCategoryId) || selectedSubcat || selectedTag || search
@@ -309,14 +214,6 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
     setActivePriceRange(priceRange);
   };
 
-  // Product count per category
-  const catCountMap = useMemo(() => {
-    const map: Record<string, number> = {};
-    products.forEach(p => {
-      if (p.CATEGORYID) map[p.CATEGORYID] = (map[p.CATEGORYID] || 0) + 1;
-    });
-    return map;
-  }, [products]);
 
   // Sidebar filters component (shared between desktop and mobile drawer)
   const FiltersSidebar = () => (
@@ -415,7 +312,7 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
               style={{ padding: '5px 11px', borderRadius: 999, fontSize: 11, fontWeight: 700, color: !selectedTag ? '#fff' : '#e396bf', background: !selectedTag ? 'linear-gradient(135deg,#e396bf,#c0547a)' : '#f8f9fa', border: 'none', cursor: 'pointer', transition: 'all 0.15s' }}>
               Todas
             </button>
-            {allTags.slice(0, 20).map(tag => (
+            {allTags.slice(0, 20).map((tag: string) => (
               <button key={tag} onClick={() => setSelectedTag(tag)}
                 style={{ padding: '5px 11px', borderRadius: 999, fontSize: 11, fontWeight: 700, color: selectedTag === tag ? '#fff' : '#e396bf', background: selectedTag === tag ? 'linear-gradient(135deg,#e396bf,#c0547a)' : '#f8f9fa', border: 'none', cursor: 'pointer', transition: 'all 0.15s' }}>
                 #{tag}
@@ -862,9 +759,36 @@ function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
             )}
             {hasMore && (
               <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0 8px' }}>
-                <button onClick={() => setVisibleCount(c => c + 20)} style={{ padding: '12px 32px', background: 'linear-gradient(135deg,#e396bf,#c0547a)', color: '#fff', border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 20px rgba(227,150,191,0.25)', fontFamily: 'inherit' }}>
-                  Cargar más ({filtered.length - visibleCount} restantes)
-                </button>
+                {isMobile ? (
+                  <div
+                    ref={(el) => {
+                      if (!el) return;
+                      const observer = new IntersectionObserver(
+                        ([entry]) => {
+                          if (entry.isIntersecting && !isLoadingMore) {
+                            loadMore();
+                          }
+                        },
+                        { rootMargin: '100px' }
+                      );
+                      observer.observe(el);
+                      return () => observer.disconnect();
+                    }}
+                    style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    {isLoadingMore ? (
+                      <div style={{ width: 24, height: 24, border: '3px solid #f3f4f6', borderTopColor: '#e396bf', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                    ) : null}
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => loadMore()} 
+                    disabled={isLoadingMore}
+                    style={{ padding: '12px 32px', background: 'linear-gradient(135deg,#e396bf,#c0547a)', color: '#fff', border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 20px rgba(227,150,191,0.25)', fontFamily: 'inherit', opacity: isLoadingMore ? 0.7 : 1 }}
+                  >
+                    {isLoadingMore ? 'Cargando...' : `Cargar más`}
+                  </button>
+                )}
               </div>
             )}
           </div>

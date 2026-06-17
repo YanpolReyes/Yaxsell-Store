@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { serverListDocuments, serverGetDocument } from '@/lib/appwrite-server';
+import { PUBLIC_CACHEABLE_COLLECTIONS } from '@/lib/appwrite';
 import { unstable_cache } from 'next/cache';
 
 const getCachedList = unstable_cache(
@@ -27,6 +28,10 @@ export async function GET(req: Request) {
 
     if (!colId) {
       return NextResponse.json({ error: 'Missing colId' }, { status: 400 });
+    }
+
+    if (!PUBLIC_CACHEABLE_COLLECTIONS.includes(colId)) {
+      return NextResponse.json({ error: 'Unauthorized collection' }, { status: 403 });
     }
 
     let data;

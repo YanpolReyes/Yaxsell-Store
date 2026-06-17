@@ -10,6 +10,8 @@ const CACHE_RULES: Record<string, number> = {
   '/api/public-data/home': 300000,           // 5 minutes
   '/api/public-data/subcategories': 600000,  // 10 minutes
   '/api/public-data/product-detail': 120000, // 2 minutes
+  '/api/public-data/apertura': 600000,       // 10 minutes
+  '/api/store-settings': 600000,             // 10 minutes
 };
 
 export default function ClientFetchCache() {

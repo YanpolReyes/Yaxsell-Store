@@ -41,7 +41,13 @@ export function middleware(request: NextRequest) {
     return new NextResponse('Access Denied (Crawlers Blocked)', { status: 403 });
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  const country = request.headers.get('x-vercel-ip-country');
+  if (country) {
+    response.cookies.set('user_country', country, { path: '/' });
+  }
+
+  return response;
 }
 
 export const config = {

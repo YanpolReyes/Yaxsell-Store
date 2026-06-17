@@ -41,20 +41,6 @@ export function getServices() {
     _account = new Account(_client);
     _storage = new Storage(_client);
 
-    const PUBLIC_CACHEABLE_COLLECTIONS = [
-      PRODUCTS_COLLECTION,
-      CATEGORIES_COLLECTION,
-      BANNERS_COLLECTION,
-      TIMED_OFFERS_COLLECTION,
-      LIVE_STREAMS_COLLECTION,
-      HOTSPOT_PANELS_COLLECTION,
-      BANNER_OVERLAY_POSITIONS_COLLECTION,
-      SUBCATEGORIES_COLLECTION,
-      THEME_CONFIG_COLLECTION,
-      APERTURA_SETTINGS_COLLECTION,
-      'store_settings'
-    ];
-
     const pendingListRequests = new Map<string, Promise<any>>();
     const originalListDocuments = _databases.listDocuments.bind(_databases);
     
@@ -151,8 +137,22 @@ export const STOCK_ALERTS_COLLECTION             = 'stock_alerts';
 export const STOCK_REQUESTS_COLLECTION           = 'stock_requests';
 export const NOTIFICATIONS_COLLECTION            = 'notifications';
 export const THEME_CONFIG_COLLECTION             = 'theme_config';
-export const APERTURA_SETTINGS_COLLECTION        = 'apertura_settings';
-export const PRODUCT_VIEWS_COLLECTION             = 'product_views';
+export const APERTURA_SETTINGS_COLLECTION      = 'apertura_settings';
+export const PRODUCT_VIEWS_COLLECTION            = 'product_views';
+
+export const PUBLIC_CACHEABLE_COLLECTIONS = [
+  PRODUCTS_COLLECTION,
+  CATEGORIES_COLLECTION,
+  BANNERS_COLLECTION,
+  TIMED_OFFERS_COLLECTION,
+  LIVE_STREAMS_COLLECTION,
+  HOTSPOT_PANELS_COLLECTION,
+  BANNER_OVERLAY_POSITIONS_COLLECTION,
+  SUBCATEGORIES_COLLECTION,
+  THEME_CONFIG_COLLECTION,
+  APERTURA_SETTINGS_COLLECTION,
+  'store_settings'
+];
 export const ADMIN_CHAT_COLLECTION                = 'admin_chat'; // Admin-user chat collection
 // ============================================
 // STORAGE — Un solo bucket con prefijos

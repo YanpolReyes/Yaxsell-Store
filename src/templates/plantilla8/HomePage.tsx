@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 import { Category, Subcategory } from '@/types';
+import { useCategories } from '@/hooks/useCategories';
 
 // Set window.countdown at module level — runs when module is first imported, before any Shopify scripts
 if (typeof window !== 'undefined') {
@@ -186,7 +187,7 @@ export default function HomePage8() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [bodyHtml, setBodyHtml] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const { categories } = useCategories();
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
 
   /* ── Mark template attribute on document for CSS scoping ── */
@@ -351,7 +352,6 @@ export default function HomePage8() {
     Promise.all([fetchHtml, fetchCats()])
       .then(([html, { cats, subcats }]) => {
         if (aborted) return;
-        setCategories(cats);
         setSubcategories(subcats);
 
         // Parse HTML using DOMParser

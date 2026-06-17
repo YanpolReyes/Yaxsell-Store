@@ -4,15 +4,15 @@ import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search, ShoppingCart, User, Heart, Menu, X, MapPin, Bell, Receipt, LogOut, Package, Minus, Plus, Trash2, Home, ArrowLeft, Grid3x3, Sparkles, Ship, Container, Store, LayoutGrid, Truck, Compass } from 'lucide-react';
+import { Search, ShoppingCart, User, Heart, Menu, X, MapPin, Receipt, LogOut, Package, Minus, Plus, Trash2, Home, ArrowLeft, Grid3x3, Sparkles, Ship, Container, Store, LayoutGrid, Truck, Compass } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/context/CartContext';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
-import { useNotifications } from '@/context/NotificationContext';
+
 import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES, formatPrice } from '@/lib/appwrite';
 import { getSectionConfigAsync, getSectionConfig, type SectionConfig } from '@/lib/section-config';
 import SearchOverlay from '@/components/SearchOverlay';
-import NotificationsOverlay from '@/components/NotificationsOverlay';
+
 import { usePrimaryAddress } from '@/hooks/usePrimaryAddress';
 import { getWhatsAppUrl, openChatbot } from '@/lib/store-contact';
 import NavAvatarWithBadge from '@/components/NavAvatarWithBadge';
@@ -35,7 +35,7 @@ export default function Navbar1() {
   const { user, isLoggedIn, logout } = useAuth();
   const { unlimitedStock } = useStoreSettings();
   const { totalItems, items, subtotal, removeItem, updateQuantity, getEffectivePrice } = useCart();
-  const { unreadCount } = useNotifications();
+
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -46,7 +46,7 @@ export default function Navbar1() {
   const [loyaltyLevelId, setLoyaltyLevelId] = useState<string | null>(null);
   const { primaryAddress } = usePrimaryAddress();
   const [authPopupOpen, setAuthPopupOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
+
   const accountDropdownRef = useRef<HTMLDivElement>(null);
   const authPopupRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -671,19 +671,7 @@ export default function Navbar1() {
             </div>
             <div className="tpl1-nav-mobile-tools">
               <button className="tpl1-nav-btn" onClick={() => setSearchOpen(!searchOpen)} title="Buscar"><Search size={20} color="#e396bf" /></button>
-              {isLoggedIn && (
-                <button
-                  type="button"
-                  className="tpl1-nav-btn tpl1-nav-notif-link"
-                  title="Notificaciones"
-                  onClick={() => setNotifOpen(true)}
-                >
-                  <Bell size={20} color="#e396bf" />
-                  {unreadCount > 0 && (
-                    <span className="tpl1-nav-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
-                  )}
-                </button>
-              )}
+
             </div>
 
             {/* Dirección primaria */}
@@ -1016,7 +1004,7 @@ export default function Navbar1() {
       {authPopupMobileLayer && createPortal(authPopupMobileLayer, document.body)}
 
       {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
-      {notifOpen && <NotificationsOverlay onClose={() => setNotifOpen(false)} />}
+
     </>
   );
 }

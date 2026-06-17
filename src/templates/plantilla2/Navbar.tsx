@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { ShoppingCart, Search, MapPin, ChevronDown, Menu, X, User, Bell, Heart, Sparkles } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useCategories } from '@/hooks/useCategories';
 import { useNotifications } from '@/context/NotificationContext';
 import { useState, useEffect, useRef } from 'react';
 import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES, CATEGORIES_COLLECTION } from '@/lib/appwrite';
@@ -75,7 +76,7 @@ export default function Navbar2({ initialSettings }: { initialSettings?: Record<
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [primaryAddress, setPrimaryAddress] = useState<string | null>(null);
   const [ns, setNs] = useState(() => initialSettings || readNavSettings());
-  const [categories, setCategories] = useState<Category[]>([]);
+  const { categories } = useCategories();
   const [catDropdown, setCatDropdown] = useState(false);
 
   // Advanced Cinematic Scroll Tracking
@@ -124,16 +125,7 @@ export default function Navbar2({ initialSettings }: { initialSettings?: Record<
   }, [user]);
 
   // Load categories
-  useEffect(() => {
-    (async () => {
-      try {
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        const res = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION, []);
-        setCategories(res.documents as any[]);
-      } catch {}
-    })();
-  }, []);
+  
 
   // Listen for theme editor changes
   useEffect(() => {
