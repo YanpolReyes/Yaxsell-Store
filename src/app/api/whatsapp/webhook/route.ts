@@ -319,8 +319,8 @@ export async function POST(req: NextRequest) {
 
             if (matchedOrder) {
               const statusRaw = matchedOrder.STATUS || matchedOrder.status || 'pending';
-              const statusLabel = STATUS_LABELS[statusRaw] || statusRaw;
-              const dateStr = matchedOrder.$createdAt ? new Date(matchedOrder.$createdAt).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' }) : '?';
+              const statusLabel = STATUS_LABELS[statusRaw as string] || statusRaw;
+              const dateStr = matchedOrder.$createdAt ? new Date(matchedOrder.$createdAt as string).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' }) : '?';
               
               queriedOrderBlock = `\n\n## 🔍 PEDIDO CONSULTADO (Coincide con tu búsqueda):
 - Código/ID: #${matchedOrder.ORDERCODE || matchedOrder.$id}
@@ -341,7 +341,7 @@ export async function POST(req: NextRequest) {
             const name  = o.CUSTOMERNAME || 'Sin nombre';
             const total = o.total || o.TOTAL || 0;
             const statusRaw = o.STATUS || o.status || 'pending';
-            const status = STATUS_LABELS[statusRaw] || statusRaw;
+            const status = STATUS_LABELS[statusRaw as string] || statusRaw;
             const date  = o.$createdAt ? new Date(o.$createdAt).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' }) : '?';
             return `#${id} | ${name} | $${Number(total).toLocaleString('es-CL')} | ${status} | ${date}`;
           });
