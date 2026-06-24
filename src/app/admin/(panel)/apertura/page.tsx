@@ -62,7 +62,6 @@ export default function AperturaPage() {
       if (existing.documents.length > 0) {
         // Update existing document
         await databases.updateDocument(databaseId, APERTURA_SETTINGS_COLLECTION_ID, existing.documents[0].$id, settings);
-        await fetch('/api/revalidate?tag=apertura_settings');
         
         // If disabling promotion, remove coupon from all auth users' prefs (server API)
         if (wasActive && !isActive) {
@@ -86,7 +85,6 @@ export default function AperturaPage() {
           ...settings,
           createdAt: new Date().toISOString()
         });
-        await fetch('/api/revalidate?tag=apertura_settings');
         alert('Configuración guardada exitosamente');
       }
     } catch (e) {

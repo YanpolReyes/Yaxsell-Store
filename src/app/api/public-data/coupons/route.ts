@@ -24,17 +24,9 @@ const getCachedActiveCoupons = unstable_cache(
       Query.limit(20),
     ]);
 
-    const docs = res.documents.filter((c: any) => {
-      const userRestriction = c.userRestriction || c.USERRESTRICTION || null;
-      if (userRestriction && userRestriction.trim() !== '' && userRestriction.trim().toLowerCase() !== 'null') {
-        return false;
-      }
-      return true;
-    });
-
-    memoryCacheAllCoupons = docs;
+    memoryCacheAllCoupons = res.documents;
     memoryCacheAllCouponsTime = now;
-    return docs;
+    return res.documents;
   },
   ['active-coupons-list-cache'],
   { revalidate: 600, tags: ['coupons'] } // 10 minutes cache

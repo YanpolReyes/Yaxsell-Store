@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, Suspense, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Search, Grid3x3, List, ShoppingCart, X, SlidersHorizontal, Sparkles, ChevronDown } from 'lucide-react';
@@ -21,30 +21,15 @@ import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import AperturaDiscountBadge from '@/components/AperturaDiscountBadge';
 import { getSkuFromFeatures } from '@/lib/product-features';
-import { useProductsCache } from '@/hooks/useProductsCache';
-import GlobalCatalogLoader from '@/components/GlobalCatalogLoader';
 
 const FF = '"DM Sans","Proxima Nova",-apple-system,BlinkMacSystemFont,sans-serif';
 
 export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } = {}) {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const catParam = lockCategoryId || searchParams.get('categoria') || '';
   const qParam = searchParams.get('q') || '';
+  const [products, setProducts] = useState<Product[]>([]);
   const [mounted, setMounted] = useState(false);
-
-  const updateCategoryUrl = (catId: string) => {
-    if (lockCategoryId) return;
-    const url = new URL(window.location.href);
-    if (catId) {
-      const cat = categories.find(c => c.$id === catId);
-      const slug = cat?.name?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || catId;
-      url.searchParams.set('categoria', slug);
-    } else {
-      url.searchParams.delete('categoria');
-    }
-    window.history.replaceState({}, '', url.toString());
-  };
 
   useEffect(() => {
     setMounted(true);
@@ -59,10 +44,17 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
   const [selectedSubSubcat, setSelectedSubSubcat] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [view, setView] = useState<'grid' | 'list'>('grid');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMoreLoading, setIsMoreLoading] = useState(false);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [serverCategoryCounts, setServerCategoryCounts] = useState<Record<string, number>>({});
+  const [serverSubcategoryCounts, setServerSubcategoryCounts] = useState<Record<string, number>>({});
+  const [serverSubSubcategoryCounts, setServerSubSubcategoryCounts] = useState<Record<string, number>>({});
   
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [zoomImage, setZoomImage] = useState<{ src: string; alt: string } | null>(null);
   const [selectedTag, setSelectedTag] = useState('');
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
   const [activePriceRange, setActivePriceRange] = useState<[number, number] | null>(null);
   const [debouncedPriceRange, setDebouncedPriceRange] = useState<[number, number] | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -95,6 +87,10 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     }
   }, [searchParams]);
 
+  const lockedCategory = lockCategoryId ? categories.find(c => c.$id === lockCategoryId) : null;
+  const categoryProductCount = lockCategoryId
+    ? products.filter(p => p.CATEGORYID === lockCategoryId).length
+    : products.length;
 
   const handleCardImageClick = (p: Product) => {
     const imgSrc = getProductImageUrl(p);
@@ -173,69 +169,145 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     activePriceRangeRef.current = activePriceRange;
   }, [activePriceRange]);
 
-  // Dynamic client-side loading and filtering via Cache Hook
-  const {
-    products: visibleProducts,
-    total: totalProducts,
-    priceRange,
-    categoryCounts: serverCategoryCounts,
-    subcategoryCounts: serverSubcategoryCounts,
-    subSubcategoryCounts: serverSubSubcategoryCounts,
-    allTags,
-    isLoadingInitialData: isLoading,
-    isLoadingMore: isMoreLoading,
-    isReachingEnd,
-    loadMore
-  } = useProductsCache({
-    categoryId: lockCategoryId || selectedCat || undefined,
-    subcategoryId: selectedSubcat || undefined,
-    subSubcategoryId: selectedSubSubcat || undefined,
-    sortBy,
-    search: debouncedSearch || undefined,
-    tag: selectedTag || undefined,
-    priceMin: debouncedPriceRange ? debouncedPriceRange[0] : undefined,
-    priceMax: debouncedPriceRange ? debouncedPriceRange[1] : undefined,
-    ofertasOnly: selectedOfertasOnly
-  });
-
-  const products = visibleProducts;
-  const filtered = visibleProducts;
-  const hasMore = !isReachingEnd;
-
-  const lockedCategory = lockCategoryId ? categories.find(c => c.$id === lockCategoryId) : null;
-  const categoryProductCount = lockCategoryId
-    ? products.filter(p => p.CATEGORYID === lockCategoryId).length
-    : products.length;
-
-  useEffect(() => {
-    if (priceRange && priceRange[0] !== 0 && priceRange[1] !== 0) {
-      if (!activePriceRangeRef.current) {
-        setActivePriceRange(priceRange as [number, number]);
-      }
+  // Dynamic server-side loading logic
+  const loadProducts = useCallback(async (isLoadMore: boolean, currentOffset: number) => {
+    if (isLoadMore) {
+      setIsMoreLoading(true);
+    } else {
+      setIsLoading(true);
     }
-  }, [priceRange]);
-
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const currentRef = loadMoreRef.current;
-    if (!currentRef) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const first = entries[0];
-        if (first.isIntersecting && hasMore && !isMoreLoading) {
-          loadMore();
+    
+    try {
+      const url = new URL('/api/public-data/products', window.location.origin);
+      url.searchParams.set('sortBy', sortBy);
+      url.searchParams.set('limit', '20');
+      url.searchParams.set('offset', currentOffset.toString());
+      
+      const cid = lockCategoryId || selectedCat;
+      if (cid) url.searchParams.set('categoryId', cid);
+      if (selectedSubcat) url.searchParams.set('subcategoryId', selectedSubcat);
+      if (selectedSubSubcat) url.searchParams.set('subSubcategoryId', selectedSubSubcat);
+      if (selectedTag) url.searchParams.set('tag', selectedTag);
+      if (selectedOfertasOnly) url.searchParams.set('ofertasOnly', 'true');
+      
+      if (debouncedSearch) {
+        url.searchParams.set('search', debouncedSearch);
+      }
+      
+      if (debouncedPriceRange) {
+        url.searchParams.set('priceMin', debouncedPriceRange[0].toString());
+        url.searchParams.set('priceMax', debouncedPriceRange[1].toString());
+      }
+      
+      const cacheKey = 'yaxsel_cache_' + url.toString();
+      
+      // Version check logic
+      try {
+        const vRes = await fetch('/api/public-data/version');
+        if (vRes.ok) {
+          const vData = await vRes.json();
+          const currentVersion = vData.version;
+          const storedVersion = localStorage.getItem('yaxsel_catalog_version');
+          if (storedVersion !== currentVersion) {
+            Object.keys(localStorage).forEach(k => {
+              if (k.startsWith('yaxsel_cache_')) localStorage.removeItem(k);
+            });
+            localStorage.setItem('yaxsel_catalog_version', currentVersion);
+          }
         }
-      },
-      { threshold: 0.1, rootMargin: '200px' }
-    );
+      } catch (err) {
+        console.error('Error checking version', err);
+      }
 
-    observer.observe(currentRef);
-    return () => {
-      if (currentRef) observer.unobserve(currentRef);
-    };
-  }, [hasMore, isMoreLoading, loadMore]);
+      let prodData = null;
+      const cachedResponse = localStorage.getItem(cacheKey);
+      
+      if (cachedResponse) {
+        try {
+          prodData = JSON.parse(cachedResponse);
+        } catch (e) {
+          localStorage.removeItem(cacheKey);
+        }
+      }
+      
+      if (!prodData) {
+        const prodRes = await fetch(url.toString());
+        if (prodRes.ok) {
+          prodData = await prodRes.json();
+          localStorage.setItem(cacheKey, JSON.stringify(prodData));
+        }
+      }
+
+      if (prodData) {
+        const newProducts = prodData.products as Product[];
+        
+        if (isLoadMore) {
+          setProducts(prev => {
+            const existingIds = new Set(prev.map(p => p.$id));
+            const filteredNew = newProducts.filter(p => !existingIds.has(p.$id));
+            return [...prev, ...filteredNew];
+          });
+        } else {
+          setProducts(newProducts);
+          if (prodData.priceRange) {
+            setPriceRange(prodData.priceRange);
+            if (!activePriceRangeRef.current) {
+              setActivePriceRange(prodData.priceRange);
+            }
+          }
+        }
+        
+        setTotalProducts(prodData.total || 0);
+        if (prodData.categoryCounts) {
+          setServerCategoryCounts(prodData.categoryCounts);
+        }
+        if (prodData.subcategoryCounts) {
+          setServerSubcategoryCounts(prodData.subcategoryCounts);
+        }
+        if (prodData.subSubcategoryCounts) {
+          setServerSubSubcategoryCounts(prodData.subSubcategoryCounts);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+      setIsMoreLoading(false);
+    }
+  }, [
+    selectedCat,
+    selectedSubcat,
+    selectedSubSubcat,
+    selectedTag,
+    debouncedSearch,
+    sortBy,
+    debouncedPriceRange,
+    selectedOfertasOnly,
+    lockCategoryId
+  ]);
+
+  // Trigger load when filters change
+  useEffect(() => {
+    loadProducts(false, 0);
+  }, [
+    selectedCat,
+    selectedSubcat,
+    selectedSubSubcat,
+    selectedTag,
+    debouncedSearch,
+    sortBy,
+    debouncedPriceRange,
+    selectedOfertasOnly,
+    lockCategoryId,
+    loadProducts
+  ]);
+
+  // Extract all unique tags from products displayed
+  const allTags = useMemo(() => Array.from(new Set(products.flatMap(p => {
+    if (!p.TAGS) return [];
+    if (typeof p.TAGS === 'string') return (p.TAGS as string).split(',').map(t => t.trim()).filter(Boolean);
+    return (p.TAGS as string[]).filter(Boolean);
+  }))).sort(), [products]);
 
   const hasActiveFilters = !!(
     (selectedCat && selectedCat !== lockCategoryId) || selectedSubcat || selectedSubSubcat || selectedTag || search || selectedOfertasOnly
@@ -250,13 +322,14 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
     setSearch('');
     setDebouncedSearch('');
     setSelectedOfertasOnly(false);
-    if (priceRange && (priceRange[0] !== 0 || priceRange[1] !== 0)) {
-      setActivePriceRange(priceRange as [number, number]);
-      setDebouncedPriceRange(priceRange as [number, number]);
-    }
+    setActivePriceRange(priceRange);
+    setDebouncedPriceRange(priceRange);
   };
 
   const catCountMap = serverCategoryCounts;
+  const visibleProducts = products;
+  const filtered = products;
+  const hasMore = products.length < totalProducts;
 
   // Sidebar filters component (shared between desktop and mobile drawer)
   const FiltersSidebar = () => (
@@ -309,7 +382,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
       {/* Categorías */}
       <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px solid #fce7f3' }}>
         <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>Categorías</p>
-        <button onClick={() => { setSelectedCat(''); setSelectedSubcat(''); updateCategoryUrl(''); }}
+        <button onClick={() => { setSelectedCat(''); setSelectedSubcat(''); }}
           style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: !selectedCat ? 700 : 500, color: !selectedCat ? '#e396bf' : '#6b7280', background: !selectedCat ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 4, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: !selectedCat ? '#e396bf' : '#d1d5db', flexShrink: 0 }} />
           <span style={{ flex: 1 }}>Todas</span>
@@ -319,7 +392,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           const count = catCountMap[c.$id] || 0;
           if (count === 0) return null;
           return (
-            <button key={c.$id} onClick={() => { setSelectedCat(c.$id); setSelectedSubcat(''); updateCategoryUrl(c.$id); }}
+            <button key={c.$id} onClick={() => { setSelectedCat(c.$id); setSelectedSubcat(''); }}
               style={{ width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 10, fontSize: 13, fontWeight: selectedCat === c.$id ? 700 : 500, color: selectedCat === c.$id ? '#e396bf' : '#6b7280', background: selectedCat === c.$id ? '#fdf2f8' : 'transparent', border: 'none', cursor: 'pointer', marginBottom: 4, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: selectedCat === c.$id ? '#e396bf' : '#d1d5db', flexShrink: 0 }} />
               <span style={{ flex: 1 }}>{c.name}</span>
@@ -382,7 +455,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
               style={{ padding: '5px 11px', borderRadius: 999, fontSize: 11, fontWeight: 700, color: !selectedTag ? '#fff' : '#e396bf', background: !selectedTag ? 'linear-gradient(135deg,#e396bf,#f5a8cf)' : '#fdf2f8', border: 'none', cursor: 'pointer', transition: 'all 0.15s' }}>
               Todas
             </button>
-            {allTags.slice(0, 20).map((tag: string) => (
+            {allTags.slice(0, 20).map(tag => (
               <button key={tag} onClick={() => setSelectedTag(tag)}
                 style={{ padding: '5px 11px', borderRadius: 999, fontSize: 11, fontWeight: 700, color: selectedTag === tag ? '#fff' : '#e396bf', background: selectedTag === tag ? 'linear-gradient(135deg,#e396bf,#f5a8cf)' : '#fdf2f8', border: 'none', cursor: 'pointer', transition: 'all 0.15s' }}>
                 #{tag}
@@ -464,13 +537,12 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: '#f8f9fa', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e396bf' }}><X size={14} /></button>}
           </div>
 
-          <div className="pk-toolbar-actions">
-            {/* Selector de Categorías en Toolbar */}
+          {/* Selector de Categorías en Toolbar */}
           {!lockCategoryId && (
             <div className="pk-toolbar-select-wrap" style={{ position: 'relative' }}>
               <select
                 value={selectedCat}
-                onChange={e => { setSelectedCat(e.target.value); setSelectedSubcat(''); updateCategoryUrl(e.target.value); }}
+                onChange={e => { setSelectedCat(e.target.value); setSelectedSubcat(''); }}
                 style={{
                   padding: '12px 34px 12px 16px',
                   borderRadius: 14,
@@ -560,7 +632,6 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             <button onClick={() => setView('grid')} style={{ padding: '11px 13px', background: view === 'grid' ? '#f8f9fa' : 'transparent', color: view === 'grid' ? '#e396bf' : '#9ca3af', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Grid3x3 size={16} /></button>
             <button onClick={() => setView('list')} style={{ padding: '11px 13px', background: view === 'list' ? '#f8f9fa' : 'transparent', color: view === 'list' ? '#e396bf' : '#9ca3af', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><List size={16} /></button>
           </div>
-          </div>
         </div>
 
         {/* Active filter chips */}
@@ -569,7 +640,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             {selectedCat && categories.find(c => c.$id === selectedCat) && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 10px 5px 12px', background: '#fdf2f8', color: '#e396bf', borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
                 {categories.find(c => c.$id === selectedCat)?.name}
-                <button onClick={() => { setSelectedCat(''); setSelectedSubcat(''); updateCategoryUrl(''); }} style={{ background: 'transparent', border: 'none', color: '#e396bf', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><X size={13} /></button>
+                <button onClick={() => { setSelectedCat(''); setSelectedSubcat(''); }} style={{ background: 'transparent', border: 'none', color: '#e396bf', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><X size={13} /></button>
               </span>
             )}
             {selectedTag && (
@@ -609,7 +680,17 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             </div>
 
             {isLoading && products.length === 0 ? (
-              <GlobalCatalogLoader />
+              <div className="pk-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} style={{ background: '#fff', borderRadius: 18, overflow: 'hidden', border: '1px solid #fce7f3' }}>
+                    <div style={{ aspectRatio: '1/1', background: 'linear-gradient(90deg,#fdf2f8,#fce7f3,#fdf2f8)', backgroundSize: '200% 100%', animation: 'pkShimmer 1.4s ease infinite' }} />
+                    <div style={{ padding: 14 }}>
+                      <div style={{ height: 14, width: '80%', background: '#fce7f3', borderRadius: 6, marginBottom: 8 }} />
+                      <div style={{ height: 18, width: '50%', background: '#fce7f3', borderRadius: 6 }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : products.length === 0 ? (
               <div className="pk-empty-state" style={{ textAlign: 'center', padding: '86px 20px', background: 'rgba(255,255,255,0.86)', borderRadius: 26, border: '1px solid #fce7f3', boxShadow: '0 14px 42px rgba(227,150,191,0.09)', backdropFilter: 'blur(14px)' }}>
                 <div className="pk-empty-icon" style={{ width: 96, height: 96, borderRadius: '50%', background: 'linear-gradient(135deg,#fdf2f8,#fce7f3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px', boxShadow: '0 10px 28px rgba(227,150,191,0.15)' }}>
@@ -677,7 +758,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                             <AnimHeart filled={fav} size={20} />
                           </button>
                         </div>
-                        <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
+                        <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 36, lineHeight: 1.4, transition: 'color 0.2s' }}>
                             {p.NAME}
                           </p>
@@ -726,7 +807,7 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         {cardSku && <div className="pk-card-sku" style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2, fontWeight: 700 }}>SKU: {cardSku}</div>}
-                        <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
+                        <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{p.NAME}</p>
                         </Link>
                         {p.PACKQTY && p.PACKQTY > 1 ? <div style={{ fontSize: 11, color: '#db2777', fontWeight: 800, marginBottom: 4 }}>{p.PACKQTY} UNIDADES POR PAQUETE</div> : null}
@@ -763,14 +844,17 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             )}
           </div>
         )}
-            <div ref={loadMoreRef} style={{ display: 'flex', justifyContent: 'center', padding: '32px 0', width: '100%' }}>
-              {isMoreLoading && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#e396bf', fontWeight: 600, fontSize: 14 }}>
-                  <span style={{ display: 'inline-block', width: '18px', height: '18px', border: '2.5px solid #e396bf', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                  <span>Cargando más productos...</span>
-                </div>
-              )}
-            </div>
+            {hasMore && (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0 8px' }}>
+                <button
+                  onClick={() => !isMoreLoading && loadProducts(true, products.length)}
+                  disabled={isMoreLoading}
+                  style={{ padding: '12px 32px', background: 'linear-gradient(135deg,#e396bf,#f5a8cf)', color: '#fff', border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: isMoreLoading ? 'not-allowed' : 'pointer', boxShadow: '0 6px 20px rgba(227,150,191,0.25)', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8 }}
+                >
+                  {isMoreLoading ? 'Cargando...' : `Cargar más (${totalProducts - products.length} restantes)`}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -881,40 +965,23 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
           position: sticky !important;
           top: 86px !important;
           z-index: 20 !important;
-          transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all 0.3s ease;
         }
         .pk-toolbar.pk-toolbar-scrolled {
-          position: -webkit-sticky !important;
-          position: sticky !important;
-          top: 86px !important;
+          position: fixed !important;
+          top: 12px !important;
+          left: 16px !important;
+          right: 16px !important;
+          width: auto !important;
           z-index: 999 !important;
-          background-color: rgba(255, 255, 255, 0.95) !important;
-          box-shadow: 0 10px 30px rgba(227,150,191,0.18) !important;
-          border-radius: 18px !important;
-          padding: 8px 12px !important;
+          max-width: 1568px;
+          margin: 0 auto;
         }
-        
-        .pk-toolbar-search {
-          transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .pk-toolbar-actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 12px;
-          align-items: center;
-          transition: opacity 0.3s ease, max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease;
-          max-height: 150px;
-          opacity: 1;
-          transform: translateY(0);
-          overflow: hidden;
-        }
-        
-        .pk-toolbar.pk-toolbar-scrolled .pk-toolbar-actions {
-          opacity: 0;
-          max-height: 0 !important;
-          transform: translateY(-10px);
-          pointer-events: none;
+        .pk-toolbar.pk-toolbar-scrolled .pk-toolbar-select-wrap,
+        .pk-toolbar.pk-toolbar-scrolled .pk-filters-btn,
+        .pk-toolbar.pk-toolbar-scrolled .pk-sort-wrap,
+        .pk-toolbar.pk-toolbar-scrolled .pk-view-toggle {
+          display: none !important;
         }
         .pk-desktop-only { display: block; }
         .pk-mobile-only { display: none; }
@@ -1013,9 +1080,10 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
             -webkit-backdrop-filter: none !important;
           }
           .pk-toolbar.pk-toolbar-scrolled {
-            position: -webkit-sticky !important;
-            position: sticky !important;
+            position: fixed !important;
             top: 10px !important;
+            left: 12px !important;
+            right: 12px !important;
             z-index: 999 !important;
             backdrop-filter: blur(16px) !important;
             -webkit-backdrop-filter: blur(16px) !important;
@@ -1144,21 +1212,12 @@ export function ProductosInner({ lockCategoryId }: { lockCategoryId?: string } =
 
         @media (max-width: 480px) {
           .pk-hero-banner {
-            position: absolute !important;
-            inset: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            min-height: 100% !important;
-            max-height: none !important;
-            aspect-ratio: auto !important;
+            aspect-ratio: 2.8 / 1 !important; min-height: 72px !important; max-height: 108px !important;
             display: block !important;
           }
           .pk-hero-banner-img {
-            object-fit: cover !important;
-            object-position: center 50% !important;
-            width: 100% !important;
-            height: 100% !important;
-            max-height: none !important;
+            object-fit: cover !important; object-position: center 40% !important;
+            width: 100% !important; height: 100% !important; max-height: none !important;
           }
         }
 

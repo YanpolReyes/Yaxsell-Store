@@ -97,14 +97,8 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
 
   function handleChange(val: string) {
     setQuery(val);
-    // Removed debounce search here
-  }
-
-  function handleSearchSubmit(e?: React.FormEvent) {
-    if (e) e.preventDefault();
-    if (!query.trim()) return;
-    addToHistory(query.trim());
-    searchProducts(query.trim());
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => searchProducts(val), 300);
   }
 
   function goSearch(term?: string) {
@@ -127,37 +121,25 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
   }
 
   const showSuggestions = !query.trim() || query.length < 2;
-  const showFallback = !loading && results.length === 0 && query.length >= 2;
-
-  // Cargar "Más vendidos" como fallback si no hay resultados
-  const [bestSellers, setBestSellers] = useState<Product[]>([]);
-  useEffect(() => {
-    if (showFallback && bestSellers.length === 0) {
-      fetch('/api/public-data/products?limit=6&sortMode=popular')
-        .then(r => r.json())
-        .then(data => setBestSellers(data.products || []))
-        .catch(() => {});
-    }
-  }, [showFallback]);
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} onClick={onClose}>
       <div style={{ background: '#fff', maxWidth: 640, margin: '0 auto', maxHeight: '85vh', overflow: 'auto', borderRadius: 16, marginTop: 12, boxShadow: '0 8px 40px rgba(0,0,0,0.15)' }}
         onClick={e => e.stopPropagation()}>
         {/* Search input */}
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #fce7f3', background: 'linear-gradient(135deg, #fdf2f8, #fdf2f8)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #fce7f3', background: 'linear-gradient(135deg, #fdf2f8, #fdf2f8)' }}>
           <Search size={18} color="#e396bf" />
           <input
             ref={inputRef}
             value={query}
             onChange={e => handleChange(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') goSearch(); if (e.key === 'Escape') onClose(); }}
             placeholder="Buscar productos, marcas y más..."
             style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: '#333', padding: '8px 0', background: 'transparent', fontFamily: "'DM Sans', system-ui, sans-serif" }}
           />
-          {query && <button type="button" onClick={() => { setQuery(''); setResults([]); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}><X size={16} color="#e396bf" /></button>}
-          <button type="submit" style={{ background: '#e396bf', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Buscar</button>
-          <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#e396bf', fontWeight: 600, padding: '4px 8px' }}>Cerrar</button>
-        </form>
+          {query && <button onClick={() => { setQuery(''); setResults([]); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}><X size={16} color="#e396bf" /></button>}
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#e396bf', fontWeight: 600, padding: '4px 8px' }}>Cerrar</button>
+        </div>
 
         {showSuggestions ? (
           <div style={{ padding: '12px 16px', background: '#fff' }}>
@@ -194,31 +176,7 @@ export default function SearchOverlay({ onClose, initialQuery = '' }: Props) {
           <div style={{ padding: '8px 0', background: '#fff' }}>
             {loading && <p style={{ padding: '16px', textAlign: 'center', fontSize: 13, color: '#999' }}>Buscando...</p>}
             {!loading && results.length === 0 && query.length >= 2 && (
-              <div style={{ padding: '16px', textAlign: 'center' }}>
-                <p style={{ fontSize: 13, color: '#999', marginBottom: 16 }}>No se encontraron resultados exactos.</p>
-                {bestSellers.length > 0 && (
-                  <div style={{ textAlign: 'left' }}>
-                    <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700, color: '#e396bf', textTransform: 'uppercase' }}>Más vendidos</p>
-                    {bestSellers.map(p => {
-                      const price = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
-                      return (
-                        <Link key={`fallback-${p.$id}`} href={`/productos/${p.$id}`} onClick={() => { addToHistory(query); onClose(); }}
-                          style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', textDecoration: 'none', borderBottom: '1px solid #f8f8f8', transition: 'background .15s' }}>
-                          {getProductImageUrl(p) && (
-                            <div style={{ width: 44, height: 44, borderRadius: 6, overflow: 'hidden', flexShrink: 0, background: '#f5f5f5' }}>
-                              <img src={getProductImageUrl(p)} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                            </div>
-                          )}
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ margin: 0, fontSize: 14, color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.NAME}</p>
-                            <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 700, color: '#e396bf' }}>{formatPrice(price)}</p>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <p style={{ padding: '16px', textAlign: 'center', fontSize: 13, color: '#999' }}>No se encontraron resultados</p>
             )}
             {results.map(p => {
               const price = p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;

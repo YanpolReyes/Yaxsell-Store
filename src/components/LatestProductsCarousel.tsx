@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { formatPrice } from '@/lib/appwrite';
+import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION, formatPrice } from '@/lib/appwrite';
 import { Product } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { Sparkles, ShoppingCart, Check, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
+import { getSkuFromFeatures } from '@/lib/product-features';
 
 export default function LatestProductsCarousel() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -15,31 +16,56 @@ export default function LatestProductsCarousel() {
   const { addItem } = useCart();
   const { settings: apertura } = useAperturaPromotion();
 
+  const [isHovered, setIsHovered] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const getScrollAmount = () => {
-    const container = containerRef.current;
-    if (!container) return 206;
-    const card = container.querySelector<HTMLElement>('[data-latest-card]');
-    if (!card) return 206;
-    const styles = window.getComputedStyle(container);
-    const gap = Number.parseFloat(styles.columnGap || styles.gap || '16') || 16;
-    // Scroll by ~2 cards on desktop, 1 on mobile for a natural feel
-    const perStep = window.innerWidth >= 768 ? 2 : 1;
-    return (card.offsetWidth + gap) * perStep;
-  };
 
   const handleScrollPrev = () => {
     if (containerRef.current) {
-      containerRef.current.scrollBy({ left: -getScrollAmount(), behavior: 'smooth' });
+      containerRef.current.scrollBy({ left: -206, behavior: 'smooth' });
     }
   };
 
   const handleScrollNext = () => {
     if (containerRef.current) {
-      containerRef.current.scrollBy({ left: getScrollAmount(), behavior: 'smooth' });
+      containerRef.current.scrollBy({ left: 206, behavior: 'smooth' });
     }
   };
+
+  const handleScroll = () => {
+    const container = containerRef.current;
+    if (!container || products.length === 0) return;
+    const { scrollLeft, scrollWidth } = container;
+    const singleCopyWidth = scrollWidth / 3;
+
+    if (scrollLeft < 10) {
+      container.scrollLeft = singleCopyWidth + scrollLeft;
+    } else if (scrollLeft >= singleCopyWidth * 2 - 10) {
+      container.scrollLeft = scrollLeft - singleCopyWidth;
+    }
+  };
+
+  // Autoplay
+  useEffect(() => {
+    if (products.length === 0 || isHovered) return;
+    const interval = setInterval(() => {
+      if (containerRef.current) {
+        containerRef.current.scrollBy({ left: 206, behavior: 'smooth' });
+      }
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [products, isHovered]);
+
+  // Center scroll position on mount/update
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container && products.length > 0) {
+      const timer = setTimeout(() => {
+        const singleCopyWidth = container.scrollWidth / 3;
+        container.scrollLeft = singleCopyWidth;
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [products]);
 
   useEffect(() => {
     const loadNewest = async () => {
@@ -86,7 +112,7 @@ export default function LatestProductsCarousel() {
       {/* Title section */}
       <div className="flex items-end justify-between mb-6">
         <div>
-          <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider mb-1 bg-gradient-to-r from-pink-600 via-fuchsia-600 to-violet-600 bg-clip-text text-transparent">
+          <div className="flex items-center gap-2 text-pink-600 font-bold text-xs uppercase tracking-wider mb-1">
             <Sparkles size={14} className="animate-pulse" />
             Novedades y Reingresos
           </div>
@@ -127,37 +153,25 @@ export default function LatestProductsCarousel() {
           display: flex !important;
           overflow-x: auto !important;
           scroll-behavior: smooth !important;
-          gap: 14px !important;
-          padding: 12px 4px 24px !important;
+          gap: 16px !important;
+          padding: 12px 10px 24px !important;
           scrollbar-width: none !important;
           -ms-overflow-style: none !important;
-          -webkit-overflow-scrolling: touch !important;
         }
         .latest-carousel-container::-webkit-scrollbar {
           display: none !important;
         }
         .latest-product-card {
-          width: clamp(210px, 60vw, 240px) !important;
+          width: 180px !important;
           flex-shrink: 0 !important;
-        }
-        @media (min-width: 640px) {
-          .latest-product-card {
-            width: clamp(200px, 26vw, 230px) !important;
-          }
-        }
-        @media (min-width: 1024px) {
-          .latest-product-card {
-            width: clamp(200px, 16vw, 226px) !important;
-          }
-        }
-        .animate-spin-slow {
-          animation: spin 1.8s linear infinite;
         }
       `}} />
 
       {/* Carousel */}
-      <div
+      <div 
         className="latest-carousel-wrapper group/wrapper relative w-full"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
         {/* Navigation Buttons */}
         <button 
@@ -176,104 +190,114 @@ export default function LatestProductsCarousel() {
         </button>
 
         {/* Scroll Container */}
-        <div
+        <div 
           ref={containerRef}
-          className="latest-carousel-container scrollbar-hide snap-x"
+          onScroll={handleScroll}
+          className="latest-carousel-container scrollbar-hide snap-x snap-mandatory"
         >
-          {products.map((p, idx) => {
+          {[...products, ...products, ...products].map((p, idx) => {
             const pricing = resolveProductDisplayPrice(p, apertura);
             const displayPrice = pricing.displayPrice;
             const hasDiscount = pricing.hasDiscount;
             const isAdding = addingId === p.$id;
 
+            // Sophisticated logic: Check actual timestamps, with a reliable fallback
+            const prodIdx = idx % products.length;
             const createdAt = new Date(p.$createdAt || '').getTime();
+            const updatedAt = new Date(p.$updatedAt || p.$createdAt || '').getTime();
             const now = Date.now();
-
-            const isNew = (now - createdAt < 7 * 24 * 60 * 60 * 1000) || (idx < 4);
+            
+            // New if created in the last 7 days, or fallback if it is in the first 4 items of the list
+            const isNew = (now - createdAt < 7 * 24 * 60 * 60 * 1000) || (prodIdx < 4);
+            // It's a restock/renovado if it has stock and either was updated recently or not brand new
             const isRestocked = !isNew && p.STOCK > 0;
 
             return (
-              <div
-                key={`latest-carousel-${p.$id}-${idx}`}
-                data-latest-card
-                className="latest-product-card snap-start group"
+              <div 
+                key={`latest-carousel-${p.$id}-${idx}`} 
+                className="latest-product-card snap-start bg-white rounded-2xl overflow-hidden border border-gray-100/50 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.07)] transition-all duration-300 group flex flex-col justify-between transform hover:-translate-y-1"
               >
-                <div className="relative h-full rounded-3xl bg-white overflow-hidden flex flex-col border border-pink-100/70 shadow-[0_6px_24px_rgba(0,0,0,0.05)] transition-all duration-300 hover:shadow-[0_16px_40px_rgba(236,72,153,0.12)] hover:-translate-y-1 hover:border-pink-200 will-change-transform">
-                  <a href={`/productos/${p.$id}`} className="block relative overflow-hidden aspect-square bg-gradient-to-br from-pink-50 via-white to-violet-50">
+                <a href={`/productos/${p.$id}`} className="block relative overflow-hidden aspect-square bg-gray-50/50 p-1.5">
+                  <div className="w-full h-full rounded-xl overflow-hidden relative shadow-inner">
                     {p.IMAGEURL ? (
-                      <img
-                        src={p.IMAGEURL}
-                        alt={p.NAME}
-                        loading="lazy"
-                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                      <img 
+                        src={p.IMAGEURL} 
+                        alt={p.NAME} 
+                        loading="lazy" 
+                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" 
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300 text-4xl">
+                      <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl bg-gray-100">
                         📦
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent pointer-events-none"></div>
+                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </div>
 
-                    {/* New / Restock badge */}
-                    <div className="absolute top-3 left-3 z-10">
-                      {isNew ? (
-                        <span className="bg-gradient-to-br from-pink-500 to-fuchsia-600 text-white font-black text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wide shadow-md shadow-pink-500/30 flex items-center gap-1 ring-1 ring-white/40">
-                          <Sparkles size={10} /> Nuevo
-                        </span>
-                      ) : (
-                        <span className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-black text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wide shadow-md shadow-emerald-500/30 flex items-center gap-1 ring-1 ring-white/40">
-                          <RefreshCw size={9} className="animate-spin-slow" /> Reingreso
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Discount badge — compact */}
-                    {pricing.hasDiscount && (
-                      <span className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm text-rose-600 font-black text-[10px] px-2 py-0.5 rounded-full shadow-sm z-10 ring-1 ring-rose-100">
-                        -{pricing.discountPercent}%
+                  {/* Badge top-left */}
+                  <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10">
+                    {isNew ? (
+                      <span className="bg-pink-600 text-white font-black text-[9px] px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm flex items-center gap-1 border border-pink-500">
+                        <Sparkles size={8} /> Nuevo
+                      </span>
+                    ) : (
+                      <span className="bg-emerald-600 text-white font-black text-[9px] px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm flex items-center gap-1 border border-emerald-500">
+                        <RefreshCw size={8} className="animate-spin-slow" /> Reingreso
                       </span>
                     )}
-                  </a>
+                  </div>
 
-                  <div className="p-3.5 flex-1 flex flex-col justify-between">
-                    <h3 className="font-bold text-gray-900 text-[13px] leading-snug line-clamp-2 mb-2 group-hover:text-fuchsia-700 transition-colors min-h-[34px]">
+                  {/* Discount percent badge */}
+                  {pricing.hasDiscount && (
+                    <span className="absolute top-2.5 right-2.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-extrabold text-[9px] px-2 py-0.5 rounded-md shadow-md z-10">
+                      -{pricing.discountPercent}% OFF
+                    </span>
+                  )}
+                </a>
+
+                {/* Details */}
+                <div className="p-3 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-semibold text-gray-800 text-[11px] leading-[14px] h-[28px] line-clamp-2 mb-1.5 group-hover:text-pink-600 transition-colors">
                       {p.NAME}
                     </h3>
 
-                    <div>
-                      <div className="flex items-baseline gap-2 mb-2.5">
-                        <span className="font-black text-gray-950 text-lg leading-none tracking-tight">
+                    {/* Price */}
+                    <div className="flex flex-col gap-0.5 mb-2.5">
+                      {hasDiscount && (
+                        <span className="text-[10px] text-gray-400 line-through leading-none">
+                          {formatPrice(p.PRICE)}
+                        </span>
+                      )}
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-black text-gray-900 text-sm leading-none">
                           {formatPrice(displayPrice)}
                         </span>
-                        {hasDiscount && (
-                          <span className="text-[11px] text-gray-400 line-through leading-none">
-                            {formatPrice(p.PRICE)}
-                          </span>
-                        )}
                       </div>
-
-                      <button
-                        onClick={(e) => handleAddToCart(e, p)}
-                        className={`w-full py-2.5 px-3 rounded-xl font-black text-[11px] uppercase tracking-wide transition-all duration-300 flex items-center justify-center gap-1.5 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
-                          isAdding
-                            ? 'bg-emerald-500 text-white shadow-[0_10px_24px_rgba(16,185,129,0.25)]'
-                            : 'bg-gradient-to-br from-pink-500 to-fuchsia-600 text-white shadow-[0_8px_20px_rgba(236,72,153,0.25)] hover:brightness-105'
-                        }`}
-                      >
-                        {isAdding ? (
-                          <>
-                            <Check size={13} strokeWidth={3} />
-                            Listo
-                          </>
-                        ) : (
-                          <>
-                            <ShoppingCart size={12} />
-                            Agregar
-                          </>
-                        )}
-                      </button>
                     </div>
                   </div>
+
+                  {/* Add to Cart button */}
+                  <button
+                    onClick={(e) => handleAddToCart(e, p)}
+                    className={`w-full py-2.5 px-3 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.02)] active:scale-95 ${
+                      isAdding
+                        ? 'bg-emerald-500 text-white shadow-emerald-500/10'
+                        : 'bg-gray-950 text-white hover:bg-pink-600'
+                    }`}
+                  >
+                    {isAdding ? (
+                      <>
+                        <Check size={12} strokeWidth={3} />
+                        Listo
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart size={11} />
+                        Agregar
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             );

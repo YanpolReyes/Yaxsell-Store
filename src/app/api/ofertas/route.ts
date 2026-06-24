@@ -1,41 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServices, getAppwriteConfig, THEME_CONFIG_COLLECTION } from '@/lib/appwrite';
 import { Query } from 'appwrite';
-import { unstable_cache } from 'next/cache';
 
 const DOC_ID = 'ofertas_section';
-// force-dynamic removed to allow Vercel CDN caching via s-maxage header
 
-const getCachedOfertas = unstable_cache(
-  async () => {
+// GET - Get list of selected product IDs
+export async function GET() {
+  try {
     const { databases } = getServices();
     const { databaseId } = getAppwriteConfig();
+
     try {
       const doc = await databases.getDocument(databaseId, THEME_CONFIG_COLLECTION, DOC_ID);
-      return JSON.parse(doc.SECTIONS || '[]');
+      const productIds = JSON.parse(doc.SECTIONS || '[]');
+      return NextResponse.json(
+        { success: true, productIds },
+        { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' } }
+      );
     } catch (e: any) {
+      // If it doesn't exist, create it empty
       if (e.code === 404) {
         await databases.createDocument(databaseId, THEME_CONFIG_COLLECTION, DOC_ID, {
           NAME: 'ofertas_section',
           SECTIONS: '[]',
         });
-        return [];
+        return NextResponse.json(
+          { success: true, productIds: [] },
+          { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' } }
+        );
       }
       throw e;
     }
-  },
-  ['ofertas-cache'],
-  { revalidate: 300, tags: ['ofertas'] } // 5 minutes cache globally
-);
-
-// GET - Get list of selected product IDs
-export async function GET() {
-  try {
-    const productIds = await getCachedOfertas();
-    return NextResponse.json(
-      { success: true, productIds },
-      { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400' } }
-    );
   } catch (error: any) {
     console.error('[API ofertas] GET Exception:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

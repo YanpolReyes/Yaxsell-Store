@@ -7,7 +7,6 @@ import { useCart } from '@/context/CartContext';
 import { formatPrice, getServices, getAppwriteConfig, ORDERS_COLLECTION } from '@/lib/appwrite';
 import RecentlyViewed from '@/components/RecentlyViewed';
 import CartLineRow from '@/components/CartLineRow';
-import DynamicCart from '@/components/DynamicCart';
 import { MINIMUM_ORDER_CLP, isBelowMinimumOrder, minimumOrderMessage } from '@/lib/order-rules';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -17,7 +16,7 @@ import { useState, useEffect } from 'react';
 const PINK = '#e396bf';
 const FF = '"DM Sans",system-ui,sans-serif';
 
-function CarritoPageContent() {
+export default function CarritoPage() {
   const { items, removeItem, updateQuantity, subtotal, totalItems, aperturaSavings, getEffectivePrice, clearCart } = useCart();
 
   const belowMinimum = isBelowMinimumOrder(subtotal);
@@ -319,7 +318,7 @@ function CarritoPageContent() {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 14 }}>
                   <span style={{ color: '#6b7280' }}>Productos ({totalItems})</span>
-                  <span style={{ color: '#1a1a1a', fontWeight: 600 }}>{formatPrice(subtotal + aperturaSavings)}</span>
+                  <span style={{ color: '#1a1a1a', fontWeight: 600 }}>{formatPrice(subtotal)}</span>
                 </div>
 
                 {aperturaSavings > 0 && (
@@ -394,14 +393,6 @@ function CarritoPageContent() {
                   >
                     Mínimo {formatPrice(MINIMUM_ORDER_CLP)}
                   </span>
-                ) : typeof document !== 'undefined' && document.cookie.includes('user_country=AR') ? (
-                  <button
-                    disabled
-                    className="cart-checkout-btn"
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '15px 0', background: '#ccc', color: '#666', textAlign: 'center', borderRadius: 12, fontSize: 14, fontWeight: 700, textDecoration: 'none', boxSizing: 'border-box', cursor: 'not-allowed' }}
-                  >
-                    Ventas no disponibles en Argentina
-                  </button>
                 ) : (
                   <Link href="/checkout"
                     className="cart-checkout-btn"
@@ -436,13 +427,5 @@ function CarritoPageContent() {
         </div>
       </div>
     </>
-  );
-}
-
-export default function CarritoPage() {
-  return (
-    <DynamicCart>
-      <CarritoPageContent />
-    </DynamicCart>
   );
 }

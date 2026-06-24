@@ -10,6 +10,7 @@ import { Product, Category, Banner, TimedOffer } from '@/types';
 import { useCart } from '@/context/CartContext';
 import DynamicHomePage from '@/components/DynamicHomePage';
 import { cached, TTL } from '@/lib/cache';
+import RecentProductsSection from '@/components/RecentProductsSection';
 
 
 declare global { interface Window { __homeFirstMount?: boolean; } }
@@ -52,7 +53,19 @@ function CountdownTimer({ offer }: { offer: TimedOffer }) {
 }
 
 export default function HomePage() {
-
+  // Force full reload when navigating back to / via SPA (Next.js router)
+  // On hard page load: document.readyState starts as 'loading' → no reload
+  // On SPA re-navigation: document is already 'complete' → force reload
+  useEffect(() => {
+    // Small delay to let StrictMode double-invocation settle
+    const timer = setTimeout(() => {
+      if (document.readyState === 'complete' && window.__homeFirstMount) {
+        window.location.reload();
+      }
+      window.__homeFirstMount = true;
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -229,6 +242,9 @@ export default function HomePage() {
         </section>
       )}
 
+      {/* RECENT PRODUCTS */}
+      <RecentProductsSection />
+
 
       {/* TIMED OFFER BANNER — debajo de categorías, estilo app */}
       {offers.length > 0 && (
@@ -324,7 +340,7 @@ export default function HomePage() {
               const discPct = hasDiscount ? Math.round(((p.PRICE - p.CURRENTPRICE!) / p.PRICE) * 100) : 0;
               return (
                 <div key={p.$id} className="glass rounded-2xl overflow-hidden card-hover group">
-                  <Link prefetch={false} href={`/productos/${p.$id}`}>
+                  <Link href={`/productos/${p.$id}`}>
                     <div className="relative h-48 bg-white/5">
                       {p.IMAGEURL ? (
                         <Image src={p.IMAGEURL} alt={p.NAME} fill sizes="100vw" className="object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -342,7 +358,7 @@ export default function HomePage() {
                     </div>
                   </Link>
                   <div className="p-4">
-                    <Link prefetch={false} href={`/productos/${p.$id}`}>
+                    <Link href={`/productos/${p.$id}`}>
                       <h3 className="font-medium text-sm mb-1 truncate hover:text-purple-300 transition-colors">{p.NAME}</h3>
                     </Link>
                     <div className="flex items-center gap-2 mb-3">

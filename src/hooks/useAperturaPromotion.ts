@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import type { AperturaSettings } from '@/lib/apertura-promo';
+import { fetchAperturaSettings, type AperturaSettings } from '@/lib/apertura-promo';
+import { getServices } from '@/lib/appwrite';
 
 // ── Singleton cache: todos los hooks comparten la misma llamada ──
 let cachedSettings: AperturaSettings | null = null;
 let cachedClaimed: boolean = false;
 let cacheTimestamp = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutos (antes era 2min con SDK directo, ahora más seguro)
+const CACHE_TTL = 2 * 60 * 1000; // 2 minutos
 let pendingPromise: Promise<{ settings: AperturaSettings; claimed: boolean }> | null = null;
 
 async function loadApertura(isLoggedIn: boolean): Promise<{ settings: AperturaSettings; claimed: boolean }> {
@@ -25,21 +26,14 @@ async function loadApertura(isLoggedIn: boolean): Promise<{ settings: AperturaSe
 
   pendingPromise = (async () => {
     try {
-      // ── Usa la API route cacheada en vez del SDK directo ──
-      const res = await fetch('/api/public-data/apertura');
-      const globalSettings: AperturaSettings = res.ok
-        ? await res.json()
-        : { isActive: false, discountPercent: 20, minPurchase: 62500 };
-
+      const globalSettings = await fetchAperturaSettings();
       let claimed = false;
       if (isLoggedIn) {
-        // Leer si el regalo fue reclamado desde localStorage (ya cacheado por AuthService)
         try {
-          const cachedUser = localStorage.getItem('yaxsel_auth_user');
-          if (cachedUser) {
-            const parsed = JSON.parse(cachedUser);
-            claimed = Boolean(parsed.welcomeGiftClaimed);
-          }
+          const { account } = getServices();
+          const acc = await account.get();
+          const prefs = (acc as { prefs?: Record<string, unknown> }).prefs || {};
+          claimed = Boolean(prefs.welcomeGiftClaimed);
         } catch {
           claimed = false;
         }

@@ -16,7 +16,7 @@ export interface StoreSettings {
 
 let cachedSettings: StoreSettings | null = null;
 let cacheTimestamp = 0;
-const CACHE_TTL = 10 * 60 * 1000; // 10 minutos (settings rara vez cambian)
+const CACHE_TTL = 2 * 60 * 1000; // 2 minutos
 let pendingPromise: Promise<StoreSettings> | null = null;
 
 async function fetchStoreSettings(): Promise<StoreSettings> {

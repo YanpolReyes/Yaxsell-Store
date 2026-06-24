@@ -148,16 +148,6 @@ export async function cached<T>(
  */
 export function invalidateProductCache(): void {
   cacheInvalidate('products:');
-  if (isBrowser()) {
-    fetch('/api/admin/revalidate', { method: 'POST' }).catch(() => {});
-    import('swr').then(({ mutate }) => {
-      mutate(
-        (key: any) => typeof key === 'string' && key.startsWith('/api/public-data/products'),
-        undefined,
-        { revalidate: true }
-      );
-    }).catch(() => {});
-  }
 }
 
 export function invalidateCategoryCache(): void {

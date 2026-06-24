@@ -47,7 +47,6 @@ export default function NavAvatarWithBadge({
           WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px))',
           mask: 'radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px))',
           boxShadow: `0 0 10px ${ringGlow}`,
-          zIndex: 2,
         }}
       />
       <div
@@ -57,9 +56,6 @@ export default function NavAvatarWithBadge({
           left: 3,
           width: size,
           height: size,
-          zIndex: 1,
-          borderRadius: '50%',
-          overflow: 'hidden',
         }}
       >
         {avatarUrl ? (
@@ -72,7 +68,6 @@ export default function NavAvatarWithBadge({
               borderRadius: '50%',
               objectFit: 'cover',
               display: 'block',
-              boxSizing: 'border-box',
               border: '2px solid rgba(255,255,255,0.95)',
               boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
             }}
@@ -86,7 +81,6 @@ export default function NavAvatarWithBadge({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxSizing: 'border-box',
               background: `linear-gradient(135deg, ${ringColor}, #fbcfe8)`,
               color: '#fff',
               fontSize: Math.round(size * 0.38),
@@ -112,7 +106,6 @@ export default function NavAvatarWithBadge({
               objectFit: 'contain',
               filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.25))',
               pointerEvents: 'none',
-              zIndex: 3,
             }}
           />
         )}

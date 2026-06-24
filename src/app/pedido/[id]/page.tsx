@@ -3,13 +3,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package, Truck, Shield, FileText, RefreshCw, Pencil, X, Plus, Minus, Trash2, Search, Tag, Receipt, ExternalLink, MessageSquare, Box } from 'lucide-react';
+import { CheckCircle, Clock, Upload, Copy, Check, AlertTriangle, MapPin, Package, Truck, Shield, FileText, RefreshCw, Pencil, X, Plus, Minus, Trash2, Search, Tag, Receipt, ExternalLink, MessageSquare } from 'lucide-react';
 import { getServices, getAppwriteConfig, ORDERS_COLLECTION, PRODUCTS_COLLECTION, MEDIA_BUCKET_ID, formatPrice, Query, ID } from '@/lib/appwrite';
 import { resolveStorageImageUrl } from '@/lib/product-images';
 import { Order, OrderItem, Product } from '@/types';
 import { generateOrderPdf } from '@/lib/generateOrderPdf';
-import { notifyPaymentUploaded, notifyNegotiationOpened, notifyNegotiationPartial, notifyNegotiationComplete } from '@/lib/notify-admin';
-import { useAuth } from '@/hooks/useAuth';
 
 const BANK_DEFAULTS = {
   bankAccountHolder: 'YESBELLA LTDA.',
@@ -50,8 +48,8 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   paid:               { label: 'Pago verificado',           color: '#166534', bg: '#f0fdf4' },
   assembling:         { label: 'Armando',                   color: '#7b1fa2', bg: '#f3e5f5' },
   negotiation:        { label: 'Negociación',                color: '#be185d', bg: '#fdf2f8' },
-  preparing_shipping: { label: 'Etiqueta lista',        color: '#5d4037', bg: '#efebe9' },
-  ready_to_ship:      { label: 'Pedido listo para enviar',            color: '#00838f', bg: '#e0f7fa' },
+  preparing_shipping: { label: 'Preparando etiqueta',        color: '#5d4037', bg: '#efebe9' },
+  ready_to_ship:      { label: 'Etiqueta lista',            color: '#00838f', bg: '#e0f7fa' },
   shipped:            { label: 'Enviado',                   color: '#6b21a8', bg: '#faf5ff' },
   delivered:          { label: 'Entregado',                 color: '#166534', bg: '#f0fdf4' },
   cancelled:          { label: 'Cancelado',                 color: '#991b1b', bg: '#fff5f5' },
@@ -84,12 +82,12 @@ const STATUS_DESCRIPTIONS: Record<string, { title: string; desc: string; alertTy
     alertType: 'warning'
   },
   preparing_shipping: {
-    title: 'Etiqueta de Despacho Lista',
+    title: 'Preparando Etiqueta de Despacho',
     desc: 'Estamos generando la etiqueta de envío con tus datos de entrega y sellando la caja para entregarla a la empresa de transporte.',
     alertType: 'indigo'
   },
   ready_to_ship: {
-    title: 'Pedido listo para enviar',
+    title: 'Listo para ser Retirado',
     desc: 'El paquete ya está embalado y etiquetado en nuestro centro de despacho, a la espera de ser retirado por la agencia de envíos seleccionada.',
     alertType: 'indigo'
   },
@@ -156,7 +154,6 @@ function getProductBarcode(p: any): string {
 
 export default function PedidoPage() {
   const { id } = useParams<{ id: string }>();
-  const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -254,13 +251,10 @@ export default function PedidoPage() {
         return stock > 0 || stock === 99999;
       });
 
-      // Sort by price similarity (compare retail prices if originalPrice is available)
-      const targetComparePrice = item.originalPrice || item.price;
+      // Sort by price similarity
       const sorted = filtered.sort((a, b) => {
-        const priceA = a.CURRENTPRICE ?? a.PRICE ?? 0;
-        const priceB = b.CURRENTPRICE ?? b.PRICE ?? 0;
-        const diffA = Math.abs(priceA - targetComparePrice);
-        const diffB = Math.abs(priceB - targetComparePrice);
+        const diffA = Math.abs((a.CURRENTPRICE ?? a.PRICE ?? 0) - item.price);
+        const diffB = Math.abs((b.CURRENTPRICE ?? b.PRICE ?? 0) - item.price);
         return diffA - diffB;
       });
 
@@ -297,22 +291,7 @@ export default function PedidoPage() {
           oldSku = oldProd.sku || getProductSku(oldProd);
           oldName = oldProd.NAME || oldName;
           oldImg = oldProd.IMAGEURL || oldImg;
-        } catch {
-          try {
-            const nameSearchRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-              Query.equal('NAME', oldItem.name),
-              Query.limit(1)
-            ]);
-            if (nameSearchRes.documents.length > 0) {
-              const oldProd = nameSearchRes.documents[0] as any;
-              oldSku = oldProd.sku || getProductSku(oldProd);
-              oldName = oldProd.NAME || oldName;
-              oldImg = oldProd.IMAGEURL || oldImg;
-            }
-          } catch (errName) {
-            console.error("Error doing name fallback search for blocked products (customer):", errName);
-          }
-        }
+        } catch {}
       }
 
       if (oldSku) {
@@ -331,25 +310,15 @@ export default function PedidoPage() {
         } catch {}
       }
 
-      // 2. Block old product stock instead of deleting
+      // 2. Delete from products
       if (oldItem.id) {
         try {
-          await databases.updateDocument(databaseId, PRODUCTS_COLLECTION, oldItem.id, {
-            STOCK: 0
-          });
-        } catch (errStock) {
-          console.warn('No se pudo actualizar stock del producto original', errStock);
-        }
+          await databases.deleteDocument(databaseId, PRODUCTS_COLLECTION, oldItem.id);
+        } catch {}
       }
 
       // 3. Swap in order ITEMS
-      let newPrice = newProd.CURRENTPRICE ?? newProd.PRICE ?? 0;
-      let newOriginalPrice = null;
-      if (oldItem.originalPrice && oldItem.originalPrice > oldItem.price) {
-        const discountPct = (oldItem.originalPrice - oldItem.price) / oldItem.originalPrice;
-        newOriginalPrice = newPrice;
-        newPrice = Math.round(newPrice * (1 - discountPct));
-      }
+      const newPrice = newProd.CURRENTPRICE ?? newProd.PRICE ?? 0;
       const newSku = newProd.sku || getProductSku(newProd);
 
       parsedItems[customerReplacingIdx] = {
@@ -357,7 +326,6 @@ export default function PedidoPage() {
         id: newProd.$id,
         name: newProd.NAME,
         price: newPrice,
-        originalPrice: newOriginalPrice,
         img: newProd.IMAGEURL || '',
         sku: newSku,
         total: newPrice * oldItem.qty,
@@ -388,32 +356,6 @@ export default function PedidoPage() {
       setSuggestions([]);
       await load();
       alert('¡Producto reemplazado con éxito!');
-
-      // Notify admin about replacement status
-      try {
-        const updatedItems = parsedItems;
-        const missingCount = updatedItems.filter((it: any) => it.missing === true).length;
-        const replacedCount = updatedItems.filter((it: any) => it.replaced === true).length;
-        const orderCode = order.ORDERCODE || order.$id;
-        const customerName = order.CUSTOMERNAME || 'Cliente';
-
-        if (missingCount === 0 && replacedCount > 0) {
-          await notifyNegotiationComplete(orderCode, customerName, replacedCount);
-        } else if (missingCount > 0 && replacedCount > 0) {
-          await notifyNegotiationPartial(orderCode, customerName, replacedCount, missingCount);
-        } else {
-          // Fallback: use the old message format for edge cases
-          const adminMsg = `✅ El cliente del pedido *#${orderCode}* ha completado un reemplazo en la web.\n• Producto original: ${oldItem.name}\n• Nuevo producto: ${newProd.NAME}`;
-          await fetch('/api/admin/whatsapp-send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone: '56936599658', message: adminMsg })
-          });
-        }
-      } catch (errNotify) {
-        console.warn('Error notificando al admin:', errNotify);
-      }
-
     } catch (e: any) {
       setReplacingError(e.message || 'Error al realizar el reemplazo');
     } finally {
@@ -430,19 +372,6 @@ export default function PedidoPage() {
       setOrder(o);
       if (o.PAYMENTPROOFURL) setUploaded(true);
       try { setItems(JSON.parse(o.ITEMS)); } catch {}
-
-      // If order is in negotiation and customer hasn't opened it yet, mark as opened
-      if (o.STATUS === 'negotiation' && !(o as any).NEGOTIATION_OPENED_AT) {
-        try {
-          await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, {
-            NEGOTIATION_OPENED_AT: Date.now()
-          });
-          // Notify admin that customer opened the negotiation link
-          notifyNegotiationOpened(o.ORDERCODE || id, o.CUSTOMERNAME || 'Cliente').catch(() => {});
-        } catch (e) {
-          console.warn('No se pudo marcar NEGOTIATION_OPENED_AT:', e);
-        }
-      }
     } catch (e) { console.error(e); }
     finally { setIsLoading(false); }
   }, [id]);
@@ -539,9 +468,6 @@ export default function PedidoPage() {
       await databases.updateDocument(databaseId, ORDERS_COLLECTION, id, { PAYMENTPROOFURL: url, STATUS: 'processing' });
       setUploaded(true);
       await load();
-
-      // Notify admin about payment upload
-      notifyPaymentUploaded(order?.ORDERCODE || id, order?.CUSTOMERNAME || 'Cliente').catch(() => {});
     } catch { alert('Error al subir el comprobante. Intenta de nuevo.'); }
     finally { setUploading(false); }
   }
@@ -875,7 +801,7 @@ export default function PedidoPage() {
 
   const card: React.CSSProperties = { background: '#fff', borderRadius: 4, padding: '20px 22px', marginBottom: 12 };
 
-  if (isLoading || authLoading) return (
+  if (isLoading) return (
     <div style={{ background: '#ebebeb', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <p style={{ color: '#999', fontSize: 15 }}>Cargando pedido...</p>
     </div>
@@ -888,23 +814,6 @@ export default function PedidoPage() {
       <Link href="/" style={{ color: '#3483fa', textDecoration: 'none', fontSize: 14 }}>Ir al inicio</Link>
     </div>
   );
-
-  if (order.USERID && order.USERID !== 'guest') {
-    if (!isLoggedIn || user?.id !== order.USERID) {
-      return (
-        <div style={{ background: '#ebebeb', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 20, textAlign: 'center' }}>
-          <Shield size={48} color="#e396bf" />
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#333', margin: 0 }}>Acceso Denegado</h2>
-          <p style={{ color: '#666', fontSize: 14, maxWidth: 400 }}>
-            Este pedido pertenece a una cuenta registrada. Para proteger la privacidad, debes iniciar sesión con la cuenta dueña de este pedido para verlo.
-          </p>
-          <Link href="/login" style={{ display: 'inline-block', marginTop: 10, padding: '12px 24px', background: '#e396bf', color: '#fff', textDecoration: 'none', borderRadius: 8, fontWeight: 700 }}>
-            Iniciar Sesión
-          </Link>
-        </div>
-      );
-    }
-  }
 
   const isPending = order.STATUS === 'pending';
   const BANK = getBankDetails();
@@ -1008,8 +917,8 @@ export default function PedidoPage() {
             { key: 'paid',               label: 'Verificado',   icon: <CheckCircle size={15} /> },
             { key: 'assembling',         label: 'Armando',      icon: <Package size={15} /> },
             { key: 'negotiation',        label: 'Negociación',  icon: <MessageSquare size={15} /> },
-            { key: 'preparing_shipping', label: 'Etiqueta Lista',  icon: <Tag size={15} /> },
-            { key: 'ready_to_ship',      label: 'Pedido listo para enviar',     icon: <Box size={15} /> },
+            { key: 'preparing_shipping', label: 'Prep. Envío',  icon: <Tag size={15} /> },
+            { key: 'ready_to_ship',      label: isRetiro ? 'Retiro' : 'Etiqueta',     icon: <Receipt size={15} /> },
             { key: 'shipped',            label: 'Enviado',      icon: <Truck size={15} /> },
             { key: 'delivered',          label: 'Entregado',    icon: <CheckCircle size={15} /> },
           ];
@@ -1165,24 +1074,6 @@ export default function PedidoPage() {
           </div>
         )}
 
-        {/* ── WhatsApp Link Section ── */}
-        <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-pink-100/40 mb-4">
-          <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2 mb-2">
-            <MessageSquare size={18} className="text-[#25D366]" /> Recibir notificaciones
-          </h2>
-          <p className="text-xs text-gray-500 mb-4">
-            Conecta tu pedido a nuestro WhatsApp para recibir actualizaciones automáticas. Si escribiste mal tu número en el carrito, haz click aquí para corregirlo.
-          </p>
-          <a
-            href={`https://wa.me/56999149712?text=vincular_pedido%20${order.$id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-2xl font-bold text-sm transition shadow-sm"
-          >
-            <MessageSquare size={16} /> Conectar WhatsApp
-          </a>
-        </div>
-
         {/* ── Order items ── */}
         <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-pink-100/40">
           <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2 mb-4">
@@ -1234,41 +1125,11 @@ export default function PedidoPage() {
                           <AlertTriangle size={13} /> Producto agotado - requiere reemplazo
                         </div>
                       )}
-                      {isReplaced && (() => {
-                        const origItem = (item as any).originalItem;
-                        if (!origItem) return (
-                          <div className="text-green-600 text-xs font-bold mt-1 flex items-center gap-1">
-                            <CheckCircle size={13} /> Reemplazado
-                          </div>
-                        );
-                        
-                        const originalPriceTotal = (origItem.price || 0) * item.qty;
-                        const replacementPriceTotal = item.price * item.qty;
-                        const difference = originalPriceTotal - replacementPriceTotal;
-                        
-                        return (
-                          <div className="mt-1 space-y-1">
-                            <div className="text-green-600 text-xs font-bold flex items-center gap-1">
-                              <CheckCircle size={13} /> Reemplazado
-                            </div>
-                            <div className="text-[11px] text-gray-500 bg-gray-50 p-2.5 rounded-xl border border-gray-100 inline-block">
-                              <p className="font-semibold text-gray-700">Detalles del reemplazo:</p>
-                              <p className="mt-0.5">Producto original: <span className="font-bold text-gray-600">{origItem.name}</span> ({formatPrice(origItem.price)})</p>
-                              {difference > 0 ? (
-                                <p className="text-orange-600 font-bold mt-0.5">
-                                  Diferencia en contra: {formatPrice(difference)}
-                                </p>
-                              ) : difference < 0 ? (
-                                <p className="text-emerald-600 font-bold mt-0.5">
-                                  Saldo a favor: {formatPrice(Math.abs(difference))}
-                                </p>
-                              ) : (
-                                <p className="text-gray-500 font-bold mt-0.5">Sin diferencia de precio</p>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })()}
+                      {isReplaced && (
+                        <div className="text-green-600 text-xs font-bold mt-1 flex items-center gap-1">
+                          <CheckCircle size={13} /> Reemplazado
+                        </div>
+                      )}
                       {(item as any).note && (
                         <div className="mt-2 text-xs bg-amber-50 text-amber-800 p-2.5 rounded-xl border border-amber-100/60 flex items-start gap-1">
                           <span className="font-bold">💬 Nota:</span>
@@ -1519,14 +1380,8 @@ export default function PedidoPage() {
                 ) : (
                   <div className="space-y-2">
                     {suggestions.map((p) => {
-                      let price = p.CURRENTPRICE ?? p.PRICE ?? 0;
-                      const originalItem = items[customerReplacingIdx!];
-                      const hasDiscount = originalItem?.originalPrice && originalItem.originalPrice > originalItem.price;
-                      if (hasDiscount) {
-                        const discountPct = (originalItem.originalPrice! - originalItem.price) / originalItem.originalPrice!;
-                        price = Math.round(price * (1 - discountPct));
-                      }
-                      const origPrice = originalItem?.price || 0;
+                      const price = p.CURRENTPRICE ?? p.PRICE ?? 0;
+                      const origPrice = items[customerReplacingIdx]?.price || 0;
                       const diff = price - origPrice;
                       const diffText = diff === 0 
                         ? 'Mismo precio' 
@@ -1628,27 +1483,6 @@ export default function PedidoPage() {
                 <span className="text-[10px] font-bold px-2 py-0.5 bg-pink-50 text-pink-700 rounded-md border border-pink-100">Modificada</span>
               )}
             </div>
-
-            {(order as any).TRACKINGNUMBER && (
-              <div className="mt-4 p-4 bg-violet-50/50 border border-violet-100 rounded-2xl flex flex-col gap-1">
-                <p className="text-[10px] font-bold text-violet-500 uppercase tracking-wider">Número de Seguimiento</p>
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-mono text-base font-bold text-violet-800 break-all select-all">
-                    {(order as any).TRACKINGNUMBER}
-                  </p>
-                  <button 
-                    onClick={() => {
-                      navigator.clipboard.writeText((order as any).TRACKINGNUMBER);
-                      alert('¡Número de seguimiento copiado!');
-                    }}
-                    className="p-2 bg-violet-100 hover:bg-violet-200 text-violet-700 rounded-xl transition shrink-0"
-                    title="Copiar número"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* Agency change option */}
             {order.STATUS === 'pending' && !order.AGENCYCHANGED && (

@@ -10,24 +10,11 @@ const CACHE_RULES: Record<string, number> = {
   '/api/public-data/home': 300000,           // 5 minutes
   '/api/public-data/subcategories': 600000,  // 10 minutes
   '/api/public-data/product-detail': 120000, // 2 minutes
-  '/api/public-data/apertura': 600000,       // 10 minutes
-  '/api/store-settings': 600000,             // 10 minutes
-  '/api/ofertas': 300000,                    // 5 minutes
-  '/api/theme-config': 300000,               // 5 minutes
 };
 
 export default function ClientFetchCache() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
-    // Clean up any stale service workers to prevent cached chunk loading errors (white screen of death)
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        for (const registration of registrations) {
-          registration.unregister();
-        }
-      }).catch((err) => console.warn('[ServiceWorker] Clean up failed:', err));
-    }
 
     // Prevent double initializing
     if ((window as any).__fetchCacheInitialized) return;
@@ -57,7 +44,9 @@ export default function ClientFetchCache() {
 
       if (matchedPath && isGet) {
         let ttl = CACHE_RULES[matchedPath];
-
+        if (urlString.includes('live=true')) {
+          ttl = 30000; // 30 seconds for live shopping
+        }
 
         const cacheKey = urlString;
         const cached = cacheMap.get(cacheKey);

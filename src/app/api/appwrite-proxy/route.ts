@@ -1,23 +1,22 @@
 import { NextResponse } from 'next/server';
 import { serverListDocuments, serverGetDocument } from '@/lib/appwrite-server';
-import { PUBLIC_CACHEABLE_COLLECTIONS } from '@/lib/appwrite';
 import { unstable_cache } from 'next/cache';
 
-const getCachedList = (colId: string, parsedQueries: string[]) => unstable_cache(
-  async () => {
+const getCachedList = unstable_cache(
+  async (colId: string, parsedQueries: string[]) => {
     return await serverListDocuments(colId, parsedQueries);
   },
-  ['appwrite-list-documents', colId, JSON.stringify(parsedQueries)],
+  ['appwrite-list-documents'],
   { revalidate: 86400, tags: ['appwrite-proxy'] }
-)();
+);
 
-const getCachedDoc = (colId: string, docId: string) => unstable_cache(
-  async () => {
+const getCachedDoc = unstable_cache(
+  async (colId: string, docId: string) => {
     return await serverGetDocument(colId, docId);
   },
-  ['appwrite-get-document', colId, docId],
+  ['appwrite-get-document'],
   { revalidate: 86400, tags: ['appwrite-proxy'] }
-)();
+);
 
 export async function GET(req: Request) {
   try {
@@ -28,10 +27,6 @@ export async function GET(req: Request) {
 
     if (!colId) {
       return NextResponse.json({ error: 'Missing colId' }, { status: 400 });
-    }
-
-    if (!PUBLIC_CACHEABLE_COLLECTIONS.includes(colId)) {
-      return NextResponse.json({ error: 'Unauthorized collection' }, { status: 403 });
     }
 
     let data;

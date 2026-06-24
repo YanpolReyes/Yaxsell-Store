@@ -20,56 +20,15 @@ const FF = '"DM Sans",system-ui,sans-serif';
 const BG_FAVORITOS = 'https://t3.ftcdn.net/jpg/03/58/30/68/360_F_358306827_NYg3eaDFRsStIWjO6CUwtuBDAo1A1TDF.jpg';
 
 export default function FavoritosPage() {
-  const { favorites, toggleFavorite } = useFavorites();
+  const { favoriteProducts, toggleFavorite, loading } = useFavorites();
   const { isLoggedIn } = useAuth();
   useCuentaBg(BG_FAVORITOS);
   const { addItem } = useCart();
   const [added, setAdded] = useState<string | null>(null);
 
-  const [favs, setFavs] = useState<Product[]>([]);
-  const [loadingFavs, setLoadingFavs] = useState(true);
-
   // Guard: si no está logueado, redirigir con hard refresh para evitar hooks mismatch
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
-  
-  useEffect(() => {
-    if (!mounted || !isLoggedIn) return;
-    if (favorites.length === 0) {
-      setFavs([]);
-      setLoadingFavs(false);
-      return;
-    }
-
-    let isSubscribed = true;
-    async function fetchFavs() {
-      try {
-        if (favs.length === 0) setLoadingFavs(true);
-        const { getServices, getAppwriteConfig, PRODUCTS_COLLECTION } = await import('@/lib/appwrite');
-        const { databases } = getServices();
-        const { databaseId } = getAppwriteConfig();
-        const { Query } = await import('appwrite');
-        
-        const queryIds = favorites.slice(0, 100);
-        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION || 'products', [
-          Query.equal('$id', queryIds),
-          Query.limit(100)
-        ]);
-        if (isSubscribed) {
-          const fetchedDocs = res.documents as unknown as Product[];
-          const orderedFavs = favorites.map(id => fetchedDocs.find(d => d.$id === id)).filter(Boolean) as Product[];
-          setFavs(orderedFavs);
-        }
-      } catch (err) {
-        console.error('Error fetching favorites', err);
-      } finally {
-        if (isSubscribed) setLoadingFavs(false);
-      }
-    }
-    fetchFavs();
-    return () => { isSubscribed = false; };
-  }, [favorites, mounted, isLoggedIn]);
-
   if (!mounted) return null;
 
   function handleAdd(p: Product) {
@@ -79,8 +38,7 @@ export default function FavoritosPage() {
   }
 
   const displayPrice = (p: Product) => p.CURRENTPRICE && p.CURRENTPRICE > 0 ? p.CURRENTPRICE : p.PRICE;
-  
-  const displayedFavs = favs.filter(p => favorites.includes(p.$id));
+  const favs = favoriteProducts;
 
   return (
     <>
@@ -135,13 +93,7 @@ export default function FavoritosPage() {
         )}
       </div>
 
-      {loadingFavs && displayedFavs.length === 0 ? (
-        <div style={{ padding: '60px 0', textAlign: 'center', color: '#888' }}>
-          <div className="spinner" style={{ width: 30, height: 30, border: '3px solid #f3f3f3', borderTop: `3px solid ${PINK}`, borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
-          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-          Cargando favoritos...
-        </div>
-      ) : displayedFavs.length === 0 ? (
+      {favs.length === 0 ? (
         <div className="fav-empty" style={{ textAlign: 'center', paddingTop: 48, paddingBottom: 32 }}>
           <div style={{ display: 'flex', justifyContent: 'center', margin: '0 auto 20px' }}>
             <LottieFavorite size={140} />
@@ -161,14 +113,14 @@ export default function FavoritosPage() {
         </div>
       ) : (
         <div className="fav-grid">
-          {displayedFavs.map(p => {
+          {favs.map(p => {
             const price = displayPrice(p);
             const hasDiscount = p.CURRENTPRICE && p.CURRENTPRICE > 0 && p.CURRENTPRICE < p.PRICE;
             const pct = hasDiscount ? Math.round((1 - p.CURRENTPRICE! / p.PRICE) * 100) : 0;
             return (
               <div key={p.$id} className="fav-card">
                 <div className="fav-card-inner">
-                  <Link prefetch={false} href={`/productos/${p.$id}`} style={{ display: 'block', position: 'relative' }}>
+                  <Link href={`/productos/${p.$id}`} style={{ display: 'block', position: 'relative' }}>
                     <div style={{ height: 160, background: '#fafafa', overflow: 'hidden' }}>
                       {p.IMAGEURL
                         ? <img src={resolveStorageImageUrl(p.IMAGEURL)} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 10 }} />
@@ -181,7 +133,7 @@ export default function FavoritosPage() {
                   </Link>
 
                   <div style={{ padding: '10px 12px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <Link prefetch={false} href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
+                    <Link href={`/productos/${p.$id}`} style={{ textDecoration: 'none' }}>
                       <p style={{ margin: '0 0 4px', fontSize: 13, color: '#333', fontWeight: 600, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.NAME}</p>
                     </Link>
 

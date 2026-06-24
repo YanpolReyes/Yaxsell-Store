@@ -1,7 +1,6 @@
 'use client';
 import { useTemplate } from '@/context/TemplateContext';
 import CollectionPage5 from '@/templates/plantilla5/CollectionPage';
-import CollectionPage100 from '@/templates/plantilla100/CollectionPage';
 
 export default function DynamicCollectionPage({ children }: { children: React.ReactNode }) {
   const { isLoading, getSectionTemplate } = useTemplate();
@@ -17,7 +16,6 @@ export default function DynamicCollectionPage({ children }: { children: React.Re
   
   const template = getSectionTemplate('collections');
   
-  if (template === 100) return <CollectionPage100 />;
   if (template === 5) return <CollectionPage5 />;
   
   // Por defecto, renderiza el children (que es la vista original de /productos)

@@ -19,13 +19,6 @@ export interface Product {
   WHOLESALEPRICE?: number;
   WHOLESALEMINQUANTITY?: number;
   PACKQTY?: number;
-  PACK_MIN_PACKS?: number;
-  PACK_DISCOUNT_PCT?: number;
-  PACK_OFFER_PRICE?: number;
-  PACK_OFFER_EXPIRES_AT?: number;
-  PACK_OFFER_MIN_PACKS?: number;
-  UNIT_OFFER_EXPIRES_AT?: number;
-  PACK_STOCK?: number;
   TAGS?: string[];
   FEATURES?: string[];
   SOLDQUANTITY?: number;
@@ -34,6 +27,7 @@ export interface Product {
   GROUPID?: string;
   COMING_SOON?: boolean;
   DATE_ADDED?: string;
+  imported_at?: string;
   section?: number;
   $createdAt?: string;
   $updatedAt?: string;
@@ -227,7 +221,6 @@ export interface CartItem {
   timedOfferPrice?: number;
   timedOfferExpiresAt?: number;
   wholesalePrice?: number;
-  isPack?: boolean;
 }
 
 export interface LiveStream {

@@ -7,7 +7,6 @@
 import { getServices, getAppwriteConfig, THEME_CONFIG_COLLECTION } from './appwrite';
 
 export interface SectionSettings {
-  [key: string]: any;
   // Content
   title?: string;
   subtitle?: string;
@@ -426,14 +425,6 @@ export interface SectionSettings {
   overlayEnabled?: boolean;
   overlayOpacity?: number;
   overlayColor?: string;
-  // Hero Banners (Plantilla 23 overrides)
-  tpl23Hero1DesktopImg?: string;
-  tpl23Hero1MobileImg?: string;
-  tpl23Hero1Title?: string;
-  tpl23Hero1BtnText?: string;
-  tpl23Hero1BtnLink?: string;
-  tpl23Hero2DesktopImg?: string;
-  tpl23Hero2MobileImg?: string;
 }
 
 export interface CollectionItem {
@@ -468,7 +459,6 @@ export interface HeroSlide {
   btnSecondaryText?: string;
   btnSecondaryLink?: string;
   alignment?: 'center' | 'left' | 'right';
-  buttonLink?: string;
 }
 
 export interface SectionConfig {
@@ -1475,14 +1465,32 @@ export async function getSectionConfigAsync(): Promise<SectionConfig[]> {
   if (pendingConfigPromise) return pendingConfigPromise;
   
   pendingConfigPromise = (async () => {
+    // Intentar leer del API server-side (que usa API key)
     try {
-      return getSectionConfigSync();
+      const res = await fetch(API_ENDPOINT);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.sections) {
+          const parsed: SectionConfig[] = typeof data.sections === 'string' ? JSON.parse(data.sections) : data.sections;
+          // Accept any array, even empty, to avoid forced reset to defaults if user intentionally has few sections
+          if (Array.isArray(parsed)) {
+            const merged = mergeWithDefaults(parsed);
+            cachedConfig = merged;
+            cacheTimestamp = Date.now();
+            // Sincronizar localStorage como backup
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(merged)); } catch {}
+            return merged;
+          }
+        }
+      }
     } catch (err) {
       console.log('[section-config] API no disponible, usando localStorage:', err);
-      return getSectionConfigSync();
     } finally {
       pendingConfigPromise = null;
     }
+    
+    // Fallback a localStorage
+    return getSectionConfigSync();
   })();
   
   return pendingConfigPromise;

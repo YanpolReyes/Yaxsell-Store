@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { X, ShoppingCart, Trash2, Plus, Minus } from 'lucide-react';
@@ -68,16 +68,10 @@ export default function CartDrawer({ open, onClose }: Props) {
               style={{ display: 'block', width: '100%', padding: '12px 0', background: '#fff', color: '#3483fa', border: '1.5px solid #3483fa', borderRadius: 6, fontSize: 14, fontWeight: 600, textAlign: 'center', textDecoration: 'none', marginBottom: 8 }}>
               Ver carrito
             </Link>
-            {typeof document !== 'undefined' && document.cookie.includes('user_country=AR') ? (
-              <button disabled style={{ display: 'block', width: '100%', padding: '12px 0', background: '#ccc', color: '#666', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 600, textAlign: 'center', cursor: 'not-allowed' }}>
-                Ventas no disponibles en Argentina
-              </button>
-            ) : (
-              <Link href="/checkout" onClick={onClose}
-                style={{ display: 'block', width: '100%', padding: '12px 0', background: '#3483fa', color: '#fff', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 600, textAlign: 'center', textDecoration: 'none' }}>
-                Ir a pagar
-              </Link>
-            )}
+            <Link href="/checkout" onClick={onClose}
+              style={{ display: 'block', width: '100%', padding: '12px 0', background: '#3483fa', color: '#fff', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 600, textAlign: 'center', textDecoration: 'none' }}>
+              Ir a pagar
+            </Link>
           </div>
         )}
       </div>
@@ -96,62 +90,37 @@ function CartDrawerRow({
   removeItem: (id: string) => void;
 }) {
   const { unitPrice, pricing } = useCartItemPrice(item);
-  const p = item.product;
-  const [incrementMode, setIncrementMode] = useState<'unit' | 'pack'>(item.isPack ? 'pack' : 'unit');
-
   return (
     <div style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid #f5f5f5' }}>
       <div style={{ width: 64, height: 64, borderRadius: 6, background: '#f9f9f9', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
-        {p.IMAGEURL ? (
-          <Image src={p.IMAGEURL} alt={p.NAME} fill style={{ objectFit: 'contain', padding: 4 }} sizes="64px" />
+        {item.product.IMAGEURL ? (
+          <Image src={item.product.IMAGEURL} alt={item.product.NAME} fill style={{ objectFit: 'contain', padding: 4 }} sizes="64px" />
         ) : (
           <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>📦</span>
         )}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: '0 0 4px', fontSize: 13, color: '#333', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-          {p.NAME}
+          {item.product.NAME}
         </p>
         {pricing.hasDiscount && pricing.originalPrice != null && (
           <p style={{ margin: '0 0 2px', fontSize: 11, color: '#999', textDecoration: 'line-through' }}>{formatPrice(pricing.originalPrice)}</p>
         )}
         <p style={{ margin: '0 0 6px', fontSize: 15, fontWeight: 700, color: pricing.fromApertura ? '#e396bf' : '#333' }}>{formatPrice(unitPrice)}</p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: 4 }}>
-            <button type="button" onClick={() => updateQuantity(p.$id, Math.max(1, item.quantity - (incrementMode === 'pack' ? (p.PACKQTY || 1) : 1)))}
+            <button type="button" onClick={() => updateQuantity(item.product.$id, Math.max(1, item.quantity - 1))}
               style={{ width: 28, height: 28, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3483fa' }}>
               <Minus size={12} />
             </button>
             <span style={{ width: 28, textAlign: 'center', fontSize: 13, fontWeight: 600 }}>{item.quantity}</span>
-            <button type="button" onClick={() => updateQuantity(p.$id, item.quantity + (incrementMode === 'pack' ? (p.PACKQTY || 1) : 1))}
+            <button type="button" onClick={() => updateQuantity(item.product.$id, item.quantity + 1)}
               style={{ width: 28, height: 28, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3483fa' }}>
               <Plus size={12} />
             </button>
           </div>
-
-          {p.PACKQTY && p.PACKQTY > 1 && (
-            <select
-              value={incrementMode}
-              onChange={(e) => setIncrementMode(e.target.value as 'unit' | 'pack')}
-              style={{
-                fontSize: 11,
-                padding: '2px 4px',
-                borderRadius: 4,
-                border: '1px solid #fbcfe8',
-                background: incrementMode === 'pack' ? '#fdf2f8' : '#fff',
-                color: incrementMode === 'pack' ? '#be185d' : '#6b7280',
-                fontWeight: 600,
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="unit">Unidad</option>
-              <option value="pack">Pack ({p.PACKQTY})</option>
-            </select>
-          )}
-
           <button type="button" onClick={() => removeItem(item.product.$id)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 4, marginLeft: 'auto' }}>
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 4 }}>
             <Trash2 size={14} />
           </button>
         </div>

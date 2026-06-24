@@ -4,23 +4,20 @@ import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User, MapPin, Package, ChevronDown, ChevronRight, Shield, Truck, RefreshCw, Plus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, WHOLESALE_ORDERS_COLLECTION_ID, APERTURA_SETTINGS_COLLECTION_ID, COUPONS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
+import { getServices, getAppwriteConfig, ORDERS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, WHOLESALE_REQUESTS_COLLECTION_ID, APERTURA_SETTINGS_COLLECTION_ID, COUPONS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { serverListDocuments } from '@/lib/appwrite-server';
 import { ADDRESSES_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { notifyNewOrder } from '@/lib/notify-admin';
 import { CHILE_REGIONES } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPrice } from '@/lib/appwrite';
 import { resolveStorageImageUrl } from '@/lib/product-images';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
-import { getSkuFromFeatures, getBarcodeFromFeatures } from '@/lib/product-features';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { Query, ID } from 'appwrite';
 import Image from 'next/image';
 import Link from 'next/link';
 import { isBelowMinimumOrder, minimumOrderMessage } from '@/lib/order-rules';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
-import DynamicCheckout from '@/components/DynamicCheckout';
 
 interface AgencyOption { name: string; color: string; bg: string; desc: string; logo: string; active?: boolean; }
 interface SavedAddress { id: string; alias: string; name: string; phone: string; fullAddress: string; commune: string; region: string; lat: number; lng: number; }
@@ -43,7 +40,7 @@ function CheckoutInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const discountParam = parseFloat(searchParams.get('discount') || '0');
-  const { items, subtotal, clearCart, catalogSubtotal, aperturaSavings, updateCartWithLiveProducts, removeItem, hasPackItems, getEffectiveItemTotal, getEffectivePrice } = useCart();
+  const { items, subtotal, clearCart, catalogSubtotal, aperturaSavings, updateCartWithLiveProducts, removeItem } = useCart();
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const { unlimitedStock } = useStoreSettings();
   const { settings: apertura, isActive: aperturaActive, discountPercent: aperturaPct } = useAperturaPromotion();
@@ -113,13 +110,10 @@ function CheckoutInner() {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponApplied, setCouponApplied] = useState('');
   const [couponDocId, setCouponDocId] = useState('');
-  const [couponUserRestriction, setCouponUserRestriction] = useState<string | null>(null);
   const [publicCoupons, setPublicCoupons] = useState<any[]>([]);
 
-  // Agency dropdown and modal state
+  // Agency dropdown state
   const [agencyDropdownOpen, setAgencyDropdownOpen] = useState(false);
-  const [showAgencyModal, setShowAgencyModal] = useState(false);
-  const [showSummaryModal, setShowSummaryModal] = useState(false);
 
   // Geolocation state
   const [showGeoModal, setShowGeoModal] = useState(false);
@@ -163,7 +157,7 @@ function CheckoutInner() {
     (async () => {
       try {
         // Fetch all coupons and filter client-side to avoid query syntax issues
-        const res = await serverListDocuments(COUPONS_COLLECTION_ID, [JSON.stringify({ method: 'limit', values: [100] })]);
+        const res = await serverListDocuments(COUPONS_COLLECTION_ID, ['limit(100)']);
         const docs = (res.documents as any[]) || [];
         const active = docs.filter((c: any) => {
           const isActive = c.isActive ?? c.ISACTIVE ?? c.ACTIVE ?? true;
@@ -189,24 +183,6 @@ function CheckoutInner() {
       } catch (e) { console.error('Failed to fetch public coupons:', e); }
     })();
   }, []);
-
-  useEffect(() => {
-    if (couponApplied && couponUserRestriction && couponUserRestriction.trim().toLowerCase() !== 'null') {
-      const restrictedVal = couponUserRestriction.trim().toLowerCase();
-      const userEmail = user?.email?.trim().toLowerCase();
-      const userId = user?.id?.trim().toLowerCase();
-      const checkoutEmail = form.email?.trim().toLowerCase();
-
-      const matchUser = (userId && userId === restrictedVal) || 
-                        (userEmail && userEmail === restrictedVal) ||
-                        (checkoutEmail && checkoutEmail === restrictedVal);
-
-      if (!matchUser) {
-        removeCoupon();
-        setError('El cupón aplicado se removió porque no coincide con el correo o usuario ingresado');
-      }
-    }
-  }, [form.email, user, couponApplied, couponUserRestriction]);
 
   useEffect(() => {
     // Load saved addresses from DB first, fallback to localStorage
@@ -383,31 +359,11 @@ function CheckoutInner() {
         return;
       }
       // Validate min purchase
-      const minOrderAmount = coupon.minPurchase ?? coupon.minOrderAmount ?? coupon.MINORDERAMOUNT ?? 0;
+      const minOrderAmount = coupon.minOrderAmount ?? coupon.MINORDERAMOUNT ?? 0;
       if (minOrderAmount && subtotal < minOrderAmount) {
         setCouponError(`Compra mínima: ${formatPrice(minOrderAmount)}`);
         setCouponLoading(false);
         return;
-      }
-
-      // Validate user/email restriction
-      const userRestriction = coupon.userRestriction || coupon.USERRESTRICTION || null;
-      const hasRestriction = userRestriction && userRestriction.trim() !== '' && userRestriction.trim().toLowerCase() !== 'null';
-      if (hasRestriction) {
-        const restrictedVal = userRestriction.trim().toLowerCase();
-        const userEmail = user?.email?.trim().toLowerCase();
-        const userId = user?.id?.trim().toLowerCase();
-        const checkoutEmail = form.email?.trim().toLowerCase();
-
-        const matchUser = (userId && userId === restrictedVal) || 
-                          (userEmail && userEmail === restrictedVal) ||
-                          (checkoutEmail && checkoutEmail === restrictedVal);
-
-        if (!matchUser) {
-          setCouponError('Este cupón está restringido a otro usuario');
-          setCouponLoading(false);
-          return;
-        }
       }
 
       // Calculate eligible subtotal for coupon (excluding active timed offer products)
@@ -445,7 +401,6 @@ function CheckoutInner() {
       setCouponDiscount(discount);
       setCouponApplied(code);
       setCouponDocId(coupon.$id);
-      setCouponUserRestriction(userRestriction || null);
     } catch (err: any) {
       setCouponError('Error al validar cupón');
     } finally {
@@ -459,7 +414,6 @@ function CheckoutInner() {
     setCouponDocId('');
     setCouponCode('');
     setCouponError('');
-    setCouponUserRestriction(null);
   }
 
   async function getNextOrderIndex(): Promise<number> {
@@ -476,6 +430,7 @@ function CheckoutInner() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!agency) { setError('Selecciona una agencia de envío'); return; }
     if (!form.region || !form.comuna) { setError('Selecciona región y comuna'); return; }
     if (!form.name || !form.rut || !form.phone) { setError('Completa todos los campos obligatorios'); return; }
     if (belowMinimum) {
@@ -483,98 +438,13 @@ function CheckoutInner() {
       return;
     }
     
-    if (!agency) {
-      setShowAgencyModal(true);
-      return;
-    }
-
-    setShowSummaryModal(true);
-  }
-
-  async function executeCheckout() {
-    setShowSummaryModal(false);
     // Si no se ha decidido sobre geolocalización, mostrar modal
     if (!geoSkipped && !geoCoords) {
       setShowGeoModal(true);
       return;
     }
 
-    if (hasPackItems) {
-      createWholesaleRequest(geoCoords);
-    } else {
-      createOrder(geoCoords);
-    }
-  }
-
-  async function createWholesaleRequest(coords: {lat: number, lng: number} | null) {
-    setSubmitting(true); setError('');
-    try {
-      // Validate pack stock for wholesale items
-      for (const item of items) {
-        if (item.isPack && item.product.PACKQTY && item.product.PACKQTY > 1) {
-          const packStock = item.product.PACK_STOCK ?? Math.floor((item.product.STOCK || 0) / item.product.PACKQTY);
-          const requestedPacks = Math.ceil(item.quantity / item.product.PACKQTY);
-          if (packStock < requestedPacks) {
-            setError(`Stock insuficiente para "${item.product.NAME}". Solo hay ${packStock} paquete(s) disponible(s) y solicitaste ${requestedPacks}.`);
-            setSubmitting(false);
-            return;
-          }
-        }
-      }
-
-      const { databases } = getServices();
-      const { databaseId } = getAppwriteConfig();
-      const now = Date.now();
-      const reqCode = `WR-${String(now).slice(-8)}`;
-      const itemsData = items.map(i => {
-        const prod = i.product as any;
-        const productSku = prod.SKU || getSkuFromFeatures(prod.FEATURES, prod.TAGS, prod.jumpseller_id, prod.SKU) || '';
-        const productBarcode = prod.BARCODE || getBarcodeFromFeatures(prod.FEATURES, prod.BARCODE) || '';
-        const total = getEffectiveItemTotal(i);
-        const price = getEffectivePrice(i);
-        return {
-          id: prod.$id,
-          name: prod.NAME,
-          price,
-          packQty: prod.PACKQTY || 1,
-          qty: i.quantity,
-          img: prod.IMAGEURL || '',
-          total,
-          isPack: i.isPack || false,
-          sku: productSku,
-          barcode: productBarcode
-        };
-      });
-      const finalAddress = (agency !== 'RETIRO EN TIENDA' && deliveryType === 'agencia' && !form.address.startsWith('[SUCURSAL]'))
-        ? `[SUCURSAL] ${form.address}` : form.address;
-      const additionalInfoWithGeo = coords
-        ? `${form.additionalInfo ? form.additionalInfo + '\n' : ''}[GEO:${coords.lat},${coords.lng}]`
-        : form.additionalInfo;
-      const docId = await databases.createDocument(databaseId, WHOLESALE_ORDERS_COLLECTION_ID, ID.unique(), {
-        USERID: user?.id || 'guest',
-        ITEMS: JSON.stringify(itemsData),
-        CUSTOMERNAME: form.name,
-        CUSTOMERRUT: form.rut,
-        CUSTOMERPHONE: form.phone,
-        CUSTOMEREMAIL: form.email,
-        REGION: form.region,
-        COMUNA: form.comuna,
-        ADDRESS: finalAddress,
-        ADDITIONALINFO: additionalInfoWithGeo,
-        SHIPPINGAGENCY: agency,
-        SUBTOTAL: subtotal,
-        TOTAL: subtotal,
-        REQCODE: reqCode,
-        STATUS: 'pending_stock',
-        CREATEDAT: now,
-        ...(customerNote.trim() ? { CUSTOMERNOTE: customerNote.trim() } : {}),
-      });
-      submittedRef.current = true;
-      clearCart();
-      router.push(`/pedido-mayorista-confirmado?id=${docId}`);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error al registrar pedido mayorista');
-    } finally { setSubmitting(false); }
+    createOrder(geoCoords);
   }
 
   const handleGeolocate = () => {
@@ -591,12 +461,7 @@ function CheckoutInner() {
         setGeoCoords(coords);
         setIsGeolocating(false);
         setShowGeoModal(false);
-        setGeoSkipped(false);
-        if (hasPackItems) {
-          createWholesaleRequest(coords);
-        } else {
-          createOrder(coords);
-        }
+        createOrder(coords);
       },
       (err) => {
         setGeoError('No se pudo obtener tu ubicación automáticamente: ' + err.message);
@@ -609,11 +474,7 @@ function CheckoutInner() {
   const handleSkipGeo = () => {
     setGeoSkipped(true);
     setShowGeoModal(false);
-    if (hasPackItems) {
-      createWholesaleRequest(null);
-    } else {
-      createOrder(null);
-    }
+    createOrder(null);
   };
 
   async function createOrder(coords: {lat: number, lng: number} | null) {
@@ -626,8 +487,18 @@ function CheckoutInner() {
       const now = Date.now();
       const expiresAt = now + 3 * 60 * 60 * 1000;
       const itemsData = items.map(i => {
-        const total = getEffectiveItemTotal(i);
-        const price = getEffectivePrice(i);
+        const hasActiveOffer = i.timedOfferPrice && i.timedOfferExpiresAt && now < i.timedOfferExpiresAt;
+        
+        const pFeatures = Array.isArray(i.product.FEATURES) ? i.product.FEATURES.join('\n') : i.product.FEATURES || '';
+        const isExact = /ExactWholesale:\s*true/i.test(pFeatures);
+        const minQty = i.product.WHOLESALEMINQUANTITY || 0;
+        const qtyMatches = isExact 
+          ? i.quantity === minQty 
+          : i.quantity >= minQty;
+
+        const hasConfiguredWholesale = !!(i.product.WHOLESALEPRICE && i.product.WHOLESALEMINQUANTITY);
+        const effectiveWholesale = (hasConfiguredWholesale && qtyMatches) ? i.product.WHOLESALEPRICE : (hasConfiguredWholesale ? undefined : i.wholesalePrice);
+        const price = hasActiveOffer ? i.timedOfferPrice! : (effectiveWholesale || resolveProductDisplayPrice(i.product, apertura).displayPrice);
         const originalPrice = i.product.PRICE !== price ? i.product.PRICE : null;
         const note = itemNotes[i.product.$id] || '';
         return { 
@@ -637,7 +508,7 @@ function CheckoutInner() {
           originalPrice, 
           qty: i.quantity, 
           img: resolveStorageImageUrl(i.product.IMAGEURL), 
-          total,
+          total: price * i.quantity,
           ...(note.trim() ? { note: note.trim() } : {})
         };
       });
@@ -708,9 +579,6 @@ function CheckoutInner() {
       });
       submittedRef.current = true;
       const orderId = (docId as unknown as { $id: string }).$id;
-
-      // Notify admin about new order
-      notifyNewOrder(orderCode, form.name, total, items.length).catch(() => {});
 
       // ── Descontar stock reservado (con rollback si falla) ──
       // Solo se descuenta si el producto tiene stock real asignado (< 99999).
@@ -891,18 +759,10 @@ function CheckoutInner() {
         .ck-trail:nth-child(13) { left: 5%; top: 45%; animation-delay: 0s; }
         .ck-trail:nth-child(14) { left: 35%; top: 35%; animation-delay: 0.8s; }
         .ck-trail:nth-child(15) { left: 65%; top: 50%; animation-delay: 1.6s; }
-        @keyframes ckPulseWholesale {
-          0%, 100% { box-shadow: 0 0 8px rgba(92,61,36,0.15), inset 0 0 12px rgba(255,255,255,0.15); }
-          50% { box-shadow: 0 0 20px rgba(92,61,36,0.3), inset 0 0 20px rgba(255,255,255,0.3); }
-        }
         .ck-confirm-btn {
           animation: ckBtnShift 3s ease infinite, ckPulse 2s ease-in-out infinite;
         }
         .ck-confirm-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 12px 32px rgba(227,150,191,0.35), inset 0 0 20px rgba(255,255,255,0.15); }
-        .ck-confirm-btn-wholesale {
-          animation: ckBtnShift 3s ease infinite, ckPulseWholesale 2s ease-in-out infinite;
-        }
-        .ck-confirm-btn-wholesale:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 12px 32px rgba(92,61,36,0.25), inset 0 0 20px rgba(255,255,255,0.2); }
         .ck-shimmer-line {
           position: absolute;
           top: 0; bottom: 0;
@@ -910,11 +770,6 @@ function CheckoutInner() {
           background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
           animation: ckShimmer 2.5s ease-in-out infinite;
           pointer-events: none;
-        }
-        .ck-modal-agency-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 12px;
         }
         @media (max-width: 800px) {
           .ck-page { padding: 12px 12px calc(76px + env(safe-area-inset-bottom, 0px)) !important; }
@@ -928,34 +783,6 @@ function CheckoutInner() {
           .ck-form-grid > div { grid-column: 1 / -1 !important; }
           .ck-summary-items { max-height: 180px !important; padding: 12px 14px !important; }
           .ck-breadcrumb { font-size: 12px !important; margin-bottom: 12px !important; flex-wrap: wrap; }
-          
-          /* Grid de agencias en modal (de 2 en 2 en mobiles) */
-          .ck-modal-agency-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 10px !important;
-          }
-          .ck-agency-card {
-            flex-direction: column !important;
-            align-items: center !important;
-            text-align: center !important;
-            padding: 14px 10px !important;
-            gap: 10px !important;
-          }
-          .ck-agency-chevron {
-            display: none !important;
-          }
-          .ck-agency-logo-wrapper {
-            width: 48px !important;
-            height: 48px !important;
-            margin-bottom: 2px;
-          }
-          .ck-agency-name {
-            font-size: 13px !important;
-          }
-          .ck-agency-desc {
-            font-size: 10px !important;
-            line-height: 1.2;
-          }
         }
         .ck-input-placeholder::placeholder { color: #6b7280; opacity: 1; }
         .ck-textarea-placeholder::placeholder { color: #6b7280; opacity: 1; }
@@ -1366,41 +1193,28 @@ function CheckoutInner() {
                       </button>
                     </div>
                     {couponError && <p style={{ margin: '4px 0 0', fontSize: 11, color: '#ef4444', fontFamily: FF }}>⚠ {couponError}</p>}
-                    {(() => {
-                      const filtered = publicCoupons.filter((c: any) => {
-                        const userRestriction = c.userRestriction || c.USERRESTRICTION || null;
-                        if (!userRestriction || userRestriction.trim() === '' || userRestriction.trim().toLowerCase() === 'null') return true;
-                        const val = userRestriction.trim().toLowerCase();
-                        return (
-                          (user?.id && user.id.toLowerCase() === val) ||
-                          (user?.email && user.email.toLowerCase() === val) ||
-                          (form.email && form.email.toLowerCase() === val)
-                        );
-                      });
-                      if (filtered.length === 0) return null;
-                      return (
-                        <div style={{ marginTop: 8 }}>
-                          <p style={{ margin: '0 0 6px', fontSize: 10, fontWeight: 700, color: '#9ca3af', fontFamily: FF, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Cupones disponibles</p>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                            {filtered.map((c: any) => {
-                              const code = (c.code || c.CODE || '').toUpperCase();
-                              if (!code) return null;
-                              const discType = c.type ?? c.DISCOUNTTYPE ?? c.TYPE ?? 'percent';
-                              const discVal = c.value ?? c.DISCOUNTVALUE ?? c.VALUE ?? 0;
-                              const label = discType === 'percent' || discType === 'percentage' ? `${discVal}% OFF` : formatPrice(discVal);
-                              return (
-                                <button key={c.$id} type="button" onClick={() => { setCouponCode(code); setCouponError(''); }}
-                                  style={{ padding: '5px 10px', borderRadius: 999, border: `1.5px solid ${couponCode === code ? PINK : '#fce7f3'}`, background: couponCode === code ? PINK_BG : '#fff', color: couponCode === code ? PINK : '#6b7280', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: FF, transition: 'all .15s', letterSpacing: 0.5 }}
-                                  onMouseEnter={e => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
-                                  onMouseLeave={e => { if (couponCode !== code) { e.currentTarget.style.borderColor = '#fce7f3'; e.currentTarget.style.color = '#6b7280'; } }}>
-                                  🎟 {code} <span style={{ fontWeight: 800, color: '#00a650' }}>{label}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
+                    {publicCoupons.length > 0 && (
+                      <div style={{ marginTop: 8 }}>
+                        <p style={{ margin: '0 0 6px', fontSize: 10, fontWeight: 700, color: '#9ca3af', fontFamily: FF, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Cupones disponibles</p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {publicCoupons.map((c: any) => {
+                            const code = (c.code || c.CODE || '').toUpperCase();
+                            if (!code) return null;
+                            const discType = c.type ?? c.DISCOUNTTYPE ?? c.TYPE ?? 'percent';
+                            const discVal = c.value ?? c.DISCOUNTVALUE ?? c.VALUE ?? 0;
+                            const label = discType === 'percent' || discType === 'percentage' ? `${discVal}% OFF` : formatPrice(discVal);
+                            return (
+                              <button key={c.$id} type="button" onClick={() => { setCouponCode(code); setCouponError(''); }}
+                                style={{ padding: '5px 10px', borderRadius: 999, border: `1.5px solid ${couponCode === code ? PINK : '#fce7f3'}`, background: couponCode === code ? PINK_BG : '#fff', color: couponCode === code ? PINK : '#6b7280', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: FF, transition: 'all .15s', letterSpacing: 0.5 }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
+                                onMouseLeave={e => { if (couponCode !== code) { e.currentTarget.style.borderColor = '#fce7f3'; e.currentTarget.style.color = '#6b7280'; } }}>
+                                🎟 {code} <span style={{ fontWeight: 800, color: '#00a650' }}>{label}</span>
+                              </button>
+                            );
+                          })}
                         </div>
-                      );
-                    })()}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1428,24 +1242,10 @@ function CheckoutInner() {
 
                 {error && <p style={{ margin: '0 22px 12px', fontSize: 12, color: '#ef4444', background: '#fef2f2', padding: '8px 12px', borderRadius: 10, border: '1px solid #fecaca', fontFamily: FF }}>⚠ {error}</p>}
 
-                {/* Wholesale notice */}
-                {hasPackItems && (
-                  <div style={{ margin: '0 22px 14px', padding: '14px 16px', borderRadius: 14, background: 'linear-gradient(135deg,#fef9f4,#fff8f0)', border: '1px solid #eed9c4', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 20 }}>📦</span>
-                      <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#5c3d24', fontFamily: FF }}>Pedido Mayorista</p>
-                    </div>
-                    <p style={{ margin: 0, fontSize: 12, color: '#92400e', fontFamily: FF, lineHeight: 1.5 }}>
-                      Hemos recibido tus productos. Antes del pago, verificaremos la disponibilidad de stock y nos comunicaremos contigo por <strong>WhatsApp</strong> para confirmarte cuáles hay disponibles.
-                    </p>
-                    <p style={{ margin: 0, fontSize: 11, color: '#b45309', fontFamily: FF }}>También podrás ver el estado desde <strong>Mis Pedidos Mayoristas</strong> en tu cuenta.</p>
-                  </div>
-                )}
-
                 {/* Submit button */}
                 <div style={{ padding: '0 22px 20px' }}>
-                  <button type="submit" disabled={submitting || belowMinimum} className={hasPackItems ? "ck-confirm-btn-wholesale" : "ck-confirm-btn"}
-                    style={{ display: 'block', width: '100%', padding: '16px 0', backgroundImage: submitting ? 'none' : (hasPackItems ? 'linear-gradient(135deg, #f7e5d4, #eed9c4, #d4b290, #eed9c4, #f7e5d4)' : 'linear-gradient(135deg, #fbcfe8, #f5a8cf, #e396bf, #f5a8cf, #fbcfe8)'), backgroundColor: submitting ? (hasPackItems ? '#eed9c4' : '#f5a8cf') : 'transparent', color: hasPackItems ? '#5c3d24' : '#fff', textAlign: 'center', borderRadius: 16, fontSize: 16, fontWeight: 800, border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', transition: 'all .3s', boxSizing: 'border-box', fontFamily: FF, position: 'relative', overflow: 'hidden', backgroundSize: '300% 300%', letterSpacing: '0.02em' }}>
+                  <button type="submit" disabled={submitting || belowMinimum || !agency} className="ck-confirm-btn"
+                    style={{ display: 'block', width: '100%', padding: '16px 0', backgroundImage: submitting ? 'none' : 'linear-gradient(135deg, #fbcfe8, #f5a8cf, #e396bf, #f5a8cf, #fbcfe8)', backgroundColor: submitting ? '#f5a8cf' : 'transparent', color: '#fff', textAlign: 'center', borderRadius: 16, fontSize: 16, fontWeight: 800, border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', transition: 'all .3s', boxSizing: 'border-box', fontFamily: FF, position: 'relative', overflow: 'hidden', backgroundSize: '300% 300%', letterSpacing: '0.02em' }}>
                     {!submitting && <>
                       <span style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
                         <span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" /><span className="ck-orb" />
@@ -1455,131 +1255,50 @@ function CheckoutInner() {
                       <span className="ck-shimmer-line" />
                     </>}
                     <span style={{ position: 'relative', zIndex: 2, textShadow: '0 1px 3px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                      {submitting ? 'Procesando...' : hasPackItems ? <>📦 Solicitar Pedido Mayorista</> : <><Shield size={16} /> Confirmar pedido</>}
+                      {submitting ? 'Procesando...' : <><Shield size={16} /> Confirmar pedido</>}
                     </span>
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-        </form>
 
-        {/* Modal de Selección de Agencia */}
-        {showAgencyModal && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', padding: 20 }}>
-            <div style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 460, overflow: 'hidden', boxShadow: '0 24px 50px rgba(0,0,0,0.15)', animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-              <div style={{ padding: '32px 24px 24px', textAlign: 'center', position: 'relative' }}>
-                <div style={{ width: 64, height: 64, background: PINK_BG, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: `1px solid ${PINK_LIGHT}`, boxShadow: `0 8px 24px rgba(227,150,191,0.2)` }}>
-                  <Truck size={32} color={PINK} strokeWidth={2.5} />
+              {/* Trust card */}
+              <div style={{ background: 'rgba(255,255,255,0.88)', borderRadius: 16, padding: '14px 18px', border: '1px solid #fce7f3', boxShadow: '0 6px 20px rgba(227,150,191,0.06)', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 10, background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Shield size={15} color="#16a34a" />
+                  </div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#16a34a', fontFamily: FF }}>Compra Protegida</p>
+                    <p style={{ margin: 0, fontSize: 10, color: '#6b7280', fontFamily: FF, lineHeight: 1.3 }}>Recibí el producto o te devolvemos tu dinero</p>
+                  </div>
                 </div>
-                <h3 style={{ margin: '0 0 12px', fontSize: 22, fontWeight: 800, color: '#111', fontFamily: FF, lineHeight: 1.2 }}>¿Por dónde enviamos tu pedido? 📦</h3>
-                <p style={{ margin: '0 0 24px', fontSize: 14, color: '#6b7280', fontFamily: FF, lineHeight: 1.5 }}>
-                  Selecciona la agencia de envíos de tu preferencia para continuar.
-                </p>
-                <div className="ck-modal-agency-grid">
-                  {agencies.map(a => (
-                    <button
-                      key={a.name}
-                      type="button"
-                      onClick={() => {
-                        setAgency(a.name);
-                        setShowAgencyModal(false);
-                        setShowSummaryModal(true);
-                      }}
-                      className="ck-agency-card"
-                      style={{
-                        padding: '16px', borderRadius: 16, border: '1px solid #e5e7eb', background: '#f9fafb', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = hasPackItems ? '#cda178' : PINK; e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = hasPackItems ? '0 6px 16px rgba(92,61,36,0.1)' : '0 6px 16px rgba(227,150,191,0.15)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.background = '#f9fafb'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; }}
-                    >
-                      <div style={{ width: 44, height: 44, borderRadius: 12, background: a.bg, border: `1px solid ${a.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} className="ck-agency-logo-wrapper">
-                        {a.logo ? (
-                          <img src={a.logo} alt={a.name} style={{ width: 24, height: 24, objectFit: 'contain' }} />
-                        ) : (
-                          <Truck size={20} color={a.color} />
-                        )}
-                      </div>
-                      <div className="ck-agency-text-wrapper">
-                        <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#111', fontFamily: FF }} className="ck-agency-name">{a.name}</p>
-                        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280', fontFamily: FF }} className="ck-agency-desc">{a.desc}</p>
-                      </div>
-                      <div style={{ marginLeft: 'auto' }} className="ck-agency-chevron">
-                        <ChevronRight size={20} color="#9ca3af" />
-                      </div>
-                    </button>
-                  ))}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 10, background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Truck size={15} color={PINK} />
+                  </div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: PINK, fontFamily: FF }}>Envío a todo Chile</p>
+                    <p style={{ margin: 0, fontSize: 10, color: '#6b7280', fontFamily: FF, lineHeight: 1.3 }}>Despacho rápido a tu dirección</p>
+                  </div>
                 </div>
-                <button type="button" onClick={() => setShowAgencyModal(false)}
-                  style={{ marginTop: 24, padding: '12px 24px', background: 'transparent', color: '#6b7280', border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: FF, textDecoration: 'underline' }}>
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal de Resumen y Confirmación */}
-        {showSummaryModal && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', padding: 20 }}>
-            <div style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 460, overflow: 'hidden', boxShadow: '0 24px 50px rgba(0,0,0,0.15)', animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
-              <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 48, height: 48, background: PINK_BG, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Package size={24} color={PINK} />
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#111', fontFamily: FF }}>Confirmación Final</h3>
-                  <p style={{ margin: 0, fontSize: 13, color: '#6b7280', fontFamily: FF }}>Revisa tus datos antes de enviar</p>
-                </div>
-              </div>
-              
-              <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
-                <div style={{ background: '#f9fafb', borderRadius: 16, padding: '16px', border: '1px solid #e5e7eb', marginBottom: 16 }}>
-                  <h4 style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 800, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, fontFamily: FF }}>Dirección de Envío</h4>
-                  <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: '#111', fontFamily: FF }}>{form.name}</p>
-                  <p style={{ margin: '0 0 4px', fontSize: 14, color: '#374151', fontFamily: FF }}>{form.address}</p>
-                  <p style={{ margin: 0, fontSize: 13, color: '#6b7280', fontFamily: FF }}>{form.comuna}, {form.region}</p>
-                </div>
-                
-                <div style={{ background: '#f9fafb', borderRadius: 16, padding: '16px', border: '1px solid #e5e7eb', marginBottom: 16 }}>
-                  <h4 style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 800, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, fontFamily: FF }}>Datos de Contacto</h4>
-                  <p style={{ margin: '0 0 4px', fontSize: 14, color: '#374151', fontFamily: FF }}><strong>Email:</strong> {form.email}</p>
-                  <p style={{ margin: '0 0 4px', fontSize: 14, color: '#374151', fontFamily: FF }}><strong>Teléfono:</strong> {form.phone}</p>
-                  <p style={{ margin: 0, fontSize: 14, color: '#374151', fontFamily: FF }}><strong>RUT:</strong> {form.rut}</p>
-                </div>
-
-                <div style={{ background: 'linear-gradient(135deg, rgba(227,150,191,0.06), rgba(249,168,212,0.1))', borderRadius: 16, padding: '16px', border: '1px solid #fce7f3' }}>
-                  <h4 style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 800, color: PINK, textTransform: 'uppercase', letterSpacing: 1, fontFamily: FF }}>Agencia Seleccionada</h4>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                      <Truck size={18} color={PINK} />
-                    </div>
-                    <div>
-                      <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#111', fontFamily: FF }}>{agency}</p>
-                    </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 10, background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <RefreshCw size={15} color="#3b82f6" />
+                  </div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#3b82f6', fontFamily: FF }}>Devolución fácil</p>
+                    <p style={{ margin: 0, fontSize: 10, color: '#6b7280', fontFamily: FF, lineHeight: 1.3 }}>Cambios y devoluciones sin complicaciones</p>
                   </div>
                 </div>
               </div>
-
-              <div style={{ padding: '16px 24px 24px', borderTop: '1px solid #f3f4f6', display: 'flex', gap: 12 }}>
-                <button type="button" onClick={() => setShowSummaryModal(false)}
-                  style={{ flex: 1, padding: '16px', background: '#f9fafb', color: '#4b5563', border: '1px solid #e5e7eb', borderRadius: 16, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: FF, transition: 'all 0.2s' }}>
-                  Volver
-                </button>
-                <button type="button" onClick={executeCheckout}
-                  style={{ flex: 2, padding: '16px', background: hasPackItems ? 'linear-gradient(135deg, #eed9c4, #e1c2a4, #cda178)' : 'linear-gradient(135deg, #fbcfe8, #f5a8cf, #e396bf)', color: hasPackItems ? '#5c3d24' : '#fff', border: 'none', borderRadius: 16, fontSize: 15, fontWeight: 800, cursor: 'pointer', fontFamily: FF, boxShadow: hasPackItems ? '0 8px 20px rgba(92,61,36,0.15)' : '0 8px 20px rgba(227,150,191,0.3)', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
-                  <span className="ck-shimmer-line" />
-                  <span style={{ position: 'relative', zIndex: 2, textShadow: hasPackItems ? 'none' : '0 1px 3px rgba(0,0,0,0.12)' }}>Confirmar y Enviar</span>
-                </button>
-              </div>
             </div>
+
           </div>
-        )}
+        </form>
 
         {/* Modal de Geolocalización (Pro) */}
         {showGeoModal && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', padding: 20 }}>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', padding: 20 }}>
             <div style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 420, overflow: 'hidden', boxShadow: '0 24px 50px rgba(0,0,0,0.15)', animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
               <div style={{ padding: '32px 24px 24px', textAlign: 'center', position: 'relative' }}>
                 <div style={{ width: 64, height: 64, background: PINK_BG, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: `1px solid ${PINK_LIGHT}`, boxShadow: `0 8px 24px rgba(227,150,191,0.2)` }}>
@@ -1605,7 +1324,7 @@ function CheckoutInner() {
                   </button>
                   <button onClick={handleSkipGeo} disabled={isGeolocating}
                     style={{ width: '100%', padding: '16px', background: '#f9fafb', color: '#4b5563', border: '1px solid #e5e7eb', borderRadius: 16, fontSize: 14, fontWeight: 700, cursor: isGeolocating ? 'not-allowed' : 'pointer', fontFamily: FF, transition: 'all 0.2s' }}>
-                    No estoy en mi casa, prefiero escribirla.
+                    No, continuar con la dirección escrita
                   </button>
                 </div>
               </div>
@@ -1627,10 +1346,8 @@ function CheckoutInner() {
 
 export default function CheckoutPage() {
   return (
-    <DynamicCheckout>
-      <Suspense fallback={<div style={{ background: 'linear-gradient(180deg, #fdf2f8 0%, #fff 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FF }}><p style={{ color: '#f5a8cf' }}>Cargando...</p></div>}>
-        <CheckoutInner />
-      </Suspense>
-    </DynamicCheckout>
+    <Suspense fallback={<div style={{ background: 'linear-gradient(180deg, #fdf2f8 0%, #fff 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FF }}><p style={{ color: '#f5a8cf' }}>Cargando...</p></div>}>
+      <CheckoutInner />
+    </Suspense>
   );
 }
