@@ -8,8 +8,14 @@ const WA_API_BASE = `https://graph.facebook.com/v20.0`;
 
 import { serverListDocuments, serverCreateDocument, serverDeleteDocument } from './appwrite-server';
 import { ADMIN_CHAT_COLLECTION_ID } from './appwrite-admin';
+import crypto from 'crypto';
 
 const MAX_HISTORY = 20; // máx turnos a mantener por usuario
+
+export function getWhatsAppDocId(msgId: string, role: 'user' | 'assistant'): string {
+  const hash = crypto.createHash('md5').update(msgId).digest('hex');
+  return role === 'user' ? `u_${hash}` : `a_${hash}`;
+}
 
 export async function getHistory(phone: string): Promise<{ role: 'user' | 'assistant'; content: string }[]> {
   try {
@@ -40,7 +46,7 @@ export async function addToHistory(
 ): Promise<void> {
   try {
     const docId = msgId 
-      ? (role === 'user' ? `wa_msg_${msgId}` : `wa_reply_${msgId}`)
+      ? getWhatsAppDocId(msgId, role)
       : `wa_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     
     await serverCreateDocument(ADMIN_CHAT_COLLECTION_ID, docId, {
@@ -75,8 +81,7 @@ export async function clearHistory(phone: string): Promise<void> {
 // ─── Send a plain text message ─────────────────────────────────────────────────
 export async function sendWhatsAppMessage(to: string, text: string, token: string): Promise<void> {
   if (!token || !WA_PHONE_NUMBER_ID) {
-    console.error('[WhatsApp] Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID env vars');
-    return;
+    throw new Error('Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID env vars');
   }
 
   const url = `${WA_API_BASE}/${WA_PHONE_NUMBER_ID}/messages`;
@@ -104,8 +109,128 @@ export async function sendWhatsAppMessage(to: string, text: string, token: strin
     if (!res.ok) {
       const err = await res.text();
       console.error('[WhatsApp] sendMessage error:', err);
+      throw new Error(`WhatsApp API Error: ${err}`);
     }
+
+    const data = await res.json();
+    console.log('[WhatsApp] Message sent successfully. Response:', JSON.stringify(data));
   }
+}
+
+// ─── Send a Template message ───────────────────────────────────────────────────
+export async function sendWhatsAppTemplate(
+  to: string,
+  templateName: string,
+  languageCode: string,
+  components: any[],
+  token: string
+): Promise<any> {
+  if (!token || !WA_PHONE_NUMBER_ID) {
+    throw new Error('Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID env vars');
+  }
+
+  const url = `${WA_API_BASE}/${WA_PHONE_NUMBER_ID}/messages`;
+  const body = {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to,
+    type: 'template',
+    template: {
+      name: templateName,
+      language: {
+        code: languageCode,
+      },
+      components,
+    },
+  };
+
+  console.log('[WhatsApp] Sending template to:', to, '| template:', templateName, '| lang:', languageCode);
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error('[WhatsApp] sendTemplate error:', err);
+    throw new Error(`WhatsApp API Error: ${err}`);
+  }
+
+  const data = await res.json();
+  console.log('[WhatsApp] Template sent successfully. Response:', JSON.stringify(data));
+  return data;
+}
+
+// ─── Send an Interactive List message (menu) ───────────────────────────────────
+export interface WhatsAppListRow {
+  id: string;
+  title: string; // máx 24 chars
+  description?: string; // máx 72 chars
+}
+export interface WhatsAppListSection {
+  title?: string; // máx 24 chars
+  rows: WhatsAppListRow[];
+}
+export async function sendWhatsAppList(
+  to: string,
+  opts: {
+    header?: string;
+    body: string;
+    footer?: string;
+    buttonText: string;
+    sections: WhatsAppListSection[];
+  },
+  token: string,
+): Promise<void> {
+  if (!token || !WA_PHONE_NUMBER_ID) {
+    throw new Error('Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID env vars');
+  }
+
+  const url = `${WA_API_BASE}/${WA_PHONE_NUMBER_ID}/messages`;
+  const clip = (s: string, n: number) => String(s || '').slice(0, n);
+
+  const interactive: any = {
+    type: 'list',
+    body: { text: clip(opts.body, 1024) },
+    action: {
+      button: clip(opts.buttonText, 20),
+      sections: opts.sections.map(sec => ({
+        ...(sec.title ? { title: clip(sec.title, 24) } : {}),
+        rows: sec.rows.map(r => ({
+          id: clip(r.id, 200),
+          title: clip(r.title, 24),
+          ...(r.description ? { description: clip(r.description, 72) } : {}),
+        })),
+      })),
+    },
+  };
+  if (opts.header) interactive.header = { type: 'text', text: clip(opts.header, 60) };
+  if (opts.footer) interactive.footer = { text: clip(opts.footer, 60) };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'interactive',
+      interactive,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error('[WhatsApp] sendList error:', err);
+    throw new Error(`WhatsApp API Error: ${err}`);
+  }
+  const data = await res.json();
+  console.log('[WhatsApp] List sent successfully. Response:', JSON.stringify(data));
 }
 
 // ─── Mark message as read ──────────────────────────────────────────────────────
@@ -144,12 +269,28 @@ function splitText(text: string, maxLen: number): string[] {
 }
 
 export function formatWhatsAppPhone(phone: string): string {
-  const cleaned = phone.replace(/\D/g, '').trim();
+  let cleaned = phone.replace(/\D/g, '').trim();
+  
+  // E.164 for Chile mobile: 569XXXXXXXX (11 digits, WITH the 9 mobile prefix)
+  // WhatsApp stores numbers in E.164 format — the 9 MUST be included
+  // Previously we dropped the 9 which caused templates to go to a non-existent number
+  if (cleaned.startsWith('569') && cleaned.length === 11) {
+    return cleaned; // Already in correct E.164 format: 569XXXXXXXX
+  }
+  
   if (cleaned.startsWith('56')) {
     return cleaned;
   }
+  
   if (cleaned.length === 9 && cleaned.startsWith('9')) {
+    // Local Chilean mobile without country code: 9XXXXXXXX → 569XXXXXXXX
     return '56' + cleaned;
   }
+  
+  if (cleaned.length === 8) {
+    // Local Chilean landline without country code or mobile prefix
+    return '56' + cleaned;
+  }
+  
   return cleaned;
 }

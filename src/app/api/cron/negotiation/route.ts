@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serverListDocuments, serverUpdateDocument, serverGetDocument } from '@/lib/appwrite-server';
 import { ORDERS_COLLECTION_ID, PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
-import { sendWhatsAppMessage, formatWhatsAppPhone, addToHistory } from '@/lib/whatsapp';
+import { sendWhatsAppMessage, sendWhatsAppTemplate, formatWhatsAppPhone, addToHistory } from '@/lib/whatsapp';
 
 const CRON_SECRET = process.env.CRON_SECRET || 'negotiation_secret_key_2026';
 const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
@@ -17,6 +17,11 @@ export async function GET(req: NextRequest) {
     // Security check
     if (secret !== CRON_SECRET) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Disable automatic cron to prevent 1 Appwrite read per minute (1440/day)
+    if (!targetOrderId) {
+      return NextResponse.json({ status: 'disabled', message: 'Cron automático desactivado para ahorrar consumo de Appwrite.' });
     }
 
     // 1. Fetch orders in negotiation
@@ -36,14 +41,17 @@ export async function GET(req: NextRequest) {
     }
 
     const processedOrders: string[] = [];
+    const sendErrors: string[] = [];
+    const debugInfo: any[] = [];
 
     for (const order of activeOrders) {
       const orderId = order.$id;
       const orderCode = order.ORDERCODE || String(orderId).slice(-6).toUpperCase();
+      const additionalInfo = (order.ADDITIONALINFO as string) || '';
       const adminNotes = (order.adminNotes as string) || '';
 
       // Skip if already notified by WA (only during automatic cron scan, not manual trigger)
-      if (!targetOrderId && adminNotes.includes('[negot_wa_notified]')) {
+      if (!targetOrderId && (adminNotes.includes('[negot_wa_notified]') || additionalInfo.includes('[negot_wa_notified]'))) {
         continue;
       }
 
@@ -100,123 +108,149 @@ export async function GET(req: NextRequest) {
           const stock = p.STOCK ?? 0;
           if (stock <= 0 || stock === 99999) return false; // must have real stock
           const price = p.CURRENTPRICE || p.PRICE || 0;
-          const diffPct = Math.abs(price - itemPrice) / itemPrice;
-          return diffPct <= 0.35; // similar price (within 35%)
+          
+          // Comparar en base al precio original (antes del descuento) o al pagado
+          const referencePrice = item.originalPrice || item.price || itemPrice || 0;
+          if (referencePrice === 0) return true;
+
+          const diffPct = Math.abs(price - referencePrice) / referencePrice;
+          return diffPct <= 0.20; // margen del 20% solicitado
         });
 
         // Take top 2 suggestions
         const topSuggestions = similar.slice(0, 2);
         if (topSuggestions.length > 0) {
-          suggestionsTextList.push(`*Reemplazos sugeridos para ${item.name}:*`);
+          const formattedItemPrice = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(item.price || 0);
+          suggestionsTextList.push(`*Reemplazos sugeridos para ${item.name} (que compraste a ${formattedItemPrice}):*`);
+          
+          const originalPrice = item.originalPrice;
+          const pricePaid = item.price;
+          const hasDiscount = originalPrice && originalPrice > pricePaid;
+
           topSuggestions.forEach((p: any) => {
-            const price = p.CURRENTPRICE || p.PRICE || 0;
-            const formattedPrice = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(price);
-            suggestionsTextList.push(`  • ${p.NAME} (${formattedPrice})`);
-          });
-        }
-      }
+            let basePrice = p.CURRENTPRICE || p.PRICE || 0;
+            const formattedBase = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(basePrice);
+            const formattedPaid = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(pricePaid);
 
-      // 3. Compose WhatsApp message (use Gemini for a warm natural tone, fallback to template)
-      const missingItemsText = missingDetails.join('\n');
-      const alternativesText = suggestionsTextList.join('\n') || 'No encontramos alternativas exactas en stock en este momento, pero puedes elegir otro reemplazo en la web.';
-      const customerLink = `${SITE_URL}/pedido/${orderId}`;
-
-      let messageText = '';
-
-      if (GEMINI_KEY) {
-        try {
-          const prompt = `Eres Yexy, la asistente virtual de la tienda Kevin&Coco.
-Estás contactando al cliente ${order.CUSTOMERNAME} por WhatsApp.
-Su pedido #${orderCode} está en preparación, pero nos percatamos que algunos productos no tienen stock.
-El/los producto(s) faltante(s) son:
-${missingItemsText}
-
-Hemos buscado estas alternativas similares en stock:
-${alternativesText}
-
-El cliente puede elegir su reemplazo ingresando a este link:
-${customerLink}
-
-Redacta un mensaje de WhatsApp amigable, directo, profesional y en español de Chile.
-No uses listas gigantes de productos. Sé proactivo, ofrece las alternativas sugeridas y el link directo.
-El mensaje debe ser breve para que el cliente decida fácilmente. No pongas códigos JSON ni markdown de bloques. Solo el mensaje final listo para enviar.`;
-
-          const geminiBody = {
-            system_instruction: { parts: [{ text: "Eres Yexy, la asistente de WhatsApp de Kevin&Coco. Hablas en español chileno, amigable y profesional." }] },
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
-          };
-
-          const modelUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_KEY}`;
-          const geminiRes = await fetch(modelUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(geminiBody),
-          });
-
-          if (geminiRes.ok) {
-            const geminiData = await geminiRes.json();
-            const text = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (text) {
-              messageText = text.replace(/\*\*(.*?)\*\*/g, '*$1*').trim(); // Convert **bold** to WA *bold*
+            if (hasDiscount) {
+              suggestionsTextList.push(`  • ${p.NAME} (Valor normal: ${formattedBase} ➡️ Te lo respetamos al mismo precio con descuento: ${formattedPaid})`);
+            } else {
+              suggestionsTextList.push(`  • ${p.NAME} (${formattedBase})`);
             }
-          }
-        } catch (geminiErr) {
-          console.error('[Cron Negotiation] Gemini API error:', geminiErr);
+          });
         }
       }
 
-      // Fallback message template if Gemini failed or wasn't configured
-      if (!messageText) {
-        messageText = `¡Hola, *${order.CUSTOMERNAME}*! 👋 Te saluda Yexy de *Kevin&Coco*.\n\nNos percatamos que algunos productos en tu pedido *#${orderCode}* no tienen stock disponible en este momento:\n${missingItemsText}\n\nTe sugerimos estas opciones alternativas:\n${alternativesText}\n\nPuedes revisar y confirmar tu reemplazo ingresando al siguiente link:\n🔗 ${customerLink}\n\n¡Muchas gracias por tu comprensión! Si tienes dudas, escríbenos por aquí.`;
-      }
+      // 3. Compose WhatsApp message (Greeting only, wait for response)
+      const customerName = order.CUSTOMERNAME || 'Amiga';
+      const firstName = customerName.split(' ')[0];
+      const messageText = `¡Hola linda, *${firstName}*! ✨ ¿Cómo estás? Te escribimos de *Kevin&Coco* por tu pedidito *#${orderCode}* 🛍️.`;
 
       // 4. Send message to WhatsApp
       const rawPhone = (order.CUSTOMERPHONE as string) || '';
       const formattedPhone = formatWhatsAppPhone(rawPhone);
 
       if (formattedPhone && WA_TOKEN) {
+        let messageSent = false;
+        let sendError = '';
         try {
-          // If manually triggered (targetOrderId is present), send order details first
-          if (targetOrderId) {
-            const formattedTotal = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(order.TOTAL || 0);
-            const detailsMsg = `📄 *Detalles de tu pedido #${orderCode}:*\n• *Cliente:* ${order.CUSTOMERNAME}\n• *Teléfono:* ${order.CUSTOMERPHONE || 'No especificado'}\n• *Dirección:* ${order.ADDRESS || 'No especificada'}${order.COMUNA ? `, ${order.COMUNA}` : ''}${order.REGION ? `, ${order.REGION}` : ''}\n• *Envío:* ${order.SHIPPINGAGENCY || 'No especificado'}\n• *Total:* ${formattedTotal}`;
-            
-            await sendWhatsAppMessage(formattedPhone, detailsMsg, WA_TOKEN);
-            await addToHistory(formattedPhone, 'assistant', detailsMsg);
-            
-            // Wait 1 second before sending the second message to ensure correct ordering on WhatsApp
-            await new Promise(resolve => setTimeout(resolve, 1000));
+          // Send the approved template first
+          await sendWhatsAppTemplate(
+            formattedPhone,
+            'saludo_kenia',
+            'es_419',
+            [
+              {
+                type: 'body',
+                parameters: [
+                  {
+                    type: 'text',
+                    text: firstName
+                  }
+                ]
+              }
+            ],
+            WA_TOKEN
+          );
+          messageSent = true;
+        } catch (tplErr: any) {
+          console.error(`[Cron Negotiation] Template failed for ${orderCode}, trying plain text:`, tplErr.message);
+          sendError = tplErr.message;
+        }
+
+        // If template failed, send as plain text message
+        if (!messageSent) {
+          try {
+            await sendWhatsAppMessage(formattedPhone, messageText, WA_TOKEN);
+            messageSent = true;
+            console.log(`[Cron Negotiation] Plain text sent to ${formattedPhone} for order ${orderCode} (template failed)`);
+          } catch (txtErr: any) {
+            console.error(`[Cron Negotiation] Plain text also failed for ${orderCode}:`, txtErr.message);
+            sendError = `Template: ${sendError} | Text: ${txtErr.message}`;
           }
+        }
 
-          await sendWhatsAppMessage(formattedPhone, messageText, WA_TOKEN);
-          await addToHistory(formattedPhone, 'assistant', messageText);
-          console.log(`[Cron Negotiation] WhatsApp sent successfully to ${formattedPhone} for order ${orderCode}`);
-          
-          // 5. Update order notes to mark as notified
-          const timestamp = new Date().toISOString().slice(0, 10);
-          const updatedNotes = adminNotes 
-            ? `${adminNotes}\n[negot_wa_notified: ${timestamp}]`
-            : `[negot_wa_notified: ${timestamp}]`;
+        if (messageSent) {
+          try {
+            const historyMsg = sendError
+              ? messageText
+              : `[Plantilla enviada] ¡Hola ${firstName}! 💕 Soy Kenia, del equipo de Kevin&Coco. ¿Cómo estás?`;
+            await addToHistory(formattedPhone, 'assistant', historyMsg);
 
-          await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
-            adminNotes: updatedNotes,
-            UPDATEDAT: Date.now()
-          });
-
-          processedOrders.push(orderCode);
-        } catch (sendErr: any) {
-          console.error(`[Cron Negotiation] Failed to send WhatsApp/update order for ${orderCode}:`, sendErr);
+            if (targetOrderId) {
+              console.log(`[Cron Negotiation] Manual trigger: Message sent to ${formattedPhone} for order ${orderCode}.`);
+            } else {
+              console.log(`[Cron Negotiation] WhatsApp message sent successfully to ${formattedPhone} for order ${orderCode}`);
+            }
+            processedOrders.push(orderCode);
+          } catch (postErr: any) {
+            console.error(`[Cron Negotiation] Failed to save history for ${orderCode}:`, postErr);
+            sendErrors.push(`${orderCode}: ${postErr.message}`);
+          }
+        } else {
+          sendErrors.push(`${orderCode}: ${sendError}`);
         }
       } else {
-        console.warn(`[Cron Negotiation] Could not send message to order ${orderCode}: phone is invalid (${rawPhone}) or WA_TOKEN is missing.`);
+        const reason = !formattedPhone ? `phone invalid or empty (raw: "${rawPhone}")` : 'WA_TOKEN missing';
+        console.warn(`[Cron Negotiation] Could not send message to order ${orderCode}: ${reason}.`);
+        sendErrors.push(`${orderCode}: ${reason}`);
+        debugInfo.push({ orderCode, rawPhone, formattedPhone, hasToken: !!WA_TOKEN });
+      }
+
+      // ALWAYS update order notes to prevent infinite retries
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const isFailed = sendErrors.some(e => e.startsWith(orderCode));
+      const marker = isFailed ? '[negot_wa_notified]' : '[negot_wa_notified]'; // Use the same marker so the cron query skips it
+      
+      const currentNotes = (order.ADDITIONALINFO as string) || '';
+      const updatedNotes = currentNotes 
+        ? `${currentNotes}\n${marker}`
+        : `${marker}`;
+
+      try {
+        await serverUpdateDocument(ORDERS_COLLECTION_ID, orderId, {
+          ADDITIONALINFO: updatedNotes,
+          UPDATEDAT: Date.now()
+        });
+        console.log(`[Cron Negotiation] Successfully marked ${orderCode} with ${marker} in ADDITIONALINFO`);
+      } catch (noteErr: any) {
+        console.error(`[Cron Negotiation] Could not update ADDITIONALINFO for ${orderCode}:`, noteErr.message);
       }
     }
 
     return NextResponse.json({
       status: 'ok',
       processed: processedOrders,
-      total_found: activeOrders.length
+      total_found: activeOrders.length,
+      skipped_no_missing: activeOrders.filter(o => {
+        try {
+          const items = JSON.parse((o.ITEMS as string) || '[]');
+          return !items.some((it: any) => it.missing === true);
+        } catch { return true; }
+      }).map(o => o.ORDERCODE || o.$id),
+      has_wa_token: !!WA_TOKEN,
+      send_errors: sendErrors,
+      debug: debugInfo,
     });
 
   } catch (err: any) {

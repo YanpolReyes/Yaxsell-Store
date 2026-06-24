@@ -6,7 +6,7 @@ const APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
 const PROJECT_ID = '6a3c200f000d5437f6c4';
 const DATABASE_ID = '6a3c237900227a52bcb2';
 const COLLECTION_ID = 'apertura_settings';
-const API_KEY = 'standard_2d173f58f38634c70435e2aa17c03320dc959192545a2e6ec9834b09d80c4f459b4e92b139ee85efba504c423f5bcb1443448799dc7d3b06e811dc0d910d058e7f1093442a87e957beaaaa09569a448ec9e6e8eb178e648e6c48a6451fdffe8716722a1162d89f96e7b243109f537eca0ee1480ef0b639f24ea32e5fdd886f9d';
+const API_KEY = process.env.APPWRITE_API_KEY || '';
 
 const client = new Client()
   .setEndpoint(APPWRITE_ENDPOINT)
@@ -18,7 +18,7 @@ const databases = new Databases(client);
 // Module-level in-memory cache (secondary layer)
 let memoryCacheApertura: any = null;
 let memoryCacheAperturaTime = 0;
-const MEMORY_CACHE_TTL = 86400000; // 24 hours
+const MEMORY_CACHE_TTL = 60000; // 60 seconds
 
 const DEFAULT_SETTINGS = {
   isActive: false,
@@ -51,7 +51,7 @@ const getCachedAperturaSettings = unstable_cache(
     return result;
   },
   ['apertura-settings-cache-v1'],
-  { revalidate: 86400, tags: ['apertura_settings'] }
+  { revalidate: 300, tags: ['apertura_settings'] }
 );
 
 export async function GET() {
@@ -59,7 +59,7 @@ export async function GET() {
     const data = await getCachedAperturaSettings();
     return NextResponse.json(data, {
       headers: {
-        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=600'
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=300'
       }
     });
   } catch (error: any) {

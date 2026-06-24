@@ -24,6 +24,7 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
   const lineTotal = unitPrice * item.quantity;
   const [zoomSrc, setZoomSrc] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [incrementMode, setIncrementMode] = useState<'unit' | 'pack'>(item.isPack ? 'pack' : 'unit');
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
@@ -85,16 +86,40 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
           </div>
 
           {/* Qty + Line total */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', background: '#fafafa', borderRadius: 8, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-              <button type="button" onClick={() => onUpdateQty(p.$id, item.quantity - 1)} style={{ width: 28, height: 28, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
+              <button type="button" onClick={() => onUpdateQty(p.$id, Math.max(1, item.quantity - (incrementMode === 'pack' ? (p.PACKQTY || 1) : 1)))} style={{ width: 28, height: 28, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
                 <Minus size={12} />
               </button>
-              <span style={{ width: 24, textAlign: 'center', fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>{item.quantity}</span>
-              <button type="button" onClick={() => onUpdateQty(p.$id, item.quantity + 1)} disabled={item.quantity >= p.STOCK} style={{ width: 28, height: 28, border: 'none', background: 'transparent', cursor: item.quantity >= p.STOCK ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: item.quantity >= p.STOCK ? '#d1d5db' : '#6b7280' }}>
+              <span style={{ minWidth: 24, textAlign: 'center', fontSize: 13, fontWeight: 600, color: '#1a1a1a', padding: '0 4px', whiteSpace: 'nowrap' }}>
+                {item.quantity}
+              </span>
+              <button type="button" onClick={() => onUpdateQty(p.$id, item.quantity + (incrementMode === 'pack' ? (p.PACKQTY || 1) : 1))} disabled={item.quantity + (incrementMode === 'pack' ? (p.PACKQTY || 1) : 1) > p.STOCK} style={{ width: 28, height: 28, border: 'none', background: 'transparent', cursor: item.quantity + (incrementMode === 'pack' ? (p.PACKQTY || 1) : 1) > p.STOCK ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: item.quantity + (incrementMode === 'pack' ? (p.PACKQTY || 1) : 1) > p.STOCK ? '#d1d5db' : '#6b7280' }}>
                 <Plus size={12} />
               </button>
             </div>
+
+            {p.PACKQTY && p.PACKQTY > 1 && (
+              <select
+                value={incrementMode}
+                onChange={(e) => setIncrementMode(e.target.value as 'unit' | 'pack')}
+                style={{
+                  fontSize: 11,
+                  padding: '4px 6px',
+                  borderRadius: 6,
+                  border: '1px solid #fbcfe8',
+                  background: incrementMode === 'pack' ? '#fdf2f8' : '#fff',
+                  color: incrementMode === 'pack' ? '#be185d' : '#6b7280',
+                  fontWeight: 600,
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="unit">Por unidad</option>
+                <option value="pack">Por pack ({p.PACKQTY})</option>
+              </select>
+            )}
+
             <span style={{ marginLeft: 'auto', fontSize: 14, fontWeight: 700, color: '#1a1a1a' }}>{formatPrice(lineTotal)}</span>
           </div>
         </div>
@@ -130,8 +155,7 @@ export default function CartLineRow({ item, onUpdateQty, onRemove }: Props) {
               width: '90vw', maxWidth: 400,
             }}
           >
-            <Link
-              href={`/productos/${p.$id}`}
+            <Link prefetch={false} href={`/productos/${p.$id}`}
               onClick={() => setZoomSrc(null)}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,

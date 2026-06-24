@@ -6,9 +6,10 @@ import * as XLSX from 'xlsx';
 import { Query, ID } from 'appwrite';
 import { getServices, getAppwriteConfig, PRODUCTS_COLLECTION_ID, CATEGORIES_COLLECTION_ID, STOCK_ALERTS_COLLECTION_ID, NOTIFICATIONS_COLLECTION_ID, SUBCATEGORIES_COLLECTION_ID, CATALOG_PRODUCTS_COLLECTION_ID, INVENTORY_PRODUCTS_COLLECTION_ID } from '@/lib/appwrite-admin';
 import { Product, Category, Subcategory } from '@/types/admin';
-import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff, Eye } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, AlertTriangle, X, Package, RefreshCw, ChevronDown, ChevronUp, Download, Copy, Percent, Star, Boxes, Sparkles, OctagonX, MapPin, ArrowLeft, MessageSquare, Loader2, ImagePlus, ImageOff, Eye, Upload } from 'lucide-react';
+import Link from 'next/link';
 import ImageUploadField from '@/components/admin/ImageUploadField';
-import { generateProductTitle, generateProductDescription } from '@/lib/aiAdmin';
+import { generateProductTitle, generateProductDescription, generateProductAiPack } from '@/lib/aiAdmin';
 import { getBarcodeFromFeatures, getSkuFromFeatures, setBarcodeInFeatures, setSkuInFeatures, getWarehouseLocationFromFeatures, setSectionInFeatures, getCustomTabsFromFeatures, setCustomTabsInFeatures, getExactWholesaleFromFeatures, setExactWholesaleInFeatures } from '@/lib/product-features';
 // Lottie imports removed to prevent React 19 crashes
 
@@ -31,14 +32,14 @@ const FieldInput = ({ label, field, type = 'text', value, onChange }: { label: s
 );
 
 const getLiveStatus = (p: Product) => {
-  if (!p.imported_at) return null;
+  if (!p.$createdAt) return null;
   const now = new Date();
   const today7Am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0, 0);
   const threshold = now.getTime() >= today7Am.getTime()
     ? today7Am.getTime()
     : new Date(today7Am.getFullYear(), today7Am.getMonth(), today7Am.getDate() - 1, 7, 0, 0, 0).getTime();
 
-  const importedTime = new Date(p.imported_at).getTime();
+  const importedTime = new Date(p.$createdAt).getTime();
   if (importedTime < threshold) return null;
 
   const createdTime = p.$createdAt ? new Date(p.$createdAt).getTime() : 0;
@@ -71,17 +72,96 @@ export default function ProductsPage() {
   const [stockModal, setStockModal] = useState(false);
   const [stockAdj, setStockAdj] = useState<{ type: 'add' | 'set'; value: string }>({ type: 'add', value: '' });
   const [applyingStock, setApplyingStock] = useState(false);
-  const [imageUrlModal, setImageUrlModal] = useState<{ productId: string; currentUrl: string; newUrl: string } | null>(null);
-  const [aiLoading, setAiLoading] = useState<'title' | 'desc' | null>(null);
+  const [imageDrawer, setImageDrawer] = useState<{
+    productId: string; productName: string;
+    img1: string; img2: string; img3: string; img4: string;
+    origImg1: string; origImg2: string; origImg3: string; origImg4: string;
+    description: string; origDescription: string;
+    features: string; origFeatures: string;
+    tags: string; origTags: string;
+    sku: string; origSku: string;
+    price: number; origPrice: number;
+    stock: number; origStock: number;
+  } | null>(null);
+  const [imageDrawerSaving, setImageDrawerSaving] = useState(false);
+  const [imageDrawerUploading, setImageDrawerUploading] = useState<string | null>(null);
+  const [imageDrawerTab, setImageDrawerTab] = useState<'images' | 'info' | 'specs'>('images');
+  const imageDrawerFileRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null]);
+  const [aiLoading, setAiLoading] = useState<'title' | 'desc' | 'tabs' | 'all' | null>(null);
   const [aiTitles, setAiTitles] = useState<string[]>([]);
-  const [yexyOpen, setYexyOpen] = useState(false);
-  const [yexyMessages, setYexyMessages] = useState<{role: string; content: string}[]>([]);
-  const [yexyInput, setYexyInput] = useState('');
-  const [yexyLoading, setYexyLoading] = useState(false);
+  const [KeniaOpen, setKeniaOpen] = useState(false);
+  const [KeniaMessages, setKeniaMessages] = useState<{role: string; content: string}[]>([]);
+  const [KeniaInput, setKeniaInput] = useState('');
+  const [KeniaLoading, setKeniaLoading] = useState(false);
   const [brokenImages, setBrokenImages] = useState<Record<string, string[]>>({});
   const [brokenOnly, setBrokenOnly] = useState(false);
   const [syncingImages, setSyncingImages] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ checked: 0, broken: 0 });
+
+  const getModalImageUrls = useCallback((data?: Partial<ProductModalData> | null) => {
+    return [data?.IMAGEURL, data?.IMAGEURL2, data?.IMAGEURL3, (data as any)?.IMAGEURL4]
+      .map((item) => String(item || '').trim())
+      .filter(Boolean)
+      .slice(0, 3);
+  }, []);
+
+  const generateAllProductContent = useCallback(async () => {
+    if (!modal) return;
+    setAiLoading('all');
+    setAiTitles([]);
+    try {
+      const categoryName = categories.find(c => c.$id === modal.data.CATEGORYID)?.name || '';
+      const result = await generateProductAiPack({
+        name: modal.data.NAME || '',
+        description: modal.data.DESCRIPTION || '',
+        category: categoryName,
+        imageUrls: getModalImageUrls(modal.data),
+      });
+      setAiTitles(result.titles);
+      setModal(m => m ? {
+        ...m,
+        data: {
+          ...m.data,
+          NAME: result.selectedTitle || m.data.NAME || '',
+          DESCRIPTION: result.description || m.data.DESCRIPTION || '',
+          _details: result.details || m.data._details || '',
+          _usage: result.usage || m.data._usage || '',
+          _ingredients: result.ingredients || m.data._ingredients || '',
+        },
+      } : m);
+    } catch (e: any) {
+      alert(e.message || 'No se pudo generar el contenido con IA.');
+    } finally {
+      setAiLoading(null);
+    }
+  }, [categories, getModalImageUrls, modal]);
+
+  const generateTechnicalTabsOnly = useCallback(async () => {
+    if (!modal) return;
+    setAiLoading('tabs');
+    try {
+      const categoryName = categories.find(c => c.$id === modal.data.CATEGORYID)?.name || '';
+      const result = await generateProductAiPack({
+        name: modal.data.NAME || '',
+        description: modal.data.DESCRIPTION || '',
+        category: categoryName,
+        imageUrls: getModalImageUrls(modal.data),
+      });
+      setModal(m => m ? {
+        ...m,
+        data: {
+          ...m.data,
+          _details: result.details || m.data._details || '',
+          _usage: result.usage || m.data._usage || '',
+          _ingredients: result.ingredients || m.data._ingredients || '',
+        },
+      } : m);
+    } catch (e: any) {
+      alert(e.message || 'No se pudo generar la ficha técnica con IA.');
+    } finally {
+      setAiLoading(null);
+    }
+  }, [categories, getModalImageUrls, modal]);
 
   // AI Categorization states
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
@@ -619,14 +699,14 @@ export default function ProductsPage() {
     return () => window.removeEventListener('yaxsel-data-change', handler);
   }, [search, catFilter, subCatFilter, stockFilter, load]);
 
-  const sendYexyMessage = async () => {
-    if (!yexyInput.trim() || yexyLoading) return;
-    const userMsg = yexyInput.trim();
-    setYexyInput('');
+  const sendKeniaMessage = async () => {
+    if (!KeniaInput.trim() || KeniaLoading) return;
+    const userMsg = KeniaInput.trim();
+    setKeniaInput('');
     const contextPrefix = modal ? `[Contexto: Estoy editando el producto "${modal.data.NAME}" (ID: ${(modal.data as Product).$id}, Precio: ${modal.data.PRICE}, Stock: ${modal.data.STOCK}, Categoría: ${categories.find(c => c.$id === modal.data.CATEGORYID)?.name || 'Sin categoría'})] ` : '';
-    const newMessages = [...yexyMessages, { role: 'user', content: contextPrefix + userMsg }];
-    setYexyMessages(newMessages);
-    setYexyLoading(true);
+    const newMessages = [...KeniaMessages, { role: 'user', content: contextPrefix + userMsg }];
+    setKeniaMessages(newMessages);
+    setKeniaLoading(true);
     try {
       const res = await fetch('/api/ai-sidekick', {
         method: 'POST',
@@ -635,7 +715,7 @@ export default function ProductsPage() {
       });
       const data = await res.json();
       const assistantMsg = data.text || data.response || data.message || 'No pude procesar la solicitud.';
-      setYexyMessages(prev => [...prev, { role: 'assistant', content: assistantMsg }]);
+      setKeniaMessages(prev => [...prev, { role: 'assistant', content: assistantMsg }]);
       // Execute actions if present
       if (data.actions) {
         for (const action of data.actions) {
@@ -669,10 +749,10 @@ export default function ProductsPage() {
             });
             const result = await res.json();
             if (result.success) {
-              setYexyMessages(prev => [...prev, { role: 'assistant', content: `✅ Producto "${actionData.name}" creado exitosamente.` }]);
+              setKeniaMessages(prev => [...prev, { role: 'assistant', content: `✅ Producto "${actionData.name}" creado exitosamente.` }]);
               load();
             } else {
-              setYexyMessages(prev => [...prev, { role: 'assistant', content: `❌ Error al crear: ${result.error}` }]);
+              setKeniaMessages(prev => [...prev, { role: 'assistant', content: `❌ Error al crear: ${result.error}` }]);
             }
           } else if (updateMatch) {
             const actionData = JSON.parse(updateMatch[1]);
@@ -686,9 +766,9 @@ export default function ProductsPage() {
               });
               const result = await res.json();
               if (result.success) {
-                setYexyMessages(prev => [...prev, { role: 'assistant', content: `✅ Producto "${actionData.name}" actualizado.` }]);
+                setKeniaMessages(prev => [...prev, { role: 'assistant', content: `✅ Producto "${actionData.name}" actualizado.` }]);
               } else {
-                setYexyMessages(prev => [...prev, { role: 'assistant', content: `❌ Error: ${result.error}` }]);
+                setKeniaMessages(prev => [...prev, { role: 'assistant', content: `❌ Error: ${result.error}` }]);
               }
             }
             load();
@@ -701,10 +781,10 @@ export default function ProductsPage() {
             });
             const result = await res.json();
             if (result.success) {
-              setYexyMessages(prev => [...prev, { role: 'assistant', content: `🗑️ Producto "${actionData.name}" eliminado.` }]);
+              setKeniaMessages(prev => [...prev, { role: 'assistant', content: `🗑️ Producto "${actionData.name}" eliminado.` }]);
               load();
             } else {
-              setYexyMessages(prev => [...prev, { role: 'assistant', content: `❌ Error al eliminar: ${result.error}` }]);
+              setKeniaMessages(prev => [...prev, { role: 'assistant', content: `❌ Error al eliminar: ${result.error}` }]);
             }
           }
         } catch (e) {
@@ -712,9 +792,9 @@ export default function ProductsPage() {
         }
       }
     } catch {
-      setYexyMessages(prev => [...prev, { role: 'assistant', content: 'Error al conectar con Yexy.' }]);
+      setKeniaMessages(prev => [...prev, { role: 'assistant', content: 'Error al conectar con Kenia.' }]);
     } finally {
-      setYexyLoading(false);
+      setKeniaLoading(false);
     }
   };
 
@@ -956,18 +1036,37 @@ export default function ProductsPage() {
   const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
   const catName = (id?: string) => categories.find(c => c.$id === id)?.name || '—';
 
-  const saveImageUrl = async () => {
-    if (!imageUrlModal) return;
+  const saveImageDrawer = async () => {
+    if (!imageDrawer) return;
+    setImageDrawerSaving(true);
     try {
       const { databases } = getServices();
       const { databaseId } = getAppwriteConfig();
-      await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, imageUrlModal.productId, {
-        IMAGEURL: imageUrlModal.newUrl,
-      });
-      setProducts(prev => prev.map(p => p.$id === imageUrlModal.productId ? { ...p, IMAGEURL: imageUrlModal.newUrl } : p));
-      setImageUrlModal(null);
-      invalidateProductCache();
+      const payload: Record<string, any> = {};
+      if (imageDrawer.img1 !== imageDrawer.origImg1) payload.IMAGEURL = imageDrawer.img1;
+      if (imageDrawer.img2 !== imageDrawer.origImg2) payload.IMAGEURL2 = imageDrawer.img2;
+      if (imageDrawer.img3 !== imageDrawer.origImg3) payload.IMAGEURL3 = imageDrawer.img3;
+      if (imageDrawer.img4 !== imageDrawer.origImg4) payload.IMAGEURL4 = imageDrawer.img4;
+      if (imageDrawer.description !== imageDrawer.origDescription) payload.DESCRIPTION = imageDrawer.description;
+      if (imageDrawer.features !== imageDrawer.origFeatures) {
+        const feats = imageDrawer.features.split('\n').map((s: string) => s.trim()).filter(Boolean);
+        payload.FEATURES = feats;
+      }
+      if (imageDrawer.tags !== imageDrawer.origTags) {
+        const tags = imageDrawer.tags.split(',').map((s: string) => s.trim()).filter(Boolean);
+        payload.TAGS = tags;
+      }
+      if (imageDrawer.sku !== imageDrawer.origSku) payload.SKU = imageDrawer.sku;
+      if (imageDrawer.price !== imageDrawer.origPrice) payload.PRICE = Number(imageDrawer.price);
+      if (imageDrawer.stock !== imageDrawer.origStock) payload.STOCK = Number(imageDrawer.stock);
+      if (Object.keys(payload).length > 0) {
+        await databases.updateDocument(databaseId, PRODUCTS_COLLECTION_ID, imageDrawer.productId, payload);
+        setProducts(prev => prev.map(p => p.$id === imageDrawer.productId ? { ...p, ...payload } : p));
+        invalidateProductCache();
+      }
+      setImageDrawer(null);
     } catch (e: any) { alert('Error: ' + e.message); }
+    finally { setImageDrawerSaving(false); }
   };
 
   const exportCSV = () => {
@@ -1284,9 +1383,9 @@ export default function ProductsPage() {
     if (!liveA && liveB) return 1;
 
     if (liveA && liveB) {
-      // Both are in Live Shopping: sort by imported_at descending
-      const timeA = a.imported_at ? new Date(a.imported_at).getTime() : 0;
-      const timeB = b.imported_at ? new Date(b.imported_at).getTime() : 0;
+      // Both are in Live Shopping: sort by $createdAt descending
+      const timeA = a.$createdAt ? new Date(a.$createdAt).getTime() : 0;
+      const timeB = b.$createdAt ? new Date(b.$createdAt).getTime() : 0;
       return timeB - timeA;
     }
 
@@ -1296,8 +1395,8 @@ export default function ProductsPage() {
       av = (a.COST && a.PRICE) ? ((a.PRICE - a.COST) / a.PRICE) : -1;
       bv = (b.COST && b.PRICE) ? ((b.PRICE - b.COST) / b.PRICE) : -1;
     } else if (sort.key === 'CREATED') {
-      av = new Date(a.$createdAt).getTime();
-      bv = new Date(b.$createdAt).getTime();
+      av = new Date(a.$createdAt || 0).getTime();
+      bv = new Date(b.$createdAt || 0).getTime();
     } else {
       av = a[sort.key] ?? 0; bv = b[sort.key] ?? 0;
     }
@@ -1305,8 +1404,21 @@ export default function ProductsPage() {
     return sort.dir === 'asc' ? cmp : -cmp;
   });
 
+  const totalInventoryValue = filtered.reduce((sum, p) => sum + (p.STOCK ?? 0) * p.PRICE, 0);
+  const totalCostValue = filtered.reduce((sum, p) => sum + (p.STOCK ?? 0) * (p.COST || 0), 0);
+  const totalUnits = filtered.reduce((sum, p) => sum + (p.STOCK ?? 0), 0);
+  const noImageCount = filtered.filter(p => !p.IMAGEURL).length;
+  const lowStockCount = filtered.filter(p => (p.STOCK ?? 0) > 0 && (p.STOCK ?? 0) <= 10).length;
+  const outStockCount = filtered.filter(p => (p.STOCK ?? 0) === 0).length;
+  const withMargin = filtered.filter(p => p.COST && p.COST > 0 && p.PRICE > 0);
+  const avgMargin = withMargin.length > 0
+    ? Math.round(withMargin.reduce((sum, p) => sum + ((p.PRICE - (p.COST || 0)) / p.PRICE) * 100, 0) / withMargin.length)
+    : null;
+  const liveCount = filtered.filter(p => Boolean(getLiveStatus(p))).length;
+  const activeFiltersCount = [Boolean(search), Boolean(catFilter), Boolean(subCatFilter), noImageOnly, brokenOnly, stockFilter !== 'instock'].filter(Boolean).length;
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" style={{ background: '#f3e8ff', minHeight: '100%', padding: '20px', borderRadius: 12 }}>
 
       {/* ═══════════════════════════════════════════════════════════════
           FULL-PAGE PRODUCT EDITOR (replaces table when modal is active)
@@ -1316,7 +1428,7 @@ export default function ProductsPage() {
           {/* Header bar */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <button onClick={() => { setModal(null); setYexyOpen(false); setYexyMessages([]); }} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition">
+              <button onClick={() => { setModal(null); setKeniaOpen(false); setKeniaMessages([]); }} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition">
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
@@ -1349,9 +1461,9 @@ export default function ProductsPage() {
                   <Eye className="w-4 h-4" /> Ver Producto
                 </a>
               )}
-              <button onClick={() => setYexyOpen(!yexyOpen)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition ${yexyOpen ? 'bg-violet-600 text-white' : 'bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200'}`}>
-                <MessageSquare className="w-4 h-4" /> Preguntar a Yexy
+              <button onClick={() => setKeniaOpen(!KeniaOpen)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition ${KeniaOpen ? 'bg-violet-600 text-white' : 'bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200'}`}>
+                <MessageSquare className="w-4 h-4" /> Preguntar a Kenia
               </button>
               <button onClick={() => setModal(null)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
               <button onClick={save} disabled={isSaving} className="px-5 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-60 flex items-center gap-2">
@@ -1362,7 +1474,7 @@ export default function ProductsPage() {
 
           <div className="flex gap-6">
             {/* Main editor area */}
-            <div className={`flex-1 space-y-6 ${yexyOpen ? 'max-w-[calc(100%-380px)]' : ''}`}>
+            <div className={`flex-1 space-y-6 ${KeniaOpen ? 'max-w-[calc(100%-380px)]' : ''}`}>
               {/* Product image + basic info */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <div className="flex gap-6 flex-col lg:flex-row">
@@ -1385,11 +1497,16 @@ export default function ProductsPage() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-sm font-medium text-gray-700">Nombre del producto *</label>
-                        <button type="button" disabled={aiLoading === 'title'} onClick={async () => {
+                        <button type="button" disabled={aiLoading === 'title' || aiLoading === 'all'} onClick={async () => {
                           setAiLoading('title'); setAiTitles([]);
                           try {
                             const catName = categories.find(c => c.$id === modal.data.CATEGORYID)?.name || '';
-                            const titles = await generateProductTitle(modal.data.DESCRIPTION || modal.data.NAME || '', catName);
+                            const titles = await generateProductTitle(
+                              modal.data.DESCRIPTION || modal.data.NAME || '',
+                              catName,
+                              getModalImageUrls(modal.data),
+                              modal.data.NAME || ''
+                            );
                             setAiTitles(titles);
                           } catch (e: any) { alert(e.message); }
                           finally { setAiLoading(null); }
@@ -1413,17 +1530,32 @@ export default function ProductsPage() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-sm font-medium text-gray-700">Descripción</label>
-                        <button type="button" disabled={aiLoading === 'desc'} onClick={async () => {
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            disabled={aiLoading === 'all'}
+                            onClick={generateAllProductContent}
+                            className="flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 hover:bg-violet-100 disabled:opacity-50"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" /> {aiLoading === 'all' ? 'Autocompletando...' : 'Autocompletar todo'}
+                          </button>
+                        <button type="button" disabled={aiLoading === 'desc' || aiLoading === 'all'} onClick={async () => {
                           setAiLoading('desc');
                           try {
                             const catName = categories.find(c => c.$id === modal.data.CATEGORYID)?.name || '';
-                            const desc = await generateProductDescription(modal.data.NAME || '', catName, modal.data.DESCRIPTION || '');
+                            const desc = await generateProductDescription(
+                              modal.data.NAME || '',
+                              catName,
+                              modal.data.DESCRIPTION || '',
+                              getModalImageUrls(modal.data)
+                            );
                             setModal(m => m ? { ...m, data: { ...m.data, DESCRIPTION: desc } } : m);
                           } catch (e: any) { alert(e.message); }
                           finally { setAiLoading(null); }
                         }} className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 disabled:opacity-50">
                           <Sparkles className="w-3.5 h-3.5" /> {aiLoading === 'desc' ? 'Generando...' : 'Generar con IA'}
                         </button>
+                        </div>
                       </div>
                       <textarea value={modal.data.DESCRIPTION || ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, DESCRIPTION: e.target.value } } : m)}
                         rows={5} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" placeholder="Describe tu producto..." />
@@ -1437,18 +1569,10 @@ export default function ProductsPage() {
                 <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" /> Precios e Inventario
                 </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Precio Normal (CLP)</label>
                     <input type="number" value={modal.data.PRICE ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, PRICE: Number(e.target.value) } } : m)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Precio Oferta <span className="text-gray-400">(vacío = sin descuento)</span></label>
-                    <input type="number" min="0"
-                      value={modal.data.CURRENTPRICE ?? ''}
-                      onChange={e => setModal(m => m ? { ...m, data: { ...m.data, CURRENTPRICE: e.target.value === '' ? undefined : Number(e.target.value) } } : m)}
-                      placeholder="Ej: 8990"
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                   </div>
                   <div>
@@ -1456,7 +1580,7 @@ export default function ProductsPage() {
                     <input type="number" value={modal.data.COST ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, COST: Number(e.target.value) } } : m)}
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                     {(() => {
-                      const price = Number(modal.data.CURRENTPRICE || modal.data.PRICE) || 0;
+                      const price = Number(modal.data.PRICE) || 0;
                       const cost = Number(modal.data.COST) || 0;
                       if (!price || !cost) return null;
                       const margin = Math.round(((price - cost) / price) * 100);
@@ -1535,36 +1659,7 @@ export default function ProductsPage() {
                       <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Precio Mayorista</label>
-                    <input type="number" value={modal.data.WHOLESALEPRICE ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEPRICE: Number(e.target.value) } } : m)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Cant. Mínima Mayorista</label>
-                    <input type="number" value={modal.data.WHOLESALEMINQUANTITY ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, WHOLESALEMINQUANTITY: Number(e.target.value) } } : m)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Lógica Mayorista</label>
-                    <div className="relative">
-                      <select value={getExactWholesaleFromFeatures(modal.data.FEATURES) ? 'exact' : 'range'}
-                        onChange={e => {
-                          const isExact = e.target.value === 'exact';
-                          setModal(m => {
-                            if (!m) return m;
-                            const currentFeatures = m.data.FEATURES || [];
-                            const newFeaturesStr = setExactWholesaleInFeatures(currentFeatures, isExact);
-                            return { ...m, data: { ...m.data, FEATURES: newFeaturesStr } };
-                          });
-                        }}
-                        className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="range">Rango Mínimo (o más)</option>
-                        <option value="exact">Cantidad Exacta</option>
-                      </select>
-                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    </div>
-                  </div>
+
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Cant. por paquete</label>
                     <input type="number" value={modal.data.PACKQTY ?? ''} onChange={e => setModal(m => m ? { ...m, data: { ...m.data, PACKQTY: Number(e.target.value) } } : m)}
@@ -1609,12 +1704,25 @@ export default function ProductsPage() {
 
               {/* Custom specs/info tabs */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" /> Pestañas de Información (Ficha Técnica)
-                </h3>
-                <p className="text-xs text-gray-500 mb-4">
-                  Completa estos campos para mostrar pestañas dedicadas debajo de la descripción en el detalle de producto de Plantilla 5. Si los dejas vacíos, no se mostrarán.
-                </p>
+                <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" /> Pestañas de Información (Ficha Técnica)
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Completa estos campos para mostrar pestañas dedicadas debajo de la descripción en el detalle de producto de Plantilla 5. Si los dejas vacíos, no se mostrarán.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={aiLoading === 'tabs' || aiLoading === 'all'}
+                    onClick={generateTechnicalTabsOnly}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-pink-200 bg-pink-50 px-3 py-2 text-xs font-semibold text-pink-700 hover:bg-pink-100 disabled:opacity-50"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {aiLoading === 'tabs' ? 'Generando ficha...' : 'Generar ficha con IA'}
+                  </button>
+                </div>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
@@ -1658,42 +1766,42 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Yexy side panel */}
-            {yexyOpen && (
+            {/* Kenia side panel */}
+            {KeniaOpen && (
               <div className="w-[360px] shrink-0 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col" style={{ maxHeight: 'calc(100vh - 200px)' }}>
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">Y</div>
-                    <span className="text-sm font-semibold text-gray-800">Yexy</span>
+                    <span className="text-sm font-semibold text-gray-800">Kenia</span>
                     <span className="text-[10px] text-gray-400">para este producto</span>
                   </div>
-                  <button onClick={() => setYexyOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400"><X className="w-4 h-4" /></button>
+                  <button onClick={() => setKeniaOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400"><X className="w-4 h-4" /></button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {yexyMessages.length === 0 && (
+                  {KeniaMessages.length === 0 && (
                     <div className="text-center py-8">
                       <div className="w-12 h-12 mx-auto rounded-full bg-violet-50 flex items-center justify-center mb-3">
                         <MessageSquare className="w-6 h-6 text-violet-500" />
                       </div>
                       <p className="text-sm text-gray-500">Pregúntale algo sobre este producto</p>
-                      <p className="text-xs text-gray-400 mt-1">Yexy ya sabe qué producto estás editando</p>
+                      <p className="text-xs text-gray-400 mt-1">Kenia ya sabe qué producto estás editando</p>
                       <div className="mt-4 space-y-2">
                         {['Mejora la descripción', 'Sugiere un precio competitivo', 'Genera tags para SEO'].map(s => (
-                          <button key={s} onClick={() => { setYexyInput(s); }} className="block w-full text-left text-xs px-3 py-2 rounded-lg bg-gray-50 hover:bg-violet-50 text-gray-600 hover:text-violet-700 transition">
+                          <button key={s} onClick={() => { setKeniaInput(s); }} className="block w-full text-left text-xs px-3 py-2 rounded-lg bg-gray-50 hover:bg-violet-50 text-gray-600 hover:text-violet-700 transition">
                             {s}
                           </button>
                         ))}
                       </div>
                     </div>
                   )}
-                  {yexyMessages.map((msg, i) => (
+                  {KeniaMessages.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
                         {msg.content}
                       </div>
                     </div>
                   ))}
-                  {yexyLoading && (
+                  {KeniaLoading && (
                     <div className="flex justify-start">
                       <div className="bg-gray-100 px-3 py-2 rounded-xl text-sm text-gray-500 flex items-center gap-1">
                         <Loader2 className="w-3 h-3 animate-spin" /> Pensando...
@@ -1703,10 +1811,10 @@ export default function ProductsPage() {
                 </div>
                 <div className="p-3 border-t border-gray-100">
                   <div className="flex gap-2">
-                    <input type="file" id="yexy-file-input" accept="image/*" className="hidden" onChange={async (e) => {
+                    <input type="file" id="Kenia-file-input" accept="image/*" className="hidden" onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      setYexyLoading(true);
+                      setKeniaLoading(true);
                       try {
                         const formData = new FormData();
                         formData.append('file', file);
@@ -1715,24 +1823,24 @@ export default function ProductsPage() {
                         const res = await fetch('/api/products/upload-image', { method: 'POST', body: formData });
                         const data = await res.json();
                         if (data.success) {
-                          setYexyMessages(prev => [...prev, { role: 'user', content: '📷 Imagen enviada' }, { role: 'assistant', content: '✅ Imagen subida y asignada al producto.' }]);
+                          setKeniaMessages(prev => [...prev, { role: 'user', content: '📷 Imagen enviada' }, { role: 'assistant', content: '✅ Imagen subida y asignada al producto.' }]);
                           if (modal?.data) setModal(m => m ? { ...m, data: { ...m.data, IMAGEURL: data.imageUrl } } : m);
                           load();
                         } else {
-                          setYexyMessages(prev => [...prev, { role: 'assistant', content: `❌ Error: ${data.error}` }]);
+                          setKeniaMessages(prev => [...prev, { role: 'assistant', content: `❌ Error: ${data.error}` }]);
                         }
-                      } catch { setYexyMessages(prev => [...prev, { role: 'assistant', content: '❌ Error al subir imagen.' }]); }
-                      finally { setYexyLoading(false); (e.target as HTMLInputElement).value = ''; }
+                      } catch { setKeniaMessages(prev => [...prev, { role: 'assistant', content: '❌ Error al subir imagen.' }]); }
+                      finally { setKeniaLoading(false); (e.target as HTMLInputElement).value = ''; }
                     }} />
-                    <button onClick={() => document.getElementById('yexy-file-input')?.click()} disabled={yexyLoading}
+                    <button onClick={() => document.getElementById('Kenia-file-input')?.click()} disabled={KeniaLoading}
                       className="p-2 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition disabled:opacity-50" title="Subir imagen">
                       <ImagePlus className="w-4 h-4" />
                     </button>
-                    <input value={yexyInput} onChange={e => setYexyInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendYexyMessage(); } }}
+                    <input value={KeniaInput} onChange={e => setKeniaInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendKeniaMessage(); } }}
                       placeholder="Escribe tu pregunta..."
                       className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
-                    <button onClick={sendYexyMessage} disabled={yexyLoading || !yexyInput.trim()}
+                    <button onClick={sendKeniaMessage} disabled={KeniaLoading || !KeniaInput.trim()}
                       className="p-2 rounded-xl bg-violet-600 text-white hover:bg-violet-700 transition disabled:opacity-50">
                       <MessageSquare className="w-4 h-4" />
                     </button>
@@ -1749,62 +1857,116 @@ export default function ProductsPage() {
          ═══════════════════════════════════════════════════════════════ */}
       {!modal && (
         <>
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Productos</h1>
-          <p className="text-sm text-gray-500">{filtered.length} de {products.length}</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => setStockModal(true)} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50" title="Ajuste masivo de stock">
-            <Boxes className="w-4 h-4" />
-          </button>
-          <button onClick={() => setPriceModal(true)} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50" title="Ajuste masivo de precios">
-            <Percent className="w-4 h-4" />
-          </button>
-          <button onClick={exportCSV} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50">
-            <Download className="w-4 h-4" />CSV
-          </button>
-          <button onClick={exportXLSX} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm font-medium hover:bg-green-100 transition disabled:opacity-50">
-            <Download className="w-4 h-4" />XLSX
-          </button>
-          <button id="btn-export-shopify" onClick={exportShopifyCSV} disabled={products.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-100 transition disabled:opacity-50" title="Exportar productos en formato CSV compatible con Shopify">
-            <Download className="w-4 h-4" /> Shopify CSV
-          </button>
-          <button onClick={() => setAiCategorizeModal(true)} className="flex items-center gap-1.5 px-3 py-2 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-700 transition shadow-sm" title="Categorizar productos usando IA">
-            <Sparkles className="w-4 h-4" /> Categorizar con Yexy
-          </button>
-          <button onClick={() => load(false)} disabled={isLoading} className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition text-gray-600">
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
-          <button onClick={syncBrokenImages} disabled={syncingImages || products.length === 0}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition disabled:opacity-50 ${
-              syncingImages ? 'bg-amber-50 border border-amber-200 text-amber-700' :
-              Object.keys(brokenImages).length > 0 ? 'bg-red-50 border border-red-200 text-red-700 hover:bg-red-100' :
-              'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-            }`} title="Verificar imágenes rotas">
-            {syncingImages ? <><Loader2 className="w-4 h-4 animate-spin" />{syncProgress.checked}/{products.flatMap(p => [p.IMAGEURL, p.IMAGEURL2, p.IMAGEURL3].filter(Boolean)).length}</> :
-             Object.keys(brokenImages).length > 0 ? <><ImageOff className="w-4 h-4" />{Object.keys(brokenImages).length} rotas</> :
-             <><ImageOff className="w-4 h-4" />Verificar fotos</>}
-          </button>
-          <button onClick={deleteAll} disabled={isDeletingAll || products.length === 0}
-            title="Borrar todos los productos"
-            className="flex items-center gap-1.5 px-3 py-2 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium hover:bg-red-100 transition disabled:opacity-50">
-            <OctagonX className={`w-4 h-4 ${isDeletingAll ? 'animate-spin' : ''}`} />
-            {isDeletingAll ? 'Borrando...' : 'Borrar todo'}
-          </button>
-          {showDuplicates && duplicates.length > 0 && (
-            <button onClick={deleteZeroStockDuplicates} disabled={isDeletingBulkDups}
-              className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-xl text-sm font-semibold transition shadow-sm">
-              <Trash2 className={`w-4 h-4 ${isDeletingBulkDups ? 'animate-spin' : ''}`} />
-              {isDeletingBulkDups && bulkDeleteProgress
-                ? `Eliminando ${bulkDeleteProgress.done}/${bulkDeleteProgress.total}...`
-                : 'Eliminar repetidos stock 0'}
+      {/* Header compacto con stats en línea */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+              <Package className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">Productos</h1>
+              <p className="text-xs text-gray-500">{filtered.length} de {products.length} · {totalUnits.toLocaleString('es-CL')} unidades · {fmt(totalInventoryValue)}</p>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition shadow-sm">
+              <Plus className="w-4 h-4" /> Agregar
             </button>
-          )}
-          <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition">
-            <Plus className="w-4 h-4" /> Agregar
-          </button>
+            <button onClick={() => setAiCategorizeModal(true)} className="flex items-center gap-1.5 px-3 py-2 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-700 transition shadow-sm" title="Categorizar productos usando IA">
+              <Sparkles className="w-4 h-4" /> Kenia
+            </button>
+            <button onClick={() => load(false)} disabled={isLoading} className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition text-gray-600">
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
+        {/* Stats inline compactas */}
+        <div className="flex flex-wrap gap-2">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-lg text-xs">
+            <span className="text-gray-500">Visibles:</span>
+            <span className="font-bold text-gray-900">{filtered.length}</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-lg text-xs">
+            <span className="text-gray-500">Stock:</span>
+            <span className="font-bold text-gray-900">{totalUnits.toLocaleString('es-CL')}</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-lg text-xs">
+            <span className="text-gray-500">Valor:</span>
+            <span className="font-bold text-gray-900">{fmt(totalInventoryValue)}</span>
+          </div>
+          {noImageCount > 0 && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 rounded-lg text-xs">
+              <span className="text-amber-600">Sin imagen:</span>
+              <span className="font-bold text-amber-700">{noImageCount}</span>
+            </div>
+          )}
+          {outStockCount > 0 && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 rounded-lg text-xs">
+              <span className="text-red-500">Agotados:</span>
+              <span className="font-bold text-red-600">{outStockCount}</span>
+            </div>
+          )}
+          {lowStockCount > 0 && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 rounded-lg text-xs">
+              <span className="text-amber-600">Stock bajo:</span>
+              <span className="font-bold text-amber-700">{lowStockCount}</span>
+            </div>
+          )}
+          {avgMargin !== null && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 rounded-lg text-xs">
+              <span className="text-emerald-600">Margen:</span>
+              <span className="font-bold text-emerald-700">{avgMargin}%</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Toolbar de acciones secundarias */}
+      <div className="flex gap-2 flex-wrap">
+        <button onClick={() => setStockModal(true)} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50" title="Ajuste masivo de stock">
+          <Boxes className="w-4 h-4" /> Stock
+        </button>
+        <button onClick={() => setPriceModal(true)} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50" title="Ajuste masivo de precios">
+          <Percent className="w-4 h-4" /> Precios
+        </button>
+        <button onClick={exportCSV} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50">
+          <Download className="w-4 h-4" />CSV
+        </button>
+        <button onClick={exportXLSX} disabled={filtered.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm font-medium hover:bg-green-100 transition disabled:opacity-50">
+          <Download className="w-4 h-4" />XLSX
+        </button>
+        <button id="btn-export-shopify" onClick={exportShopifyCSV} disabled={products.length === 0} className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-100 transition disabled:opacity-50" title="Exportar productos en formato CSV compatible con Shopify">
+          <Download className="w-4 h-4" /> Shopify CSV
+        </button>
+        <Link href="/admin/products/import-images" className="flex items-center gap-1.5 px-3 py-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl text-sm font-medium hover:bg-amber-100 transition" title="Importar imágenes por SKU">
+          <Upload className="w-4 h-4" /> Importar Imágenes
+        </Link>
+        <button onClick={syncBrokenImages} disabled={syncingImages || products.length === 0}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition disabled:opacity-50 ${
+            syncingImages ? 'bg-amber-50 border border-amber-200 text-amber-700' :
+            Object.keys(brokenImages).length > 0 ? 'bg-red-50 border border-red-200 text-red-700 hover:bg-red-100' :
+            'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+          }`} title="Verificar imágenes rotas">
+          {syncingImages ? <><Loader2 className="w-4 h-4 animate-spin" />{syncProgress.checked}/{products.flatMap(p => [p.IMAGEURL, p.IMAGEURL2, p.IMAGEURL3].filter(Boolean)).length}</> :
+           Object.keys(brokenImages).length > 0 ? <><ImageOff className="w-4 h-4" />{Object.keys(brokenImages).length} rotas</> :
+           <><ImageOff className="w-4 h-4" />Verificar fotos</>}
+        </button>
+        <button onClick={deleteAll} disabled={isDeletingAll || products.length === 0}
+          title="Borrar todos los productos"
+          className="flex items-center gap-1.5 px-3 py-2 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium hover:bg-red-100 transition disabled:opacity-50">
+          <OctagonX className={`w-4 h-4 ${isDeletingAll ? 'animate-spin' : ''}`} />
+          {isDeletingAll ? 'Borrando...' : 'Borrar todo'}
+        </button>
+        {showDuplicates && duplicates.length > 0 && (
+          <button onClick={deleteZeroStockDuplicates} disabled={isDeletingBulkDups}
+            className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-xl text-sm font-semibold transition shadow-sm">
+            <Trash2 className={`w-4 h-4 ${isDeletingBulkDups ? 'animate-spin' : ''}`} />
+            {isDeletingBulkDups && bulkDeleteProgress
+              ? `Eliminando ${bulkDeleteProgress.done}/${bulkDeleteProgress.total}...`
+              : 'Eliminar repetidos stock 0'}
+          </button>
+        )}
       </div>
 
       {/* Progress bar de eliminación masiva */}
@@ -1905,7 +2067,7 @@ export default function ProductsPage() {
       </div>
 
       {categories.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           <button onClick={() => { setCatFilter(''); setSubCatFilter(''); }}
             className={`px-3 py-1 rounded-full text-xs font-medium transition ${!catFilter ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
             Todas
@@ -1950,7 +2112,7 @@ export default function ProductsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
+              <tr className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-50/50">
                 {showDuplicates ? (
                   <>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Producto Repetido</th>
@@ -2114,10 +2276,10 @@ export default function ProductsPage() {
                         <button
                           onClick={() => {
                             openEdit(p);
-                            setTimeout(() => setYexyOpen(true), 100);
+                            setTimeout(() => setKeniaOpen(true), 100);
                           }}
                           className="relative shrink-0 group"
-                          title="Preguntar a Yexy AI"
+                          title="Preguntar a Kenia AI"
                         >
                           <div className="w-10 h-10 flex items-center justify-center bg-violet-50 rounded-xl hover:bg-violet-100 transition-colors border border-violet-200 text-violet-600">
                             <Sparkles className="w-5 h-5 animate-pulse" />
@@ -2128,13 +2290,33 @@ export default function ProductsPage() {
                         </button>
                         <div
                           className="relative w-10 h-10 shrink-0 cursor-pointer group"
-                          onClick={() =>
-                            setImageUrlModal({
+                          onClick={() => {
+                            setImageDrawerTab('images');
+                            setImageDrawer({
                               productId: p.$id,
-                              currentUrl: p.IMAGEURL || '',
-                              newUrl: p.IMAGEURL || '',
-                            })
-                          }
+                              productName: p.NAME || '',
+                              img1: p.IMAGEURL || '',
+                              img2: p.IMAGEURL2 || '',
+                              img3: p.IMAGEURL3 || '',
+                              img4: (p as any).IMAGEURL4 || '',
+                              origImg1: p.IMAGEURL || '',
+                              origImg2: p.IMAGEURL2 || '',
+                              origImg3: p.IMAGEURL3 || '',
+                              origImg4: (p as any).IMAGEURL4 || '',
+                              description: p.DESCRIPTION || '',
+                              origDescription: p.DESCRIPTION || '',
+                              features: (Array.isArray(p.FEATURES) ? p.FEATURES : []).join('\n'),
+                              origFeatures: (Array.isArray(p.FEATURES) ? p.FEATURES : []).join('\n'),
+                              tags: (Array.isArray(p.TAGS) ? p.TAGS : []).join(', '),
+                              origTags: (Array.isArray(p.TAGS) ? p.TAGS : []).join(', '),
+                              sku: (p as any).SKU || '',
+                              origSku: (p as any).SKU || '',
+                              price: p.PRICE || 0,
+                              origPrice: p.PRICE || 0,
+                              stock: p.STOCK ?? 0,
+                              origStock: p.STOCK ?? 0,
+                            });
+                          }}
                           title="Click para cambiar imagen"
                         >
                           <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden">
@@ -2177,9 +2359,9 @@ export default function ProductsPage() {
                                 Ya estaba (En Live)
                               </span>
                             )}
-                            {liveStatus && p.imported_at && (
+                            {liveStatus && p.$createdAt && (
                               <span className="text-[9px] text-gray-400 font-medium">
-                                ({new Date(p.imported_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })})
+                                ({new Date(p.$createdAt).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })})
                               </span>
                             )}
                           </div>
@@ -2316,14 +2498,14 @@ export default function ProductsPage() {
         {!isLoading && !showDuplicates && filtered.length > 0 && (
           <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center gap-4 text-xs text-gray-500">
             <span><span className="font-semibold text-gray-700">{filtered.length}</span> productos</span>
-            <span>Stock total: <span className="font-semibold text-gray-700">{filtered.reduce((s, p) => s + (p.STOCK ?? 0), 0).toLocaleString('es-CL')} un.</span></span>
-            <span>Valor inventario: <span className="font-semibold text-gray-700">{fmt(filtered.reduce((s, p) => s + (p.STOCK ?? 0) * p.PRICE, 0))}</span></span>
+            <span>Stock: <span className="font-semibold text-gray-700">{totalUnits.toLocaleString('es-CL')} un.</span></span>
+            <span>Valor: <span className="font-semibold text-gray-700">{fmt(totalInventoryValue)}</span></span>
             {filtered.some(p => p.COST) && (
-              <span>Valor a costo: <span className="font-semibold text-gray-700">{fmt(filtered.reduce((s, p) => s + (p.STOCK ?? 0) * (p.COST || 0), 0))}</span></span>
+              <span>Costo: <span className="font-semibold text-gray-700">{fmt(totalCostValue)}</span></span>
             )}
             {(() => { const noCost = filtered.filter(p => !p.COST || p.COST === 0).length; return noCost > 0 ? <span className="text-amber-600 font-medium">{noCost} sin costo</span> : null; })()}
-            {(() => { const noImg = filtered.filter(p => !p.IMAGEURL).length; return noImg > 0 ? <span className="text-amber-500 font-medium">{noImg} sin imagen</span> : null; })()}
-            {(() => { const withMargin = filtered.filter(p => p.COST && p.COST > 0); if (withMargin.length === 0) return null; const avg = Math.round(withMargin.reduce((s, p) => s + ((p.PRICE - (p.COST || 0)) / p.PRICE) * 100, 0) / withMargin.length); return <span className="ml-auto text-indigo-600 font-semibold">Margen promedio: {avg}%</span>; })()}
+            {noImageCount > 0 ? <span className="text-amber-500 font-medium">{noImageCount} sin imagen</span> : null}
+            {avgMargin !== null ? <span className="ml-auto text-indigo-600 font-semibold">Margen: {avgMargin}%</span> : null}
           </div>
         )}
       </div>
@@ -2438,36 +2620,267 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* Image URL replacement modal */}
-      {imageUrlModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <p className="font-bold text-gray-900">Cambiar imagen</p>
-              <button onClick={() => setImageUrlModal(null)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X className="w-4 h-4" /></button>
+      {/* Image drawer (cortina lateral) */}
+      {imageDrawer && (
+        <div className="fixed inset-0 z-[9999] flex justify-end" onClick={() => !imageDrawerSaving && setImageDrawer(null)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" />
+          <div
+            className="relative h-full w-full max-w-[640px] bg-white shadow-2xl flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="shrink-0 border-b border-gray-100 px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
+                  <ImagePlus className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-gray-900 text-sm">Editar producto</p>
+                  <p className="text-xs text-gray-500 truncate max-w-[300px]">{imageDrawer.productName}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => !imageDrawerSaving && setImageDrawer(null)}
+                className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <div className="p-5 space-y-4">
-              {imageUrlModal.currentUrl && (
-                <div className="w-full h-32 rounded-xl bg-gray-100 overflow-hidden">
-                  <img src={imageUrlModal.currentUrl} alt="Actual" className="w-full h-full object-cover" />
+
+            {/* Tabs */}
+            <div className="shrink-0 flex gap-1 px-5 pt-3 border-b border-gray-100">
+              {([
+                { key: 'images' as const, label: 'Imágenes' },
+                { key: 'info' as const, label: 'Descripción' },
+                { key: 'specs' as const, label: 'Ficha técnica' },
+              ]).map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setImageDrawerTab(tab.key)}
+                  className={`px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px ${
+                    imageDrawerTab === tab.key
+                      ? 'border-indigo-600 text-indigo-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-5">
+              {/* TAB: Images */}
+              {imageDrawerTab === 'images' && (
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: 'Imagen 1', sub: 'Principal', key: 'img1' as const, idx: 0 },
+                    { label: 'Imagen 2', sub: 'Secundaria', key: 'img2' as const, idx: 1 },
+                    { label: 'Imagen 3', sub: 'Detalle', key: 'img3' as const, idx: 2 },
+                    { label: 'Imagen 4', sub: 'Extra', key: 'img4' as const, idx: 3 },
+                  ].map((slot) => {
+                    const url = imageDrawer[slot.key];
+                    const isUploading = imageDrawerUploading === slot.key;
+                    return (
+                      <div key={slot.key} className="rounded-xl border border-gray-200 p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-gray-900">{slot.label}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${slot.idx === 0 ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}>
+                              {slot.sub}
+                            </span>
+                          </div>
+                          {url && (
+                            <button
+                              onClick={() => setImageDrawer(d => d ? { ...d, [slot.key]: '' } : null)}
+                              className="text-[11px] text-red-500 hover:text-red-700 font-medium"
+                            >Quitar</button>
+                          )}
+                        </div>
+                        {url ? (
+                          <div className="relative w-full h-28 rounded-lg overflow-hidden bg-gray-100 mb-2">
+                            <img src={url} alt={slot.label} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            className="w-full h-28 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-indigo-400 hover:text-indigo-500 transition mb-2"
+                            onClick={() => imageDrawerFileRefs.current[slot.idx]?.click()}
+                          >
+                            {isUploading ? (
+                              <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                            ) : (
+                              <>
+                                <Upload className="w-5 h-5 mb-1" />
+                                <span className="text-[11px] font-medium">Subir</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                        <div className="flex gap-1.5">
+                          <input
+                            type="url"
+                            value={url}
+                            onChange={e => setImageDrawer(d => d ? { ...d, [slot.key]: e.target.value } : null)}
+                            placeholder="URL..."
+                            className="flex-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                          <input
+                            ref={el => { imageDrawerFileRefs.current[slot.idx] = el; }}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              setImageDrawerUploading(slot.key);
+                              try {
+                                const { storage } = getServices();
+                                const { endpoint, projectId } = getAppwriteConfig();
+                                const fileId = ID.unique();
+                                await storage.createFile(PRODUCTS_BUCKET_ID, fileId, file);
+                                const newUrl = `${endpoint}/storage/buckets/${PRODUCTS_BUCKET_ID}/files/${fileId}/view?project=${projectId}`;
+                                setImageDrawer(d => d ? { ...d, [slot.key]: newUrl } : null);
+                              } catch (err: any) {
+                                alert('Error al subir: ' + err.message);
+                              } finally {
+                                setImageDrawerUploading(null);
+                                e.target.value = '';
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => imageDrawerFileRefs.current[slot.idx]?.click()}
+                            disabled={isUploading}
+                            className="shrink-0 px-2.5 py-2 border border-indigo-200 bg-indigo-50 rounded-lg text-xs font-medium text-indigo-700 hover:bg-indigo-100 transition disabled:opacity-50"
+                          >
+                            <Upload className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">URL de la nueva imagen</label>
-                <input type="url" value={imageUrlModal.newUrl} onChange={e => setImageUrlModal(m => m ? { ...m, newUrl: e.target.value } : null)}
-                  placeholder="https://ejemplo.com/imagen.jpg"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
+
+              {/* TAB: Info (descripción + datos básicos) */}
+              {imageDrawerTab === 'info' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Descripción</label>
+                    <textarea
+                      value={imageDrawer.description}
+                      onChange={e => setImageDrawer(d => d ? { ...d, description: e.target.value } : null)}
+                      rows={6}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                      placeholder="Descripción del producto..."
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1.5">SKU</label>
+                      <input
+                        type="text"
+                        value={imageDrawer.sku}
+                        onChange={e => setImageDrawer(d => d ? { ...d, sku: e.target.value } : null)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="SKU del producto"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1.5">Tags</label>
+                      <input
+                        type="text"
+                        value={imageDrawer.tags}
+                        onChange={e => setImageDrawer(d => d ? { ...d, tags: e.target.value } : null)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="tag1, tag2, tag3"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1.5">Precio (CLP)</label>
+                      <input
+                        type="number"
+                        value={imageDrawer.price}
+                        onChange={e => setImageDrawer(d => d ? { ...d, price: Number(e.target.value) } : null)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1.5">Stock</label>
+                      <input
+                        type="number"
+                        value={imageDrawer.stock}
+                        onChange={e => setImageDrawer(d => d ? { ...d, stock: Number(e.target.value) } : null)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: Specs (ficha técnica) */}
+              {imageDrawerTab === 'specs' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                      Ficha técnica <span className="text-gray-400 font-normal">(una característica por línea)</span>
+                    </label>
+                    <textarea
+                      value={imageDrawer.features}
+                      onChange={e => setImageDrawer(d => d ? { ...d, features: e.target.value } : null)}
+                      rows={10}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none font-mono"
+                      placeholder={"Ejemplo:\nMaterial: Algodón\nTalla: L\nColor: Azul\nGarantía: 3 meses"}
+                    />
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-xs text-gray-500">
+                      <span className="font-semibold text-gray-700">Vista previa:</span>
+                    </p>
+                    {imageDrawer.features.trim() ? (
+                      <ul className="mt-2 space-y-1">
+                        {imageDrawer.features.split('\n').filter((s: string) => s.trim()).map((line: string, i: number) => {
+                          const [key, ...rest] = line.split(':');
+                          return (
+                            <li key={i} className="text-xs flex gap-2">
+                              <span className="font-medium text-gray-700">{key.trim()}:</span>
+                              <span className="text-gray-600">{rest.join(':').trim()}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <p className="mt-1 text-xs text-gray-400">Sin características</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="flex justify-end gap-3 p-5 border-t border-gray-100">
-              <button onClick={() => setImageUrlModal(null)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
-              <button onClick={saveImageUrl} className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition">Guardar</button>
+
+            {/* Footer */}
+            <div className="shrink-0 border-t border-gray-100 px-5 py-3.5 flex justify-end gap-3 bg-white">
+              <button
+                onClick={() => !imageDrawerSaving && setImageDrawer(null)}
+                className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+              >Cancelar</button>
+              <button
+                onClick={saveImageDrawer}
+                disabled={imageDrawerSaving}
+                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-50 shadow-sm"
+              >
+                {imageDrawerSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : null}
+                {imageDrawerSaving ? 'Guardando...' : 'Guardar cambios'}
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* AI Categorization Modal (Yexy) */}
+      {/* AI Categorization Modal (Kenia) */}
       {aiCategorizeModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[85vh]">
@@ -2478,7 +2891,7 @@ export default function ProductsPage() {
                   <Sparkles className="w-5 h-5 animate-pulse" />
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900 text-base">Categorización Inteligente con Yexy</p>
+                  <p className="font-bold text-gray-900 text-base">Categorización Inteligente con Kenia</p>
                   <p className="text-xs text-gray-500 mt-0.5">Organiza tu catálogo de forma automática usando Inteligencia Artificial</p>
                 </div>
               </div>
@@ -2501,7 +2914,7 @@ export default function ProductsPage() {
                     <div>
                       <p className="font-semibold">¿Cómo funciona?</p>
                       <p className="text-violet-700/95 mt-1 leading-relaxed text-xs">
-                        Yexy analizará el título y la descripción de tus productos para recomendarte la categoría y la subcategoría que mejor se ajusten de entre las que tienes registradas. Luego podrás revisar las propuestas antes de aplicarlas.
+                        Kenia analizará el título y la descripción de tus productos para recomendarte la categoría y la subcategoría que mejor se ajusten de entre las que tienes registradas. Luego podrás revisar las propuestas antes de aplicarlas.
                       </p>
                     </div>
                   </div>
@@ -2540,7 +2953,7 @@ export default function ProductsPage() {
                 <div className="flex flex-col items-center justify-center py-16 space-y-6 max-w-md mx-auto">
                   <div className="w-16 h-16 rounded-full border-4 border-violet-100 border-t-violet-600 animate-spin" />
                   <div className="text-center">
-                    <p className="font-bold text-gray-800 text-lg">Yexy está analizando tu catálogo...</p>
+                    <p className="font-bold text-gray-800 text-lg">Kenia está analizando tu catálogo...</p>
                     <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
                       Este proceso se realiza en lotes eficientes de 10 productos para garantizar la máxima precisión. Por favor, no cierres esta ventana.
                     </p>
@@ -2581,7 +2994,7 @@ export default function ProductsPage() {
                             <th className="p-4">Producto</th>
                             <th className="p-4">Categoría Sugerida</th>
                             <th className="p-4">Subcategoría Sugerida</th>
-                            <th className="p-4">Justificación de Yexy</th>
+                            <th className="p-4">Justificación de Kenia</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-sm">
@@ -2683,4 +3096,3 @@ export default function ProductsPage() {
     </div>
   );
 }
-

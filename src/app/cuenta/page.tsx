@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { getServices, getAppwriteConfig, MEDIA_BUCKET_ID, MEDIA_PREFIXES } from '@/lib/appwrite';
 import {
   ShoppingBag, Bell, Heart, ShoppingCart, MessageCircle,
-  User, MapPin, Receipt, HelpCircle, Phone,
+  User, MapPin, Receipt, HelpCircle, Phone, Package,
   Loader2, ChevronRight, LogOut, Building2, Trophy, Tag, Star, Settings, Ticket, Gift, Pencil, Sparkles, PackageSearch,
   Award, Crown, Gem,
 } from 'lucide-react';
@@ -25,6 +25,7 @@ interface MenuItem { icon: any; label: string; href: string; desc?: string; badg
 
 const MIS_COMPRAS_ITEMS: MenuItem[] = [
   { icon: Receipt,      label: 'Mis Pedidos',   href: '/cuenta/pedidos',    desc: 'Seguí el estado de tus pedidos' },
+  { icon: Package,      label: 'Pedidos Mayoristas', href: '/cuenta/pedidos-mayoristas', desc: 'Pedidos al por mayor y paquetes' },
   { icon: Heart,        label: 'Mis Favoritos', href: '/cuenta/favoritos',  desc: 'Productos que guardaste' },
   { icon: PackageSearch,label: 'Mis Consultas', href: '/cuenta/consultas', desc: 'Consultas de disponibilidad' },
   { icon: ShoppingCart, label: 'Mi Carrito',    href: '/carrito',           desc: 'Productos en tu carrito' },
@@ -56,7 +57,7 @@ const QUICK_SHORTCUTS = [
 
 function getFilePreviewUrl(fileId: string): string {
   const { endpoint, projectId } = getAppwriteConfig();
-  const path = MEDIA_PREFIXES.thumbnails + fileId;
+  const path = fileId;
   return `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${path}/view?project=${projectId}`;
 }
 
@@ -76,6 +77,14 @@ const FALLBACK_MEDAL_ICONS: Record<string, { icon: any; color: string; bg: strin
   gold: { icon: Crown, color: '#fbbf24', bg: '#fef3c7' },
   diamond: { icon: Gem, color: '#60a5fa', bg: '#eff6ff' },
   ruby: { icon: Sparkles, color: '#f43f5e', bg: '#ffe4e6' },
+};
+
+const LEVEL_META: Record<string, { name: string; color: string; chipBg: string; chipBorder: string }> = {
+  bronze:  { name: 'Bronce',   color: '#b45309', chipBg: 'rgba(205,127,50,0.12)',  chipBorder: 'rgba(205,127,50,0.3)' },
+  silver:  { name: 'Plata',    color: '#6b7280', chipBg: 'rgba(156,163,175,0.14)', chipBorder: 'rgba(156,163,175,0.35)' },
+  gold:    { name: 'Oro',      color: '#b45309', chipBg: 'rgba(251,191,36,0.16)',  chipBorder: 'rgba(251,191,36,0.4)' },
+  diamond: { name: 'Diamante', color: '#2563eb', chipBg: 'rgba(96,165,250,0.14)',  chipBorder: 'rgba(96,165,250,0.4)' },
+  ruby:    { name: 'Rubí',     color: '#e11d48', chipBg: 'rgba(244,63,94,0.12)',   chipBorder: 'rgba(244,63,94,0.35)' },
 };
 
 export default function CuentaPage() {
@@ -165,6 +174,7 @@ export default function CuentaPage() {
   const userName = user?.name || 'Usuario';
   const initials = userName.split(' ').filter(Boolean).map((w: string) => w[0]).slice(0, 2).join('').toUpperCase() || 'U';
   const firstName = userName.split(' ')[0] || 'Usuario';
+  const levelMeta = LEVEL_META[currentLevel] || LEVEL_META.bronze;
 
   return (
     <>
@@ -278,25 +288,99 @@ export default function CuentaPage() {
           z-index: 10;
           border-radius: 22px 22px 0 0;
         }
+        /* ── Hero cover gradient ── */
+        .hero-cover {
+          position: relative;
+          overflow: hidden;
+          background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #5b21b6 50%, #9d174d 75%, #be185d 100%);
+        }
+        .hero-cover::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background:
+            radial-gradient(ellipse 60% 80% at 20% 30%, rgba(227,150,191,0.25) 0%, transparent 50%),
+            radial-gradient(ellipse 50% 60% at 80% 70%, rgba(129,140,248,0.2) 0%, transparent 50%),
+            radial-gradient(ellipse 40% 50% at 50% 50%, rgba(168,85,247,0.15) 0%, transparent 60%);
+          z-index: 1;
+        }
+        .hero-cover::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='0.5' opacity='0.04'%3E%3Ccircle cx='15' cy='15' r='6'/%3E%3Cpath d='M35 10l3 3 3-3z'/%3E%3Ccircle cx='55' cy='20' r='4'/%3E%3Cpath d='M10 40c3 0 5 2 5 5s-2 5-5 5-5-2-5-5 2-5 5-5z'/%3E%3Cpath d='M35 35l4 4 4-4' stroke-linecap='round'/%3E%3Ccircle cx='60' cy='50' r='5'/%3E%3Cpath d='M20 65l3-3 3 3' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E");
+          background-size: 80px 80px;
+          z-index: 1;
+        }
+        .hero-cover-overlay {
+          position: absolute;
+          bottom: 0; left: 0; right: 0;
+          height: 60%;
+          background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.9) 90%, #fff 100%);
+          z-index: 2;
+        }
+        /* ── Section tabs ── */
+        .section-tab {
+          display: flex; align-items: center; gap: 10px;
+          padding: 14px 18px; font-size: 13px; font-weight: 800;
+          text-transform: uppercase; letter-spacing: 0.06em;
+          color: #6b7280; cursor: pointer;
+          transition: all 0.2s; border-bottom: 2.5px solid transparent;
+        }
+        .section-tab:hover { color: #1a1a1a; }
+        .section-tab.active { color: #1a1a1a; border-bottom-color: #e396bf; }
+        .section-tab .tab-icon {
+          width: 28px; height: 28px; border-radius: 9px;
+          display: flex; align-items: center; justify-content: center;
+          transition: all 0.2s;
+        }
+        .section-tab.active .tab-icon { transform: scale(1.1); }
+
+        /* ── Premium colored cards ── */
+        .ccard {
+          position: relative; overflow: hidden;
+          transition: transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .22s, border-color .22s;
+        }
+        .ccard:hover {
+          transform: translateY(-4px) scale(1.015);
+          box-shadow: 0 2px 4px rgba(0,0,0,.04), 0 8px 18px rgba(0,0,0,.08), 0 22px 40px rgba(0,0,0,.09) !important;
+        }
+        .ccard:hover .ccard-arrow { opacity: 1; transform: translateX(0); }
+        .ccard:hover .ccard-wm { transform: scale(1.12) rotate(-8deg); }
+        .ccard:hover .ccard-icon { transform: scale(1.08) rotate(-3deg); }
+        .ccard-arrow { opacity: 0; transform: translateX(-6px); transition: all .22s ease; }
+        .ccard-wm { transition: transform .4s cubic-bezier(.34,1.56,.64,1); }
+        .ccard-icon { transition: transform .25s cubic-bezier(.34,1.56,.64,1); }
+
+        /* ── Section header ── */
+        .sec-head { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
+        .sec-head-icon {
+          width: 34px; height: 34px; border-radius: 11px;
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 4px 11px rgba(0,0,0,0.13), inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+        .sec-head-count {
+          font-size: 12px; font-weight: 800; color: #9ca3af;
+          background: rgba(0,0,0,0.05); border-radius: 999px; padding: 2px 10px;
+        }
+        .sec-head-line { flex: 1; height: 1px; background: linear-gradient(90deg, rgba(0,0,0,0.08), transparent); }
       `}</style>
 
       {/* ════════════════ DESKTOP ════════════════ */}
       <div className="cuenta-desktop" style={{ display: 'none' }}>
         {/* Hero header */}
         <div style={{ background: '#fff', borderRadius: 22, marginBottom: 24, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', position: 'relative' }}>
-          <div style={{
-            height: 160,
-            backgroundImage: coverUrl ? `url(${coverUrl})` : 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+          <div className="hero-cover" style={{
+            height: 180,
+            backgroundImage: coverUrl ? `url(${coverUrl})` : undefined,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            position: 'relative',
-            overflow: 'hidden'
           }}>
-            <Link href="/cuenta/perfil" style={{ position: 'absolute', top: 12, right: 12, width: 34, height: 34, borderRadius: 12, background: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <Link href="/cuenta/perfil" style={{ position: 'absolute', top: 12, right: 12, width: 34, height: 34, borderRadius: 12, background: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', zIndex: 5 }}>
               <Pencil size={15} color="#374151" style={{ opacity: 0.8 }} />
             </Link>
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(to bottom,transparent,#fff)' }} />
+            <div className="hero-cover-overlay" />
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 20, padding: '0 28px 32px', marginTop: -55, position: 'relative', zIndex: 2 }}>
             <div style={{ position: 'relative' }}>
@@ -346,8 +430,13 @@ export default function CuentaPage() {
               )}
             </div>
             <div style={{ paddingBottom: 6, flex: 1 }}>
-              <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.02em' }}>¡Hola, {firstName}!</h1>
-              <p style={{ margin: '4px 0 0', fontSize: 14, color: '#6b7280' }}>{user.email}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.02em' }}>¡Hola, {firstName}!</h1>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 999, background: levelMeta.chipBg, border: `1px solid ${levelMeta.chipBorder}`, fontSize: 12, fontWeight: 800, color: levelMeta.color }}>
+                  <Trophy size={12} /> Nivel {levelMeta.name}
+                </span>
+              </div>
+              <p style={{ margin: '5px 0 0', fontSize: 14, color: '#6b7280' }}>{user.email}</p>
             </div>
             <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 12, textDecoration: 'none', marginBottom: 6, boxShadow: '0 4px 14px rgba(227,150,191,0.25)' }}>
               <Trophy size={15} /> Tienda de puntos
@@ -453,13 +542,31 @@ export default function CuentaPage() {
           <LoyaltyLevel />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
-          {ALL_CARDS.map(item => <DesktopCard key={item.label} item={item} />)}
-        </div>
+        {/* ── Sections with clear headers ── */}
+        {([
+          { title: 'Mis Compras',  Icon: ShoppingBag, g: 'linear-gradient(135deg,#6366f1,#8b5cf6)', items: MIS_COMPRAS_ITEMS, base: 0,  cols: 4 },
+          { title: 'Mi Cuenta',    Icon: User,        g: 'linear-gradient(135deg,#3b82f6,#60a5fa)', items: CUENTA_ITEMS,      base: 10, cols: 3 },
+          { title: 'Más opciones', Icon: Settings,    g: 'linear-gradient(135deg,#f59e0b,#fbbf24)', items: CONFIG_ITEMS,      base: 20, cols: 4 },
+        ] as const).map(sec => {
+          const SecIcon = sec.Icon;
+          return (
+            <div key={sec.title} style={{ marginBottom: 26 }}>
+              <div className="sec-head">
+                <div className="sec-head-icon" style={{ background: sec.g }}><SecIcon size={17} color="#fff" strokeWidth={2.2} /></div>
+                <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.015em' }}>{sec.title}</h2>
+                <span className="sec-head-count">{sec.items.length}</span>
+                <span className="sec-head-line" />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${sec.cols}, 1fr)`, gap: 14 }}>
+                {sec.items.map((item, i) => <ColoredCard key={item.label} item={item} index={i + sec.base} />)}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* ════════ MOBILE HARDCORE PREMIUM ════════ */}
-      <div className="cuenta-mobile" style={{ fontFamily: FF, background: 'transparent', minHeight: '100vh' }}>
+      <div className="cuenta-mobile" style={{ fontFamily: FF, background: 'linear-gradient(to bottom, #f8fafc, #f1f5f9)', minHeight: '100vh', paddingBottom: 50 }}>
         <style>{`
           .pm-pill:active { transform: scale(0.93); opacity: 0.85; }
           .pm-pill { transition: transform 0.18s cubic-bezier(.34,1.56,.64,1); }
@@ -470,10 +577,6 @@ export default function CuentaPage() {
           @keyframes qa-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
           @keyframes qa-glow-pulse { 0%,100% { filter: drop-shadow(0 0 3px rgba(227,150,191,0.2)); } 50% { filter: drop-shadow(0 0 8px rgba(227,150,191,0.25)); } }
           @keyframes qa-wiggle { 0% { transform: rotate(0deg); } 15% { transform: rotate(-8deg); } 30% { transform: rotate(6deg); } 45% { transform: rotate(-4deg); } 60% { transform: rotate(2deg); } 75% { transform: rotate(-1deg); } 100% { transform: rotate(0deg); } }
-          @keyframes td_shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-          @keyframes td_float { 0%,100% { transform: translateY(0); opacity: 0.6; } 50% { transform: translateY(-2px); opacity: 1; } }
-          @keyframes td_bubble { 0%,100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.4); opacity: 0.6; } }
-          @keyframes td_drift { 0%,100% { transform: translateX(0); opacity: 0.15; } 50% { transform: translateX(6px); opacity: 0.25; } }
           .qa-icon-float { animation: qa-float 3s ease-in-out infinite; }
           .qa-icon-float:nth-child(1) { animation-delay: 0s; }
           .qa-icon-float:nth-child(2) { animation-delay: 0.4s; }
@@ -497,40 +600,47 @@ export default function CuentaPage() {
             border: 1px solid rgba(0,0,0,0.07) !important;
             transform: none !important;
           }
+          .ios-group {
+            background: #fff;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            border: 1px solid #f1f5f9;
+            margin-bottom: 24px;
+          }
+          .ios-group-title {
+            margin: 0 0 8px 12px;
+            font-size: 13px;
+            font-weight: 800;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+          }
         `}</style>
 
-        {/* ── HERO: card style like desktop ── */}
-        <div style={{ padding: '12px 12px 0' }}>
-          <div style={{ background: '#fff', borderRadius: 22, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', position: 'relative' }}>
-            {/* Cover image */}
-            <div style={{
-              height: 130,
-              backgroundImage: coverUrl ? `url(${coverUrl})` : 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              position: 'relative',
-              overflow: 'hidden'
-            }}>
-              <Link href="/cuenta/perfil" style={{ position: 'absolute', top: 10, right: 10, width: 30, height: 30, borderRadius: 10, background: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                <Pencil size={13} color="#374151" style={{ opacity: 0.8 }} />
-              </Link>
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 50, background: 'linear-gradient(to bottom,transparent,#fff)' }} />
-            </div>
-            {/* Saludo arriba, avatar abajo */}
-            <div style={{ padding: '0 18px', marginTop: -36, position: 'relative', zIndex: 2, textAlign: 'center' }}>
-              <p style={{ margin: 0, fontSize: 20, fontWeight: 900, color: '#1a1a1a', letterSpacing: '-0.03em', lineHeight: 1.2 }}>
-                ¡Hola, {firstName}! 👋
-              </p>
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#6b7280', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {user.email}
-              </p>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px 18px 20px', position: 'relative', zIndex: 2 }}>
-              <div style={{ position: 'relative' }}>
-                <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 800, color: PINK, overflow: 'hidden', border: '3px solid #fff', boxShadow: '0 0 0 2px rgba(227,150,191,0.15), 0 4px 6px -1px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.12)' }}>
-                  {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
-                </div>
+        {/* ── HERO: Premium Mobile Cover ── */}
+        <div style={{ position: 'relative', marginBottom: 20 }}>
+          <div style={{
+            height: 180,
+            backgroundImage: coverUrl ? `url(${coverUrl})` : `url(${BG_CUENTA})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            position: 'relative',
+            borderBottomLeftRadius: 32,
+            borderBottomRightRadius: 32,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+          }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))', borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }} />
+            <Link href="/cuenta/perfil" style={{ position: 'absolute', top: 16, right: 16, width: 36, height: 36, borderRadius: 12, background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.4)', zIndex: 5 }}>
+              <Pencil size={16} color="#fff" />
+            </Link>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -60, position: 'relative', zIndex: 2 }}>
+            <div style={{ position: 'relative' }}>
+              <div style={{ width: 110, height: 110, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, fontWeight: 800, color: PINK, overflow: 'hidden', border: '4px solid #fff', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
+                {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
+              </div>
               {!medalError ? (
                 <img 
                   src={MEDAL_IMAGES[currentLevel] || MEDAL_IMAGES.bronze}
@@ -538,13 +648,13 @@ export default function CuentaPage() {
                   onError={() => setMedalError(true)}
                   style={{ 
                     position: 'absolute', 
-                    bottom: -2, 
-                    right: -2, 
-                    width: 28, 
-                    height: 28, 
+                    bottom: 0, 
+                    right: 0, 
+                    width: 34, 
+                    height: 34, 
                     objectFit: 'contain',
                     zIndex: 10,
-                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                    filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.2))'
                   }}
                 />
               ) : (
@@ -554,34 +664,48 @@ export default function CuentaPage() {
                   return (
                     <div style={{
                       position: 'absolute',
-                      bottom: -2,
-                      right: -2,
-                      width: 28,
-                      height: 28,
+                      bottom: 0,
+                      right: 0,
+                      width: 34,
+                      height: 34,
                       borderRadius: '50%',
                       background: info.bg,
                       border: `2px solid #fff`,
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       zIndex: 10,
                     }}>
-                      <FallbackIcon size={14} color={info.color} fill={info.color} />
+                      <FallbackIcon size={16} color={info.color} fill={info.color} />
                     </div>
                   );
                 })()
               )}
-              </div>
-              <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 14, width: '100%', maxWidth: 280, padding: '11px 16px', background: PINK, color: '#fff', fontSize: 12, fontWeight: 700, borderRadius: 12, textDecoration: 'none', boxShadow: '0 4px 14px rgba(227,150,191,0.2)' }}>
-                <Trophy size={13} /> Tienda de puntos
-              </Link>
             </div>
+
+            <div style={{ textAlign: 'center', marginTop: 12, padding: '0 20px' }}>
+              <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
+                ¡Hola, {firstName}!
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 999, background: levelMeta.chipBg, border: `1px solid ${levelMeta.chipBorder}`, fontSize: 11.5, fontWeight: 800, color: levelMeta.color }}>
+                  <Trophy size={12} /> Nivel {levelMeta.name}
+                </span>
+              </div>
+              <p style={{ margin: '7px 0 0', fontSize: 14, color: '#64748b', fontWeight: 500 }}>
+                {user.email}
+              </p>
+            </div>
+
+            <Link href="/cuenta/puntos" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, padding: '10px 24px', background: PINK, color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: 20, textDecoration: 'none', boxShadow: '0 6px 16px rgba(227,150,191,0.3)', transition: 'transform 0.2s' }}>
+              <Trophy size={15} /> Tienda de puntos
+            </Link>
           </div>
         </div>
 
         {/* ── QUICK ACTIONS: gradient pill cards ── */}
-        <div style={{ padding: '14px 14px 0' }}>
+        <div style={{ padding: '0 16px 10px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
             {[
               { icon: Receipt,      label: 'Pedidos',    href: '/cuenta/pedidos',    g: 'linear-gradient(135deg,#6366f1,#8b5cf6)', shadow: 'rgba(99,102,241,0.35)', image: 'https://storage.googleapis.com/geminai-449212.firebasestorage.app/IADESIGN/2026/05/1778902651562-pegada-1778902645915.png?GoogleAccessId=imagen%40geminai-449212.iam.gserviceaccount.com&Expires=16730334000&Signature=OKWZOLTMN0DmNxF9i2zJvPKGsGgQbWbwKDU9L887E5hHYoSclN7CnFS8lcAEJid%2F5LgCmKwnOHozplzK7sG0iGALAcnAFpTVUFfp%2BDmN0iURUkPa%2BrFJHcxzEi8qvxfI7Kok8Ortf%2FV1SSEvPKkXcZgPGb41b3Sz6afLz2tK5JsLAUIHHCZ9V2nxi%2FO5lq7y1RDt0jT0q8RokkxREqSsAFF0IcKqwZ3Mlo2HZidVKzMr%2Br1iat82uZdAYv%2FYHCnf22%2BZYFtnyc4qG7ZiIfQ6w8p8VkEMeS6CYvYIcK%2FtZbliO9wzYCyvsATa4bdjzHLEaM6%2F3friX3cQtTkCkQz1Zg%3D%3D' },
@@ -650,7 +774,7 @@ export default function CuentaPage() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.3 + idx * 0.12 }}
-                      style={{ fontSize: 10.5, fontWeight: 700, color: '#374151', textAlign: 'center', lineHeight: 1.2 }}
+                      style={{ fontSize: 11, fontWeight: 700, color: '#475569', textAlign: 'center', lineHeight: 1.2 }}
                     >{sc.label}</motion.span>
                   </Link>
                 </motion.div>
@@ -659,57 +783,43 @@ export default function CuentaPage() {
           </div>
         </div>
 
-
-
         {/* ── LOYALTY compact card ── */}
-        <div style={{ padding: '14px 14px 0' }}>
+        <div style={{ padding: '14px 16px 10px' }}>
           <LoyaltyLevel />
         </div>
 
-        {/* ── MENU GROUPS ── */}
-        <div style={{ padding: '14px 14px 50px' }}>
+        {/* ── MENU GROUPS (Native iOS Style) ── */}
+        <div style={{ padding: '10px 16px' }}>
 
-          {/* Section: Mis compras */}
-          <p style={{ margin: '0 0 7px 2px', fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.07em' }}>Mis compras</p>
-          <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', marginBottom: 16 }}>
-            <PmRow icon={Receipt} label="Mis Pedidos" desc="Seguí tus compras" href="/cuenta/pedidos" g="linear-gradient(135deg,#6366f1,#8b5cf6)" />
-            <PmRow icon={PackageSearch} label="Consultas" desc="Disponibilidad de productos" href="/cuenta/consultas" g="linear-gradient(135deg,#c0547a,#f97316)" />
-            <PmRow icon={Ticket} label="Cupones" desc="Tus descuentos disponibles" href="/cuenta/cupones" g="linear-gradient(135deg,#e396bf,#f472b6)" />
-            <PmRow icon={Gift} label="Regalos" desc="Tus regalos disponibles" href="/cuenta/regalos" g="linear-gradient(135deg,#f59e0b,#fbbf24)" last badge={hasGifts ? 1 : undefined} />
+          <h3 className="ios-group-title">Mis compras</h3>
+          <div className="ios-group">
+            {MIS_COMPRAS_ITEMS.map((item, i) => <MobileRow key={item.label} item={item} index={i} isLast={i === MIS_COMPRAS_ITEMS.length - 1} />)}
           </div>
 
-          {/* Section: Mi cuenta */}
-          <p style={{ margin: '0 0 7px 2px', fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.07em' }}>Mi cuenta</p>
-          <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', marginBottom: 16 }}>
-            <PmRow icon={User} label="Datos personales" desc="Nombre, foto y perfil" href="/cuenta" g="linear-gradient(135deg,#3b82f6,#60a5fa)" />
-            <PmRow icon={Phone} label="Contacto" desc="Teléfono y RUT" href="/cuenta/info" g="linear-gradient(135deg,#06b6d4,#22d3ee)" />
-            <PmRow icon={MapPin} label="Direcciones" desc="Envíos guardados" href="/cuenta/direcciones" g="linear-gradient(135deg,#10b981,#34d399)" last />
+          <h3 className="ios-group-title">Mi cuenta</h3>
+          <div className="ios-group">
+            {CUENTA_ITEMS.map((item, i) => <MobileRow key={item.label} item={item} index={i + 10} isLast={i === CUENTA_ITEMS.length - 1} />)}
           </div>
 
-          {/* Section: Más */}
-          <p style={{ margin: '0 0 7px 2px', fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.07em' }}>Más opciones</p>
-          <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.07)', marginBottom: 20 }}>
-            <PmRow icon={Trophy} label="Mis Niveles" desc="Programa de lealtad" href="/cuenta/niveles" g="linear-gradient(135deg,#f59e0b,#fbbf24)" />
-            <PmRow icon={Building2} label="Cuenta Mayorista" desc="Precios por volumen" href="/mayorista" g="linear-gradient(135deg,#8b5cf6,#a78bfa)" />
-            <PmRow icon={HelpCircle} label="Soporte" desc="Ayuda y tickets" href="/cuenta/tickets" g="linear-gradient(135deg,#64748b,#94a3b8)" />
-            <PmRow icon={MessageCircle} label="Conversaciones" desc="Historial de chats" href="/cuenta/conversaciones" g="linear-gradient(135deg,#0ea5e9,#38bdf8)" last />
+          <h3 className="ios-group-title">Más opciones</h3>
+          <div className="ios-group">
+            {CONFIG_ITEMS.map((item, i) => <MobileRow key={item.label} item={item} index={i + 20} isLast={i === CONFIG_ITEMS.length - 1} />)}
           </div>
 
-          {/* Logout */}
           <button className="pm-logout" onClick={handleLogout} style={{
             width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-            padding: '15px', background: '#fff', borderRadius: 18,
-            border: '1px solid rgba(220,38,38,0.15)',
-            boxShadow: '0 2px 12px rgba(220,38,38,0.08)',
-            cursor: 'pointer', color: '#dc2626', fontSize: 14.5, fontWeight: 700,
-            fontFamily: FF,
+            padding: '16px', background: '#fff', borderRadius: 20,
+            border: '1px solid #fee2e2',
+            boxShadow: '0 2px 10px rgba(220,38,38,0.05)',
+            cursor: 'pointer', color: '#dc2626', fontSize: 15, fontWeight: 700,
+            fontFamily: FF, marginTop: 10,
           }}>
-            <LogOut size={17} />Cerrar sesión
+            <LogOut size={18} />Cerrar sesión
           </button>
 
-          <div style={{ marginTop: 20, display: 'flex', gap: 20, justifyContent: 'center' }}>
+          <div style={{ marginTop: 24, display: 'flex', gap: 20, justifyContent: 'center' }}>
             {['Términos', 'Privacidad', 'Ayuda'].map(t => (
-              <span key={t} style={{ fontSize: 11, color: '#c4c9d4', cursor: 'pointer', fontWeight: 600 }}>{t}</span>
+              <span key={t} style={{ fontSize: 12, color: '#94a3b8', cursor: 'pointer', fontWeight: 600 }}>{t}</span>
             ))}
           </div>
         </div>
@@ -733,6 +843,91 @@ function DesktopCard({ item }: { item: MenuItem }) {
           <p style={{ margin: 0, fontSize: 14, color: '#9ca3af', lineHeight: 1.4 }}>{item.desc}</p>
         )}
       </div>
+    </Link>
+  );
+}
+
+const CARD_GRADIENTS = [
+  'linear-gradient(135deg,#6366f1,#8b5cf6)',
+  'linear-gradient(135deg,#e396bf,#f472b6)',
+  'linear-gradient(135deg,#f59e0b,#fbbf24)',
+  'linear-gradient(135deg,#10b981,#34d399)',
+  'linear-gradient(135deg,#3b82f6,#60a5fa)',
+  'linear-gradient(135deg,#06b6d4,#22d3ee)',
+  'linear-gradient(135deg,#8b5cf6,#a78bfa)',
+  'linear-gradient(135deg,#0ea5e9,#38bdf8)',
+  'linear-gradient(135deg,#64748b,#94a3b8)',
+  'linear-gradient(135deg,#c0547a,#f97316)',
+];
+
+const CARD_TINTS = ['#6366f1', '#e396bf', '#f59e0b', '#10b981', '#3b82f6', '#06b6d4', '#8b5cf6', '#0ea5e9', '#64748b', '#c0547a'];
+
+function ColoredCard({ item, index }: { item: MenuItem; index: number }) {
+  const Icon = item.icon;
+  const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
+  const tint = CARD_TINTS[index % CARD_TINTS.length];
+  return (
+    <Link href={item.href} className="ccard" style={{
+      textDecoration: 'none', display: 'flex', flexDirection: 'column',
+      background: `linear-gradient(160deg, ${tint}0a, #fff 42%)`, borderRadius: 18, overflow: 'hidden',
+      border: '1px solid rgba(0,0,0,0.07)',
+      boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.06), 0 8px 20px rgba(0,0,0,0.05)',
+      minHeight: 132,
+    }}>
+      <div style={{ height: 4, background: gradient }} />
+      {/* Watermark icon */}
+      <Icon className="ccard-wm" size={104} color={tint} strokeWidth={1.5}
+        style={{ position: 'absolute', right: -22, bottom: -22, opacity: 0.08, pointerEvents: 'none' }} />
+      <div style={{ padding: '18px 18px 20px', display: 'flex', flexDirection: 'column', gap: 12, flex: 1, position: 'relative', zIndex: 1 }}>
+        <div className="ccard-icon" style={{
+          width: 46, height: 46, borderRadius: 14,
+          background: gradient, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: `0 5px 14px ${tint}55, inset 0 1px 0 rgba(255,255,255,0.35)`, flexShrink: 0,
+        }}>
+          <Icon size={21} color="#fff" strokeWidth={2.2} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <p style={{ margin: '0 0 4px', fontSize: 14.5, fontWeight: 700, color: '#1a1a1a', letterSpacing: '-0.01em', lineHeight: 1.2 }}>{item.label}</p>
+          {item.desc && <p style={{ margin: 0, fontSize: 12.5, color: '#9ca3af', lineHeight: 1.4 }}>{item.desc}</p>}
+        </div>
+      </div>
+      {/* Hover arrow */}
+      <div className="ccard-arrow" style={{
+        position: 'absolute', right: 14, bottom: 14, width: 26, height: 26, borderRadius: 9,
+        background: tint, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: `0 3px 9px ${tint}66`, zIndex: 2,
+      }}>
+        <ChevronRight size={15} color="#fff" strokeWidth={2.6} />
+      </div>
+    </Link>
+  );
+}
+
+function MobileRow({ item, index, isLast }: { item: MenuItem; index: number; isLast?: boolean }) {
+  const Icon = item.icon;
+  const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
+  return (
+    <Link href={item.href} style={{
+      textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 14,
+      padding: '16px', background: '#fff',
+      borderBottom: isLast ? 'none' : '1px solid #f1f5f9',
+      transition: 'background 0.15s', position: 'relative',
+    }}
+    onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; }}
+    onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}
+    >
+      <div style={{
+        width: 36, height: 36, borderRadius: 10,
+        background: gradient, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.1)', flexShrink: 0,
+      }}>
+        <Icon size={18} color="#fff" strokeWidth={2.2} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#1e293b', lineHeight: 1.2 }}>{item.label}</p>
+        {item.desc && <p style={{ margin: '3px 0 0', fontSize: 11.5, color: '#64748b', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.desc}</p>}
+      </div>
+      <ChevronRight size={18} color="#cbd5e1" />
     </Link>
   );
 }

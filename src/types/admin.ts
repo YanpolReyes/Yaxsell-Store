@@ -1,4 +1,4 @@
-export type OrderStatus = 'pending' | 'processing' | 'paid' | 'assembling' | 'negotiation' | 'preparing_shipping' | 'ready_to_ship' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'processing' | 'paid' | 'assembling' | 'confirming_stock' | 'stock_confirmed' | 'packing' | 'negotiation' | 'preparing_shipping' | 'ready_to_ship' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface OrderItem {
   productId: string;
@@ -40,6 +40,8 @@ export interface Order {
   COUPONCODE?: string;
   DISCOUNTAMOUNT?: number;
   AGENCYCHANGED?: boolean;
+  TRACKINGNUMBER?: string;
+  BOXPHOTOS?: string; // JSON array de URLs de fotos de las cajas antes de despachar
   adminNotes?: string;
   $createdAt: string;
   $updatedAt: string;
@@ -54,6 +56,14 @@ export interface Product {
   COST?: number;
   WHOLESALEPRICE?: number;
   WHOLESALEMINQUANTITY?: number;
+  PACKQTY?: number;
+  PACK_MIN_PACKS?: number;
+  PACK_DISCOUNT_PCT?: number;
+  PACK_OFFER_PRICE?: number;
+  PACK_OFFER_EXPIRES_AT?: number;
+  PACK_OFFER_MIN_PACKS?: number;
+  UNIT_OFFER_EXPIRES_AT?: number;
+  PACK_STOCK?: number;
   STOCK: number;
   CATEGORYID?: string;
   SUBCATEGORYID?: string;
@@ -74,7 +84,6 @@ export interface Product {
   ISFEATURED?: boolean;
   ISACTIVE?: boolean;
   GROUPID?: string;
-  PACKQTY?: number;
   RESTOCKTHRESHOLD?: number;
   CUSTOM_PRIMARY_COLOR?: string;
   CUSTOM_SECONDARY_COLOR?: string;
@@ -86,7 +95,6 @@ export interface Product {
   COMING_SOON?: boolean;
   DATE_ADDED?: string;
   section?: number;
-  imported_at?: string;
   $createdAt: string;
   $updatedAt: string;
 }

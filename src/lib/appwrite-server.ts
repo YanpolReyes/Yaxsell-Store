@@ -7,9 +7,7 @@ const PROJECT_ID =
   process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '6a3c200f000d5437f6c4';
 const DATABASE_ID =
   process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a3c237900227a52bcb2';
-const API_KEY =
-  process.env.APPWRITE_API_KEY ||
-  'standard_2d173f58f38634c70435e2aa17c03320dc959192545a2e6ec9834b09d80c4f459b4e92b139ee85efba504c423f5bcb1443448799dc7d3b06e811dc0d910d058e7f1093442a87e957beaaaa09569a448ec9e6e8eb178e648e6c48a6451fdffe8716722a1162d89f96e7b243109f537eca0ee1480ef0b639f24ea32e5fdd886f9d';
+const API_KEY = process.env.APPWRITE_API_KEY || '';
 
 export const getHeaders = () => ({
   'Content-Type': 'application/json',
@@ -23,11 +21,28 @@ export function getServerConfig() {
   return { endpoint: APPWRITE_ENDPOINT, projectId: PROJECT_ID, databaseId: DATABASE_ID };
 }
 
+// ── Monitor de lecturas: identifica QUÉ ruta consume llamadas a Appwrite ──
+// Loguea cada lectura server-side con la ruta que la originó (parseada del stack).
+// En los logs de Vercel, filtra por "[AWREAD]". Silenciar con env AW_LOG_READS=0.
+function logRead(op: string, collectionId: string, detail = ''): void {
+  if (process.env.AW_LOG_READS === '0') return;
+  let via = '';
+  try {
+    const lines = (new Error().stack || '').split('\n').slice(2);
+    const frame =
+      lines.find((l) => /[\\/](app|pages|lib|services|hooks)[\\/]/.test(l) && !/appwrite-server/.test(l)) ||
+      lines[0] || '';
+    via = frame.trim().replace(/^at\s+/, '').slice(0, 140);
+  } catch {}
+  console.log(`[AWREAD] ${op} col=${collectionId} ${detail} | via: ${via}`);
+}
+
 export async function serverListDocuments(
   collectionId: string,
   queries: string[] = []
 ): Promise<{ documents: Record<string, unknown>[]; total: number }> {
-  const q = queries.length ? `?${queries.map((x) => `queries[]=${encodeURIComponent(x)}`).join('&')}` : '';
+  logRead('list', collectionId, `q=${queries.join('|').slice(0, 100)}`);
+  const q = queries.length ? `?${queries.map((x, i) => `queries[${i}]=${encodeURIComponent(x)}`).join('&')}` : '';
   const res = await fetch(
     `${APPWRITE_ENDPOINT}/databases/${DATABASE_ID}/collections/${collectionId}/documents${q}`,
     { headers: headers() }
@@ -43,6 +58,7 @@ export async function serverGetDocument(
   collectionId: string,
   documentId: string
 ): Promise<Record<string, unknown>> {
+  logRead('get', collectionId, `id=${documentId}`);
   const res = await fetch(
     `${APPWRITE_ENDPOINT}/databases/${DATABASE_ID}/collections/${collectionId}/documents/${documentId}`,
     { headers: headers() }

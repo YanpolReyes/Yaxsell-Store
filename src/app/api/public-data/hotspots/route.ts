@@ -3,7 +3,7 @@ import { getServices, getAppwriteConfig, HOTSPOT_PANELS_COLLECTION } from '@/lib
 import { Query } from 'appwrite';
 import { unstable_cache } from 'next/cache';
 
-export const dynamic = 'force-dynamic';
+// force-dynamic removed to allow Vercel CDN caching via s-maxage header
 
 let memoryCacheHotspots: any[] | null = null;
 let memoryCacheHotspotsTime = 0;
@@ -36,7 +36,7 @@ export async function GET() {
     const panels = await getCachedHotspots();
     return NextResponse.json({ panels }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120'
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=300'
       }
     });
   } catch (err) {

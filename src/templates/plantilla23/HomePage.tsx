@@ -14,7 +14,6 @@
    ════════════════════════════════════════════════════════════════════ */
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import RecentProductsSection from '@/components/RecentProductsSection';
 import LatestProductsCarousel from '@/components/LatestProductsCarousel';
 import WholesaleOffersSection from '@/components/WholesaleOffersSection';
 import { getServices, getAppwriteConfig, CATEGORIES_COLLECTION, SUBCATEGORIES_COLLECTION, PRODUCTS_COLLECTION, TIMED_OFFERS_COLLECTION, Query, formatPrice } from '@/lib/appwrite';
@@ -28,6 +27,7 @@ import { resolveStorageImageUrl } from '@/lib/product-images';
 import { useAperturaPromotion } from '@/hooks/useAperturaPromotion';
 import { resolveProductDisplayPrice } from '@/lib/apertura-promo';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { getSectionConfigAsync, type SectionConfig } from '@/lib/section-config';
 
 const SHOPIFY_BASE = '/shopify/plantilla23/assets';
 
@@ -144,6 +144,25 @@ const FONT_FACE_CSS = `
 `;
 
 export default function HomePage23() {
+  // ═══ CONFIGURACIÓN MANUAL DEL HERO BANNER (EDITAR AQUÍ DIRECTAMENTE) ═══
+  // Si deseas cambiar las imágenes o textos de los banners, edítalos aquí:
+  const MANUAL_HERO_CONFIG = {
+    hero1: {
+      // Reemplaza estas URLs de imagen si quieres cambiar el banner de entrada (Hero 1).
+      // Si las dejas vacías (''), se usará el video original de la plantilla.
+      desktopImg: '', 
+      mobileImg: '',
+      title: 'Poderosamente Bella',
+      btnText: 'Tienda',
+      btnLink: '/productos',
+    },
+    hero2: {
+      // Reemplaza estas URLs si quieres cambiar la imagen de Kenia (Hero 2).
+      desktopImg: 'https://nyc.cloud.appwrite.io/v1/storage/buckets/products/files/6a39bd67000f28163657/view?project=6a3c200f000d5437f6c4&impersonateuserid=&mode=admin',
+      mobileImg: 'https://nyc.cloud.appwrite.io/v1/storage/buckets/products/files/6a39d12200270cb291d4/view?project=6a3c200f000d5437f6c4&impersonateuserid=&mode=admin',
+    }
+  };
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [bodyHtml, setBodyHtml] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -161,10 +180,33 @@ export default function HomePage23() {
   const [timedOffers, setTimedOffers] = useState<any[]>([]);
   const [isAppwriteLoaded, setIsAppwriteLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
-  const [liveShoppingContainer, setLiveShoppingContainer] = useState<Element | null>(null);
+
   const [htmlInjected, setHtmlInjected] = useState(false);
   const [latestProductsContainer, setLatestProductsContainer] = useState<Element | null>(null);
   const [wholesaleOffersContainer, setWholesaleOffersContainer] = useState<Element | null>(null);
+  const [keniaEnabled, setKeniaEnabled] = useState(true);
+  const [themeSections, setThemeSections] = useState<SectionConfig[]>([]);
+  const [isThemeConfigLoaded, setIsThemeConfigLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/public-data/kenia-status')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && typeof data.isEnabled === 'boolean') {
+          setKeniaEnabled(data.isEnabled);
+        }
+      })
+      .catch(() => {});
+
+    getSectionConfigAsync()
+      .then((cfg) => {
+        setThemeSections(cfg);
+        setIsThemeConfigLoaded(true);
+      })
+      .catch(() => {
+        setIsThemeConfigLoaded(true);
+      });
+  }, []);
 
   useEffect(() => {
     // Override/disable FocusTrap to prevent screen lock bugs when opening/closing drawers
@@ -211,8 +253,15 @@ export default function HomePage23() {
     const root = containerRef.current;
     if (!root) return;
 
-    // 1. Timer Setup (Target midnight CLT on June 15, 2026 -> 2026-06-16T00:00:00-04:00)
-    const targetTime = new Date('2026-06-16T00:00:00-04:00').getTime();
+    // 1. Timer Setup — cuenta regresiva hasta el día 1 del siguiente mes (00:00 hora local).
+    //    Se recalcula en cada carga, por lo que siempre apunta al próximo "1".
+    const nowForTarget = new Date();
+    const targetTime = new Date(
+      nowForTarget.getFullYear(),
+      nowForTarget.getMonth() + 1,
+      1,
+      0, 0, 0, 0
+    ).getTime();
     try {
       localStorage.removeItem('yaxsell_offers_timer_3d');
     } catch (e) {
@@ -540,17 +589,26 @@ export default function HomePage23() {
         
         if (!active) return;
 
-        // Verify that we actually received valid non-empty data
-        const hasCategories = data.categories && data.categories.length > 0;
-        const hasProducts = data.products && data.products.length > 0;
-        if (!hasCategories || !hasProducts) {
-          throw new Error('Received empty categories or products from database');
+        const nextCategories = Array.isArray(data.categories) ? data.categories : [];
+        const nextSubcategories = Array.isArray(data.subcategories) ? data.subcategories : [];
+        const nextProducts = Array.isArray(data.products) ? data.products : [];
+        const nextCheapestProducts = Array.isArray(data.cheapestProducts)
+          ? data.cheapestProducts
+          : [];
+
+        if (nextCategories.length === 0 || nextProducts.length === 0) {
+          console.warn('[Plantilla23] Home data came back empty or partial.', {
+            categories: nextCategories.length,
+            products: nextProducts.length,
+            subcategories: nextSubcategories.length,
+            cheapestProducts: nextCheapestProducts.length,
+          });
         }
 
-        setCategories(data.categories || []);
-        setSubcategories(data.subcategories || []);
-        setProducts(data.products || []);
-        setCheapestProducts(data.cheapestProducts || []);
+        setCategories(nextCategories);
+        setSubcategories(nextSubcategories);
+        setProducts(nextProducts);
+        setCheapestProducts(nextCheapestProducts.length > 0 ? nextCheapestProducts : nextProducts);
         setDestacadoTemporal(data.destacadoTemporal || null);
         setPackTimer(data.packTimer || null);
         setTimedOffers(data.timedOffers || []);
@@ -1448,14 +1506,35 @@ export default function HomePage23() {
 /* Estado 3: Navbar final scrolled (data-scroll="true") - Glassmorphism sutil y elegante, sin línea blanca abajo */
       custom-header.header-element[data-scroll="true"],
       .header[data-id="sections--27304712208665__header"][data-scroll="true"] {
-        background: rgba(253, 242, 248, 0.72) !important;
-        background-color: rgba(253, 242, 248, 0.72) !important;
+        background: #fdf2f8 !important;
+        background-color: #fdf2f8 !important;
         background-image: none !important;
         backdrop-filter: blur(12px) saturate(140%) !important;
         -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
         border: none !important;
         border-bottom: none !important;
         box-shadow: 0 4px 20px -2px rgba(227, 150, 191, 0.12) !important;
+      }
+
+      /* Logo and UNIDAD/PAQUETE buttons black only when scrolled navbar appears */
+      custom-header[data-scroll="true"] .logo-wrapper img,
+      .header[data-scroll="true"] .logo-wrapper img {
+        filter: brightness(0) !important;
+      }
+      custom-header[data-scroll="true"] a[href*="/productos"],
+      custom-header[data-scroll="true"] a[href*="/paquetes"],
+      .header[data-scroll="true"] a[href*="/productos"],
+      .header[data-scroll="true"] a[href*="/paquetes"] {
+        color: #000000 !important;
+        border-color: #000000 !important;
+      }
+      custom-header[data-scroll="true"] a[href*="/productos"] *,
+      custom-header[data-scroll="true"] a[href*="/paquetes"] *,
+      .header[data-scroll="true"] a[href*="/productos"] *,
+      .header[data-scroll="true"] a[href*="/paquetes"] * {
+        color: #000000 !important;
+        fill: #000000 !important;
+        stroke: #000000 !important;
       }
 
       /* ==========================================
@@ -1841,7 +1920,7 @@ export default function HomePage23() {
 
   /* ── Set innerHTML ONCE via ref ── */
   useEffect(() => {
-    if (!bodyHtml || !containerRef.current || !isAppwriteLoaded) return;
+    if (!bodyHtml || !containerRef.current || !isAppwriteLoaded || !isThemeConfigLoaded) return;
     if (containerRef.current.dataset.htmlSet) return;
 
     // Parse HTML string to DOM nodes in memory
@@ -1977,9 +2056,18 @@ export default function HomePage23() {
     // Insert Live Shopping, Wholesale Offers and Latest Products placeholders right after the Hero banner (slideshow)
     const heroBannerSection = tempDiv.querySelector('#shopify-section-template--27304712470809__slideshow_FBfKC8');
     if (heroBannerSection) {
+      // Move the "Oferta de Apertura" countdown timer to sit directly below the hero banner.
+      // (En el HTML original queda más abajo; el cliente lo quiere justo debajo del hero.)
+      let anchor: Element = heroBannerSection;
+      const countdownSection = tempDiv.querySelector('[id*="countdown_timer"]');
+      if (countdownSection) {
+        heroBannerSection.insertAdjacentElement('afterend', countdownSection);
+        anchor = countdownSection;
+      }
+
       const liveShoppingRoot = document.createElement('div');
       liveShoppingRoot.id = 'yaxsell-live-shopping-root';
-      heroBannerSection.insertAdjacentElement('afterend', liveShoppingRoot);
+      anchor.insertAdjacentElement('afterend', liveShoppingRoot);
 
       const wholesaleOffersRoot = document.createElement('div');
       wholesaleOffersRoot.id = 'yaxsell-wholesale-offers-root';
@@ -1990,12 +2078,9 @@ export default function HomePage23() {
       wholesaleOffersRoot.insertAdjacentElement('afterend', latestProductsRoot);
     }
 
-    // Clear mockup product listings to prevent flashing native Shopify products
+    // Clear mockup product listings to prevent flashing native Shopify products (but keep container elements for hydration selectors)
     tempDiv.querySelectorAll('.featured-collection__products').forEach(section => {
-      const firstWrapper = section.querySelector('.featured-collection__first-product-wrapper');
-      const swiperWrapper = section.querySelector('.featured-collection__product-by-collection .swiper-wrapper');
-      if (firstWrapper) firstWrapper.innerHTML = '';
-      if (swiperWrapper) swiperWrapper.innerHTML = '';
+      // Keep wrappers but clear their contents if needed, or don't clear them here to ensure selectors are present in the innerHTML
     });
     tempDiv.querySelectorAll('.product-columns-block .swiper-container .swiper-wrapper, product-columns .swiper-container .swiper-wrapper').forEach(wrapper => {
       wrapper.innerHTML = '';
@@ -2007,6 +2092,252 @@ export default function HomePage23() {
     containerRef.current.innerHTML = tempDiv.innerHTML;
     containerRef.current.dataset.htmlSet = '1';
     setHtmlInjected(true);
+
+    // ═══ CUSTOM HERO CONFIG OVERRIDES (MANUAL DESDE CÓDIGO) ═══
+    
+    // 1. Desktop Image override
+    if (MANUAL_HERO_CONFIG.hero1.desktopImg) {
+      const vidDesktop = containerRef.current.querySelector('#hero1-video-desktop') as HTMLVideoElement | null;
+      if (vidDesktop) {
+        vidDesktop.style.display = 'none'; // Ocultar video por defecto
+        let customImg = containerRef.current.querySelector('#hero1-custom-img-desktop') as HTMLImageElement;
+        if (!customImg) {
+          customImg = document.createElement('img');
+          customImg.id = 'hero1-custom-img-desktop';
+          customImg.className = vidDesktop.className;
+          customImg.style.opacity = '1';
+          vidDesktop.parentElement?.insertBefore(customImg, vidDesktop);
+        }
+        customImg.src = MANUAL_HERO_CONFIG.hero1.desktopImg;
+      }
+    }
+
+    // 2. Mobile Image override
+    if (MANUAL_HERO_CONFIG.hero1.mobileImg) {
+      const vidMobile = containerRef.current.querySelector('#hero1-video-mobile') as HTMLVideoElement | null;
+      if (vidMobile) {
+        vidMobile.style.display = 'none'; // Ocultar video por defecto
+        let customImg = containerRef.current.querySelector('#hero1-custom-img-mobile') as HTMLImageElement;
+        if (!customImg) {
+          customImg = document.createElement('img');
+          customImg.id = 'hero1-custom-img-mobile';
+          customImg.className = vidMobile.className;
+          customImg.style.opacity = '1';
+          vidMobile.parentElement?.insertBefore(customImg, vidMobile);
+        }
+        customImg.src = MANUAL_HERO_CONFIG.hero1.mobileImg;
+      }
+    }
+
+    // 3. Text & Button override
+    if (MANUAL_HERO_CONFIG.hero1.title) {
+      const headingSpan = containerRef.current.querySelector('giant-heading h2 span.leading-none');
+      if (headingSpan) headingSpan.textContent = MANUAL_HERO_CONFIG.hero1.title;
+    }
+    if (MANUAL_HERO_CONFIG.hero1.btnText) {
+      const splitHero = containerRef.current.querySelector('split-hero');
+      if (splitHero) {
+        const btn = splitHero.querySelector('a.button--primary');
+        if (btn) {
+           btn.textContent = MANUAL_HERO_CONFIG.hero1.btnText;
+           if (MANUAL_HERO_CONFIG.hero1.btnLink) {
+             (btn as HTMLAnchorElement).href = MANUAL_HERO_CONFIG.hero1.btnLink;
+           }
+        }
+      }
+    }
+
+    // 🎞️ Segundo Hero Banner (Kenia) — carrusel overlay con crossfade sobre la banner
+    // original, con flechas, puntos, autoplay (5s) y responsive (PC ≥993px / móvil <993px).
+    try {
+      const heroSec = containerRef.current.querySelector('[data-id="template--27304712470809__slideshow_FBfKC8"]') as HTMLElement | null;
+      if (heroSec && !heroSec.dataset.keniaBound) {
+        heroSec.dataset.keniaBound = '1';
+
+        const KENIA_PHONE = '56936599658';
+        const KENIA_WA_URL = `https://wa.me/${KENIA_PHONE}?text=${encodeURIComponent('REGISTRATE CON KENIA')}`;
+        const DEFAULT_KENIA_PC = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781758588825-pegada-1781758586654.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=XuK0ff%2FaOBtzwSnfof24jryXdgHqvpnnFpt41fhV7HXSqq%2FsLtXBdxn1EeoICl6hOqGuAI8p2OEjm1v%2BItCsAfedWAJL9DdZAOgD9ax0YS7GUFnwGi%2Blugbq%2F52eS4Xf3M0PY9il9TikeU6BMNgqRoOVc5wsYcgUHLHI5bHkn3vMSaZty9kBmi%2BZlhXir7eM%2F5RGBD9yBJWDQsw19lA3qp8fEo5p8Wn%2FbrGMv9NXIELdqG2%2Bv0HvURo1zJsNcD%2B0TCsoLGVkuK7ojYLl6f8hB6yCLdAFH2LgICS%2B800QecmCHs3kJQeOG%2FlXlpvF9T11vamgc24ZptjcwlmmVzwyTw%3D%3D';
+        const DEFAULT_KENIA_MOBILE = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781758310444-pegada-1781758308350.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=GjfIQEBUtw%2F4U6GjdNN4ECU4wcqITqFei2LBBSdASIQyNI%2FRs2M0%2BH%2Fd8OTLaGhjmG%2B6eWQfFTXBoCdmhkyo%2Fd1H9kvIeAlzmDkUY%2BPzS35yTsjelnVXlTvt77zKpsUQfYYR9u5eYIDN%2FfdSEFY98Wb5rlPJOFt2FXneYQqnqfyJA8OhSGnHYKmfxfymlsZakUv6GmiiZGewHQ%2FbTABTHHz4cSgI5rlEISwoPGnDzEsait9CHZoszRscjCeocczr34Vbnd15CJsxrDl%2BaDIijdHSC7JPvAdt14rW6kxp6q1QAbNfxxdUmeIawwAP4tPI2a7EAg8Vna5RIr171OqYtg%3D%3D';
+
+        const KENIA_IMG_PC = MANUAL_HERO_CONFIG.hero2.desktopImg || DEFAULT_KENIA_PC;
+        const KENIA_IMG_MOBILE = MANUAL_HERO_CONFIG.hero2.mobileImg || DEFAULT_KENIA_MOBILE;
+
+        const heroBg = heroSec.querySelector('.slideshow__background') as HTMLElement | null;
+        if (heroBg) {
+          heroBg.style.position = heroBg.style.position || 'relative';
+
+          // CSS: imagen responsive (móvil <993px / PC ≥993px) + estilos de flechas y puntos.
+          const kStyle = document.createElement('style');
+          kStyle.textContent = `
+            .tpl23-kenia-slide { background-image:url('${KENIA_IMG_MOBILE}'); }
+            @media (min-width:993px){ .tpl23-kenia-slide { background-image:url('${KENIA_IMG_PC}'); } }
+            .tpl23-hero-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:30;width:42px;height:42px;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.85);color:#be185d;box-shadow:0 4px 14px rgba(0,0,0,.18);transition:background .2s,transform .2s;}
+            .tpl23-hero-nav:hover{background:#fff;transform:translateY(-50%) scale(1.08);}
+            .tpl23-hero-prev{left:14px;} .tpl23-hero-next{right:14px;}
+            .tpl23-hero-dots{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:30;display:flex;gap:9px;}
+            .tpl23-hero-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.6);cursor:pointer;transition:width .25s,background .25s;border:none;padding:0;}
+            .tpl23-hero-dot.active{width:26px;border-radius:6px;background:#fff;}
+            @media (max-width:768px){.tpl23-hero-nav{width:34px;height:34px;} .tpl23-hero-prev{left:8px;} .tpl23-hero-next{right:8px;} .tpl23-hero-dots{bottom:14px;}}
+          `;
+          heroBg.appendChild(kStyle);
+
+          // Slide 2 (Kenia): overlay con crossfade sobre la banner original.
+          // Si keniaEnabled → <a> clickeable a WhatsApp; si no → <div> solo visual.
+          let kenia: HTMLElement;
+          if (keniaEnabled) {
+            const a = document.createElement('a');
+            a.href = KENIA_WA_URL;
+            a.target = '_blank';
+            a.rel = 'noopener';
+            kenia = a;
+          } else {
+            kenia = document.createElement('div');
+          }
+          kenia.className = 'tpl23-kenia-slide';
+          kenia.style.cssText = 'position:absolute;inset:0;z-index:6;opacity:0;transition:opacity .7s ease;background-size:cover;background-position:center top;background-repeat:no-repeat;display:block;';
+          heroBg.appendChild(kenia);
+
+          // Puntos
+          const dotsWrap = document.createElement('div');
+          dotsWrap.className = 'tpl23-hero-dots';
+          const dots: HTMLButtonElement[] = [];
+
+          let idx = 0; // 0 = banner original, 1 = Kenia
+          let timer = 0;
+          const setSlide = (i: number) => {
+            idx = ((i % 2) + 2) % 2;
+            kenia.style.opacity = idx === 1 ? '1' : '0';
+            dots.forEach((d, di) => d.classList.toggle('active', di === idx));
+          };
+          const restart = () => { window.clearInterval(timer); timer = window.setInterval(() => setSlide(idx + 1), 5000); };
+
+          [0, 1].forEach(i => {
+            const d = document.createElement('button');
+            d.type = 'button';
+            d.className = 'tpl23-hero-dot' + (i === 0 ? ' active' : '');
+            d.setAttribute('aria-label', 'Banner ' + (i + 1));
+            d.onclick = (e) => { e.preventDefault(); e.stopPropagation(); setSlide(i); restart(); };
+            dots.push(d);
+            dotsWrap.appendChild(d);
+          });
+          heroBg.appendChild(dotsWrap);
+
+          // Flechas
+          const prev = document.createElement('button');
+          prev.type = 'button';
+          prev.className = 'tpl23-hero-nav tpl23-hero-prev';
+          prev.setAttribute('aria-label', 'Anterior');
+          prev.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+          prev.onclick = (e) => { e.preventDefault(); e.stopPropagation(); setSlide(idx - 1); restart(); };
+
+          const next = document.createElement('button');
+          next.type = 'button';
+          next.className = 'tpl23-hero-nav tpl23-hero-next';
+          next.setAttribute('aria-label', 'Siguiente');
+          next.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+          next.onclick = (e) => { e.preventDefault(); e.stopPropagation(); setSlide(idx + 1); restart(); };
+
+          heroBg.appendChild(prev);
+          heroBg.appendChild(next);
+
+          restart(); // arranca autoplay (cambia cada 5s)
+        }
+      }
+    } catch (e) { console.error('[TPL23] Kenia hero banner error', e); }
+
+    // 🧭 Header/drawer móvil: (1) eliminar "COMPRA DESDE: UNIDAD/PAQUETE" del header,
+    // (2) subir lupa + carrito a la fila de la hamburguesa, y (3) en el drawer izquierdo
+    // reemplazar "TIENDA" por UNIDAD (/productos) y PAQUETE (/paquetes).
+    // El header y el menú del drawer se terminan de poblar (categorías con contador)
+    // DESPUÉS de inyectar el HTML, así que aplicamos los cambios con un polling
+    // idempotente hasta que el contenido esté listo (o se agote el tiempo).
+    const applyMobileHeaderDrawer = (): boolean => {
+      const root = containerRef.current;
+      if (!root) return true;
+      let done = true;
+      try {
+        // (1) Eliminar SOLO la columna "COMPRA DESDE" (texto que EMPIEZA con ella y sin
+        //     hamburguesa dentro, para no borrar el header completo). Idempotente.
+        root.querySelectorAll('.flex.flex-col').forEach(c => {
+          const el = c as HTMLElement;
+          if (/^COMPRA\s*DESDE/i.test((el.textContent || '').trim())
+            && !el.querySelector('.menu-hamburger-button, #button-mobile-menu-drawer')) {
+            el.remove();
+          }
+        });
+
+        // (2) Subir lupa + carrito a la fila de la hamburguesa.
+        const burger = root.querySelector('#button-mobile-menu-drawer') as HTMLElement | null;
+        if (burger) {
+          const burgerWrap = burger.parentElement as HTMLElement | null;
+          if (burgerWrap && !burgerWrap.dataset.iconsMoved) {
+            const headerRow = burger.closest('.flex.justify-between') as HTMLElement | null;
+            const iconsBar = headerRow
+              ? ([...headerRow.children].find(c => c.classList.contains('w-full') && c.classList.contains('lg:hidden')) as HTMLElement | undefined)
+              : undefined;
+            const search = iconsBar?.querySelector('.search-icon') as HTMLElement | null;
+            const cart = iconsBar?.querySelector('.cart-icon') as HTMLElement | null;
+            if (iconsBar && search && cart) {
+              burgerWrap.dataset.iconsMoved = '1';
+              burgerWrap.style.width = '100%';
+              burgerWrap.style.display = 'flex';
+              burgerWrap.style.alignItems = 'center';
+              burgerWrap.style.justifyContent = 'space-between';
+              const grp = document.createElement('div');
+              grp.style.cssText = 'display:flex;align-items:center;gap:8px;';
+              grp.appendChild(search);
+              grp.appendChild(cart);
+              burgerWrap.appendChild(grp);
+              iconsBar.style.display = 'none';
+            } else {
+              done = false; // aún no están los iconos
+            }
+          }
+        } else {
+          done = false; // aún no está la hamburguesa
+        }
+
+        // (3) Drawer: TIENDA → UNIDAD + PAQUETE. Guard por presencia (re-aplica si se
+        //     re-renderiza el menú). Solo marca hecho cuando UNIDAD ya existe.
+        const drawerUl = root.querySelector('#mobile-menu-drawer ul.menu--drawer') as HTMLElement | null;
+        if (drawerUl) {
+          const hasUnidad = [...drawerUl.children].some(li => /^\s*UNIDAD\b/i.test((li.textContent || '').trim()));
+          if (!hasUnidad) {
+            const tiendaLi = ([...drawerUl.children].find(li => /^\s*TIENDA\b/i.test((li.textContent || '').trim())) as HTMLElement | undefined);
+            if (tiendaLi) {
+              const makeLi = (label: string, href: string) => {
+                const li = tiendaLi.cloneNode(true) as HTMLElement;
+                li.querySelectorAll('a').forEach(a => a.setAttribute('href', href));
+                const w = document.createTreeWalker(li, NodeFilter.SHOW_TEXT);
+                let node: Node | null;
+                while ((node = w.nextNode())) {
+                  if (node.nodeValue && /\S/.test(node.nodeValue)) {
+                    node.nodeValue = node.nodeValue.replace(/TIENDA/ig, label);
+                  }
+                }
+                return li;
+              };
+              tiendaLi.insertAdjacentElement('beforebegin', makeLi('UNIDAD', '/productos'));
+              tiendaLi.insertAdjacentElement('beforebegin', makeLi('PAQUETE', '/paquetes'));
+              tiendaLi.remove();
+            } else {
+              done = false; // TIENDA aún no está en el menú
+            }
+          }
+        } else {
+          done = false; // drawer aún no listo
+        }
+      } catch (e) { console.error('[TPL23] header/drawer móvil error', e); }
+      return done;
+    };
+    {
+      let hdTries = 0;
+      const hdTimer = window.setInterval(() => {
+        hdTries++;
+        if (applyMobileHeaderDrawer() || hdTries > 25) window.clearInterval(hdTimer);
+      }, 400);
+      applyMobileHeaderDrawer();
+    }
 
     // ✨ Hero Banner — Premium Particle System (lag-free via pre-rendered textures)
     const heroParticlesCanvas = containerRef.current.querySelector('#yaxsell-hero-particles') as HTMLCanvasElement;
@@ -2191,10 +2522,6 @@ export default function HomePage23() {
       setLatestProductsContainer(latestProductsEl);
     }
 
-    const liveShoppingEl = document.getElementById('yaxsell-live-shopping-root');
-    if (liveShoppingEl) {
-      setLiveShoppingContainer(liveShoppingEl);
-    }
 
     // Remove leftover Shopify elements
     const root = containerRef.current;
@@ -2542,7 +2869,7 @@ export default function HomePage23() {
     setTimeout(injectMobileHeroButtons, 800);
     setTimeout(injectMobileHeroButtons, 2000);
 
-  }, [bodyHtml, categories, isAppwriteLoaded, timedOffers]);
+  }, [bodyHtml, categories, isAppwriteLoaded, timedOffers, keniaEnabled, isThemeConfigLoaded]);
 
   /* ── Wire "Iniciar Sesión" button to auth popup (same style as plantilla1) ── */
   useEffect(() => {
@@ -3221,7 +3548,7 @@ export default function HomePage23() {
       setTimeout(() => {
         // 1. Populate Tab 1: Productos baratos para empezar a emprender (cheapest in-stock)
         const tab1Products = [...cheapestProducts]
-          .filter(p => p.STOCK && p.STOCK > 0)
+          .filter(p => p.STOCK === undefined || p.STOCK === null || p.STOCK > 0 || p.STOCK === 99999)
           .sort((a: any, b: any) => {
             const priceA = a.CURRENTPRICE && a.CURRENTPRICE > 0 ? a.CURRENTPRICE : (a.PRICE || 0);
             const priceB = b.CURRENTPRICE && b.CURRENTPRICE > 0 ? b.CURRENTPRICE : (b.PRICE || 0);
@@ -4388,6 +4715,18 @@ export default function HomePage23() {
 
   }, [cartItems, cartTotal, bodyHtml, updateQuantity, removeItem, products]);
 
+  /* ── Anular enlaces de WhatsApp de Kenia si está desactivada ── */
+  useEffect(() => {
+    if (!keniaEnabled) {
+      const keniaLinks = document.querySelectorAll('a[href*="56936599658"]');
+      keniaLinks.forEach((link) => {
+        link.removeAttribute('href');
+        link.addEventListener('click', (e) => e.preventDefault());
+        (link as HTMLElement).style.cursor = 'default';
+      });
+    }
+  }, [keniaEnabled, bodyHtml]);
+
   /* ── Loading/error states ── */
   if (loadError) {
     return (
@@ -4989,10 +5328,6 @@ export default function HomePage23() {
         latestProductsContainer
       )}
 
-      {liveShoppingContainer && createPortal(
-        <RecentProductsSection />,
-        liveShoppingContainer
-      )}
     </>
   );
 }

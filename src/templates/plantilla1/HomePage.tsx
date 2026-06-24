@@ -304,6 +304,7 @@ export default function HomePage1() {
   isLoggedInRef.current = isLoggedIn;
   const containerRef = useRef<HTMLDivElement>(null);
   const couponRootRef = useRef<Root | null>(null);
+  const keniaBannerRootRef = useRef<Root | null>(null);
   const countdownMobileRootRef = useRef<Root | null>(null);
   const [bodyHtml, setBodyHtml] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -312,6 +313,18 @@ export default function HomePage1() {
   const [featuredProduct, setFeaturedProduct] = useState<Product | null>(null);
   const [countdownOffer, setCountdownOffer] = useState<TimedOffer | null>(null);
   const [countdownProduct, setCountdownProduct] = useState<Product | null>(null);
+  const [keniaEnabled, setKeniaEnabled] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/public-data/kenia-status')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && typeof data.isEnabled === 'boolean') {
+          setKeniaEnabled(data.isEnabled);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   /* ── Mark template attribute on document for CSS scoping ── */
   useEffect(() => {
@@ -503,11 +516,7 @@ export default function HomePage1() {
         processed = processed.replace(/Mi tienda 3/gi, '');
         processed = processed.replace(/>MUSK</gi, '><');
         processed = processed.replace(/shop now/gi, 'Ver productos');
-        // Fix navbar: add "En Camino" after Catálogo and replace "Contacto" with "Mis Pedidos"
-        processed = processed.replace(
-          /(<li[^>]*class="nav_li[^"]*"[^>]*>\s*<a[^>]*href="\/catalogo"[^>]*>[^<]*<\/a>\s*<\/li>)/i,
-          '$1<li class="nav_li link_menu_men heading_font"><a href="/llegan-pronto" aria-label="En Camino">En Camino</a></li>'
-        );
+        // Fix navbar: replace "Contacto" with "Mis Pedidos"
         processed = processed.replace(
           /<a[^>]*href="[^"]*contact[^"]*"[^>]*aria-label="Contacto"[^>]*>Contacto<\/a>/i,
           '<a href="/cuenta/pedidos" aria-label="Mis Pedidos">Mis Pedidos</a>'
@@ -728,22 +737,6 @@ export default function HomePage1() {
         const tiendaLink = navbar.querySelector('.nav_li a[href="/productos"]');
         if (tiendaLink?.parentElement) {
           tiendaLink.parentElement.after(li);
-        } else {
-          navbar.querySelector('ul')?.appendChild(li);
-        }
-      }
-      // Add "En Camino" link after Catálogo
-      if (!navbar.querySelector('a[href="/llegan-pronto"]')) {
-        const li = document.createElement('li');
-        li.className = 'nav_li link_menu_men heading_font';
-        const a = document.createElement('a');
-        a.href = '/llegan-pronto';
-        a.setAttribute('aria-label', 'En Camino');
-        a.textContent = 'En Camino';
-        li.appendChild(a);
-        const catalogoLink = navbar.querySelector('.nav_li a[href="/catalogo"]');
-        if (catalogoLink?.parentElement) {
-          catalogoLink.parentElement.after(li);
         } else {
           navbar.querySelector('ul')?.appendChild(li);
         }
@@ -1788,7 +1781,7 @@ export default function HomePage1() {
     };
     const getAvatarPreviewUrl = (fileId: string): string => {
       const { endpoint, projectId } = getAppwriteConfig();
-      const path = MEDIA_PREFIXES.thumbnails + fileId;
+      const path = fileId;
       return `${endpoint}/storage/buckets/${MEDIA_BUCKET_ID}/files/${path}/view?project=${projectId}`;
     };
 
@@ -5069,20 +5062,26 @@ export default function HomePage1() {
       try {
         const { databaseId } = getAppwriteConfig();
         const { databases } = getServices();
-        // Cargar categorías seleccionadas
-        const catsRes = await Promise.all(
-          catIds.map(id => databases.getDocument(databaseId, CATEGORIES_COLLECTION, id).catch(() => null))
-        );
-        const cats = catsRes.filter(Boolean) as unknown as Category[];
-        // Cargar productos por cada categoría
-        const productsPerCat = await Promise.all(
-          cats.map(c =>
-            databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-              Query.equal('CATEGORYID', c.$id),
-              Query.greaterThan('STOCK', 0),
-              Query.limit(perCat),
-            ]).then(r => r.documents as unknown as Product[]).catch(() => [] as Product[])
-          )
+        // Cargar todas las categorías seleccionadas en 1 sola llamada
+        const catBatchRes = await databases.listDocuments(databaseId, CATEGORIES_COLLECTION, [
+          Query.equal('$id', catIds),
+          Query.limit(100),
+        ]).catch(() => ({ documents: [] }));
+        const cats = (catBatchRes.documents as unknown as Category[]).filter(Boolean);
+        // Cargar productos de todas las categorías en 1 sola llamada
+        const catIdList = cats.map(c => c.$id);
+        let allProducts: Product[] = [];
+        if (catIdList.length > 0) {
+          const prodRes = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+            Query.equal('CATEGORYID', catIdList),
+            Query.greaterThan('STOCK', 0),
+            Query.limit(500),
+          ]).catch(() => ({ documents: [] }));
+          allProducts = prodRes.documents as unknown as Product[];
+        }
+        // Agrupar productos por categoría en memoria
+        const productsPerCat = cats.map(c =>
+          allProducts.filter(p => p.CATEGORYID === c.$id).slice(0, perCat)
         );
         if (!alive) return;
 
@@ -5820,18 +5819,28 @@ export default function HomePage1() {
     window.addEventListener('resize', applyFeaturedMobileLayout);
 
     // Auto-fetch product counts from Appwrite for categories missing productCount
+    // Single batch call instead of N calls per category
     (async () => {
+      const itemsNeedingCount = items.filter(it => it.productCount === undefined && it.categoryId);
+      if (itemsNeedingCount.length === 0) return;
       const { databaseId } = getAppwriteConfig();
       const { databases } = getServices();
-      for (let idx = 0; idx < items.length; idx++) {
-        const item = items[idx];
-        if (item.productCount !== undefined || !item.categoryId) continue;
-        try {
-          const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-            Query.equal('CATEGORYID', item.categoryId),
-            Query.limit(1),
-          ]);
-          const count = res.total;
+      const catIdsToCount = itemsNeedingCount.map(it => it.categoryId!);
+      try {
+        const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
+          Query.equal('CATEGORYID', catIdsToCount),
+          Query.greaterThan('STOCK', 0),
+          Query.limit(500),
+        ]);
+        const counts: Record<string, number> = {};
+        for (const doc of res.documents) {
+          const cat = (doc as any).CATEGORYID;
+          counts[cat] = (counts[cat] || 0) + 1;
+        }
+        for (let idx = 0; idx < items.length; idx++) {
+          const item = items[idx];
+          if (item.productCount !== undefined || !item.categoryId) continue;
+          const count = counts[item.categoryId] || 0;
           if (idx < slides.length) {
             const details = slides[idx].querySelector('.product-details') as HTMLElement;
             if (details) {
@@ -5845,8 +5854,8 @@ export default function HomePage1() {
               badge.style.display = 'inline-flex';
             }
           }
-        } catch { /* ignore */ }
-      }
+        }
+      } catch { /* ignore */ }
     })();
 
     return () => {
@@ -6851,31 +6860,131 @@ export default function HomePage1() {
       const heroEl = document.getElementById('shopify-section-template--22405132419320__hero_banner_R6iEJ4');
       if (heroEl) {
         const hs = heroSec.settings || {};
-        const slides = hs.heroSlides;
+
+        // Define Kenia's promotional slide as herobanner 2
+        const KENIA_PHONE = '56936599658';
+        const KENIA_WA_URL = `https://wa.me/${KENIA_PHONE}?text=${encodeURIComponent('REGISTRATE CON KENIA')}`;
+        const KENIA_IMG_PC = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781734075685-pegada-1781734073035.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=pB3phWWaO5gjCrm5MDeTa4B9yJRxBCfQZZl0hKH8AgvxRAt%2FyIFq1WO3HgT37USBj6GGa9rdB%2Fpq1JSHcoqESCJJdGfG0fY1Nk3UAaHcGWz52EWY1IyW5KUdVmJaAV%2FM2NQTyc4hKr4iwdzibIXrTufp1DiF6HXBkHBRmj1XlsRgBHBgcHnEK7DhNpfuqAjBECpBzIOd0UDKeFbQIaZ2g1JkiWTlUESTS2KnC%2B8A%2FRFbhNy0Q0DvKFkrALylkbR8S39QD%2FFCwuwSA5Qiqyvnuko5FB6MfQuQVmIl51cE%2BveXDd1F2yU6WlaRZCJ4%2BWrR%2FR0phLnbS1GK6PICYm%2BK7Q%3D%3D';
+        const KENIA_IMG_MOBILE = 'https://storage.googleapis.com/asistoraerp.firebasestorage.app/IADESIGN/2026/06/1781734384924-pegada-1781734383088.png?GoogleAccessId=firebase-adminsdk-fbsvc%40asistoraerp.iam.gserviceaccount.com&Expires=16730334000&Signature=vgk%2BhBwoekrfTywuMo4ksekSlWku11fqOigNF3acuZBd4QnkvzpEO%2FtYtJvd1R0dMspS7HsDmjJK6Ph8Tz78L7dUh2IBCDz0yupBP3TtQdDURnXpuzhSGdGzjoCmExz%2BDeMvp8625Vj0LQmZDEMx2Oy0h8j59p%2FCcEr1e3y7RIFueedOKuo8rQxSw%2BDkLaQBd9f1I8t%2FlpmaWjVXl6qPmcX8rMvPtO%2Fk6Saupukz1iWy1byR3Q66SayYKr2ofcBnE3zPpzJ3CgOrexAq1h4%2FQjBjZjbiw%2Fbfbq8LSR9gWj8WkAbDOem%2FgGGXQKBRlYJN77IMX9d0Syu9q4jOZRKt1g%3D%3D';
+
+        const keniaSlide = {
+          imageUrl: KENIA_IMG_PC,
+          mobileImageUrl: KENIA_IMG_MOBILE,
+          title: '',
+          subtitle: '',
+          description: '',
+          btnPrimaryText: '',
+          btnPrimaryLink: '',
+          btnSecondaryText: '',
+          btnSecondaryLink: '',
+          alignment: 'center' as const,
+          buttonLink: KENIA_WA_URL,
+        };
+
+        const slides = [...(hs.heroSlides || [])];
+        if (keniaEnabled) {
+          if (slides.length < 2) {
+            slides.push(keniaSlide);
+          } else {
+            slides[1] = {
+              ...slides[1],
+              imageUrl: KENIA_IMG_PC,
+              mobileImageUrl: KENIA_IMG_MOBILE,
+              buttonLink: KENIA_WA_URL,
+              title: '',
+              subtitle: '',
+              description: '',
+              btnPrimaryText: '',
+              btnPrimaryLink: '',
+              btnSecondaryText: '',
+              btnSecondaryLink: '',
+            };
+          }
+        }
+
         const swiperSlides = heroEl.querySelectorAll('.swiper-slide') as NodeListOf<HTMLElement>;
 
         // Apply autoplay/delay/speed via swiper options
-        const sliderEl = heroEl.querySelector('fuzion-hero-banner-slider') as HTMLElement;
-        if (sliderEl && (hs.heroAutoplay !== undefined || hs.heroDelay !== undefined || hs.heroTransitionSpeed !== undefined)) {
+        const originalSliderEl = heroEl.querySelector('fuzion-hero-banner-slider') as HTMLElement;
+        if (originalSliderEl && (window as any).Swiper) {
           try {
-            const opts = JSON.parse(sliderEl.dataset.swiperOptions!.replace(/&quot;/g, '"'));
-            if (hs.heroAutoplay !== undefined) {
-              opts.autoplay = hs.heroAutoplay ? { delay: hs.heroDelay || 5000, disableOnInteraction: false } : false;
+            // Destroy the old Swiper instance FIRST so it cleans up duplicates and styles
+            const oldSw = (originalSliderEl as any).slider || (originalSliderEl as any).swiper || (originalSliderEl.querySelector('.swiper') as any)?.swiper;
+            if (oldSw && typeof oldSw.destroy === 'function') {
+              try { oldSw.destroy(true, true); } catch (e) { }
             }
-            if (hs.heroTransitionSpeed !== undefined) {
-              opts.speed = hs.heroTransitionSpeed;
+
+            // Bypass the buggy Fuzion custom element entirely by converting it to a div
+            let sliderEl = originalSliderEl;
+            if (originalSliderEl.tagName.toLowerCase() === 'fuzion-hero-banner-slider') {
+              const newDiv = document.createElement('div');
+              newDiv.className = originalSliderEl.className;
+              if (!newDiv.classList.contains('swiper')) newDiv.classList.add('swiper');
+              // Remove the fade class to ensure it can slide normally
+              newDiv.classList.remove('swiper-fade', 'swiper-effect-fade');
+              
+              // Move all children directly to preserve existing DOM node references!
+              while (originalSliderEl.firstChild) {
+                newDiv.appendChild(originalSliderEl.firstChild);
+              }
+              
+              originalSliderEl.replaceWith(newDiv);
+              sliderEl = newDiv;
             }
-            if (window.matchMedia('(max-width: 768px)').matches) {
-              opts.loop = false;
-              opts.autoplay = false;
-              opts.allowTouchMove = false;
-              opts.simulateTouch = false;
-              opts.noSwiping = true;
-              opts.watchOverflow = true;
+
+            // Force loop, autoplay, and touch settings globally when multiple slides exist
+            const shouldAutoplay = hs.heroAutoplay !== false;
+            const hasMultiple = slides.length > 1;
+
+            const swiperConfig: any = {
+              slidesPerView: 1,
+              spaceBetween: 0,
+              loop: hasMultiple,
+              speed: hs.heroTransitionSpeed || 1000,
+              effect: 'slide', // Slide effect globally for proper swiping
+              allowTouchMove: true,
+              simulateTouch: true,
+              followFinger: true,
+              touchEventsTarget: 'wrapper',
+              watchOverflow: !hasMultiple,
+              navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev'
+              },
+              pagination: false
+            };
+
+            if (hasMultiple && shouldAutoplay) {
+              swiperConfig.autoplay = {
+                delay: hs.heroDelay || 5000,
+                disableOnInteraction: false
+              };
+            } else {
+              swiperConfig.autoplay = false;
             }
-            sliderEl.dataset.swiperOptions = JSON.stringify(opts);
-          } catch { }
+
+            // Initialize a fresh, pure Swiper instance
+            const newSwiper = new (window as any).Swiper(sliderEl, swiperConfig);
+            (sliderEl as any).swiper = newSwiper;
+
+            // Aggressive watchdog: keep swiping if it gets stuck
+            const watchdog = () => {
+              if (newSwiper && hasMultiple) {
+                newSwiper.params.allowTouchMove = true;
+                newSwiper.allowTouchMove = true;
+                if (shouldAutoplay && (!newSwiper.autoplay || !newSwiper.autoplay.running)) {
+                  try { newSwiper.autoplay.start(); } catch {}
+                }
+              }
+            };
+            setTimeout(watchdog, 1000);
+            setTimeout(watchdog, 3000);
+
+          } catch (err) {
+            console.error('[TPL1] Nuclear Swiper init failed:', err);
+          }
         }
+
 
         // Apply slide content
         const overlayOpacity = hs.heroOverlayOpacity ?? 0.3;
@@ -7294,6 +7403,21 @@ export default function HomePage1() {
               slide.classList.remove('center-content', 'left-content', 'right-content');
               slide.classList.add(`${sl.alignment}-content`);
             }
+
+            // Whole-slide click handler (e.g. for Kenia banner)
+            if (sl.buttonLink) {
+              slide.style.cursor = 'pointer';
+              slide.onclick = (e) => {
+                const target = e.target as HTMLElement;
+                if (target.closest('a') && target.closest('a') !== slide) {
+                  return;
+                }
+                window.open(sl.buttonLink, '_blank');
+              };
+            } else {
+              slide.style.cursor = '';
+              slide.onclick = null;
+            }
           });
 
           // Hide extra slides if fewer than original
@@ -7308,7 +7432,7 @@ export default function HomePage1() {
           const applyHeroMobileLock = () => {
             const isMobile = window.matchMedia('(max-width: 768px)').matches;
             if (!heroEl) return;
-            if (isMobile) {
+            if (isMobile && slides.length <= 1) {
               heroEl.classList.add('tpl1-hero-mobile-locked');
               swiperSlides.forEach((slide, i) => {
                 slide.style.display = i === 0 ? '' : 'none';
@@ -7330,7 +7454,28 @@ export default function HomePage1() {
               sliderEl?.addEventListener?.('swiper:ready', lockSwiper as EventListener);
             } else {
               heroEl.classList.remove('tpl1-hero-mobile-locked');
-              swiperSlides.forEach(slide => { slide.style.display = ''; });
+              swiperSlides.forEach((slide, i) => {
+                if (i < slides.length) {
+                  slide.style.display = '';
+                } else {
+                  slide.style.display = 'none';
+                }
+              });
+              const unlockSwiper = () => {
+                const slider = heroEl.querySelector('fuzion-hero-banner-slider') as HTMLElement & { swiper?: { allowTouchMove: boolean; autoplay?: { start?: () => void }; enable?: () => void; touchRatio?: number } };
+                const sw = slider?.swiper || (heroEl.querySelector('.swiper') as HTMLElement & { swiper?: typeof slider.swiper })?.swiper || (slider as any)?.slider;
+                if (sw) {
+                  sw.allowTouchMove = true;
+                  sw.touchRatio = 1;
+                  try { sw.enable?.(); } catch { /* ignore */ }
+                  const shouldAutoplay = hs.heroAutoplay !== false;
+                  if (shouldAutoplay && slides.length > 1) {
+                    try { sw.autoplay?.start?.(); } catch { /* ignore */ }
+                  }
+                }
+              };
+              unlockSwiper();
+              [400, 900, 1200, 2200, 3500].forEach((ms) => setTimeout(unlockSwiper, ms));
             }
           };
           applyHeroMobileLock();
@@ -7828,7 +7973,7 @@ export default function HomePage1() {
       main.insertBefore(el, anchor);
       anchor = el.nextSibling;
     });
-  }, [bodyHtml, sectionCfg]);
+  }, [bodyHtml, sectionCfg, keniaEnabled]);
 
   /* ── Heading split-text scroll animation (#enlarge_heading + #enlarge_subheading).
         GSAP + ScrollTrigger. Espera a que Swiper termine antes de inicializar. ── */
@@ -8115,7 +8260,11 @@ export default function HomePage1() {
     );
   }, [bodyHtml, sectionCfg, countdownOffer, countdownProduct]);
 
+  // Removed redundant static Kenia banner injection as it is now integrated as Slide 2 (herobanner 2)
+
   /* ── Inject TPL1 coupon banner before Colecciones ── */
+
+
   useEffect(() => {
     if (!bodyHtml || sectionCfg.length === 0 || !containerRef.current) return;
     const enabled = isSectionEnabled(sectionCfg, 'tpl1_coupon_banner');
@@ -8180,7 +8329,7 @@ export default function HomePage1() {
     }
 
     // Inject Chatbot button
-    if (chatbotEnabled) {
+    if (chatbotEnabled && keniaEnabled) {
       const cbBtn = document.createElement('button');
       cbBtn.id = 'tpl1-chatbot-button';
       cbBtn.dataset.sectionId = 'tpl1_chatbot_button';
@@ -8196,7 +8345,19 @@ export default function HomePage1() {
       if (wa) wa.remove();
       if (cb) cb.remove();
     };
-  }, [bodyHtml, sectionCfg]);
+  }, [bodyHtml, sectionCfg, keniaEnabled]);
+
+  /* ── Anular enlaces de WhatsApp de Kenia si está desactivada ── */
+  useEffect(() => {
+    if (!keniaEnabled) {
+      const keniaLinks = document.querySelectorAll('a[href*="56936599658"]');
+      keniaLinks.forEach((link) => {
+        link.removeAttribute('href');
+        link.addEventListener('click', (e) => e.preventDefault());
+        (link as HTMLElement).style.cursor = 'default';
+      });
+    }
+  }, [keniaEnabled, bodyHtml]);
 
   /* ── Loading state ── */
   if (loadError) {

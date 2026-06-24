@@ -6,19 +6,6 @@ import { resolveProductDisplayPrice, fetchAperturaSettings } from '@/lib/apertur
 import { getSkuFromFeatures } from '@/lib/product-features';
 import { normalizeProductImages } from '@/lib/product-images';
 
-// Helper to get threshold for live shopping
-function getLiveShoppingThreshold(): Date {
-  const now = new Date();
-  const today7Am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0, 0);
-  if (now.getTime() >= today7Am.getTime()) {
-    return today7Am;
-  } else {
-    const yesterday7Am = new Date(today7Am);
-    yesterday7Am.setDate(yesterday7Am.getDate() - 1);
-    return yesterday7Am;
-  }
-}
-
 // Module-level in-memory cache fallbacks (safe-guard in case unstable_cache is bypassed or server restarts)
 let memoryCacheAllProducts: any[] | null = null;
 let memoryCacheAllProductsTime = 0;
@@ -29,13 +16,12 @@ let memoryCacheActiveOffersTime = 0;
 let memoryCacheAperturaSettings: any = null;
 let memoryCacheAperturaSettingsTime = 0;
 
-let memoryCacheLiveProducts: Record<string, { data: any[]; timestamp: number }> = {};
 
 // Cache all active products for 60 seconds
 const getCachedAllProducts = unstable_cache(
   async () => {
     const now = Date.now();
-    if (memoryCacheAllProducts && (now - memoryCacheAllProductsTime < 60000)) {
+    if (memoryCacheAllProducts && (now - memoryCacheAllProductsTime < 2000)) {
       return memoryCacheAllProducts;
     }
 
@@ -75,14 +61,14 @@ const getCachedAllProducts = unstable_cache(
     return normalized;
   },
   ['all-public-products-cache-v3'],
-  { revalidate: 86400, tags: ['products'] }
+  { revalidate: 3600, tags: ['products'] }
 );
 
 // Cache active offer target IDs
 const getCachedActiveOffers = unstable_cache(
   async () => {
     const now = Date.now();
-    if (memoryCacheActiveOffers && (now - memoryCacheActiveOffersTime < 86400000)) {
+    if (memoryCacheActiveOffers && (now - memoryCacheActiveOffersTime < 3600000)) {
       return memoryCacheActiveOffers;
     }
 
@@ -99,7 +85,7 @@ const getCachedActiveOffers = unstable_cache(
     return ids;
   },
   ['active-offers-cache-v3'],
-  { revalidate: 86400, tags: ['offers'] }
+  { revalidate: 3600, tags: ['offers'] }
 );
 
 // Cache apertura settings
@@ -119,53 +105,9 @@ const getCachedAperturaSettings = unstable_cache(
   { revalidate: 3600, tags: ['settings'] }
 );
 
-// Cache live products for 60 seconds
-const getCachedLiveProducts = unstable_cache(
-  async (thresholdIso: string) => {
-    const now = Date.now();
-    const cached = memoryCacheLiveProducts[thresholdIso];
-    if (cached && (now - cached.timestamp < 60000)) {
-      return cached.data;
-    }
-
-    const { databases } = getServices();
-    const { databaseId } = getAppwriteConfig();
-    const res = await databases.listDocuments(databaseId, PRODUCTS_COLLECTION, [
-      Query.greaterThanEqual('imported_at', thresholdIso),
-      Query.greaterThanEqual('STOCK', 0),
-      Query.orderDesc('imported_at'),
-      Query.limit(500),
-    ]);
-    const normalized = res.documents.map(p => normalizeProductImages(p as any));
-    memoryCacheLiveProducts[thresholdIso] = {
-      data: normalized,
-      timestamp: Date.now()
-    };
-    return normalized;
-  },
-  ['live-products-cache-v3'],
-  { revalidate: 60, tags: ['products', 'live'] }
-);
-
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const isLive = searchParams.get('live') === 'true';
-
-    // 1. Live Shopping (Real-time DB query with 60s cache)
-    if (isLive) {
-      const threshold = getLiveShoppingThreshold();
-      const normalized = await getCachedLiveProducts(threshold.toISOString());
-      return NextResponse.json(
-        { products: normalized },
-        {
-          headers: {
-            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=60',
-          },
-        }
-      );
-    }
-
     const idsParam = searchParams.get('ids');
     if (idsParam) {
       const ids = idsParam.split(',').filter(Boolean);
@@ -319,7 +261,7 @@ export async function GET(request: NextRequest) {
       allTags
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=86400'
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=300'
       }
     });
 

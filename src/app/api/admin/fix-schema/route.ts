@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1';
 const PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '6a3c200f000d5437f6c4';
-const API_KEY = process.env.APPWRITE_API_KEY || 'standard_2d173f58f38634c70435e2aa17c03320dc959192545a2e6ec9834b09d80c4f459b4e92b139ee85efba504c423f5bcb1443448799dc7d3b06e811dc0d910d058e7f1093442a87e957beaaaa09569a448ec9e6e8eb178e648e6c48a6451fdffe8716722a1162d89f96e7b243109f537eca0ee1480ef0b639f24ea32e5fdd886f9d';
+const API_KEY = process.env.APPWRITE_API_KEY || '';
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a3c237900227a52bcb2';
 
 interface AttrDef {
@@ -20,6 +20,7 @@ const FIXES: Record<string, AttrDef[]> = {
     { key: 'IMAGEURL5', type: 'string', size: 2048, required: false, default: null },
     { key: 'TAGS', type: 'string', size: 512, required: false, default: null, array: true },
     { key: 'FEATURES', type: 'string', size: 15000, required: false, default: null, array: true },
+    { key: 'UNIT_OFFER_EXPIRES_AT', type: 'integer', required: false, default: null },
   ],
   points_store_items: [
     { key: 'SORTORDER', type: 'integer', required: false, default: 0 },
@@ -35,6 +36,11 @@ const FIXES: Record<string, AttrDef[]> = {
     { key: 'NOTIFIED', type: 'boolean', required: false, default: false },
     { key: 'sku', type: 'string', size: 128, required: false },
     { key: 'jumpsellerId', type: 'string', size: 64, required: false },
+  ],
+  orders: [
+    // size >= 16384 => almacenado como TEXT (fuera de fila), evita el límite de bytes de la fila
+    { key: 'BOXPHOTOS', type: 'string', size: 20000, required: false },
+    { key: 'adminNotes', type: 'string', size: 10000, required: false },
   ],
   cart_snapshots: [
     { key: 'userId', type: 'string', size: 128, required: true },

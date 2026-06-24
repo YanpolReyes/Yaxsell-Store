@@ -63,15 +63,14 @@ const NAV_GROUPS: NavGroup[] = [
         { href: '/admin/products',       label: 'Productos',       icon: Ico.Productos },
         { href: '/admin/products/liveshopping', label: 'Live Shopping',   icon: Ico.LiveShop },
         { href: '/admin/products/bulk-add', label: 'Agregar Masivamente', icon: Ico.Sparkles },
+        { href: '/admin/products/bulk-delete', label: 'Eliminar Masivamente', icon: Ico.OctagonX },
         { href: '/admin/products/vinculacion', label: 'Vincular Productos', icon: Ico.Sparkles },
         { href: '/admin/categories',     label: 'Categorías',      icon: Ico.Categorias },
         { href: '/admin/subcategories',  label: 'Subcategorías',   icon: Ico.Subcategorias },
-        { href: '/admin/blocked-products', label: 'Productos Bloqueados', icon: Ico.Sparkles },
       ]},
       { href: '', label: 'INVENTARIO', icon: Ico.Inventario, children: [
         { href: '/admin/inventory',      label: 'Stock',           icon: Ico.Inventario },
         { href: '/admin/wholesale-products', label: 'Productos Mayoristas', icon: Ico.Mayoristas },
-        { href: '/admin/products/bulk-delete', label: 'Eliminar Masivamente', icon: Ico.OctagonX },
         { href: '/admin/products/bulk-add', label: 'Agregar Masivamente', icon: Ico.Sparkles },
         { href: '/admin/products/bulk-edit', label: 'Editar Masivamente', icon: Ico.Sparkles },
         { href: '/admin/products/stock-editor', label: 'Editor de Stock', icon: Ico.Inventario },
@@ -84,9 +83,14 @@ const NAV_GROUPS: NavGroup[] = [
       ]},
       { href: '/admin/product-votes', label: 'PRÓXIMAMENTE', icon: Ico.Ofertas }
     ]},
+    { href: '/admin/por-mayor', label: 'Por Mayor', icon: Ico.Mayoristas },
+    { href: '/admin/por-unidad', label: 'Por Unidad', icon: Ico.Productos },
+    { href: '/admin/embalajes', label: 'Embalajes', icon: Ico.Inventario },
     { href: '', label: 'Pedidos', icon: Ico.Pedidos, badge: 'orders', children: [
       { href: '/admin/orders',            label: 'Todos los Pedidos', icon: Ico.Pedidos, badge: 'orders' },
+      { href: '/admin/wholesale-orders',  label: 'Pedidos Mayoristas', icon: Ico.Mayoristas },
       { href: '/admin/orders/negotiation', label: 'Negociación',       icon: Ico.Pedidos },
+      { href: '/admin/blocked-products',  label: 'Productos Bloqueados', icon: Ico.Sparkles },
     ]},
     { href: '/admin/users',     label: 'Clientes',    icon: Ico.Usuarios },
     { href: '/admin/analytics', label: 'Analytics',    icon: Ico.Analytics },
@@ -101,6 +105,11 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/notifications', label: 'Notificaciones', icon: Ico.Notifs, badge: 'notifs' },
     ]},
     { href: '/admin/wholesale', label: 'Mayoristas',   icon: Ico.Mayoristas, badge: 'wholesale' },
+    { href: '/admin/ia', label: 'Kenia IA', icon: Ico.Sparkles, children: [
+      { href: '/admin/ia',           label: 'Centro de control', icon: Ico.Sparkles },
+      { href: '/admin/ia/whatsapp',  label: 'WhatsApp',          icon: Ico.Soporte },
+      { href: '/admin/ia/appwrite',  label: 'Appwrite Monitor',  icon: Ico.Server },
+    ]},
   ]},
   { label: 'Configuración', defaultOpen: false, items: [
     { href: '/admin/engagement/plantillas', label: 'Plantillas',       icon: Ico.Plantillas },
@@ -119,7 +128,7 @@ const NAV_GROUPS: NavGroup[] = [
 /* ═══════════════════ IA Top Bar Button ═══════════════════ */
 const IA_PHRASES = [
   '¿Necesitas ayuda?',
-  'Habla con Yexy',
+  'Habla con Kenia',
   'Crear y editar productos',
   'Consultar pedidos',
   'Niveles de inventario',
@@ -209,6 +218,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { unlimitedStock } = useStoreSettings();
   const router   = useRouter();
   const pathname = usePathname();
+  const isFullScreenIAWhatsApp = pathname === '/admin/ia/whatsapp';
 
   const filteredNavGroups = NAV_GROUPS.map(group => {
     if (group.label === 'General') {
@@ -492,7 +502,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     return (
-      <Link key={`${item.href}-${item.label}`} href={item.href}
+      <Link key={`${item.href}-${item.label}`} href={item.href} prefetch={false}
         onClick={() => setSidebarOpen(false)}
         className="sf-nav-item"
         style={{
@@ -826,7 +836,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <>
       <style>{topbarShineCss}</style>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#1a1a1a', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: isFullScreenIAWhatsApp ? '#111b21' : '#1a1a1a', overflow: 'hidden' }}>
+      {isFullScreenIAWhatsApp ? (
+        <>
+          <div className="admin-content-wrap" ref={contentWrapRef} style={{
+            flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0, height: '100%', background: '#111b21',
+            display: 'flex', flexDirection: 'column',
+          }}>
+            <main ref={contentRef} className="admin-main-content" style={{
+              position: 'relative', zIndex: 1, flex: 1, height: '100%',
+              overflow: 'hidden',
+              padding: 0, background: '#111b21',
+              margin: 0,
+            }}>
+              {children}
+            </main>
+          </div>
+          <AISidekick open={sidekickOpen} onClose={() => setSidekickOpen(false)} />
+        </>
+      ) : (
+      <>
       {/* ═══ Top bar — unified with sidebar ═══ */}
       <header style={{
         height: 64,
@@ -849,6 +878,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               src="https://firebasestorage.googleapis.com/v0/b/geminai-449212.firebasestorage.app/o/Yaxsell%2Flogo.png?alt=media&token=3c24b115-53b7-4603-badf-1af26b586a6a"
               alt="Yaxsel"
               fill
+              sizes="200px"
               style={{ objectFit: 'contain' }}
               priority
             />
@@ -864,30 +894,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
 
           {/* IA Sidekick button with typing phrases */}
-          <IATopBarButton isOpen={sidekickOpen} onClick={() => setSidekickOpen(o => !o)} />
-
-          {/* Limpiar Caché Button */}
-          <button 
-            onClick={async () => {
-              try {
-                await fetch('/api/revalidate?tag=products');
-                alert('¡Caché limpiado con éxito! La tienda está actualizada para todos.');
-              } catch (e) {
-                alert('Error al limpiar caché');
-              }
-            }}
-            title="Limpiar Caché de Tienda"
-            style={{
-              height: 32, padding: '0 12px', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', 
-              cursor: 'pointer', fontSize: 12, fontWeight: 600, transition: 'all .2s'
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)'; }}
-            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; }}
-          >
-            <RefreshCw size={14} />
-            <span className="hidden sm:inline">Limpiar Caché</span>
-          </button>
+          <IATopBarButton isOpen={sidekickOpen} onClick={() => {
+            setSidekickOpen(true);
+            if (pathname !== '/admin/ia') router.push('/admin/ia');
+          }} />
 
           {/* Notifications */}
           <Link href="/admin/notifications" style={{
@@ -911,11 +921,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               transition: 'background .15s',
             }}>
               <div style={{
-                width: 28, height: 28, borderRadius: '50%', background: '#059669',
+                width: 28, height: 28, borderRadius: '50%',
+                background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', fontWeight: 700, fontSize: 11, flexShrink: 0,
+                color: '#fff', fontWeight: 800, fontSize: 10, flexShrink: 0,
+                boxShadow: '0 0 0 2px rgba(139,92,246,0.4)',
               }}>
-                {user?.name?.charAt(0).toUpperCase() || 'A'}
+                {user?.name?.split(' ').slice(0,2).map((w: string) => w[0]).join('').toUpperCase() || 'JE'}
               </div>
               <span className="hidden sm:inline" style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: 500, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {user?.name || 'Admin'}
@@ -951,8 +963,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {/* Header */}
                 <div className="um-item" style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
-                      {user?.name?.charAt(0).toUpperCase() || 'A'}
+                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 11, flexShrink: 0, boxShadow: '0 0 0 2px rgba(139,92,246,0.3)' }}>
+                      {user?.name?.split(' ').slice(0,2).map((w: string) => w[0]).join('').toUpperCase() || 'JE'}
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <p style={{ margin: 0, color: '#fff', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name || 'Admin'}</p>
@@ -1011,6 +1023,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* IA Sidekick panel */}
         <AISidekick open={sidekickOpen} onClose={() => setSidekickOpen(false)} />
       </div>
+      </>
+      )}
     </div>
     </>
   );

@@ -37,6 +37,21 @@ export function getServices() {
   const { endpoint, projectId } = getConfig();
   if (!_client) {
     _client = new Client().setEndpoint(endpoint).setProject(projectId);
+
+    // 🔒 SERVER-ONLY: autenticar con la API key para que las lecturas funcionen
+    // aunque las colecciones NO sean de lectura pública (read("any")).
+    // En el cliente, process.env.APPWRITE_API_KEY es undefined y Next NO lo incluye
+    // en el bundle (no es NEXT_PUBLIC), así que la key jamás se expone al navegador.
+    // El navegador sigue leyendo vía el proxy cacheado /api/appwrite-proxy.
+    if (typeof window === 'undefined' && process.env.APPWRITE_API_KEY) {
+      try {
+        (_client as any).headers = {
+          ...((_client as any).headers || {}),
+          'X-Appwrite-Key': process.env.APPWRITE_API_KEY,
+        };
+      } catch { /* noop */ }
+    }
+
     _databases = new Databases(_client);
     _account = new Account(_client);
     _storage = new Storage(_client);
@@ -54,9 +69,16 @@ export function getServices() {
         const promise = (async () => {
           try {
             const qStr = encodeURIComponent(JSON.stringify(queries || []));
-            const res = await fetch(`/api/appwrite-proxy?colId=${colId}&queries=${qStr}`);
-            if (res.ok) {
-              return await res.json();
+            // Retry proxy up to 2 times before falling back to direct Appwrite
+            for (let attempt = 0; attempt < 2; attempt++) {
+              try {
+                const res = await fetch(`/api/appwrite-proxy?colId=${colId}&queries=${qStr}`);
+                if (res.ok) {
+                  return await res.json();
+                }
+              } catch {
+                // retry on network error
+              }
             }
           } catch (e) {
             console.warn('[CachedAppwrite] Proxy failed for listDocuments, falling back to direct Appwrite', e);
@@ -84,9 +106,15 @@ export function getServices() {
         
         const promise = (async () => {
           try {
-            const res = await fetch(`/api/appwrite-proxy?colId=${colId}&docId=${docId}`);
-            if (res.ok) {
-              return await res.json();
+            for (let attempt = 0; attempt < 2; attempt++) {
+              try {
+                const res = await fetch(`/api/appwrite-proxy?colId=${colId}&docId=${docId}`);
+                if (res.ok) {
+                  return await res.json();
+                }
+              } catch {
+                // retry on network error
+              }
             }
           } catch (e) {
             console.warn('[CachedAppwrite] Proxy failed for getDocument, falling back to direct Appwrite', e);
@@ -158,6 +186,8 @@ export const ADMIN_CHAT_COLLECTION                = 'admin_chat'; // Admin-user 
 // STORAGE — Un solo bucket con prefijos
 // ============================================
 export const MEDIA_BUCKET_ID = 'products';
+// Bucket dedicado a las fotos de las cajas de pedidos antes de despachar
+export const ORDER_BOX_PHOTOS_BUCKET_ID = '6a349e3f000d44477aa2';
 
 // Prefijos para organizar archivos en el bucket único
 export const MEDIA_PREFIXES = {
