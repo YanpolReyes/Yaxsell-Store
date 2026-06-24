@@ -188,7 +188,7 @@ export class AuthService {
   // Crear documento de usuario en la base de datos
   private static async createUserDocument(user: any): Promise<User> {
     try {
-      const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a0a58ca001798410d86';
+      const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a3c237900227a52bcb2';
       if (!databaseId) {
         throw new Error('Database ID not configured');
       }
@@ -250,7 +250,7 @@ export class AuthService {
       
       let isWholesale = false;
       try {
-        const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a0a58ca001798410d86';
+        const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a3c237900227a52bcb2';
         const userDoc = await databases.listDocuments(
           databaseId,
           USERS_COLLECTION_ID,
@@ -329,7 +329,7 @@ export class AuthService {
 
       // Actualizar documento en la base de datos
       const currentUser = await account.get();
-      const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a0a58ca001798410d86';
+      const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a3c237900227a52bcb2';
       if (!databaseId) {
         return { success: false, error: 'Database ID not configured' };
       }

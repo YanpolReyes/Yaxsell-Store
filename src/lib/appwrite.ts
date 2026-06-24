@@ -19,8 +19,8 @@ function getConfig() {
   }
   return {
     endpoint: process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1',
-    projectId: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '6a0a4e8d0032177f3f90',
-    databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a0a58ca001798410d86',
+    projectId: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '6a3c200f000d5437f6c4',
+    databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '6a3c237900227a52bcb2',
   };
 }
 
@@ -157,7 +157,7 @@ export const ADMIN_CHAT_COLLECTION                = 'admin_chat'; // Admin-user 
 // ============================================
 // STORAGE — Un solo bucket con prefijos
 // ============================================
-export const MEDIA_BUCKET_ID = '6a15f9a5001070a3c408';
+export const MEDIA_BUCKET_ID = 'products';
 
 // Prefijos para organizar archivos en el bucket único
 export const MEDIA_PREFIXES = {
